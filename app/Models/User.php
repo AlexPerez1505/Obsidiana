@@ -1,0 +1,162 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
+
+class User extends Authenticatable implements MustVerifyEmail
+{
+    /** @use HasFactory<\Database\Factories\UserFactory> */
+    use HasFactory, Notifiable;
+
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_APPROVED = 'approved';
+    public const STATUS_BANNED = 'banned';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+        'verification_code',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'verification_code_expires_at' => 'datetime',
+            'verification_code_sent_at' => 'datetime',
+            'is_admin' => 'boolean',
+            'approved_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+
+    /**
+     * ¿Es administrador?
+     */
+    public function isAdmin(): bool
+    {
+        return (bool) $this->is_admin;
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === self::STATUS_APPROVED;
+    }
+
+    public function isBanned(): bool
+    {
+        return $this->status === self::STATUS_BANNED;
+    }
+
+    /**
+     * Etiqueta legible del estado.
+     */
+    public function statusLabel(): string
+    {
+        return match ($this->status) {
+            self::STATUS_APPROVED => 'Con acceso',
+            self::STATUS_BANNED   => 'Baneado',
+            default               => 'Pendiente',
+        };
+    }
+
+    /**
+     * Historial de inicios de sesión del usuario.
+     */
+    public function loginLogs(): HasMany
+    {
+        return $this->hasMany(LoginLog::class)->latest('logged_at');
+    }
+
+    /**
+     * Genera un código de verificación de 6 dígitos, lo guarda hasheado
+     * y devuelve el código en texto plano para enviarlo por correo.
+     */
+    public function generateVerificationCode(int $minutes = 10): string
+    {
+        $code = (string) random_int(100000, 999999);
+
+        $this->forceFill([
+            'verification_code' => Hash::make($code),
+            'verification_code_expires_at' => Carbon::now()->addMinutes($minutes),
+            'verification_code_sent_at' => Carbon::now(),
+        ])->save();
+
+        return $code;
+    }
+
+    /**
+     * Comprueba si un código es válido y no ha expirado.
+     */
+    public function verificationCodeMatches(string $code): bool
+    {
+        if (! $this->verification_code || ! $this->verification_code_expires_at) {
+            return false;
+        }
+
+        if ($this->verification_code_expires_at->isPast()) {
+            return false;
+        }
+
+        return Hash::check($code, $this->verification_code);
+    }
+
+    /**
+     * Marca el correo como verificado y limpia el código.
+     */
+    public function confirmEmailVerification(): void
+    {
+        $this->forceFill([
+            'email_verified_at' => Carbon::now(),
+            'verification_code' => null,
+            'verification_code_expires_at' => null,
+        ])->save();
+    }
+
+    /**
+     * Segundos que faltan para poder reenviar el código (throttle de 60s).
+     */
+    public function secondsUntilResend(int $cooldown = 60): int
+    {
+        if (! $this->verification_code_sent_at) {
+            return 0;
+        }
+
+        $elapsed = $this->verification_code_sent_at->diffInSeconds(Carbon::now());
+
+        return (int) max(0, $cooldown - $elapsed);
+    }
+}
