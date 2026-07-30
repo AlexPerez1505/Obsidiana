@@ -39,14 +39,18 @@ class CustomerController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $request->merge([
+            'rfc' => strtoupper($request->input('rfc') ?? ''),
+        ]);
+
         $data = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
             'apellido' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'max:50'],
+            'telefono' => ['required', 'string', 'digits:10'],
             'correo' => ['nullable', 'email', 'unique:customers,correo'],
-            'rfc' => ['nullable', 'string', 'size:13', 'unique:customers,rfc'],
-            'customer_category_id' => ['nullable', 'exists:customer_categories,id'],
-            'congress_id' => ['nullable', 'exists:congresses,id'],
+            'rfc' => ['required', 'string', 'size:13', 'regex:/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{2,3}$/', 'unique:customers,rfc'],
+            'customer_category_id' => ['required', 'exists:customer_categories,id'],
+            'congress_id' => ['required', 'exists:congresses,id'],
             'receives_promotion' => ['required', 'boolean'],
             'comentarios' => ['nullable', 'string'],
         ]);

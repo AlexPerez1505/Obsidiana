@@ -29,7 +29,7 @@
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                     <x-ui.form-group label="Nombre *" name="nombre" placeholder="Ingrese el nombre" :required="true" />
                     <x-ui.form-group label="Apellido *" name="apellido" placeholder="Ingrese el apellido" :required="true" />
-                    <x-ui.form-group label="Teléfono *" name="telefono" type="tel" placeholder="Ingrese el teléfono" :required="true" inputmode="tel" />
+                    <x-ui.form-group label="Teléfono *" name="telefono" type="tel" placeholder="Ingrese el teléfono" :required="true" inputmode="tel" maxlength="10" pattern="\d{10}" />
                     <x-ui.form-group label="Correo Electrónico" name="correo" type="email" placeholder="Ingrese el correo" />
                 </div>
             </x-ui.card>
@@ -57,7 +57,7 @@
                             @endforeach
                         </select>
                     </x-ui.form-group>
-                    <x-ui.form-group label="RFC" name="rfc" placeholder="PEGJ800815H54" maxlength="13" />
+                    <x-ui.form-group label="RFC *" name="rfc" placeholder="PEGJ800815H54" maxlength="13" :required="true" />
                     <x-ui.form-group for="receives_promotion" label="¿Recibe Promoción? *">
                         <select id="receives_promotion" name="receives_promotion" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
                             <option value="" disabled selected>Seleccione</option>
