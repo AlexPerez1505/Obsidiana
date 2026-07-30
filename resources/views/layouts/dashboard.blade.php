@@ -274,8 +274,10 @@
         .submenu { display:none; flex-direction:column; gap:4px; padding-left:14px; margin-left:20px; border-left:2px solid var(--border); }
         .nav-group.open .submenu { display:flex; }
         .submenu .nav-item { padding:9px 12px; font-size:13.5px; }
-        .nav-sub { gap:10px; }
-        .submenu .nav-bullet { width:6px; height:6px; color:var(--muted); }
+        .nav-sub { gap:10px; position:relative; }
+        .submenu .nav-bullet { width:6px; height:6px; color:var(--muted); flex:0 0 auto; }
+        .submenu-label { font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:8px 12px 2px; }
+        .nav-count { margin-left:auto; background:var(--primary); color:#fff; font-size:11px; font-weight:800; min-width:20px; height:20px; padding:0 6px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; }
         .app.collapsed .nav-group .submenu { display:none !important; }
         .app.collapsed .nav-chev { display:none; }
 
@@ -378,10 +380,43 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                 <span class="nav-label">Gestión Administrativa</span>
             </a>
-            <a class="nav-item" href="#" data-tip="Gestión de Marketing">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-                <span class="nav-label">Gestión de Marketing</span>
-            </a>
+            <div class="nav-group {{ request()->is('structure/marketing*') ? 'open' : '' }}">
+                <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Marketing">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                    <span class="nav-label">Gestión de Marketing</span>
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+                </a>
+                <div class="submenu">
+                    <a class="nav-item nav-sub" href="#" data-tip="Inicio">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Inicio</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Guía de marca">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Guía de marca</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Calendario">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Calendario</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Aprobación de flyers">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Aprobación de flyers</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Biblioteca & catálogo">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Biblioteca & catálogo</span>
+                    </a>
+                    <div class="submenu-label">Datos</div>
+                    
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Tareas">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Tareas</span>
+                        <span class="nav-count">4</span>
+                    </a>
+                </div>
+            </div>
             <a class="nav-item" href="#" data-tip="Configuración">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 <span class="nav-label">Configuración</span>
