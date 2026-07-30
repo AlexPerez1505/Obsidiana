@@ -11,17 +11,25 @@
     <form method="POST" action="{{ route('verification.verify') }}">
         @csrf
 
-        <label for="code">Código de verificación</label>
-        <input id="code" class="code-input" type="text" name="code" inputmode="numeric"
-               maxlength="6" pattern="[0-9]*" autocomplete="one-time-code" required autofocus>
-        @error('code') <p class="err">{{ $message }}</p> @enderror
+        <x-ui.form-group
+            label="Código de verificación"
+            name="code"
+            type="text"
+            inputClass="code-input"
+            inputmode="numeric"
+            maxlength="6"
+            pattern="[0-9]*"
+            autocomplete="one-time-code"
+            :required="true"
+            :autofocus="true"
+        />
 
-        <button type="submit" class="btn">Verificar</button>
+        <x-ui.button>Verificar</x-ui.button>
     </form>
 
     <form method="POST" action="{{ route('verification.resend') }}" style="margin-top:14px;">
         @csrf
-        <button type="submit" class="btn btn--ghost">Reenviar código</button>
+        <x-ui.button variant="ghost">Reenviar código</x-ui.button>
     </form>
 
     <form method="POST" action="{{ route('logout') }}" class="foot">

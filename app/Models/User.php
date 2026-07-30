@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -158,5 +159,26 @@ class User extends Authenticatable implements MustVerifyEmail
         $elapsed = $this->verification_code_sent_at->diffInSeconds(Carbon::now());
 
         return (int) max(0, $cooldown - $elapsed);
+    }
+
+    /**
+     * Permisos asignados al usuario.
+     */
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class);
+    }
+
+    /**
+     * Determina si el usuario tiene un permiso concreto.
+     * Los administradores siempre lo tienen.
+     */
+    public function hasPermission(string $name): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return $this->permissions()->where('name', $name)->exists();
     }
 }

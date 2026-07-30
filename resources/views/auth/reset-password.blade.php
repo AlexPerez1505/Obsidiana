@@ -8,23 +8,42 @@
     <form method="POST" action="{{ route('password.update') }}">
         @csrf
 
-        <label for="email">Correo electrónico</label>
-        <input id="email" type="email" name="email" value="{{ old('email', $email) }}" required>
-        @error('email') <p class="err">{{ $message }}</p> @enderror
+        <x-ui.form-group
+            label="Correo electrónico"
+            name="email"
+            type="email"
+            :value="old('email', $email)"
+            :required="true"
+        />
 
-        <label for="code">Código de 6 dígitos</label>
-        <input id="code" class="code-input" type="text" name="code" inputmode="numeric"
-               maxlength="6" pattern="[0-9]*" autocomplete="one-time-code" required autofocus>
-        @error('code') <p class="err">{{ $message }}</p> @enderror
+        <x-ui.form-group
+            label="Código de 6 dígitos"
+            name="code"
+            type="text"
+            inputClass="code-input"
+            inputmode="numeric"
+            maxlength="6"
+            pattern="[0-9]*"
+            autocomplete="one-time-code"
+            :required="true"
+            :autofocus="true"
+        />
 
-        <label for="password">Nueva contraseña</label>
-        <input id="password" type="password" name="password" required>
-        @error('password') <p class="err">{{ $message }}</p> @enderror
+        <x-ui.form-group
+            label="Nueva contraseña"
+            name="password"
+            type="password"
+            :required="true"
+        />
 
-        <label for="password_confirmation">Confirmar nueva contraseña</label>
-        <input id="password_confirmation" type="password" name="password_confirmation" required>
+        <x-ui.form-group
+            label="Confirmar nueva contraseña"
+            name="password_confirmation"
+            type="password"
+            :required="true"
+        />
 
-        <button type="submit" class="btn">Restablecer contraseña</button>
+        <x-ui.button>Restablecer contraseña</x-ui.button>
     </form>
 
     <p class="foot"><a class="link" href="{{ route('login') }}">Volver a iniciar sesión</a></p>

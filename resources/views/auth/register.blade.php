@@ -8,22 +8,38 @@
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
-        <label for="name">Nombre</label>
-        <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus>
-        @error('name') <p class="err">{{ $message }}</p> @enderror
+        <x-ui.form-group
+            label="Nombre"
+            name="name"
+            type="text"
+            :value="old('name')"
+            :required="true"
+            :autofocus="true"
+        />
 
-        <label for="email">Correo electrónico</label>
-        <input id="email" type="email" name="email" value="{{ old('email') }}" required>
-        @error('email') <p class="err">{{ $message }}</p> @enderror
+        <x-ui.form-group
+            label="Correo electrónico"
+            name="email"
+            type="email"
+            :value="old('email')"
+            :required="true"
+        />
 
-        <label for="password">Contraseña</label>
-        <input id="password" type="password" name="password" required>
-        @error('password') <p class="err">{{ $message }}</p> @enderror
+        <x-ui.form-group
+            label="Contraseña"
+            name="password"
+            type="password"
+            :required="true"
+        />
 
-        <label for="password_confirmation">Confirmar contraseña</label>
-        <input id="password_confirmation" type="password" name="password_confirmation" required>
+        <x-ui.form-group
+            label="Confirmar contraseña"
+            name="password_confirmation"
+            type="password"
+            :required="true"
+        />
 
-        <button type="submit" class="btn">Crear cuenta</button>
+        <x-ui.button>Crear cuenta</x-ui.button>
     </form>
 
     <p class="foot">¿Ya tienes cuenta? <a class="link" href="{{ route('login') }}">Inicia sesión</a></p>

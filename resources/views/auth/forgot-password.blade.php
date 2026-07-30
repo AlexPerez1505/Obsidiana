@@ -8,11 +8,16 @@
     <form method="POST" action="{{ route('password.email') }}">
         @csrf
 
-        <label for="email">Correo electrónico</label>
-        <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus>
-        @error('email') <p class="err">{{ $message }}</p> @enderror
+        <x-ui.form-group
+            label="Correo electrónico"
+            name="email"
+            type="email"
+            :value="old('email')"
+            :required="true"
+            :autofocus="true"
+        />
 
-        <button type="submit" class="btn">Enviar código</button>
+        <x-ui.button>Enviar código</x-ui.button>
     </form>
 
     <p class="foot">

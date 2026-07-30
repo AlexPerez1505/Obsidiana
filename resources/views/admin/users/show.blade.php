@@ -8,29 +8,35 @@
         <a class="link" href="{{ route('admin.users.index') }}">← Volver a usuarios</a>
     </div>
 
-    <div class="card" style="margin-bottom:18px;">
+    <x-ui.card style="margin-bottom:18px;">
         <p style="margin-top:0;">
-            @if ($user->hasVerifiedEmail())
-                <span class="badge badge--ok">Correo verificado</span>
-            @else
-                <span class="badge badge--warn">Correo sin verificar</span>
-            @endif
+            <x-ui.badge :variant="$user->hasVerifiedEmail() ? 'ok' : 'warn'">
+                {{ $user->hasVerifiedEmail() ? 'Correo verificado' : 'Correo sin verificar' }}
+            </x-ui.badge>
+
             @if ($user->isApproved())
-                <span class="badge badge--ok">Con acceso</span>
+                <x-ui.badge variant="ok">Con acceso</x-ui.badge>
             @elseif ($user->isBanned())
-                <span class="badge badge--danger">Baneado</span>
+                <x-ui.badge variant="danger">Baneado</x-ui.badge>
             @else
-                <span class="badge badge--warn">Pendiente de aprobación</span>
+                <x-ui.badge variant="warn">Pendiente de aprobación</x-ui.badge>
             @endif
+
             @if ($user->is_admin)
-                <span class="badge badge--info">Administrador</span>
+                <x-ui.badge variant="info">Administrador</x-ui.badge>
             @endif
-            <span class="badge" style="background:var(--surface-2);color:var(--muted);">{{ $activeCount }} sesión(es) activa(s)</span>
-            <span class="muted" style="margin-left:6px;">Registrado el {{ $user->created_at?->format('d/m/Y H:i') }}</span>
+
+            <x-ui.badge style="background:var(--surface-2);color:var(--muted);">
+                {{ $activeCount }} sesión(es) activa(s)
+            </x-ui.badge>
+
+            <span class="muted" style="margin-left:6px;">
+                Registrado el {{ $user->created_at?->format('d/m/Y H:i') }}
+            </span>
         </p>
 
         @if ($user->isBanned() && $user->banned_reason)
-            <div class="alert alert--err">Motivo del baneo: {{ $user->banned_reason }}</div>
+            <x-ui.alert type="err">Motivo del baneo: {{ $user->banned_reason }}</x-ui.alert>
         @endif
 
         {{-- Control de acceso --}}
@@ -38,14 +44,14 @@
             @if ($user->isPending())
                 <form method="POST" action="{{ route('admin.users.approve', $user) }}">
                     @csrf
-                    <button type="submit" class="btn">✓ Aprobar acceso</button>
+                    <x-ui.button>✓ Aprobar acceso</x-ui.button>
                 </form>
             @endif
 
             @if ($user->isBanned())
                 <form method="POST" action="{{ route('admin.users.unban', $user) }}">
                     @csrf
-                    <button type="submit" class="btn">Reactivar cuenta</button>
+                    <x-ui.button>Reactivar cuenta</x-ui.button>
                 </form>
             @else
                 <form method="POST" action="{{ route('admin.users.ban', $user) }}"
@@ -55,40 +61,32 @@
                         <label for="banned_reason" style="margin-top:0;">Motivo (opcional)</label>
                         <input id="banned_reason" type="text" name="banned_reason" placeholder="Ej. incumplió las reglas" style="width:240px;">
                     </div>
-                    <button type="submit" class="btn btn--danger">Banear / desactivar</button>
+                    <x-ui.button variant="danger">Banear / desactivar</x-ui.button>
                 </form>
             @endif
 
             <form method="POST" action="{{ route('admin.users.toggleAdmin', $user) }}">
                 @csrf
-                <button type="submit" class="btn btn--ghost">{{ $user->is_admin ? 'Quitar admin' : 'Hacer admin' }}</button>
+                <x-ui.button variant="ghost">
+                    {{ $user->is_admin ? 'Quitar admin' : 'Hacer admin' }}
+                </x-ui.button>
             </form>
+
+            <a href="{{ route('admin.users.permissions', $user) }}" style="padding:8px 14px; background:var(--primary-soft); color:var(--primary); border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; align-self:flex-end;">
+                Administrar permisos
+            </a>
         </div>
-    </div>
+    </x-ui.card>
 
     {{-- Historial de conexiones --}}
-    <div class="card">
-        <h2 class="section-title">Historial de conexiones</h2>
+    <x-ui.card>
+        <x-ui.section-title>Historial de conexiones</x-ui.section-title>
         <p class="muted" style="margin:0 0 12px;">Últimos inicios de sesión de este usuario.</p>
+
         @if ($logs->isEmpty())
-            <p class="muted">Este usuario aún no tiene conexiones registradas.</p>
+            <x-logs.empty message="Este usuario aún no tiene conexiones registradas." />
         @else
-            <div style="overflow-x:auto;">
-                <table>
-                    <thead><tr><th>Fecha</th><th>IP</th><th>Ubicación</th><th>Navegador</th><th>Sistema</th></tr></thead>
-                    <tbody>
-                        @foreach ($logs as $log)
-                            <tr>
-                                <td>{{ $log->logged_at?->format('d/m/Y H:i') }}</td>
-                                <td>{{ $log->ip_address ?? '—' }}</td>
-                                <td>{{ $log->location ?? '—' }}</td>
-                                <td>{{ $log->browser ?? '—' }}</td>
-                                <td>{{ $log->platform ?? '—' }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+            <x-logs.table :logs="$logs" />
         @endif
-    </div>
+    </x-ui.card>
 @endsection

@@ -8,13 +8,21 @@
     <form method="POST" action="{{ route('login') }}">
         @csrf
 
-        <label for="email">Correo electrónico</label>
-        <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus>
-        @error('email') <p class="err">{{ $message }}</p> @enderror
+        <x-ui.form-group
+            label="Correo electrónico"
+            name="email"
+            type="email"
+            :value="old('email')"
+            :required="true"
+            :autofocus="true"
+        />
 
-        <label for="password">Contraseña</label>
-        <input id="password" type="password" name="password" required>
-        @error('password') <p class="err">{{ $message }}</p> @enderror
+        <x-ui.form-group
+            label="Contraseña"
+            name="password"
+            type="password"
+            :required="true"
+        />
 
         <div class="row" style="margin-top:14px;">
             <label class="check" style="margin:0;">
@@ -23,7 +31,7 @@
             <a class="link" href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a>
         </div>
 
-        <button type="submit" class="btn">Entrar</button>
+        <x-ui.button>Entrar</x-ui.button>
     </form>
 
     <p class="foot">¿No tienes cuenta? <a class="link" href="{{ route('register') }}">Regístrate</a></p>
