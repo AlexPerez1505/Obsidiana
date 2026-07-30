@@ -45,20 +45,23 @@ class CustomerController extends Controller
 
         $data = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
-            'apellido' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'digits:10'],
+            'apellido_paterno' => ['required', 'string', 'max:255'],
+            'apellido_materno' => ['required', 'string', 'max:255'],
+            'telefono' => ['required', 'string', 'regex:/^\d{10,12}$/'],
             'correo' => ['nullable', 'email', 'unique:customers,correo'],
-            'rfc' => ['required', 'string', 'size:13', 'regex:/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{2,3}$/', 'unique:customers,rfc'],
+            'rfc' => ['required', 'string', 'regex:/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{2,3}$/', 'unique:customers,rfc'],
             'customer_category_id' => ['required', 'exists:customer_categories,id'],
             'congress_id' => ['required', 'exists:congresses,id'],
             'receives_promotion' => ['required', 'boolean'],
             'comentarios' => ['nullable', 'string'],
         ]);
 
+        $data['apellido'] = trim($data['apellido_paterno'] . ' ' . $data['apellido_materno']);
+
         $data['seller_id'] = auth()->id();
 
         Customer::create($data);
 
-        return redirect()->route('commercial.clientes.create')->with('status', 'Cliente guardado correctamente.');
+        return redirect()->route('commercial.clientes.index')->with('status', 'Cliente guardado correctamente.');
     }
 }

@@ -23,7 +23,7 @@ $fieldName = $name ?? $for;
     <input id="{{ $fieldName }}"
            type="{{ $type }}"
            name="{{ $fieldName }}"
-           value="{{ $value }}"
+           value="{{ old($fieldName, $value) }}"
            {{ $required ? 'required' : '' }}
            {{ $autofocus ? 'autofocus' : '' }}
            @if ($placeholder) placeholder="{{ $placeholder }}" @endif

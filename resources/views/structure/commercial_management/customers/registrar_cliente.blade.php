@@ -28,8 +28,9 @@
                 <x-ui.section-title style="margin:0 0 16px;">Datos Personales</x-ui.section-title>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                     <x-ui.form-group label="Nombre *" name="nombre" placeholder="Ingrese el nombre" :required="true" />
-                    <x-ui.form-group label="Apellido *" name="apellido" placeholder="Ingrese el apellido" :required="true" />
-                    <x-ui.form-group label="Teléfono *" name="telefono" type="tel" placeholder="Ingrese el teléfono" :required="true" inputmode="tel" maxlength="10" pattern="\d{10}" />
+                    <x-ui.form-group label="Apellido Paterno *" name="apellido_paterno" placeholder="Ingrese el apellido paterno" :required="true" />
+                    <x-ui.form-group label="Apellido Materno *" name="apellido_materno" placeholder="Ingrese el apellido materno" :required="true" />
+                    <x-ui.form-group label="Teléfono (con lada) *" name="telefono" type="tel" placeholder="Ingrese el teléfono con lada" :required="true" inputmode="tel" maxlength="12" pattern="\d{10,12}" />
                     <x-ui.form-group label="Correo Electrónico" name="correo" type="email" placeholder="Ingrese el correo" />
                 </div>
             </x-ui.card>
@@ -45,7 +46,7 @@
                         <select id="customer_category_id" name="customer_category_id" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
                             <option value="" disabled selected>Seleccione una categoría</option>
                             @foreach ($categories as $category)
-                                <option value="{{ $category->id }}">{{ $category->label }}</option>
+                                <option value="{{ $category->id }}" @selected(old('customer_category_id') == $category->id)>{{ $category->label }}</option>
                             @endforeach
                         </select>
                     </x-ui.form-group>
@@ -53,16 +54,16 @@
                         <select id="congress_id" name="congress_id" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
                             <option value="" disabled selected>Seleccione un Congreso</option>
                             @foreach ($congresses as $congress)
-                                <option value="{{ $congress->id }}">{{ $congress->label }}</option>
+                                <option value="{{ $congress->id }}" @selected(old('congress_id') == $congress->id)>{{ $congress->label }}</option>
                             @endforeach
                         </select>
                     </x-ui.form-group>
                     <x-ui.form-group label="RFC *" name="rfc" placeholder="PEGJ800815H54" maxlength="13" :required="true" />
                     <x-ui.form-group for="receives_promotion" label="¿Recibe Promoción? *">
                         <select id="receives_promotion" name="receives_promotion" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                            <option value="" disabled selected>Seleccione</option>
-                            <option value="1">Sí</option>
-                            <option value="0">No</option>
+                            <option value="" disabled @selected(old('receives_promotion') === null || old('receives_promotion') === '')>Seleccione</option>
+                            <option value="1" @selected(old('receives_promotion') == '1')>Sí</option>
+                            <option value="0" @selected(old('receives_promotion') == '0')>No</option>
                         </select>
                     </x-ui.form-group>
                 </div>
@@ -72,7 +73,7 @@
             <x-ui.card>
                 <x-ui.section-title style="margin:0 0 16px;">Información Adicional</x-ui.section-title>
                 <x-ui.form-group label="Dirección y Comentarios" for="comentarios">
-                    <textarea id="comentarios" name="comentarios" rows="4" placeholder="Dirección y comentarios" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;"></textarea>
+                    <textarea id="comentarios" name="comentarios" rows="4" placeholder="Dirección y comentarios" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('comentarios') }}</textarea>
                 </x-ui.form-group>
             </x-ui.card>
         </div>
@@ -113,4 +114,10 @@
             </x-ui.card>
         </div>
     </form>
+
+    <script>
+        document.getElementById('rfc').addEventListener('input', function (e) {
+            e.target.value = e.target.value.toUpperCase();
+        });
+    </script>
 @endsection
