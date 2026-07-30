@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -73,6 +74,16 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/perfil', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/perfil', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/perfil/contrasena', [ProfileController::class, 'updatePassword'])->name('profile.password');
+
+    // Gestión Comercial
+    Route::get('/gestion-comercial/clientes', [CustomerController::class, 'index'])
+        ->name('commercial.clientes.index');
+
+    Route::get('/gestion-comercial/clientes/registrar', [CustomerController::class, 'create'])
+        ->name('commercial.clientes.create');
+
+    Route::post('/gestion-comercial/clientes/registrar', [CustomerController::class, 'store'])
+        ->name('commercial.clientes.store');
 
     // Panel de administración (solo admins)
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {

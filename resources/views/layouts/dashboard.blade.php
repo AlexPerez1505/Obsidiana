@@ -267,6 +267,18 @@
         .toast b{ font-weight:800; }
         @media (max-width:640px){ .toast{ top:14px; right:14px; left:14px; max-width:none; } }
 
+        .nav-group { display:flex; flex-direction:column; gap:4px; }
+        .nav-toggle { cursor:pointer; }
+        .nav-chev { width:16px; height:16px; margin-left:auto; transition:transform .2s ease; flex:0 0 auto; pointer-events:none; }
+        .nav-group.open .nav-chev { transform:rotate(180deg); }
+        .submenu { display:none; flex-direction:column; gap:4px; padding-left:14px; margin-left:20px; border-left:2px solid var(--border); }
+        .nav-group.open .submenu { display:flex; }
+        .submenu .nav-item { padding:9px 12px; font-size:13.5px; }
+        .nav-sub { gap:10px; }
+        .submenu .nav-bullet { width:6px; height:6px; color:var(--muted); }
+        .app.collapsed .nav-group .submenu { display:none !important; }
+        .app.collapsed .nav-chev { display:none; }
+
         /* ===== Responsive ===== */
         @media (max-width:1024px) {
             .hamburger { display:flex; }
@@ -325,20 +337,55 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
                 <span class="nav-label">Dashboard</span>
             </a>
-            <a class="nav-item {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.edit') }}" data-tip="Mi perfil">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
-                <span class="nav-label">Mi perfil</span>
-            </a>
-            @if ($u->isAdmin())
-                <a class="nav-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}" data-tip="Usuarios">
+            <div class="nav-group">
+                <a class="nav-item nav-toggle" href="#" data-tip="Gestión Comercial">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 5a3 3 0 0 1 0 6"/><path d="M20 20c0-2.5-1.3-4.2-3.5-5"/></svg>
-                    <span class="nav-label">Usuarios</span>
+                    <span class="nav-label">Gestión Comercial</span>
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
-                <a class="nav-item {{ request()->routeIs('admin.permissions.*') ? 'active' : '' }}" href="{{ route('admin.permissions.index') }}" data-tip="Permisos">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-                    <span class="nav-label">Permisos</span>
-                </a>
-            @endif
+                <div class="submenu">
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.clientes.index') ? 'active' : '' }}" href="{{ route('commercial.clientes.index') }}" data-tip="Clientes">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Clientes</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Cotizaciones">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Cotizaciones</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Ventas">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Ventas</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Facturación">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Facturación</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Promociones">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Promociones</span>
+                    </a>
+                </div>
+            </div>
+            <a class="nav-item" href="#" data-tip="Gestión de Inventario">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                <span class="nav-label">Gestión de Inventario</span>
+            </a>
+            <a class="nav-item" href="#" data-tip="Gestión de Servicios">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                <span class="nav-label">Gestión de Servicios</span>
+            </a>
+            <a class="nav-item" href="#" data-tip="Gestión Administrativa">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                <span class="nav-label">Gestión Administrativa</span>
+            </a>
+            <a class="nav-item" href="#" data-tip="Gestión de Marketing">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                <span class="nav-label">Gestión de Marketing</span>
+            </a>
+            <a class="nav-item" href="#" data-tip="Configuración">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span class="nav-label">Configuración</span>
+            </a>
         </nav>
 
     </aside>
@@ -528,6 +575,14 @@
             });
         });
     });
+
+        // Submenús del sidebar
+        document.querySelectorAll('.nav-toggle').forEach(function (toggle) {
+            toggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                toggle.closest('.nav-group').classList.toggle('open');
+            });
+        });
 </script>
 </body>
 </html>
