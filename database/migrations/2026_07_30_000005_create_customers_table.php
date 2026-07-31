@@ -19,7 +19,7 @@ return new class extends Migration
 
             $table->foreignId('seller_id')->nullable()->constrained('users');
             $table->foreignId('category_id')->nullable()->constrained('categories');
-            $table->foreignId('congress_id')->nullable()->constrained('congresses');
+            $table->foreignId('congress_id')->nullable()->constrained('congress_events');
             $table->boolean('receives_promotion')->default(false);
 
             $table->timestamps();

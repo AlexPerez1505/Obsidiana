@@ -37,8 +37,8 @@
         </div>
         <p class="page-sub">Consulta las categorías registradas en el sistema.</p>
 
-        @if (session('status'))
-            <div class="alert alert--ok" style="margin:16px 0 0;">{{ session('status') }}</div>
+        @if (session('status_category'))
+            <div class="alert alert--ok" style="margin:16px 0 0;">{{ session('status_category') }}</div>
         @endif
 
         @if ($categories->isEmpty())
@@ -58,9 +58,21 @@
                             <span class="category-name">{{ $category->name }}</span>
                             <span class="category-meta">Categoría registrada · ID {{ $category->id }}</span>
                         </div>
-                        <span class="category-arrow" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-                        </span>
+                        <div class="congress-menu">
+                            <button type="button" class="congress-menu-trigger" aria-label="Acciones de la categoría" aria-expanded="false">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+                            </button>
+                            <div class="congress-menu-dropdown">
+                                <a href="{{ route('configuracion.categorias.edit', $category) }}" class="congress-menu-item" title="Editar" aria-label="Editar categoría" style="text-decoration:none;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                    <span>Editar</span>
+                                </a>
+                                <a href="{{ route('configuracion.categorias.delete', $category) }}" class="congress-menu-item danger" title="Eliminar" aria-label="Eliminar categoría" style="text-decoration:none;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                                    <span>Eliminar</span>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 @endforeach
             </div>
@@ -97,6 +109,10 @@
         </div>
         <p class="page-sub">Gestiona los congresos registrados en el sistema.</p>
 
+        @if (session('status_congress'))
+            <div class="alert alert--ok" style="margin:16px 0 0;">{{ session('status_congress') }}</div>
+        @endif
+
         @if ($congresses->isEmpty())
             <div class="catalog-empty">Todavía no hay congresos registrados.</div>
         @else
@@ -104,8 +120,9 @@
                 <table class="congress-table" id="congressTable">
                     <thead>
                         <tr>
-                            <th>Imagen</th>
+                            <th>Archivo</th>
                             <th>Nombre</th>
+                            <th>Categoría</th>
                             <th>Fechas</th>
                             <th>Lugar</th>
                             <th>Estado</th>
@@ -121,36 +138,71 @@
                                 if ($today < $start) { $estado = 'upcoming'; $estadoLabel = 'Programado'; }
                                 elseif ($today > $end) { $estado = 'finished'; $estadoLabel = 'Finalizado'; }
                                 else { $estado = 'active'; $estadoLabel = 'En curso'; }
+
+                                // Determinar el primer archivo y su tipo
+                                $firstFile = is_array($congress->image_path) ? ($congress->image_path[0] ?? null) : $congress->image_path;
+                                $fileExists = $firstFile && \Illuminate\Support\Facades\Storage::disk('public')->exists($firstFile);
+                                $fileExt = $firstFile ? strtolower(pathinfo($firstFile, PATHINFO_EXTENSION)) : '';
+                                $isImage = in_array($fileExt, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp']);
+                                $fileCount = is_array($congress->image_path) ? count($congress->image_path) : 0;
                             @endphp
-                            <tr data-search="{{ strtolower($congress->name . ' ' . ($congress->category?->name ?? '') . ' ' . $estadoLabel) }}">
+                            <tr data-search="{{ strtolower($congress->name . ' ' . ($congress->category?->name ?? '') . ' ' . ($congress->address ?? '') . ' ' . $estadoLabel) }}">
                                 <td>
-                                    @if ($congress->image_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($congress->image_path))
-                                        <img src="{{ asset('storage/' . $congress->image_path) }}" alt="{{ $congress->name }}" class="congress-thumb">
+                                    @if ($fileExists && $isImage)
+                                        <img src="{{ asset('storage/' . $firstFile) }}" alt="{{ $congress->name }}" class="congress-thumb">
+                                    @elseif ($fileExists)
+                                        <div class="congress-thumb-file" title="{{ basename($firstFile) }}">
+                                            @if ($fileExt === 'pdf')
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg>
+                                            @elseif (in_array($fileExt, ['doc', 'docx']))
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13l-2 4-2-4M10 17v-4M10 15h2.5"/></svg>
+                                            @elseif (in_array($fileExt, ['xls', 'xlsx']))
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m8 17 2-4 2 4M8 13v4M14 13l-2 4 2 4"/></svg>
+                                            @elseif (in_array($fileExt, ['ppt', 'pptx']))
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><rect x="8" y="13" width="8" height="4" rx="1"/><path d="M12 13v4"/></svg>
+                                            @else
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+                                            @endif
+                                            <span class="file-ext">{{ strtoupper($fileExt) }}</span>
+                                        </div>
                                     @else
                                         <div class="congress-thumb-placeholder" aria-hidden="true">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
                                         </div>
                                     @endif
+                                    @if ($fileCount > 1)
+                                        <span class="file-count-badge">+{{ $fileCount - 1 }}</span>
+                                    @endif
                                 </td>
                                 <td><span class="congress-name">{{ $congress->name }}</span></td>
+                                <td><span class="congress-category">{{ $congress->category?->name ?? '—' }}</span></td>
                                 <td>
                                     <span class="congress-dates">
-                                        {{ $congress->start_date->format('d/m/Y') }} — {{ $congress->end_date->format('d/m/Y') }}
+                                        {{ $congress->start_date->format('d/m/Y') }}<br>
+                                        {{ $congress->end_date->format('d/m/Y') }}
                                     </span>
                                 </td>
-                                <td><span class="congress-place">{{ $congress->category?->name ?? '—' }}</span></td>
+                                <td><span class="congress-place">{{ $congress->address ?? '—' }}</span></td>
                                 <td><span class="congress-badge {{ $estado }}">{{ $estadoLabel }}</span></td>
                                 <td>
-                                    <div class="congress-actions" style="justify-content:flex-end;">
-                                        <button type="button" class="congress-action-btn" title="Ver" aria-label="Ver congreso">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    <div class="congress-menu">
+                                        <button type="button" class="congress-menu-trigger" aria-label="Acciones del congreso" aria-expanded="false">
+                                            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
                                         </button>
-                                        <button type="button" class="congress-action-btn" title="Editar" aria-label="Editar congreso">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                                        </button>
-                                        <button type="button" class="congress-action-btn danger" title="Eliminar" aria-label="Eliminar congreso">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
-                                        </button>
+                                        <div class="congress-menu-dropdown">
+                                            <a href="{{ route('configuracion.congresos.show', $congress) }}" class="congress-menu-item" title="Ver" aria-label="Ver congreso" style="text-decoration:none;">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                                <span>Ver</span>
+                                            </a>
+                                            <a href="{{ route('configuracion.congresos.edit', $congress) }}" class="congress-menu-item" title="Editar" aria-label="Editar congreso" style="text-decoration:none;">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                                <span>Editar</span>
+                                            </a>
+                                            <a href="{{ route('configuracion.congresos.delete', $congress) }}" class="congress-menu-item danger" title="Eliminar" aria-label="Eliminar congreso" style="text-decoration:none;">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                                                <span>Eliminar</span>
+                                            </a>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -221,6 +273,41 @@
                 }
                 conInput.addEventListener('input', function () { filterCons(this.value); });
             }
+
+            // ---- Menú de tres puntos (acciones de congreso) ----
+            var menus = document.querySelectorAll('.congress-menu');
+            menus.forEach(function (menu) {
+                var trigger = menu.querySelector('.congress-menu-trigger');
+                trigger.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    // Cerrar otros menús abiertos
+                    menus.forEach(function (m) {
+                        if (m !== menu) {
+                            m.classList.remove('open');
+                            m.querySelector('.congress-menu-trigger').setAttribute('aria-expanded', 'false');
+                        }
+                    });
+                    // Posición fija para menús dentro de la lista de categorías
+                    if (menu.closest('.category-list')) {
+                        var rect = trigger.getBoundingClientRect();
+                        menu.style.setProperty('--menu-top', (rect.bottom + 4) + 'px');
+                        menu.style.setProperty('--menu-right', (window.innerWidth - rect.right) + 'px');
+                    }
+                    var open = menu.classList.toggle('open');
+                    trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+                });
+            });
+            // Cerrar menú al hacer clic fuera
+            document.addEventListener('click', function () {
+                menus.forEach(function (m) {
+                    m.classList.remove('open');
+                    m.querySelector('.congress-menu-trigger').setAttribute('aria-expanded', 'false');
+                });
+            });
+            // Evitar que el clic dentro del menú lo cierre inmediatamente
+            document.querySelectorAll('.congress-menu-dropdown').forEach(function (dd) {
+                dd.addEventListener('click', function (e) { e.stopPropagation(); });
+            });
         })();
     </script>
 @endsection

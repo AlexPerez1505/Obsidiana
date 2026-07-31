@@ -1,23 +1,24 @@
 @extends('structure.Configuracion.layout')
 
-@section('title', 'Crear Categoría')
+@section('title', 'Editar Categoría')
 
 @section('configuracion_content')
     <div class="modal-overlay">
         <div class="modal-card catalog-card">
             <div class="modal-header">
-                <h2 class="page-title">Nueva Categoría</h2>
+                <h2 class="page-title">Editar Categoría</h2>
             </div>
-            <p class="page-sub">Registra una categoría con solo Nombre. El Id se genera automáticamente.</p>
+            <p class="page-sub">Actualiza el nombre de la categoría seleccionada.</p>
 
             @if (session('status'))
                 <div class="alert alert--ok" style="margin:16px 0 0;">{{ session('status') }}</div>
             @endif
 
-            <form method="POST" action="{{ route('configuracion.categorias.store') }}" style="margin-top:18px;">
+            <form method="POST" action="{{ route('configuracion.categorias.update', $category) }}" style="margin-top:18px;">
                 @csrf
+                @method('PUT')
 
-                <x-ui.form-group label="Nombre" name="name" placeholder="Ingrese el nombre de la categoría" :required="true" />
+                <x-ui.form-group label="Nombre" name="name" placeholder="Ingrese el nombre de la categoría" :value="$category->name" :required="true" />
 
                 <div class="form-actions">
                     <a href="{{ route('configuracion.catalogos.index') }}" class="modal-back" aria-label="Regresar">
@@ -26,7 +27,7 @@
                         </svg>
                         <span>Regresar</span>
                     </a>
-                    <button type="submit" class="btn">Guardar Categoría</button>
+                    <button type="submit" class="btn">Guardar cambios</button>
                 </div>
             </form>
         </div>
