@@ -29,13 +29,16 @@ class CongressEventController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'image' => ['nullable', 'image', 'max:2048'],
-            'category_id' => ['nullable', 'exists:categories,id'],
+            'category_id' => ['required', 'exists:categories,id'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'assembly_time' => ['required', 'date_format:H:i'],
             'disassembly_time' => ['required', 'date_format:H:i'],
             'download_access' => ['required', 'boolean'],
             'download_text' => ['nullable', 'string'],
+            'upload_access' => ['required', 'boolean'],
+            'upload_text' => ['nullable', 'string'],
+            'address' => ['nullable', 'string', 'max:255'],
         ]);
 
         if ($request->hasFile('image')) {

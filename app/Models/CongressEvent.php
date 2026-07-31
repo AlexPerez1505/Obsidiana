@@ -21,6 +21,9 @@ class CongressEvent extends Model
         'disassembly_time',
         'download_access',
         'download_text',
+        'upload_access',
+        'upload_text',
+        'address',
     ];
 
     protected $casts = [
@@ -29,6 +32,7 @@ class CongressEvent extends Model
         'assembly_time' => 'datetime:H:i',
         'disassembly_time' => 'datetime:H:i',
         'download_access' => 'boolean',
+        'upload_access' => 'boolean',
     ];
 
     public function category(): BelongsTo
