@@ -15,3 +15,4 @@ require __DIR__.'/web/commercial.php';
 require __DIR__.'/web/admin.php';
 require __DIR__.'/web/catalogo.php';
 require __DIR__.'/web/marketing.php';
+require __DIR__.'/web/inventory.php';

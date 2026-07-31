@@ -58,7 +58,7 @@
                         <select id="congress_id" name="congress_id" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
                             <option value="" disabled selected>Seleccione un Congreso</option>
                             @foreach ($congresses as $congress)
-                                <option value="{{ $congress->id }}" @selected(old('congress_id') == $congress->id)>{{ $congress->label }}</option>
+                                <option value="{{ $congress->id }}" @selected(old('congress_id') == $congress->id)>{{ $congress->name }}</option>
                             @endforeach
                         </select>
                     </x-ui.form-group>

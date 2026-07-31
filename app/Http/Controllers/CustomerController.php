@@ -41,7 +41,7 @@ class CustomerController extends Controller
     {
         return view('structure.commercial_management.customers.registrar_cliente', [
             'categories' => Category::query()->orderBy('name')->get(),
-            'congresses' => Congress::all(),
+            'congresses' => Congress::query()->with('category')->latest()->get(),
         ]);
     }
 
@@ -84,7 +84,7 @@ class CustomerController extends Controller
         return view('structure.commercial_management.customers.actulizar_cliente', [
             'customer' => $cliente,
             'categories' => Category::query()->orderBy('name')->get(),
-            'congresses' => Congress::all(),
+            'congresses' => Congress::query()->with('category')->latest()->get(),
         ]);
     }
 
