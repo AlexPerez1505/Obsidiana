@@ -79,7 +79,7 @@
                     </div>
                     <div>
                         <div style="color:rgba(255,255,255,0.55); font-size:13px;">Congreso Conocido</div>
-                        <div style="color:#fff; font-size:15px; font-weight:600;">{{ $customer->congress?->label ?? 'Sin congreso' }}</div>
+                        <div style="color:#fff; font-size:15px; font-weight:600;">{{ $customer->congress?->name ?? 'Sin congreso' }}</div>
                     </div>
                     <div>
                         <div style="color:rgba(255,255,255,0.55); font-size:13px;">RFC</div>

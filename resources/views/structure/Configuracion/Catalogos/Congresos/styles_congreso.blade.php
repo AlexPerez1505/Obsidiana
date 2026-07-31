@@ -417,4 +417,89 @@
     @media (max-width: 1024px) {
         form > div:first-of-type { grid-template-columns: 1fr !important; }
     }
+    /* ===== Mejoras vista de detalle (leer) ===== */
+    .status-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 12px; border-radius: 999px;
+        font-size: 12px; font-weight: 700; letter-spacing: .02em;
+        border: 1px solid currentColor;
+    }
+    .status-badge::before {
+        content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+        background: currentColor; box-shadow: 0 0 6px currentColor;
+    }
+    .status-upcoming { background: rgba(6, 182, 212, 0.12); color: #06b6d4; }
+    .status-active { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+    .status-finished { background: rgba(34, 197, 94, 0.12); color: #22c55e; }
+
+    .congress-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .congress-actions .btn {
+        text-decoration: none; padding: 10px 18px; border-radius: 10px;
+        font-size: 14px; font-weight: 700; transition: all .18s ease;
+        display: inline-flex; align-items: center; justify-content: center;
+        border: 1px solid transparent;
+    }
+    .congress-actions .btn:not(.btn--secondary):not(.btn--danger) {
+        background: linear-gradient(135deg, #00A8FF, #007aff); color: #fff;
+        box-shadow: 0 6px 18px rgba(0, 168, 255, 0.4);
+    }
+    .congress-actions .btn:not(.btn--secondary):not(.btn--danger):hover {
+        box-shadow: 0 8px 26px rgba(0, 168, 255, 0.6); transform: translateY(-2px);
+    }
+    .congress-actions .btn--secondary {
+        background: rgba(255, 255, 255, 0.08); border-color: rgba(0, 168, 255, 0.5); color: #fff;
+    }
+    .congress-actions .btn--secondary:hover { background: rgba(0, 168, 255, 0.14); border-color: #00A8FF; transform: translateY(-2px); }
+    .congress-actions .btn--danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff;
+        box-shadow: 0 6px 18px rgba(239, 68, 68, 0.35);
+    }
+    .congress-actions .btn--danger:hover { box-shadow: 0 8px 26px rgba(239, 68, 68, 0.55); transform: translateY(-2px); }
+
+    .data-item { display: flex; flex-direction: column; gap: 6px; }
+    .data-item .form-label { margin: 0; font-size: 13px; color: rgba(255, 255, 255, 0.55); letter-spacing: .03em; }
+    .data-item .value { font-size: 15px; font-weight: 600; color: #fff; margin: 0; line-height: 1.35; }
+    .data-item .value.muted { color: rgba(255, 255, 255, 0.4); font-weight: 500; }
+
+    .access-pill {
+        display: inline-block; padding: 4px 10px; border-radius: 999px;
+        font-size: 13px; font-weight: 700; margin-top: 6px;
+    }
+    .access-pill--enabled { background: rgba(34, 197, 94, 0.14); color: #22c55e; }
+    .access-pill--disabled { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.55); }
+    .access-row .access-pill { margin-top: 0; }
+    .access-text { font-size: 14px; color: rgba(255, 255, 255, 0.75); margin: 8px 0 0; line-height: 1.45; }
+
+    .map-link {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 14px; border-radius: 10px;
+        background: rgba(249, 115, 22, 0.12); color: #fb923c;
+        border: 1px solid rgba(249, 115, 22, 0.45);
+        font-size: 14px; font-weight: 600; text-decoration: none;
+        transition: all .18s ease;
+    }
+    .map-link:hover { background: rgba(249, 115, 22, 0.2); box-shadow: 0 0 14px rgba(249, 115, 22, 0.25); }
+
+    .file-link {
+        display: block; margin-top: 8px;
+        padding: 6px 10px; border-radius: 8px;
+        background: rgba(0, 168, 255, 0.12); color: #00d0ff;
+        border: 1px solid rgba(0, 168, 255, 0.35);
+        font-size: 12px; font-weight: 700; text-align: center; text-decoration: none;
+        transition: all .15s ease;
+    }
+    .file-link:hover { background: rgba(0, 168, 255, 0.22); box-shadow: 0 0 10px rgba(0, 168, 255, 0.3); }
+
+    :root[data-theme="light"] .status-upcoming { background: rgba(6, 182, 212, 0.1); color: #0891b2; }
+    :root[data-theme="light"] .status-active { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+    :root[data-theme="light"] .status-finished { background: rgba(34, 197, 94, 0.1); color: #16a34a; }
+    :root[data-theme="light"] .data-item .form-label { color: var(--muted); }
+    :root[data-theme="light"] .data-item .value { color: var(--text); }
+    :root[data-theme="light"] .data-item .value.muted { color: var(--muted); }
+    :root[data-theme="light"] .congress-actions .btn--secondary { background: rgba(15, 23, 42, 0.04); border-color: rgba(15, 23, 42, 0.2); color: var(--text); }
+    :root[data-theme="light"] .congress-actions .btn--secondary:hover { background: rgba(0, 122, 255, 0.1); border-color: var(--primary); }
+    :root[data-theme="light"] .access-pill--disabled { background: rgba(15, 23, 42, 0.06); color: var(--muted); }
+    :root[data-theme="light"] .access-text { color: var(--muted); }
+    :root[data-theme="light"] .map-link { background: rgba(249, 115, 22, 0.08); color: #ea580c; border-color: rgba(249, 115, 22, 0.3); }
+    :root[data-theme="light"] .file-link { background: rgba(0, 122, 255, 0.08); color: var(--primary); border-color: rgba(0, 122, 255, 0.25); }
 </style>

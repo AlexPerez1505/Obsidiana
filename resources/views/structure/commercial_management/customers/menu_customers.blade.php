@@ -249,16 +249,15 @@
     <style>
         .customer-action-menu {
             display: none;
-            position: absolute;
-            top: 100%;
-            right: 0;
-            margin-top: 8px;
+            position: fixed;
+            top: 0;
+            left: 0;
             min-width: 180px;
             background: #1f2937;
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.35);
-            z-index: 100;
+            z-index: 1000;
             padding: 10px;
             overflow: hidden;
             animation: menuPop 0.18s ease;
@@ -343,6 +342,28 @@
         document.addEventListener('DOMContentLoaded', function() {
             const toggles = document.querySelectorAll('.action-menu-toggle');
 
+            function positionMenu(menu, btn) {
+                const rect = btn.getBoundingClientRect();
+                const mw = menu.offsetWidth;
+                const mh = menu.offsetHeight;
+
+                let left = rect.right - mw;
+                if (left < 0) left = 0;
+                if (left + mw > window.innerWidth) left = window.innerWidth - mw;
+
+                let top = rect.bottom + 8;
+                if (top + mh > window.innerHeight) top = rect.top - mh - 8;
+
+                menu.style.left = left + 'px';
+                menu.style.top = top + 'px';
+            }
+
+            function closeAllMenus() {
+                document.querySelectorAll('.customer-action-menu').forEach(function(m) {
+                    m.style.display = 'none';
+                });
+            }
+
             toggles.forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -353,15 +374,17 @@
                         if (m !== menu) m.style.display = 'none';
                     });
 
-                    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                    if (menu.style.display === 'block') {
+                        menu.style.display = 'none';
+                    } else {
+                        positionMenu(menu, this);
+                        menu.style.display = 'block';
+                    }
                 });
             });
 
-            document.addEventListener('click', function() {
-                document.querySelectorAll('.customer-action-menu').forEach(function(m) {
-                    m.style.display = 'none';
-                });
-            });
+            document.addEventListener('click', closeAllMenus);
+            window.addEventListener('scroll', closeAllMenus, true);
 
             document.querySelectorAll('.customer-action-menu').forEach(function(menu) {
                 menu.addEventListener('click', function(e) {
