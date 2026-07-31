@@ -194,4 +194,12 @@ class TaskController extends Controller
     {
         return view('structure.gestion_marketing.biblioteca_catalogo.index');
     }
+
+    /**
+     * Muestra la guía de marca del equipo de marketing.
+     */
+    public function guiaDeMarca(): View
+    {
+        return view('structure.gestion_marketing.guia_de_marca.index');
+    }
 }

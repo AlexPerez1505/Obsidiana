@@ -29,4 +29,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
     Route::get('/marketing/biblioteca-catalogo', [TaskController::class, 'bibliotecaCatalogo'])
         ->name('marketing.biblioteca_catalogo.index');
+
+    Route::get('/marketing/guia-de-marca', [TaskController::class, 'guiaDeMarca'])
+        ->name('marketing.guia_de_marca.index');
 });
