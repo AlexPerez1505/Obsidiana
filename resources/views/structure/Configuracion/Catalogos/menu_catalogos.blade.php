@@ -190,10 +190,10 @@
                                             <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
                                         </button>
                                         <div class="congress-menu-dropdown">
-                                            <button type="button" class="congress-menu-item" title="Ver" aria-label="Ver congreso">
+                                            <a href="{{ route('configuracion.congresos.show', $congress) }}" class="congress-menu-item" title="Ver" aria-label="Ver congreso" style="text-decoration:none;">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                                                 <span>Ver</span>
-                                            </button>
+                                            </a>
                                             <a href="{{ route('configuracion.congresos.edit', $congress) }}" class="congress-menu-item" title="Editar" aria-label="Editar congreso" style="text-decoration:none;">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                                                 <span>Editar</span>

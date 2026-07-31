@@ -129,6 +129,16 @@ class CongressController extends Controller
     }
 
     /**
+     * Muestra el detalle de un congreso.
+     */
+    public function show(Congress $congress): View
+    {
+        return view('structure.Configuracion.Catalogos.Congresos.r_congresos', [
+            'congress' => $congress,
+        ]);
+    }
+
+    /**
      * Muestra la confirmación para eliminar un congreso.
      */
     public function delete(Congress $congress): View

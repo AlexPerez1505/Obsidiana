@@ -37,6 +37,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/configuracion/congresos', [CongressController::class, 'store'])
         ->name('configuracion.congresos.store');
 
+    Route::get('/configuracion/congresos/{congress}', [CongressController::class, 'show'])
+        ->name('configuracion.congresos.show');
+
     Route::get('/configuracion/congresos/editar/{congress}', [CongressController::class, 'edit'])
         ->name('configuracion.congresos.edit');
 
