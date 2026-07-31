@@ -19,7 +19,7 @@ class Customer extends Model
         'rfc',
         'comentarios',
         'seller_id',
-        'customer_category_id',
+        'category_id',
         'congress_id',
         'receives_promotion',
     ];
@@ -38,7 +38,7 @@ class Customer extends Model
 
     public function category(): BelongsTo
     {
-        return $this->belongsTo(CustomerCategory::class, 'customer_category_id');
+        return $this->belongsTo(Category::class);
     }
 
     public function congress(): BelongsTo

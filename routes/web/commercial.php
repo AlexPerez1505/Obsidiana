@@ -17,4 +17,16 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
     Route::post('/gestion-comercial/clientes/registrar', [CustomerController::class, 'store'])
         ->name('commercial.clientes.store');
+
+    Route::get('/gestion-comercial/clientes/{cliente}', [CustomerController::class, 'show'])
+        ->name('commercial.clientes.show');
+
+    Route::get('/gestion-comercial/clientes/{cliente}/editar', [CustomerController::class, 'edit'])
+        ->name('commercial.clientes.edit');
+
+    Route::put('/gestion-comercial/clientes/{cliente}', [CustomerController::class, 'update'])
+        ->name('commercial.clientes.update');
+
+    Route::post('/gestion-comercial/clientes/categorias', [CustomerController::class, 'storeCategory'])
+        ->name('commercial.clientes.categories.store');
 });

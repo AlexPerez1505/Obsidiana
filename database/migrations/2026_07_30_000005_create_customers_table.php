@@ -18,7 +18,7 @@ return new class extends Migration
             $table->text('comentarios')->nullable();
 
             $table->foreignId('seller_id')->nullable()->constrained('users');
-            $table->foreignId('customer_category_id')->nullable()->constrained('customer_categories');
+            $table->foreignId('category_id')->nullable()->constrained('categories');
             $table->foreignId('congress_id')->nullable()->constrained('congresses');
             $table->boolean('receives_promotion')->default(false);
 

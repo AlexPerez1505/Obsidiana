@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use App\Models\Congress;
-use App\Models\CustomerCategory;
 use Illuminate\Database\Seeder;
 
 class CustomerCatalogSeeder extends Seeder
@@ -14,16 +14,13 @@ class CustomerCatalogSeeder extends Seeder
     public function run(): void
     {
         $categories = [
-            ['name' => 'vip', 'label' => 'VIP'],
-            ['name' => 'regular', 'label' => 'Regular'],
-            ['name' => 'nuevo', 'label' => 'Nuevo'],
+            ['name' => 'VIP'],
+            ['name' => 'Regular'],
+            ['name' => 'Nuevo'],
         ];
 
         foreach ($categories as $category) {
-            CustomerCategory::firstOrCreate(
-                ['name' => $category['name']],
-                ['label' => $category['label']]
-            );
+            Category::firstOrCreate(['name' => $category['name']]);
         }
 
         $congresses = [
