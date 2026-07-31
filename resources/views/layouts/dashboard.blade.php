@@ -397,23 +397,23 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Guía de marca</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Calendario">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.agenda.index') ? 'active' : '' }}" href="{{ route('marketing.agenda.index') }}" data-tip="Calendario">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Calendario</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Aprobación de flyers">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.aprobacion_flyers.index') ? 'active' : '' }}" href="{{ route('marketing.aprobacion_flyers.index') }}" data-tip="Aprobación de flyers">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Aprobación de flyers</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Biblioteca & catálogo">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.biblioteca_catalogo.index') ? 'active' : '' }}" href="{{ route('marketing.biblioteca_catalogo.index') }}" data-tip="Biblioteca & catálogo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Biblioteca & catálogo</span>
                     </a>
                     <div class="submenu-label">Datos</div>
-                    <a class="nav-item nav-sub" href="#" data-tip="Tareas">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.tareas.index') ? 'active' : '' }}" href="{{ route('marketing.tareas.index') }}" data-tip="Tareas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Tareas</span>
-                        <span class="nav-count">4</span>
+                        <span class="nav-count">6</span>
                     </a>
                 </div>
             </div>

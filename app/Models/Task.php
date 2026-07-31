@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Task extends Model
+{
+    /** @use HasFactory<\Database\Factories\TaskFactory> */
+    use HasFactory;
+
+    protected $fillable = [
+        'title',
+        'description',
+        'status',
+        'priority',
+        'tags',
+        'due_date',
+        'progress',
+        'user_id',
+        'created_by',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'tags' => 'array',
+            'due_date' => 'date',
+            'progress' => 'integer',
+        ];
+    }
+
+    /**
+     * Responsable asignado.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Usuario que creó la tarea.
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+}
