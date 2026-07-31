@@ -1,31 +1,32 @@
 @extends('structure.Configuracion.layout')
 
-@section('title', 'Crear Congreso')
+@section('title', 'Editar Congreso')
 
 @section('configuracion_content')
     <div style="max-width:1200px; margin:0 auto;">
         <div class="card catalog-card">
             <div class="catalog-header">
-                <h2 class="page-title">Nuevo Congreso</h2>
+                <h2 class="page-title">Editar Congreso</h2>
             </div>
-            <p class="page-sub">Registra un nuevo congreso. El Id se genera automáticamente.</p>
+            <p class="page-sub">Actualiza los datos del congreso.</p>
 
-            @if (session('status'))
-                <div class="alert alert--ok" style="margin:16px 0 0;">{{ session('status') }}</div>
+            @if (session('status_congress'))
+                <div class="alert alert--ok" style="margin:16px 0 0;">{{ session('status_congress') }}</div>
             @endif
 
-            <form method="POST" action="{{ route('configuracion.congresos.store') }}" enctype="multipart/form-data" style="margin-top:18px;">
+            <form id="congress-form" method="POST" action="{{ route('configuracion.congresos.update', $congress) }}" enctype="multipart/form-data" style="margin-top:18px;">
                 @csrf
+                @method('PUT')
 
-                <div style="display:grid; grid-template-columns:5fr 4fr; gap:16px; align-items:start;">
+                <div id="step-1" style="display:grid; grid-template-columns:5fr 4fr; gap:16px; align-items:start;">
                     <div class="form-section section-info">
                         <h3 class="form-section-title">Información general</h3>
 
-                        <x-ui.form-group label="Nombre *" name="name" placeholder="Nombre del congreso" :required="true" />
+                        <x-ui.form-group label="Nombre *" name="name" placeholder="Nombre del congreso" :value="$congress->name" :required="true" />
 
                         <div style="margin-top:16px;">
                             <x-ui.form-group for="category_id" label="Categoría *">
-                                <input type="hidden" name="category_id" id="category_id_value" value="{{ old('category_id') }}" required>
+                                <input type="hidden" name="category_id" id="category_id_value" value="{{ old('category_id', $congress->category_id) }}" required>
                                 <div id="category_id" class="custom-select" role="combobox" tabindex="0" aria-expanded="false" aria-haspopup="listbox" data-placeholder="Seleccione una categoría">
                                     <div class="custom-select-trigger">
                                         <span class="custom-select-label">Seleccione una categoría</span>
@@ -33,7 +34,7 @@
                                     </div>
                                     <div class="custom-select-options" role="listbox">
                                         @foreach ($categories as $category)
-                                            <div class="custom-select-option" data-value="{{ $category->id }}" role="option" @if(old('category_id') == $category->id) aria-selected="true" @endif>{{ $category->name }}</div>
+                                            <div class="custom-select-option" data-value="{{ $category->id }}" role="option" @if(old('category_id', $congress->category_id) == $category->id) aria-selected="true" @endif>{{ $category->name }}</div>
                                         @endforeach
                                     </div>
                                 </div>
@@ -51,7 +52,7 @@
 
                         <div style="margin-top:16px;">
                             <x-ui.form-group for="comments" label="Comentarios">
-                                <textarea id="comments" name="comments" rows="4" maxlength="5000" placeholder="Notas o comentarios internos sobre el congreso" class="form-input">{{ old('comments') }}</textarea>
+                                <textarea id="comments" name="comments" rows="4" maxlength="5000" placeholder="Notas o comentarios internos sobre el congreso" class="form-input">{{ old('comments', $congress->comments) }}</textarea>
                             </x-ui.form-group>
                         </div>
                     </div>
@@ -60,10 +61,10 @@
                         <div class="form-section section-schedule">
                             <h3 class="form-section-title">Programación</h3>
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                                <x-ui.form-group label="Fecha de inicio *" name="start_date" type="text" :required="true" inputClass="form-input flatpickr-date" />
-                                <x-ui.form-group label="Fecha de finalización *" name="end_date" type="text" :required="true" inputClass="form-input flatpickr-date" />
-                                <x-ui.form-group label="Hora de montaje *" name="assembly_time" type="text" :required="true" inputClass="form-input flatpickr-time" />
-                                <x-ui.form-group label="Hora de desmontaje *" name="disassembly_time" type="text" :required="true" inputClass="form-input flatpickr-time" />
+                                <x-ui.form-group label="Fecha de inicio *" name="start_date" type="text" :required="true" inputClass="form-input flatpickr-date" :value="$congress->start_date->format('Y-m-d')" />
+                                <x-ui.form-group label="Fecha de finalización *" name="end_date" type="text" :required="true" inputClass="form-input flatpickr-date" :value="$congress->end_date->format('Y-m-d')" />
+                                <x-ui.form-group label="Hora de montaje *" name="assembly_time" type="text" :required="true" inputClass="form-input flatpickr-time" :value="$congress->assembly_time->format('H:i')" />
+                                <x-ui.form-group label="Hora de desmontaje *" name="disassembly_time" type="text" :required="true" inputClass="form-input flatpickr-time" :value="$congress->disassembly_time->format('H:i')" />
                             </div>
                         </div>
 
@@ -77,12 +78,12 @@
                                 </div>
                                 <label class="ui-switch">
                                     <input type="hidden" name="download_access" value="0">
-                                    <input type="checkbox" id="download_access" name="download_access" value="1" @checked(old('download_access') == '1' || old('download_access') === true)>
+                                    <input type="checkbox" id="download_access" name="download_access" value="1" @checked(old('download_access', $congress->download_access))>
                                     <span class="slider"></span>
                                 </label>
                             </div>
-                            <div id="download-fields" class="access-fields @if (!(old('download_access') == '1' || old('download_access') === true)) is-hidden @endif">
-                                <x-ui.form-group label="Lugar de descarga" name="download_text" placeholder="Lugar o enlace de descarga" />
+                            <div id="download-fields" class="access-fields @if (! old('download_access', $congress->download_access)) is-hidden @endif">
+                                <x-ui.form-group label="Lugar de descarga" name="download_text" placeholder="Lugar o enlace de descarga" :value="$congress->download_text" />
                             </div>
 
                             <hr class="form-divider">
@@ -94,12 +95,12 @@
                                 </div>
                                 <label class="ui-switch">
                                     <input type="hidden" name="upload_access" value="0">
-                                    <input type="checkbox" id="upload_access" name="upload_access" value="1" @checked(old('upload_access') == '1' || old('upload_access') === true)>
+                                    <input type="checkbox" id="upload_access" name="upload_access" value="1" @checked(old('upload_access', $congress->upload_access))>
                                     <span class="slider"></span>
                                 </label>
                             </div>
-                            <div id="upload-fields" class="access-fields @if (!(old('upload_access') == '1' || old('upload_access') === true)) is-hidden @endif">
-                                <x-ui.form-group label="Lugar de carga" name="upload_text" placeholder="Lugar o enlace donde se suben o entregan cosas" />
+                            <div id="upload-fields" class="access-fields @if (! old('upload_access', $congress->upload_access)) is-hidden @endif">
+                                <x-ui.form-group label="Lugar de carga" name="upload_text" placeholder="Lugar o enlace donde se suben o entregan cosas" :value="$congress->upload_text" />
                             </div>
                         </div>
 
@@ -107,7 +108,7 @@
                             <h3 class="form-section-title">Ubicación</h3>
 
                             <x-ui.form-group for="address" label="Dirección / Ubicación">
-                                <input id="address" name="address" type="text" value="{{ old('address') }}" placeholder="Ej. Hotel Hilton, Ciudad de México" class="form-input" />
+                                <input id="address" name="address" type="text" value="{{ old('address', $congress->address) }}" placeholder="Ej. Hotel Hilton, Ciudad de México" class="form-input" />
                             </x-ui.form-group>
 
                             <div id="address-suggestions" class="address-suggestions"></div>
@@ -122,7 +123,7 @@
 
                 <div class="form-actions">
                     <button type="button" class="btn btn--secondary" onclick="history.back()">Regresar</button>
-                    <button type="button" class="btn" id="btn-next-step">Guardar Congreso</button>
+                    <button type="button" class="btn" id="btn-next-step">Continuar</button>
                 </div>
 
                 <!-- ===== Paso 2: Notificaciones ===== -->
@@ -140,7 +141,7 @@
                         <x-ui.form-group for="notify_users" label="Usuarios a notificar">
                             <select id="notify_users" name="notify_users[]" class="form-input" multiple size="8">
                                 @foreach ($users as $user)
-                                    <option value="{{ $user->id }}" @selected(in_array($user->id, old('notify_users', [])))>{{ $user->name }} — {{ $user->email }}</option>
+                                    <option value="{{ $user->id }}" @selected(in_array($user->id, old('notify_users', $congress->notifiedUsers->pluck('id')->toArray())))>{{ $user->name }} — {{ $user->email }}</option>
                                 @endforeach
                             </select>
                         </x-ui.form-group>
@@ -150,7 +151,7 @@
 
                     <div class="form-actions">
                         <button type="button" class="btn btn--secondary" id="btn-back-step">Regresar</button>
-                        <button type="submit" class="btn">Confirmar Congreso</button>
+                        <button type="submit" class="btn">Actualizar Congreso</button>
                     </div>
                 </div>
             </form>
@@ -224,106 +225,8 @@
                     }
                 });
 
-                /* ===== Persistencia del formulario con localStorage ===== */
-                var STORAGE_KEY = 'congress_form_draft';
-                var congressForm = document.querySelector('form[action="' + '{{ route("configuracion.congresos.store") }}' + '"]');
-                var hadServerError = @json(session('errors') && $errors->any());
-
-                // Campos a persistir (excluyendo archivos, que no se pueden guardar en localStorage)
-                var persistFields = ['name', 'category_id', 'start_date', 'end_date',
-                    'assembly_time', 'disassembly_time', 'download_access', 'download_text',
-                    'upload_access', 'upload_text', 'address', 'comments'];
-
-                function saveFormDraft() {
-                    var data = {};
-                    persistFields.forEach(function (name) {
-                        // Para campos con hidden + checkbox (download_access, upload_access),
-                        // buscar el checkbox específicamente
-                        var el = document.querySelector('input[type="checkbox"][name="' + name + '"]')
-                              || document.querySelector('[name="' + name + '"]');
-                        if (!el) return;
-                        if (el.type === 'checkbox') {
-                            data[name] = el.checked ? '1' : '0';
-                        } else {
-                            data[name] = el.value;
-                        }
-                    });
-                    // notify_users (select multiple)
-                    var notifySel = document.getElementById('notify_users');
-                    if (notifySel) {
-                        data['notify_users'] = Array.from(notifySel.selectedOptions).map(function (o) { return o.value; });
-                    }
-                    try {
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                    } catch (e) {}
-                }
-
-                function restoreFormDraft() {
-                    // Si hubo error de validación del servidor, old() ya rellena los campos; no sobrescribir.
-                    if (hadServerError) return;
-                    var raw;
-                    try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { return; }
-                    if (!raw) return;
-                    var data;
-                    try { data = JSON.parse(raw); } catch (e) { return; }
-                    if (!data) return;
-
-                    persistFields.forEach(function (name) {
-                        if (data[name] === undefined) return;
-                        var el = document.querySelector('input[type="checkbox"][name="' + name + '"]')
-                              || document.querySelector('[name="' + name + '"]');
-                        if (!el) return;
-                        if (el.type === 'checkbox') {
-                            el.checked = data[name] === '1';
-                        } else {
-                            el.value = data[name];
-                        }
-                    });
-
-                    // notify_users (select multiple)
-                    var notifySel = document.getElementById('notify_users');
-                    if (notifySel && Array.isArray(data['notify_users'])) {
-                        Array.from(notifySel.options).forEach(function (opt) {
-                            opt.selected = data['notify_users'].indexOf(opt.value) !== -1;
-                        });
-                    }
-
-                    // Sincronizar flatpickr con los valores restaurados
-                    if (data['start_date'] && startDatePicker) startDatePicker.setDate(data['start_date'], false, 'Y-m-d');
-                    if (data['end_date'] && endDatePicker) endDatePicker.setDate(data['end_date'], false, 'Y-m-d');
-                    var aTime = document.querySelector('input[name="assembly_time"]');
-                    var dTime = document.querySelector('input[name="disassembly_time"]');
-                    if (data['assembly_time'] && aTime && aTime._flatpickr) aTime._flatpickr.setDate(data['assembly_time'], false, 'H:i');
-                    if (data['disassembly_time'] && dTime && dTime._flatpickr) dTime._flatpickr.setDate(data['disassembly_time'], false, 'H:i');
-                    syncEndDateMin();
-                }
-
-                function clearFormDraft() {
-                    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-                }
-
-                // Restaurar al cargar la página
-                restoreFormDraft();
-
-                // Guardar borrador cuando el usuario interactúa con cualquier campo
-                if (congressForm) {
-                    congressForm.addEventListener('input', saveFormDraft);
-                    congressForm.addEventListener('change', saveFormDraft);
-                    // Limpiar borrador cuando el formulario se envía con éxito (sin error)
-                    congressForm.addEventListener('submit', function () {
-                        // Si pasa la validación del cliente, limpiamos tras un breve delay
-                        // para que el submit no se cancele
-                        setTimeout(function () {
-                            // Solo limpiar si no hay errores de validación del servidor después
-                            clearFormDraft();
-                        }, 100);
-                    });
-                }
-
-                // Si hay mensaje de éxito (session status), limpiar el borrador
-                @if (session('status'))
-                    clearFormDraft();
-                @endif
+                /* ===== Referencia al formulario ===== */
+                var congressForm = document.getElementById('congress-form');
 
                 var addrInput = document.getElementById('address');
                 var previewLink = document.getElementById('preview-map');
@@ -428,7 +331,7 @@
                 toggleDownloadFields();
 
                 /* ===== Flujo de dos pasos: Paso 1 → Paso 2 (Notificaciones) ===== */
-                var step1Content = document.querySelector('form[action="' + '{{ route("configuracion.congresos.store") }}' + '"] > div[style*="grid-template-columns"]');
+                var step1Content = document.getElementById('step-1');
                 var step2 = document.getElementById('step-2');
                 var btnNext = document.getElementById('btn-next-step');
                 var btnBack = document.getElementById('btn-back-step');

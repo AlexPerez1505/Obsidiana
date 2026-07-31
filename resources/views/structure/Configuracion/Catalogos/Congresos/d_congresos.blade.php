@@ -1,32 +1,31 @@
 @extends('structure.Configuracion.layout')
 
-@section('title', 'Crear Categoría')
+@section('title', 'Eliminar Congreso')
 
 @section('configuracion_content')
     <div class="modal-overlay">
         <div class="modal-card catalog-card">
             <div class="modal-header">
-                <h2 class="page-title">Nueva Categoría</h2>
+                <h2 class="page-title">Eliminar Congreso</h2>
             </div>
-            <p class="page-sub">Registra una categoría con solo Nombre. El Id se genera automáticamente.</p>
+            <p class="page-sub">¿Estás seguro de que deseas eliminar el congreso <strong style="color:#00A8FF;">{{ $congress->name }}</strong>? Esta acción no se puede deshacer.</p>
 
             @if (session('status'))
                 <div class="alert alert--ok" style="margin:16px 0 0;">{{ session('status') }}</div>
             @endif
 
-            <form method="POST" action="{{ route('configuracion.categorias.store') }}" style="margin-top:18px;">
+            <form method="POST" action="{{ route('configuracion.congresos.destroy', $congress) }}" style="margin-top:18px;">
                 @csrf
-
-                <x-ui.form-group label="Nombre" name="name" placeholder="Ingrese el nombre de la categoría" :required="true" />
+                @method('DELETE')
 
                 <div class="form-actions">
                     <a href="{{ route('configuracion.catalogos.index') }}" class="modal-back" aria-label="Regresar">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M15 18l-6-6 6-6"/>
                         </svg>
-                        <span>Regresar</span>
+                        <span>Cancelar</span>
                     </a>
-                    <button type="submit" class="btn">Guardar Categoría</button>
+                    <button type="submit" class="btn" style="background:#ef4444; color:#fff;">Eliminar</button>
                 </div>
             </form>
         </div>

@@ -129,6 +129,8 @@
         .category-list {
             border-top: 1px solid rgba(0, 168, 255, 0.35);
             margin-top: 18px;
+            max-height: 460px;
+            overflow-y: auto;
         }
         .category-item {
             display: flex;
@@ -157,14 +159,14 @@
         .category-name {
             display: block;
             overflow: hidden;
-            color: #fff;
+            color: var(--text);
             font-size: 15px;
             font-weight: 700;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
         .category-meta {
-            color: rgba(255, 255, 255, 0.55);
+            color: var(--muted);
             font-size: 12px;
             margin-top: 3px;
         }
@@ -204,7 +206,7 @@
 
         /* ===== Tabla de congresos ===== */
         .congress-section { margin-top: 28px; }
-        .congress-table-wrap { width: 100%; overflow-x: auto; border-radius: 14px; }
+        .congress-table-wrap { width: 100%; overflow-x: auto; overflow-y: auto; max-height: 440px; border-radius: 14px; }
         .congress-table {
             width: 100%;
             border-collapse: separate;
@@ -213,7 +215,7 @@
             min-width: 760px;
         }
         .congress-table thead th {
-            text-align: left;
+            text-align: center;
             padding: 13px 14px;
             color: rgba(255, 255, 255, 0.75);
             font-size: 12px;
@@ -222,16 +224,23 @@
             letter-spacing: .04em;
             border-bottom: 1px solid rgba(0, 168, 255, 0.35);
             white-space: nowrap;
+            position: sticky;
+            top: 0;
+            background: rgba(8, 18, 40, 0.96);
+            z-index: 1;
         }
         .congress-table tbody td {
             padding: 12px 14px;
             border-bottom: 1px solid rgba(0, 168, 255, 0.18);
             color: #fff;
             vertical-align: middle;
+            text-align: center;
         }
         .congress-table tbody tr { transition: background .16s ease; }
         .congress-table tbody tr:hover { background: rgba(0, 168, 255, 0.08); }
         .congress-table tbody tr:last-child td { border-bottom: none; }
+        .congress-table th:last-child,
+        .congress-table td:last-child { text-align: right; }
         .congress-thumb {
             width: 46px;
             height: 46px;
@@ -250,9 +259,59 @@
             background: rgba(0, 168, 255, 0.10);
             border: 1px solid rgba(0, 168, 255, 0.35);
             color: #00A8FF;
+            margin: 0 auto;
         }
         .congress-thumb-placeholder svg { width: 22px; height: 22px; }
+        .congress-thumb-file {
+            width: 46px; height: 46px; border-radius: 10px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0, 168, 255, 0.10); border: 1px solid rgba(0, 168, 255, 0.35);
+            gap: 1px; cursor: help; color: #00A8FF; margin: 0 auto;
+        }
+        .congress-thumb-file svg { width: 20px; height: 20px; }
+        .congress-thumb-file .file-ext { font-size: 8px; font-weight: 700; color: #00A8FF; letter-spacing: .5px; }
+        .file-count-badge {
+            display: inline-block; margin-left: 4px; padding: 1px 6px;
+            border-radius: 10px; font-size: 10px; font-weight: 700;
+            background: rgba(0, 168, 255, 0.18); color: #00A8FF; border: 1px solid rgba(0, 168, 255, 0.35);
+            vertical-align: middle;
+        }
+        /* Menú de tres puntos */
+        .congress-menu { position: relative; display: inline-block; }
+        .congress-menu-trigger {
+            width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(0, 168, 255, 0.3);
+            background: rgba(0, 168, 255, 0.06); color: var(--muted); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all .15s ease;
+        }
+        .congress-menu-trigger svg { width: 18px; height: 18px; }
+        .congress-menu-trigger:hover { background: rgba(0, 168, 255, 0.16); color: var(--text); border-color: #00A8FF; }
+        .congress-menu-trigger[aria-expanded="true"] { background: rgba(0, 168, 255, 0.2); color: var(--text); border-color: #00A8FF; }
+        .congress-menu-dropdown {
+            position: absolute; right: 0; top: calc(100% + 4px); z-index: 50;
+            min-width: 140px; border-radius: 10px; overflow: hidden;
+            background: #0b1a35; border: 1px solid rgba(0, 168, 255, 0.35);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); padding: 4px;
+            display: none; flex-direction: column; gap: 2px;
+        }
+        .congress-menu.open .congress-menu-dropdown { display: flex; }
+        .category-list .congress-menu .congress-menu-dropdown {
+            position: fixed;
+            top: var(--menu-top, 0);
+            right: var(--menu-right, auto);
+            left: auto;
+            bottom: auto;
+        }
+        .congress-menu-item {
+            display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px;
+            border: none; border-radius: 7px; background: transparent; color: var(--text);
+            font-size: 13px; cursor: pointer; text-align: left; transition: all .12s ease;
+        }
+        .congress-menu-item svg { width: 16px; height: 16px; flex: 0 0 auto; }
+        .congress-menu-item:hover { background: rgba(0, 168, 255, 0.14); color: var(--text); }
+        .congress-menu-item.danger { color: var(--danger); }
+        .congress-menu-item.danger:hover { background: rgba(239, 68, 68, 0.16); color: var(--danger); }
         .congress-name { font-weight: 700; color: #fff; }
+        .congress-category { color: rgba(255, 255, 255, 0.7); font-size: 13px; }
         .congress-dates { color: rgba(255, 255, 255, 0.7); font-size: 13px; white-space: nowrap; }
         .congress-place { color: rgba(255, 255, 255, 0.7); font-size: 13px; }
         .congress-badge {
@@ -315,9 +374,9 @@
             background: rgba(15, 23, 42, 0.04);
             border-bottom-color: rgba(15, 23, 42, 0.18);
         }
-        :root[data-theme="light"] .category-name { color: var(--text); }
-        :root[data-theme="light"] .category-meta { color: var(--muted); }
-        :root[data-theme="light"] .category-arrow { color: var(--muted); }
+        :root[data-theme="light"] .category-name { color: #0f172a; }
+        :root[data-theme="light"] .category-meta { color: #334155; }
+        :root[data-theme="light"] .category-arrow { color: #334155; }
         :root[data-theme="light"] .catalog-empty { color: var(--muted); }
         :root[data-theme="light"] .catalog-create {
             background: rgba(15, 23, 42, 0.04);
@@ -357,6 +416,7 @@
         :root[data-theme="light"] .congress-table thead th {
             color: var(--muted);
             border-bottom-color: rgba(15, 23, 42, 0.14);
+            background: rgba(255, 255, 255, 0.96);
         }
         :root[data-theme="light"] .congress-table tbody td {
             color: var(--text);
@@ -369,7 +429,28 @@
             border-color: rgba(0, 122, 255, 0.25);
             color: var(--primary);
         }
+        :root[data-theme="light"] .congress-thumb-file {
+            background: rgba(0, 122, 255, 0.08);
+            border-color: rgba(0, 122, 255, 0.25);
+            color: var(--primary);
+        }
+        :root[data-theme="light"] .congress-thumb-file .file-ext { color: var(--primary); }
+        :root[data-theme="light"] .file-count-badge {
+            background: rgba(0, 122, 255, 0.12); color: var(--primary); border-color: rgba(0, 122, 255, 0.25);
+        }
+        :root[data-theme="light"] .congress-menu-trigger {
+            background: rgba(15, 23, 42, 0.04); color: #334155; border-color: rgba(15, 23, 42, 0.14);
+        }
+        :root[data-theme="light"] .congress-menu-trigger:hover { background: rgba(0, 122, 255, 0.1); color: #0f172a; border-color: var(--primary); }
+        :root[data-theme="light"] .congress-menu-dropdown {
+            background: #fff; border-color: rgba(15, 23, 42, 0.14); box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+        }
+        :root[data-theme="light"] .congress-menu-item { color: #0f172a; }
+        :root[data-theme="light"] .congress-menu-item:hover { background: rgba(15, 23, 42, 0.06); }
+        :root[data-theme="light"] .congress-menu-item.danger { color: var(--danger); }
+        :root[data-theme="light"] .congress-menu-item.danger:hover { background: var(--danger-soft); }
         :root[data-theme="light"] .congress-name { color: var(--text); }
+        :root[data-theme="light"] .congress-category { color: var(--muted); }
         :root[data-theme="light"] .congress-dates { color: var(--muted); }
         :root[data-theme="light"] .congress-place { color: var(--muted); }
         :root[data-theme="light"] .congress-badge.finished {
@@ -395,7 +476,15 @@
             .catalog-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 640px) {
-            .catalog-card { margin: 0; }
+            .catalog-card { margin: 0; padding: 16px; }
+            .catalog-header { flex-wrap: wrap; gap: 12px; }
+            .catalog-header h2 { font-size: 20px; }
+            .catalog-header-actions { width: 100%; justify-content: flex-end; }
+            .category-list { max-height: 360px; }
+            .congress-table-wrap { max-height: 320px; }
+            .congress-table { min-width: 620px; }
+            .congress-table th, .congress-table td { padding: 10px 8px; font-size: 12px; }
+            .congress-thumb { width: 38px; height: 38px; }
         }
     </style>
 

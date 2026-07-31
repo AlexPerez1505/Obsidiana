@@ -62,7 +62,7 @@ class CustomerController extends Controller
             'correo' => ['nullable', 'email', 'unique:customers,correo'],
             'rfc' => ['required', 'string', 'regex:/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{2,3}$/', 'unique:customers,rfc'],
             'category_id' => ['required', 'exists:categories,id'],
-            'congress_id' => ['required', 'exists:congresses,id'],
+            'congress_id' => ['required', 'exists:congress_events,id'],
             'receives_promotion' => ['required', 'boolean'],
             'comentarios' => ['nullable', 'string'],
         ]);
@@ -105,7 +105,7 @@ class CustomerController extends Controller
             'correo' => ['nullable', 'email', 'unique:customers,correo,' . $cliente->id],
             'rfc' => ['required', 'string', 'regex:/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{2,3}$/', 'unique:customers,rfc,' . $cliente->id],
             'category_id' => ['required', 'exists:categories,id'],
-            'congress_id' => ['required', 'exists:congresses,id'],
+            'congress_id' => ['required', 'exists:congress_events,id'],
             'receives_promotion' => ['required', 'boolean'],
             'comentarios' => ['nullable', 'string'],
         ]);
