@@ -2,7 +2,7 @@
 @section('title', 'Marketing')
 
 @section('content')
-    <div class="card" style="margin-bottom:24px; background:linear-gradient(135deg, #f6f8fb 0%, #eef3fa 100%);">
+    <div class="card" style="margin-bottom:24px; background:linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);">
         <div style="max-width:780px;">
             <h1 class="section-title" style="margin:0; font-size:34px; line-height:1.15; letter-spacing:-0.02em; font-weight:800;">
                 Todo el marketing de MediBuy, <span style="color:var(--green);">en un solo lugar.</span>
@@ -77,7 +77,7 @@
                 </div>
             </a>
 
-            <a href="#" style="text-decoration:none; color:inherit;">
+            <a href="{{ route('marketing.guia.index') }}" style="text-decoration:none; color:inherit;">
                 <div class="card" style="padding:20px; display:flex; align-items:center; justify-content:space-between; gap:14px; transition:transform .15s, box-shadow .15s;">
                     <div style="display:flex; align-items:center; gap:14px;">
                         <div style="width:44px; height:44px; border-radius:12px; background:var(--green); color:#fff; display:flex; align-items:center; justify-content:center;">
