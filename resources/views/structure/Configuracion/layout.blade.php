@@ -643,6 +643,14 @@
         :root[data-theme="light"] .counter--blue { background: rgba(0,122,255,0.1); color: var(--primary); border-color: rgba(0,122,255,0.25); }
         :root[data-theme="light"] .name-pill { background: rgba(0,122,255,0.1); color: var(--primary); border-color: rgba(0,122,255,0.25); }
         :root[data-theme="light"] .name-empty { color: var(--muted); }
+
+        .page-title { color: #fff; }
+        .page-subtitle { color: rgba(255,255,255,0.55); }
+        :root[data-theme="light"] .page-title { color: var(--text); }
+        :root[data-theme="light"] .page-subtitle { color: var(--muted); }
+        :root[data-theme="light"] .search-box .search-icon { color: var(--primary); }
+        :root[data-theme="light"] .type-icon { background: rgba(0,122,255,0.1); color: var(--primary); }
+        :root[data-theme="light"] .empty-cell { color: var(--muted); }
     </style>
 
     @yield('configuracion_content')
