@@ -6,8 +6,8 @@
     <div class="catalog-card" style="margin-bottom:22px;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;">
             <div>
-                <h2 style="margin:0; font-size:24px; font-weight:700; color:#fff;">Tipos de Equipo</h2>
-                <p style="margin:4px 0 0; color:rgba(255,255,255,0.55); font-size:14px;">Catálogo de tipos de equipo disponibles</p>
+                <h2 class="page-title" style="margin:0; font-size:24px; font-weight:700;">Tipos de Equipo</h2>
+                <p class="page-subtitle" style="margin:4px 0 0; font-size:14px;">Catálogo de tipos de equipo disponibles</p>
             </div>
             <a href="{{ route('configuracion.tipos_equipo.create') }}" style="background:linear-gradient(135deg, #00A8FF, #7C3AED); color:#fff; border:1px solid rgba(255,255,255,0.15); padding:10px 18px; border-radius:12px; font-size:14px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:8px; box-shadow:0 0 12px rgba(59,130,246,0.35), 0 0 30px rgba(124,58,237,0.2); transition:all 0.2s ease;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -170,25 +170,57 @@
     (function () {
         var menus = document.querySelectorAll('.congress-menu');
         menus.forEach(function (menu) {
+            menu._dd = menu.querySelector('.congress-menu-dropdown');
+        });
+
+        function closeMenu(menu) {
+            var trigger = menu.querySelector('.congress-menu-trigger');
+            var dd = menu._dd;
+            if (dd && dd.parentNode !== menu) menu.appendChild(dd);
+            if (dd) dd.removeAttribute('style');
+            menu.classList.remove('open');
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+
+        function openMenu(menu, trigger) {
+            var dd = menu._dd;
+            menus.forEach(function (m) {
+                if (m !== menu && m.classList.contains('open')) closeMenu(m);
+            });
+
+            document.body.appendChild(dd);
+            var rect = trigger.getBoundingClientRect();
+            var w = 140;
+            var left = rect.left;
+            if (left + w > window.innerWidth - 8) {
+                left = Math.max(8, window.innerWidth - w - 8);
+            }
+            dd.style.display = 'flex';
+            dd.style.position = 'fixed';
+            dd.style.zIndex = '9999';
+            dd.style.top = (rect.bottom + 4) + 'px';
+            dd.style.left = left + 'px';
+            dd.style.right = 'auto';
+
+            menu.classList.add('open');
+            trigger.setAttribute('aria-expanded', 'true');
+        }
+
+        menus.forEach(function (menu) {
             var trigger = menu.querySelector('.congress-menu-trigger');
             trigger.addEventListener('click', function (e) {
                 e.stopPropagation();
-                menus.forEach(function (m) {
-                    if (m !== menu) {
-                        m.classList.remove('open');
-                        m.querySelector('.congress-menu-trigger').setAttribute('aria-expanded', 'false');
-                    }
-                });
-                var isOpen = menu.classList.toggle('open');
-                trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                if (menu.classList.contains('open')) closeMenu(menu);
+                else openMenu(menu, trigger);
             });
         });
+
         document.addEventListener('click', function () {
             menus.forEach(function (m) {
-                m.classList.remove('open');
-                m.querySelector('.congress-menu-trigger').setAttribute('aria-expanded', 'false');
+                if (m.classList.contains('open')) closeMenu(m);
             });
         });
+
         document.querySelectorAll('.congress-menu-dropdown').forEach(function (dd) {
             dd.addEventListener('click', function (e) { e.stopPropagation(); });
         });
