@@ -22,20 +22,32 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Tipo de equipo</label>
-                    <select name="tipo_equipo"><option>Selecciona un tipo</option></select>
+                    <label for="tipo_equipo">Tipo de equipo</label>
+                    <input type="text" name="tipo_equipo" id="tipo_equipo" list="tipo_equipo_list" placeholder="Ej. Equipo médico">
+                    <datalist id="tipo_equipo_list">
+                        @foreach ($equipmentTypes->unique('name')->sortBy('name')->values() as $type)
+                            <option value="{{ $type->name }}">
+                        @endforeach
+                    </datalist>
                 </div>
                 <div class="form-group">
-                    <label>Subtipo</label>
-                    <select name="subtipo"><option>Selecciona un subtipo</option></select>
+                    <label for="subtipo">Subtipo</label>
+                    <input type="text" name="subtipo" id="subtipo" list="subtipo_list" placeholder="Ej. Monitor de signos vitales" disabled>
+                    <datalist id="subtipo_list"></datalist>
                 </div>
                 <div class="form-group">
-                    <label>Marca</label>
-                    <input type="text" name="marca" placeholder="Ej. Olympus">
+                    <label for="marca">Marca</label>
+                    <input type="text" name="marca" id="marca" list="marca_list" placeholder="Ej. Olympus">
+                    <datalist id="marca_list">
+                        @foreach ($brands->unique('name')->sortBy('name')->values() as $brand)
+                            <option value="{{ $brand->name }}">
+                        @endforeach
+                    </datalist>
                 </div>
                 <div class="form-group">
-                    <label>Modelo</label>
-                    <input type="text" name="modelo" placeholder="Ej. C-90">
+                    <label for="modelo">Modelo</label>
+                    <input type="text" name="modelo" id="modelo" list="modelo_list" placeholder="Ej. C-90" disabled>
+                    <datalist id="modelo_list"></datalist>
                 </div>
                 <div class="form-group">
                     <label>Numero de serie</label>
@@ -124,5 +136,226 @@
         ctx.clearRect(0, 0, rect.width, rect.height);
     }
     window.clearSignature = clearSignature;
+</script>
+@endpush
+
+@push('scripts')
+<style>
+    .combobox { position: relative; display: flex; align-items: center; }
+    .combobox input { padding-right: 38px; }
+    .combobox-arrow {
+        position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+        background: transparent; border: none; color: var(--muted); cursor: pointer;
+        padding: 4px; display: flex; align-items: center; justify-content: center;
+    }
+    .combobox-list {
+        position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+        max-height: 220px; overflow-y: auto; background: var(--surface);
+        border: 1px solid var(--border); border-radius: 9px; box-shadow: var(--shadow);
+        z-index: 100; list-style: none; margin: 0; padding: 6px 0; display: none;
+    }
+    .combobox-list.open { display: block; }
+    .combobox-list li {
+        padding: 10px 14px; cursor: pointer; color: var(--text); font-size: 14px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .combobox-list li:hover,
+    .combobox-list li.active { background: var(--primary-soft); color: var(--primary); }
+    .combobox-list .no-results { color: var(--muted); cursor: default; text-align: center; font-size: 13px; }
+</style>
+<script>
+    (function () {
+        function Combobox(input) {
+            input.removeAttribute('list');
+            input.setAttribute('autocomplete', 'off');
+
+            var wrapper = document.createElement('div');
+            wrapper.className = 'combobox';
+            input.parentNode.insertBefore(wrapper, input);
+            wrapper.appendChild(input);
+
+            var arrow = document.createElement('button');
+            arrow.type = 'button';
+            arrow.className = 'combobox-arrow';
+            arrow.setAttribute('tabindex', '-1');
+            arrow.setAttribute('aria-label', 'Mostrar opciones');
+            arrow.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>';
+            wrapper.appendChild(arrow);
+
+            var list = document.createElement('ul');
+            list.className = 'combobox-list';
+            wrapper.appendChild(list);
+
+            var options = [];
+            var open = false;
+            var active = -1;
+
+            function render(filter) {
+                filter = filter || '';
+                list.innerHTML = '';
+                var term = filter.trim().toLowerCase();
+                var matches = options.filter(function (o) { return o.toLowerCase().indexOf(term) !== -1; });
+                matches.forEach(function (text, i) {
+                    var li = document.createElement('li');
+                    li.textContent = text;
+                    if (i === active) li.classList.add('active');
+                    li.addEventListener('mousedown', function (e) {
+                        e.preventDefault();
+                        pick(text);
+                    });
+                    list.appendChild(li);
+                });
+                if (matches.length === 0) {
+                    var li = document.createElement('li');
+                    li.className = 'no-results';
+                    li.textContent = 'Sin coincidencias';
+                    list.appendChild(li);
+                }
+            }
+
+            function pick(text) {
+                input.value = text;
+                active = -1;
+                close();
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            function openList() {
+                if (input.disabled) return;
+                open = true;
+                list.classList.add('open');
+                active = -1;
+                render(input.value);
+            }
+
+            function close() {
+                open = false;
+                active = -1;
+                list.classList.remove('open');
+            }
+
+            input.addEventListener('focus', openList);
+            input.addEventListener('blur', function () { setTimeout(close, 150); });
+            input.addEventListener('input', function () {
+                if (!open) openList();
+                else render(input.value);
+            });
+
+            arrow.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+                if (open) close();
+                else input.focus();
+            });
+
+            input.addEventListener('keydown', function (e) {
+                var items;
+                if (!open) {
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        openList();
+                    }
+                    return;
+                }
+                items = list.querySelectorAll('li:not(.no-results)');
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    active = (active + 1) % items.length;
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    active = (active - 1 + items.length) % items.length;
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (active >= 0 && items[active]) {
+                        items[active].click();
+                    } else if (input.value.trim()) {
+                        close();
+                    }
+                } else if (e.key === 'Escape') {
+                    close();
+                    input.blur();
+                } else {
+                    return;
+                }
+                render(input.value);
+                if (items[active]) items[active].scrollIntoView({ block: 'nearest' });
+            });
+
+            return {
+                setOptions: function (arr) {
+                    options = arr;
+                    if (open) render(input.value);
+                }
+            };
+        }
+
+        var typeInput = document.getElementById('tipo_equipo');
+        var subtypeInput = document.getElementById('subtipo');
+        var brandInput = document.getElementById('marca');
+        var modelInput = document.getElementById('modelo');
+
+        var typeCb = Combobox(typeInput);
+        var subtypeCb = Combobox(subtypeInput);
+        var brandCb = Combobox(brandInput);
+        var modelCb = Combobox(modelInput);
+
+        function debounce(fn, ms) {
+            var t;
+            return function () {
+                clearTimeout(t);
+                t = setTimeout(fn.bind(this), ms);
+            };
+        }
+
+        function setEnabled(input, enabled) {
+            var cb = input === subtypeInput ? subtypeCb : (input === modelInput ? modelCb : null);
+            input.disabled = !enabled;
+            if (!enabled) {
+                input.value = '';
+                if (cb) cb.setOptions([]);
+            }
+        }
+
+        function loadSubtypes() {
+            var value = typeInput.value.trim();
+            setEnabled(subtypeInput, false);
+
+            if (!value) return;
+
+            fetch('{{ route('configuracion.tipos_equipo.subtypes') }}?equipment_type_name=' + encodeURIComponent(value))
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    var names = data.map(function (i) { return i.name; });
+                    subtypeCb.setOptions([...new Set(names)]);
+                    setEnabled(subtypeInput, true);
+                })
+                .catch(function () {
+                    setEnabled(subtypeInput, false);
+                });
+        }
+
+        function loadModels() {
+            var value = brandInput.value.trim();
+            setEnabled(modelInput, false);
+
+            if (!value) return;
+
+            fetch('{{ route('configuracion.tipos_equipo.models') }}?brand_name=' + encodeURIComponent(value))
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    var names = data.map(function (i) { return i.name; });
+                    modelCb.setOptions([...new Set(names)]);
+                    setEnabled(modelInput, true);
+                })
+                .catch(function () {
+                    setEnabled(modelInput, false);
+                });
+        }
+
+        typeCb.setOptions(Array.prototype.slice.call(document.querySelectorAll('#tipo_equipo_list option')).map(function (o) { return o.value; }));
+        brandCb.setOptions(Array.prototype.slice.call(document.querySelectorAll('#marca_list option')).map(function (o) { return o.value; }));
+
+        typeInput.addEventListener('input', debounce(loadSubtypes, 250));
+        brandInput.addEventListener('input', debounce(loadModels, 250));
+    })();
 </script>
 @endpush

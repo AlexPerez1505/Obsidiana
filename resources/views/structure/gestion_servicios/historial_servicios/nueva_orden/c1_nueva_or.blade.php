@@ -5,10 +5,10 @@
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     Buscar cliente existente
                 </button>
-                <button type="button" class="tab-btn" data-tab="new">
+                <a href="{{ route('commercial.clientes.create', ['return_to' => route('gestion.servicios.historial.nueva_orden')]) }}" class="tab-btn" style="text-decoration:none;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
                     Registrar nuevo cliente
-                </button>
+                </a>
             </div>
 
             <div id="tab-search">
@@ -41,24 +41,6 @@
                     @empty
                         <p class="muted" style="text-align:center; margin:14px 0; font-size:13px;">No hay clientes registrados.</p>
                     @endforelse
-                </div>
-            </div>
-
-            <div id="tab-new" style="display:none;">
-                <p class="muted" style="margin-bottom:14px;">Completa los datos del nuevo cliente.</p>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Nombre completo</label>
-                        <input type="text" name="new_client_name" placeholder="Ej. Dr. Juan Perez">
-                    </div>
-                    <div class="form-group">
-                        <label>Telefono</label>
-                        <input type="text" name="new_client_phone" placeholder="Ej. 551 234 5678">
-                    </div>
-                    <div class="form-group">
-                        <label>Correo</label>
-                        <input type="text" name="new_client_email" placeholder="Ej. cliente@mail.com">
-                    </div>
                 </div>
             </div>
 
@@ -109,12 +91,10 @@ $clients = $customers->map(function($customer) {
         document.getElementById('sel-client-name').textContent = clients[index].name;
         document.getElementById('tech-client-name').textContent = clients[index].name;
     }
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    document.querySelectorAll('button.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('button.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            document.getElementById('tab-search').style.display = btn.dataset.tab === 'search' ? 'block' : 'none';
-            document.getElementById('tab-new').style.display = btn.dataset.tab === 'new' ? 'block' : 'none';
         });
     });
 </script>
