@@ -170,25 +170,57 @@
     (function () {
         var menus = document.querySelectorAll('.congress-menu');
         menus.forEach(function (menu) {
+            menu._dd = menu.querySelector('.congress-menu-dropdown');
+        });
+
+        function closeMenu(menu) {
+            var trigger = menu.querySelector('.congress-menu-trigger');
+            var dd = menu._dd;
+            if (dd && dd.parentNode !== menu) menu.appendChild(dd);
+            if (dd) dd.removeAttribute('style');
+            menu.classList.remove('open');
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+
+        function openMenu(menu, trigger) {
+            var dd = menu._dd;
+            menus.forEach(function (m) {
+                if (m !== menu && m.classList.contains('open')) closeMenu(m);
+            });
+
+            document.body.appendChild(dd);
+            var rect = trigger.getBoundingClientRect();
+            var w = 140;
+            var left = rect.left;
+            if (left + w > window.innerWidth - 8) {
+                left = Math.max(8, window.innerWidth - w - 8);
+            }
+            dd.style.display = 'flex';
+            dd.style.position = 'fixed';
+            dd.style.zIndex = '9999';
+            dd.style.top = (rect.bottom + 4) + 'px';
+            dd.style.left = left + 'px';
+            dd.style.right = 'auto';
+
+            menu.classList.add('open');
+            trigger.setAttribute('aria-expanded', 'true');
+        }
+
+        menus.forEach(function (menu) {
             var trigger = menu.querySelector('.congress-menu-trigger');
             trigger.addEventListener('click', function (e) {
                 e.stopPropagation();
-                menus.forEach(function (m) {
-                    if (m !== menu) {
-                        m.classList.remove('open');
-                        m.querySelector('.congress-menu-trigger').setAttribute('aria-expanded', 'false');
-                    }
-                });
-                var isOpen = menu.classList.toggle('open');
-                trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                if (menu.classList.contains('open')) closeMenu(menu);
+                else openMenu(menu, trigger);
             });
         });
+
         document.addEventListener('click', function () {
             menus.forEach(function (m) {
-                m.classList.remove('open');
-                m.querySelector('.congress-menu-trigger').setAttribute('aria-expanded', 'false');
+                if (m.classList.contains('open')) closeMenu(m);
             });
         });
+
         document.querySelectorAll('.congress-menu-dropdown').forEach(function (dd) {
             dd.addEventListener('click', function (e) { e.stopPropagation(); });
         });

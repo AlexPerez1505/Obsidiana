@@ -294,7 +294,9 @@
             display: none; flex-direction: column; gap: 2px;
         }
         .congress-menu.open .congress-menu-dropdown { display: flex; }
-        .category-list .congress-menu .congress-menu-dropdown {
+        .category-list .congress-menu .congress-menu-dropdown,
+        .table-wrap .congress-menu .congress-menu-dropdown,
+        .equipment-table .congress-menu .congress-menu-dropdown {
             position: fixed;
             top: var(--menu-top, 0);
             right: var(--menu-right, auto);
