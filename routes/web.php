@@ -16,5 +16,6 @@ require __DIR__.'/web/marketing/marketing.php';
 require __DIR__.'/web/admin/admin.php';
 require __DIR__.'/web/configuracion/catalogo.php';
 require __DIR__.'/web/configuracion/tipo_equipo.php';
+require __DIR__.'/web/configuracion/refaciones.php';
 require __DIR__.'/web/inventory/inventory.php';
 require __DIR__.'/web/services/historial.php';
