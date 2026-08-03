@@ -14,5 +14,6 @@ require __DIR__.'/web/dashboard.php';
 require __DIR__.'/web/commercial.php';
 require __DIR__.'/web/admin.php';
 require __DIR__.'/web/catalogo.php';
+require __DIR__.'/web/tipo_equipo.php';
 require __DIR__.'/web/marketing.php';
 require __DIR__.'/web/inventory.php';
