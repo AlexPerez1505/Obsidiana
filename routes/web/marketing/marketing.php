@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\GuiaDeMarcaController;
 use App\Http\Controllers\TaskController;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 /*
