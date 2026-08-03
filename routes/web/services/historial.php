@@ -21,6 +21,6 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         $equipmentTypes = EquipmentType::orderBy('name')->get();
         $brands = Brand::orderBy('name')->get();
 
-        return view('structure.gestion_servicios.historial_servicios.nueva_orden.c_nueva_orden', compact('customers', 'equipmentTypes', 'brands'));
+        return view('structure.gestion_servicios.historial_servicios.registro_servicio.c_registro_serv', compact('customers', 'equipmentTypes', 'brands'));
     })->name('gestion.servicios.historial.nueva_orden');
 });
