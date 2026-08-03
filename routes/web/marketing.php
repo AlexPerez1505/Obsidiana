@@ -1,7 +1,48 @@
 <?php
 
+use App\Http\Controllers\GuiaDeMarcaController;
+use App\Http\Controllers\TaskController;
+use Illuminate\Support\Facades\Route;
+
 /*
 |--------------------------------------------------------------------------
 | Gestión de Marketing
 |--------------------------------------------------------------------------
 */
+
+Route::middleware(['auth', 'verified', 'approved'])->group(function () {
+    Route::get('/marketing/tareas', [TaskController::class, 'index'])
+        ->name('marketing.tareas.index');
+
+    Route::get('/marketing/tareas/crear', [TaskController::class, 'create'])
+        ->name('marketing.tareas.create');
+
+    Route::post('/marketing/tareas', [TaskController::class, 'store'])
+        ->name('marketing.tareas.store');
+
+    Route::put('/marketing/tareas/{task}', [TaskController::class, 'update'])
+        ->name('marketing.tareas.update');
+
+    Route::get('/marketing/aprobacion-flyers', [TaskController::class, 'aprobacionFlyers'])
+        ->name('marketing.aprobacion_flyers.index');
+
+    Route::get('/marketing/agenda', [TaskController::class, 'agenda'])
+        ->name('marketing.agenda.index');
+
+    Route::get('/marketing/biblioteca-catalogo', [TaskController::class, 'bibliotecaCatalogo'])
+        ->name('marketing.biblioteca_catalogo.index');
+
+    Route::get('/marketing/guia-de-marca', [TaskController::class, 'guiaDeMarca'])
+        ->name('marketing.guia_de_marca.index');
+
+    Route::get('/gestion-marketing/inicio', function () {
+        return view('structure.gestion_marketing.inicio.menu_marketing');
+    })->name('marketing.inicio');
+
+    Route::get('/gestion-marketing/guia-de-marca', [GuiaDeMarcaController::class, 'index'])
+        ->name('marketing.guia.index');
+    Route::get('/gestion-marketing/guia-de-marca/crear', [GuiaDeMarcaController::class, 'create'])
+        ->name('marketing.guia.create');
+    Route::post('/gestion-marketing/guia-de-marca', [GuiaDeMarcaController::class, 'update'])
+        ->name('marketing.guia.update');
+});
