@@ -37,11 +37,12 @@ class CustomerController extends Controller
     /**
      * Muestra el formulario de registro de cliente.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
         return view('structure.commercial_management.customers.registrar_cliente', [
             'categories' => Category::query()->orderBy('name')->get(),
             'congresses' => Congress::query()->with('category')->latest()->get(),
+            'returnTo' => $request->input('return_to'),
         ]);
     }
 
@@ -71,7 +72,12 @@ class CustomerController extends Controller
 
         $data['seller_id'] = auth()->id();
 
-        Customer::create($data);
+        $customer = Customer::create($data);
+
+        if ($returnTo = $request->input('return_to')) {
+            $separator = str_contains($returnTo, '?') ? '&' : '?';
+            return redirect($returnTo . $separator . 'cliente_id=' . $customer->id)->with('status', 'Cliente guardado correctamente.');
+        }
 
         return redirect()->route('commercial.clientes.index')->with('status', 'Cliente guardado correctamente.');
     }
