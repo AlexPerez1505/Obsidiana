@@ -18,17 +18,43 @@ class UserController extends Controller
     /**
      * Lista de todos los usuarios con métricas.
      */
-    public function index(SessionManager $sessions): View
+    public function index(SessionManager $sessions, Request $request): View
     {
-        $users = User::withCount('loginLogs')
-            ->orderByDesc('created_at')
-            ->get();
+        $query = User::withCount('loginLogs');
+
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('payroll_number', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status = $request->get('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($position = $request->get('position')) {
+            $query->where('position', $position);
+        }
+
+        $users = $query->orderByDesc('created_at')->get();
 
         $activeCounts = $sessions->activeCountsForAll();
+
+        $positions = User::whereNotNull('position')
+            ->where('position', '!=', '')
+            ->distinct()
+            ->pluck('position')
+            ->sort()
+            ->values();
 
         return view('admin.users.index', [
             'users'        => $users,
             'activeCounts' => $activeCounts,
+            'positions'    => $positions,
+            'filters'      => $request->only(['search', 'status', 'position']),
         ]);
     }
 

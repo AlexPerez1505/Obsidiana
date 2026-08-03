@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8">
@@ -395,35 +395,43 @@
                     </a>
                 </div>
             </div>
-            <div class="nav-group {{ request()->is('gestion-servicios*') ? 'open' : '' }}">
-                <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Servicios">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                    <span class="nav-label">Gestión de Servicios</span>
+            <a class="nav-item" href="#" data-tip="Gestión de Servicios">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                <span class="nav-label">Gestión de Servicios</span>
+            </a>
+            <div class="nav-group {{ request()->routeIs('admin.*') ? 'open' : '' }}">
+                <a class="nav-item nav-toggle" href="#" data-tip="Gestión Administrativa">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                    <span class="nav-label">Gestión Administrativa</span>
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-                    <a class="nav-item nav-sub" href="#" data-tip="Cartas de Garantía">
+                    <a class="nav-item nav-sub {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}" data-tip="Recursos humanos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Cartas de Garantía</span>
+                        <span class="nav-label">Recursos humanos</span>
                     </a>
-                    <a class="nav-item nav-sub" href="{{ route('gestion.servicios.historial') }}" data-tip="Historial de Servicios">
+                    <a class="nav-item nav-sub" href="#" data-tip="Viáticos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Historial de Servicios</span>
+                        <span class="nav-label">Viáticos</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Mantenimiento">
+                    <a class="nav-item nav-sub" href="#" data-tip="Vehículos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Mantenimiento</span>
+                        <span class="nav-label">Vehículos</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Servicios">
+                    <a class="nav-item nav-sub {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}" data-tip="Reporte">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Servicios</span>
+                        <span class="nav-label">Reporte</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('admin.materials.*') ? 'active' : '' }}" href="{{ route('admin.materials.index') }}" data-tip="Solicitud de materiales">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Solicitud de materiales</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('admin.agenda.*') ? 'active' : '' }}" href="{{ route('admin.agenda.index') }}" data-tip="Agenda">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Agenda</span>
                     </a>
                 </div>
             </div>
-            <a class="nav-item" href="#" data-tip="Gestión Administrativa">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                <span class="nav-label">Gestión Administrativa</span>
-            </a>
             <div class="nav-group {{ request()->is('gestion-marketing*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Marketing">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
