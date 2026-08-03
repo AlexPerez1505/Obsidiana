@@ -64,20 +64,32 @@
     .uc-search {
         position: relative; flex: 1; min-width: 240px; max-width: 420px;
     }
-    .uc-search input {
-        width: 100%; padding: 11px 12px 11px 42px;
-        border: 1px solid var(--border); border-radius: 10px;
+    .uc-toolbar .uc-search input[type="text"] {
+        width: 100%; padding: 12px 14px 12px 80px !important;
+        border: 3px solid #64748b; border-radius: 10px;
         font-size: 14.5px; font-family: inherit;
         background: var(--surface); color: var(--text);
         outline: none; transition: border .15s, box-shadow .15s;
     }
-    .uc-search input:focus {
+    .uc-toolbar .uc-search input[type="text"]:focus {
         border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(0,122,255,.12);
+        box-shadow: 0 0 0 4px rgba(0,122,255,.16);
     }
     .uc-search svg {
-        position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
-        width: 18px; height: 18px; color: var(--muted); pointer-events: none;
+        position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+        width: 20px; height: 20px; color: var(--muted); pointer-events: none;
+        display: block;
+    }
+
+    /* ===== Stat cards ===== */
+    .stat-row .card {
+        border: 1.5px solid #94a3b8;
+        box-shadow: 0 2px 8px rgba(0,0,0,.05);
+        transition: border-color .15s, box-shadow .15s;
+    }
+    .stat-row .card:hover { border-color: var(--primary); box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+    .stat-row .stat-ico {
+        border: 1.5px solid rgba(0,0,0,.08);
     }
     .uc-filter {
         position: relative;
@@ -85,7 +97,7 @@
     .uc-filter select {
         appearance: none; -webkit-appearance: none;
         padding: 11px 36px 11px 14px;
-        border: 1px solid var(--border); border-radius: 10px;
+        border: 1px solid #94a3b8; border-radius: 10px;
         font-size: 14.5px; font-family: inherit; font-weight: 600;
         background: var(--surface); color: var(--text);
         cursor: pointer; outline: none; transition: border .15s;
@@ -101,22 +113,24 @@
     .uc-spacer { flex: 1; }
     .uc-btn-add {
         display: inline-flex; align-items: center; gap: 7px;
-        padding: 10px 18px; border: none; border-radius: 10px;
+        padding: 10px 18px; border: 1.5px solid rgba(255,255,255,.35); border-radius: 10px;
         background: var(--primary); color: #fff;
         font-size: 14.5px; font-weight: 700; cursor: pointer;
         text-decoration: none; transition: background .15s;
+        box-shadow: 0 2px 0 rgba(0,0,0,.12);
     }
     .uc-btn-add:hover { background: var(--primary-strong); }
     .uc-btn-add svg { width: 18px; height: 18px; }
     .uc-view-toggle {
-        display: inline-flex; border: 1px solid var(--border); border-radius: 10px;
+        display: inline-flex; border: 1px solid #94a3b8; border-radius: 10px;
         overflow: hidden; flex: 0 0 auto;
     }
     .uc-view-toggle button {
-        padding: 10px 12px; border: none; background: var(--surface);
+        padding: 10px 12px; border-right: 1px solid #94a3b8; border-left: none; border-top: none; border-bottom: none; background: var(--surface);
         color: var(--muted); cursor: pointer; transition: background .15s, color .15s;
         display: flex; align-items: center; justify-content: center;
     }
+    .uc-view-toggle button:last-child { border-right: none; }
     .uc-view-toggle button.active {
         background: var(--primary-soft); color: var(--primary);
     }
@@ -134,12 +148,13 @@
 
     /* ===== Tarjeta de usuario ===== */
     .uc-card {
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: 16px; padding: 22px; box-shadow: var(--shadow);
-        position: relative; transition: box-shadow .2s, transform .2s;
+        background: var(--surface); border: 1.5px solid #94a3b8;
+        border-radius: 16px; padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,.04);
+        position: relative; transition: box-shadow .2s, transform .2s, border-color .15s;
         display: flex; flex-direction: column; gap: 14px;
     }
     .uc-card:hover {
+        border-color: var(--primary);
         box-shadow: 0 8px 30px rgba(17,24,39,.10);
         transform: translateY(-2px);
     }
@@ -155,7 +170,7 @@
         width: 64px; height: 64px; border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
         font-weight: 700; font-size: 22px; overflow: hidden;
-        border: 2px solid var(--border);
+        border: 2px solid #94a3b8;
     }
     .uc-avatar img {
         width: 100%; height: 100%; object-fit: cover; display: block;
@@ -196,15 +211,16 @@
     .uc-dots {
         position: absolute; bottom: 18px; right: 18px;
         width: 32px; height: 32px; border-radius: 8px;
-        border: none; background: var(--surface-2); color: var(--muted);
+        border: 1.5px solid #94a3b8; background: var(--surface-2); color: var(--muted);
         cursor: pointer; display: flex; align-items: center; justify-content: center;
-        transition: background .15s, color .15s;
+        transition: background .15s, color .15s, border-color .15s;
     }
+    .uc-dots:hover { border-color: var(--primary); }
     .uc-dots:hover { background: var(--primary-soft); color: var(--primary); }
     .uc-dots svg { width: 18px; height: 18px; }
     .uc-dots-menu {
         position: absolute; bottom: 54px; right: 18px;
-        background: var(--surface); border: 1px solid var(--border);
+        background: var(--surface); border: 1px solid #94a3b8;
         border-radius: 12px; box-shadow: 0 10px 30px rgba(17,24,39,.14);
         padding: 6px; min-width: 180px; z-index: 20;
         opacity: 0; visibility: hidden; transform: translateY(6px) scale(.97);

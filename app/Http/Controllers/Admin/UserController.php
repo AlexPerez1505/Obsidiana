@@ -63,10 +63,20 @@ class UserController extends Controller
      */
     public function show(User $user, SessionManager $sessions): View
     {
+        $documents = $user->employeeDocuments()->latest()->get();
+        $shifts = $user->employeeShifts()->orderByDesc('shift_date')->limit(10)->get();
+        $shiftDates = $user->employeeShifts()
+            ->where('shift_date', '>=', now()->startOfMonth())
+            ->where('shift_date', '<=', now()->endOfMonth())
+            ->get();
+
         return view('admin.users.show', [
-            'user'         => $user,
-            'logs'         => $user->loginLogs()->limit(50)->get(),
-            'activeCount'  => $sessions->activeCountFor($user->id),
+            'user'        => $user,
+            'logs'        => $user->loginLogs()->limit(50)->get(),
+            'activeCount' => $sessions->activeCountFor($user->id),
+            'documents'   => $documents,
+            'shifts'      => $shifts,
+            'shiftDates'  => $shiftDates,
         ]);
     }
 
