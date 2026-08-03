@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admin.')->group(function () {
     Route::view('/agenda', 'admin.agenda.index')->name('agenda.index');
     Route::view('/materiales', 'admin.materiales.index')->name('materials.index');
+    Route::view('/reportes', 'admin.reportes.index')->name('reports.index');
 });
 
 Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->name('admin.')->group(function () {
