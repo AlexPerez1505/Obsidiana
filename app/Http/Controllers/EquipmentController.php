@@ -16,16 +16,18 @@ class EquipmentController extends Controller
 {
     public function index(): View
     {
-        $equipmentTypes = EquipmentType::withCount('subtypes')->latest()->paginate(10);
+        $equipmentTypes = EquipmentType::with('subtypes')->latest()->paginate(10);
 
         $equipmentTypes->getCollection()->transform(function (EquipmentType $type) {
-            $type->brands_count = Brand::whereHas('equipment', function ($query) use ($type) {
-                $query->where('equipment_type_id', $type->id);
-            })->count();
+            $type->subtypes_names = $type->subtypes->pluck('name')->sort()->values();
 
-            $type->models_count = EquipmentModel::whereHas('equipment', function ($query) use ($type) {
+            $type->brands_names = Brand::whereHas('equipment', function ($query) use ($type) {
                 $query->where('equipment_type_id', $type->id);
-            })->count();
+            })->orderBy('name')->pluck('name');
+
+            $type->models_names = EquipmentModel::whereHas('equipment', function ($query) use ($type) {
+                $query->where('equipment_type_id', $type->id);
+            })->orderBy('name')->pluck('name');
 
             return $type;
         });

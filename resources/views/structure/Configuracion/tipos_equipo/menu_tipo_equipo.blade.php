@@ -67,10 +67,6 @@
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
                 <button type="button" class="toolbar-btn" disabled>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
-                    Estado: Activo
-                </button>
-                <button type="button" class="toolbar-btn" disabled>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Exportar
                 </button>
@@ -102,9 +98,33 @@
                                     </div>
                                 </div>
                             </td>
-                            <td><span class="counter counter--blue">{{ number_format($type->subtypes_count) }}</span></td>
-                            <td><span class="counter counter--blue">{{ number_format($type->brands_count) }}</span></td>
-                            <td><span class="counter counter--blue">{{ number_format($type->models_count) }}</span></td>
+                            <td>
+                                <div class="name-list">
+                                    @forelse ($type->subtypes_names as $name)
+                                        <span class="name-pill">{{ $name }}</span>
+                                    @empty
+                                        <span class="name-empty">—</span>
+                                    @endforelse
+                                </div>
+                            </td>
+                            <td>
+                                <div class="name-list">
+                                    @forelse ($type->brands_names as $name)
+                                        <span class="name-pill">{{ $name }}</span>
+                                    @empty
+                                        <span class="name-empty">—</span>
+                                    @endforelse
+                                </div>
+                            </td>
+                            <td>
+                                <div class="name-list">
+                                    @forelse ($type->models_names as $name)
+                                        <span class="name-pill">{{ $name }}</span>
+                                    @empty
+                                        <span class="name-empty">—</span>
+                                    @endforelse
+                                </div>
+                            </td>
                             <td>
                                 <div class="actions">
                                     <button type="button" class="action-btn action-btn--edit" title="Editar" disabled>
@@ -231,19 +251,26 @@
         .type-name { font-weight: 700; color: #fff; }
         .type-desc { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 2px; }
 
-        .counter {
-            display: inline-block;
-            min-width: 32px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 700;
+        .name-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            max-height: 80px;
+            overflow-y: auto;
         }
-        .counter--blue {
+        .name-pill {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
             background: rgba(0,168,255,0.15);
             color: #00A8FF;
             border: 1px solid rgba(0,168,255,0.35);
         }
+        .name-empty { color: rgba(255,255,255,0.4); font-size: 13px; }
 
         .actions { display: flex; align-items: center; justify-content: center; gap: 8px; }
         .action-btn {
@@ -279,6 +306,8 @@
         :root[data-theme="light"] .type-desc { color: var(--muted); }
         :root[data-theme="light"] .action-btn { background: rgba(15,23,42,0.04); border-color: rgba(15,23,42,0.14); color: var(--text); }
         :root[data-theme="light"] .counter--blue { background: rgba(0,122,255,0.1); color: var(--primary); border-color: rgba(0,122,255,0.25); }
+        :root[data-theme="light"] .name-pill { background: rgba(0,122,255,0.1); color: var(--primary); border-color: rgba(0,122,255,0.25); }
+        :root[data-theme="light"] .name-empty { color: var(--muted); }
     </style>
     @endpush
 @endsection
