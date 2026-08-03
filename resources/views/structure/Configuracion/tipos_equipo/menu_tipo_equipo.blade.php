@@ -126,13 +126,24 @@
                                 </div>
                             </td>
                             <td>
-                                <div class="actions">
-                                    <button type="button" class="action-btn action-btn--edit" title="Editar" disabled>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                <div class="congress-menu">
+                                    <button type="button" class="congress-menu-trigger" aria-label="Acciones del tipo de equipo" aria-expanded="false">
+                                        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
                                     </button>
-                                    <button type="button" class="action-btn action-btn--delete" title="Eliminar" disabled>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                    </button>
+                                    <div class="congress-menu-dropdown">
+                                        <a href="#" class="congress-menu-item" title="Ver" aria-label="Ver tipo de equipo" style="text-decoration:none;">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            <span>Ver</span>
+                                        </a>
+                                        <a href="#" class="congress-menu-item" title="Editar" aria-label="Editar tipo de equipo" style="text-decoration:none;">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                            <span>Editar</span>
+                                        </a>
+                                        <a href="#" class="congress-menu-item danger" title="Eliminar" aria-label="Eliminar tipo de equipo" style="text-decoration:none;">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                                            <span>Eliminar</span>
+                                        </a>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -152,162 +163,35 @@
         @endif
     </div>
 
-    @push('scripts')
-    <style>
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-        @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 560px) { .stats-grid { grid-template-columns: 1fr; } }
-        .stat-card {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            background: rgba(8,18,40,0.82);
-            border: 1px solid rgba(0,168,255,0.55);
-            border-radius: 14px;
-            padding: 16px;
-            box-shadow: 0 8px 28px rgba(0,0,0,0.35), 0 0 14px rgba(0,168,255,0.2), inset 0 1px 0 rgba(255,255,255,0.04);
-        }
-        .stat-icon {
-            width: 46px; height: 46px;
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .stat-info { flex: 1; }
-        .stat-number { font-size: 22px; font-weight: 800; color: #fff; }
-        .stat-label { font-size: 13px; color: #fff; font-weight: 600; }
-        .stat-sublabel { font-size: 12px; color: rgba(255,255,255,0.5); }
-
-        .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-        .search-box { position: relative; }
-        .search-box input {
-            width: 100%;
-            padding: 10px 14px 10px 38px;
-            border: 1px solid rgba(0,168,255,0.45);
-            border-radius: 11px;
-            background: rgba(8,18,40,0.55);
-            color: #fff;
-            font-size: 14px;
-            outline: none;
-            cursor: not-allowed;
-        }
-        .search-box .search-icon {
-            position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
-            color: #00A8FF; pointer-events: none;
-        }
-        .toolbar-btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 9px 14px;
-            border: 1px solid rgba(0,168,255,0.45);
-            border-radius: 11px;
-            background: rgba(8,18,40,0.55);
-            color: #fff;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-
-        .table-wrap { overflow-x: auto; border-radius: 14px; }
-        .equipment-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            font-size: 14px;
-            min-width: 760px;
-        }
-        .equipment-table thead th {
-            text-align: center;
-            padding: 13px 14px;
-            color: rgba(255,255,255,0.75);
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .04em;
-            border-bottom: 1px solid rgba(0,168,255,0.35);
-            white-space: nowrap;
-            background: rgba(8,18,40,0.96);
-        }
-        .equipment-table thead th:first-child { text-align: left; }
-        .equipment-table tbody td {
-            padding: 14px;
-            border-bottom: 1px solid rgba(0,168,255,0.18);
-            color: #fff;
-            vertical-align: middle;
-            text-align: center;
-        }
-        .equipment-table tbody tr { transition: background .16s ease; }
-        .equipment-table tbody tr:hover { background: rgba(0,168,255,0.08); }
-        .equipment-table tbody td:first-child { text-align: left; }
-
-        .type-cell { display: flex; align-items: center; gap: 12px; }
-        .type-icon {
-            width: 42px; height: 42px;
-            border-radius: 12px;
-            background: rgba(0,168,255,0.12);
-            color: #00A8FF;
-            display: flex; align-items: center; justify-content: center;
-            flex: 0 0 42px;
-        }
-        .type-name { font-weight: 700; color: #fff; }
-        .type-desc { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 2px; }
-
-        .name-list {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 5px;
-            max-height: 80px;
-            overflow-y: auto;
-        }
-        .name-pill {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 600;
-            white-space: nowrap;
-            background: rgba(0,168,255,0.15);
-            color: #00A8FF;
-            border: 1px solid rgba(0,168,255,0.35);
-        }
-        .name-empty { color: rgba(255,255,255,0.4); font-size: 13px; }
-
-        .actions { display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .action-btn {
-            width: 34px; height: 34px;
-            border-radius: 10px;
-            border: 1px solid rgba(0,168,255,0.35);
-            background: rgba(8,18,40,0.55);
-            color: rgba(255,255,255,0.7);
-            display: inline-flex; align-items: center; justify-content: center;
-            cursor: not-allowed;
-            opacity: 0.6;
-            transition: all .16s ease;
-        }
-        .action-btn--edit:hover { color: #00A8FF; border-color: #00A8FF; }
-        .action-btn--delete:hover { color: #ef4444; border-color: #ef4444; }
-
-        .empty-cell {
-            text-align: center;
-            color: rgba(255,255,255,0.55);
-            padding: 28px 14px;
-        }
-
-        :root[data-theme="light"] .stat-card { background: linear-gradient(145deg, rgba(15,23,42,0.04), rgba(15,23,42,0.08)); border-color: rgba(15,23,42,0.14); }
-        :root[data-theme="light"] .stat-number { color: var(--text); }
-        :root[data-theme="light"] .stat-label { color: var(--text); }
-        :root[data-theme="light"] .stat-sublabel { color: var(--muted); }
-        :root[data-theme="light"] .search-box input { background: #fff; color: var(--text); border-color: rgba(15,23,42,0.18); }
-        :root[data-theme="light"] .toolbar-btn { background: #fff; color: var(--text); border-color: rgba(15,23,42,0.18); }
-        :root[data-theme="light"] .equipment-table thead th { background: rgba(15,23,42,0.04); color: var(--text); border-color: rgba(15,23,42,0.14); }
-        :root[data-theme="light"] .equipment-table tbody td { color: var(--text); border-color: rgba(15,23,42,0.08); }
-        :root[data-theme="light"] .equipment-table tbody tr:hover { background: rgba(0,122,255,0.08); }
-        :root[data-theme="light"] .type-name { color: var(--text); }
-        :root[data-theme="light"] .type-desc { color: var(--muted); }
-        :root[data-theme="light"] .action-btn { background: rgba(15,23,42,0.04); border-color: rgba(15,23,42,0.14); color: var(--text); }
-        :root[data-theme="light"] .counter--blue { background: rgba(0,122,255,0.1); color: var(--primary); border-color: rgba(0,122,255,0.25); }
-        :root[data-theme="light"] .name-pill { background: rgba(0,122,255,0.1); color: var(--primary); border-color: rgba(0,122,255,0.25); }
-        :root[data-theme="light"] .name-empty { color: var(--muted); }
-    </style>
-    @endpush
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        var menus = document.querySelectorAll('.congress-menu');
+        menus.forEach(function (menu) {
+            var trigger = menu.querySelector('.congress-menu-trigger');
+            trigger.addEventListener('click', function (e) {
+                e.stopPropagation();
+                menus.forEach(function (m) {
+                    if (m !== menu) {
+                        m.classList.remove('open');
+                        m.querySelector('.congress-menu-trigger').setAttribute('aria-expanded', 'false');
+                    }
+                });
+                var isOpen = menu.classList.toggle('open');
+                trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+        });
+        document.addEventListener('click', function () {
+            menus.forEach(function (m) {
+                m.classList.remove('open');
+                m.querySelector('.congress-menu-trigger').setAttribute('aria-expanded', 'false');
+            });
+        });
+        document.querySelectorAll('.congress-menu-dropdown').forEach(function (dd) {
+            dd.addEventListener('click', function (e) { e.stopPropagation(); });
+        });
+    })();
+</script>
+@endpush
