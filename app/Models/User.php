@@ -186,7 +186,25 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function permissions(): BelongsToMany
     {
-        return $this->belongsToMany(Permission::class);
+        return $this->belongsToMany(Permission::class)->withPivot('level');
+    }
+
+    /**
+     * Rol principal asignado al usuario.
+     */
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function employeeDocuments(): HasMany
+    {
+        return $this->hasMany(EmployeeDocument::class);
+    }
+
+    public function employeeShifts(): HasMany
+    {
+        return $this->hasMany(EmployeeShift::class);
     }
 
     /**
