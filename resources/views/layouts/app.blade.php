@@ -31,7 +31,7 @@
         input[type=text], input[type=email], input[type=password] {
             width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px;
             font-size:15px; outline:none; transition:border .15s; background:var(--card); color:var(--text); }
-        input:focus { border-color:var(--indigo); box-shadow:0 0 0 3px rgba(0,122,255,.15); }
+        input:focus { border-color:var(--indigo); box-shadow:0 0 0 3px rgba(0, 122, 255, 0.15); }
         /* Botón de "ojo" para mostrar/ocultar contraseña */
         .pw-wrap { position:relative; display:block; }
         .pw-wrap input { padding-right:44px; }

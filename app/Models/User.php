@@ -107,6 +107,22 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Movimientos administrativos registrados para el empleado.
+     */
+    public function employeeReports(): HasMany
+    {
+        return $this->hasMany(EmployeeReport::class)->latest('start_date');
+    }
+
+    /**
+     * Movimientos administrativos creados por este usuario.
+     */
+    public function createdEmployeeReports(): HasMany
+    {
+        return $this->hasMany(EmployeeReport::class, 'created_by')->latest('created_at');
+    }
+
+    /**
      * Genera un código de verificación de 6 dígitos, lo guarda hasheado
      * y devuelve el código en texto plano para enviarlo por correo.
      */

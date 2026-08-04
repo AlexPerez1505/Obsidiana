@@ -4,7 +4,17 @@
 @section('page-sub', 'Gestion Administrativa > Reporte')
 
 @php
+    $employees = [
+        ['name' => 'Ricardo', 'initials' => 'R', 'area' => 'Gestion Administrativa', 'attendance' => '94%', 'pending' => '0', 'status' => 'Al dia'],
+        ['name' => 'Marina Sherlyn', 'initials' => 'MS', 'area' => 'Marketing', 'attendance' => '96%', 'pending' => '1', 'status' => 'Vacaciones'],
+        ['name' => 'Jose Alex', 'initials' => 'JA', 'area' => 'Inventario', 'attendance' => '91%', 'pending' => '1', 'status' => 'Permiso'],
+        ['name' => 'Andrea Ramirez', 'initials' => 'AR', 'area' => 'Servicios', 'attendance' => '88%', 'pending' => '1', 'status' => 'Justificar'],
+        ['name' => 'Dylan Santiago', 'initials' => 'DS', 'area' => 'Comercial', 'attendance' => '90%', 'pending' => '1', 'status' => 'Revision'],
+        ['name' => 'Fernanda Lopez', 'initials' => 'FL', 'area' => 'Administracion', 'attendance' => '97%', 'pending' => '0', 'status' => 'Al dia'],
+    ];
+
     $metrics = [
+        ['label' => 'Colaboradores', 'value' => count($employees), 'trend' => 'En seguimiento', 'type' => 'employee'],
         ['label' => 'Asistencias', 'value' => '94%', 'trend' => '+3%', 'type' => 'attendance'],
         ['label' => 'Faltas', 'value' => '7', 'trend' => '-2', 'type' => 'absence'],
         ['label' => 'Vacaciones', 'value' => '4', 'trend' => 'Activas', 'type' => 'vacation'],
@@ -29,14 +39,6 @@
         'incident' => ['label' => 'Incidencia', 'class' => 'incident'],
     ];
 
-    $weekly = [
-        ['day' => 'Lun', 'value' => 92],
-        ['day' => 'Mar', 'value' => 96],
-        ['day' => 'Mie', 'value' => 89],
-        ['day' => 'Jue', 'value' => 94],
-        ['day' => 'Vie', 'value' => 91],
-        ['day' => 'Sab', 'value' => 78],
-    ];
 @endphp
 
 @push('head')
@@ -181,7 +183,7 @@
 
     .reports-metrics {
         display: grid;
-        grid-template-columns: repeat(5, minmax(140px, 1fr));
+        grid-template-columns: repeat(6, minmax(140px, 1fr));
         gap: 12px;
     }
 
@@ -213,6 +215,7 @@
         background: var(--surface-2);
     }
 
+    .metric-box.employee .reports-icon { color: #0891b2; background: #cffafe; }
     .metric-box.attendance .reports-icon { color: #2563eb; background: #dbeafe; }
     .metric-box.absence .reports-icon { color: #dc2626; background: #fee2e2; }
     .metric-box.vacation .reports-icon { color: #059669; background: #d1fae5; }
@@ -357,37 +360,80 @@
         gap: 18px;
     }
 
-    .chart-body {
-        padding: 18px 20px 20px;
+    .employee-summary-list {
         display: grid;
-        gap: 14px;
-    }
-
-    .chart-row {
-        display: grid;
-        grid-template-columns: 38px 1fr 44px;
         gap: 10px;
-        align-items: center;
+        padding: 14px;
     }
 
-    .chart-row span {
+    .employee-summary-item {
+        display: grid;
+        grid-template-columns: 38px 1fr;
+        gap: 10px;
+        align-items: start;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+    }
+
+    .employee-summary-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    .employee-summary-main {
+        min-width: 0;
+    }
+
+    .employee-summary-main strong,
+    .employee-summary-area,
+    .employee-summary-stats span {
+        display: block;
+    }
+
+    .employee-summary-main strong {
+        color: var(--text);
+        font-size: 14px;
+    }
+
+    .employee-summary-area {
+        margin-top: 2px;
         color: var(--muted);
         font-size: 12.5px;
-        font-weight: 800;
+        font-weight: 700;
     }
 
-    .chart-track {
-        height: 10px;
-        overflow: hidden;
-        border-radius: 999px;
+    .employee-summary-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .employee-summary-stats span {
+        min-width: 0;
+        padding: 7px 8px;
+        border-radius: 8px;
         background: var(--surface-2);
-        border: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 11.5px;
+        font-weight: 800;
+        line-height: 1.25;
     }
 
-    .chart-fill {
-        height: 100%;
-        border-radius: inherit;
-        background: linear-gradient(90deg, #2563eb, #22c55e);
+    .employee-summary-stats b {
+        display: block;
+        color: var(--text);
+        font-size: 12px;
     }
 
     .pending-list {
@@ -434,6 +480,7 @@
         line-height: 1.35;
     }
 
+    :root[data-theme="dark"] .metric-box.employee .reports-icon { background: rgba(8, 145, 178, .18); color: #67e8f9; }
     :root[data-theme="dark"] .metric-box.attendance .reports-icon,
     :root[data-theme="dark"] .type-pill.attendance { background: rgba(37, 99, 235, .18); color: #93c5fd; }
     :root[data-theme="dark"] .metric-box.absence .reports-icon,
@@ -502,7 +549,7 @@
                 </svg>
                 <div>
                     <h2>Reportes administrativos</h2>
-                    <p>Asistencias, faltas, vacaciones, permisos e incidencias.</p>
+                    <p>Control por colaborador de asistencias, faltas, vacaciones, permisos e incidencias.</p>
                 </div>
             </div>
 
@@ -530,11 +577,17 @@
                     <option>Inventario</option>
                     <option>Servicios</option>
                     <option>Comercial</option>
+                    <option>Administracion</option>
                 </select>
             </div>
             <div class="reports-field">
                 <label for="report-person">Colaborador</label>
-                <input id="report-person" type="text" placeholder="Buscar nombre">
+                <input id="report-person" type="text" placeholder="Buscar nombre" list="report-employees">
+                <datalist id="report-employees">
+                    @foreach ($employees as $employee)
+                        <option value="{{ $employee['name'] }}"></option>
+                    @endforeach
+                </datalist>
             </div>
             <button class="reports-light" type="submit">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 3H2l8 9.5V20l4-2v-5.5L22 3z"></path></svg>
@@ -548,7 +601,9 @@
                     <div class="metric-top">
                         <span class="metric-label">{{ $metric['label'] }}</span>
                         <span class="reports-icon">
-                            @if ($metric['type'] === 'attendance')
+                            @if ($metric['type'] === 'employee')
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            @elseif ($metric['type'] === 'attendance')
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
                             @elseif ($metric['type'] === 'absence')
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
@@ -620,18 +675,24 @@
                 <div class="reports-panel">
                     <div class="reports-panel-head">
                         <div>
-                            <h3>Asistencia semanal</h3>
-                            <p>Porcentaje registrado.</p>
+                            <h3>Colaboradores monitoreados</h3>
+                            <p>Resumen individual del periodo.</p>
                         </div>
+                        <span class="status-pill" id="employeeCount">{{ count($employees) }} empleados</span>
                     </div>
-                    <div class="chart-body">
-                        @foreach ($weekly as $item)
-                            <div class="chart-row">
-                                <span>{{ $item['day'] }}</span>
-                                <div class="chart-track">
-                                    <div class="chart-fill" style="width: {{ $item['value'] }}%;"></div>
-                                </div>
-                                <span>{{ $item['value'] }}%</span>
+                    <div class="employee-summary-list" id="employeeSummaryList">
+                        @foreach ($employees as $employee)
+                            <div class="employee-summary-item" data-employee="{{ strtolower($employee['name']) }}" data-area="{{ $employee['area'] }}">
+                                <span class="employee-summary-avatar">{{ $employee['initials'] }}</span>
+                                <span class="employee-summary-main">
+                                    <strong>{{ $employee['name'] }}</strong>
+                                    <span class="employee-summary-area">{{ $employee['area'] }}</span>
+                                    <span class="employee-summary-stats">
+                                        <span><b>{{ $employee['attendance'] }}</b> Asistencia</span>
+                                        <span><b>{{ $employee['pending'] }}</b> Pendientes</span>
+                                        <span><b>{{ $employee['status'] }}</b> Estado</span>
+                                    </span>
+                                </span>
                             </div>
                         @endforeach
                     </div>
@@ -679,6 +740,7 @@
             const person = document.getElementById('report-person').value.trim().toLowerCase();
             const area = document.getElementById('report-area').value;
             let visible = 0;
+            let visibleEmployees = 0;
 
             document.querySelectorAll('#recordsBody tr').forEach((row) => {
                 const matchesType = activeReportType === 'all' || row.dataset.type === activeReportType;
@@ -690,7 +752,17 @@
                 if (show) visible += 1;
             });
 
+            document.querySelectorAll('#employeeSummaryList .employee-summary-item').forEach((item) => {
+                const matchesPerson = !person || item.dataset.employee.includes(person);
+                const matchesArea = area === 'all' || item.dataset.area === area;
+                const show = matchesPerson && matchesArea;
+
+                item.style.display = show ? '' : 'none';
+                if (show) visibleEmployees += 1;
+            });
+
             document.getElementById('reportCount').textContent = visible + (visible === 1 ? ' registro' : ' registros');
+            document.getElementById('employeeCount').textContent = visibleEmployees + (visibleEmployees === 1 ? ' empleado' : ' empleados');
         }
 
         function exportReport() {
