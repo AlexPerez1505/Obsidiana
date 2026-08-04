@@ -37,42 +37,35 @@ class GuiaDeMarcaController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'clear_colors' => ['nullable', 'boolean'],
-            'clear_fonts' => ['nullable', 'boolean'],
-            'colors' => ['nullable', 'array', 'required_without:clear_colors'],
-            'colors.*.name' => ['nullable', 'string', 'max:100'],
-            'colors.*.hex' => ['nullable', 'string', 'max:7'],
+        $data = $request->validate([
+            'colors' => ['nullable', 'array'],
+            'colors.*.name' => ['required', 'string', 'max:100'],
+            'colors.*.hex' => ['required', 'string', 'max:7'],
             'fonts' => ['nullable', 'array'],
-            'fonts.*.name' => ['nullable', 'string', 'max:100'],
-            'fonts.*.sample' => ['nullable', 'string', 'max:255'],
-            'fonts.*.usage' => ['nullable', 'string', 'max:100'],
-            'fonts.*.description' => ['nullable', 'string', 'max:500'],
+            'fonts.*.name' => ['required', 'string', 'max:100'],
+            'fonts.*.sample' => ['required', 'string', 'max:255'],
+            'fonts.*.usage' => ['required', 'string', 'max:100'],
+            'fonts.*.description' => ['required', 'string', 'max:500'],
         ]);
-
-        if (! empty($validated['clear_colors'])) {
-            $validated['colors'] = [];
-        } elseif (! array_key_exists('colors', $validated)) {
-            unset($validated['colors']);
-        }
-
-        if (! empty($validated['clear_fonts'])) {
-            $validated['fonts'] = [];
-        } elseif (! array_key_exists('fonts', $validated)) {
-            unset($validated['fonts']);
-        }
-
-        unset($validated['clear_colors'], $validated['clear_fonts']);
 
         $brandGuide = BrandGuide::first();
 
         if (! $brandGuide) {
-            $brandGuide = new BrandGuide();
-            $brandGuide->fill($validated)->save();
-        } else {
-            $brandGuide->update($validated);
+            $brandGuide = BrandGuide::create(BrandGuide::defaults());
         }
 
-        return redirect()->route('marketing.guia.index')->with('status', 'Paleta y tipografía actualizadas.');
+        $update = [];
+
+        if (array_key_exists('colors', $data)) {
+            $update['colors'] = $data['colors'];
+        }
+
+        if (array_key_exists('fonts', $data)) {
+            $update['fonts'] = $data['fonts'];
+        }
+
+        $brandGuide->update($update);
+
+        return redirect()->route('marketing.guia_de_marca.index')->with('status', 'Guía de marca actualizada.');
     }
 }

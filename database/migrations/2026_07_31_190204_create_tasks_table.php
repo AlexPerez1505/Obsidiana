@@ -11,6 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('tasks')) {
+            Schema::table('tasks', function (Blueprint $table) {
+                if (!Schema::hasColumn('tasks', 'progress')) {
+                    $table->unsignedTinyInteger('progress')->default(0)->after('due_date');
+                }
+            });
+
+            return;
+        }
+
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
             $table->string('title');
