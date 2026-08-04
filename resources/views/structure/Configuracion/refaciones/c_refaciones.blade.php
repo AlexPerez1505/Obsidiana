@@ -44,6 +44,16 @@
             @csrf
 
             <div class="form-group">
+                <label class="form-label" for="subtype_name">Subtipo *</label>
+                <input type="text" id="subtype_name" name="subtype_name" class="form-input" value="{{ old('subtype_name') }}" list="subtype_list" placeholder="Ej. Monitor de signos vitales" required>
+                <datalist id="subtype_list">
+                    @foreach ($subtypes as $subtype)
+                        <option value="{{ $subtype }}"></option>
+                    @endforeach
+                </datalist>
+            </div>
+
+            <div class="form-group">
                 <label class="form-label" for="name">Nombre *</label>
                 <input type="text" id="name" name="name" class="form-input" value="{{ old('name') }}" placeholder="Ej. Fusible principal" required>
             </div>
@@ -53,15 +63,9 @@
                 <textarea id="description" name="description" class="form-input" rows="3" placeholder="Detalles de la refacción">{{ old('description') }}</textarea>
             </div>
 
-            <div class="form-grid">
-                <div class="form-group">
-                    <label class="form-label" for="price">Precio</label>
-                    <input type="number" step="0.01" id="price" name="price" class="form-input" value="{{ old('price') }}" placeholder="0.00">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="stock">Stock</label>
-                    <input type="number" id="stock" name="stock" class="form-input" value="{{ old('stock', 0) }}" placeholder="0">
-                </div>
+            <div class="form-group">
+                <label class="form-label" for="stock">Stock</label>
+                <input type="number" id="stock" name="stock" class="form-input" value="{{ old('stock', 0) }}" placeholder="0">
             </div>
 
             <div class="form-group">
