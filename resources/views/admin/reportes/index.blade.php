@@ -39,6 +39,14 @@
         'incident' => ['label' => 'Incidencia', 'class' => 'incident'],
     ];
 
+    $pendingModules = [
+        ['type' => 'permission', 'count' => 2, 'title' => 'Permisos por aprobar', 'detail' => 'Solicitudes de salida personal en espera.', 'tone' => 'permission'],
+        ['type' => 'absence', 'count' => 1, 'title' => 'Faltas por justificar', 'detail' => 'Registros sin evidencia cargada.', 'tone' => 'absence'],
+        ['type' => 'incident', 'count' => 3, 'title' => 'Incidencias abiertas', 'detail' => 'Retardos y ajustes de asistencia.', 'tone' => 'incident'],
+        ['type' => 'vacation', 'count' => 1, 'title' => 'Vacaciones por validar', 'detail' => 'Periodos pendientes de autorizacion.', 'tone' => 'vacation'],
+        ['type' => 'attendance', 'count' => 2, 'title' => 'Asistencias por revisar', 'detail' => 'Entradas y salidas pendientes de cierre.', 'tone' => 'attendance'],
+    ];
+
 @endphp
 
 @push('head')
@@ -438,24 +446,31 @@
 
     .pending-list {
         display: grid;
-        gap: 10px;
+        grid-template-columns: 1fr;
+        gap: 12px;
         padding: 14px;
     }
 
     .pending-item {
-        display: grid;
-        grid-template-columns: 36px 1fr;
-        gap: 10px;
-        align-items: start;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
         padding: 12px;
         border: 1px solid var(--border);
         border-radius: 9px;
         background: var(--surface);
     }
 
+    .pending-item-head {
+        display: grid;
+        grid-template-columns: 38px 1fr;
+        gap: 10px;
+        align-items: start;
+    }
+
     .pending-dot {
-        width: 36px;
-        height: 36px;
+        width: 38px;
+        height: 38px;
         border-radius: 10px;
         display: inline-flex;
         align-items: center;
@@ -464,6 +479,12 @@
         color: var(--accent);
         font-weight: 900;
     }
+
+    .pending-item.permission .pending-dot { background: #ffedd5; color: #b45309; }
+    .pending-item.absence .pending-dot { background: #fee2e2; color: #b91c1c; }
+    .pending-item.incident .pending-dot { background: #ede9fe; color: #6d28d9; }
+    .pending-item.vacation .pending-dot { background: #d1fae5; color: #047857; }
+    .pending-item.attendance .pending-dot { background: #dbeafe; color: #1d4ed8; }
 
     .pending-item strong {
         display: block;
@@ -480,6 +501,24 @@
         line-height: 1.35;
     }
 
+    .pending-action {
+        width: 100%;
+        min-height: 34px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface-2);
+        color: var(--primary);
+        font: inherit;
+        font-size: 12.5px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    .pending-action:hover {
+        border-color: rgba(37, 99, 235, .45);
+        background: var(--primary-soft);
+    }
+
     :root[data-theme="dark"] .metric-box.employee .reports-icon { background: rgba(8, 145, 178, .18); color: #67e8f9; }
     :root[data-theme="dark"] .metric-box.attendance .reports-icon,
     :root[data-theme="dark"] .type-pill.attendance { background: rgba(37, 99, 235, .18); color: #93c5fd; }
@@ -491,6 +530,11 @@
     :root[data-theme="dark"] .type-pill.permission { background: rgba(217, 119, 6, .18); color: #fdba74; }
     :root[data-theme="dark"] .metric-box.incident .reports-icon,
     :root[data-theme="dark"] .type-pill.incident { background: rgba(124, 58, 237, .2); color: #c4b5fd; }
+    :root[data-theme="dark"] .pending-item.permission .pending-dot { background: rgba(217, 119, 6, .18); color: #fdba74; }
+    :root[data-theme="dark"] .pending-item.absence .pending-dot { background: rgba(220, 38, 38, .18); color: #fca5a5; }
+    :root[data-theme="dark"] .pending-item.incident .pending-dot { background: rgba(124, 58, 237, .2); color: #c4b5fd; }
+    :root[data-theme="dark"] .pending-item.vacation .pending-dot { background: rgba(16, 185, 129, .16); color: #86efac; }
+    :root[data-theme="dark"] .pending-item.attendance .pending-dot { background: rgba(37, 99, 235, .18); color: #93c5fd; }
 
     @media (max-width: 1180px) {
         .reports-metrics {
@@ -706,18 +750,20 @@
                         </div>
                     </div>
                     <div class="pending-list">
-                        <div class="pending-item">
-                            <span class="pending-dot">2</span>
-                            <span><strong>Permisos por aprobar</strong><span>Solicitudes de salida personal en espera.</span></span>
-                        </div>
-                        <div class="pending-item">
-                            <span class="pending-dot">1</span>
-                            <span><strong>Falta por justificar</strong><span>Registro sin evidencia cargada.</span></span>
-                        </div>
-                        <div class="pending-item">
-                            <span class="pending-dot">3</span>
-                            <span><strong>Incidencias abiertas</strong><span>Retardos y ajustes de asistencia.</span></span>
-                        </div>
+                        @foreach ($pendingModules as $module)
+                            <div class="pending-item {{ $module['tone'] }}">
+                                <div class="pending-item-head">
+                                    <span class="pending-dot">{{ $module['count'] }}</span>
+                                    <span>
+                                        <strong>{{ $module['title'] }}</strong>
+                                        <span>{{ $module['detail'] }}</span>
+                                    </span>
+                                </div>
+                                <button class="pending-action" type="button" data-pending-module="{{ $module['type'] }}">
+                                    Revisar modulo
+                                </button>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             </aside>
@@ -729,12 +775,27 @@
 
         document.querySelectorAll('.reports-tab').forEach((button) => {
             button.addEventListener('click', () => {
-                document.querySelectorAll('.reports-tab').forEach((item) => item.classList.remove('is-active'));
-                button.classList.add('is-active');
-                activeReportType = button.dataset.reportType;
-                filterReportRows();
+                setReportType(button.dataset.reportType);
             });
         });
+
+        document.querySelectorAll('[data-pending-module]').forEach((button) => {
+            button.addEventListener('click', () => {
+                setReportType(button.dataset.pendingModule);
+
+                if (typeof window.showToast === 'function') {
+                    window.showToast('Modulo de pendientes filtrado.');
+                }
+            });
+        });
+
+        function setReportType(type) {
+            activeReportType = type;
+            document.querySelectorAll('.reports-tab').forEach((item) => {
+                item.classList.toggle('is-active', item.dataset.reportType === type);
+            });
+            filterReportRows();
+        }
 
         function filterReportRows() {
             const person = document.getElementById('report-person').value.trim().toLowerCase();

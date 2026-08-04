@@ -123,11 +123,75 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Asistencias registradas del empleado.
+     */
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(EmployeeAttendance::class)->latest('attendance_date');
+    }
+
+    /**
+     * Faltas registradas del empleado.
+     */
+    public function absences(): HasMany
+    {
+        return $this->hasMany(EmployeeAbsence::class)->latest('absence_date');
+    }
+
+    /**
+     * Solicitudes de vacaciones del empleado.
+     */
+    public function vacationRequests(): HasMany
+    {
+        return $this->hasMany(EmployeeVacationRequest::class)->latest('start_date');
+    }
+
+    /**
+     * Solicitudes de permiso del empleado.
+     */
+    public function permissionRequests(): HasMany
+    {
+        return $this->hasMany(EmployeePermissionRequest::class)->latest('permission_date');
+    }
+
+    /**
+     * Incidencias registradas del empleado.
+     */
+    public function incidents(): HasMany
+    {
+        return $this->hasMany(EmployeeIncident::class)->latest('incident_date');
+    }
+
+    /**
      * Movimientos de inventario registrados por este usuario.
      */
     public function inventoryMovements(): HasMany
     {
         return $this->hasMany(InventoryMovement::class, 'created_by')->latest('movement_date');
+    }
+
+    /**
+     * Solicitudes de material capturadas por este usuario.
+     */
+    public function materialRequests(): HasMany
+    {
+        return $this->hasMany(MaterialRequest::class, 'requested_by')->latest('submitted_at');
+    }
+
+    /**
+     * Solicitudes de material revisadas por este usuario.
+     */
+    public function reviewedMaterialRequests(): HasMany
+    {
+        return $this->hasMany(MaterialRequest::class, 'reviewed_by')->latest('reviewed_at');
+    }
+
+    /**
+     * Solicitudes de material entregadas por este usuario.
+     */
+    public function deliveredMaterialRequests(): HasMany
+    {
+        return $this->hasMany(MaterialRequest::class, 'delivered_by')->latest('delivered_at');
     }
 
     /**
