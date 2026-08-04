@@ -485,6 +485,10 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Tipos de Equipo</span>
                     </a>
+                    <a class="nav-item nav-sub" href="{{ route('configuracion.refaciones.index') }}" data-tip="Tipos de Equipo">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Refacciones</span>
+                    </a>
                 </div>
             </div>
         </nav>

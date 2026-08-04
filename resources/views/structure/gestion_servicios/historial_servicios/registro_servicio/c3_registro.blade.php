@@ -73,30 +73,7 @@
                 </div>
             </div>
 
-            <div class="form-grid" style="margin-top:22px;">
-                <div class="form-group">
-                    <label>Fecha de inicio</label>
-                    <div class="date-row">
-                        <input type="text" name="ini_dd" placeholder="DD">
-                        <input type="text" name="ini_mm" placeholder="MM">
-                        <input type="text" name="ini_yyyy" placeholder="YYYY">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Fecha de finalizacion</label>
-                    <div class="date-row">
-                        <input type="text" name="fin_dd" placeholder="DD">
-                        <input type="text" name="fin_mm" placeholder="MM">
-                        <input type="text" name="fin_yyyy" placeholder="YYYY">
-                    </div>
-                </div>
-            </div>
 
-            <label style="display:flex; align-items:center; gap:10px; margin-top:18px; cursor:pointer; font-weight:600;">
-                <input type="checkbox" name="notificar_tecnico" checked style="width:18px; height:18px;">
-                <span>Notificar al tecnico al asignar la orden</span>
-            </label>
-            <p class="muted" style="margin:4px 0 0 28px; font-size:13px;">Se enviara un correo con los detalles de la asignacion</p>
         </div>
 
 @push('scripts')
