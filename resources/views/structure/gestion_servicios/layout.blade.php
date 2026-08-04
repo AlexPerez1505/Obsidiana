@@ -651,6 +651,56 @@
         :root[data-theme="light"] .search-box .search-icon { color: var(--primary); }
         :root[data-theme="light"] .type-icon { background: rgba(0,122,255,0.1); color: var(--primary); }
         :root[data-theme="light"] .empty-cell { color: var(--muted); }
+
+        /* ===== Tarjetas de condición (tipo de mantenimiento) ===== */
+        .condition-screen { display:flex; flex-direction:column; gap:18px; max-width:620px; margin:0 auto; }
+        .condition-card {
+            border:1px solid rgba(34,197,94,0.55);
+            border-radius:14px;
+            padding:18px;
+            background:rgba(8,18,40,0.82);
+            cursor:pointer;
+            display:flex;
+            align-items:center;
+            gap:14px;
+            transition:all .18s ease;
+            box-shadow:0 8px 28px rgba(0,0,0,0.35), 0 0 14px rgba(34,197,94,0.2), inset 0 1px 0 rgba(255,255,255,0.04);
+            backdrop-filter:blur(14px);
+            -webkit-backdrop-filter:blur(14px);
+        }
+        .condition-card:hover { border-color:#22C55E; background:rgba(34,197,94,0.12); box-shadow:0 8px 32px rgba(0,0,0,0.45), 0 0 22px rgba(34,197,94,0.45), inset 0 1px 0 rgba(255,255,255,0.06); }
+        .condition-card.selected { border-color:#22C55E; background:rgba(34,197,94,0.16); box-shadow:0 8px 32px rgba(0,0,0,0.45), 0 0 24px rgba(34,197,94,0.5), inset 0 0 0 1px rgba(34,197,94,0.6); }
+        .condition-card .check { width:22px; height:22px; border:2px solid rgba(34,197,94,0.55); border-radius:6px; display:flex; align-items:center; justify-content:center; color:transparent; transition:all .18s ease; background:rgba(8,18,40,0.55); }
+        .condition-card.selected .check { background:#22C55E; border-color:#22C55E; color:#fff; box-shadow:0 0 10px rgba(34,197,94,0.65); }
+        .condition-card .info strong { font-size:15px; display:block; margin-bottom:2px; color:#fff; transition:color .18s ease; }
+        .condition-card .info span { font-size:13px; color:rgba(255,255,255,0.55); transition:color .18s ease; }
+        .condition-card--externo { border-color:rgba(245,158,11,0.55); box-shadow:0 8px 28px rgba(0,0,0,0.35), 0 0 14px rgba(245,158,11,0.2), inset 0 1px 0 rgba(255,255,255,0.04); }
+        .condition-card--externo:hover { border-color:#f59e0b; background:rgba(245,158,11,0.14); box-shadow:0 8px 32px rgba(0,0,0,0.45), 0 0 22px rgba(245,158,11,0.45), inset 0 1px 0 rgba(255,255,255,0.06); }
+        .condition-card--externo.selected { border-color:#f59e0b; background:rgba(245,158,11,0.22); box-shadow:0 8px 32px rgba(0,0,0,0.45), 0 0 26px rgba(245,158,11,0.55), inset 0 0 0 1px rgba(245,158,11,0.65); }
+        .condition-card--externo .check { border-color:rgba(245,158,11,0.55); }
+        .condition-card--externo.selected .check { background:#f59e0b; border-color:#f59e0b; color:#fff; box-shadow:0 0 12px rgba(245,158,11,0.75); }
+        .condition-card--externo.selected .info strong { color:#f59e0b; text-shadow:0 0 12px rgba(245,158,11,0.55); }
+        .condition-card--externo.selected .info span { color:rgba(245,158,11,0.85); }
+        .condition-card--interno { border-color:rgba(168,85,247,0.55); box-shadow:0 8px 28px rgba(0,0,0,0.35), 0 0 14px rgba(168,85,247,0.2), inset 0 1px 0 rgba(255,255,255,0.04); }
+        .condition-card--interno:hover { border-color:#a855f7; background:rgba(168,85,247,0.14); box-shadow:0 8px 32px rgba(0,0,0,0.45), 0 0 22px rgba(168,85,247,0.45), inset 0 1px 0 rgba(255,255,255,0.06); }
+        .condition-card--interno.selected { border-color:#a855f7; background:rgba(168,85,247,0.22); box-shadow:0 8px 32px rgba(0,0,0,0.45), 0 0 26px rgba(168,85,247,0.55), inset 0 0 0 1px rgba(168,85,247,0.65); }
+        .condition-card--interno .check { border-color:rgba(168,85,247,0.55); }
+        .condition-card--interno.selected .check { background:#a855f7; border-color:#a855f7; color:#fff; box-shadow:0 0 12px rgba(168,85,247,0.75); }
+        .condition-card--interno.selected .info strong { color:#a855f7; text-shadow:0 0 12px rgba(168,85,247,0.55); }
+        .condition-card--interno.selected .info span { color:rgba(168,85,247,0.85); }
+        :root[data-theme="light"] .condition-card { background:rgba(15,23,42,0.06); border-color:rgba(15,23,42,0.14); box-shadow:0 8px 28px rgba(15,23,42,0.08); }
+        :root[data-theme="light"] .condition-card:hover { background:rgba(15,23,42,0.1); }
+        :root[data-theme="light"] .condition-card.selected { background:rgba(15,23,42,0.14); }
+        :root[data-theme="light"] .condition-card .info strong { color:var(--text); }
+        :root[data-theme="light"] .condition-card .info span { color:var(--muted); }
+        :root[data-theme="light"] .condition-card--externo { border-color:rgba(245,158,11,0.55); }
+        :root[data-theme="light"] .condition-card--externo:hover { background:rgba(245,158,11,0.1); }
+        :root[data-theme="light"] .condition-card--externo.selected { background:rgba(245,158,11,0.16); box-shadow:0 8px 28px rgba(245,158,11,0.18); }
+        :root[data-theme="light"] .condition-card--externo.selected .info strong { color:#b45309; text-shadow:none; }
+        :root[data-theme="light"] .condition-card--interno { border-color:rgba(168,85,247,0.55); }
+        :root[data-theme="light"] .condition-card--interno:hover { background:rgba(168,85,247,0.1); }
+        :root[data-theme="light"] .condition-card--interno.selected { background:rgba(168,85,247,0.16); box-shadow:0 8px 28px rgba(168,85,247,0.18); }
+        :root[data-theme="light"] .condition-card--interno.selected .info strong { color:#7e22ce; text-shadow:none; }
     </style>
 
     @yield('service_content')

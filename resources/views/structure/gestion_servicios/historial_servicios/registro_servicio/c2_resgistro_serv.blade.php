@@ -54,16 +54,16 @@
                     <input type="text" name="serie" placeholder="Ej. SN-893-832">
                 </div>
                 <div class="form-group">
-                    <label>Ano</label>
-                    <input type="text" name="anio" placeholder="Ej. 2026">
-                </div>
-                <div class="form-group">
                     <label>Fecha de adquisicion</label>
                     <div class="date-row">
                         <input type="text" name="adq_dd" placeholder="DD">
                         <input type="text" name="adq_mm" placeholder="MM">
                         <input type="text" name="adq_yyyy" placeholder="YYYY">
                     </div>
+                </div>
+                <div class="form-group" style="grid-column:1/-1;">
+                    <label>Descripcion del equipo</label>
+                    <textarea name="descripcion_equipo" rows="3" placeholder="Describe el equipo y su funcion"></textarea>
                 </div>
                 <div class="form-group" style="grid-column:1/-1;">
                     <label>Observaciones</label>

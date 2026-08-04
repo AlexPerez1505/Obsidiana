@@ -52,15 +52,6 @@
 .badge.danger { background:var(--danger-soft); color:var(--danger); }
 .summary-pill { display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border:1px solid var(--border); border-radius:999px; font-size:13px; }
 .signature-box { border:1px dashed var(--border); border-radius:12px; width:100%; height:120px; }
-.condition-screen { display:flex; flex-direction:column; gap:18px; max-width:620px; margin:0 auto; }
-.condition-card { border:1px solid var(--border); border-radius:14px; padding:18px; background:var(--surface); cursor:pointer; display:flex; align-items:center; gap:14px; transition:border-color .15s, background .15s; }
-.condition-card:hover { border-color:var(--primary); }
-.condition-card.selected { border-color:var(--primary); background:var(--primary-soft); }
-.condition-card .check { width:22px; height:22px; border:2px solid var(--border); border-radius:6px; display:flex; align-items:center; justify-content:center; color:transparent; }
-.condition-card.selected .check { background:var(--primary); border-color:var(--primary); color:#fff; }
-.condition-card .info { flex:1; }
-.condition-card .info strong { font-size:15px; display:block; margin-bottom:2px; }
-.condition-card .info span { font-size:13px; color:var(--muted); }
 .hidden { display:none !important; }
 </style>
 
@@ -75,7 +66,7 @@
         </div>
     </div>
 
-    <div class="condition-card" data-condition="externo">
+    <div class="condition-card condition-card--externo" data-condition="externo">
         <div class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
         <div class="info">
             <strong>Mantenimiento externo</strong>
@@ -83,7 +74,7 @@
         </div>
     </div>
 
-    <div class="condition-card" data-condition="interno">
+    <div class="condition-card condition-card--interno" data-condition="interno">
         <div class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
         <div class="info">
             <strong>Mantenimiento interno</strong>
@@ -144,6 +135,7 @@
         @include('structure.gestion_servicios.historial_servicios.registro_servicio.c1_registro_serv', ['customers' => $customers])
         @include('structure.gestion_servicios.historial_servicios.registro_servicio.c2_resgistro_serv')
         @include('structure.gestion_servicios.historial_servicios.registro_servicio.c3_registro')
+        @include('structure.gestion_servicios.historial_servicios.registro_servicio.reg_resumen')
     </form>
 </div>
 @endsection
@@ -215,10 +207,17 @@
             btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Regresar';
             btnPrimary.innerHTML = 'Siguiente: Tecnico <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
             btnPrimary.type = 'button';
-        } else {
+        } else if (currentStep === 3) {
             wizardTitle.textContent = 'Final tecnico';
             wizardSubtitle.textContent = 'Asigna un especialista al servicio programmado';
             wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+            btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Regresar';
+            btnPrimary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar registro';
+            btnPrimary.type = 'button';
+        } else {
+            wizardTitle.textContent = 'Resumen de Orden';
+            wizardSubtitle.textContent = 'Revisa la informacion antes de guardar';
+            wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
             btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Regresar';
             btnPrimary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Orden';
             btnPrimary.type = 'submit';
@@ -226,7 +225,7 @@
     }
 
     btnPrimary.addEventListener('click', () => {
-        if (currentStep < 3) {
+        if (currentStep < 4) {
             currentStep++;
             updateStep();
         }
