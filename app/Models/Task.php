@@ -14,12 +14,16 @@ class Task extends Model
     protected $fillable = [
         'title',
         'description',
+        'delivery_link',
         'status',
         'priority',
         'tags',
         'due_date',
+        'review_date',
         'progress',
         'user_id',
+        'linked_piece',
+        'rejection_comment',
         'created_by',
     ];
 
@@ -28,6 +32,7 @@ class Task extends Model
         return [
             'tags' => 'array',
             'due_date' => 'date',
+            'review_date' => 'date',
             'progress' => 'integer',
         ];
     }
