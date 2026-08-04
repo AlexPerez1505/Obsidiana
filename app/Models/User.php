@@ -170,6 +170,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Roles asignados al usuario.
+     */
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class);
+    }
+
+    /**
      * Determina si el usuario tiene un permiso concreto.
      * Los administradores siempre lo tienen.
      */
@@ -179,6 +187,13 @@ class User extends Authenticatable implements MustVerifyEmail
             return true;
         }
 
-        return $this->permissions()->where('name', $name)->exists();
+        if ($this->permissions()->where('name', $name)->exists()) {
+            return true;
+        }
+
+        return $this->roles()
+            ->where('is_active', true)
+            ->whereHas('permissions', fn ($q) => $q->where('name', $name))
+            ->exists();
     }
 }
