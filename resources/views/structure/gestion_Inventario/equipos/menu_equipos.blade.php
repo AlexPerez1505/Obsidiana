@@ -1,42 +1,42 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Productos')
-@section('page-title', 'Productos')
-@section('page-sub', 'Gestion de Inventario > Productos')
+@section('title', 'Equipos')
+@section('page-title', 'Equipos')
+@section('page-sub', 'Gestion de Inventario > Equipos')
 
 @php
-    $products = [
-        ['code' => 'PRO-0001', 'name' => 'Endoscopio Flexible', 'category' => 'Endoscopia', 'unit' => 'Pza', 'stock' => 3, 'status' => 'Activo', 'tone' => 'green', 'thumb' => 'scope'],
-        ['code' => 'PRO-0002', 'name' => 'Endoscopio Flexible', 'category' => 'Endoscopia', 'unit' => 'Pza', 'stock' => 2, 'status' => 'Mantenimiento', 'tone' => 'blue', 'thumb' => 'probe'],
-        ['code' => 'PRO-0003', 'name' => 'Endoscopio Flexible', 'category' => 'Endoscopia', 'unit' => 'Pza', 'stock' => 1, 'status' => 'Activo', 'tone' => 'green', 'thumb' => 'fiber'],
-        ['code' => 'PRO-0004', 'name' => 'Endoscopio Flexible', 'category' => 'Endoscopia', 'unit' => 'Pza', 'stock' => 3, 'status' => 'Inactivo', 'tone' => 'red', 'thumb' => 'tower'],
-        ['code' => 'PRO-0005', 'name' => 'Endoscopio Flexible', 'category' => 'Endoscopia', 'unit' => 'Pza', 'stock' => 1, 'status' => 'Activo', 'tone' => 'green', 'thumb' => 'control', 'selected' => true],
-        ['code' => 'PRO-0006', 'name' => 'Endoscopio Flexible', 'category' => 'Endoscopia', 'unit' => 'Pza', 'stock' => 2, 'status' => 'Activo', 'tone' => 'green', 'thumb' => 'cable'],
+    $equipmentRows = [
+        ['code' => 'PRO-0001', 'name' => 'Torre de endoscopia', 'type' => 'Endoscopia', 'location' => 'Quirofano 1', 'owner' => 'Ing. Joel Diaz', 'status' => 'Bueno', 'tone' => 'green', 'thumb' => 'tower'],
+        ['code' => 'PRO-0002', 'name' => 'Torre de endoscopia', 'type' => 'Endoscopia', 'location' => 'Quirofano 1', 'owner' => 'Ing. Joel Diaz', 'status' => 'Mantenimiento', 'tone' => 'blue', 'thumb' => 'monitor'],
+        ['code' => 'PRO-0003', 'name' => 'Torre de endoscopia', 'type' => 'Endoscopia', 'location' => 'Quirofano 1', 'owner' => 'Ing. Joel Diaz', 'status' => 'Mantenimiento', 'tone' => 'blue', 'thumb' => 'stack'],
+        ['code' => 'PRO-0004', 'name' => 'Torre de endoscopia', 'type' => 'Endoscopia', 'location' => 'Quirofano 1', 'owner' => 'Ing. Joel Diaz', 'status' => 'Malo', 'tone' => 'red', 'thumb' => 'scope'],
+        ['code' => 'PRO-0005', 'name' => 'Torre de endoscopia', 'type' => 'Endoscopia', 'location' => 'Quirofano 1', 'owner' => 'Ing. Joel Diaz', 'status' => 'Bueno', 'tone' => 'green', 'thumb' => 'cart'],
+        ['code' => 'PRO-0006', 'name' => 'Torre de endoscopia', 'type' => 'Endoscopia', 'location' => 'Quirofano 1', 'owner' => 'Ing. Joel Diaz', 'status' => 'Malo', 'tone' => 'red', 'thumb' => 'unit'],
     ];
 @endphp
 
 @push('head')
 <style>
-    .products-page {
+    .equipment-page {
         display: grid;
         gap: 18px;
     }
 
-    .products-head {
+    .equipment-head {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
         gap: 16px;
     }
 
-    .products-head p {
+    .equipment-head p {
         margin: 0;
         color: #718096;
         font-size: 14px;
         font-weight: 600;
     }
 
-    .product-create {
+    .equipment-create {
         min-height: 38px;
         margin-top: 22px;
         padding: 0 14px;
@@ -54,19 +54,19 @@
         white-space: nowrap;
     }
 
-    .product-create:hover {
+    .equipment-create:hover {
         background: #0879d0;
     }
 
-    .product-create svg,
-    .product-search svg,
-    .product-action svg {
+    .equipment-create svg,
+    .equipment-search svg,
+    .equipment-action svg {
         width: 16px;
         height: 16px;
         flex: 0 0 auto;
     }
 
-    .product-search {
+    .equipment-search {
         position: relative;
         padding: 13px 16px;
         border-radius: 18px;
@@ -74,7 +74,7 @@
         border: 1px solid rgba(226, 232, 240, .78);
     }
 
-    .product-search svg {
+    .equipment-search svg {
         position: absolute;
         left: 28px;
         top: 50%;
@@ -83,7 +83,7 @@
         pointer-events: none;
     }
 
-    .product-search input {
+    .equipment-search input {
         width: 100%;
         height: 40px;
         padding: 0 14px 0 42px;
@@ -96,31 +96,31 @@
         outline: none;
     }
 
-    .product-search input:focus {
+    .equipment-search input:focus {
         border-color: #158be8;
         box-shadow: 0 0 0 3px rgba(21, 139, 232, .14);
     }
 
-    .products-table-panel {
+    .equipment-table-panel {
         overflow: hidden;
         border: 1px solid #a8c5ff;
         border-radius: 5px;
         background: #fff;
     }
 
-    .products-table-wrap {
+    .equipment-table-wrap {
         overflow-x: auto;
     }
 
-    .products-table {
+    .equipment-table {
         width: 100%;
-        min-width: 920px;
+        min-width: 940px;
         border-collapse: collapse;
         color: #202938;
         font-size: 13px;
     }
 
-    .products-table th {
+    .equipment-table th {
         padding: 17px 16px;
         background: #d8e2ff;
         color: #111827;
@@ -130,7 +130,7 @@
         border-bottom: 1px solid #a8c5ff;
     }
 
-    .products-table td {
+    .equipment-table td {
         height: 70px;
         padding: 11px 16px;
         border-bottom: 1px solid #a8c5ff;
@@ -139,34 +139,21 @@
         font-weight: 600;
     }
 
-    .products-table tr.is-selected td {
-        border-top: 4px solid #0a8cff;
-        border-bottom: 4px solid #0a8cff;
-    }
-
-    .products-table tr.is-selected td:first-child {
-        border-left: 4px solid #0a8cff;
-    }
-
-    .products-table tr.is-selected td:last-child {
-        border-right: 4px solid #0a8cff;
-    }
-
-    .product-thumb {
-        width: 76px;
-        height: 46px;
+    .equipment-thumb {
+        width: 82px;
+        height: 48px;
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
-    .product-thumb svg {
-        width: 64px;
-        height: 42px;
+    .equipment-thumb svg {
+        width: 58px;
+        height: 46px;
         display: block;
     }
 
-    .state-pill {
+    .equipment-state {
         min-width: 70px;
         min-height: 24px;
         padding: 0 10px;
@@ -180,25 +167,25 @@
         white-space: nowrap;
     }
 
-    .state-pill.green {
+    .equipment-state.green {
         color: #16a329;
         border: 1px solid #22c943;
         background: #f7fff8;
     }
 
-    .state-pill.blue {
+    .equipment-state.blue {
         color: #1689ff;
         border: 1px solid #1689ff;
         background: #f5fbff;
     }
 
-    .state-pill.red {
+    .equipment-state.red {
         color: #ff3131;
         border: 1px solid #ff4b4b;
         background: #fff8f8;
     }
 
-    .product-action {
+    .equipment-action {
         width: 32px;
         height: 32px;
         border: 0;
@@ -211,18 +198,18 @@
         cursor: pointer;
     }
 
-    .product-action:hover {
+    .equipment-action:hover {
         background: #eef4ff;
     }
 
-    .product-action-menu {
+    .equipment-action-menu {
         position: relative;
         display: inline-flex;
         align-items: center;
         justify-content: center;
     }
 
-    .product-action-list {
+    .equipment-action-list {
         position: absolute;
         right: 0;
         top: calc(100% + 6px);
@@ -236,13 +223,13 @@
         z-index: 20;
     }
 
-    .product-action-menu.is-open .product-action-list {
+    .equipment-action-menu.is-open .equipment-action-list {
         display: grid;
         gap: 3px;
     }
 
-    .product-action-list a,
-    .product-action-list button {
+    .equipment-action-list a,
+    .equipment-action-list button {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -262,29 +249,29 @@
         cursor: pointer;
     }
 
-    .product-action-list a:hover,
-    .product-action-list button:hover {
+    .equipment-action-list a:hover,
+    .equipment-action-list button:hover {
         background: #eef4ff;
         color: #0879d0;
     }
 
-    .product-action-list a svg,
-    .product-action-list button svg {
+    .equipment-action-list a svg,
+    .equipment-action-list button svg {
         width: 15px;
         height: 15px;
         flex: 0 0 auto;
     }
 
-    .product-action-list .product-action-danger {
+    .equipment-action-list .equipment-action-danger {
         color: #ef4444;
     }
 
-    .product-action-list .product-action-danger:hover {
+    .equipment-action-list .equipment-action-danger:hover {
         background: #fff1f2;
         color: #dc2626;
     }
 
-    .products-foot {
+    .equipment-foot {
         min-height: 40px;
         padding: 0 16px;
         background: #d7e9ff;
@@ -297,7 +284,7 @@
         font-weight: 700;
     }
 
-    .products-foot button {
+    .equipment-foot button {
         border: 0;
         background: transparent;
         color: #1689ff;
@@ -306,71 +293,71 @@
         cursor: pointer;
     }
 
-    :root[data-theme="dark"] .product-search,
-    :root[data-theme="dark"] .products-table-panel {
+    :root[data-theme="dark"] .equipment-search,
+    :root[data-theme="dark"] .equipment-table-panel {
         background: var(--surface);
         border-color: var(--border);
     }
 
-    :root[data-theme="dark"] .product-search input,
-    :root[data-theme="dark"] .products-table td {
+    :root[data-theme="dark"] .equipment-search input,
+    :root[data-theme="dark"] .equipment-table td {
         background: var(--surface-2);
         color: var(--text);
         border-color: var(--border);
     }
 
-    :root[data-theme="dark"] .products-table th {
+    :root[data-theme="dark"] .equipment-table th {
         background: rgba(10, 132, 255, .18);
         color: var(--text);
         border-color: var(--border);
     }
 
-    :root[data-theme="dark"] .products-foot {
+    :root[data-theme="dark"] .equipment-foot {
         background: rgba(10, 132, 255, .14);
     }
 
-    :root[data-theme="dark"] .product-action {
+    :root[data-theme="dark"] .equipment-action {
         color: var(--text);
     }
 
-    :root[data-theme="dark"] .product-action:hover,
-    :root[data-theme="dark"] .product-action-list a:hover,
-    :root[data-theme="dark"] .product-action-list button:hover {
+    :root[data-theme="dark"] .equipment-action:hover,
+    :root[data-theme="dark"] .equipment-action-list a:hover,
+    :root[data-theme="dark"] .equipment-action-list button:hover {
         background: rgba(10, 132, 255, .16);
     }
 
-    :root[data-theme="dark"] .product-action-list {
+    :root[data-theme="dark"] .equipment-action-list {
         background: var(--surface);
         border-color: var(--border);
         box-shadow: var(--shadow);
     }
 
-    :root[data-theme="dark"] .product-action-list a,
-    :root[data-theme="dark"] .product-action-list button {
+    :root[data-theme="dark"] .equipment-action-list a,
+    :root[data-theme="dark"] .equipment-action-list button {
         color: var(--text);
     }
 
-    :root[data-theme="dark"] .product-action-list .product-action-danger {
+    :root[data-theme="dark"] .equipment-action-list .equipment-action-danger {
         color: #f87171;
     }
 
-    :root[data-theme="dark"] .product-action-list .product-action-danger:hover {
+    :root[data-theme="dark"] .equipment-action-list .equipment-action-danger:hover {
         background: rgba(248, 113, 113, .14);
         color: #fca5a5;
     }
 
-    :root[data-theme="dark"] .products-head p,
-    :root[data-theme="dark"] .product-search svg {
+    :root[data-theme="dark"] .equipment-head p,
+    :root[data-theme="dark"] .equipment-search svg {
         color: var(--muted);
     }
 
     @media (max-width: 760px) {
-        .products-head {
+        .equipment-head {
             align-items: stretch;
             flex-direction: column;
         }
 
-        .product-create {
+        .equipment-create {
             width: 100%;
             margin-top: 0;
         }
@@ -379,61 +366,61 @@
 @endpush
 
 @section('content')
-    <section class="products-page">
-        <div class="products-head">
+    <section class="equipment-page">
+        <div class="equipment-head">
             <div>
-                <p>Administra todos los productos del inventario.</p>
+                <p>Administra todos los equipos del inventario.</p>
             </div>
 
-            <a href="{{ route('inventory.productos.create') }}" class="product-create">
+            <a href="{{ route('inventory.equipos.create') }}" class="equipment-create">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12 5v14"></path>
                     <path d="M5 12h14"></path>
                 </svg>
-                Nuevo producto
+                Nuevo Equipo
             </a>
         </div>
 
-        <div class="product-search">
+        <div class="equipment-search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="11" cy="11" r="7"></circle>
                 <path d="m20 20-3.5-3.5"></path>
             </svg>
-            <input id="productSearch" type="search" placeholder="Buscar por nombre, codigo o categoria..." autocomplete="off">
+            <input id="equipmentSearch" type="search" placeholder="Buscar por nombre, codigo o categoria..." autocomplete="off">
         </div>
 
-        <div class="products-table-panel">
-            <div class="products-table-wrap">
-                <table class="products-table">
+        <div class="equipment-table-panel">
+            <div class="equipment-table-wrap">
+                <table class="equipment-table">
                     <thead>
                         <tr>
                             <th>Codigo</th>
                             <th>Imagen</th>
-                            <th>Producto</th>
-                            <th>Categoria</th>
-                            <th>Unidad</th>
-                            <th>Stock actual</th>
+                            <th>Equipo</th>
+                            <th>Tipo</th>
+                            <th>Ubicacion</th>
+                            <th>Responsable</th>
                             <th>Estado</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="productsBody">
-                        @foreach ($products as $product)
-                            <tr class="{{ ! empty($product['selected']) ? 'is-selected' : '' }}" data-search="{{ strtolower($product['code'].' '.$product['name'].' '.$product['category'].' '.$product['status']) }}">
-                                <td>{{ $product['code'] }}</td>
+                    <tbody id="equipmentBody">
+                        @foreach ($equipmentRows as $equipment)
+                            <tr data-search="{{ strtolower($equipment['code'].' '.$equipment['name'].' '.$equipment['type'].' '.$equipment['location'].' '.$equipment['owner'].' '.$equipment['status']) }}">
+                                <td>{{ $equipment['code'] }}</td>
                                 <td>
-                                    <span class="product-thumb" aria-label="Imagen de {{ $product['name'] }}">
-                                        @include('structure.gestion_Inventario.equipos.partials.product-thumb', ['type' => $product['thumb']])
+                                    <span class="equipment-thumb" aria-label="Imagen de {{ $equipment['name'] }}">
+                                        @include('structure.gestion_Inventario.equipos.partials.equipment-thumb', ['type' => $equipment['thumb']])
                                     </span>
                                 </td>
-                                <td>{{ $product['name'] }}</td>
-                                <td>{{ $product['category'] }}</td>
-                                <td>{{ $product['unit'] }}</td>
-                                <td>{{ $product['stock'] }}</td>
-                                <td><span class="state-pill {{ $product['tone'] }}">{{ $product['status'] }}</span></td>
+                                <td>{{ $equipment['name'] }}</td>
+                                <td>{{ $equipment['type'] }}</td>
+                                <td>{{ $equipment['location'] }}</td>
+                                <td>{{ $equipment['owner'] }}</td>
+                                <td><span class="equipment-state {{ $equipment['tone'] }}">{{ $equipment['status'] }}</span></td>
                                 <td>
-                                    <div class="product-action-menu" data-product-action-menu>
-                                        <button class="product-action" type="button" aria-label="Acciones de {{ $product['code'] }}" aria-haspopup="true" aria-expanded="false" data-product-action-toggle>
+                                    <div class="equipment-action-menu" data-equipment-action-menu>
+                                        <button class="equipment-action" type="button" aria-label="Acciones de {{ $equipment['code'] }}" aria-haspopup="true" aria-expanded="false" data-equipment-action-toggle>
                                             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                                 <circle cx="12" cy="5" r="1.8"></circle>
                                                 <circle cx="12" cy="12" r="1.8"></circle>
@@ -441,38 +428,42 @@
                                             </svg>
                                         </button>
 
-                                        <div class="product-action-list" role="menu">
-                                            <a href="{{ route('inventory.productos.show', ['producto' => $product['code']]) }}" role="menuitem">
+                                        <div class="equipment-action-list" role="menu">
+                                            <a href="{{ route('inventory.equipos.show', ['equipo' => $equipment['code']]) }}" role="menuitem">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                     <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path>
                                                     <circle cx="12" cy="12" r="3"></circle>
                                                 </svg>
                                                 Ver detalle
                                             </a>
-                                            <a href="{{ route('inventory.productos.edit', ['producto' => $product['code']]) }}" role="menuitem">
+                                            <a href="{{ route('inventory.equipos.edit', ['equipo' => $equipment['code']]) }}" role="menuitem">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                     <path d="M12 20h9"></path>
                                                     <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
                                                 </svg>
                                                 Editar
                                             </a>
-                                            <a href="{{ route('inventory.stock.index', ['producto' => $product['code']]) }}" role="menuitem">
+                                            <button type="button" role="menuitem" data-equipment-action-message="Asignacion de responsable pendiente de conectar.">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M12 5v14"></path>
-                                                    <path d="M5 12h14"></path>
-                                                    <path d="M19 5v14"></path>
+                                                    <path d="M20 21a8 8 0 0 0-16 0"></path>
+                                                    <circle cx="12" cy="7" r="4"></circle>
                                                 </svg>
-                                                Ajustar stock
-                                            </a>
-                                            <a href="{{ route('inventory.movimientos.index', ['producto' => $product['code']]) }}" role="menuitem">
+                                                Asignar responsable
+                                            </button>
+                                            <button type="button" role="menuitem" data-equipment-action-message="Cambio de ubicacion pendiente de conectar.">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M3 12a9 9 0 1 0 3-6.7"></path>
-                                                    <path d="M3 4v5h5"></path>
-                                                    <path d="M12 7v5l3 2"></path>
+                                                    <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z"></path>
+                                                    <circle cx="12" cy="10" r="3"></circle>
                                                 </svg>
-                                                Historial de movimientos
-                                            </a>
-                                            <button type="button" class="product-action-danger" role="menuitem" data-product-action-message="Eliminacion de producto pendiente de confirmar.">
+                                                Cambiar ubicacion
+                                            </button>
+                                            <button type="button" role="menuitem" data-equipment-action-message="Registro de mantenimiento pendiente de conectar.">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1a6 6 0 0 1-7.8 7.8l-5.7 5.7a2.1 2.1 0 0 1-3-3l5.7-5.7a6 6 0 0 1 7.8-7.8l-3.1 3.1z"></path>
+                                                </svg>
+                                                Registrar mantenimiento
+                                            </button>
+                                            <button type="button" class="equipment-action-danger" role="menuitem" data-equipment-action-message="Eliminacion de equipo pendiente de confirmar.">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                     <path d="M3 6h18"></path>
                                                     <path d="M8 6V4h8v2"></path>
@@ -490,45 +481,45 @@
                     </tbody>
                 </table>
             </div>
-            <div class="products-foot">
-                <span id="productCount">Mostrando 1 a {{ count($products) }} de 25 resultados</span>
+            <div class="equipment-foot">
+                <span id="equipmentCount">Mostrando 1 a {{ count($equipmentRows) }} de 25 resultados</span>
                 <button type="button">Ver mas &gt;</button>
             </div>
         </div>
     </section>
 
     <script>
-        const productSearch = document.getElementById('productSearch');
-        const productRows = Array.from(document.querySelectorAll('#productsBody tr'));
-        const productCount = document.getElementById('productCount');
+        const equipmentSearch = document.getElementById('equipmentSearch');
+        const equipmentRows = Array.from(document.querySelectorAll('#equipmentBody tr'));
+        const equipmentCount = document.getElementById('equipmentCount');
 
-        productSearch.addEventListener('input', () => {
-            const query = productSearch.value.trim().toLowerCase();
+        equipmentSearch.addEventListener('input', () => {
+            const query = equipmentSearch.value.trim().toLowerCase();
             let visible = 0;
 
-            productRows.forEach((row) => {
+            equipmentRows.forEach((row) => {
                 const show = !query || row.dataset.search.includes(query);
                 row.style.display = show ? '' : 'none';
                 if (show) visible += 1;
             });
 
-            productCount.textContent = visible === 0
+            equipmentCount.textContent = visible === 0
                 ? 'Sin resultados'
                 : 'Mostrando 1 a ' + visible + ' de 25 resultados';
         });
 
         document.addEventListener('click', (event) => {
-            const toggle = event.target.closest('[data-product-action-toggle]');
-            const actionButton = event.target.closest('[data-product-action-message]');
+            const toggle = event.target.closest('[data-equipment-action-toggle]');
+            const actionButton = event.target.closest('[data-equipment-action-message]');
 
             if (actionButton && window.showToast) {
-                window.showToast(actionButton.dataset.productActionMessage);
+                window.showToast(actionButton.dataset.equipmentActionMessage);
             }
 
-            document.querySelectorAll('[data-product-action-menu]').forEach((menu) => {
-                if (!toggle || menu !== toggle.closest('[data-product-action-menu]')) {
+            document.querySelectorAll('[data-equipment-action-menu]').forEach((menu) => {
+                if (!toggle || menu !== toggle.closest('[data-equipment-action-menu]')) {
                     menu.classList.remove('is-open');
-                    const button = menu.querySelector('[data-product-action-toggle]');
+                    const button = menu.querySelector('[data-equipment-action-toggle]');
                     if (button) {
                         button.setAttribute('aria-expanded', 'false');
                     }
@@ -539,7 +530,7 @@
                 return;
             }
 
-            const menu = toggle.closest('[data-product-action-menu]');
+            const menu = toggle.closest('[data-equipment-action-menu]');
             const isOpen = menu.classList.toggle('is-open');
             toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         });
@@ -549,9 +540,9 @@
                 return;
             }
 
-            document.querySelectorAll('[data-product-action-menu]').forEach((menu) => {
+            document.querySelectorAll('[data-equipment-action-menu]').forEach((menu) => {
                 menu.classList.remove('is-open');
-                const button = menu.querySelector('[data-product-action-toggle]');
+                const button = menu.querySelector('[data-equipment-action-toggle]');
                 if (button) {
                     button.setAttribute('aria-expanded', 'false');
                 }

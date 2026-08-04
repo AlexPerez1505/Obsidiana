@@ -6,13 +6,19 @@
     <div class="catalog-card" style="margin-bottom:22px;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;">
             <div>
-                <h2 style="margin:0; font-size:24px; font-weight:700; color:#fff;">Nuevo equipo</h2>
-                <p style="margin:4px 0 0; color:rgba(255,255,255,0.55); font-size:14px;">Registra un nuevo equipo en el inventario del sistema.</p>
+                <h2 class="page-title" style="margin:0; font-size:24px; font-weight:700;">Nuevo equipo</h2>
+                <p class="page-desc" style="margin:4px 0 0; font-size:14px;">Registra un nuevo equipo en el inventario del sistema.</p>
             </div>
-            <a href="{{ route('configuracion.tipos_equipo.index') }}" style="background:rgba(8,18,40,0.45); border:1px solid rgba(80,130,220,0.22); color:#fff; padding:10px 16px; border-radius:12px; font-size:14px; font-weight:500; text-decoration:none; display:inline-flex; align-items:center; gap:8px; transition:all 0.2s ease;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-                Regresar
-            </a>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <a href="{{ route('configuracion.tipos_equipo.index') }}" class="back-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                    Regresar
+                </a>
+                <button type="submit" form="equipment-form" class="btn" style="display:inline-flex; align-items:center; gap:8px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Guardar equipo
+                </button>
+            </div>
         </div>
     </div>
 
@@ -26,7 +32,7 @@
 
             <div class="form-section" style="margin-bottom:18px;">
                 <h3 class="form-section-title">Información básica</h3>
-                <p style="margin:0 0 16px; color:rgba(255,255,255,0.55); font-size:13px;">Completa los datos principales del equipo. Los campos marcados con * son obligatorios.</p>
+                <p class="section-desc" style="margin:0 0 16px; font-size:13px;">Completa los datos principales del equipo. Los campos marcados con * son obligatorios.</p>
 
                 <div class="form-grid">
                     <div class="form-group">
@@ -94,46 +100,43 @@
             </div>
 
             <div class="form-section" style="margin-bottom:18px;">
-                <h3 class="form-section-title">Descripción (opcional)</h3>
-                <p style="margin:0 0 16px; color:rgba(255,255,255,0.55); font-size:13px;">Agrega información adicional que ayude a identificar mejor el equipo.</p>
+                <button type="button" id="desc-toggle" class="form-section-title" aria-expanded="false">
+                    <span>Descripción (opcional)</span>
+                    <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                </button>
 
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label" for="type_description">Descripción del tipo (opcional)</label>
-                        <textarea id="type_description" name="type_description" class="form-input description-field" rows="3" maxlength="120" placeholder="Agrega una descripción breve del tipo de equipo...">{{ old('type_description') }}</textarea>
-                        <span class="char-count">0 / 120</span>
-                    </div>
+                <div class="desc-panel" id="desc-panel">
+                    <p class="section-desc" style="margin:0 0 16px; font-size:13px;">Agrega información adicional que ayude a identificar mejor el equipo.</p>
 
-                    <div class="form-group">
-                        <label class="form-label" for="subtype_description">Descripción del subtipo (opcional)</label>
-                        <textarea id="subtype_description" name="subtype_description" class="form-input description-field" rows="3" maxlength="120" placeholder="Agrega una descripción breve del subtipo...">{{ old('subtype_description') }}</textarea>
-                        <span class="char-count">0 / 120</span>
-                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="type_description">Descripción del tipo (opcional)</label>
+                            <textarea id="type_description" name="type_description" class="form-input description-field" rows="3" maxlength="120" placeholder="Agrega una descripción breve del tipo de equipo...">{{ old('type_description') }}</textarea>
+                            <span class="char-count">0 / 120</span>
+                        </div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="brand_description">Descripción de la marca (opcional)</label>
-                        <textarea id="brand_description" name="brand_description" class="form-input description-field" rows="3" maxlength="120" placeholder="Agrega una descripción breve de la marca...">{{ old('brand_description') }}</textarea>
-                        <span class="char-count">0 / 120</span>
-                    </div>
+                        <div class="form-group">
+                            <label class="form-label" for="subtype_description">Descripción del subtipo (opcional)</label>
+                            <textarea id="subtype_description" name="subtype_description" class="form-input description-field" rows="3" maxlength="120" placeholder="Agrega una descripción breve del subtipo...">{{ old('subtype_description') }}</textarea>
+                            <span class="char-count">0 / 120</span>
+                        </div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="model_description">Descripción del modelo (opcional)</label>
-                        <textarea id="model_description" name="model_description" class="form-input description-field" rows="3" maxlength="120" placeholder="Agrega una descripción breve del modelo...">{{ old('model_description') }}</textarea>
-                        <span class="char-count">0 / 120</span>
+                        <div class="form-group">
+                            <label class="form-label" for="brand_description">Descripción de la marca (opcional)</label>
+                            <textarea id="brand_description" name="brand_description" class="form-input description-field" rows="3" maxlength="120" placeholder="Agrega una descripción breve de la marca...">{{ old('brand_description') }}</textarea>
+                            <span class="char-count">0 / 120</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="model_description">Descripción del modelo (opcional)</label>
+                            <textarea id="model_description" name="model_description" class="form-input description-field" rows="3" maxlength="120" placeholder="Agrega una descripción breve del modelo...">{{ old('model_description') }}</textarea>
+                            <span class="char-count">0 / 120</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="form-actions" style="display:flex; justify-content:flex-end; align-items:center; gap:12px;">
-                <a href="{{ route('configuracion.tipos_equipo.index') }}" class="modal-back" style="text-decoration:none;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
-                    <span>Cancelar</span>
-                </a>
-                <button type="submit" class="btn" style="display:inline-flex; align-items:center; gap:8px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                    Guardar equipo
-                </button>
-            </div>
+
         </form>
     </div>
 
@@ -307,6 +310,64 @@
         :root[data-theme="light"] .combobox-list li.active { background: rgba(0,168,255,0.12); color: #00A8FF; }
         :root[data-theme="light"] .combobox-list .no-results { color: var(--muted); }
         :root[data-theme="light"] .combobox-arrow { color: var(--muted); }
+
+        /* ===== Clases auxiliares del tema claro ===== */
+        .page-title { color: #fff; }
+        :root[data-theme="light"] .page-title { color: var(--text); }
+        .page-desc { color: rgba(255,255,255,0.55); }
+        :root[data-theme="light"] .page-desc { color: var(--muted); }
+        .back-link {
+            background: rgba(8,18,40,0.45);
+            border: 1px solid rgba(80,130,220,0.22);
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        .back-link:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
+        :root[data-theme="light"] .back-link {
+            background: rgba(15,23,42,0.06);
+            border: 1px solid rgba(15,23,42,0.14);
+            color: var(--text);
+        }
+        :root[data-theme="light"] .back-link:hover { background: rgba(0,122,255,0.1); border-color: var(--primary); }
+        .section-desc { color: rgba(255,255,255,0.55); }
+        :root[data-theme="light"] .section-desc { color: var(--muted); }
+
+        :root[data-theme="light"] .btn {
+            background: linear-gradient(135deg, #00A8FF, #7C3AED);
+            color: #fff;
+            border-color: rgba(255,255,255,0.15);
+        }
+        :root[data-theme="light"] .modal-back {
+            background: rgba(15,23,42,0.04);
+            border: 1px solid rgba(15,23,42,0.18);
+            color: var(--text);
+        }
+        :root[data-theme="light"] .modal-back:hover { background: rgba(0,122,255,0.1); border-color: var(--primary); color: var(--primary); }
+
+        /* ===== Panel desplegable de descripciones ===== */
+        .desc-panel { display: none; }
+        .desc-panel.open { display: block; }
+        #desc-toggle {
+            width: 100%;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            font-family: inherit;
+            text-align: left;
+            color: #00A8FF;
+        }
+        #desc-toggle .chevron { margin-left: auto; transition: transform .2s ease; }
+        #desc-toggle[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+        :root[data-theme="light"] #desc-toggle { color: var(--primary); }
     </style>
     <script>
         (function () {
@@ -507,6 +568,16 @@
             }
             if (brandInput.value.trim()) {
                 loadModels();
+            }
+
+            // Toggle del panel de descripciones opcionales
+            var descToggle = document.getElementById('desc-toggle');
+            var descPanel = document.getElementById('desc-panel');
+            if (descToggle && descPanel) {
+                descToggle.addEventListener('click', function () {
+                    var open = descPanel.classList.toggle('open');
+                    descToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                });
             }
 
             document.querySelectorAll('.description-field').forEach(function (textarea) {

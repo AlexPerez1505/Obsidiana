@@ -123,6 +123,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Movimientos de inventario registrados por este usuario.
+     */
+    public function inventoryMovements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class, 'created_by')->latest('movement_date');
+    }
+
+    /**
      * Genera un código de verificación de 6 dígitos, lo guarda hasheado
      * y devuelve el código en texto plano para enviarlo por correo.
      */
@@ -187,14 +195,6 @@ class User extends Authenticatable implements MustVerifyEmail
     public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class)->withPivot('level');
-    }
-
-    /**
-     * Rol principal asignado al usuario.
-     */
-    public function role()
-    {
-        return $this->belongsTo(Role::class);
     }
 
     public function employeeDocuments(): HasMany

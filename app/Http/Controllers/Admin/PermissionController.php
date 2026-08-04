@@ -90,29 +90,24 @@ class PermissionController extends Controller
     {
         $permissions = Permission::orderBy('label')->get();
         $userPermissions = $user->permissions->pluck('pivot.level', 'id')->toArray();
-        $roles = \App\Models\Role::orderBy('label')->get();
 
         return view('admin.users.permissions', [
             'user'            => $user,
             'permissions'     => $permissions,
             'userPermissions' => $userPermissions,
-            'roles'           => $roles,
         ]);
     }
 
     /**
-     * Sincroniza los permisos y el rol de un usuario.
+     * Sincroniza los permisos de un usuario.
      */
     public function updateUserPermissions(Request $request, User $user): RedirectResponse
     {
         $data = $request->validate([
-            'role_id'             => ['nullable', 'exists:roles,id'],
             'permissions'         => ['array'],
             'permissions.*.id'    => ['required', 'exists:permissions,id'],
             'permissions.*.level' => ['required', 'in:enabled,read_only,edit,admin'],
         ]);
-
-        $user->forceFill(['role_id' => $data['role_id'] ?? null])->save();
 
         $sync = [];
         foreach ($data['permissions'] ?? [] as $perm) {
