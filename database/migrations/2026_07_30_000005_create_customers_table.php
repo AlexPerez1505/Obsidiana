@@ -13,14 +13,15 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('apellido');
             $table->string('telefono');
-            $table->string('correo')->nullable()->unique();
-            $table->string('rfc', 13)->nullable()->unique();
+            $table->string('gmail')->nullable()->unique();
+            $table->string('direccion')->nullable();
             $table->text('comentarios')->nullable();
 
-            $table->foreignId('seller_id')->nullable()->constrained('users');
-            $table->foreignId('category_id')->nullable()->constrained('categories');
-            $table->foreignId('congress_id')->nullable()->constrained('congress_events');
-            $table->boolean('receives_promotion')->default(false);
+            $table->foreignId('asesor')->nullable()->constrained('users');
+            $table->foreignId('categorias_id')->nullable()->constrained('categories');
+            $table->foreignId('congreso_conocido')->nullable()->constrained('congress_events');
+            $table->boolean('recibe_promocion')->default(false);
+            $table->boolean('activo')->default(true);
 
             $table->timestamps();
         });
