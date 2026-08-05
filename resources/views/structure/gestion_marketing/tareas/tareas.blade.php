@@ -18,12 +18,18 @@
         'alta' => ['bg' => 'rgba(239,68,68,.14)', 'color' => '#ef4444', 'border' => '#ef4444'],
     ];
 
+    $statusLabels = [
+        'pendiente' => 'Por hacer',
+        'en_proceso' => 'En curso',
+        'revision' => 'En curso',
+        'completada' => 'Hecho',
+    ];
+
     $badgeColors = [
-        'aprobado' => ['dot' => '#22c55e', 'bg' => 'rgba(34,197,94,.14)', 'color' => '#22c55e'],
-        'aprobada' => ['dot' => '#22c55e', 'bg' => 'rgba(34,197,94,.14)', 'color' => '#22c55e'],
         'pendiente' => ['dot' => '#f59e0b', 'bg' => 'rgba(245,158,11,.14)', 'color' => '#f59e0b'],
-        'idea' => ['dot' => '#ef4444', 'bg' => 'rgba(239,68,68,.14)', 'color' => '#ef4444'],
-        'revisión' => ['dot' => '#a855f7', 'bg' => 'rgba(168,85,247,.14)', 'color' => '#a855f7'],
+        'en_proceso' => ['dot' => '#3b82f6', 'bg' => 'rgba(59,130,246,.14)', 'color' => '#3b82f6'],
+        'revision' => ['dot' => '#a855f7', 'bg' => 'rgba(168,85,247,.14)', 'color' => '#a855f7'],
+        'completada' => ['dot' => '#22c55e', 'bg' => 'rgba(34,197,94,.14)', 'color' => '#22c55e'],
     ];
     $badgeDefault = ['dot' => 'var(--primary)', 'bg' => 'var(--primary-soft)', 'color' => 'var(--primary)'];
 
@@ -172,6 +178,18 @@
         line-height: 1.5;
         background: var(--surface-2);
     }
+    .task-modal-foot { padding: 18px 26px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; background: var(--surface-2); }
+    .task-modal-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .task-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 16px; border-radius: 10px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s; color: #fff; }
+    .task-btn-blue { background: #3b82f6; }
+    .task-btn-blue:hover { background: #2563eb; }
+    .task-btn-green { background: #22c55e; }
+    .task-btn-green:hover { background: #16a34a; }
+    .task-btn-amber { background: #f59e0b; }
+    .task-btn-amber:hover { background: #d97706; }
+    .task-reject-box { display: none; flex-direction: column; gap: 8px; }
+    .task-reject-box.is-open { display: flex; }
+    .task-reject-box textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px; min-height: 80px; resize: vertical; }
 </style>
 
 <div class="kanban-wrap">
@@ -202,9 +220,10 @@
                 <div class="kanban-col-body">
                     @forelse ($column['tasks'] as $task)
                         @php
-                            $firstTag = ($task->tags[0] ?? null);
-                            $badge = $badgeColors[strtolower($firstTag ?? '')] ?? $badgeDefault;
-                            $category = $task->tags[1] ?? null;
+                            $status = $task->status;
+                            $badge = $badgeColors[$status] ?? $badgeDefault;
+                            $statusLabel = $statusLabels[$status] ?? 'Tarea';
+                            $category = $task->category;
                             $categoryColor = $categoryColors[(crc32(strtolower($category ?? '')) % count($categoryColors))] ?? 'var(--primary)';
                             $priority = $priorityColors[$task->priority] ?? $priorityColors['media'];
                             $borderLeft = '3px solid ' . $priority['border'];
@@ -215,13 +234,13 @@
                                 : 'Sin fecha';
                         @endphp
 
-                        <div class="kanban-card" style="border-left:{{ $borderLeft }};" data-json="{{ json_encode(['id' => $task->id, 'title' => $task->title, 'firstTag' => $firstTag, 'category' => $task->category, 'reviewer' => $task->reviewer?->name, 'due_date' => $task->due_date?->format('d/m/Y'), 'user' => $task->user?->name, 'linked_piece' => $task->linked_piece, 'delivery_link' => $task->delivery_link, 'platform' => $task->platform, 'has_video' => $task->has_video, 'rejection_comment' => $task->rejection_comment, 'task_description' => $task->task_description, 'description' => $task->description]) }}" onclick="openTaskModal(this)">
+                        <div class="kanban-card" style="border-left:{{ $borderLeft }};" data-json="{{ json_encode(['id' => $task->id, 'title' => $task->title, 'status' => $task->status, 'category' => $task->category, 'reviewer' => $task->reviewer?->name, 'due_date' => $task->due_date?->format('d/m/Y'), 'user' => $task->user?->name, 'linked_piece' => $task->linked_piece, 'delivery_link' => $task->delivery_link, 'platform' => $task->platform, 'has_video' => $task->has_video, 'rejection_comment' => $task->rejection_comment, 'task_description' => $task->task_description, 'description' => $task->description]) }}" onclick="openTaskModal(this)">
                             <h3 class="kanban-card-title">{{ $task->title }}</h3>
 
                             <div class="kanban-card-line">
                                 <span class="kanban-badge" style="background:{{ $badge['bg'] }}; color:{{ $badge['color'] }};">
                                     <span class="kanban-badge-dot" style="background:{{ $badge['dot'] }}"></span>
-                                    {{ $firstTag ?? 'Tarea' }}
+                                    {{ $statusLabel }}
                                 </span>
 
                                 @if ($category)
@@ -343,16 +362,33 @@
                 </div>
             </div>
         </div>
+
+        <div class="task-modal-foot" id="modalActions">
+            <form id="formAccion" class="task-modal-actions" method="POST">
+                @csrf
+                @method('PUT')
+                <button type="submit" class="task-btn task-btn-blue" id="btnEnviar" formaction="">Mandar a revisión</button>
+            </form>
+        </div>
     </div>
 </div>
 
 <script>
+    const statusLabels = {
+        pendiente: 'Por hacer',
+        en_proceso: 'En curso',
+        revision: 'En revisión',
+        completada: 'Hecho'
+    };
+
     function openTaskModal(card) {
         const data = JSON.parse(card.dataset.json);
+        const base = '{{ url('/marketing/tareas') }}';
+
         document.getElementById('modalTitle').textContent = data.title || 'Tarea';
         setText('modalTitleValue', data.title);
         setText('modalCategory', data.category);
-        setText('modalStatus', data.firstTag);
+        setText('modalStatus', statusLabels[data.status] || data.status);
         setText('modalDate', data.due_date);
         setText('modalUser', data.user);
         setText('modalReviewer', data.reviewer);
@@ -363,6 +399,14 @@
         setText('modalComments', data.rejection_comment);
         setText('modalDesc', data.task_description);
         setText('modalCopy', data.description);
+
+        document.getElementById('btnEnviar').setAttribute('formaction', `${base}/${data.id}/enviar-revision`);
+
+        const puedeEnviar = data.status === 'pendiente' || data.status === 'en_proceso';
+
+        document.getElementById('btnEnviar').style.display = puedeEnviar ? 'inline-flex' : 'none';
+        document.getElementById('modalActions').style.display = puedeEnviar ? '' : 'none';
+
         document.getElementById('taskModal').classList.add('is-open');
     }
 
