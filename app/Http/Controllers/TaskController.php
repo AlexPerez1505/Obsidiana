@@ -48,25 +48,19 @@ class TaskController extends Controller
         $columns = [
             [
                 'id' => 'pendiente',
-                'title' => 'Pendientes',
+                'title' => 'Por hacer',
                 'color' => 'amber',
                 'tasks' => $tasks->where('status', 'pendiente')->values(),
             ],
             [
                 'id' => 'en_proceso',
-                'title' => 'En proceso',
+                'title' => 'En curso',
                 'color' => 'blue',
-                'tasks' => $tasks->where('status', 'en_proceso')->values(),
-            ],
-            [
-                'id' => 'revision',
-                'title' => 'Revisión',
-                'color' => 'violet',
-                'tasks' => $tasks->where('status', 'revision')->values(),
+                'tasks' => $tasks->whereIn('status', ['en_proceso', 'revision'])->values(),
             ],
             [
                 'id' => 'completada',
-                'title' => 'Completadas',
+                'title' => 'Hecho',
                 'color' => 'emerald',
                 'tasks' => $tasks->where('status', 'completada')->values(),
             ],
@@ -99,7 +93,7 @@ class TaskController extends Controller
      */
     public function create(): View
     {
-        return view('structure.gestion_marketing.tareas.crear', [
+        return view('structure.gestion_marketing.tareas.crear_tarea', [
             'users' => User::orderBy('name')->get(),
             'statuses' => [
                 'pendiente' => 'Pendiente',
@@ -123,12 +117,16 @@ class TaskController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'delivery_link' => ['nullable', 'url'],
             'status' => ['required', 'in:pendiente,en_proceso,revision,completada'],
             'priority' => ['required', 'in:baja,media,alta'],
             'due_date' => ['nullable', 'date'],
+            'review_date' => ['nullable', 'date'],
             'progress' => ['required', 'integer', 'min:0', 'max:100'],
             'user_id' => ['required', 'exists:users,id'],
             'tags' => ['nullable', 'string'],
+            'linked_piece' => ['nullable', 'string', 'max:255'],
+            'rejection_comment' => ['nullable', 'string'],
         ]);
 
         $data['tags'] = $data['tags']
@@ -151,12 +149,16 @@ class TaskController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'delivery_link' => ['nullable', 'url'],
             'status' => ['required', 'in:pendiente,en_proceso,revision,completada'],
             'priority' => ['required', 'in:baja,media,alta'],
             'due_date' => ['nullable', 'date'],
+            'review_date' => ['nullable', 'date'],
             'progress' => ['required', 'integer', 'min:0', 'max:100'],
             'user_id' => ['required', 'exists:users,id'],
             'tags' => ['nullable', 'string'],
+            'linked_piece' => ['nullable', 'string', 'max:255'],
+            'rejection_comment' => ['nullable', 'string'],
         ]);
 
         $data['tags'] = $data['tags']
@@ -165,7 +167,7 @@ class TaskController extends Controller
 
         $task->update($data);
 
-        return redirect()->route('marketing.tareas.index')
+        return redirect()->back()
             ->with('status', 'Tarea actualizada correctamente.');
     }
 
@@ -201,5 +203,49 @@ class TaskController extends Controller
     public function guiaDeMarca(): View
     {
         return view('structure.gestion_marketing.guia_de_marca.index');
+    }
+
+    /**
+     * Elimina una tarea del sistema.
+     */
+    public function destroy(Task $task): RedirectResponse
+    {
+        $task->delete();
+
+        return redirect()->back()
+            ->with('status', 'Tarea eliminada correctamente.');
+    }
+
+    /**
+     * Aprueba una tarea en revisión.
+     */
+    public function aprobar(Task $task): RedirectResponse
+    {
+        $task->update([
+            'status' => 'completada',
+            'rejection_comment' => null,
+            'progress' => 100,
+        ]);
+
+        return redirect()->back()
+            ->with('status', 'Tarea aprobada correctamente.');
+    }
+
+    /**
+     * Devuelve una tarea con comentario de corrección.
+     */
+    public function devolver(Task $task, Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'rejection_comment' => ['required', 'string'],
+        ]);
+
+        $task->update([
+            'status' => 'en_proceso',
+            'rejection_comment' => $data['rejection_comment'],
+        ]);
+
+        return redirect()->back()
+            ->with('status', 'Tarea devuelta correctamente.');
     }
 }
