@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\GuiaDeMarcaController;
-use App\Http\Controllers\TaskController;
+use App\Http\Controllers\Marketing\GuiaDeMarcaController;
+use App\Http\Controllers\Marketing\TaskController;
 use Illuminate\Support\Facades\Route;
 
 /*

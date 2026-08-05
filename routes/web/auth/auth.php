@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Dashboard\AccountController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
