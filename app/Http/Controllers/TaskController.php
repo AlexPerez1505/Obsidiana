@@ -15,7 +15,7 @@ class TaskController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Task::with(['user', 'creator']);
+        $query = Task::with(['user', 'creator', 'reviewer']);
 
         if ($request->filled('q')) {
             $q = $request->input('q');
@@ -117,6 +117,7 @@ class TaskController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'task_description' => ['nullable', 'string'],
             'delivery_link' => ['nullable', 'url'],
             'status' => ['required', 'in:pendiente,en_proceso,revision,completada'],
             'priority' => ['required', 'in:baja,media,alta'],
@@ -124,7 +125,12 @@ class TaskController extends Controller
             'review_date' => ['nullable', 'date'],
             'progress' => ['required', 'integer', 'min:0', 'max:100'],
             'user_id' => ['required', 'exists:users,id'],
+            'reviewer_id' => ['nullable', 'exists:users,id'],
             'tags' => ['nullable', 'string'],
+            'category' => ['nullable', 'string', 'max:255'],
+            'platform' => ['nullable', 'array'],
+            'platform.*' => ['string', 'max:255'],
+            'has_video' => ['nullable', 'boolean'],
             'linked_piece' => ['nullable', 'string', 'max:255'],
             'rejection_comment' => ['nullable', 'string'],
         ]);
@@ -149,6 +155,7 @@ class TaskController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'task_description' => ['nullable', 'string'],
             'delivery_link' => ['nullable', 'url'],
             'status' => ['required', 'in:pendiente,en_proceso,revision,completada'],
             'priority' => ['required', 'in:baja,media,alta'],
@@ -156,7 +163,12 @@ class TaskController extends Controller
             'review_date' => ['nullable', 'date'],
             'progress' => ['required', 'integer', 'min:0', 'max:100'],
             'user_id' => ['required', 'exists:users,id'],
+            'reviewer_id' => ['nullable', 'exists:users,id'],
             'tags' => ['nullable', 'string'],
+            'category' => ['nullable', 'string', 'max:255'],
+            'platform' => ['nullable', 'array'],
+            'platform.*' => ['string', 'max:255'],
+            'has_video' => ['nullable', 'boolean'],
             'linked_piece' => ['nullable', 'string', 'max:255'],
             'rejection_comment' => ['nullable', 'string'],
         ]);

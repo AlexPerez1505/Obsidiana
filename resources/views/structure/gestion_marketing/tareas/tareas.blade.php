@@ -73,6 +73,105 @@
     .kanban-assign { font-size:13px; font-weight:700; color:var(--text); }
     .kanban-date { margin-left:auto; font-size:12px; font-weight:700; color:var(--muted); }
     .kanban-empty { color:var(--muted); font-size:13px; text-align:center; padding:18px 8px; }
+
+    .task-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 1000;
+    }
+    .task-modal.is-open { display: flex; }
+    .task-modal-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        overflow: hidden;
+        max-width: 720px;
+        width: 100%;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+    }
+    .task-modal-scroll {
+        overflow: auto;
+        padding: 26px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+    }
+    .task-modal-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 22px 26px;
+        border-bottom: 1px solid var(--border);
+    }
+    .task-modal-eyebrow {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--primary);
+    }
+    .task-modal-title {
+        margin: 4px 0 0;
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+    }
+    .task-modal-close {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background .15s, color .15s;
+    }
+    .task-modal-close:hover { background: var(--surface); color: var(--text); }
+    .task-field { display: flex; flex-direction: column; gap: 7px; }
+    .task-field label {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+    }
+    .task-value {
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text);
+        font-size: 14px;
+        min-height: 44px;
+        line-height: 1.5;
+    }
+    .task-value a { color: var(--primary); text-decoration: none; word-break: break-all; }
+    .task-value a:hover { text-decoration: underline; }
+    .task-value.empty { color: var(--muted); }
+    .task-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    @media (max-width: 640px) { .task-row { grid-template-columns: 1fr; } }
+    .task-preview {
+        border: 1px dashed var(--border);
+        border-radius: 14px;
+        padding: 30px 20px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+        background: var(--surface-2);
+    }
 </style>
 
 <div class="kanban-wrap">
@@ -116,7 +215,7 @@
                                 : 'Sin fecha';
                         @endphp
 
-                        <div class="kanban-card" style="border-left:{{ $borderLeft }};">
+                        <div class="kanban-card" style="border-left:{{ $borderLeft }};" data-json="{{ json_encode(['id' => $task->id, 'title' => $task->title, 'firstTag' => $firstTag, 'category' => $task->category, 'reviewer' => $task->reviewer?->name, 'due_date' => $task->due_date?->format('d/m/Y'), 'user' => $task->user?->name, 'linked_piece' => $task->linked_piece, 'delivery_link' => $task->delivery_link, 'platform' => $task->platform, 'has_video' => $task->has_video, 'rejection_comment' => $task->rejection_comment, 'task_description' => $task->task_description, 'description' => $task->description]) }}" onclick="openTaskModal(this)">
                             <h3 class="kanban-card-title">{{ $task->title }}</h3>
 
                             <div class="kanban-card-line">
@@ -154,4 +253,147 @@
         @endforeach
     </div>
 </div>
+
+<div class="task-modal" id="taskModal" onclick="if(event.target === this) closeTaskModal()">
+    <div class="task-modal-card">
+        <div class="task-modal-head">
+            <div>
+                <div class="task-modal-eyebrow">Detalle de tarea</div>
+                <h1 class="task-modal-title" id="modalTitle">Tarea</h1>
+            </div>
+            <button type="button" class="task-modal-close" onclick="closeTaskModal()" title="Cerrar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <div class="task-modal-scroll">
+            <div class="task-field">
+                <label>Pieza / Título</label>
+                <div class="task-value" id="modalTitleValue">—</div>
+            </div>
+
+            <div class="task-row">
+                <div class="task-field">
+                    <label>Categoría</label>
+                    <div class="task-value empty" id="modalCategory">—</div>
+                </div>
+                <div class="task-field">
+                    <label>Estado</label>
+                    <div class="task-value" id="modalStatus">—</div>
+                </div>
+            </div>
+
+            <div class="task-row">
+                <div class="task-field">
+                    <label>Fecha</label>
+                    <div class="task-value" id="modalDate">—</div>
+                </div>
+                <div class="task-field">
+                    <label>Responsable</label>
+                    <div class="task-value" id="modalUser">—</div>
+                </div>
+            </div>
+
+            <div class="task-row">
+                <div class="task-field">
+                    <label>Revisor</label>
+                    <div class="task-value empty" id="modalReviewer">—</div>
+                </div>
+                <div class="task-field">
+                    <label>Producto / Equipo</label>
+                    <div class="task-value" id="modalProduct">—</div>
+                </div>
+            </div>
+
+            <div class="task-row">
+                <div class="task-field">
+                    <label>Plataforma destino</label>
+                    <div class="task-value empty" id="modalPlatform">—</div>
+                </div>
+                <div class="task-field">
+                    <label>Video</label>
+                    <div class="task-value empty" id="modalVideo">—</div>
+                </div>
+            </div>
+
+            <div class="task-field">
+                <label>Enlace (Canva / Drive)</label>
+                <div class="task-value" id="modalLink">—</div>
+            </div>
+
+            <div class="task-field">
+                <label>Comentarios de revisión</label>
+                <div class="task-value" id="modalComments">—</div>
+            </div>
+
+            <div class="task-field">
+                <label>Descripción</label>
+                <div class="task-value empty" id="modalDesc">—</div>
+            </div>
+
+            <div class="task-field">
+                <label>Copy / Texto del post</label>
+                <div class="task-value" id="modalCopy">—</div>
+            </div>
+
+            <div class="task-field">
+                <label>Entrega — Imagen o video (vista previa del enlace)</label>
+                <div class="task-preview">
+                    Aún no hay imagen/video. Pega el enlace arriba y aquí lo verá todo el equipo.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openTaskModal(card) {
+        const data = JSON.parse(card.dataset.json);
+        document.getElementById('modalTitle').textContent = data.title || 'Tarea';
+        setText('modalTitleValue', data.title);
+        setText('modalCategory', data.category);
+        setText('modalStatus', data.firstTag);
+        setText('modalDate', data.due_date);
+        setText('modalUser', data.user);
+        setText('modalReviewer', data.reviewer);
+        setText('modalProduct', data.linked_piece);
+        setText('modalPlatform', data.platform && data.platform.length ? data.platform.join(', ') : null);
+        setText('modalVideo', data.has_video ? 'Sí' : null);
+        setLink('modalLink', data.delivery_link);
+        setText('modalComments', data.rejection_comment);
+        setText('modalDesc', data.task_description);
+        setText('modalCopy', data.description);
+        document.getElementById('taskModal').classList.add('is-open');
+    }
+
+    function closeTaskModal() {
+        document.getElementById('taskModal').classList.remove('is-open');
+    }
+
+    function setText(id, value) {
+        const el = document.getElementById(id);
+        if (!value) {
+            el.textContent = '—';
+            el.classList.add('empty');
+            return;
+        }
+        el.textContent = value;
+        el.classList.remove('empty');
+    }
+
+    function setLink(id, url) {
+        const el = document.getElementById(id);
+        if (!url) {
+            el.textContent = '—';
+            el.classList.add('empty');
+            return;
+        }
+        el.innerHTML = '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>';
+        el.classList.remove('empty');
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeTaskModal();
+    });
+</script>
 @endsection
