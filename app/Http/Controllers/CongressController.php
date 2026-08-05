@@ -18,7 +18,7 @@ class CongressController extends Controller
     public function create(): View
     {
         return view('structure.Configuracion.Catalogos.Congresos.c_congresos', [
-            'categories' => Category::query()->orderBy('name')->get(),
+            'categories' => Category::query()->orderBy('nombre')->get(),
             'users' => User::query()->orderBy('name')->get(['id', 'name', 'email']),
         ]);
     }
@@ -29,41 +29,23 @@ class CongressController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'label' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:5000'],
-            'images' => ['nullable', 'array', 'max:10'],
-            'images.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif,svg,bmp,pdf,doc,docx,xls,xlsx,ppt,pptx'],
-            'category_id' => ['required', 'exists:categories,id'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
-            'assembly_time' => ['required', 'date_format:H:i'],
-            'disassembly_time' => ['required', 'date_format:H:i'],
-            'download_access' => ['required', 'boolean'],
-            'download_text' => ['nullable', 'string'],
-            'upload_access' => ['required', 'boolean'],
-            'upload_text' => ['nullable', 'string'],
-            'address' => ['nullable', 'string', 'max:255'],
+            'nombre' => ['required', 'string', 'max:255'],
+            'descripcion' => ['nullable', 'string', 'max:5000'],
+            'path_archivo' => ['nullable', 'string', 'max:255'],
+            'categoria_id' => ['required', 'exists:categorias,id'],
+            'fecha_inicio' => ['required', 'date'],
+            'fecha_finalizacion' => ['required', 'date', 'after_or_equal:fecha_inicio'],
+            'hora_montaje' => ['required', 'date_format:H:i'],
+            'hora_desmontaje' => ['required', 'date_format:H:i'],
+            'descarga_acceso' => ['required', 'boolean'],
+            'descarga_texto' => ['nullable', 'string'],
+            'acceso_subir' => ['required', 'boolean'],
+            'subir_texto' => ['nullable', 'string'],
+            'direccion' => ['nullable', 'string', 'max:255'],
             'comments' => ['nullable', 'string', 'max:5000'],
-            'notify_users' => ['nullable', 'array'],
-            'notify_users.*' => ['exists:users,id'],
         ]);
 
-        $notifyUsers = $request->input('notify_users', []);
-        unset($data['notify_users']);
-
-        if ($request->hasFile('images')) {
-            $data['image_path'] = [];
-            foreach ($request->file('images') as $file) {
-                $data['image_path'][] = $file->store('congresses', 'public');
-            }
-        }
-
         $congress = Congress::create($data);
-
-        if (!empty($notifyUsers)) {
-            $congress->notifiedUsers()->sync($notifyUsers);
-        }
 
         return redirect()->route('configuracion.catalogos.index')->with('status_congress', 'Congreso guardado correctamente.');
     }
@@ -75,7 +57,7 @@ class CongressController extends Controller
     {
         return view('structure.Configuracion.Catalogos.Congresos.u_congresos', [
             'congress' => $congress,
-            'categories' => Category::query()->orderBy('name')->get(),
+            'categories' => Category::query()->orderBy('nombre')->get(),
             'users' => User::query()->orderBy('name')->get(['id', 'name', 'email']),
         ]);
     }
@@ -86,44 +68,23 @@ class CongressController extends Controller
     public function update(Request $request, Congress $congress): RedirectResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'label' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:5000'],
-            'images' => ['nullable', 'array', 'max:10'],
-            'images.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif,svg,bmp,pdf,doc,docx,xls,xlsx,ppt,pptx'],
-            'category_id' => ['required', 'exists:categories,id'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
-            'assembly_time' => ['required', 'date_format:H:i'],
-            'disassembly_time' => ['required', 'date_format:H:i'],
-            'download_access' => ['required', 'boolean'],
-            'download_text' => ['nullable', 'string'],
-            'upload_access' => ['required', 'boolean'],
-            'upload_text' => ['nullable', 'string'],
-            'address' => ['nullable', 'string', 'max:255'],
+            'nombre' => ['required', 'string', 'max:255'],
+            'descripcion' => ['nullable', 'string', 'max:5000'],
+            'path_archivo' => ['nullable', 'string', 'max:255'],
+            'categoria_id' => ['required', 'exists:categorias,id'],
+            'fecha_inicio' => ['required', 'date'],
+            'fecha_finalizacion' => ['required', 'date', 'after_or_equal:fecha_inicio'],
+            'hora_montaje' => ['required', 'date_format:H:i'],
+            'hora_desmontaje' => ['required', 'date_format:H:i'],
+            'descarga_acceso' => ['required', 'boolean'],
+            'descarga_texto' => ['nullable', 'string'],
+            'acceso_subir' => ['required', 'boolean'],
+            'subir_texto' => ['nullable', 'string'],
+            'direccion' => ['nullable', 'string', 'max:255'],
             'comments' => ['nullable', 'string', 'max:5000'],
-            'notify_users' => ['nullable', 'array'],
-            'notify_users.*' => ['exists:users,id'],
         ]);
 
-        $notifyUsers = $request->input('notify_users', []);
-        unset($data['notify_users']);
-
-        $images = $congress->image_path ?? [];
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $file) {
-                $images[] = $file->store('congresses', 'public');
-            }
-        }
-        $data['image_path'] = $images;
-
         $congress->update($data);
-
-        if (!empty($notifyUsers)) {
-            $congress->notifiedUsers()->sync($notifyUsers);
-        } else {
-            $congress->notifiedUsers()->detach();
-        }
 
         return redirect()->route('configuracion.catalogos.index')->with('status_congress', 'Congreso actualizado correctamente.');
     }

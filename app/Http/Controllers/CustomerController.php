@@ -17,7 +17,7 @@ class CustomerController extends Controller
      */
     public function index(Request $request): View
     {
-        $customers = Customer::with(['seller', 'category'])->latest()->get();
+        $customers = Customer::with(['asesor', 'category'])->latest()->get();
 
         return view('structure.commercial_management.customers.menu_customers', [
             'customers' => $customers,
@@ -30,7 +30,7 @@ class CustomerController extends Controller
     public function show(Customer $cliente): View
     {
         return view('structure.commercial_management.customers.ver_cliente', [
-            'customer' => $cliente->load(['seller', 'category', 'congress']),
+            'customer' => $cliente->load(['asesor', 'category', 'congress']),
         ]);
     }
 
@@ -40,38 +40,42 @@ class CustomerController extends Controller
     public function create(): View
     {
         return view('structure.commercial_management.customers.registrar_cliente', [
-            'categories' => Category::query()->orderBy('name')->get(),
-            'congresses' => Congress::query()->with('category')->latest()->get(),
+            'categories' => Category::query()->orderBy('nombre')->get(),
+            'congresses' => Congress::query()->latest()->get(),
         ]);
     }
 
     /**
-     * Guarda un nuevo cliente.
+     * Guarda un nuevo cliente. Responde JSON cuando se llama vía AJAX (ej. modal de cotizaciones).
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $request->merge([
-            'rfc' => strtoupper($request->input('rfc') ?? ''),
-        ]);
-
         $data = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
-            'apellido_paterno' => ['required', 'string', 'max:255'],
-            'apellido_materno' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'regex:/^\d{10,12}$/'],
-            'correo' => ['nullable', 'email', 'unique:customers,correo'],
-            'rfc' => ['required', 'string', 'regex:/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{2,3}$/', 'unique:customers,rfc'],
-            'category_id' => ['required', 'exists:categories,id'],
-            'congress_id' => ['required', 'exists:congress_events,id'],
-            'receives_promotion' => ['required', 'boolean'],
+            'apellido' => ['nullable', 'string', 'max:255'],
+            'telefono' => ['nullable', 'string', 'max:20'],
+            'gmail' => ['nullable', 'email', 'max:255'],
+            'direccion' => ['nullable', 'string', 'max:255'],
             'comentarios' => ['nullable', 'string'],
+            'categoria_id' => ['nullable', 'exists:categorias,id'],
+            'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
+            'recibe_promocion' => ['nullable', 'boolean'],
         ]);
 
-        $data['apellido'] = trim($data['apellido_paterno'] . ' ' . $data['apellido_materno']);
+        $data['recibe_promocion'] = $request->boolean('recibe_promocion');
+        $data['activo'] = true;
+        $data['asesor_id'] = auth()->id();
 
-        $data['seller_id'] = auth()->id();
+        $customer = Customer::create($data);
 
-        Customer::create($data);
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'id' => $customer->id,
+                'nombre' => $customer->nombre,
+                'apellido' => $customer->apellido,
+                'telefono' => $customer->telefono,
+            ]);
+        }
 
         return redirect()->route('commercial.clientes.index')->with('status', 'Cliente guardado correctamente.');
     }
@@ -83,8 +87,8 @@ class CustomerController extends Controller
     {
         return view('structure.commercial_management.customers.actulizar_cliente', [
             'customer' => $cliente,
-            'categories' => Category::query()->orderBy('name')->get(),
-            'congresses' => Congress::query()->with('category')->latest()->get(),
+            'categories' => Category::query()->orderBy('nombre')->get(),
+            'congresses' => Congress::query()->latest()->get(),
         ]);
     }
 
@@ -93,24 +97,21 @@ class CustomerController extends Controller
      */
     public function update(Request $request, Customer $cliente): RedirectResponse
     {
-        $request->merge([
-            'rfc' => strtoupper($request->input('rfc') ?? ''),
-        ]);
-
         $data = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
-            'apellido_paterno' => ['required', 'string', 'max:255'],
-            'apellido_materno' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'regex:/^\d{10,12}$/'],
-            'correo' => ['nullable', 'email', 'unique:customers,correo,' . $cliente->id],
-            'rfc' => ['required', 'string', 'regex:/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{2,3}$/', 'unique:customers,rfc,' . $cliente->id],
-            'category_id' => ['required', 'exists:categories,id'],
-            'congress_id' => ['required', 'exists:congress_events,id'],
-            'receives_promotion' => ['required', 'boolean'],
+            'apellido' => ['nullable', 'string', 'max:255'],
+            'telefono' => ['nullable', 'string', 'max:20'],
+            'gmail' => ['nullable', 'email', 'max:255'],
+            'direccion' => ['nullable', 'string', 'max:255'],
             'comentarios' => ['nullable', 'string'],
+            'categoria_id' => ['nullable', 'exists:categorias,id'],
+            'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
+            'recibe_promocion' => ['nullable', 'boolean'],
+            'activo' => ['nullable', 'boolean'],
         ]);
 
-        $data['apellido'] = trim($data['apellido_paterno'] . ' ' . $data['apellido_materno']);
+        $data['recibe_promocion'] = $request->boolean('recibe_promocion');
+        $data['activo'] = $request->boolean('activo', true);
 
         $cliente->update($data);
 
@@ -123,14 +124,14 @@ class CustomerController extends Controller
     public function storeCategory(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
+            'nombre' => ['required', 'string', 'max:255', 'unique:categorias,nombre'],
         ]);
 
         $category = Category::create($data);
 
         return response()->json([
             'id' => $category->id,
-            'name' => $category->name,
+            'nombre' => $category->nombre,
         ]);
     }
 }

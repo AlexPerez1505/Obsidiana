@@ -8,17 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('subtypes', function (Blueprint $table) {
+        Schema::create('paquetes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('equipment_type_id')->constrained('equipment_types')->cascadeOnDelete();
-            $table->string('name');
-            $table->text('description')->nullable();
+            $table->string('nombre');
+
+            $table->unsignedBigInteger('producto_id');
+            $table->foreign('producto_id')->references('id')->on('productos')->onDelete('cascade');
+
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('subtypes');
+        Schema::dropIfExists('paquetes');
     }
 };
