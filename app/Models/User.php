@@ -107,6 +107,94 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Movimientos administrativos registrados para el empleado.
+     */
+    public function employeeReports(): HasMany
+    {
+        return $this->hasMany(EmployeeReport::class)->latest('start_date');
+    }
+
+    /**
+     * Movimientos administrativos creados por este usuario.
+     */
+    public function createdEmployeeReports(): HasMany
+    {
+        return $this->hasMany(EmployeeReport::class, 'created_by')->latest('created_at');
+    }
+
+    /**
+     * Asistencias registradas del empleado.
+     */
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(EmployeeAttendance::class)->latest('attendance_date');
+    }
+
+    /**
+     * Faltas registradas del empleado.
+     */
+    public function absences(): HasMany
+    {
+        return $this->hasMany(EmployeeAbsence::class)->latest('absence_date');
+    }
+
+    /**
+     * Solicitudes de vacaciones del empleado.
+     */
+    public function vacationRequests(): HasMany
+    {
+        return $this->hasMany(EmployeeVacationRequest::class)->latest('start_date');
+    }
+
+    /**
+     * Solicitudes de permiso del empleado.
+     */
+    public function permissionRequests(): HasMany
+    {
+        return $this->hasMany(EmployeePermissionRequest::class)->latest('permission_date');
+    }
+
+    /**
+     * Incidencias registradas del empleado.
+     */
+    public function incidents(): HasMany
+    {
+        return $this->hasMany(EmployeeIncident::class)->latest('incident_date');
+    }
+
+    /**
+     * Movimientos de inventario registrados por este usuario.
+     */
+    public function inventoryMovements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class, 'created_by')->latest('movement_date');
+    }
+
+    /**
+     * Solicitudes de material capturadas por este usuario.
+     */
+    public function materialRequests(): HasMany
+    {
+        return $this->hasMany(MaterialRequest::class, 'requested_by')->latest('submitted_at');
+    }
+
+    /**
+     * Solicitudes de material revisadas por este usuario.
+     */
+    public function reviewedMaterialRequests(): HasMany
+    {
+        return $this->hasMany(MaterialRequest::class, 'reviewed_by')->latest('reviewed_at');
+    }
+
+    /**
+     * Solicitudes de material entregadas por este usuario.
+     */
+    public function deliveredMaterialRequests(): HasMany
+    {
+        return $this->hasMany(MaterialRequest::class, 'delivered_by')->latest('delivered_at');
+    }
+
+    /**
      * Genera un código de verificación de 6 dígitos, lo guarda hasheado
      * y devuelve el código en texto plano para enviarlo por correo.
      */
@@ -170,15 +258,17 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function permissions(): BelongsToMany
     {
-        return $this->belongsToMany(Permission::class);
+        return $this->belongsToMany(Permission::class)->withPivot('level');
     }
 
-    /**
-     * Roles asignados al usuario.
-     */
-    public function roles(): BelongsToMany
+    public function employeeDocuments(): HasMany
     {
-        return $this->belongsToMany(Role::class);
+        return $this->hasMany(EmployeeDocument::class);
+    }
+
+    public function employeeShifts(): HasMany
+    {
+        return $this->hasMany(EmployeeShift::class);
     }
 
     /**
@@ -191,13 +281,6 @@ class User extends Authenticatable implements MustVerifyEmail
             return true;
         }
 
-        if ($this->permissions()->where('name', $name)->exists()) {
-            return true;
-        }
-
-        return $this->roles()
-            ->where('is_active', true)
-            ->whereHas('permissions', fn ($q) => $q->where('name', $name))
-            ->exists();
+        return $this->permissions()->where('name', $name)->exists();
     }
 }

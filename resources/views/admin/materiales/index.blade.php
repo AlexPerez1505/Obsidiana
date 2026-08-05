@@ -214,6 +214,30 @@
 
     .materials-control select {
         cursor: pointer;
+        background: var(--surface-2);
+        color: var(--text);
+    }
+
+    .materials-control select option {
+        background: #ffffff;
+        color: #111827;
+        font-weight: 700;
+    }
+
+    :root[data-theme="dark"] .materials-control select {
+        background: var(--surface-2);
+        color: var(--text);
+        color-scheme: dark;
+    }
+
+    :root[data-theme="dark"] .materials-control select option {
+        background: #0f1a30;
+        color: #e8eef8;
+    }
+
+    :root[data-theme="dark"] .materials-control select option:checked {
+        background: #1e40af;
+        color: #ffffff;
     }
 
     .quantity-control {
@@ -406,6 +430,150 @@
         color: var(--primary);
     }
 
+    .approvals-panel {
+        overflow: hidden;
+    }
+
+    .approvals-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .approvals-head h3 {
+        margin: 0;
+        color: var(--text);
+        font-size: 18px;
+    }
+
+    .approvals-head p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .approvals-count {
+        min-height: 32px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: var(--primary-soft);
+        color: var(--primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .approvals-table-wrap {
+        overflow-x: auto;
+    }
+
+    .approvals-table {
+        width: 100%;
+        min-width: 860px;
+        border-collapse: collapse;
+        color: var(--text);
+    }
+
+    .approvals-table th {
+        padding: 14px 16px;
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+        text-align: left;
+        text-transform: uppercase;
+    }
+
+    .approvals-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+        font-weight: 800;
+        vertical-align: middle;
+    }
+
+    .approvals-table td small {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .approval-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 26px;
+        padding: 0 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .approval-status.pending {
+        background: var(--accent-soft);
+        color: var(--accent);
+    }
+
+    .approval-status.approved {
+        background: var(--green-soft);
+        color: var(--green);
+    }
+
+    .approval-status.rejected {
+        background: var(--danger-soft);
+        color: var(--danger);
+    }
+
+    .approval-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .approval-action {
+        min-height: 32px;
+        padding: 0 11px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    .approval-action.approve {
+        border-color: color-mix(in srgb, var(--green) 45%, var(--border));
+        color: var(--green);
+    }
+
+    .approval-action.reject {
+        border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+        color: var(--danger);
+    }
+
+    .approval-action:hover {
+        background: var(--surface-2);
+    }
+
+    .approval-action:disabled {
+        cursor: not-allowed;
+        opacity: .45;
+    }
+
     @media (max-width: 1080px) {
         .materials-layout {
             grid-template-columns: 1fr;
@@ -465,7 +633,7 @@
 
         <div class="materials-layout">
             <section class="materials-panel" aria-label="Formulario para solicitar material">
-                <form class="materials-form" onsubmit="event.preventDefault(); showMaterialToast('Solicitud enviada a revisión.');">
+                <form class="materials-form" id="materialsForm" onsubmit="submitMaterialRequest(event);">
                     <div class="materials-field">
                         <label for="category">Categoría</label>
                         <div class="materials-control">
@@ -631,15 +799,76 @@
                 </div>
             </aside>
         </div>
+
+        <section class="materials-panel approvals-panel" aria-label="Revision de solicitudes de material">
+            <div class="approvals-head">
+                <div>
+                    <h3>Revision de solicitudes</h3>
+                    <p>Aqui se aprueban o rechazan las solicitudes enviadas.</p>
+                </div>
+                <span class="approvals-count" id="approvalCount">2 pendientes</span>
+            </div>
+
+            <div class="approvals-table-wrap">
+                <table class="approvals-table">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Material</th>
+                            <th>Cantidad</th>
+                            <th>Fecha requerida</th>
+                            <th>Urgencia</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="materialsApprovalBody">
+                        <tr>
+                            <td>SOL-0007</td>
+                            <td>Hojas carta<small>Papeleria</small></td>
+                            <td>4 Paquete</td>
+                            <td>{{ now()->addDays(2)->format('Y-m-d') }}</td>
+                            <td>Normal</td>
+                            <td><span class="approval-status pending">Pendiente</span></td>
+                            <td>
+                                <div class="approval-actions">
+                                    <button class="approval-action approve" type="button" data-approval-action="approve">Aprobar</button>
+                                    <button class="approval-action reject" type="button" data-approval-action="reject">Rechazar</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>SOL-0008</td>
+                            <td>Guantes nitrilo<small>Seguridad e Higiene</small></td>
+                            <td>2 Caja</td>
+                            <td>{{ now()->addDays(3)->format('Y-m-d') }}</td>
+                            <td>Urgente</td>
+                            <td><span class="approval-status pending">Pendiente</span></td>
+                            <td>
+                                <div class="approval-actions">
+                                    <button class="approval-action approve" type="button" data-approval-action="approve">Aprobar</button>
+                                    <button class="approval-action reject" type="button" data-approval-action="reject">Rechazar</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </section>
 
     <script>
         const category = document.getElementById('category');
+        const material = document.getElementById('material');
         const quantity = document.getElementById('quantity');
         const unit = document.getElementById('unit');
+        const requiredDate = document.getElementById('required-date');
+        const materialsApprovalBody = document.getElementById('materialsApprovalBody');
+        const approvalCount = document.getElementById('approvalCount');
         const summaryCategory = document.getElementById('summaryCategory');
         const summaryQuantity = document.getElementById('summaryQuantity');
         const summaryUrgency = document.getElementById('summaryUrgency');
+        let materialRequestSequence = 9;
 
         function updateSummary() {
             summaryCategory.textContent = category.value;
@@ -658,9 +887,75 @@
             }
         }
 
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function currentUrgency() {
+            return document.querySelector('.segment.is-active')?.dataset.urgency || 'Normal';
+        }
+
+        function updateApprovalCount() {
+            const pending = materialsApprovalBody.querySelectorAll('.approval-status.pending').length;
+            approvalCount.textContent = pending === 1 ? '1 pendiente' : `${pending} pendientes`;
+        }
+
+        function bindApprovalButtons(scope = document) {
+            scope.querySelectorAll('[data-approval-action]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const row = button.closest('tr');
+                    const status = row.querySelector('.approval-status');
+                    const action = button.dataset.approvalAction;
+                    const approved = action === 'approve';
+
+                    status.className = `approval-status ${approved ? 'approved' : 'rejected'}`;
+                    status.textContent = approved ? 'Aprobada' : 'Rechazada';
+                    row.querySelectorAll('[data-approval-action]').forEach((item) => item.disabled = true);
+                    updateApprovalCount();
+                    showMaterialToast(approved ? 'Solicitud aprobada.' : 'Solicitud rechazada.');
+                });
+            });
+        }
+
+        function submitMaterialRequest(event) {
+            event.preventDefault();
+
+            const materialName = material.value.trim() || 'Material sin nombre';
+            const folio = `SOL-${String(materialRequestSequence).padStart(4, '0')}`;
+            materialRequestSequence += 1;
+
+            materialsApprovalBody.insertAdjacentHTML('afterbegin', `
+                <tr>
+                    <td>${folio}</td>
+                    <td>${escapeHtml(materialName)}<small>${escapeHtml(category.value)}</small></td>
+                    <td>${escapeHtml(quantity.value || 1)} ${escapeHtml(unit.value)}</td>
+                    <td>${escapeHtml(requiredDate.value)}</td>
+                    <td>${escapeHtml(currentUrgency())}</td>
+                    <td><span class="approval-status pending">Pendiente</span></td>
+                    <td>
+                        <div class="approval-actions">
+                            <button class="approval-action approve" type="button" data-approval-action="approve">Aprobar</button>
+                            <button class="approval-action reject" type="button" data-approval-action="reject">Rechazar</button>
+                        </div>
+                    </td>
+                </tr>
+            `);
+
+            bindApprovalButtons(materialsApprovalBody.firstElementChild);
+            updateApprovalCount();
+            showMaterialToast('Solicitud enviada a revision. Ahora aparece en Revision de solicitudes.');
+        }
+
         category.addEventListener('change', updateSummary);
         quantity.addEventListener('input', updateSummary);
         unit.addEventListener('change', updateSummary);
+        bindApprovalButtons();
+        updateApprovalCount();
 
         document.querySelectorAll('.segment').forEach((button) => {
             button.addEventListener('click', () => {
