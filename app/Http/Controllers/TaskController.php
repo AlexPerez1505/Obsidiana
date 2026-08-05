@@ -206,7 +206,7 @@ class TaskController extends Controller
      */
     public function bibliotecaCatalogo(): View
     {
-        return view('structure.gestion_marketing.biblioteca_catalogo.index');
+        return view('structure.gestion_marketing.catalogo.biblioteca_catalogo');
     }
 
     /**
