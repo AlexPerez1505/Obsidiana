@@ -69,6 +69,8 @@
     @media (max-width: 640px) { .checklist-grid { grid-template-columns: 1fr; } }
     .checklist-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; font-size: 13px; font-weight: 600; }
     .checklist-item input { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+    .checklist-item.locked { cursor: not-allowed; opacity: .75; }
+    .checklist-item.locked input { cursor: not-allowed; }
     .checklist-item.checked { background: var(--green-soft); border-color: #22c55e; color: var(--green); }
     .comment-box { display: flex; flex-direction: column; gap: 8px; }
     .comment-box textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 14px; min-height: 90px; resize: vertical; }
@@ -76,10 +78,10 @@
     .modal-actions { display: flex; gap: 10px; padding: 18px 26px; border-top: 1px solid var(--border); background: var(--surface-2); }
     .modal-actions form { flex: 1; }
     .modal-btn { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 18px; border-radius: 10px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; color: #fff; }
-    .modal-btn-green { background: #22c55e; }
-    .modal-btn-green:hover { background: #16a34a; }
-    .modal-btn-amber { background: #f59e0b; }
-    .modal-btn-amber:hover { background: #d97706; }
+    .modal-btn-green { background: #2563eb; }
+    .modal-btn-green:hover { background: #1d4ed8; }
+    .modal-btn-amber { background: #60a5fa; }
+    .modal-btn-amber:hover { background: #3b82f6; }
 </style>
 
 <div class="approval-wrap">
@@ -229,9 +231,9 @@
                         </td>
                         <td>
                             @php
-                                $checked = implode(',', $task->approval_checklist ?? []);
+                                $locked = implode(',', $task->approval_checklist ?? []);
                             @endphp
-                            <button type="button" class="review-btn" onclick="openApprovalModal({{ $task->id }}, '{{ addslashes($task->title) }}', '{{ addslashes($task->category ?? '') }}', '{{ $status }}', '{{ $task->delivery_link ?? '' }}', '{{ addslashes($task->task_description ?? '') }}', '{{ addslashes($task->description ?? '') }}', '{{ $checked }}')" {{ $status === 'revision' ? '' : 'disabled' }}>
+                            <button type="button" class="review-btn" onclick="openApprovalModal({{ $task->id }}, '{{ addslashes($task->title) }}', '{{ addslashes($task->category ?? '') }}', '{{ $status }}', '{{ $task->delivery_link ?? '' }}', '{{ addslashes($task->task_description ?? '') }}', '{{ addslashes($task->description ?? '') }}', '{{ $locked }}')" {{ $status === 'revision' ? '' : 'disabled' }}>
                                 Revisar
                             </button>
                         </td>
@@ -301,7 +303,7 @@
 </div>
 
 <script>
-    function openApprovalModal(id, title, category, status, link, desc, copy, checked) {
+    function openApprovalModal(id, title, category, status, link, desc, copy, locked) {
         const base = '{{ url('/marketing/tareas') }}';
         document.getElementById('btnAprobar').setAttribute('formaction', `${base}/${id}/aprobar`);
         document.getElementById('btnDevolver').dataset.formaction = `${base}/${id}/devolver`;
@@ -316,9 +318,12 @@
         if (!html) html = '<p style="color:var(--muted);">No hay detalles adicionales.</p>';
         document.getElementById('modalDescription').innerHTML = html;
 
-        const checkedArray = checked ? checked.split(',').map(Number).filter(n => !isNaN(n)) : [];
+        const lockedArray = locked ? locked.split(',').map(Number).filter(n => !isNaN(n)) : [];
         document.querySelectorAll('.checklist-item input').forEach((cb, index) => {
-            cb.checked = checkedArray.includes(index);
+            const isLocked = lockedArray.includes(index);
+            cb.checked = isLocked;
+            cb.disabled = isLocked;
+            cb.closest('.checklist-item').classList.toggle('locked', isLocked);
         });
         document.querySelectorAll('.checklist-item').forEach(l => l.classList.remove('checked'));
         document.getElementById('rejectionComment').value = '';
