@@ -45,6 +45,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/marketing/biblioteca-catalogo', [TaskController::class, 'bibliotecaCatalogo'])
         ->name('marketing.biblioteca_catalogo.index');
 
+    Route::get('/marketing/biblioteca-catalogo/flyer/{task}/descargar', [TaskController::class, 'descargarFlyer'])
+        ->name('marketing.biblioteca_catalogo.descargar_flyer');
+
     Route::get('/marketing/guia-de-marca', [GuiaDeMarcaController::class, 'index'])
         ->name('marketing.guia_de_marca.index');
 

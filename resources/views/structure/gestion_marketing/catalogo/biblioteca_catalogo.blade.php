@@ -104,6 +104,86 @@
         color: var(--muted);
         font-size: 14px;
     }
+    .galeria-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .galeria-card {
+        flex: 1 1 240px;
+        max-width: 320px;
+        min-height: 150px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition: transform .15s, box-shadow .15s, border-color .15s;
+        text-decoration: none;
+        color: inherit;
+    }
+    .galeria-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(10,132,255,.35);
+        box-shadow: 0 10px 28px rgba(0,0,0,.22);
+    }
+    .galeria-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .galeria-tag {
+        display: inline-flex;
+        width: fit-content;
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: var(--green-soft);
+        color: var(--green);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+    .galeria-status {
+        display: inline-flex;
+        width: fit-content;
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: rgba(10,132,255,.12);
+        color: var(--primary);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+    .galeria-title {
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1.3;
+    }
+    .galeria-copy {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .galeria-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: auto;
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 700;
+    }
+    .galeria-link span { color: var(--muted); font-weight: 600; }
     .catalogo-foot {
         display: flex;
         align-items: center;
@@ -176,11 +256,31 @@
 
     <div class="catalogo-section">
         <h2 class="catalogo-title" style="font-size: 20px;">Galería de piezas</h2>
-        <p class="catalogo-sub">Toca una imagen para ver su copy.</p>
+        <p class="catalogo-sub">Toca una tarjeta para ver el flyer en Canva / Drive.</p>
 
-        <div class="galeria-empty">
-            Aún no hay imágenes cargadas. Cuando subas flyers a las piezas, aparecerán aquí.
-        </div>
+        @if($flyers->isEmpty())
+            <div class="galeria-empty">
+                Aún no hay flyers cargados. Cuando marques tareas como hechas con enlace de Canva o Drive, aparecerán aquí.
+            </div>
+        @else
+            <div class="galeria-grid">
+                @foreach($flyers as $flyer)
+                    <a href="{{ route('marketing.biblioteca_catalogo.descargar_flyer', $flyer) }}" class="galeria-card" title="Descargar flyer">
+                        <div class="galeria-meta">
+                            @if($flyer->category)
+                                <span class="galeria-tag">{{ $flyer->category }}</span>
+                            @endif
+                            <span class="galeria-status">Hecho</span>
+                        </div>
+                        <div class="galeria-title">{{ $flyer->title }}</div>
+                        @if($flyer->description)
+                            <p class="galeria-copy">{{ Str::limit($flyer->description, 140) }}</p>
+                        @endif
+                        <div class="galeria-link">Descargar / abrir <span>→</span></div>
+                    </a>
+                @endforeach
+            </div>
+        @endif
     </div>
 
     <div class="catalogo-foot">

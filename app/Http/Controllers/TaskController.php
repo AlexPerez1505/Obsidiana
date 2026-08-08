@@ -6,6 +6,7 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
 
 class TaskController extends Controller
@@ -221,7 +222,51 @@ public function aprobacionFlyers(): View
      */
     public function bibliotecaCatalogo(): View
     {
-        return view('structure.gestion_marketing.catalogo.biblioteca_catalogo');
+        $flyers = Task::where('status', 'completada')
+            ->whereNotNull('delivery_link')
+            ->where('delivery_link', '!=', '')
+            ->orderByDesc('updated_at')
+            ->get();
+
+        return view('structure.gestion_marketing.catalogo.biblioteca_catalogo', [
+            'flyers' => $flyers,
+        ]);
+    }
+
+    /**
+     * Descarga el flyer asociado a una tarea completada.
+     */
+    public function descargarFlyer(Task $task): RedirectResponse|\Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        if ($task->status !== 'completada' || empty($task->delivery_link)) {
+            abort(404);
+        }
+
+        try {
+            $response = Http::timeout(30)->get($task->delivery_link);
+        } catch (\Exception $e) {
+            return redirect()->away($task->delivery_link);
+        }
+
+        $contentType = $response->header('Content-Type') ?: 'application/octet-stream';
+
+        // Si Canva/Google devuelve HTML, lo mejor es abrir la URL original.
+        if (str_contains($contentType, 'text/html')) {
+            return redirect()->away($task->delivery_link);
+        }
+
+        $extension = 'file';
+        if (preg_match('/\.([a-zA-Z0-9]{2,8})(?:[?#]|$)/', $task->delivery_link, $matches)) {
+            $extension = $matches[1];
+        }
+
+        $filename = preg_replace('/[^A-Za-z0-9\-]/', '_', $task->title) . '_flyer.' . $extension;
+
+        return response()->streamDownload(function () use ($response) {
+            echo $response->body();
+        }, $filename, [
+            'Content-Type' => $contentType,
+        ]);
     }
 
     /**
