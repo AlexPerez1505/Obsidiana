@@ -210,14 +210,29 @@
         padding: 11px 22px;
         border-radius: 12px;
         border: none;
-        background: var(--primary);
+        background: #2563eb;
         color: #fff;
         font-size: 15px;
         font-weight: 700;
         cursor: pointer;
         transition: background .15s;
     }
-    .task-save:hover { background: var(--primary-strong); }
+    .task-save:hover { background: #1d4ed8; }
+    .task-review {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 22px;
+        border-radius: 12px;
+        border: none;
+        background: #0ea5e9;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background .15s;
+    }
+    .task-review:hover { background: #0284c7; }
 
     .platform-choices {
         display: flex;
@@ -333,9 +348,14 @@
                 <div class="kanban-col-body">
                     @forelse ($column['tasks'] as $task)
                         @php
-                            $firstTag = ($task->tags[0] ?? null);
-                            $badge = $badgeColors[strtolower($firstTag ?? '')] ?? $badgeDefault;
-                            $category = $task->tags[1] ?? null;
+                            $statusBadges = [
+                                'pendiente' => ['dot' => '#f59e0b', 'bg' => 'rgba(245,158,11,.14)', 'color' => '#f59e0b', 'label' => 'Por hacer'],
+                                'en_proceso' => ['dot' => '#3b82f6', 'bg' => 'rgba(59,130,246,.14)', 'color' => '#3b82f6', 'label' => 'En curso'],
+                                'revision' => ['dot' => '#a855f7', 'bg' => 'rgba(168,85,247,.14)', 'color' => '#a855f7', 'label' => 'En revisión'],
+                                'completada' => ['dot' => '#22c55e', 'bg' => 'rgba(34,197,94,.14)', 'color' => '#22c55e', 'label' => 'Hecho'],
+                            ];
+                            $statusBadge = $statusBadges[$task->status] ?? $badgeDefault;
+                            $category = $task->category;
                             $categoryColor = $categoryColors[(crc32(strtolower($category ?? '')) % count($categoryColors))] ?? 'var(--primary)';
                             $priority = $priorityColors[$task->priority] ?? $priorityColors['media'];
                             $borderLeft = '3px solid ' . $priority['border'];
@@ -346,13 +366,13 @@
                                 : 'Sin fecha';
                         @endphp
 
-                        <div class="kanban-card" style="border-left:{{ $borderLeft }};" data-json="{{ json_encode(['id' => $task->id, 'title' => $task->title, 'firstTag' => $firstTag, 'category' => $task->category, 'reviewer' => $task->reviewer?->name, 'reviewer_id' => $task->reviewer_id, 'due_date' => $task->due_date?->format('Y-m-d'), 'user' => $task->user?->name, 'user_id' => $task->user_id, 'status' => $task->status, 'priority' => $task->priority, 'progress' => $task->progress, 'linked_piece' => $task->linked_piece, 'delivery_link' => $task->delivery_link, 'platform' => $task->platform, 'has_video' => $task->has_video, 'rejection_comment' => $task->rejection_comment, 'task_description' => $task->task_description, 'description' => $task->description]) }}" onclick="openTaskModal(this)">
+                        <div class="kanban-card" style="border-left:{{ $borderLeft }};" data-json="{{ json_encode(['id' => $task->id, 'title' => $task->title, 'category' => $task->category, 'reviewer' => $task->reviewer?->name, 'reviewer_id' => $task->reviewer_id, 'due_date' => $task->due_date?->format('Y-m-d'), 'user' => $task->user?->name, 'user_id' => $task->user_id, 'status' => $task->status, 'priority' => $task->priority, 'progress' => $task->progress, 'linked_piece' => $task->linked_piece, 'delivery_link' => $task->delivery_link, 'platform' => $task->platform, 'has_video' => $task->has_video, 'approval_checklist' => $task->approval_checklist ?? [], 'rejection_comment' => $task->rejection_comment, 'task_description' => $task->task_description, 'description' => $task->description], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}" onclick="openTaskModal(this)">
                             <h3 class="kanban-card-title">{{ $task->title }}</h3>
 
                             <div class="kanban-card-line">
-                                <span class="kanban-badge" style="background:{{ $badge['bg'] }}; color:{{ $badge['color'] }};">
-                                    <span class="kanban-badge-dot" style="background:{{ $badge['dot'] }}"></span>
-                                    {{ $firstTag ?? 'Tarea' }}
+                                <span class="kanban-badge" style="background:{{ $statusBadge['bg'] }}; color:{{ $statusBadge['color'] }};">
+                                    <span class="kanban-badge-dot" style="background:{{ $statusBadge['dot'] }}"></span>
+                                    {{ $statusBadge['label'] ?? 'Tarea' }}
                                 </span>
 
                                 @if ($category)
@@ -375,6 +395,7 @@
 
                                 <span class="kanban-date">{{ $fecha }}</span>
                             </div>
+
                         </div>
                     @empty
                         <div class="kanban-empty">No hay tareas en esta columna.</div>
@@ -424,17 +445,7 @@
                         <option value="Promociones">Promociones</option>
                     </select>
                 </div>
-                <div class="task-field">
-                    <label for="editTags">Estado</label>
-                    <select id="editTags" name="tags" required>
-                        <option value="Aprobado">Aprobado</option>
-                        <option value="Cambios solicitados">Cambios solicitados</option>
-                        <option value="En revisión">En revisión</option>
-                        <option value="Idea">Idea</option>
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="Publicado">Publicado</option>
-                    </select>
-                </div>
+
             </div>
 
             <div class="task-row">
@@ -497,8 +508,13 @@
             </div>
 
             <div class="task-field">
-                <label for="editComments">Comentarios de revisión</label>
+                <label for="editComments">Comentarios del revisor</label>
                 <textarea id="editComments" name="rejection_comment" placeholder="Notas del revisor..."></textarea>
+            </div>
+
+            <div class="task-field" id="reviewChecklistField" style="display:none;">
+                <span class="field-label">Checklist de revisión</span>
+                <div id="reviewChecklist" class="task-value" style="display:flex;flex-direction:column;gap:6px;"></div>
             </div>
 
             <div class="task-field">
@@ -520,7 +536,10 @@
         </div>
 
         <div class="task-footer">
-            <button type="submit" class="task-save">
+            <button type="button" class="task-review" id="btnEnviarRevision" style="display:none;" onclick="enviarARevision()">
+                Mandar a revisión
+            </button>
+            <button type="submit" class="task-save" id="btnGuardar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
                 Guardar cambios
             </button>
@@ -529,15 +548,28 @@
 </div>
 
 <script>
+    var approvalLabels = [
+        'Nombre/modelo',
+        'Specs verificados',
+        'Marca/logo',
+        'Precio/política',
+        'Ortografía',
+        'Datos de contacto',
+        'Sin claims indebidos',
+        'Formato de red',
+        'Imagen nítida',
+        'Leyenda salud',
+    ];
+    var currentTaskId = null;
+
     function openTaskModal(card) {
-        const data = JSON.parse(card.dataset.json);
-        const form = document.getElementById('taskEditForm');
+        var data = JSON.parse(card.dataset.json);
+        var form = document.getElementById('taskEditForm');
         form.action = '/marketing/tareas/' + data.id;
 
         document.getElementById('modalTitle').textContent = data.title || 'Tarea';
         document.getElementById('editTitle').value = data.title || '';
         document.getElementById('editCategory').value = data.category || '';
-        document.getElementById('editTags').value = data.firstTag || '';
         document.getElementById('editDueDate').value = data.due_date || '';
         document.getElementById('editUser').value = data.user_id || '';
         document.getElementById('editReviewer').value = data.reviewer_id || '';
@@ -548,14 +580,62 @@
         document.getElementById('editCopy').value = data.description || '';
         document.getElementById('editStatus').value = data.status || 'pendiente';
         document.getElementById('editPriority').value = data.priority || 'media';
-        document.getElementById('editProgress').value = data.progress ?? 0;
+        document.getElementById('editProgress').value = data.progress || 0;
 
-        document.querySelectorAll('.edit-platform').forEach(cb => {
-            cb.checked = data.platform ? data.platform.includes(cb.value) : false;
+        Array.prototype.forEach.call(document.querySelectorAll('.edit-platform'), function(cb) {
+            cb.checked = data.platform && data.platform.indexOf(cb.value) !== -1;
         });
         document.getElementById('editHasVideo').checked = data.has_video === true || data.has_video === 1 || data.has_video === '1';
 
+        var approvalList = Array.isArray(data.approval_checklist) ? data.approval_checklist : [];
+        var checked = approvalList.map(function(n) { return parseInt(n, 10); });
+        var reviewField = document.getElementById('reviewChecklistField');
+        var reviewBox = document.getElementById('reviewChecklist');
+        if (data.rejection_comment || checked.length) {
+            reviewBox.innerHTML = approvalLabels.map(function(label, index) {
+                var isChecked = checked.indexOf(index) !== -1;
+                var icon = isChecked ? '\u2713' : '\u2717';
+                var color = isChecked ? '#22c55e' : '#ef4444';
+                return '<div style="color:' + color + ';font-weight:600;">' + icon + ' ' + label + '</div>';
+            }).join('');
+            reviewField.style.display = 'flex';
+        } else {
+            reviewBox.innerHTML = '';
+            reviewField.style.display = 'none';
+        }
+
+        currentTaskId = data.id;
+        var isPendiente = data.status === 'pendiente';
+        var form = document.getElementById('taskEditForm');
+        var fields = form.querySelectorAll('input:not([type="hidden"]), select, textarea');
+        for (var i = 0; i < fields.length; i++) {
+            fields[i].disabled = !isPendiente;
+        }
+        document.getElementById('btnGuardar').style.display = isPendiente ? '' : 'none';
+        document.getElementById('btnEnviarRevision').style.display = isPendiente ? '' : 'none';
+
         document.getElementById('taskModal').classList.add('is-open');
+    }
+
+    function enviarARevision() {
+        if (!currentTaskId) return;
+        var token = document.querySelector('#taskEditForm input[name="_token"]').value;
+        var formData = new FormData();
+        formData.append('_token', token);
+        formData.append('_method', 'PUT');
+
+        fetch('/marketing/tareas/' + currentTaskId + '/enviar-revision', {
+            method: 'POST',
+            body: formData,
+        }).then(function(response) {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('No se pudo enviar a revisión. Intenta de nuevo.');
+            }
+        }).catch(function() {
+            alert('No se pudo enviar a revisión. Intenta de nuevo.');
+        });
     }
 
     function closeTaskModal() {
