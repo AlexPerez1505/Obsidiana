@@ -16,6 +16,7 @@ return new class extends Migration
         // con el esquema correcto.
         Schema::dropIfExists('cotizacion_items');
 
+        
         Schema::create('cotizacion_items', function (Blueprint $table) {
             $table->id();
 

@@ -411,11 +411,7 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Productos</span>
                     </a>
-<<<<<<< HEAD
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.paquetes.*') ? 'active' : '' }}" href="{{ route('inventory.paquetes.index') }}" data-tip="Paquetes">
-=======
-                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.stock.*') ? 'active' : '' }}" href="{{ route('inventory.stock.index') }}" data-tip="Stock">
->>>>>>> b95b5c4a56a09dfa1286d7e02372229b13965a74
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Paquetes</span>
                     </a>

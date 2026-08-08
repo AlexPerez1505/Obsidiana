@@ -42,14 +42,8 @@ class CustomerController extends Controller
     public function create(Request $request): View
     {
         return view('structure.commercial_management.customers.registrar_cliente', [
-<<<<<<< HEAD:app/Http/Controllers/CustomerController.php
             'categories' => Category::query()->orderBy('nombre')->get(),
             'congresses' => Congress::query()->latest()->get(),
-=======
-            'categories' => Category::query()->orderBy('name')->get(),
-            'congresses' => Congress::query()->with('category')->latest()->get(),
-            'returnTo' => $request->input('return_to'),
->>>>>>> b95b5c4a56a09dfa1286d7e02372229b13965a74:app/Http/Controllers/Commercial/CustomerController.php
         ]);
     }
 
@@ -76,7 +70,6 @@ class CustomerController extends Controller
 
         $customer = Customer::create($data);
 
-<<<<<<< HEAD:app/Http/Controllers/CustomerController.php
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'id' => $customer->id,
@@ -84,13 +77,6 @@ class CustomerController extends Controller
                 'apellido' => $customer->apellido,
                 'telefono' => $customer->telefono,
             ]);
-=======
-        $customer = Customer::create($data);
-
-        if ($returnTo = $request->input('return_to')) {
-            $separator = str_contains($returnTo, '?') ? '&' : '?';
-            return redirect($returnTo . $separator . 'cliente_id=' . $customer->id)->with('status', 'Cliente guardado correctamente.');
->>>>>>> b95b5c4a56a09dfa1286d7e02372229b13965a74:app/Http/Controllers/Commercial/CustomerController.php
         }
 
         return redirect()->route('commercial.clientes.index')->with('status', 'Cliente guardado correctamente.');

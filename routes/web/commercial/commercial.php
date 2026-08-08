@@ -1,12 +1,8 @@
 <?php
 
-<<<<<<< HEAD:routes/web/commercial.php
-use App\Http\Controllers\CotizacionController;
-use App\Http\Controllers\CustomerController;
-use App\Http\Controllers\PlanPagoPlantillaController;
-=======
 use App\Http\Controllers\Commercial\CustomerController;
->>>>>>> b95b5c4a56a09dfa1286d7e02372229b13965a74:routes/web/commercial/commercial.php
+use App\Http\Controllers\CotizacionController;
+use App\Http\Controllers\PlanPagoPlantillaController;
 use Illuminate\Support\Facades\Route;
 
 /*
