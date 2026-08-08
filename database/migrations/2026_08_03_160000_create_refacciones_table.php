@@ -8,17 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('roles', function (Blueprint $table) {
+        Schema::create('refacciones', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
+            $table->string('subtype');
+            $table->string('name');
             $table->text('description')->nullable();
-            $table->boolean('is_active')->default(true);
+            $table->unsignedInteger('stock')->default(0);
+            $table->string('compatible_with')->nullable();
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('roles');
+        Schema::dropIfExists('refacciones');
     }
 };

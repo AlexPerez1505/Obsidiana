@@ -1,15 +1,15 @@
         <!-- Paso 3: Tecnico -->
-        <div class="step-panel" data-step="3">
+        <div class="step-panel" data-step="3" id="step-panel-interno">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:22px;">
                 <div style="display:flex; align-items:center; gap:12px;">
-                    <div class="client-avatar">JD</div>
+                    <div class="client-avatar" id="tech-client-avatar">JD</div>
                     <div>
                         <div class="client-name" id="tech-client-name">DR. Jhone Doe</div>
-                        <div class="client-info">Cliente seleccionado</div>
+                        <div class="client-info" id="tech-client-info">Cliente seleccionado</div>
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:12px; color:var(--muted); font-size:14px;">
-                    Registrado por: <strong style="color:var(--text);">ING. ALEX ESQUIVEL</strong>
+                    Registrado por: <strong style="color:var(--text);">{{ auth()->user()?->name ?? 'Invitado' }}</strong>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
             </div>

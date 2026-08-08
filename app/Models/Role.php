@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Models;
 
@@ -26,12 +26,12 @@ class Role extends Model
         ];
     }
 
-    public function users(): HasMany
+    public function primaryUsers(): HasMany
     {
         return $this->hasMany(User::class);
     }
 
-    public function assignedUsers(): BelongsToMany
+    public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
     }

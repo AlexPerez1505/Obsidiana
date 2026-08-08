@@ -19,10 +19,12 @@
                     <h2 class="page-title" style="margin:0;">Registrar Cliente</h2>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <a href="{{ $returnTo ?? route('commercial.clientes.index') }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-                        Regresar
-                    </a>
+                    @if(!empty($returnTo))
+                        <a href="{{ $returnTo }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                            Regresar
+                        </a>
+                    @endif
                     <x-ui.button>Guardar Cliente</x-ui.button>
                 </div>
             </div>

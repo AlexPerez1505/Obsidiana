@@ -2,14 +2,14 @@
         <div class="step-panel" data-step="2">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:22px;">
                 <div style="display:flex; align-items:center; gap:12px;">
-                    <div class="client-avatar">JD</div>
+                    <div class="client-avatar" id="sel-client-avatar">JD</div>
                     <div>
                         <div class="client-name" id="sel-client-name">DR. Jhone Doe</div>
-                        <div class="client-info">Cliente seleccionado</div>
+                        <div class="client-info" id="sel-client-info">Cliente seleccionado</div>
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:12px; color:var(--muted); font-size:14px;">
-                    Registrado por: <strong style="color:var(--text);">ING. ALEX ESQUIVEL</strong>
+                    Registrado por: <strong style="color:var(--text);">{{ auth()->user()?->name ?? 'Invitado' }}</strong>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
             </div>
@@ -52,14 +52,6 @@
                 <div class="form-group">
                     <label>Numero de serie</label>
                     <input type="text" name="serie" placeholder="Ej. SN-893-832">
-                </div>
-                <div class="form-group">
-                    <label>Fecha de adquisicion</label>
-                    <div class="date-row">
-                        <input type="text" name="adq_dd" placeholder="DD">
-                        <input type="text" name="adq_mm" placeholder="MM">
-                        <input type="text" name="adq_yyyy" placeholder="YYYY">
-                    </div>
                 </div>
                 <div class="form-group" style="grid-column:1/-1;">
                     <label>Descripcion del equipo</label>
@@ -104,8 +96,13 @@
 
             <div class="form-group" style="margin-top:18px;">
                 <label>Firma Digital</label>
-                <canvas class="signature-box" id="signature-pad"></canvas>
-                <a href="#" style="font-size:13px; color:var(--primary);" onclick="clearSignature(); return false;">Limpiar firma</a>
+                <canvas class="signature-box" id="signature-pad" style="cursor:crosshair;"></canvas>
+                <div style="display:flex; align-items:center; gap:14px; margin-top:8px;">
+                    <a href="#" style="font-size:13px; color:var(--primary);" onclick="clearSignature(); return false;">Limpiar firma</a>
+                    <a href="#" style="font-size:13px; color:var(--primary);" onclick="document.getElementById('signature-upload').click(); return false;">Cargar firma</a>
+                    <input type="file" id="signature-upload" accept="image/*" style="display:none;">
+                </div>
+                <input type="hidden" name="firma" id="firma-input">
             </div>
         </div>
 
@@ -114,26 +111,63 @@
     // Firma basica (canvas vacio)
     const canvas = document.getElementById('signature-pad');
     const ctx = canvas.getContext('2d');
+    const firmaInput = document.getElementById('firma-input');
+    const signatureUpload = document.getElementById('signature-upload');
     function resizeCanvas() {
         const rect = canvas.getBoundingClientRect();
         canvas.width = rect.width;
         canvas.height = rect.height;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = getComputedStyle(document.body).color || '#000';
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
+    function updateFirmaInput() {
+        if (firmaInput) firmaInput.value = canvas.toDataURL('image/png');
+    }
+
     let drawing = false;
     canvas.addEventListener('mousedown', e => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
     canvas.addEventListener('mousemove', e => { if (drawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } });
-    canvas.addEventListener('mouseup', () => drawing = false);
-    canvas.addEventListener('mouseout', () => drawing = false);
+    canvas.addEventListener('mouseup', () => { drawing = false; updateFirmaInput(); });
+    canvas.addEventListener('mouseout', () => { drawing = false; updateFirmaInput(); });
     canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; const t = e.touches[0]; const r = canvas.getBoundingClientRect(); ctx.beginPath(); ctx.moveTo(t.clientX - r.left, t.clientY - r.top); });
     canvas.addEventListener('touchmove', e => { e.preventDefault(); if (drawing) { const t = e.touches[0]; const r = canvas.getBoundingClientRect(); ctx.lineTo(t.clientX - r.left, t.clientY - r.top); ctx.stroke(); } });
-    canvas.addEventListener('touchend', () => drawing = false);
+    canvas.addEventListener('touchend', () => { drawing = false; updateFirmaInput(); });
+
+    function drawImageToCanvas(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const scale = Math.min(canvas.width / img.width, canvas.height / img.height, 1);
+                const x = (canvas.width - img.width * scale) / 2;
+                const y = (canvas.height - img.height * scale) / 2;
+                ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                updateFirmaInput();
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    if (signatureUpload) {
+        signatureUpload.addEventListener('change', function() {
+            if (this.files && this.files[0]) drawImageToCanvas(this.files[0]);
+        });
+    }
 
     function clearSignature() {
         const rect = canvas.getBoundingClientRect();
         ctx.clearRect(0, 0, rect.width, rect.height);
+        if (firmaInput) firmaInput.value = '';
+        if (signatureUpload) signatureUpload.value = '';
     }
     window.clearSignature = clearSignature;
 </script>

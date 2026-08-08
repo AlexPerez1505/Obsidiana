@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\CongressController;
+use App\Http\Controllers\Configuracion\CategoryController;
+use App\Http\Controllers\Configuracion\CongressController;
 use Illuminate\Support\Facades\Route;
 
 /*
