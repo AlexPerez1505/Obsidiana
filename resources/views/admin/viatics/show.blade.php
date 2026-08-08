@@ -186,7 +186,7 @@
         .vp-back-btn { max-width: 300px; margin: 0 auto; }
     }
 </style>
-@endendpush
+@endpush
 
 @php
     $badgeInfo = match($viatic->status) {

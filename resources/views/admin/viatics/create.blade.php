@@ -153,7 +153,7 @@
         .vt-page { max-width: 100%; }
     }
 </style>
-@endendpush
+@endpush
 
 @section('content')
 <div class="vt-page">

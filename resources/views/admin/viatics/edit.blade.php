@@ -142,7 +142,7 @@
     .vt-delete-btn:hover { background: #fee2e2; }
     .vt-delete-btn svg { width: 18px; height: 18px; }
 </style>
-@endendpush
+@endpush
 
 @section('content')
 <div class="vt-page">
