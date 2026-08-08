@@ -140,7 +140,8 @@
     }
     .task-modal-close:hover { background: var(--surface); color: var(--text); }
     .task-field { display: flex; flex-direction: column; gap: 7px; }
-    .task-field label {
+    .task-field label:not(.platform-pill):not(.video-toggle),
+    .task-field .field-label {
         font-size: 11px;
         font-weight: 800;
         letter-spacing: 0.06em;
@@ -172,6 +173,136 @@
         line-height: 1.5;
         background: var(--surface-2);
     }
+    .task-field input,
+    .task-field select,
+    .task-field textarea {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text);
+        font-size: 14px;
+        outline: none;
+        transition: border-color .15s, background .15s;
+        font-family: inherit;
+    }
+    .task-field input:focus,
+    .task-field select:focus,
+    .task-field textarea:focus { border-color: var(--primary); background: var(--surface); }
+    .task-field input::placeholder,
+    .task-field textarea::placeholder { color: var(--muted); opacity: .7; }
+    .task-field textarea { min-height: 90px; resize: vertical; }
+
+    .task-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 18px 26px;
+        border-top: 1px solid var(--border);
+        background: var(--surface-2);
+    }
+    .task-save {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 22px;
+        border-radius: 12px;
+        border: none;
+        background: var(--primary);
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background .15s;
+    }
+    .task-save:hover { background: var(--primary-strong); }
+
+    .platform-choices {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .platform-pill {
+        position: relative;
+        cursor: pointer;
+    }
+    .platform-pill input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .platform-pill span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 22px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: normal;
+        text-transform: none;
+        transition: all .15s;
+    }
+    .platform-pill input:checked + span {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+    }
+    .platform-pill input:focus + span { box-shadow: 0 0 0 2px var(--primary-soft); }
+
+    .video-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: normal;
+        text-transform: none;
+        color: var(--text);
+    }
+    .video-toggle input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .video-knob {
+        width: 44px;
+        height: 24px;
+        border-radius: 12px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        position: relative;
+        transition: background .15s, border-color .15s;
+    }
+    .video-knob::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--text);
+        transition: transform .15s;
+    }
+    .video-toggle input:checked + .video-knob {
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+    .video-toggle input:checked + .video-knob::after {
+        transform: translateX(20px);
+        background: #fff;
+    }
+    .video-text { color: var(--muted); }
+    .video-toggle input:checked ~ .video-text { color: var(--text); }
 </style>
 
 <div class="kanban-wrap">
@@ -215,7 +346,7 @@
                                 : 'Sin fecha';
                         @endphp
 
-                        <div class="kanban-card" style="border-left:{{ $borderLeft }};" data-json="{{ json_encode(['id' => $task->id, 'title' => $task->title, 'firstTag' => $firstTag, 'category' => $task->category, 'reviewer' => $task->reviewer?->name, 'due_date' => $task->due_date?->format('d/m/Y'), 'user' => $task->user?->name, 'linked_piece' => $task->linked_piece, 'delivery_link' => $task->delivery_link, 'platform' => $task->platform, 'has_video' => $task->has_video, 'rejection_comment' => $task->rejection_comment, 'task_description' => $task->task_description, 'description' => $task->description]) }}" onclick="openTaskModal(this)">
+                        <div class="kanban-card" style="border-left:{{ $borderLeft }};" data-json="{{ json_encode(['id' => $task->id, 'title' => $task->title, 'firstTag' => $firstTag, 'category' => $task->category, 'reviewer' => $task->reviewer?->name, 'reviewer_id' => $task->reviewer_id, 'due_date' => $task->due_date?->format('Y-m-d'), 'user' => $task->user?->name, 'user_id' => $task->user_id, 'status' => $task->status, 'priority' => $task->priority, 'progress' => $task->progress, 'linked_piece' => $task->linked_piece, 'delivery_link' => $task->delivery_link, 'platform' => $task->platform, 'has_video' => $task->has_video, 'rejection_comment' => $task->rejection_comment, 'task_description' => $task->task_description, 'description' => $task->description]) }}" onclick="openTaskModal(this)">
                             <h3 class="kanban-card-title">{{ $task->title }}</h3>
 
                             <div class="kanban-card-line">
@@ -255,10 +386,16 @@
 </div>
 
 <div class="task-modal" id="taskModal" onclick="if(event.target === this) closeTaskModal()">
-    <div class="task-modal-card">
+    <form method="POST" id="taskEditForm" class="task-modal-card">
+        @csrf
+        @method('PUT')
+        <input type="hidden" id="editStatus" name="status">
+        <input type="hidden" id="editPriority" name="priority">
+        <input type="hidden" id="editProgress" name="progress">
+
         <div class="task-modal-head">
             <div>
-                <div class="task-modal-eyebrow">Detalle de tarea</div>
+                <div class="task-modal-eyebrow">Editar tarea</div>
                 <h1 class="task-modal-title" id="modalTitle">Tarea</h1>
             </div>
             <button type="button" class="task-modal-close" onclick="closeTaskModal()" title="Cerrar">
@@ -268,128 +405,161 @@
 
         <div class="task-modal-scroll">
             <div class="task-field">
-                <label>Pieza / Título</label>
-                <div class="task-value" id="modalTitleValue">—</div>
+                <label for="editTitle">Pieza / Título</label>
+                <input type="text" id="editTitle" name="title" placeholder="Título de la pieza..." required>
             </div>
 
             <div class="task-row">
                 <div class="task-field">
-                    <label>Categoría</label>
-                    <div class="task-value empty" id="modalCategory">—</div>
+                    <label for="editCategory">Categoría</label>
+                    <select id="editCategory" name="category">
+                        <option value="">—</option>
+                        <option value="Antes / Después">Antes / Después</option>
+                        <option value="Carruseles">Carruseles</option>
+                        <option value="Congreso">Congreso</option>
+                        <option value="Cumpleaños">Cumpleaños</option>
+                        <option value="Días conmemorativos">Días conmemorativos</option>
+                        <option value="Educación">Educación</option>
+                        <option value="Equipos">Equipos</option>
+                        <option value="Promociones">Promociones</option>
+                    </select>
                 </div>
                 <div class="task-field">
-                    <label>Estado</label>
-                    <div class="task-value" id="modalStatus">—</div>
-                </div>
-            </div>
-
-            <div class="task-row">
-                <div class="task-field">
-                    <label>Fecha</label>
-                    <div class="task-value" id="modalDate">—</div>
-                </div>
-                <div class="task-field">
-                    <label>Responsable</label>
-                    <div class="task-value" id="modalUser">—</div>
-                </div>
-            </div>
-
-            <div class="task-row">
-                <div class="task-field">
-                    <label>Revisor</label>
-                    <div class="task-value empty" id="modalReviewer">—</div>
-                </div>
-                <div class="task-field">
-                    <label>Producto / Equipo</label>
-                    <div class="task-value" id="modalProduct">—</div>
+                    <label for="editTags">Estado</label>
+                    <select id="editTags" name="tags" required>
+                        <option value="Aprobado">Aprobado</option>
+                        <option value="Cambios solicitados">Cambios solicitados</option>
+                        <option value="En revisión">En revisión</option>
+                        <option value="Idea">Idea</option>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Publicado">Publicado</option>
+                    </select>
                 </div>
             </div>
 
             <div class="task-row">
                 <div class="task-field">
-                    <label>Plataforma destino</label>
-                    <div class="task-value empty" id="modalPlatform">—</div>
+                    <label for="editDueDate">Fecha</label>
+                    <input type="date" id="editDueDate" name="due_date">
                 </div>
                 <div class="task-field">
-                    <label>Video</label>
-                    <div class="task-value empty" id="modalVideo">—</div>
+                    <label for="editUser">Responsable</label>
+                    <select id="editUser" name="user_id" required>
+                        <option value="">—</option>
+                        @foreach ($users as $u)
+                            <option value="{{ $u->id }}">{{ $u->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="task-row">
+                <div class="task-field">
+                    <label for="editReviewer">Revisor</label>
+                    <select id="editReviewer" name="reviewer_id">
+                        <option value="">—</option>
+                        @foreach ($users as $u)
+                            <option value="{{ $u->id }}">{{ $u->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="task-field">
+                    <label for="editProduct">Producto / Equipo</label>
+                    <input type="text" id="editProduct" name="linked_piece" placeholder="Ej. Endoscopia">
+                </div>
+            </div>
+
+            <div class="task-row">
+                <div class="task-field">
+                    <span class="field-label">Plataforma destino</span>
+                    <div class="platform-choices">
+                        @foreach (['Facebook','Instagram','LinkedIn','TikTok','Todas','WhatsApp','YouTube'] as $platform)
+                            <label class="platform-pill">
+                                <input type="checkbox" name="platform[]" value="{{ $platform }}" class="edit-platform">
+                                <span>{{ $platform }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="task-field">
+                    <span class="field-label">Video</span>
+                    <label class="video-toggle" for="editHasVideo">
+                        <input type="checkbox" id="editHasVideo" name="has_video" value="1">
+                        <span class="video-knob"></span>
+                        <span class="video-text">¿Incluye video?</span>
+                    </label>
                 </div>
             </div>
 
             <div class="task-field">
-                <label>Enlace (Canva / Drive)</label>
-                <div class="task-value" id="modalLink">—</div>
+                <label for="editLink">Enlace (Canva / Drive)</label>
+                <input type="url" id="editLink" name="delivery_link" placeholder="Pega el link de Canva o Drive del flyer">
             </div>
 
             <div class="task-field">
-                <label>Comentarios de revisión</label>
-                <div class="task-value" id="modalComments">—</div>
+                <label for="editComments">Comentarios de revisión</label>
+                <textarea id="editComments" name="rejection_comment" placeholder="Notas del revisor..."></textarea>
             </div>
 
             <div class="task-field">
-                <label>Descripción</label>
-                <div class="task-value empty" id="modalDesc">—</div>
+                <label for="editTaskDesc">Descripción</label>
+                <textarea id="editTaskDesc" name="task_description" placeholder="Descripción de la pieza / instrucciones..."></textarea>
             </div>
 
             <div class="task-field">
-                <label>Copy / Texto del post</label>
-                <div class="task-value" id="modalCopy">—</div>
+                <label for="editCopy">Copy / Texto del post</label>
+                <textarea id="editCopy" name="description" placeholder="Texto de la publicación..."></textarea>
             </div>
 
             <div class="task-field">
-                <label>Entrega — Imagen o video (vista previa del enlace)</label>
+                <span class="field-label">Entrega — Imagen o video (vista previa del enlace)</span>
                 <div class="task-preview">
                     Aún no hay imagen/video. Pega el enlace arriba y aquí lo verá todo el equipo.
                 </div>
             </div>
         </div>
-    </div>
+
+        <div class="task-footer">
+            <button type="submit" class="task-save">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
+                Guardar cambios
+            </button>
+        </div>
+    </form>
 </div>
 
 <script>
     function openTaskModal(card) {
         const data = JSON.parse(card.dataset.json);
+        const form = document.getElementById('taskEditForm');
+        form.action = '/marketing/tareas/' + data.id;
+
         document.getElementById('modalTitle').textContent = data.title || 'Tarea';
-        setText('modalTitleValue', data.title);
-        setText('modalCategory', data.category);
-        setText('modalStatus', data.firstTag);
-        setText('modalDate', data.due_date);
-        setText('modalUser', data.user);
-        setText('modalReviewer', data.reviewer);
-        setText('modalProduct', data.linked_piece);
-        setText('modalPlatform', data.platform && data.platform.length ? data.platform.join(', ') : null);
-        setText('modalVideo', data.has_video ? 'Sí' : null);
-        setLink('modalLink', data.delivery_link);
-        setText('modalComments', data.rejection_comment);
-        setText('modalDesc', data.task_description);
-        setText('modalCopy', data.description);
+        document.getElementById('editTitle').value = data.title || '';
+        document.getElementById('editCategory').value = data.category || '';
+        document.getElementById('editTags').value = data.firstTag || '';
+        document.getElementById('editDueDate').value = data.due_date || '';
+        document.getElementById('editUser').value = data.user_id || '';
+        document.getElementById('editReviewer').value = data.reviewer_id || '';
+        document.getElementById('editProduct').value = data.linked_piece || '';
+        document.getElementById('editLink').value = data.delivery_link || '';
+        document.getElementById('editComments').value = data.rejection_comment || '';
+        document.getElementById('editTaskDesc').value = data.task_description || '';
+        document.getElementById('editCopy').value = data.description || '';
+        document.getElementById('editStatus').value = data.status || 'pendiente';
+        document.getElementById('editPriority').value = data.priority || 'media';
+        document.getElementById('editProgress').value = data.progress ?? 0;
+
+        document.querySelectorAll('.edit-platform').forEach(cb => {
+            cb.checked = data.platform ? data.platform.includes(cb.value) : false;
+        });
+        document.getElementById('editHasVideo').checked = data.has_video === true || data.has_video === 1 || data.has_video === '1';
+
         document.getElementById('taskModal').classList.add('is-open');
     }
 
     function closeTaskModal() {
         document.getElementById('taskModal').classList.remove('is-open');
-    }
-
-    function setText(id, value) {
-        const el = document.getElementById(id);
-        if (!value) {
-            el.textContent = '—';
-            el.classList.add('empty');
-            return;
-        }
-        el.textContent = value;
-        el.classList.remove('empty');
-    }
-
-    function setLink(id, url) {
-        const el = document.getElementById(id);
-        if (!url) {
-            el.textContent = '—';
-            el.classList.add('empty');
-            return;
-        }
-        el.innerHTML = '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>';
-        el.classList.remove('empty');
     }
 
     document.addEventListener('keydown', function(e) {
