@@ -16,6 +16,7 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admi
     Route::view('/agenda', 'admin.agenda.index')->name('agenda.index');
     Route::view('/materiales', 'admin.materiales.index')->name('materials.index');
     Route::view('/reportes', 'admin.reportes.index')->name('reports.index');
+    Route::view('/viaticos', 'admin.viaticos.index')->name('viatics.index');
 });
 
 Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->name('admin.')->group(function () {
