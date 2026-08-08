@@ -352,19 +352,15 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Clientes</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Cotizaciones">
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.cotizaciones.*') ? 'active' : '' }}" href="{{ route('commercial.cotizaciones.index') }}" data-tip="Cotizaciones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cotizaciones</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Ventas">
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.remisiones.*') ? 'active' : '' }}" href="{{ route('commercial.remisiones.index') }}" data-tip="Remisiones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Ventas</span>
+                        <span class="nav-label">Remisiones</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Facturación">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Facturación</span>
-                    </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Promociones">
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.promociones.*') ? 'active' : '' }}" href="{{ route('commercial.promociones.index') }}" data-tip="Promociones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Promociones</span>
                     </a>
@@ -389,9 +385,9 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Productos</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.stock.*') ? 'active' : '' }}" href="{{ route('inventory.stock.index') }}" data-tip="Stock">
+                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.paquetes.*') ? 'active' : '' }}" href="{{ route('inventory.paquetes.index') }}" data-tip="Paquetes">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Stock</span>
+                        <span class="nav-label">Paquetes</span>
                     </a>
                 </div>
             </div>

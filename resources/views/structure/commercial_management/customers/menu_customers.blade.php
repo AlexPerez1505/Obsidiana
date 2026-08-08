@@ -65,9 +65,9 @@
     {{-- Estadísticas (sin gráficas) --}}
     @php
         $total = $customers->count();
-        $withPromo = $customers->where('receives_promotion', true)->count();
-        $activeAdvisors = $customers->pluck('seller_id')->unique()->filter()->count();
-        $registeredEmails = $customers->whereNotNull('correo')->count();
+        $withPromo = $customers->where('recibe_promocion', true)->count();
+        $activeAdvisors = $customers->pluck('asesor_id')->unique()->filter()->count();
+        $registeredEmails = $customers->whereNotNull('gmail')->count();
     @endphp
     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:18px;">
         <div class="stat-card cyan">
@@ -158,7 +158,7 @@
                                 <span class="customer-avatar" style="background:{{ $avatarColor }}; box-shadow: 0 0 12px {{ $avatarColor }}, 0 0 0 1px rgba(255,255,255,0.15);">{{ $initials }}</span>
                                 <div>
                                     <div class="customer-name">{{ $customer->nombre }} {{ $customer->apellido }}</div>
-                                    <div class="customer-meta">{{ $customer->empresa ?? 'Sin empresa' }}</div>
+                                    <div class="customer-meta">{{ $customer->category?->nombre ?? 'Sin categoría' }}</div>
                                 </div>
                             </div>
                         </td>
@@ -168,16 +168,16 @@
                         </td>
                         <td>
                             <svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                            {{ $customer->correo ?? '-' }}
+                            {{ $customer->gmail ?? '-' }}
                         </td>
                         <td>
                             <svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                            {{ $customer->seller?->name ?? 'Sin asesor' }}
+                            {{ $customer->asesor?->name ?? 'Sin asesor' }}
                         </td>
                         <td>
-                            <span class="promotion-badge {{ $customer->receives_promotion ? '' : 'inactive' }}">
+                            <span class="promotion-badge {{ $customer->recibe_promocion ? '' : 'inactive' }}">
                                 <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;"></span>
-                                {{ $customer->receives_promotion ? 'Sí' : 'No' }}
+                                {{ $customer->recibe_promocion ? 'Sí' : 'No' }}
                             </span>
                         </td>
                         <td>

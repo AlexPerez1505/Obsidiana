@@ -2,61 +2,51 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Congress extends Model
 {
-    /** @use HasFactory<\Database\Factories\CongressFactory> */
-    use HasFactory;
-
-    protected $table = 'congress_events';
+    protected $table = 'congresos_eventos';
 
     protected $fillable = [
-        'name',
-        'label',
-        'description',
-        'image_path',
-        'category_id',
-        'start_date',
-        'end_date',
-        'assembly_time',
-        'disassembly_time',
-        'download_access',
-        'download_text',
-        'upload_access',
-        'upload_text',
-        'address',
+        'nombre',
+        'descripcion',
+        'path_archivo',
+        'categoria_id',
+        'fecha_inicio',
+        'fecha_finalizacion',
+        'hora_montaje',
+        'hora_desmontaje',
+        'descarga_acceso',
+        'descarga_texto',
+        'acceso_subir',
+        'subir_texto',
+        'latitude',
+        'longitud',
+        'direccion',
         'comments',
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
-        'assembly_time' => 'datetime:H:i',
-        'disassembly_time' => 'datetime:H:i',
-        'download_access' => 'boolean',
-        'upload_access' => 'boolean',
-        'image_path' => 'array',
+        'fecha_inicio' => 'date',
+        'fecha_finalizacion' => 'date',
+        'hora_montaje' => 'datetime:H:i',
+        'hora_desmontaje' => 'datetime:H:i',
+        'descarga_acceso' => 'boolean',
+        'acceso_subir' => 'boolean',
+        'latitude' => 'decimal:7',
+        'longitud' => 'decimal:7',
     ];
 
     public function category(): BelongsTo
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(Category::class, 'categoria_id');
     }
 
     public function customers(): HasMany
     {
-        return $this->hasMany(Customer::class, 'congress_id');
-    }
-
-    public function notifiedUsers(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'congress_event_user', 'congress_event_id', 'user_id')
-            ->withPivot(['notified', 'notified_at'])
-            ->withTimestamps();
+        return $this->hasMany(Customer::class, 'congreso_id');
     }
 }
