@@ -38,6 +38,7 @@
     .approval-table td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     .approval-table tr:last-child td { border-bottom: none; }
     .approval-table tr:hover td { background: var(--surface-2); }
+    .approval-table tbody tr { cursor: pointer; }
 
     .td-piece { display: flex; flex-direction: column; gap: 3px; }
     .piece-title { font-weight: 700; font-size: 14px; color: var(--text); }
@@ -82,6 +83,14 @@
     .modal-btn-green:hover { background: #1d4ed8; }
     .modal-btn-amber { background: #60a5fa; }
     .modal-btn-amber:hover { background: #3b82f6; }
+    .spec-section { display: flex; flex-direction: column; gap: 16px; }
+    .spec-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    @media (max-width: 640px) { .spec-grid { grid-template-columns: 1fr; } }
+    .spec-field { display: flex; flex-direction: column; gap: 6px; }
+    .spec-label { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .spec-value { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 14px; line-height: 1.5; word-break: break-word; white-space: pre-wrap; }
+    .spec-value a { color: var(--primary); text-decoration: none; }
+    .spec-value a:hover { text-decoration: underline; }
 </style>
 
 <div class="approval-wrap">
@@ -180,8 +189,25 @@
                         $platforms = $task->platform ?? [];
                         $progress = $task->progress ?? 0;
                         $progressCount = round($progress / 10);
+                        $taskJson = json_encode([
+                            'id' => $task->id,
+                            'title' => $task->title,
+                            'category' => $task->category,
+                            'status' => $task->status,
+                            'due_date' => $fecha,
+                            'user' => $task->user?->name,
+                            'reviewer' => $task->reviewer?->name,
+                            'platform' => $task->platform,
+                            'has_video' => $task->has_video,
+                            'delivery_link' => $task->delivery_link,
+                            'task_description' => $task->task_description,
+                            'description' => $task->description,
+                            'rejection_comment' => $task->rejection_comment,
+                            'approval_checklist' => $task->approval_checklist ?? [],
+                            'linked_piece' => $task->linked_piece,
+                        ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
                     @endphp
-                    <tr data-title="{{ strtolower($task->title) }}" data-category="{{ strtolower($task->category ?? '') }}" data-status="{{ $status }}">
+                    <tr data-title="{{ strtolower($task->title) }}" data-category="{{ strtolower($task->category ?? '') }}" data-status="{{ $status }}" data-json="{{ $taskJson }}" onclick="openApprovalModalFromElement(this)">
                         <td>
                             <div class="td-piece">
                                 <span class="piece-title">{{ $task->title }}</span>
@@ -230,10 +256,7 @@
                             </div>
                         </td>
                         <td>
-                            @php
-                                $locked = implode(',', $task->approval_checklist ?? []);
-                            @endphp
-                            <button type="button" class="review-btn" onclick="openApprovalModal({{ $task->id }}, '{{ addslashes($task->title) }}', '{{ addslashes($task->category ?? '') }}', '{{ $status }}', '{{ $task->delivery_link ?? '' }}', '{{ addslashes($task->task_description ?? '') }}', '{{ addslashes($task->description ?? '') }}', '{{ $locked }}')" {{ $status === 'revision' ? '' : 'disabled' }}>
+                            <button type="button" class="review-btn" data-json="{{ $taskJson }}" onclick="event.stopPropagation(); openApprovalModalFromElement(this)" {{ $status === 'revision' ? '' : 'disabled' }}>
                                 Revisar
                             </button>
                         </td>
@@ -258,8 +281,22 @@
             @csrf
             @method('PUT')
             <div class="approval-modal-scroll">
-                <div>
-                    <div id="modalDescription" style="font-size:14px;color:var(--text);line-height:1.5;"></div>
+                <div class="spec-section">
+                    <h3 class="checklist-title">Especificaciones de la pieza</h3>
+                    <div class="spec-grid">
+                        <div class="spec-field"><span class="spec-label">Pieza / Título</span><div class="spec-value" id="specTitle">—</div></div>
+                        <div class="spec-field"><span class="spec-label">Categoría</span><div class="spec-value" id="specCategory">—</div></div>
+                        <div class="spec-field"><span class="spec-label">Fecha</span><div class="spec-value" id="specDueDate">—</div></div>
+                        <div class="spec-field"><span class="spec-label">Responsable</span><div class="spec-value" id="specUser">—</div></div>
+                        <div class="spec-field"><span class="spec-label">Revisor</span><div class="spec-value" id="specReviewer">—</div></div>
+                        <div class="spec-field"><span class="spec-label">Producto / Equipo</span><div class="spec-value" id="specProduct">—</div></div>
+                        <div class="spec-field"><span class="spec-label">Plataforma destino</span><div class="spec-value" id="specPlatforms">—</div></div>
+                        <div class="spec-field"><span class="spec-label">Video</span><div class="spec-value" id="specVideo">—</div></div>
+                        <div class="spec-field"><span class="spec-label">Enlace</span><div class="spec-value" id="specLink">—</div></div>
+                        <div class="spec-field"><span class="spec-label">Descripción</span><div class="spec-value" id="specTaskDesc">—</div></div>
+                        <div class="spec-field"><span class="spec-label">Copy / Texto del post</span><div class="spec-value" id="specCopy">—</div></div>
+                        <div class="spec-field"><span class="spec-label">Comentarios del revisor</span><div class="spec-value" id="specComments">—</div></div>
+                    </div>
                 </div>
 
                 <div>
@@ -303,30 +340,53 @@
 </div>
 
 <script>
-    function openApprovalModal(id, title, category, status, link, desc, copy, locked) {
+    function openApprovalModalFromElement(el) {
+        openApprovalModal(JSON.parse(el.dataset.json));
+    }
+
+    function openApprovalModal(data) {
         const base = '{{ url('/marketing/tareas') }}';
-        document.getElementById('btnAprobar').setAttribute('formaction', `${base}/${id}/aprobar`);
-        document.getElementById('btnDevolver').dataset.formaction = `${base}/${id}/devolver`;
-        document.getElementById('approvalForm').action = `${base}/${id}/aprobar`;
-        document.getElementById('modalTitle').textContent = title || 'Revisar pieza';
+        document.getElementById('btnAprobar').setAttribute('formaction', `${base}/${data.id}/aprobar`);
+        document.getElementById('btnDevolver').dataset.formaction = `${base}/${data.id}/devolver`;
+        document.getElementById('approvalForm').action = `${base}/${data.id}/aprobar`;
+        document.getElementById('modalTitle').textContent = data.title || 'Revisar pieza';
 
-        let html = '';
-        if (category) html += `<span class="piece-cat" style="margin-bottom:10px;"><span class="piece-cat-dot"></span>${category}</span><br>`;
-        if (desc) html += `<p><strong>Descripción:</strong> ${desc}</p>`;
-        if (copy) html += `<p><strong>Copy / Texto del post:</strong> ${copy}</p>`;
-        if (link) html += `<p><strong>Enlace:</strong> <a href="${link}" target="_blank" rel="noopener" style="color:var(--primary);">${link}</a></p>`;
-        if (!html) html = '<p style="color:var(--muted);">No hay detalles adicionales.</p>';
-        document.getElementById('modalDescription').innerHTML = html;
+        document.getElementById('specTitle').textContent = data.title || '—';
+        document.getElementById('specCategory').textContent = data.category || '—';
+        document.getElementById('specDueDate').textContent = data.due_date || '—';
+        document.getElementById('specUser').textContent = data.user || '—';
+        document.getElementById('specReviewer').textContent = data.reviewer || '—';
+        document.getElementById('specProduct').textContent = data.linked_piece || '—';
+        document.getElementById('specVideo').textContent = data.has_video ? 'Sí' : 'No';
+        document.getElementById('specTaskDesc').textContent = data.task_description || '—';
+        document.getElementById('specCopy').textContent = data.description || '—';
+        document.getElementById('specComments').textContent = data.rejection_comment || '—';
 
-        const lockedArray = locked ? locked.split(',').map(Number).filter(n => !isNaN(n)) : [];
+        const platforms = Array.isArray(data.platform) ? data.platform : [];
+        document.getElementById('specPlatforms').innerHTML = platforms.length
+            ? platforms.map(p => `<span class="platform-item" style="display:inline-block;margin:2px 4px 2px 0;">${p}</span>`).join('')
+            : '—';
+
+        const link = data.delivery_link || '';
+        document.getElementById('specLink').innerHTML = link
+            ? `<a href="${link}" target="_blank" rel="noopener">${link}</a>`
+            : '—';
+
+        const isRevision = data.status === 'revision';
+        const isCompleted = data.status === 'completada';
+        const lockedArray = Array.isArray(data.approval_checklist) ? data.approval_checklist : [];
         document.querySelectorAll('.checklist-item input').forEach((cb, index) => {
             const isLocked = lockedArray.includes(index);
-            cb.checked = isLocked;
-            cb.disabled = isLocked;
-            cb.closest('.checklist-item').classList.toggle('locked', isLocked);
+            cb.checked = isCompleted || isLocked;
+            cb.disabled = isCompleted || !isRevision || isLocked;
+            cb.closest('.checklist-item').classList.toggle('locked', isCompleted || !isRevision || isLocked);
         });
         document.querySelectorAll('.checklist-item').forEach(l => l.classList.remove('checked'));
         document.getElementById('rejectionComment').value = '';
+
+        document.querySelector('#approvalForm .comment-box').style.display = isRevision ? 'flex' : 'none';
+        document.querySelector('#approvalForm .modal-actions').style.display = isRevision ? 'flex' : 'none';
+
         updateCheckCount();
 
         document.getElementById('approvalModal').classList.add('is-open');
