@@ -49,6 +49,7 @@
                             </td>
                             <td style="display:flex; gap:8px; flex-wrap:wrap;">
                                 <a href="{{ route('commercial.cotizaciones.show', $cot) }}" class="btn btn--ghost" style="padding:6px 12px; font-size:13px; text-decoration:none;">Ver detalle</a>
+                                <a href="{{ route('commercial.cotizaciones.edit', $cot) }}" class="btn btn--ghost" style="padding:6px 12px; font-size:13px; text-decoration:none;">Editar</a>
                                 @if($cot->estado !== 'remision')
                                     <form method="POST" action="{{ route('commercial.cotizaciones.remision', $cot) }}" onsubmit="return confirm('¿Convertir esta cotización en remisión? Se volverá una venta definitiva.');">
                                         @csrf

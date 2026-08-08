@@ -10,6 +10,7 @@
             <span class="badge {{ $cotizacion->estado === 'remision' ? 'badge--ok' : 'badge--warn' }}" style="font-size:13px; padding:6px 12px;">
                 {{ $cotizacion->estado === 'remision' ? 'Remisión (venta definitiva)' : 'Cotización (solo presupuesto)' }}
             </span>
+            <a href="{{ route('commercial.cotizaciones.edit', $cotizacion) }}" class="btn btn--ghost" style="text-decoration:none;">Editar</a>
             @if($cotizacion->estado !== 'remision')
                 <form method="POST" action="{{ route('commercial.cotizaciones.remision', $cotizacion) }}" onsubmit="return confirm('¿Convertir esta cotización en remisión? Se volverá una venta definitiva.');">
                     @csrf
@@ -92,6 +93,7 @@
                     <div><div class="muted" style="font-size:13px;">Descuentos</div><div style="font-weight:700;">${{ number_format($cotizacion->descuentos, 2) }}</div></div>
                     <div><div class="muted" style="font-size:13px;">IVA {{ $cotizacion->aplica_iva ? '(16%)' : '(no aplica)' }}</div><div style="font-weight:700;">${{ number_format($cotizacion->iva, 2) }}</div></div>
                     <div><div class="muted" style="font-size:13px;">Costo de envío</div><div style="font-weight:700;">${{ number_format($cotizacion->costo_envio, 2) }}</div></div>
+                    <div><div class="muted" style="font-size:13px;">Anticipo</div><div style="font-weight:700; color:var(--green);">${{ number_format($cotizacion->anticipo, 2) }}</div></div>
                     <div><div class="muted" style="font-size:13px;">Total</div><div style="font-weight:800; font-size:18px;">${{ number_format($cotizacion->total, 2) }}</div></div>
                     <div><div class="muted" style="font-size:13px;">Lugar</div><div style="font-weight:700;">{{ $cotizacion->lugar ?: '—' }}</div></div>
                 </div>
@@ -121,7 +123,12 @@
                             @forelse($cotizacion->planPagos->sortBy('no_pago') as $plan)
                                 @php $pagado = $plan->pagos->where('pagado', true)->isNotEmpty(); @endphp
                                 <tr>
-                                    <td>{{ $plan->no_pago }}</td>
+                                    <td>
+                                        {{ $plan->no_pago === 0 ? 'Anticipo' : $plan->no_pago }}
+                                        @if($plan->no_pago === 0)
+                                            <span class="badge" style="background:var(--green-soft); color:var(--green); font-weight:700; font-size:10.5px; margin-left:4px;">ANTICIPO</span>
+                                        @endif
+                                    </td>
                                     <td>{{ $plan->plazo_pagar->format('d/m/Y') }}</td>
                                     <td style="font-weight:700;">${{ number_format($plan->monto ?? ($cotizacion->total / max($cotizacion->planPagos->count(), 1)), 2) }}</td>
                                     <td>{{ $plan->metodo_pago }}</td>

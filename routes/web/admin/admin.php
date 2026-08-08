@@ -23,6 +23,7 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admi
 
 Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/usuarios', [UserController::class, 'index'])->name('users.index');
+    Route::post('/usuarios/perfil-rh', [UserController::class, 'updateHrProfile'])->name('users.hrProfile.update');
     Route::get('/usuarios/{user}', [UserController::class, 'show'])->name('users.show');
     Route::post('/usuarios/{user}/admin', [UserController::class, 'toggleAdmin'])->name('users.toggleAdmin');
     Route::post('/usuarios/{user}/aprobar', [UserController::class, 'approve'])->name('users.approve');
