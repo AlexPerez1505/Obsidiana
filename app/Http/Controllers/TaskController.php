@@ -119,7 +119,6 @@ class TaskController extends Controller
             'description' => ['nullable', 'string'],
             'task_description' => ['nullable', 'string'],
             'delivery_link' => ['nullable', 'url'],
-            'status' => ['required', 'in:pendiente,en_proceso,revision,completada'],
             'priority' => ['required', 'in:baja,media,alta'],
             'due_date' => ['nullable', 'date'],
             'review_date' => ['nullable', 'date'],
@@ -132,11 +131,12 @@ class TaskController extends Controller
             'platform.*' => ['string', 'max:255'],
             'has_video' => ['nullable', 'boolean'],
             'linked_piece' => ['nullable', 'string', 'max:255'],
-            'rejection_comment' => ['nullable', 'string'],
         ]);
 
-        $data['tags'] = $data['tags']
-            ? array_values(array_filter(array_map('trim', explode(',', $data['tags']))))
+        $data['status'] = 'pendiente';
+        $tags = $data['tags'] ?? null;
+        $data['tags'] = $tags
+            ? array_values(array_filter(array_map('trim', explode(',', $tags))))
             : [];
 
         $data['created_by'] = auth()->id();
@@ -173,8 +173,9 @@ class TaskController extends Controller
             'rejection_comment' => ['nullable', 'string'],
         ]);
 
-        $data['tags'] = $data['tags']
-            ? array_values(array_filter(array_map('trim', explode(',', $data['tags']))))
+        $tags = $data['tags'] ?? null;
+        $data['tags'] = $tags
+            ? array_values(array_filter(array_map('trim', explode(',', $tags))))
             : [];
 
         $task->update($data);
@@ -265,14 +266,57 @@ public function aprobacionFlyers(): View
     {
         $data = $request->validate([
             'rejection_comment' => ['required', 'string'],
+            'approval_checklist' => ['nullable', 'array'],
         ]);
 
+        $items = [
+            'Nombre/modelo',
+            'Specs verificados',
+            'Marca/logo',
+            'Precio/política',
+            'Ortografía',
+            'Datos de contacto',
+            'Sin claims indebidos',
+            'Formato de red',
+            'Imagen nítida',
+            'Leyenda salud',
+        ];
+
+        $previous = $task->approval_checklist ?? [];
+        $submitted = array_map('intval', $data['approval_checklist'] ?? []);
+        $final = array_values(array_unique(array_merge($previous, $submitted)));
+
+        $missing = collect($items)
+            ->filter(fn ($_, $index) => !in_array($index, $final))
+            ->values()
+            ->all();
+
+        $comment = trim($data['rejection_comment']);
+        $missingText = $missing
+            ? 'Checklist pendiente: ' . implode(', ', $missing)
+            : 'Checklist completo';
+
         $task->update([
-            'status' => 'en_proceso',
-            'rejection_comment' => $data['rejection_comment'],
+            'status' => 'pendiente',
+            'approval_checklist' => $final,
+            'progress' => min(count($final) * 10, 100),
+            'rejection_comment' => "Especificaciones:\n{$comment}\n\n{$missingText}",
         ]);
 
         return redirect()->back()
-            ->with('status', 'Tarea devuelta correctamente.');
+            ->with('status', 'Pieza devuelta con observaciones.');
+    }
+
+    /**
+     * Envía una tarea pendiente a revisión (aprobación de flyers).
+     */
+    public function enviarRevision(Task $task): RedirectResponse
+    {
+        $task->update([
+            'status' => 'revision',
+        ]);
+
+        return redirect()->back()
+            ->with('status', 'Pieza enviada a revisión.');
     }
 }
