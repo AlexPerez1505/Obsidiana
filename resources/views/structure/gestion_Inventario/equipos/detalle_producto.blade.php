@@ -2,19 +2,21 @@
 
 @php
     $productData = array_merge([
-        'code' => '',
+        'id' => '',
+        'serial_number' => '',
         'name' => '',
         'category' => '',
+        'subtype' => '',
         'unit' => 'Pza',
         'brand' => '',
         'model' => '',
         'description' => '',
+        'price' => 0,
         'stock_current' => 0,
-        'stock_min' => 0,
-        'stock_max' => 0,
         'warehouse' => '',
         'status' => 'Activo',
         'thumb' => 'scope',
+        'image_path' => '',
     ], $product ?? []);
 @endphp
 
@@ -74,6 +76,14 @@
     .product-detail-image svg {
         width: min(170px, 92%);
         height: auto;
+    }
+
+    .product-detail-image img {
+        width: min(220px, 100%);
+        aspect-ratio: 1 / 1;
+        object-fit: cover;
+        border-radius: 8px;
+        display: block;
     }
 
     .product-detail-main {
@@ -187,7 +197,7 @@
                 <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost" style="text-decoration:none;">
                     Cancelar
                 </a>
-                <a href="{{ route('inventory.stock.index', ['producto' => $productData['code']]) }}" class="btn" style="text-decoration:none;">
+                <a href="{{ route('inventory.stock.index', ['producto' => $productData['id']]) }}" class="btn" style="text-decoration:none;">
                     Aplicar ajuste
                 </a>
             </div>
@@ -195,7 +205,11 @@
 
         <article class="product-detail-card">
             <div class="product-detail-image" aria-label="Imagen de {{ $productData['name'] }}">
-                @include('structure.gestion_Inventario.equipos.partials.product-thumb', ['type' => $productData['thumb']])
+                @if(! empty($productData['image_path']))
+                    <img src="{{ asset($productData['image_path']) }}" alt="Imagen de {{ $productData['name'] }}">
+                @else
+                    @include('structure.gestion_Inventario.equipos.partials.product-thumb', ['type' => $productData['thumb']])
+                @endif
             </div>
 
             <div class="product-detail-main">
@@ -203,12 +217,16 @@
 
                 <dl class="product-detail-list">
                     <div class="product-detail-item">
-                        <dt>Codigo:</dt>
-                        <dd>{{ $productData['code'] }}</dd>
+                        <dt>Numero de serie:</dt>
+                        <dd>{{ $productData['serial_number'] }}</dd>
                     </div>
                     <div class="product-detail-item">
-                        <dt>Categoria:</dt>
+                        <dt>Tipo de equipo:</dt>
                         <dd>{{ $productData['category'] }}</dd>
+                    </div>
+                    <div class="product-detail-item">
+                        <dt>Subtipo:</dt>
+                        <dd>{{ $productData['subtype'] }}</dd>
                     </div>
                     <div class="product-detail-item">
                         <dt>Marca:</dt>
@@ -223,7 +241,11 @@
                         <dd>{{ $productData['unit'] }}</dd>
                     </div>
                     <div class="product-detail-item">
-                        <dt>Ubicacion:</dt>
+                        <dt>Precio:</dt>
+                        <dd>${{ number_format((float) $productData['price'], 2) }} MXN</dd>
+                    </div>
+                    <div class="product-detail-item">
+                        <dt>Almacen:</dt>
                         <dd>{{ $productData['warehouse'] }}</dd>
                     </div>
                     <div class="product-detail-item">
@@ -235,16 +257,12 @@
 
             <aside class="product-detail-stock" aria-label="Resumen de stock">
                 <div>
-                    <span class="product-detail-stock__label">Stock actual</span>
+                    <span class="product-detail-stock__label">Stock</span>
                     <strong class="product-detail-stock__value">{{ $productData['stock_current'] }} {{ $productData['unit'] }}</strong>
                 </div>
                 <div>
-                    <span class="product-detail-stock__label">Stock minimo</span>
-                    <strong class="product-detail-stock__value">{{ $productData['stock_min'] }} {{ $productData['unit'] }}</strong>
-                </div>
-                <div>
-                    <span class="product-detail-stock__label">Stock maximo</span>
-                    <strong class="product-detail-stock__value">{{ $productData['stock_max'] }} {{ $productData['unit'] }}</strong>
+                    <span class="product-detail-stock__label">Precio</span>
+                    <strong class="product-detail-stock__value">${{ number_format((float) $productData['price'], 2) }} MXN</strong>
                 </div>
                 <div>
                     <span class="product-detail-stock__label">Estado</span>

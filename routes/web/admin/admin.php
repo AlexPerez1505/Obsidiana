@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\MaterialRequestController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\TripController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VehicleController;
@@ -14,9 +16,9 @@ use Illuminate\Support\Facades\Route;
 */
 Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admin.')->group(function () {
     Route::view('/agenda', 'admin.agenda.index')->name('agenda.index');
-    Route::view('/materiales', 'admin.materiales.index')->name('materials.index');
-    Route::view('/reportes', 'admin.reportes.index')->name('reports.index');
-    Route::view('/viaticos', 'admin.viaticos.index')->name('viatics.index');
+    Route::get('/materiales', [MaterialRequestController::class, 'index'])->name('materials.index');
+    Route::post('/materiales', [MaterialRequestController::class, 'store'])->name('materials.store');
+    Route::get('/reportes', [ReportController::class, 'index'])->name('reports.index');
 });
 
 Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -26,13 +28,14 @@ Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->n
     Route::post('/usuarios/{user}/aprobar', [UserController::class, 'approve'])->name('users.approve');
     Route::post('/usuarios/{user}/banear', [UserController::class, 'ban'])->name('users.ban');
     Route::post('/usuarios/{user}/desbanear', [UserController::class, 'unban'])->name('users.unban');
+    Route::post('/reportes', [ReportController::class, 'store'])->name('reports.store');
+    Route::patch('/materiales/{materialRequest}/revision', [MaterialRequestController::class, 'review'])->name('materials.review');
 
     // Vehículos
     Route::get('/vehiculos', [VehicleController::class, 'index'])->name('vehicles.index');
     Route::post('/vehiculos', [VehicleController::class, 'store'])->name('vehicles.store');
     Route::get('/vehiculos/{vehicle}', [VehicleController::class, 'show'])->name('vehicles.show');
 
-    // Viáticos
     Route::get('/viaticos', [ViaticController::class, 'index'])->name('viatics.index');
     Route::get('/viaticos/crear', [ViaticController::class, 'create'])->name('viatics.create');
     Route::post('/viaticos', [ViaticController::class, 'store'])->name('viatics.store');
@@ -44,7 +47,6 @@ Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->n
     Route::patch('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'updateExpense'])->name('viatics.expense.update');
     Route::delete('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'destroyExpense'])->name('viatics.expense.destroy');
 
-    // Viajes en curso
     Route::post('/viajes', [TripController::class, 'store'])->name('trips.store');
     Route::get('/viajes/{trip}', [TripController::class, 'show'])->name('trips.show');
     Route::post('/viajes/{trip}/gastos', [TripController::class, 'addExpense'])->name('trips.expense');

@@ -16,6 +16,11 @@ class ViaticController extends Controller
     public function index(Request $request): View
     {
         $query = Viatic::with(['user', 'vehicle'])->latest();
+        $user = $request->user();
+
+        if (! $user->isAdmin()) {
+            $query->where('user_id', $user->id);
+        }
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -100,6 +105,8 @@ class ViaticController extends Controller
 
     public function edit(Viatic $viatic): View
     {
+        $this->authorizeViatic($viatic);
+
         $vehicles = Vehicle::orderBy('brand')->get();
 
         return view('admin.viatics.edit', [
@@ -110,6 +117,8 @@ class ViaticController extends Controller
 
     public function update(Request $request, Viatic $viatic): RedirectResponse
     {
+        $this->authorizeViatic($viatic);
+
         $data = $request->validate([
             'vehicle_id'   => ['nullable', 'exists:vehicles,id'],
             'vehicle_name' => ['nullable', 'string', 'max:100'],
@@ -134,6 +143,8 @@ class ViaticController extends Controller
 
     public function destroy(Viatic $viatic): RedirectResponse
     {
+        $this->authorizeViatic($viatic);
+
         $viatic->delete();
 
         return redirect()->route('admin.viatics.index')->with('status', 'Viático eliminado correctamente.');
@@ -141,6 +152,8 @@ class ViaticController extends Controller
 
     public function show(Viatic $viatic): View
     {
+        $this->authorizeViatic($viatic);
+
         $viatic->load('expenses');
 
         return view('admin.viatics.show', [
@@ -150,6 +163,8 @@ class ViaticController extends Controller
 
     public function addExpense(Request $request, Viatic $viatic): JsonResponse
     {
+        $this->authorizeViatic($viatic);
+
         $data = $request->validate([
             'type'   => ['required', 'string', 'in:toll,fuel,meal,other'],
             'label'  => ['nullable', 'string', 'max:255'],
@@ -190,6 +205,8 @@ class ViaticController extends Controller
 
     public function updateExpense(Request $request, Viatic $viatic, ViaticExpense $expense): JsonResponse
     {
+        $this->authorizeExpense($viatic, $expense);
+
         $data = $request->validate([
             'type'   => ['required', 'string', 'in:toll,fuel,meal,other'],
             'label'  => ['nullable', 'string', 'max:255'],
@@ -229,6 +246,8 @@ class ViaticController extends Controller
 
     public function destroyExpense(Viatic $viatic, ViaticExpense $expense): JsonResponse
     {
+        $this->authorizeExpense($viatic, $expense);
+
         $expense->delete();
 
         $total = $viatic->fresh()->total_computed;
@@ -237,5 +256,22 @@ class ViaticController extends Controller
             'total' => $total,
             'count' => $viatic->expenses()->count(),
         ]);
+    }
+
+    private function authorizeViatic(Viatic $viatic): void
+    {
+        $user = request()->user();
+
+        abort_unless(
+            $user && ($user->isAdmin() || (int) $viatic->user_id === (int) $user->id),
+            403
+        );
+    }
+
+    private function authorizeExpense(Viatic $viatic, ViaticExpense $expense): void
+    {
+        $this->authorizeViatic($viatic);
+
+        abort_unless((int) $expense->viatic_id === (int) $viatic->id, 404);
     }
 }

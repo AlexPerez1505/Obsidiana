@@ -29,7 +29,10 @@ class EmployeeReport extends Model
     protected $fillable = [
         'user_id',
         'created_by',
+        'employee_name',
+        'employee_initials',
         'type',
+        'label',
         'status',
         'area',
         'start_date',
@@ -39,6 +42,7 @@ class EmployeeReport extends Model
         'late_minutes',
         'detail',
         'metadata',
+        'generated_at',
     ];
 
     protected function casts(): array
@@ -48,6 +52,7 @@ class EmployeeReport extends Model
             'end_date' => 'date',
             'late_minutes' => 'integer',
             'metadata' => 'array',
+            'generated_at' => 'datetime',
         ];
     }
 

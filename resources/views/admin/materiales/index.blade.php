@@ -4,7 +4,7 @@
 @section('page-sub', 'Gestion Administrativa > Solicitud de materiales')
 
 @php
-    $categories = [
+    $categories = $categories ?? [
         'Papelería',
         'Limpieza',
         'Herramientas',
@@ -27,6 +27,9 @@
         'Hojalatería y Pintura',
         'Otros',
     ];
+    $materialRequests = $materialRequests ?? [];
+    $pendingCount = $pendingCount ?? collect($materialRequests)->where('status', 'pendiente')->count();
+    $selectedUrgency = old('urgency', 'Normal');
 @endphp
 
 @push('head')
@@ -633,7 +636,14 @@
 
         <div class="materials-layout">
             <section class="materials-panel" aria-label="Formulario para solicitar material">
-                <form class="materials-form" id="materialsForm" onsubmit="submitMaterialRequest(event);">
+                <form class="materials-form" id="materialsForm" method="POST" action="{{ route('admin.materials.store') }}">
+                    @csrf
+
+                    @if ($errors->any())
+                        <div class="materials-panel" style="padding:12px 14px;border-color:rgba(220,38,38,.32);color:#dc2626;font-weight:800;">
+                            Revisa los campos de la solicitud antes de enviarla.
+                        </div>
+                    @endif
                     <div class="materials-field">
                         <label for="category">Categoría</label>
                         <div class="materials-control">
@@ -645,7 +655,7 @@
                             </span>
                             <select id="category" name="category">
                                 @foreach ($categories as $category)
-                                    <option value="{{ $category }}">{{ $category }}</option>
+                                    <option value="{{ $category }}" @selected(old('category') === $category)>{{ $category }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -661,7 +671,7 @@
                                         <path d="M3.27 6.96 12 12l8.73-5.04"></path>
                                     </svg>
                                 </span>
-                                <input id="material" name="material" type="text" autocomplete="off" placeholder="Ej. hojas carta, guantes, cable HDMI">
+                                <input id="material" name="material_name" type="text" value="{{ old('material_name') }}" autocomplete="off" placeholder="Ej. hojas carta, guantes, cable HDMI" required>
                             </div>
                         </div>
 
@@ -676,7 +686,7 @@
                                 </span>
                                 <div class="quantity-control">
                                     <button type="button" onclick="adjustQuantity(-1)" aria-label="Disminuir cantidad">-</button>
-                                    <input id="quantity" name="quantity" type="number" min="1" value="1" inputmode="numeric">
+                                    <input id="quantity" name="quantity" type="number" min="1" value="{{ old('quantity', 1) }}" inputmode="numeric" required>
                                     <button type="button" onclick="adjustQuantity(1)" aria-label="Aumentar cantidad">+</button>
                                 </div>
                             </div>
@@ -693,11 +703,9 @@
                                     </svg>
                                 </span>
                                 <select id="unit" name="unit">
-                                    <option>Pieza</option>
-                                    <option>Paquete</option>
-                                    <option>Caja</option>
-                                    <option>Kit</option>
-                                    <option>Servicio</option>
+                                    @foreach (['Pieza', 'Paquete', 'Caja', 'Kit', 'Servicio'] as $unitOption)
+                                        <option value="{{ $unitOption }}" @selected(old('unit', 'Pieza') === $unitOption)>{{ $unitOption }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
@@ -711,7 +719,7 @@
                                         <rect x="3" y="4" width="18" height="18" rx="2"></rect>
                                     </svg>
                                 </span>
-                                <input id="required-date" name="required_date" type="date" value="{{ now()->addDay()->format('Y-m-d') }}">
+                                <input id="required-date" name="required_date" type="date" value="{{ old('required_date', now()->addDay()->format('Y-m-d')) }}">
                             </div>
                         </div>
                     </div>
@@ -719,10 +727,11 @@
                     <div class="materials-field">
                         <label>Urgencia</label>
                         <div class="segmented" role="group" aria-label="Urgencia">
-                            <button class="segment is-active" type="button" data-urgency="Normal">Normal</button>
-                            <button class="segment" type="button" data-urgency="Urgente">Urgente</button>
-                            <button class="segment" type="button" data-urgency="Programada">Programada</button>
+                            <button class="segment {{ $selectedUrgency === 'Normal' ? 'is-active' : '' }}" type="button" data-urgency="Normal">Normal</button>
+                            <button class="segment {{ $selectedUrgency === 'Urgente' ? 'is-active' : '' }}" type="button" data-urgency="Urgente">Urgente</button>
+                            <button class="segment {{ $selectedUrgency === 'Programada' ? 'is-active' : '' }}" type="button" data-urgency="Programada">Programada</button>
                         </div>
+                        <input type="hidden" id="urgency" name="urgency" value="{{ $selectedUrgency }}">
                     </div>
 
                     <div class="materials-field">
@@ -734,7 +743,7 @@
                                     <path d="M14 2v6h6M8 13h8M8 17h5"></path>
                                 </svg>
                             </span>
-                            <textarea id="justification" name="justification" placeholder="Describe la necesidad del equipo o insumo solicitado, su uso y urgencia."></textarea>
+                            <textarea id="justification" name="justification" placeholder="Describe la necesidad del equipo o insumo solicitado, su uso y urgencia.">{{ old('justification') }}</textarea>
                         </div>
                     </div>
 
@@ -806,7 +815,7 @@
                     <h3>Revision de solicitudes</h3>
                     <p>Aqui se aprueban o rechazan las solicitudes enviadas.</p>
                 </div>
-                <span class="approvals-count" id="approvalCount">2 pendientes</span>
+                <span class="approvals-count" id="approvalCount">{{ $pendingCount }} {{ $pendingCount === 1 ? 'pendiente' : 'pendientes' }}</span>
             </div>
 
             <div class="approvals-table-wrap">
@@ -823,34 +832,40 @@
                         </tr>
                     </thead>
                     <tbody id="materialsApprovalBody">
-                        <tr>
-                            <td>SOL-0007</td>
-                            <td>Hojas carta<small>Papeleria</small></td>
-                            <td>4 Paquete</td>
-                            <td>{{ now()->addDays(2)->format('Y-m-d') }}</td>
-                            <td>Normal</td>
-                            <td><span class="approval-status pending">Pendiente</span></td>
-                            <td>
-                                <div class="approval-actions">
-                                    <button class="approval-action approve" type="button" data-approval-action="approve">Aprobar</button>
-                                    <button class="approval-action reject" type="button" data-approval-action="reject">Rechazar</button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>SOL-0008</td>
-                            <td>Guantes nitrilo<small>Seguridad e Higiene</small></td>
-                            <td>2 Caja</td>
-                            <td>{{ now()->addDays(3)->format('Y-m-d') }}</td>
-                            <td>Urgente</td>
-                            <td><span class="approval-status pending">Pendiente</span></td>
-                            <td>
-                                <div class="approval-actions">
-                                    <button class="approval-action approve" type="button" data-approval-action="approve">Aprobar</button>
-                                    <button class="approval-action reject" type="button" data-approval-action="reject">Rechazar</button>
-                                </div>
-                            </td>
-                        </tr>
+                        @forelse ($materialRequests as $requestRow)
+                            <tr>
+                                <td>{{ $requestRow['folio'] }}</td>
+                                <td>{{ $requestRow['material_name'] }}<small>{{ $requestRow['category'] }}</small></td>
+                                <td>{{ $requestRow['quantity'] }} {{ $requestRow['unit'] }}</td>
+                                <td>{{ $requestRow['required_date'] }}</td>
+                                <td>{{ $requestRow['urgency'] }}</td>
+                                <td><span class="approval-status {{ $requestRow['status_class'] }}">{{ $requestRow['status_label'] }}</span></td>
+                                <td>
+                                    <div class="approval-actions">
+                                        @if (auth()->user()?->isAdmin() && $requestRow['can_review'])
+                                            <form method="POST" action="{{ route('admin.materials.review', $requestRow['id']) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <input type="hidden" name="decision" value="approve">
+                                                <button class="approval-action approve" type="submit">Aprobar</button>
+                                            </form>
+                                            <form method="POST" action="{{ route('admin.materials.review', $requestRow['id']) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <input type="hidden" name="decision" value="reject">
+                                                <button class="approval-action reject" type="submit">Rechazar</button>
+                                            </form>
+                                        @else
+                                            <button class="approval-action" type="button" disabled>Sin acciones</button>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7">No hay solicitudes registradas.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
@@ -862,6 +877,7 @@
         const material = document.getElementById('material');
         const quantity = document.getElementById('quantity');
         const unit = document.getElementById('unit');
+        const urgencyInput = document.getElementById('urgency');
         const requiredDate = document.getElementById('required-date');
         const materialsApprovalBody = document.getElementById('materialsApprovalBody');
         const approvalCount = document.getElementById('approvalCount');
@@ -897,7 +913,7 @@
         }
 
         function currentUrgency() {
-            return document.querySelector('.segment.is-active')?.dataset.urgency || 'Normal';
+            return urgencyInput?.value || document.querySelector('.segment.is-active')?.dataset.urgency || 'Normal';
         }
 
         function updateApprovalCount() {
@@ -961,6 +977,9 @@
             button.addEventListener('click', () => {
                 document.querySelectorAll('.segment').forEach((item) => item.classList.remove('is-active'));
                 button.classList.add('is-active');
+                if (urgencyInput) {
+                    urgencyInput.value = button.dataset.urgency;
+                }
                 summaryUrgency.textContent = button.dataset.urgency;
             });
         });

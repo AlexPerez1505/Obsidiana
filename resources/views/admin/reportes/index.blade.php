@@ -4,7 +4,7 @@
 @section('page-sub', 'Gestion Administrativa > Reporte')
 
 @php
-    $employees = [
+    $employees = $employees ?? [
         ['name' => 'Ricardo', 'initials' => 'R', 'area' => 'Gestion Administrativa', 'attendance' => '94%', 'pending' => '0', 'status' => 'Al dia'],
         ['name' => 'Marina Sherlyn', 'initials' => 'MS', 'area' => 'Marketing', 'attendance' => '96%', 'pending' => '1', 'status' => 'Vacaciones'],
         ['name' => 'Jose Alex', 'initials' => 'JA', 'area' => 'Inventario', 'attendance' => '91%', 'pending' => '1', 'status' => 'Permiso'],
@@ -13,7 +13,7 @@
         ['name' => 'Fernanda Lopez', 'initials' => 'FL', 'area' => 'Administracion', 'attendance' => '97%', 'pending' => '0', 'status' => 'Al dia'],
     ];
 
-    $metrics = [
+    $metrics = $metrics ?? [
         ['label' => 'Colaboradores', 'value' => count($employees), 'trend' => 'En seguimiento', 'type' => 'employee'],
         ['label' => 'Asistencias', 'value' => '94%', 'trend' => '+3%', 'type' => 'attendance'],
         ['label' => 'Faltas', 'value' => '7', 'trend' => '-2', 'type' => 'absence'],
@@ -22,7 +22,7 @@
         ['label' => 'Incidencias', 'value' => '3', 'trend' => 'Revision', 'type' => 'incident'],
     ];
 
-    $records = [
+    $records = $records ?? [
         ['employee' => 'Ricardo', 'area' => 'Gestion Administrativa', 'type' => 'attendance', 'label' => 'Asistencia', 'date' => '03 Ago 2026', 'detail' => 'Entrada 08:02 - salida 17:01', 'status' => 'Validada'],
         ['employee' => 'Marina Sherlyn', 'area' => 'Marketing', 'type' => 'vacation', 'label' => 'Vacaciones', 'date' => '05-09 Ago 2026', 'detail' => 'Periodo solicitado por descanso anual', 'status' => 'Aprobada'],
         ['employee' => 'Jose Alex', 'area' => 'Inventario', 'type' => 'permission', 'label' => 'Permiso', 'date' => '04 Ago 2026', 'detail' => 'Salida personal de 12:00 a 14:00', 'status' => 'Pendiente'],
@@ -39,7 +39,7 @@
         'incident' => ['label' => 'Incidencia', 'class' => 'incident'],
     ];
 
-    $pendingModules = [
+    $pendingModules = $pendingModules ?? [
         ['type' => 'permission', 'count' => 2, 'title' => 'Permisos por aprobar', 'detail' => 'Solicitudes de salida personal en espera.', 'tone' => 'permission'],
         ['type' => 'absence', 'count' => 1, 'title' => 'Faltas por justificar', 'detail' => 'Registros sin evidencia cargada.', 'tone' => 'absence'],
         ['type' => 'incident', 'count' => 3, 'title' => 'Incidencias abiertas', 'detail' => 'Retardos y ajustes de asistencia.', 'tone' => 'incident'],
@@ -47,6 +47,23 @@
         ['type' => 'attendance', 'count' => 2, 'title' => 'Asistencias por revisar', 'detail' => 'Entradas y salidas pendientes de cierre.', 'tone' => 'attendance'],
     ];
 
+    $areas = $areas ?? collect($employees)->pluck('area')->filter()->unique()->values()->all();
+    $filters = array_merge([
+        'start_date' => '2026-08-01',
+        'end_date' => '2026-08-31',
+        'area' => 'all',
+        'person' => '',
+    ], $filters ?? []);
+    $reportStatuses = [
+        'pendiente' => 'Pendiente',
+        'validada' => 'Validada',
+        'aprobada' => 'Aprobada',
+        'justificar' => 'Justificar',
+        'revision' => 'Revision',
+        'rechazada' => 'Rechazada',
+        'cancelada' => 'Cancelada',
+    ];
+    $isReportGeneratorOpen = $errors->any();
 @endphp
 
 @push('head')
@@ -76,6 +93,14 @@
         justify-content: space-between;
         align-items: center;
         gap: 16px;
+    }
+
+    .reports-header-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
     }
 
     .reports-heading {
@@ -158,10 +183,11 @@
     }
 
     .reports-field input,
-    .reports-field select {
+    .reports-field select,
+    .reports-field textarea {
         width: 100%;
-        height: 42px;
-        padding: 0 11px;
+        min-height: 42px;
+        padding: 10px 11px;
         border: 1px solid var(--border);
         border-radius: 8px;
         background: var(--surface);
@@ -170,8 +196,14 @@
         outline: none;
     }
 
+    .reports-field textarea {
+        min-height: 86px;
+        resize: vertical;
+    }
+
     .reports-field input:focus,
-    .reports-field select:focus {
+    .reports-field select:focus,
+    .reports-field textarea:focus {
         border-color: var(--primary);
         box-shadow: 0 0 0 3px rgba(0, 122, 255, .12);
     }
@@ -187,6 +219,49 @@
         align-items: center;
         justify-content: center;
         gap: 8px;
+    }
+
+    .report-generator {
+        display: grid;
+    }
+
+    .report-generator[hidden] {
+        display: none;
+    }
+
+    .report-generator-form {
+        display: grid;
+        gap: 16px;
+        padding: 18px 20px 20px;
+    }
+
+    .report-form-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .reports-field--wide {
+        grid-column: 1 / -1;
+    }
+
+    .report-form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .report-errors {
+        margin: 0;
+        padding: 12px 14px;
+        border-radius: 8px;
+        border: 1px solid rgba(220, 38, 38, .28);
+        background: rgba(220, 38, 38, .08);
+        color: #dc2626;
+        font-size: 13px;
+        font-weight: 800;
     }
 
     .reports-metrics {
@@ -547,7 +622,8 @@
     }
 
     @media (max-width: 860px) {
-        .reports-filters {
+        .reports-filters,
+        .report-form-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
@@ -558,13 +634,16 @@
             flex-direction: column;
         }
 
+        .reports-header-actions,
         .reports-primary,
-        .reports-light {
+        .reports-light,
+        .report-form-actions {
             width: 100%;
         }
 
         .reports-filters,
-        .reports-metrics {
+        .reports-metrics,
+        .report-form-grid {
             grid-template-columns: 1fr;
         }
 
@@ -597,39 +676,153 @@
                 </div>
             </div>
 
-            <button class="reports-primary" type="button" onclick="exportReport()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
-                Exportar reporte
-            </button>
+            <div class="reports-header-actions">
+                @if (auth()->user()?->isAdmin())
+                    <button class="reports-primary" type="button" data-report-generator-open>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+                        Generar reporte
+                    </button>
+                @endif
+                <button class="reports-light" type="button" onclick="exportReport()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
+                    Exportar reporte
+                </button>
+            </div>
         </div>
 
-        <form class="reports-filters" onsubmit="event.preventDefault(); filterReportRows();">
+        @if (auth()->user()?->isAdmin())
+            <section class="reports-panel report-generator" id="reportGenerator" @unless($isReportGeneratorOpen) hidden @endunless>
+                <div class="reports-panel-head">
+                    <div>
+                        <h3>Generar reporte</h3>
+                        <p>Registra un movimiento administrativo para el colaborador.</p>
+                    </div>
+                    <button class="reports-light" type="button" data-report-generator-close>Cerrar</button>
+                </div>
+
+                <form class="report-generator-form" method="POST" action="{{ route('admin.reports.store') }}">
+                    @csrf
+
+                    @if ($errors->any())
+                        <div class="report-errors">
+                            Revisa los campos marcados antes de guardar el reporte.
+                        </div>
+                    @endif
+
+                    <div class="report-form-grid">
+                        <div class="reports-field">
+                            <label for="new-report-employee">Colaborador</label>
+                            <input id="new-report-employee" name="employee_name" type="text" value="{{ old('employee_name') }}" list="report-employees" required>
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-area">Area</label>
+                            <input id="new-report-area" name="area" type="text" value="{{ old('area') }}" list="report-areas" required>
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-type">Tipo</label>
+                            <select id="new-report-type" name="type" required>
+                                <option value="asistencia" @selected(old('type') === 'asistencia')>Asistencia</option>
+                                <option value="falta" @selected(old('type') === 'falta')>Falta</option>
+                                <option value="vacaciones" @selected(old('type') === 'vacaciones')>Vacaciones</option>
+                                <option value="permiso" @selected(old('type') === 'permiso')>Permiso</option>
+                                <option value="incidencia" @selected(old('type') === 'incidencia')>Incidencia</option>
+                            </select>
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-status">Estado</label>
+                            <select id="new-report-status" name="status" required>
+                                @foreach ($reportStatuses as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('status', 'pendiente') === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-start">Fecha inicio</label>
+                            <input id="new-report-start" name="start_date" type="date" value="{{ old('start_date', now()->format('Y-m-d')) }}" required>
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-end">Fecha fin</label>
+                            <input id="new-report-end" name="end_date" type="date" value="{{ old('end_date') }}">
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-check-in">Entrada</label>
+                            <input id="new-report-check-in" name="check_in" type="time" value="{{ old('check_in') }}">
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-check-out">Salida</label>
+                            <input id="new-report-check-out" name="check_out" type="time" value="{{ old('check_out') }}">
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-late">Minutos tarde</label>
+                            <input id="new-report-late" name="late_minutes" type="number" min="0" step="1" value="{{ old('late_minutes') }}">
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-attendance">Asistencia %</label>
+                            <input id="new-report-attendance" name="attendance" type="number" min="0" max="100" step="1" value="{{ old('attendance') }}">
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-pending">Pendientes</label>
+                            <input id="new-report-pending" name="pending" type="number" min="0" step="1" value="{{ old('pending', 0) }}">
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-summary">Estado resumen</label>
+                            <input id="new-report-summary" name="summary_status" type="text" value="{{ old('summary_status') }}">
+                        </div>
+
+                        <div class="reports-field reports-field--wide">
+                            <label for="new-report-detail">Detalle</label>
+                            <textarea id="new-report-detail" name="detail" required>{{ old('detail') }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="report-form-actions">
+                        <button class="reports-light" type="button" data-report-generator-close>Cancelar</button>
+                        <button class="reports-primary" type="submit">Guardar reporte</button>
+                    </div>
+                </form>
+            </section>
+        @endif
+
+        <form class="reports-filters" method="GET" action="{{ route('admin.reports.index') }}" onsubmit="filterReportRows();">
             <div class="reports-field">
                 <label for="report-start">Desde</label>
-                <input id="report-start" type="date" value="2026-08-01">
+                <input id="report-start" name="start_date" type="date" value="{{ $filters['start_date'] }}">
             </div>
             <div class="reports-field">
                 <label for="report-end">Hasta</label>
-                <input id="report-end" type="date" value="2026-08-31">
+                <input id="report-end" name="end_date" type="date" value="{{ $filters['end_date'] }}">
             </div>
             <div class="reports-field">
                 <label for="report-area">Area</label>
-                <select id="report-area">
-                    <option value="all">Todas</option>
-                    <option>Gestion Administrativa</option>
-                    <option>Marketing</option>
-                    <option>Inventario</option>
-                    <option>Servicios</option>
-                    <option>Comercial</option>
-                    <option>Administracion</option>
+                <select id="report-area" name="area">
+                    <option value="all" @selected($filters['area'] === 'all')>Todas</option>
+                    @foreach ($areas as $area)
+                        <option value="{{ $area }}" @selected($filters['area'] === $area)>{{ $area }}</option>
+                    @endforeach
                 </select>
             </div>
             <div class="reports-field">
                 <label for="report-person">Colaborador</label>
-                <input id="report-person" type="text" placeholder="Buscar nombre" list="report-employees">
+                <input id="report-person" name="person" type="text" placeholder="Buscar nombre" list="report-employees" value="{{ $filters['person'] }}">
                 <datalist id="report-employees">
                     @foreach ($employees as $employee)
                         <option value="{{ $employee['name'] }}"></option>
+                    @endforeach
+                </datalist>
+                <datalist id="report-areas">
+                    @foreach ($areas as $area)
+                        <option value="{{ $area }}"></option>
                     @endforeach
                 </datalist>
             </div>
@@ -772,6 +965,24 @@
 
     <script>
         let activeReportType = 'all';
+        const reportGenerator = document.getElementById('reportGenerator');
+
+        document.querySelectorAll('[data-report-generator-open]').forEach((button) => {
+            button.addEventListener('click', () => {
+                if (reportGenerator) {
+                    reportGenerator.hidden = false;
+                    reportGenerator.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-report-generator-close]').forEach((button) => {
+            button.addEventListener('click', () => {
+                if (reportGenerator) {
+                    reportGenerator.hidden = true;
+                }
+            });
+        });
 
         document.querySelectorAll('.reports-tab').forEach((button) => {
             button.addEventListener('click', () => {

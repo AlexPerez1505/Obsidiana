@@ -5,14 +5,8 @@
 @section('page-sub', 'Gestion de Inventario > Productos')
 
 @php
-    $products = [
-        ['code' => 'PRO-0001', 'name' => 'Endoscopio Flexible', 'category' => 'Endoscopia', 'unit' => 'Pza', 'stock' => 3, 'status' => 'Activo', 'tone' => 'green', 'thumb' => 'scope'],
-        ['code' => 'PRO-0002', 'name' => 'Endoscopio Flexible', 'category' => 'Endoscopia', 'unit' => 'Pza', 'stock' => 2, 'status' => 'Mantenimiento', 'tone' => 'blue', 'thumb' => 'probe'],
-        ['code' => 'PRO-0003', 'name' => 'Endoscopio Flexible', 'category' => 'Endoscopia', 'unit' => 'Pza', 'stock' => 1, 'status' => 'Activo', 'tone' => 'green', 'thumb' => 'fiber'],
-        ['code' => 'PRO-0004', 'name' => 'Endoscopio Flexible', 'category' => 'Endoscopia', 'unit' => 'Pza', 'stock' => 3, 'status' => 'Inactivo', 'tone' => 'red', 'thumb' => 'tower'],
-        ['code' => 'PRO-0005', 'name' => 'Endoscopio Flexible', 'category' => 'Endoscopia', 'unit' => 'Pza', 'stock' => 1, 'status' => 'Activo', 'tone' => 'green', 'thumb' => 'control', 'selected' => true],
-        ['code' => 'PRO-0006', 'name' => 'Endoscopio Flexible', 'category' => 'Endoscopia', 'unit' => 'Pza', 'stock' => 2, 'status' => 'Activo', 'tone' => 'green', 'thumb' => 'cable'],
-    ];
+    $products = $products ?? collect();
+    $productTotal = is_countable($products) ? count($products) : 0;
 @endphp
 
 @push('head')
@@ -114,7 +108,7 @@
 
     .products-table {
         width: 100%;
-        min-width: 920px;
+        min-width: 1120px;
         border-collapse: collapse;
         color: #202938;
         font-size: 13px;
@@ -163,6 +157,14 @@
     .product-thumb svg {
         width: 64px;
         height: 42px;
+        display: block;
+    }
+
+    .product-thumb img {
+        width: 76px;
+        height: 46px;
+        object-fit: cover;
+        border-radius: 5px;
         display: block;
     }
 
@@ -262,6 +264,10 @@
         cursor: pointer;
     }
 
+    .product-action-list form {
+        margin: 0;
+    }
+
     .product-action-list a:hover,
     .product-action-list button:hover {
         background: #eef4ff;
@@ -304,6 +310,11 @@
         font: inherit;
         font-weight: 800;
         cursor: pointer;
+    }
+
+    .products-empty {
+        color: #718096;
+        text-align: center;
     }
 
     :root[data-theme="dark"] .product-search,
@@ -407,33 +418,41 @@
                 <table class="products-table">
                     <thead>
                         <tr>
-                            <th>Codigo</th>
+                            <th>Numero de serie</th>
                             <th>Imagen</th>
                             <th>Producto</th>
-                            <th>Categoria</th>
+                            <th>Tipo de equipo</th>
+                            <th>Subtipo</th>
                             <th>Unidad</th>
-                            <th>Stock actual</th>
+                            <th>Stock</th>
+                            <th>Precio</th>
                             <th>Estado</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="productsBody">
-                        @foreach ($products as $product)
-                            <tr class="{{ ! empty($product['selected']) ? 'is-selected' : '' }}" data-search="{{ strtolower($product['code'].' '.$product['name'].' '.$product['category'].' '.$product['status']) }}">
-                                <td>{{ $product['code'] }}</td>
+                        @forelse ($products as $product)
+                            <tr class="{{ ! empty($product['selected']) ? 'is-selected' : '' }}" data-search="{{ strtolower($product['serial_number'].' '.$product['name'].' '.$product['category'].' '.$product['subtype'].' '.$product['status']) }}">
+                                <td>{{ $product['serial_number'] }}</td>
                                 <td>
                                     <span class="product-thumb" aria-label="Imagen de {{ $product['name'] }}">
-                                        @include('structure.gestion_Inventario.equipos.partials.product-thumb', ['type' => $product['thumb']])
+                                        @if(! empty($product['image_path']))
+                                            <img src="{{ asset($product['image_path']) }}" alt="Imagen de {{ $product['name'] }}">
+                                        @else
+                                            @include('structure.gestion_Inventario.equipos.partials.product-thumb', ['type' => $product['thumb']])
+                                        @endif
                                     </span>
                                 </td>
                                 <td>{{ $product['name'] }}</td>
                                 <td>{{ $product['category'] }}</td>
+                                <td>{{ $product['subtype'] }}</td>
                                 <td>{{ $product['unit'] }}</td>
                                 <td>{{ $product['stock'] }}</td>
+                                <td>${{ number_format((float) $product['price'], 2) }} MXN</td>
                                 <td><span class="state-pill {{ $product['tone'] }}">{{ $product['status'] }}</span></td>
                                 <td>
                                     <div class="product-action-menu" data-product-action-menu>
-                                        <button class="product-action" type="button" aria-label="Acciones de {{ $product['code'] }}" aria-haspopup="true" aria-expanded="false" data-product-action-toggle>
+                                        <button class="product-action" type="button" aria-label="Acciones de {{ $product['serial_number'] }}" aria-haspopup="true" aria-expanded="false" data-product-action-toggle>
                                             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                                 <circle cx="12" cy="5" r="1.8"></circle>
                                                 <circle cx="12" cy="12" r="1.8"></circle>
@@ -442,21 +461,21 @@
                                         </button>
 
                                         <div class="product-action-list" role="menu">
-                                            <a href="{{ route('inventory.productos.show', ['producto' => $product['code']]) }}" role="menuitem">
+                                            <a href="{{ route('inventory.productos.show', ['producto' => $product['id']]) }}" role="menuitem">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                     <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path>
                                                     <circle cx="12" cy="12" r="3"></circle>
                                                 </svg>
                                                 Ver detalle
                                             </a>
-                                            <a href="{{ route('inventory.productos.edit', ['producto' => $product['code']]) }}" role="menuitem">
+                                            <a href="{{ route('inventory.productos.edit', ['producto' => $product['id']]) }}" role="menuitem">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                     <path d="M12 20h9"></path>
                                                     <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
                                                 </svg>
                                                 Editar
                                             </a>
-                                            <a href="{{ route('inventory.stock.index', ['producto' => $product['code']]) }}" role="menuitem">
+                                            <a href="{{ route('inventory.stock.index', ['producto' => $product['id']]) }}" role="menuitem">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                     <path d="M12 5v14"></path>
                                                     <path d="M5 12h14"></path>
@@ -464,7 +483,7 @@
                                                 </svg>
                                                 Ajustar stock
                                             </a>
-                                            <a href="{{ route('inventory.movimientos.index', ['producto' => $product['code']]) }}" role="menuitem">
+                                            <a href="{{ route('inventory.movimientos.index', ['producto' => $product['id']]) }}" role="menuitem">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                     <path d="M3 12a9 9 0 1 0 3-6.7"></path>
                                                     <path d="M3 4v5h5"></path>
@@ -472,50 +491,61 @@
                                                 </svg>
                                                 Historial de movimientos
                                             </a>
-                                            <button type="button" class="product-action-danger" role="menuitem" data-product-action-message="Eliminacion de producto pendiente de confirmar.">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M3 6h18"></path>
-                                                    <path d="M8 6V4h8v2"></path>
-                                                    <path d="M19 6l-1 14H6L5 6"></path>
-                                                    <path d="M10 11v5"></path>
-                                                    <path d="M14 11v5"></path>
-                                                </svg>
-                                                Eliminar
-                                            </button>
+                                            <form method="POST" action="{{ route('inventory.productos.destroy', ['producto' => $product['id']]) }}" onsubmit="return confirm('¿Eliminar este producto?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="product-action-danger" role="menuitem">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                        <path d="M3 6h18"></path>
+                                                        <path d="M8 6V4h8v2"></path>
+                                                        <path d="M19 6l-1 14H6L5 6"></path>
+                                                        <path d="M10 11v5"></path>
+                                                        <path d="M14 11v5"></path>
+                                                    </svg>
+                                                    Eliminar
+                                                </button>
+                                            </form>
                                         </div>
                                     </div>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr data-empty-row>
+                                <td class="products-empty" colspan="10">No hay productos registrados.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
             <div class="products-foot">
-                <span id="productCount">Mostrando 1 a {{ count($products) }} de 25 resultados</span>
-                <button type="button">Ver mas &gt;</button>
+                <span id="productCount">{{ $productTotal === 0 ? 'Sin productos registrados' : 'Mostrando 1 a '.$productTotal.' de '.$productTotal.' resultados' }}</span>
+                <button type="button" @disabled($productTotal === 0)>Ver mas &gt;</button>
             </div>
         </div>
     </section>
 
     <script>
         const productSearch = document.getElementById('productSearch');
-        const productRows = Array.from(document.querySelectorAll('#productsBody tr'));
+        const productRows = Array.from(document.querySelectorAll('#productsBody tr[data-search]'));
         const productCount = document.getElementById('productCount');
+        const productTotal = productRows.length;
 
-        productSearch.addEventListener('input', () => {
-            const query = productSearch.value.trim().toLowerCase();
-            let visible = 0;
+        if (productSearch) {
+            productSearch.addEventListener('input', () => {
+                const query = productSearch.value.trim().toLowerCase();
+                let visible = 0;
 
-            productRows.forEach((row) => {
-                const show = !query || row.dataset.search.includes(query);
-                row.style.display = show ? '' : 'none';
-                if (show) visible += 1;
+                productRows.forEach((row) => {
+                    const show = !query || row.dataset.search.includes(query);
+                    row.style.display = show ? '' : 'none';
+                    if (show) visible += 1;
+                });
+
+                productCount.textContent = visible === 0
+                    ? 'Sin resultados'
+                    : 'Mostrando 1 a ' + visible + ' de ' + productTotal + ' resultados';
             });
-
-            productCount.textContent = visible === 0
-                ? 'Sin resultados'
-                : 'Mostrando 1 a ' + visible + ' de 25 resultados';
-        });
+        }
 
         document.addEventListener('click', (event) => {
             const toggle = event.target.closest('[data-product-action-toggle]');

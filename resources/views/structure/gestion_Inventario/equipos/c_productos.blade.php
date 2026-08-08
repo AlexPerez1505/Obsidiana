@@ -4,33 +4,44 @@
     $mode = $mode ?? 'create';
     $isEdit = $mode === 'edit';
     $productData = array_merge([
-        'code' => '',
+        'id' => '',
+        'serial_number' => '',
         'name' => '',
         'category' => '',
+        'subtype' => '',
         'unit' => '',
         'brand' => '',
         'model' => '',
         'description' => '',
+        'price' => '',
         'stock_current' => '',
-        'stock_max' => '',
-        'stock_min' => '',
         'warehouse' => '',
         'type' => '',
         'technical_category' => '',
         'specifications' => '',
         'supplier' => '',
         'supplier_code' => '',
-        'location' => '',
-        'warranty' => '',
-        'notes' => '',
         'thumb' => 'scope',
+        'image_path' => '',
     ], $product ?? []);
+    $selectOptions = array_merge([
+        'categories' => ['Endoscopia', 'Consumibles', 'Instrumental', 'Refacciones'],
+        'subtypes' => [],
+        'subtypesByCategory' => [],
+        'brands' => [],
+        'models' => [],
+    ], $selectOptions ?? []);
+    $currentCategory = old('category', $productData['category']);
+    $currentSubtype = old('subtype', $productData['subtype']);
+    $currentBrand = old('brand', $productData['brand']);
+    $currentModel = old('model', $productData['model']);
+    $imageUrl = $productData['image_path'] ? asset($productData['image_path']) : null;
     $pageTitle = $isEdit ? 'Editar producto' : 'Nuevo Producto';
     $pageSub = $isEdit ? 'Gestion de Inventario > Productos > Editar Producto' : 'Gestion de Inventario > Productos > Nuevo Producto';
-    $introText = $isEdit ? 'Actualiza la informacion del producto del inventario.' : 'Registra un nuevo producto del inventario.';
-    $imageAction = $isEdit ? 'Cambiar imagen' : 'Seleccionar imagen';
-    $submitLabel = $isEdit ? 'Guardar cambios' : 'Guardar producto';
-    $toastMessage = $isEdit ? 'Cambios del producto preparados para guardar.' : 'Producto preparado para guardar.';
+    $cardTitle = $isEdit ? 'Editar producto' : 'Agregar producto';
+    $cardSub = $isEdit ? 'Actualiza los datos del producto y su imagen.' : 'Crea un nuevo producto y sube su imagen.';
+    $imageAction = $isEdit ? 'Cambiar imagen' : 'Subir imagen';
+    $submitLabel = $isEdit ? 'Guardar cambios' : 'Guardar';
 @endphp
 
 @section('title', $pageTitle)
@@ -40,180 +51,266 @@
 @push('head')
 <style>
     .product-create {
-        display: grid;
-        gap: 18px;
+        max-width: 1040px;
+        margin: 0 auto;
     }
 
-    .product-create__bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        flex-wrap: wrap;
-    }
-
-    .product-create__intro {
-        color: var(--muted);
-        margin: 0;
-        font-size: 0.94rem;
-    }
-
-    .product-create__actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .product-create__grid {
-        display: grid;
-        grid-template-columns: minmax(170px, 0.65fr) minmax(380px, 1.85fr) minmax(240px, 0.85fr);
-        gap: 18px;
-        align-items: stretch;
-    }
-
-    .product-create__row {
-        display: grid;
-        grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-        gap: 18px;
-    }
-
-    .product-panel {
-        background: var(--surface);
+    .product-card {
+        overflow: visible;
         border: 1px solid var(--border);
-        border-radius: 18px;
+        border-radius: 8px;
+        background: var(--surface);
         box-shadow: var(--shadow);
-        padding: 20px;
-        min-width: 0;
     }
 
-    .product-panel__header {
+    .product-card__header {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 16px;
+        gap: 18px;
+        padding: 26px 30px;
+        border-bottom: 1px solid var(--border);
     }
 
-    .product-panel__title {
-        color: var(--text);
-        font-size: 1rem;
-        font-weight: 800;
+    .product-card__header h2 {
         margin: 0;
+        color: var(--text);
+        font-size: clamp(1.7rem, 3vw, 2.45rem);
+        font-weight: 900;
+        line-height: 1.05;
     }
 
-    .product-pill {
-        border: 1px solid rgba(34, 197, 94, 0.65);
-        color: #22c55e;
-        background: rgba(34, 197, 94, 0.08);
-        border-radius: 999px;
-        font-size: 0.72rem;
-        font-weight: 800;
-        line-height: 1;
-        padding: 5px 10px;
-        white-space: nowrap;
+    .product-card__header p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.98rem;
+        font-weight: 600;
+    }
+
+    .product-card__body {
+        display: grid;
+        gap: 22px;
+        padding: 30px;
     }
 
     .product-form-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px 18px;
-    }
-
-    .product-form-grid--three {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .product-form-grid--compact {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px 26px;
     }
 
     .product-field {
         display: grid;
-        gap: 6px;
+        gap: 7px;
         min-width: 0;
-    }
-
-    .product-field--wide {
-        grid-column: 1 / -1;
     }
 
     .product-field label {
         color: var(--muted);
-        font-size: 0.78rem;
-        font-weight: 700;
-        margin: 0;
+        font-size: 0.86rem;
+        font-weight: 800;
     }
 
-    .product-field .product-input,
-    .product-field .product-select,
-    .product-field .product-textarea {
+    .product-input,
+    .product-money {
         width: 100%;
+        min-height: 58px;
         border: 1px solid var(--border);
+        border-radius: 8px;
         background: var(--surface-2);
         color: var(--text);
-        border-radius: 8px;
-        min-height: 38px;
-        padding: 8px 12px;
         font: inherit;
+        font-size: 1rem;
         outline: none;
         transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
     }
 
-    .product-field .product-textarea {
-        min-height: 78px;
-        resize: vertical;
+    .product-input {
+        padding: 0 16px;
     }
 
-    .product-field .product-input:focus,
-    .product-field .product-select:focus,
-    .product-field .product-textarea:focus {
+    .product-input:focus,
+    .product-money:focus-within {
         border-color: rgba(37, 99, 235, 0.9);
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
     }
 
-    .product-image-card {
+    .product-combo {
+        position: relative;
         display: grid;
-        grid-template-rows: auto 1fr auto;
-        gap: 14px;
+        grid-template-columns: minmax(0, 1fr) 50px;
+        align-items: stretch;
     }
 
-    .product-image-card__preview {
-        border: 1px dashed rgba(37, 99, 235, 0.55);
-        background: rgba(37, 99, 235, 0.04);
+    .product-combo .product-input {
+        border-radius: 8px 0 0 8px;
+    }
+
+    .product-combo__toggle {
+        border: 1px solid var(--border);
+        border-left: 0;
+        border-radius: 0 8px 8px 0;
+        background: var(--surface-2);
+        color: var(--muted);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .product-combo__toggle svg {
+        width: 18px;
+        height: 18px;
+        transition: transform 0.15s ease;
+    }
+
+    .product-combo.is-open .product-combo__toggle svg {
+        transform: rotate(180deg);
+    }
+
+    .product-combo__menu {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + 6px);
+        z-index: 40;
+        display: none;
+        max-height: 230px;
+        overflow-y: auto;
+        padding: 6px;
+        border: 1px solid var(--border);
         border-radius: 8px;
-        min-height: 154px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+    }
+
+    .product-combo.is-open .product-combo__menu {
+        display: grid;
+        gap: 3px;
+    }
+
+    .product-combo__option {
+        min-height: 36px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text);
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+        padding: 0 10px;
+        text-align: left;
+    }
+
+    .product-combo__option:hover,
+    .product-combo__option:focus {
+        background: rgba(21, 139, 232, 0.16);
+        outline: none;
+    }
+
+    .product-money {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        padding: 0 16px;
+    }
+
+    .product-money__prefix,
+    .product-money__suffix {
+        color: var(--muted);
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .product-money__input {
+        min-width: 0;
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        font-size: 1rem;
+        outline: none;
+        padding: 12px 0;
+    }
+
+    .product-money__input::-webkit-outer-spin-button,
+    .product-money__input::-webkit-inner-spin-button {
+        margin: 0;
+    }
+
+    .product-image-upload {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        min-height: 190px;
+        padding: 18px;
+        border: 1px dashed var(--border);
+        border-radius: 8px;
+        background: rgba(37, 99, 235, 0.03);
+    }
+
+    .product-image-preview {
+        width: 158px;
+        aspect-ratio: 1 / 1;
+        flex: 0 0 auto;
+        border-radius: 8px;
+        background: var(--surface-2);
         display: grid;
         place-items: center;
         overflow: hidden;
     }
 
-    .product-image-card__preview svg {
-        width: min(128px, 80%);
+    .product-image-preview svg {
+        width: 90px;
         height: auto;
     }
 
-    .product-image-card__preview img {
+    .product-image-preview img {
         width: 100%;
         height: 100%;
-        object-fit: contain;
+        object-fit: cover;
         display: block;
-        padding: 12px;
     }
 
-    .product-image-card__button {
-        color: #1e90ff;
+    .product-image-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        min-width: 0;
+    }
+
+    .product-upload-button {
+        min-height: 50px;
+        padding: 0 22px;
+        border-radius: 8px;
+        background: #45cdb4;
+        color: #fff;
         cursor: pointer;
         display: inline-flex;
+        align-items: center;
         justify-content: center;
-        text-align: center;
-        font-weight: 800;
-        font-size: 0.86rem;
-        margin: 0;
+        gap: 10px;
+        font-size: 0.95rem;
+        font-weight: 900;
+        box-shadow: 0 14px 28px rgba(69, 205, 180, 0.22);
     }
 
-    .product-image-card__input {
+    .product-upload-button svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .product-image-help {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        font-weight: 700;
+    }
+
+    .product-file-input {
         position: absolute;
         width: 1px;
         height: 1px;
@@ -221,257 +318,365 @@
         pointer-events: none;
     }
 
-    .product-create .sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border: 0;
+    .product-card__footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 14px;
+        padding: 0 30px 30px;
     }
 
-    @media (max-width: 1180px) {
-        .product-create__grid,
-        .product-create__row {
-            grid-template-columns: 1fr;
-        }
+    .product-error-box {
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        border-radius: 8px;
+        background: rgba(239, 68, 68, 0.1);
+        color: #fca5a5;
+        padding: 14px 16px;
+        font-weight: 700;
+    }
 
-        .product-image-card {
-            max-width: 320px;
-        }
+    .product-error-box ul {
+        margin: 8px 0 0;
+        padding-left: 18px;
     }
 
     @media (max-width: 760px) {
-        .product-create__bar,
-        .product-create__actions {
+        .product-card__header,
+        .product-card__footer {
+            padding-left: 18px;
+            padding-right: 18px;
+        }
+
+        .product-card__header,
+        .product-card__footer,
+        .product-image-upload,
+        .product-image-actions {
             align-items: stretch;
-            justify-content: stretch;
+            flex-direction: column;
         }
 
-        .product-create__actions,
-        .product-create__actions .btn {
-            width: 100%;
+        .product-card__body {
+            padding: 22px 18px;
         }
 
-        .product-form-grid,
-        .product-form-grid--three,
-        .product-form-grid--compact {
+        .product-form-grid {
             grid-template-columns: 1fr;
         }
 
-        .product-panel {
-            padding: 16px;
+        .product-image-preview {
+            width: 100%;
+            max-width: 190px;
+        }
+
+        .product-card__header .btn,
+        .product-card__footer .btn,
+        .product-upload-button {
+            width: 100%;
         }
     }
 </style>
 @endpush
 
 @section('content')
-    <form class="product-create" id="productCreateForm" method="POST" action="#" enctype="multipart/form-data">
+    <form class="product-create" id="productCreateForm" method="POST" action="{{ $isEdit ? route('inventory.productos.update', ['producto' => $productData['id']]) : route('inventory.productos.store') }}" enctype="multipart/form-data">
         @csrf
+        @if($isEdit)
+            @method('PATCH')
+        @endif
 
-        <div class="product-create__bar">
-            <p class="product-create__intro">{{ $introText }}</p>
+        <section class="product-card" aria-labelledby="product-form-title">
+            <div class="product-card__header">
+                <div>
+                    <h2 id="product-form-title">{{ $cardTitle }}</h2>
+                    <p>{{ $cardSub }}</p>
+                </div>
 
-            <div class="product-create__actions">
                 <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost" style="text-decoration:none;">
                     Volver
+                </a>
+            </div>
+
+            <div class="product-card__body">
+                @if ($errors->any())
+                    <div class="product-error-box">
+                        Revisa los datos del producto.
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <div class="product-form-grid">
+                    <div class="product-field">
+                        <label for="category">Tipo de equipo</label>
+                        <div class="product-combo" data-combo data-combo-name="category">
+                            <input class="product-input" type="text" id="category" name="category" value="{{ $currentCategory }}" autocomplete="off" data-combo-input>
+                            <button class="product-combo__toggle" type="button" aria-label="Mostrar tipos de equipo" data-combo-toggle>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="m6 9 6 6 6-6"></path>
+                                </svg>
+                            </button>
+                            <div class="product-combo__menu" role="listbox" data-combo-menu>
+                                @foreach($selectOptions['categories'] as $category)
+                                    <button class="product-combo__option" type="button" data-combo-option="{{ $category }}">{{ $category }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-field">
+                        <label for="subtype">Subtipo</label>
+                        <div class="product-combo" data-combo data-combo-name="subtype">
+                            <input class="product-input" type="text" id="subtype" name="subtype" value="{{ $currentSubtype }}" autocomplete="off" data-combo-input>
+                            <button class="product-combo__toggle" type="button" aria-label="Mostrar subtipos" data-combo-toggle>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="m6 9 6 6 6-6"></path>
+                                </svg>
+                            </button>
+                            <div class="product-combo__menu" role="listbox" data-combo-menu>
+                                @foreach($selectOptions['subtypes'] as $subtype)
+                                    <button class="product-combo__option" type="button" data-combo-option="{{ $subtype }}">{{ $subtype }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-field">
+                        <label for="brand">Marca</label>
+                        <div class="product-combo" data-combo data-combo-name="brand">
+                            <input class="product-input" type="text" id="brand" name="brand" value="{{ $currentBrand }}" autocomplete="off" data-combo-input>
+                            <button class="product-combo__toggle" type="button" aria-label="Mostrar marcas" data-combo-toggle>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="m6 9 6 6 6-6"></path>
+                                </svg>
+                            </button>
+                            <div class="product-combo__menu" role="listbox" data-combo-menu>
+                                @foreach($selectOptions['brands'] as $brand)
+                                    <button class="product-combo__option" type="button" data-combo-option="{{ $brand }}">{{ $brand }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-field">
+                        <label for="model">Modelo</label>
+                        <div class="product-combo" data-combo data-combo-name="model">
+                            <input class="product-input" type="text" id="model" name="model" value="{{ $currentModel }}" autocomplete="off" data-combo-input>
+                            <button class="product-combo__toggle" type="button" aria-label="Mostrar modelos" data-combo-toggle>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="m6 9 6 6 6-6"></path>
+                                </svg>
+                            </button>
+                            <div class="product-combo__menu" role="listbox" data-combo-menu>
+                                @foreach($selectOptions['models'] as $model)
+                                    <button class="product-combo__option" type="button" data-combo-option="{{ $model }}">{{ $model }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-field">
+                        <label for="price">Precio</label>
+                        <div class="product-money">
+                            <span class="product-money__prefix">$</span>
+                            <input class="product-money__input" type="number" id="price" name="price" value="{{ old('price', $productData['price']) }}" min="0" step="0.01" inputmode="decimal">
+                            <span class="product-money__suffix">MXN</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="product-image-upload">
+                    <div class="product-image-preview" id="productImagePreview" aria-label="Vista previa">
+                        @if($imageUrl)
+                            <img src="{{ $imageUrl }}" alt="Vista previa del producto">
+                        @else
+                            @include('structure.gestion_Inventario.equipos.partials.product-thumb', ['type' => $productData['thumb']])
+                        @endif
+                    </div>
+
+                    <div class="product-image-actions">
+                        <label class="product-upload-button" for="product_image">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 5v14"></path>
+                                <path d="M5 12h14"></path>
+                            </svg>
+                            {{ $imageAction }}
+                        </label>
+                        <p class="product-image-help">Formatos: JPG/PNG. Max 2MB.</p>
+                    </div>
+
+                    <input class="product-file-input" type="file" id="product_image" name="product_image" accept="image/jpeg,image/png">
+                </div>
+            </div>
+
+            <div class="product-card__footer">
+                <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost" style="text-decoration:none;">
+                    Cancelar
                 </a>
                 <button type="submit" class="btn btn--primary">
                     {{ $submitLabel }}
                 </button>
             </div>
-        </div>
-
-        <div class="product-create__grid">
-            <section class="product-panel product-image-card" aria-labelledby="product-image-title">
-                <h3 class="product-panel__title" id="product-image-title">Imagen del producto</h3>
-
-                <div class="product-image-card__preview" id="productImagePreview">
-                    @include('structure.gestion_Inventario.equipos.partials.product-thumb', ['type' => $productData['thumb']])
-                </div>
-
-                <label class="product-image-card__button" for="product_image">{{ $imageAction }}</label>
-                <input class="product-image-card__input" type="file" id="product_image" name="product_image" accept="image/*">
-            </section>
-
-            <section class="product-panel" aria-labelledby="product-general-title">
-                <div class="product-panel__header">
-                    <h3 class="product-panel__title" id="product-general-title">Informacion general</h3>
-                    <span class="product-pill">Activo</span>
-                </div>
-
-                <div class="product-form-grid">
-                    <div class="product-field">
-                        <label for="code">Codigo</label>
-                        <input class="product-input" type="text" id="code" name="code" value="{{ old('code', $productData['code']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="product-field">
-                        <label for="name">Nombre del producto</label>
-                        <input class="product-input" type="text" id="name" name="name" value="{{ old('name', $productData['name']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="product-field">
-                        <label for="category">Categoria</label>
-                        <select class="product-select" id="category" name="category">
-                            <option value="">Seleccionar</option>
-                            <option value="Endoscopia" @selected(old('category', $productData['category']) === 'Endoscopia')>Endoscopia</option>
-                            <option value="Consumibles" @selected(old('category', $productData['category']) === 'Consumibles')>Consumibles</option>
-                            <option value="Instrumental" @selected(old('category', $productData['category']) === 'Instrumental')>Instrumental</option>
-                            <option value="Refacciones" @selected(old('category', $productData['category']) === 'Refacciones')>Refacciones</option>
-                        </select>
-                    </div>
-
-                    <div class="product-field">
-                        <label for="unit">Unidad de medida</label>
-                        <select class="product-select" id="unit" name="unit">
-                            <option value="">Seleccionar</option>
-                            <option value="Pza" @selected(old('unit', $productData['unit']) === 'Pza')>Pza</option>
-                            <option value="Caja" @selected(old('unit', $productData['unit']) === 'Caja')>Caja</option>
-                            <option value="Kit" @selected(old('unit', $productData['unit']) === 'Kit')>Kit</option>
-                            <option value="Paquete" @selected(old('unit', $productData['unit']) === 'Paquete')>Paquete</option>
-                        </select>
-                    </div>
-
-                    <div class="product-field">
-                        <label for="brand">Marca</label>
-                        <input class="product-input" type="text" id="brand" name="brand" value="{{ old('brand', $productData['brand']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="product-field">
-                        <label for="model">Modelo</label>
-                        <input class="product-input" type="text" id="model" name="model" value="{{ old('model', $productData['model']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="product-field product-field--wide">
-                        <label for="description">Descripcion</label>
-                        <input class="product-input" type="text" id="description" name="description" value="{{ old('description', $productData['description']) }}" autocomplete="off">
-                    </div>
-                </div>
-            </section>
-
-            <section class="product-panel" aria-labelledby="product-stock-title">
-                <div class="product-panel__header">
-                    <h3 class="product-panel__title" id="product-stock-title">Stock y control</h3>
-                    <span class="product-pill">Activo</span>
-                </div>
-
-                <div class="product-form-grid product-form-grid--compact">
-                    <div class="product-field product-field--wide">
-                        <label for="stock_current">Stock actual</label>
-                        <input class="product-input" type="number" id="stock_current" name="stock_current" value="{{ old('stock_current', $productData['stock_current']) }}" min="0" step="1">
-                    </div>
-
-                    <div class="product-field product-field--wide">
-                        <label for="stock_max">Stock maximo</label>
-                        <input class="product-input" type="number" id="stock_max" name="stock_max" value="{{ old('stock_max', $productData['stock_max']) }}" min="0" step="1">
-                    </div>
-
-                    <div class="product-field product-field--wide">
-                        <label for="stock_min">Stock minimo</label>
-                        <input class="product-input" type="number" id="stock_min" name="stock_min" value="{{ old('stock_min', $productData['stock_min']) }}" min="0" step="1">
-                    </div>
-
-                    <div class="product-field product-field--wide">
-                        <label for="warehouse">Almacen predeterminado</label>
-                        <select class="product-select" id="warehouse" name="warehouse">
-                            <option value="">Seleccionar</option>
-                            <option value="Almacen Central" @selected(old('warehouse', $productData['warehouse']) === 'Almacen Central')>Almacen Central</option>
-                            <option value="Quirofano 1" @selected(old('warehouse', $productData['warehouse']) === 'Quirofano 1')>Quirofano 1</option>
-                            <option value="Quirofano 2" @selected(old('warehouse', $productData['warehouse']) === 'Quirofano 2')>Quirofano 2</option>
-                            <option value="Servicio tecnico" @selected(old('warehouse', $productData['warehouse']) === 'Servicio tecnico')>Servicio tecnico</option>
-                        </select>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="product-create__row">
-            <section class="product-panel" aria-labelledby="product-tech-title">
-                <h3 class="product-panel__title" id="product-tech-title">Informacion tecnica</h3>
-
-                <div class="product-form-grid product-form-grid--three" style="margin-top:16px;">
-                    <div class="product-field">
-                        <label for="type">Tipo</label>
-                        <input class="product-input" type="text" id="type" name="type" value="{{ old('type', $productData['type']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="product-field">
-                        <label for="technical_category">Categoria tecnica</label>
-                        <input class="product-input" type="text" id="technical_category" name="technical_category" value="{{ old('technical_category', $productData['technical_category']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="product-field">
-                        <label for="specifications">Especificaciones</label>
-                        <input class="product-input" type="text" id="specifications" name="specifications" value="{{ old('specifications', $productData['specifications']) }}" autocomplete="off">
-                    </div>
-                </div>
-            </section>
-
-            <section class="product-panel" aria-labelledby="product-supplier-title">
-                <h3 class="product-panel__title" id="product-supplier-title">Proveedor</h3>
-
-                <div class="product-form-grid product-form-grid--compact" style="margin-top:16px;">
-                    <div class="product-field">
-                        <label for="supplier">Proveedor</label>
-                        <input class="product-input" type="text" id="supplier" name="supplier" value="{{ old('supplier', $productData['supplier']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="product-field">
-                        <label for="supplier_code">Codigo de proveedor</label>
-                        <input class="product-input" type="text" id="supplier_code" name="supplier_code" value="{{ old('supplier_code', $productData['supplier_code']) }}" autocomplete="off">
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="product-create__row">
-            <section class="product-panel" aria-labelledby="product-extra-title">
-                <h3 class="product-panel__title" id="product-extra-title">Informacion adicional</h3>
-
-                <div class="product-form-grid product-form-grid--compact" style="margin-top:16px;">
-                    <div class="product-field">
-                        <label for="location">Ubicacion</label>
-                        <input class="product-input" type="text" id="location" name="location" value="{{ old('location', $productData['location']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="product-field">
-                        <label for="warranty">Garantia</label>
-                        <input class="product-input" type="text" id="warranty" name="warranty" value="{{ old('warranty', $productData['warranty']) }}" autocomplete="off">
-                    </div>
-                </div>
-            </section>
-
-            <section class="product-panel" aria-labelledby="product-notes-title">
-                <h3 class="product-panel__title" id="product-notes-title">Notas</h3>
-
-                <div class="product-field" style="margin-top:16px;">
-                    <label class="sr-only" for="notes">Notas</label>
-                    <textarea class="product-textarea" id="notes" name="notes">{{ old('notes', $productData['notes']) }}</textarea>
-                </div>
-            </section>
-        </div>
+        </section>
     </form>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const form = document.getElementById('productCreateForm');
             const imageInput = document.getElementById('product_image');
             const imagePreview = document.getElementById('productImagePreview');
+            const categoryInput = document.getElementById('category');
+            const subtypeInput = document.getElementById('subtype');
+            const allSubtypeOptions = @json($selectOptions['subtypes'] ?? []);
+            const subtypesByCategory = @json($selectOptions['subtypesByCategory'] ?? []);
+            const comboControllers = new Map();
 
-            if (form) {
-                form.addEventListener('submit', function (event) {
-                    event.preventDefault();
+            const normalizeKey = function (value) {
+                return String(value || '')
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .toLowerCase();
+            };
 
-                    if (window.showToast) {
-                        window.showToast(@json($toastMessage));
+            const uniqueSorted = function (values) {
+                return Array.from(new Set(values.filter(Boolean).map(function (value) {
+                    return String(value).replace(/\s+/g, ' ').trim();
+                }))).sort(function (first, second) {
+                    return first.localeCompare(second, 'es-MX');
+                });
+            };
+
+            const relationMap = new Map();
+            Object.keys(subtypesByCategory).forEach(function (category) {
+                relationMap.set(normalizeKey(category), uniqueSorted(subtypesByCategory[category]));
+            });
+
+            const closeOtherCombos = function (currentCombo) {
+                document.querySelectorAll('[data-combo]').forEach(function (combo) {
+                    if (combo !== currentCombo) {
+                        combo.classList.remove('is-open');
                     }
                 });
+            };
+
+            const filterOptions = function (combo, input) {
+                const query = normalizeKey(input.value);
+
+                combo.querySelectorAll('[data-combo-option]').forEach(function (option) {
+                    const value = normalizeKey(option.dataset.comboOption);
+                    option.hidden = query !== '' && !value.includes(query);
+                });
+            };
+
+            const bindOptionClicks = function (combo, input) {
+                combo.querySelectorAll('[data-combo-option]').forEach(function (option) {
+                    option.addEventListener('click', function () {
+                        input.value = option.dataset.comboOption;
+                        combo.classList.remove('is-open');
+                        input.focus();
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    });
+                });
+            };
+
+            const renderComboOptions = function (combo, input, values) {
+                const menu = combo.querySelector('[data-combo-menu]');
+
+                if (!menu) {
+                    return;
+                }
+
+                menu.innerHTML = '';
+                uniqueSorted(values).forEach(function (value) {
+                    const button = document.createElement('button');
+                    button.className = 'product-combo__option';
+                    button.type = 'button';
+                    button.dataset.comboOption = value;
+                    button.textContent = value;
+                    menu.appendChild(button);
+                });
+
+                bindOptionClicks(combo, input);
+            };
+
+            document.querySelectorAll('[data-combo]').forEach(function (combo) {
+                const input = combo.querySelector('[data-combo-input]');
+                const toggle = combo.querySelector('[data-combo-toggle]');
+                const name = combo.dataset.comboName || input.id;
+
+                toggle.addEventListener('click', function () {
+                    closeOtherCombos(combo);
+                    combo.classList.toggle('is-open');
+                    filterOptions(combo, input);
+                    input.focus();
+                });
+
+                input.addEventListener('focus', function () {
+                    closeOtherCombos(combo);
+                    combo.classList.add('is-open');
+                    filterOptions(combo, input);
+                });
+
+                input.addEventListener('input', function () {
+                    combo.classList.add('is-open');
+                    filterOptions(combo, input);
+                });
+
+                bindOptionClicks(combo, input);
+                comboControllers.set(name, {
+                    render: function (values) {
+                        renderComboOptions(combo, input, values);
+                    },
+                    combo: combo,
+                    input: input,
+                });
+            });
+
+            const updateSubtypesForCategory = function (clearInvalid) {
+                if (!categoryInput || !subtypeInput || !comboControllers.has('subtype')) {
+                    return;
+                }
+
+                let values = relationMap.get(normalizeKey(categoryInput.value)) || uniqueSorted(allSubtypeOptions);
+                const currentSubtype = subtypeInput.value.trim();
+                const currentExists = values.some(function (value) {
+                    return normalizeKey(value) === normalizeKey(currentSubtype);
+                });
+
+                if (currentSubtype !== '' && !currentExists) {
+                    if (clearInvalid) {
+                        subtypeInput.value = '';
+                    } else {
+                        values = uniqueSorted(values.concat([currentSubtype]));
+                    }
+                }
+
+                const subtypeCombo = comboControllers.get('subtype');
+                subtypeCombo.render(values);
+                filterOptions(subtypeCombo.combo, subtypeCombo.input);
+            };
+
+            if (categoryInput) {
+                categoryInput.addEventListener('change', function () {
+                    updateSubtypesForCategory(true);
+                });
+
+                categoryInput.addEventListener('input', function () {
+                    updateSubtypesForCategory(false);
+                });
+
+                updateSubtypesForCategory(false);
             }
+
+            document.addEventListener('click', function (event) {
+                if (!event.target.closest('[data-combo]')) {
+                    document.querySelectorAll('[data-combo]').forEach(function (combo) {
+                        combo.classList.remove('is-open');
+                    });
+                }
+            });
 
             if (imageInput && imagePreview) {
                 imageInput.addEventListener('change', function () {
