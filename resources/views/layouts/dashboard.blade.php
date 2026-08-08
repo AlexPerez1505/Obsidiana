@@ -494,11 +494,11 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Calendario</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Aprobación de flyers">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.aprobacion_flyers.*') ? 'active' : '' }}" href="{{ route('marketing.aprobacion_flyers.index') }}" data-tip="Aprobación de flyers">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Aprobación de flyers</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Biblioteca & catálogo">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.biblioteca_catalogo.*') ? 'active' : '' }}" href="{{ route('marketing.biblioteca_catalogo.index') }}" data-tip="Biblioteca & catálogo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Biblioteca & catálogo</span>
                     </a>
