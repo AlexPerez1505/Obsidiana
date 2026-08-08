@@ -185,7 +185,7 @@
         .vl-add-desktop svg { width: 18px; height: 18px; }
     }
 </style>
-@endendpush
+@endpush
 
 @section('content')
 <div class="vl-page">
