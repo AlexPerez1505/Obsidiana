@@ -15,4 +15,49 @@
             </a>
         </div>
     </div>
+
+    <div class="card">
+        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+            <thead>
+                <tr style="text-align:left; border-bottom:1px solid var(--border, rgba(255,255,255,0.1));">
+                    <th style="padding:12px 10px;">Orden</th>
+                    <th style="padding:12px 10px;">Cliente</th>
+                    <th style="padding:12px 10px;">Tipo de Técnico</th>
+                    <th style="padding:12px 10px;">Técnico</th>
+                    <th style="padding:12px 10px;">Estado</th>
+                    <th style="padding:12px 10px;">Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($services as $service)
+                    <tr style="border-bottom:1px solid var(--border, rgba(255,255,255,0.06));">
+                        <td style="padding:12px 10px;">
+                            <a href="{{ route('gestion.servicios.historial.show', $service) }}" style="color:#00A8FF; text-decoration:none; font-weight:600;">
+                                {{ $service->service_number }}
+                            </a>
+                        </td>
+                        <td style="padding:12px 10px;">{{ trim(($service->customer->nombre ?? '') . ' ' . ($service->customer->apellido ?? '')) ?: '—' }}</td>
+                        <td style="padding:12px 10px;">
+                            @if ($service->service_type === 'externo')
+                                <span style="background:rgba(124,58,237,0.15); color:#A78BFA; padding:4px 10px; border-radius:8px; font-size:12.5px; font-weight:600;">Externo</span>
+                            @else
+                                <span style="background:rgba(0,168,255,0.15); color:#38BDF8; padding:4px 10px; border-radius:8px; font-size:12.5px; font-weight:600;">Interno</span>
+                            @endif
+                        </td>
+                        <td style="padding:12px 10px;">
+                            {{ $service->service_type === 'externo'
+                                ? ($service->externalTechnician->name ?? '—')
+                                : ($service->internalTechnician->name ?? '—') }}
+                        </td>
+                        <td style="padding:12px 10px; text-transform:capitalize;">{{ $service->status }}</td>
+                        <td style="padding:12px 10px;" class="muted">{{ $service->created_at->format('d/m/Y H:i') }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" style="padding:24px 10px; text-align:center;" class="muted">No hay servicios registrados.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 @endsection

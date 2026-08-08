@@ -12,8 +12,13 @@ use App\Models\ExternalTechnician;
 use App\Models\User;
 
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
-    Route::view('/gestion-servicios/historial-servicios', 'structure.gestion_servicios.historial_servicios.menu_historial_servicios')
-        ->name('gestion.servicios.historial');
+    Route::get('/gestion-servicios/historial-servicios', function () {
+        $services = \App\Models\Service::with(['customer', 'internalTechnician', 'externalTechnician'])
+            ->latest()
+            ->get();
+
+        return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('services'));
+    })->name('gestion.servicios.historial');
     Route::get('/gestion-servicios/historial-servicios/nueva-orden', function () {
         $customers = Customer::with('seller')->latest()->get();
 
