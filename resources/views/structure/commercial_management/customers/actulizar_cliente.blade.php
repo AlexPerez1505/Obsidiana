@@ -2,12 +2,6 @@
 @section('title', 'Actualizar Cliente')
 
 @section('content')
-    @php
-        $apellidos = explode(' ', $customer->apellido, 2);
-        $apellido_paterno = $apellidos[0] ?? '';
-        $apellido_materno = $apellidos[1] ?? '';
-    @endphp
-
     <form method="POST" action="{{ route('commercial.clientes.update', $customer) }}" style="display:grid; grid-template-columns:1fr 320px; gap:18px; align-items:start;">
         @csrf
         @method('PUT')
@@ -38,10 +32,9 @@
                 <x-ui.section-title style="margin:0 0 16px;">Datos Personales</x-ui.section-title>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                     <x-ui.form-group label="Nombre *" name="nombre" placeholder="Ingrese el nombre" :value="$customer->nombre" :required="true" />
-                    <x-ui.form-group label="Apellido Paterno *" name="apellido_paterno" placeholder="Ingrese el apellido paterno" :value="$apellido_paterno" :required="true" />
-                    <x-ui.form-group label="Apellido Materno *" name="apellido_materno" placeholder="Ingrese el apellido materno" :value="$apellido_materno" :required="true" />
-                    <x-ui.form-group label="Teléfono (con lada) *" name="telefono" type="tel" placeholder="Ingrese el teléfono con lada" :value="$customer->telefono" :required="true" inputmode="tel" maxlength="12" pattern="\d{10,12}" />
-                    <x-ui.form-group label="Correo Electrónico" name="correo" type="email" placeholder="Ingrese el correo" :value="$customer->correo" />
+                    <x-ui.form-group label="Apellido" name="apellido" placeholder="Ingrese el apellido" :value="$customer->apellido" />
+                    <x-ui.form-group label="Teléfono" name="telefono" type="tel" placeholder="Ingrese el teléfono" :value="$customer->telefono" inputmode="tel" maxlength="20" />
+                    <x-ui.form-group label="Correo (Gmail)" name="gmail" type="email" placeholder="Ingrese el correo" :value="$customer->gmail" />
                 </div>
             </x-ui.card>
 
@@ -50,29 +43,35 @@
                 <x-ui.section-title style="margin:0 0 16px;">Información Comercial</x-ui.section-title>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                     <x-ui.form-group for="asesor" label="Asesor de Ventas">
-                        <input id="asesor" type="text" value="{{ $customer->seller?->name ?? auth()->user()?->name }}" readonly style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);" />
+                        <input id="asesor" type="text" value="{{ $customer->asesor?->name ?? auth()->user()?->name }}" readonly style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);" />
                     </x-ui.form-group>
-                    <x-ui.form-group for="category_id" label="Categoría *">
-                        <select id="category_id" name="category_id" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                            <option value="" disabled>Seleccione una categoría</option>
+                    <x-ui.form-group for="categoria_id" label="Categoría">
+                        <select id="categoria_id" name="categoria_id" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
+                            <option value="">Sin categoría</option>
                             @foreach ($categories as $category)
-                                <option value="{{ $category->id }}" @selected(old('category_id', $customer->category_id) == $category->id)>{{ $category->name }}</option>
+                                <option value="{{ $category->id }}" @selected(old('categoria_id', $customer->categoria_id) == $category->id)>{{ $category->nombre }}</option>
                             @endforeach
                         </select>
                     </x-ui.form-group>
-                    <x-ui.form-group for="congress_id" label="Congreso Conocido *">
-                        <select id="congress_id" name="congress_id" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                            <option value="" disabled>Seleccione un Congreso</option>
+                    <x-ui.form-group for="congreso_id" label="Congreso Conocido">
+                        <select id="congreso_id" name="congreso_id" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
+                            <option value="">Sin congreso</option>
                             @foreach ($congresses as $congress)
-                                <option value="{{ $congress->id }}" @selected(old('congress_id', $customer->congress_id) == $congress->id)>{{ $congress->name }}</option>
+                                <option value="{{ $congress->id }}" @selected(old('congreso_id', $customer->congreso_id) == $congress->id)>{{ $congress->nombre }}</option>
                             @endforeach
                         </select>
                     </x-ui.form-group>
-                    <x-ui.form-group label="RFC *" name="rfc" placeholder="PEGJ800815H54" maxlength="13" :value="$customer->rfc" :required="true" />
-                    <x-ui.form-group for="receives_promotion" label="¿Recibe Promoción? *">
-                        <input type="hidden" name="receives_promotion" value="0">
+                    <x-ui.form-group for="recibe_promocion" label="¿Recibe Promoción?">
+                        <input type="hidden" name="recibe_promocion" value="0">
                         <label class="ui-switch">
-                            <input type="checkbox" id="receives_promotion" name="receives_promotion" value="1" @checked(old('receives_promotion', $customer->receives_promotion ? '1' : '0') == '1')>
+                            <input type="checkbox" id="recibe_promocion" name="recibe_promocion" value="1" @checked(old('recibe_promocion', $customer->recibe_promocion ? '1' : '0') == '1')>
+                            <span class="slider"></span>
+                        </label>
+                    </x-ui.form-group>
+                    <x-ui.form-group for="activo" label="¿Cliente Activo?">
+                        <input type="hidden" name="activo" value="0">
+                        <label class="ui-switch">
+                            <input type="checkbox" id="activo" name="activo" value="1" @checked(old('activo', $customer->activo ? '1' : '0') == '1')>
                             <span class="slider"></span>
                         </label>
                     </x-ui.form-group>
@@ -82,8 +81,11 @@
             {{-- Información adicional --}}
             <x-ui.card>
                 <x-ui.section-title style="margin:0 0 16px;">Información Adicional</x-ui.section-title>
-                <x-ui.form-group label="Dirección y Comentarios" for="comentarios">
-                    <textarea id="comentarios" name="comentarios" rows="4" placeholder="Dirección y comentarios" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('comentarios', $customer->comentarios) }}</textarea>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                    <x-ui.form-group label="Dirección" name="direccion" placeholder="Dirección del cliente" :value="$customer->direccion" />
+                </div>
+                <x-ui.form-group label="Comentarios" for="comentarios">
+                    <textarea id="comentarios" name="comentarios" rows="4" placeholder="Comentarios" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('comentarios', $customer->comentarios) }}</textarea>
                 </x-ui.form-group>
             </x-ui.card>
         </div>
@@ -96,16 +98,6 @@
                     <x-ui.section-title style="margin:0;">Información</x-ui.section-title>
                 </div>
                 <p class="muted" style="margin:0; font-size:14px;">Modifica los datos básicos del cliente.</p>
-                <p class="muted" style="margin:8px 0 0; font-size:14px;">Los campos marcados con * son obligatorios</p>
-            </x-ui.card>
-
-            <x-ui.card>
-                <x-ui.section-title style="margin:0 0 12px;">Consejos</x-ui.section-title>
-                <ul style="margin:0; padding-left:18px; font-size:14px; color:var(--text); line-height:1.7;">
-                    <li>Verifica que el RFC sea correcto.</li>
-                    <li>Revisa la categoría asignada.</li>
-                    <li>Actualiza las notas si es necesario.</li>
-                </ul>
             </x-ui.card>
 
             <x-ui.card>
@@ -117,9 +109,8 @@
                     <span class="muted" style="font-size:14px;">{{ $customer->nombre }} {{ $customer->apellido }}</span>
                 </div>
                 <div style="font-size:14px; color:var(--text); line-height:1.8;">
-                    <p style="margin:0;">{{ $customer->apellido }}</p>
-                    <p style="margin:0;">{{ $customer->telefono }}</p>
-                    <p style="margin:0;">{{ $customer->seller?->name ?? 'Sin asesor' }}</p>
+                    <p style="margin:0;">{{ $customer->telefono ?: 'Sin teléfono' }}</p>
+                    <p style="margin:0;">{{ $customer->asesor?->name ?? 'Sin asesor' }}</p>
                 </div>
             </x-ui.card>
         </div>
@@ -133,10 +124,4 @@
         .ui-switch input:checked + .slider { background-color: var(--green, #22c55e); }
         .ui-switch input:checked + .slider:before { transform: translateX(24px); }
     </style>
-
-    <script>
-        document.getElementById('rfc').addEventListener('input', function (e) {
-            e.target.value = e.target.value.toUpperCase();
-        });
-    </script>
 @endsection

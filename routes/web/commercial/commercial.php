@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CotizacionController;
 use App\Http\Controllers\CustomerController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,4 +30,35 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
     Route::post('/gestion-comercial/clientes/categorias', [CustomerController::class, 'storeCategory'])
         ->name('commercial.clientes.categories.store');
+
+    // Cotizaciones
+    Route::get('/gestion-comercial/cotizaciones', [CotizacionController::class, 'index'])
+        ->name('commercial.cotizaciones.index');
+
+    Route::get('/gestion-comercial/cotizaciones/buscar-cliente', [CotizacionController::class, 'buscarCliente'])
+        ->name('commercial.cotizaciones.buscarCliente');
+
+    Route::get('/gestion-comercial/cotizaciones/crear', [CotizacionController::class, 'create'])
+        ->name('commercial.cotizaciones.create');
+
+    Route::post('/gestion-comercial/cotizaciones', [CotizacionController::class, 'store'])
+        ->name('commercial.cotizaciones.store');
+
+    Route::get('/gestion-comercial/cotizaciones/{cotizacion}', [CotizacionController::class, 'show'])
+        ->name('commercial.cotizaciones.show');
+
+    Route::post('/gestion-comercial/cotizaciones/{cotizacion}/plan-pagos', [CotizacionController::class, 'storePlanPago'])
+        ->name('commercial.cotizaciones.planPagos.store');
+
+    Route::post('/gestion-comercial/cotizaciones/plan-pagos/{planPago}/pagos', [CotizacionController::class, 'storePago'])
+        ->name('commercial.cotizaciones.pagos.store');
+
+    // Remisiones y Promociones (próximamente)
+    Route::get('/gestion-comercial/remisiones', function () {
+        return view('structure.commercial_management.placeholder', ['titulo' => 'Remisiones']);
+    })->name('commercial.remisiones.index');
+
+    Route::get('/gestion-comercial/promociones', function () {
+        return view('structure.commercial_management.placeholder', ['titulo' => 'Promociones']);
+    })->name('commercial.promociones.index');
 });
