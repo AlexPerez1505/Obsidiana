@@ -209,6 +209,34 @@ public function aprobacionFlyers(): View
 }
 
     /**
+     * Muestra el inicio del módulo de marketing con estadísticas en vivo.
+     */
+    public function inicio(): View
+    {
+        $cambiosSolicitados = Task::where('status', 'pendiente')
+            ->whereNotNull('rejection_comment')
+            ->count();
+
+        $enRevision = Task::where('status', 'revision')->count();
+
+        $pendientePorTomar = Task::where('status', 'pendiente')->count();
+
+        $areasEspecializadas = Task::whereNotNull('category')
+            ->where('category', '!=', '')
+            ->distinct()
+            ->count('category');
+
+        return view('structure.gestion_marketing.inicio.menu_marketing', [
+            'inicioStats' => [
+                'cambios_solicitados' => $cambiosSolicitados,
+                'en_revision' => $enRevision,
+                'pendiente_por_tomar' => $pendientePorTomar,
+                'areas_especializadas' => $areasEspecializadas,
+            ],
+        ]);
+    }
+
+    /**
      * Muestra el calendario de contenido del plan editorial.
      */
     public function agenda(): View
