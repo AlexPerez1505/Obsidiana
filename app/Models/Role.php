@@ -2,20 +2,42 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Role extends Model
 {
+    /** @use HasFactory<\Database\Factories\RoleFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'name',
         'label',
         'description',
+        'is_active',
     ];
 
-    public function users(): HasMany
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function primaryUsers(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class);
+    }
+
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class);
     }
 }

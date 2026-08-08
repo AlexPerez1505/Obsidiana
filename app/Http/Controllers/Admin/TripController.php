@@ -15,6 +15,8 @@ class TripController extends Controller
 {
     public function show(Trip $trip): View
     {
+        $this->authorizeTrip($trip);
+
         $trip->load('expenses');
 
         return view('admin.trips.show', [
@@ -45,6 +47,8 @@ class TripController extends Controller
 
     public function addExpense(Request $request, Trip $trip): JsonResponse
     {
+        $this->authorizeTrip($trip);
+
         $data = $request->validate([
             'type'   => ['required', 'string', 'in:toll,fuel,meal,other'],
             'label'  => ['nullable', 'string', 'max:255'],
@@ -85,6 +89,8 @@ class TripController extends Controller
 
     public function updateExpense(Request $request, Trip $trip, TripExpense $expense): JsonResponse
     {
+        $this->authorizeExpense($trip, $expense);
+
         $data = $request->validate([
             'type'   => ['required', 'string', 'in:toll,fuel,meal,other'],
             'label'  => ['nullable', 'string', 'max:255'],
@@ -124,6 +130,8 @@ class TripController extends Controller
 
     public function destroyExpense(Trip $trip, TripExpense $expense): JsonResponse
     {
+        $this->authorizeExpense($trip, $expense);
+
         $expense->delete();
 
         $total = $trip->fresh()->total_computed;
@@ -136,11 +144,30 @@ class TripController extends Controller
 
     public function finish(Trip $trip): RedirectResponse
     {
+        $this->authorizeTrip($trip);
+
         $trip->update([
             'status'    => Trip::STATUS_COMPLETED,
             'ended_at'  => now(),
         ]);
 
         return redirect()->route('admin.viatics.index')->with('status', 'Viaje finalizado. Total: $' . number_format($trip->total, 2));
+    }
+
+    private function authorizeTrip(Trip $trip): void
+    {
+        $user = request()->user();
+
+        abort_unless(
+            $user && ($user->isAdmin() || (int) $trip->user_id === (int) $user->id),
+            403
+        );
+    }
+
+    private function authorizeExpense(Trip $trip, TripExpense $expense): void
+    {
+        $this->authorizeTrip($trip);
+
+        abort_unless((int) $expense->trip_id === (int) $trip->id, 404);
     }
 }

@@ -179,18 +179,27 @@
     .vh-input-wrap {
         position: relative; display: flex; align-items: center;
     }
-    .vh-input-wrap svg {
-        position: absolute; left: 12px; width: 17px; height: 17px;
+    .vh-modal .vh-input-wrap > svg {
+        position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+        width: 18px; height: 18px; z-index: 1;
         color: var(--muted); pointer-events: none; flex: 0 0 auto;
     }
-    .vh-input-wrap input, .vh-input-wrap select {
-        width: 100%; padding: 10px 12px 10px 40px;
+    .vh-modal .vh-input-wrap > input,
+    .vh-modal .vh-input-wrap > select {
+        width: 100%; min-height: 50px;
+        padding: 10px 14px 10px 48px !important;
         border: 2px solid #94a3b8; border-radius: 10px;
         font-size: 14px; font-family: inherit;
         background: var(--surface); color: var(--text);
         outline: none; transition: border .15s, box-shadow .15s;
+        box-sizing: border-box;
     }
-    .vh-input-wrap input:focus, .vh-input-wrap select:focus {
+    .vh-modal .vh-input-wrap > input::placeholder {
+        color: var(--muted);
+        opacity: 0.9;
+    }
+    .vh-modal .vh-input-wrap > input:focus,
+    .vh-modal .vh-input-wrap > select:focus {
         border-color: var(--primary);
         box-shadow: 0 0 0 3px rgba(0,122,255,.12);
     }

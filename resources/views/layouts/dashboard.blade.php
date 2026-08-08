@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8">
@@ -363,7 +363,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
                 <span class="nav-label">Dashboard</span>
             </a>
-            <div class="nav-group">
+            <div class="nav-group {{ request()->routeIs('commercial.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Comercial">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 5a3 3 0 0 1 0 6"/><path d="M20 20c0-2.5-1.3-4.2-3.5-5"/></svg>
                     <span class="nav-label">Gestión Comercial</span>
@@ -392,14 +392,14 @@
                     </a>
                 </div>
             </div>
-            <div class="nav-group">
+            <div class="nav-group {{ request()->routeIs('inventory.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Inventario">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                     <span class="nav-label">Gestión de Inventario</span>
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-                    <a class="nav-item nav-sub" href="#" data-tip="Entrada / Salida">
+                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.movimientos.*') ? 'active' : '' }}" href="{{ route('inventory.movimientos.index') }}" data-tip="Entrada / Salida">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Entrada / Salida</span>
                     </a>
@@ -411,17 +411,42 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Productos</span>
                     </a>
+<<<<<<< HEAD
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.paquetes.*') ? 'active' : '' }}" href="{{ route('inventory.paquetes.index') }}" data-tip="Paquetes">
+=======
+                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.stock.*') ? 'active' : '' }}" href="{{ route('inventory.stock.index') }}" data-tip="Stock">
+>>>>>>> b95b5c4a56a09dfa1286d7e02372229b13965a74
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Paquetes</span>
                     </a>
                 </div>
             </div>
-            <a class="nav-item" href="#" data-tip="Gestión de Servicios">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                <span class="nav-label">Gestión de Servicios</span>
-            </a>
-            <div class="nav-group">
+            <div class="nav-group {{ request()->is('gestion-servicios*') ? 'open' : '' }}">
+                <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Servicios">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                    <span class="nav-label">Gestión de Servicios</span>
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+                </a>
+                <div class="submenu">
+                    <a class="nav-item nav-sub" href="#" data-tip="Cartas de Garantía">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Cartas de Garantía</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="{{ route('gestion.servicios.historial') }}" data-tip="Historial de Servicios">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Historial de Servicios</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Mantenimiento">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Mantenimiento</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Servicios">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Servicios</span>
+                    </a>
+                </div>
+            </div>
+            <div class="nav-group {{ request()->routeIs('admin.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Administrativa">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                     <span class="nav-label">Gestión Administrativa</span>
@@ -440,21 +465,21 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Vehículos</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Reporte">
+                    <a class="nav-item nav-sub {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}" data-tip="Reporte">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Reporte</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Solicitud de materiales">
+                    <a class="nav-item nav-sub {{ request()->routeIs('admin.materials.*') ? 'active' : '' }}" href="{{ route('admin.materials.index') }}" data-tip="Solicitud de materiales">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Solicitud de materiales</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Agenda">
+                    <a class="nav-item nav-sub {{ request()->routeIs('admin.agenda.*') ? 'active' : '' }}" href="{{ route('admin.agenda.index') }}" data-tip="Agenda">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Agenda</span>
                     </a>
                 </div>
             </div>
-            <div class="nav-group {{ request()->is('gestion-marketing*') ? 'open' : '' }}">
+            <div class="nav-group {{ request()->routeIs('marketing.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Marketing">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                     <span class="nav-label">Gestión de Marketing</span>
@@ -465,11 +490,11 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Inicio</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.guia.index') ? 'active' : '' }}" href="{{ route('marketing.guia.index') }}" data-tip="Guía de marca">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.guia_de_marca.*') ? 'active' : '' }}" href="{{ route('marketing.guia_de_marca.index') }}" data-tip="Guía de marca">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Guía de marca</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Calendario">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.calendario.*') ? 'active' : '' }}" href="{{ route('marketing.calendario.index') }}" data-tip="Calendario">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Calendario</span>
                     </a>
@@ -482,7 +507,7 @@
                         <span class="nav-label">Biblioteca & catálogo</span>
                     </a>
                     <div class="submenu-label">Datos</div>
-                    <a class="nav-item nav-sub" href="#" data-tip="Tareas">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.tareas.*') ? 'active' : '' }}" href="{{ route('marketing.tareas.index') }}" data-tip="Tareas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Tareas</span>
                     </a>

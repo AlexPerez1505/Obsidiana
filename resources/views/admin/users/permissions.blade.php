@@ -260,8 +260,8 @@
             </a>
 
             <div class="perm-header">
-                <h2 class="perm-title">Gestión de Permisos y Roles: {{ $user->name }}</h2>
-                <p class="perm-subtitle">Asigna el rol principal y configura los permisos por módulo.</p>
+                <h2 class="perm-title">Gestion de Permisos: {{ $user->name }}</h2>
+                <p class="perm-subtitle">Configura los permisos por modulo.</p>
             </div>
 
             <div class="perm-body">
@@ -289,19 +289,6 @@
 
                 <form method="POST" action="{{ route('admin.users.permissions.update', $user) }}">
                     @csrf
-
-                    {{-- Role selector --}}
-                    <div class="perm-role-selector">
-                        <label>Asignar Rol Principal</label>
-                        <div class="perm-role-select">
-                            <select name="role_id">
-                                <option value="">Sin rol asignado</option>
-                                @foreach($roles as $role)
-                                    <option value="{{ $role->id }}" {{ $user->role_id === $role->id ? 'selected' : '' }}>{{ $role->label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
 
                     {{-- Permissions matrix --}}
                     <div class="perm-matrix">

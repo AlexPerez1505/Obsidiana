@@ -6,6 +6,7 @@
 
 @section('content')
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Open+Sans:wght@600;700;800&display=swap');
     .guia-title { margin:0; font-size:32px; font-weight:800; letter-spacing:-0.02em; }
     .guia-sub { margin:10px 0 0; color:var(--muted); line-height:1.55; max-width:720px; }
     .section-title { margin:0 0 18px; font-size:18px; font-weight:700; }
@@ -21,12 +22,16 @@
     .color-meta { padding:16px; display:flex; flex-direction:column; gap:10px; }
     .edit-field { width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:8px 12px; color:var(--text); font-family:inherit; font-size:14px; outline:none; transition:border 0.15s, background 0.15s; }
     .edit-field:focus { border-color:var(--primary); background:var(--surface); }
-    .font-card { display:flex; flex-direction:column; gap:12px; background:var(--surface-2); border:1px solid var(--border); border-radius:14px; padding:46px 20px 20px; position:relative; }
-    .font-title { font-size:26px; font-weight:800; letter-spacing:-0.02em; background:transparent; border:none; border-bottom:1px dashed var(--border); border-radius:0; padding:0 0 6px; }
-    .font-title:focus { background:transparent; border-color:var(--primary); }
-    .font-sample { font-size:15px; }
-    .font-usage { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); font-weight:700; }
-    .font-desc { font-size:13px; line-height:1.5; resize:vertical; min-height:54px; }
+    .font-card { display:flex; flex-direction:column; gap:16px; background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:28px 24px 24px; position:relative; color:var(--text); }
+    [data-theme="dark"] .font-card { background:#0d1630; border-color:rgba(90,140,230,.14); color:#e8eef8; }
+    .font-name { font-size:34px; font-weight:700; line-height:1.15; letter-spacing:-0.03em; color:var(--text); }
+    [data-theme="dark"] .font-name { color:#e8eef8; }
+    .font-sample { font-size:15px; color:var(--text); letter-spacing:.01em; }
+    [data-theme="dark"] .font-sample { color:#e8eef8; }
+    .font-usage { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--primary); font-weight:700; }
+    [data-theme="dark"] .font-usage { color:#0a84ff; }
+    .font-desc { font-size:13px; line-height:1.55; color:var(--muted); }
+    [data-theme="dark"] .font-desc { color:#93a4bd; }
     .tone-card { padding:22px; border-radius:14px; }
     .tone-card.do { background:#f0fdf4; border:1px solid #bbf7d0; }
     .tone-card.dont { background:#fef2f2; border:1px solid #fecaca; }
@@ -43,7 +48,7 @@
     .btn-primary:hover { background:var(--primary-strong); }
 </style>
 
-<form method="POST" action="{{ route('marketing.guia.update') }}">
+<form method="POST" action="{{ route('marketing.guia_de_marca.update') }}">
     @csrf
 
     <div class="card" style="margin-bottom:22px;">
@@ -60,7 +65,7 @@
                 <h2 class="section-title" style="margin:0;">Paleta de color</h2>
                 <span style="font-size:12px; color:var(--muted);">(clic para copiar el HEX)</span>
             </div>
-            <a href="{{ route('marketing.guia.create') }}" class="btn-primary" style="padding:9px 16px; font-size:14px; text-decoration:none;">Crear más colores</a>
+            <a href="{{ route('marketing.guia_de_marca.create') }}" class="btn-primary" style="padding:9px 16px; font-size:14px; text-decoration:none;">Crear más colores</a>
         </div>
         <div class="palette-grid" id="palette-grid">
             @foreach ($brandGuide->colors as $i => $color)
@@ -81,15 +86,18 @@
     <div class="card" style="margin-bottom:22px;">
         <h2 class="section-title">Tipografía</h2>
         <div class="fonts-grid" id="fonts-grid">
-            @foreach ($brandGuide->fonts ?? [] as $i => $font)
-                <div class="font-card" data-index="{{ $i }}">
-                    <button type="button" class="remove-font" title="Eliminar fuente" onclick="removeFont(this)">&times;</button>
-                    <input type="text" name="fonts[{{ $i }}][name]" value="{{ old("fonts.$i.name", $font['name'] ?? '') }}" class="edit-field font-title" placeholder="Nombre de la fuente">
-                    <input type="text" name="fonts[{{ $i }}][sample]" value="{{ old("fonts.$i.sample", $font['sample'] ?? '') }}" class="edit-field font-sample" placeholder="Aa Bb Cc · 0123456789">
-                    <input type="text" name="fonts[{{ $i }}][usage]" value="{{ old("fonts.$i.usage", $font['usage'] ?? '') }}" class="edit-field font-usage" placeholder="USO · TIPO">
-                    <textarea name="fonts[{{ $i }}][description]" class="edit-field font-desc" rows="2" placeholder="Descripción de uso">{{ old("fonts.$i.description", $font['description'] ?? '') }}</textarea>
-                </div>
-            @endforeach
+            <div class="font-card" data-index="0">
+                <div class="font-name" style="font-family:'Open Sans',sans-serif;">Open Sans</div>
+                <div class="font-sample" style="font-family:'Open Sans',sans-serif;">Aa Bb Cc · 0123456789</div>
+                <div class="font-usage">DISPLAY · TÍTULOS</div>
+                <div class="font-desc">Para encabezados, nombres de equipo y números grandes. Pesos 600-800.</div>
+            </div>
+            <div class="font-card" data-index="1">
+                <div class="font-name" style="font-family:'Inter',sans-serif;">Inter</div>
+                <div class="font-sample" style="font-family:'Inter',sans-serif;">Aa Bb Cc · 0123456789</div>
+                <div class="font-usage">TEXTO · CUERPO</div>
+                <div class="font-desc">Para descripciones, copys largos y datos técnicos. Pesos 400-600.</div>
+            </div>
         </div>
     </div>
 
@@ -187,7 +195,6 @@
         document.querySelectorAll('.hex-input').forEach(function (input) { window.updateSwatch(input); });
 
         var palette = document.getElementById('palette-grid');
-        var fontsGrid = document.getElementById('fonts-grid');
 
         function reindexColors() {
             var cards = palette.querySelectorAll('.color-card');
@@ -199,26 +206,10 @@
             });
         }
 
-        function reindexFonts() {
-            var cards = fontsGrid.querySelectorAll('.font-card');
-            cards.forEach(function (card, i) {
-                card.dataset.index = i;
-                card.querySelectorAll('input, textarea').forEach(function (input) {
-                    input.name = input.name.replace(/^fonts\[\d+\]/, 'fonts[' + i + ']');
-                });
-            });
-        }
-
         window.removeColor = function (btn) {
             var card = btn.closest('.color-card');
             card.remove();
             reindexColors();
-        };
-
-        window.removeFont = function (btn) {
-            var card = btn.closest('.font-card');
-            card.remove();
-            reindexFonts();
         };
     })();
 </script>
