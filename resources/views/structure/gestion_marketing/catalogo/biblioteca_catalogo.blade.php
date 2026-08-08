@@ -175,7 +175,6 @@
     </div>
 
     <div class="catalogo-section">
-        <div class="catalogo-eyebrow" style="color: var(--muted); border-color: var(--border);">Contenido en Notion</div>
         <h2 class="catalogo-title" style="font-size: 20px;">Galería de piezas</h2>
         <p class="catalogo-sub">Toca una imagen para ver su copy.</p>
 
