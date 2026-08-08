@@ -1,44 +1,31 @@
 @extends('layouts.dashboard')
 @section('title', 'Solicitud de materiales')
-@section('page-title', 'Solicitud de materiales')
+@section('page-title', 'Solicitar Material')
 @section('page-sub', 'Gestion Administrativa > Solicitud de materiales')
 
 @php
-    $statusMeta = [
-        'draft' => ['label' => 'Registrada', 'class' => 'draft'],
-        'sent' => ['label' => 'Enviada', 'class' => 'sent'],
-        'approved' => ['label' => 'Aprobada', 'class' => 'approved'],
-        'delivered' => ['label' => 'Entregada', 'class' => 'delivered'],
-    ];
-
-    $requests = [
-        [
-            'folio' => 'SM-0261',
-            'area' => 'Marketing',
-            'reason' => 'Material para capacitacion interna del equipo comercial.',
-            'requested_by' => 'Ricardo',
-            'date' => '03 Ago 2026',
-            'status' => 'sent',
-            'items' => 'Plumones, hojas carta, cinta',
-        ],
-        [
-            'folio' => 'SM-0258',
-            'area' => 'Inventario',
-            'reason' => 'Reposicion para kit de instalacion en campo.',
-            'requested_by' => 'Jose Alex',
-            'date' => '31 Jul 2026',
-            'status' => 'approved',
-            'items' => 'Cinchos, etiquetas, guantes',
-        ],
-        [
-            'folio' => 'SM-0254',
-            'area' => 'Servicios',
-            'reason' => 'Entrega completada para mantenimiento preventivo.',
-            'requested_by' => 'Marina',
-            'date' => '29 Jul 2026',
-            'status' => 'delivered',
-            'items' => 'Alcohol, panos, tornilleria',
-        ],
+    $categories = [
+        'Papelería',
+        'Limpieza',
+        'Herramientas',
+        'Administración',
+        'Ventas',
+        'Logística y Envíos',
+        'Almacén',
+        'Mantenimiento de Equipo Médico',
+        'Servicio Técnico',
+        'Sistemas / TI',
+        'Compras',
+        'Marketing',
+        'Seguridad e Higiene',
+        'Mobiliario de Oficina',
+        'Uniformes',
+        'Publicidad',
+        'Capacitación',
+        'Combustible y Transporte',
+        'Reparaciones Generales',
+        'Hojalatería y Pintura',
+        'Otros',
     ];
 @endphp
 
@@ -67,9 +54,8 @@
     .materials-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-end;
         gap: 16px;
-        padding-bottom: 2px;
     }
 
     .materials-heading {
@@ -79,106 +65,70 @@
         min-width: 0;
     }
 
-    .materials-heading svg {
-        width: 34px;
-        height: 34px;
-        color: var(--primary);
+    .materials-heading-icon,
+    .field-icon,
+    .summary-dot,
+    .flow-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         flex: 0 0 auto;
+    }
+
+    .materials-heading-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: var(--primary-soft);
+        color: var(--primary);
+    }
+
+    .materials-heading-icon svg,
+    .field-icon svg,
+    .materials-btn svg {
+        width: 20px;
+        height: 20px;
     }
 
     .materials-heading h2 {
         margin: 0;
+        color: var(--text);
         font-size: 24px;
         line-height: 1.12;
-        color: var(--text);
     }
 
     .materials-heading p {
-        margin: 3px 0 0;
+        margin: 4px 0 0;
         color: var(--muted);
         font-size: 14px;
         font-weight: 600;
     }
 
-    .materials-primary {
-        min-height: 44px;
-        padding: 0 18px;
-        border: 0;
-        border-radius: 7px;
-        background: #2563eb;
-        color: #fff;
+    .status-pill {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        gap: 9px;
-        font: inherit;
-        font-weight: 800;
-        cursor: pointer;
-        box-shadow: 0 10px 22px rgba(37, 99, 235, .22);
+        gap: 8px;
+        min-height: 34px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 900;
         white-space: nowrap;
     }
 
-    .materials-primary:hover {
-        background: #1d4ed8;
-    }
-
-    .materials-primary svg,
-    .materials-light-btn svg,
-    .materials-icon svg {
-        width: 19px;
-        height: 19px;
-        flex: 0 0 auto;
-    }
-
-    .materials-flow {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(135px, 1fr));
-        gap: 12px;
-    }
-
-    .flow-step {
-        display: grid;
-        grid-template-columns: 38px 1fr;
-        gap: 10px;
-        align-items: center;
-        min-height: 70px;
-        padding: 12px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: var(--surface);
-    }
-
-    .flow-step.is-current {
-        border-color: rgba(37, 99, 235, .48);
-        box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .28);
-    }
-
-    .flow-step strong {
-        display: block;
-        font-size: 13.5px;
-        color: var(--text);
-    }
-
-    .flow-step span {
-        color: var(--muted);
-        font-size: 12px;
-        font-weight: 700;
-    }
-
-    .materials-icon {
-        width: 38px;
-        height: 38px;
-        border-radius: 10px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--primary-soft);
-        color: var(--primary);
+    .status-pill::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
     }
 
     .materials-layout {
         display: grid;
-        grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr);
+        grid-template-columns: minmax(0, 1fr) 320px;
         gap: 18px;
         align-items: start;
     }
@@ -186,317 +136,303 @@
     .materials-panel {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 10px;
+        border-radius: 18px;
         box-shadow: var(--shadow);
-    }
-
-    .materials-panel-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        padding: 18px 20px;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .materials-panel-head h3 {
-        margin: 0;
-        color: var(--text);
-        font-size: 17px;
-    }
-
-    .materials-panel-head p {
-        margin: 3px 0 0;
-        color: var(--muted);
-        font-size: 13px;
-        font-weight: 600;
+        min-width: 0;
     }
 
     .materials-form {
         display: grid;
-        gap: 14px;
-        padding: 18px 20px 20px;
+        gap: 22px;
+        padding: 24px;
     }
 
-    .materials-form-grid {
+    .materials-row {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px;
+        gap: 18px;
+    }
+
+    .materials-field {
+        min-width: 0;
     }
 
     .materials-field label {
-        margin: 0 0 7px;
+        display: block;
+        margin: 0 0 8px;
+        color: var(--text);
+        font-size: 15px;
+        line-height: 1.2;
+        font-weight: 900;
     }
 
-    .materials-field input,
-    .materials-field select,
-    .materials-field textarea {
-        width: 100%;
-        padding: 11px 12px;
+    .materials-control {
+        display: flex;
+        align-items: center;
+        min-height: 56px;
+        overflow: hidden;
         border: 1px solid var(--border);
-        border-radius: 8px;
+        border-bottom: 3px solid var(--green);
+        border-radius: 12px;
+        background: var(--surface-2);
+        transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+
+    .materials-control:focus-within {
+        border-color: var(--primary);
         background: var(--surface);
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, .14);
+    }
+
+    .field-icon {
+        align-self: stretch;
+        width: 52px;
+        background: color-mix(in srgb, var(--surface-2) 70%, var(--border));
+        color: var(--muted);
+        border-right: 1px solid var(--border);
+    }
+
+    .materials-control input,
+    .materials-control select,
+    .materials-control textarea {
+        width: 100%;
+        min-width: 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
         color: var(--text);
         font: inherit;
-        outline: none;
+        font-size: 16px;
+        font-weight: 700;
     }
 
-    .materials-field textarea {
-        min-height: 94px;
-        resize: vertical;
+    .materials-control input,
+    .materials-control select {
+        height: 53px;
+        padding: 0 13px;
     }
 
-    .materials-field input:focus,
-    .materials-field select:focus,
-    .materials-field textarea:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, .12);
-    }
-
-    .materials-items {
-        display: grid;
-        gap: 9px;
-    }
-
-    .materials-item-row {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 96px 128px 38px;
-        gap: 9px;
-        align-items: end;
-    }
-
-    .materials-remove {
-        width: 38px;
-        height: 38px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: var(--surface);
-        color: var(--danger);
+    .materials-control select {
         cursor: pointer;
-        display: inline-flex;
+    }
+
+    .quantity-control {
+        display: grid;
+        grid-template-columns: 42px 1fr 42px;
         align-items: center;
-        justify-content: center;
+        width: 100%;
+        padding: 0 8px;
     }
 
-    .materials-remove:hover {
-        background: var(--danger-soft);
+    .quantity-control button {
+        width: 34px;
+        height: 34px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--primary);
+        font-size: 21px;
+        font-weight: 900;
+        cursor: pointer;
     }
 
-    .materials-remove svg {
-        width: 17px;
-        height: 17px;
+    .quantity-control input {
+        text-align: center;
+        padding: 0;
+    }
+
+    .segmented {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .segment {
+        min-height: 42px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--muted);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    .segment.is-active {
+        border-color: var(--primary);
+        background: var(--primary-soft);
+        color: var(--primary);
+    }
+
+    .textarea-control {
+        align-items: stretch;
+        min-height: 152px;
+    }
+
+    .textarea-control .field-icon {
+        align-items: flex-start;
+        padding-top: 16px;
+    }
+
+    .textarea-control textarea {
+        min-height: 149px;
+        padding: 14px;
+        resize: vertical;
+        line-height: 1.5;
+        font-weight: 650;
     }
 
     .materials-actions {
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-end;
         align-items: center;
         gap: 12px;
         padding-top: 4px;
     }
 
-    .materials-light-btn {
-        min-height: 40px;
-        padding: 0 14px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: var(--surface);
-        color: var(--primary);
+    .materials-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
+        min-height: 46px;
+        padding: 0 18px;
+        border-radius: 12px;
         font: inherit;
-        font-weight: 800;
+        font-weight: 900;
         cursor: pointer;
     }
 
-    .materials-light-btn:hover {
+    .materials-btn.ghost {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--primary);
+    }
+
+    .materials-btn.ghost:hover {
         background: var(--primary-soft);
-        border-color: rgba(37, 99, 235, .32);
     }
 
-    .materials-side {
-        display: grid;
-        gap: 18px;
+    .materials-btn.primary {
+        border: 0;
+        background: var(--primary);
+        color: #fff;
+        box-shadow: 0 10px 22px rgba(0, 122, 255, .18);
     }
 
-    .delivery-box {
+    .materials-btn.primary:hover {
+        background: var(--primary-strong);
+    }
+
+    .side-panel {
+        overflow: hidden;
+    }
+
+    .side-head {
         padding: 18px 20px;
+        border-bottom: 1px solid var(--border);
     }
 
-    .delivery-status {
-        display: grid;
-        gap: 12px;
+    .side-head h3 {
+        margin: 0;
+        color: var(--text);
+        font-size: 17px;
     }
 
-    .delivery-row {
+    .side-head p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .summary-list,
+    .flow-list {
         display: grid;
-        grid-template-columns: 34px 1fr;
+        gap: 13px;
+        padding: 16px 20px 18px;
+    }
+
+    .summary-item,
+    .flow-step {
+        display: grid;
+        grid-template-columns: 30px 1fr;
         gap: 10px;
         align-items: start;
     }
 
-    .delivery-dot {
-        width: 34px;
-        height: 34px;
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--surface-2);
-        color: var(--muted);
-        border: 1px solid var(--border);
+    .summary-dot {
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
+        background: var(--green-soft);
+        color: var(--green);
+        font-size: 13px;
         font-weight: 900;
     }
 
-    .delivery-row.is-ready .delivery-dot {
-        background: var(--green-soft);
-        color: var(--green);
-    }
-
-    .delivery-row strong {
+    .summary-item strong,
+    .flow-step strong {
         display: block;
         color: var(--text);
         font-size: 14px;
     }
 
-    .delivery-row span {
+    .summary-item span,
+    .flow-step span {
         color: var(--muted);
-        display: block;
-        margin-top: 2px;
         font-size: 12.5px;
-        font-weight: 600;
         line-height: 1.35;
-    }
-
-    .requests-list {
-        display: grid;
-        gap: 10px;
-        padding: 12px;
-    }
-
-    .request-card {
-        border: 1px solid var(--border);
-        border-radius: 9px;
-        padding: 13px;
-        background: var(--surface);
-    }
-
-    .request-top {
-        display: flex;
-        justify-content: space-between;
-        gap: 10px;
-        align-items: flex-start;
-        margin-bottom: 8px;
-    }
-
-    .request-top strong {
-        color: var(--text);
-        font-size: 14.5px;
-    }
-
-    .request-top small {
-        display: block;
-        color: var(--muted);
-        margin-top: 2px;
         font-weight: 700;
     }
 
-    .request-card p {
-        margin: 0 0 8px;
+    .flow-list {
+        padding-top: 0;
+    }
+
+    .flow-number {
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
+        background: var(--surface-2);
         color: var(--muted);
         font-size: 13px;
-        line-height: 1.35;
-    }
-
-    .request-items {
-        color: var(--text);
-        font-size: 12.5px;
-        font-weight: 800;
-    }
-
-    .status-pill {
-        padding: 4px 9px;
-        border-radius: 999px;
-        font-size: 11.5px;
         font-weight: 900;
-        white-space: nowrap;
     }
 
-    .status-pill.draft {
-        color: #6b4f00;
-        background: #fff4c2;
+    .flow-step.is-current .flow-number {
+        background: var(--primary-soft);
+        color: var(--primary);
     }
 
-    .status-pill.sent {
-        color: #075985;
-        background: #dff3ff;
-    }
-
-    .status-pill.approved {
-        color: #166534;
-        background: #dcfce7;
-    }
-
-    .status-pill.delivered {
-        color: #4338ca;
-        background: #e0e7ff;
-    }
-
-    :root[data-theme="dark"] .status-pill.draft {
-        background: rgba(245, 158, 11, .18);
-        color: #facc15;
-    }
-
-    :root[data-theme="dark"] .status-pill.sent {
-        background: rgba(14, 165, 233, .16);
-        color: #7dd3fc;
-    }
-
-    :root[data-theme="dark"] .status-pill.approved {
-        background: rgba(34, 197, 94, .15);
-        color: #86efac;
-    }
-
-    :root[data-theme="dark"] .status-pill.delivered {
-        background: rgba(99, 102, 241, .18);
-        color: #c4b5fd;
-    }
-
-    @media (max-width: 1100px) {
-        .materials-layout,
-        .materials-flow {
-            grid-template-columns: 1fr 1fr;
+    @media (max-width: 1080px) {
+        .materials-layout {
+            grid-template-columns: 1fr;
         }
     }
 
-    @media (max-width: 760px) {
-        .materials-header,
-        .materials-actions {
+    @media (max-width: 680px) {
+        .materials-header {
+            align-items: flex-start;
             flex-direction: column;
+        }
+
+        .materials-row,
+        .segmented {
+            grid-template-columns: 1fr;
+        }
+
+        .materials-form {
+            padding: 18px;
+        }
+
+        .materials-actions {
             align-items: stretch;
+            flex-direction: column;
         }
 
-        .materials-primary,
-        .materials-light-btn {
-            width: 100%;
-        }
-
-        .materials-layout,
-        .materials-flow,
-        .materials-form-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .materials-item-row {
-            grid-template-columns: 1fr;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 9px;
-        }
-
-        .materials-remove {
+        .materials-btn {
             width: 100%;
         }
     }
@@ -513,206 +449,184 @@
 
         <div class="materials-header">
             <div class="materials-heading">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                    <path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"></path>
-                </svg>
+                <span class="materials-heading-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4z"></path>
+                        <path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"></path>
+                    </svg>
+                </span>
                 <div>
-                    <h2>Solicitud de materiales</h2>
-                    <p>Registra el motivo, envia a revision y controla la entrega.</p>
+                    <h2>Nueva solicitud</h2>
+                    <p>Registra el insumo, cantidad y justificación para revisión.</p>
                 </div>
             </div>
-            <button class="materials-primary" type="button" onclick="document.getElementById('material-reason').focus();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
-                Nueva solicitud
-            </button>
-        </div>
-
-        <div class="materials-flow" aria-label="Flujo de solicitud">
-            <div class="flow-step is-current">
-                <span class="materials-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6M8 13h8M8 17h5"></path></svg>
-                </span>
-                <span><strong>Registro</strong><span>Captura motivo y materiales</span></span>
-            </div>
-            <div class="flow-step">
-                <span class="materials-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4 20-7z"></path></svg>
-                </span>
-                <span><strong>Envio</strong><span>La solicitud pasa al encargado</span></span>
-            </div>
-            <div class="flow-step">
-                <span class="materials-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
-                </span>
-                <span><strong>Aprobacion</strong><span>Revision de materiales</span></span>
-            </div>
-            <div class="flow-step">
-                <span class="materials-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7 9 18l-5-5"></path><path d="M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                </span>
-                <span><strong>Entrega</strong><span>Encargado entrega material</span></span>
-            </div>
+            <span class="status-pill">Borrador</span>
         </div>
 
         <div class="materials-layout">
-            <div class="materials-panel">
-                <div class="materials-panel-head">
-                    <div>
-                        <h3>Registrar solicitud</h3>
-                        <p>El motivo ayuda al encargado a aprobar y preparar la entrega.</p>
-                    </div>
-                    <span class="status-pill draft">Borrador</span>
-                </div>
-
-                <form class="materials-form" onsubmit="event.preventDefault(); showMaterialToast();">
-                    <div class="materials-form-grid">
-                        <div class="materials-field">
-                            <label for="material-area">Area solicitante</label>
-                            <select id="material-area">
-                                <option>Gestion Administrativa</option>
-                                <option>Marketing</option>
-                                <option>Inventario</option>
-                                <option>Servicios</option>
-                                <option>Comercial</option>
-                            </select>
-                        </div>
-                        <div class="materials-field">
-                            <label for="material-priority">Prioridad</label>
-                            <select id="material-priority">
-                                <option>Normal</option>
-                                <option>Urgente</option>
-                                <option>Programada</option>
+            <section class="materials-panel" aria-label="Formulario para solicitar material">
+                <form class="materials-form" onsubmit="event.preventDefault(); showMaterialToast('Solicitud enviada a revisión.');">
+                    <div class="materials-field">
+                        <label for="category">Categoría</label>
+                        <div class="materials-control">
+                            <span class="field-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 4h16v16H4z"></path>
+                                    <path d="M8 4v16M4 9h16M4 15h16"></path>
+                                </svg>
+                            </span>
+                            <select id="category" name="category">
+                                @foreach ($categories as $category)
+                                    <option value="{{ $category }}">{{ $category }}</option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
 
-                    <div class="materials-form-grid">
+                    <div class="materials-row">
                         <div class="materials-field">
-                            <label for="material-date">Fecha requerida</label>
-                            <input id="material-date" type="date" value="2026-08-05">
+                            <label for="material">Material/Equipo/Etc</label>
+                            <div class="materials-control">
+                                <span class="field-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4z"></path>
+                                        <path d="M3.27 6.96 12 12l8.73-5.04"></path>
+                                    </svg>
+                                </span>
+                                <input id="material" name="material" type="text" autocomplete="off" placeholder="Ej. hojas carta, guantes, cable HDMI">
+                            </div>
                         </div>
+
                         <div class="materials-field">
-                            <label for="material-recipient">Recibe</label>
-                            <input id="material-recipient" type="text" value="Ricardo">
+                            <label for="quantity">Cantidad</label>
+                            <div class="materials-control">
+                                <span class="field-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M8 7h8M8 12h8M8 17h8"></path>
+                                        <path d="M4 7h.01M4 12h.01M4 17h.01"></path>
+                                    </svg>
+                                </span>
+                                <div class="quantity-control">
+                                    <button type="button" onclick="adjustQuantity(-1)" aria-label="Disminuir cantidad">-</button>
+                                    <input id="quantity" name="quantity" type="number" min="1" value="1" inputmode="numeric">
+                                    <button type="button" onclick="adjustQuantity(1)" aria-label="Aumentar cantidad">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="materials-row">
+                        <div class="materials-field">
+                            <label for="unit">Unidad</label>
+                            <div class="materials-control">
+                                <span class="field-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M4 7h16M4 12h16M4 17h10"></path>
+                                    </svg>
+                                </span>
+                                <select id="unit" name="unit">
+                                    <option>Pieza</option>
+                                    <option>Paquete</option>
+                                    <option>Caja</option>
+                                    <option>Kit</option>
+                                    <option>Servicio</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="materials-field">
+                            <label for="required-date">Fecha requerida</label>
+                            <div class="materials-control">
+                                <span class="field-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M8 2v4M16 2v4M3 10h18"></path>
+                                        <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                                    </svg>
+                                </span>
+                                <input id="required-date" name="required_date" type="date" value="{{ now()->addDay()->format('Y-m-d') }}">
+                            </div>
                         </div>
                     </div>
 
                     <div class="materials-field">
-                        <label for="material-reason">Motivo de la solicitud</label>
-                        <textarea id="material-reason">Se requiere material para preparar una entrega operativa y dejar evidencia del uso.</textarea>
+                        <label>Urgencia</label>
+                        <div class="segmented" role="group" aria-label="Urgencia">
+                            <button class="segment is-active" type="button" data-urgency="Normal">Normal</button>
+                            <button class="segment" type="button" data-urgency="Urgente">Urgente</button>
+                            <button class="segment" type="button" data-urgency="Programada">Programada</button>
+                        </div>
                     </div>
 
-                    <div class="materials-items" id="materialsItems">
-                        <div class="materials-item-row">
-                            <div class="materials-field">
-                                <label>Material</label>
-                                <input type="text" value="Hojas carta">
-                            </div>
-                            <div class="materials-field">
-                                <label>Cantidad</label>
-                                <input type="text" value="2">
-                            </div>
-                            <div class="materials-field">
-                                <label>Unidad</label>
-                                <select>
-                                    <option>Paquete</option>
-                                    <option>Pieza</option>
-                                    <option>Caja</option>
-                                    <option>Kit</option>
-                                </select>
-                            </div>
-                            <button class="materials-remove" type="button" aria-label="Quitar material" onclick="removeMaterialRow(this)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
-
-                        <div class="materials-item-row">
-                            <div class="materials-field">
-                                <label>Material</label>
-                                <input type="text" value="Plumones">
-                            </div>
-                            <div class="materials-field">
-                                <label>Cantidad</label>
-                                <input type="text" value="6">
-                            </div>
-                            <div class="materials-field">
-                                <label>Unidad</label>
-                                <select>
-                                    <option>Pieza</option>
-                                    <option>Paquete</option>
-                                    <option>Caja</option>
-                                    <option>Kit</option>
-                                </select>
-                            </div>
-                            <button class="materials-remove" type="button" aria-label="Quitar material" onclick="removeMaterialRow(this)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
-                            </button>
+                    <div class="materials-field">
+                        <label for="justification">Justificación</label>
+                        <div class="materials-control textarea-control">
+                            <span class="field-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <path d="M14 2v6h6M8 13h8M8 17h5"></path>
+                                </svg>
+                            </span>
+                            <textarea id="justification" name="justification" placeholder="Describe la necesidad del equipo o insumo solicitado, su uso y urgencia."></textarea>
                         </div>
                     </div>
 
                     <div class="materials-actions">
-                        <button class="materials-light-btn" type="button" onclick="addMaterialRow()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
-                            Agregar material
+                        <button class="materials-btn ghost" type="button" onclick="showMaterialToast('Borrador guardado localmente.')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                <path d="M17 21v-8H7v8M7 3v5h8"></path>
+                            </svg>
+                            Guardar borrador
                         </button>
-
-                        <button class="materials-primary" type="submit">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4 20-7z"></path></svg>
-                            Enviar solicitud
+                        <button class="materials-btn primary" type="submit">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M22 2 11 13"></path>
+                                <path d="M22 2 15 22l-4-9-9-4 20-7z"></path>
+                            </svg>
+                            Enviar Solicitud
                         </button>
                     </div>
                 </form>
-            </div>
+            </section>
 
-            <aside class="materials-side">
-                <div class="materials-panel">
-                    <div class="materials-panel-head">
-                        <div>
-                            <h3>Aprobacion y entrega</h3>
-                            <p>Vista del encargado de materiales.</p>
-                        </div>
+            <aside class="materials-panel side-panel" aria-label="Resumen de solicitud">
+                <div class="side-head">
+                    <h3>Resumen</h3>
+                    <p>Estado actual de la solicitud</p>
+                </div>
+
+                <div class="summary-list">
+                    <div class="summary-item">
+                        <span class="summary-dot">1</span>
+                        <span><strong id="summaryCategory">Papelería</strong>Categoría seleccionada</span>
                     </div>
-                    <div class="delivery-box">
-                        <div class="delivery-status">
-                            <div class="delivery-row is-ready">
-                                <span class="delivery-dot">1</span>
-                                <span><strong>Solicitud recibida</strong><span>Se revisa motivo, cantidades y disponibilidad.</span></span>
-                            </div>
-                            <div class="delivery-row is-ready">
-                                <span class="delivery-dot">2</span>
-                                <span><strong>Aprobacion del encargado</strong><span>Si procede, se reserva el material para entrega.</span></span>
-                            </div>
-                            <div class="delivery-row">
-                                <span class="delivery-dot">3</span>
-                                <span><strong>Entrega fisica</strong><span>El encargado confirma quien recibe y fecha de salida.</span></span>
-                            </div>
-                        </div>
+                    <div class="summary-item">
+                        <span class="summary-dot">2</span>
+                        <span><strong id="summaryQuantity">1 Pieza</strong>Cantidad solicitada</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-dot">3</span>
+                        <span><strong id="summaryUrgency">Normal</strong>Nivel de urgencia</span>
                     </div>
                 </div>
 
-                <div class="materials-panel">
-                    <div class="materials-panel-head">
-                        <div>
-                            <h3>Solicitudes recientes</h3>
-                            <p>Ejemplos visuales del flujo.</p>
-                        </div>
+                <div class="side-head">
+                    <h3>Proceso</h3>
+                    <p>Seguimiento administrativo</p>
+                </div>
+
+                <div class="flow-list">
+                    <div class="flow-step is-current">
+                        <span class="flow-number">1</span>
+                        <span><strong>Solicitud</strong><span>El usuario captura y envía el requerimiento.</span></span>
                     </div>
-                    <div class="requests-list">
-                        @foreach ($requests as $request)
-                            @php($meta = $statusMeta[$request['status']])
-                            <article class="request-card">
-                                <div class="request-top">
-                                    <span>
-                                        <strong>{{ $request['folio'] }}</strong>
-                                        <small>{{ $request['area'] }} - {{ $request['date'] }}</small>
-                                    </span>
-                                    <span class="status-pill {{ $meta['class'] }}">{{ $meta['label'] }}</span>
-                                </div>
-                                <p>{{ $request['reason'] }}</p>
-                                <div class="request-items">{{ $request['items'] }}</div>
-                            </article>
-                        @endforeach
+                    <div class="flow-step">
+                        <span class="flow-number">2</span>
+                        <span><strong>Revisión</strong><span>Administración valida disponibilidad y prioridad.</span></span>
+                    </div>
+                    <div class="flow-step">
+                        <span class="flow-number">3</span>
+                        <span><strong>Entrega</strong><span>El encargado confirma la salida del material.</span></span>
                     </div>
                 </div>
             </aside>
@@ -720,35 +634,40 @@
     </section>
 
     <script>
-        function addMaterialRow() {
-            const container = document.getElementById('materialsItems');
-            const template = container.querySelector('.materials-item-row').cloneNode(true);
+        const category = document.getElementById('category');
+        const quantity = document.getElementById('quantity');
+        const unit = document.getElementById('unit');
+        const summaryCategory = document.getElementById('summaryCategory');
+        const summaryQuantity = document.getElementById('summaryQuantity');
+        const summaryUrgency = document.getElementById('summaryUrgency');
 
-            template.querySelectorAll('input').forEach((input) => {
-                input.value = '';
-            });
-
-            template.querySelector('select').selectedIndex = 0;
-            container.appendChild(template);
-            template.querySelector('input').focus();
+        function updateSummary() {
+            summaryCategory.textContent = category.value;
+            summaryQuantity.textContent = `${quantity.value || 1} ${unit.value}`;
         }
 
-        function removeMaterialRow(button) {
-            const rows = document.querySelectorAll('.materials-item-row');
-            if (rows.length === 1) {
-                rows[0].querySelectorAll('input').forEach((input) => {
-                    input.value = '';
-                });
-                return;
-            }
-
-            button.closest('.materials-item-row').remove();
+        function adjustQuantity(amount) {
+            const current = parseInt(quantity.value || '1', 10);
+            quantity.value = Math.max(1, current + amount);
+            updateSummary();
         }
 
-        function showMaterialToast() {
+        function showMaterialToast(message) {
             if (typeof window.showToast === 'function') {
-                window.showToast('Solicitud enviada a revision del encargado.');
+                window.showToast(message);
             }
         }
+
+        category.addEventListener('change', updateSummary);
+        quantity.addEventListener('input', updateSummary);
+        unit.addEventListener('change', updateSummary);
+
+        document.querySelectorAll('.segment').forEach((button) => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.segment').forEach((item) => item.classList.remove('is-active'));
+                button.classList.add('is-active');
+                summaryUrgency.textContent = button.dataset.urgency;
+            });
+        });
     </script>
 @endsection
