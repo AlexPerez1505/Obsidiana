@@ -30,6 +30,7 @@ class Task extends Model
         'linked_piece',
         'rejection_comment',
         'created_by',
+        'approval_checklist',
     ];
 
     protected function casts(): array
@@ -41,6 +42,7 @@ class Task extends Model
             'due_date' => 'date',
             'review_date' => 'date',
             'progress' => 'integer',
+            'approval_checklist' => 'array',
         ];
     }
 

@@ -186,10 +186,25 @@ class TaskController extends Controller
     /**
      * Muestra el tablero de aprobación de flyers.
      */
-    public function aprobacionFlyers(): View
-    {
-        return view('structure.gestion_marketing.aprobacion_flyers.index');
-    }
+    /**
+ * Muestra el tablero de aprobación de flyers.
+ */
+public function aprobacionFlyers(): View
+{
+    $tasks = Task::with(['user', 'reviewer'])->orderBy('due_date')->get();
+
+    return view('structure.gestion_marketing.aprobacion_flyers.index', [
+        'tasks' => $tasks,
+        'stats' => [
+            'por_hacer' => $tasks->where('status', 'pendiente')->count(),
+            'en_curso' => $tasks->whereIn('status', ['en_proceso', 'revision'])->count(),
+            'hecho' => $tasks->where('status', 'completada')->count(),
+            'en_revision' => $tasks->where('status', 'revision')->count(),
+            'cambios' => $tasks->where('status', 'pendiente')->whereNotNull('rejection_comment')->count(),
+            'aprobado' => $tasks->where('status', 'completada')->count(),
+        ],
+    ]);
+}
 
     /**
      * Muestra el calendario de contenido del plan editorial.
