@@ -26,7 +26,6 @@ class Task extends Model
         'due_date',
         'review_date',
         'progress',
-        'approval_checklist',
         'user_id',
         'linked_piece',
         'rejection_comment',
@@ -38,7 +37,6 @@ class Task extends Model
         return [
             'tags' => 'array',
             'platform' => 'array',
-            'approval_checklist' => 'array',
             'has_video' => 'boolean',
             'due_date' => 'date',
             'review_date' => 'date',

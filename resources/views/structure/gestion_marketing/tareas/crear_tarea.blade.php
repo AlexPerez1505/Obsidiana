@@ -304,7 +304,24 @@
                     </select>
                 </div>
 
-
+                <div class="task-field">
+                    <label for="tags">Estado</label>
+                    <select id="tags" name="tags" required>
+                        @php
+                            $statuses = [
+                                'aprobado' => 'Aprobado',
+                                'cambios_solicitados' => 'Cambios solicitados',
+                                'en_revision' => 'En revisión',
+                                'idea' => 'Idea',
+                                'pendiente' => 'Pendiente',
+                                'publicado' => 'Publicado',
+                            ];
+                        @endphp
+                        @foreach ($statuses as $value => $label)
+                            <option value="{{ $label }}" {{ old('tags', 'Idea') == $label ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
 
             <div class="task-row">
@@ -382,6 +399,11 @@
             </div>
 
             <div class="task-field">
+                <label for="rejection_comment">Comentarios de revisión</label>
+                <textarea id="rejection_comment" name="rejection_comment" placeholder="Notas del revisor...">{{ old('rejection_comment') }}</textarea>
+            </div>
+
+            <div class="task-field">
                 <label for="task_description">Descripción</label>
                 <textarea id="task_description" name="task_description" placeholder="Descripción de la pieza / instrucciones...">{{ old('task_description') }}</textarea>
             </div>
@@ -398,7 +420,9 @@
                 </div>
             </div>
 
-
+            <div class="task-hint">
+                Pega el enlace en "Enlace (Canva / Drive)" y aquí lo verá todo el equipo.
+            </div>
         </div>
 
         <div class="task-footer">

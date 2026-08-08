@@ -135,7 +135,7 @@ class TaskController extends Controller
             'rejection_comment' => ['nullable', 'string'],
         ]);
 
-        $data['tags'] = ($data['tags'] ?? null)
+        $data['tags'] = $data['tags']
             ? array_values(array_filter(array_map('trim', explode(',', $data['tags']))))
             : [];
 
@@ -157,6 +157,7 @@ class TaskController extends Controller
             'description' => ['nullable', 'string'],
             'task_description' => ['nullable', 'string'],
             'delivery_link' => ['nullable', 'url'],
+            'status' => ['required', 'in:pendiente,en_proceso,revision,completada'],
             'priority' => ['required', 'in:baja,media,alta'],
             'due_date' => ['nullable', 'date'],
             'review_date' => ['nullable', 'date'],
@@ -172,11 +173,9 @@ class TaskController extends Controller
             'rejection_comment' => ['nullable', 'string'],
         ]);
 
-        $data['tags'] = ($data['tags'] ?? null)
+        $data['tags'] = $data['tags']
             ? array_values(array_filter(array_map('trim', explode(',', $data['tags']))))
             : [];
-
-        unset($data['status']);
 
         $task->update($data);
 
@@ -189,19 +188,7 @@ class TaskController extends Controller
      */
     public function aprobacionFlyers(): View
     {
-        $tasks = Task::with(['user', 'reviewer'])->orderBy('due_date')->get();
-
-        return view('structure.gestion_marketing.aprobacion_flyers.index', [
-            'tasks' => $tasks,
-            'stats' => [
-                'por_hacer' => $tasks->where('status', 'pendiente')->count(),
-                'en_curso' => $tasks->whereIn('status', ['en_proceso', 'revision'])->count(),
-                'hecho' => $tasks->where('status', 'completada')->count(),
-                'en_revision' => $tasks->where('status', 'revision')->count(),
-                'cambios' => $tasks->where('status', 'pendiente')->whereNotNull('rejection_comment')->count(),
-                'aprobado' => $tasks->where('status', 'completada')->count(),
-            ],
-        ]);
+        return view('structure.gestion_marketing.aprobacion_flyers.index');
     }
 
     /**
@@ -244,15 +231,12 @@ class TaskController extends Controller
     /**
      * Aprueba una tarea en revisión.
      */
-    public function aprobar(Task $task, Request $request): RedirectResponse
+    public function aprobar(Task $task): RedirectResponse
     {
-        $checklist = $this->sanitizeChecklist($request->input('approval_checklist'));
-
         $task->update([
             'status' => 'completada',
             'rejection_comment' => null,
             'progress' => 100,
-            'approval_checklist' => $checklist,
         ]);
 
         return redirect()->back()
@@ -268,42 +252,12 @@ class TaskController extends Controller
             'rejection_comment' => ['required', 'string'],
         ]);
 
-        $checklist = $this->sanitizeChecklist($request->input('approval_checklist'));
-
         $task->update([
-            'status' => 'pendiente',
+            'status' => 'en_proceso',
             'rejection_comment' => $data['rejection_comment'],
-            'approval_checklist' => $checklist,
-            'progress' => min(100, count($checklist) * 10),
         ]);
 
         return redirect()->back()
             ->with('status', 'Tarea devuelta correctamente.');
-    }
-
-    /**
-     * Envía una tarea a revisión.
-     */
-    public function enviarRevision(Task $task): RedirectResponse
-    {
-        $task->update([
-            'status' => 'revision',
-            'rejection_comment' => null,
-        ]);
-
-        return redirect()->back()
-            ->with('status', 'Tarea enviada a revisión correctamente.');
-    }
-
-    /**
-     * Limpia el array de índices del checklist de aprobación.
-     */
-    private function sanitizeChecklist(mixed $value): array
-    {
-        if (!is_array($value)) {
-            return [];
-        }
-
-        return array_values(array_filter(array_map('intval', $value), fn ($v) => $v >= 0 && $v <= 9));
     }
 }
