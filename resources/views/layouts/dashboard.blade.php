@@ -481,6 +481,10 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Refacciones</span>
                     </a>
+                    <a class="nav-item nav-sub" href="{{ route('configuracion.cartas.index') }}" data-tip="Cartas de garantía">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Cartas de garantía</span>
+                    </a>
                 </div>
             </div>
         </nav>
