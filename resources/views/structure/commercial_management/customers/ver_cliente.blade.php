@@ -15,7 +15,7 @@
         $avatarColor = ['#7c3aed','#3b82f6','#10b981','#f59e0b','#ec4899'][crc32($initials) % 5];
     @endphp
 
-    <div style="display:grid; grid-template-columns:1fr 320px; gap:18px; align-items:start;">
+    <div class="rgrid-sidebar">
         <div>
             {{-- Header --}}
             <div class="card" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
@@ -44,7 +44,7 @@
             {{-- Datos personales --}}
             <x-ui.card style="margin-bottom:18px;">
                 <x-ui.section-title style="margin:0 0 16px;">Datos Personales</x-ui.section-title>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="rgrid-2">
                     <div>
                         <div class="muted" style="font-size:13px;">Nombre</div>
                         <div style="font-size:15px; font-weight:600;">{{ $customer->nombre }}</div>
@@ -67,7 +67,7 @@
             {{-- Información comercial --}}
             <x-ui.card style="margin-bottom:18px;">
                 <x-ui.section-title style="margin:0 0 16px;">Información Comercial</x-ui.section-title>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="rgrid-2">
                     <div>
                         <div class="muted" style="font-size:13px;">Asesor</div>
                         <div style="font-size:15px; font-weight:600;">{{ $customer->asesor?->name ?? 'Sin asesor' }}</div>

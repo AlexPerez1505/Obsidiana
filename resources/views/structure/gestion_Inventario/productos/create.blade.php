@@ -8,7 +8,7 @@
         @csrf
         <x-ui.card style="margin-bottom:18px;">
             <x-ui.section-title style="margin:0 0 16px;">Datos del Producto</x-ui.section-title>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div class="rgrid-2">
                 <x-ui.form-group label="Tipo de Equipo *" name="tipo_equipo" placeholder="Ej. Endoscopio" :required="true" />
                 <x-ui.form-group label="Subtipo" name="subtipo" placeholder="Ej. Flexible" />
                 <x-ui.form-group label="Marca" name="marca" placeholder="Ej. Olympus" />
@@ -23,7 +23,7 @@
             </x-ui.form-group>
             <x-ui.form-group label="Imagen del Producto" for="imagen">
                 <input type="file" id="imagen" name="imagen" accept="image/*" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:9px; font-size:14px; background:var(--surface); color:var(--text);">
-                <small style="color:var(--text-secondary);">Formatos: JPG, PNG, GIF. Máximo 5MB.</small>
+                <small style="color:var(--muted);">Formatos: JPG, PNG, GIF. Máximo 5MB.</small>
             </x-ui.form-group>
         </x-ui.card>
 

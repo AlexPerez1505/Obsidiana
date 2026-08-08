@@ -17,6 +17,7 @@ class Cotizacion extends Model
         'subtotal',
         'descuentos',
         'iva',
+        'aplica_iva',
         'lugar',
         'costo_envio',
         'total',
@@ -30,11 +31,19 @@ class Cotizacion extends Model
         'subtotal' => 'decimal:2',
         'descuentos' => 'decimal:2',
         'iva' => 'decimal:2',
+        'aplica_iva' => 'boolean',
         'costo_envio' => 'decimal:2',
         'total' => 'decimal:2',
-        'estado' => 'boolean',
         'regalo' => 'boolean',
     ];
+
+    /**
+     * true si la cotización ya se convirtió en remisión (venta definitiva con seguimiento de pagos).
+     */
+    public function esRemision(): bool
+    {
+        return $this->estado === 'remision';
+    }
 
     public function cliente(): BelongsTo
     {
@@ -59,5 +68,10 @@ class Cotizacion extends Model
     public function planPagos(): HasMany
     {
         return $this->hasMany(PlanPago::class, 'cotizacion_id');
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(CotizacionItem::class, 'cotizacion_id');
     }
 }

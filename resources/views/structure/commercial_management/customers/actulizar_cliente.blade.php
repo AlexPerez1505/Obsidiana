@@ -2,7 +2,7 @@
 @section('title', 'Actualizar Cliente')
 
 @section('content')
-    <form method="POST" action="{{ route('commercial.clientes.update', $customer) }}" style="display:grid; grid-template-columns:1fr 320px; gap:18px; align-items:start;">
+    <form method="POST" action="{{ route('commercial.clientes.update', $customer) }}" class="rgrid-sidebar">
         @csrf
         @method('PUT')
 
@@ -30,7 +30,7 @@
             {{-- Datos personales --}}
             <x-ui.card style="margin-bottom:18px;">
                 <x-ui.section-title style="margin:0 0 16px;">Datos Personales</x-ui.section-title>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="rgrid-2">
                     <x-ui.form-group label="Nombre *" name="nombre" placeholder="Ingrese el nombre" :value="$customer->nombre" :required="true" />
                     <x-ui.form-group label="Apellido" name="apellido" placeholder="Ingrese el apellido" :value="$customer->apellido" />
                     <x-ui.form-group label="Teléfono" name="telefono" type="tel" placeholder="Ingrese el teléfono" :value="$customer->telefono" inputmode="tel" maxlength="20" />
@@ -41,7 +41,7 @@
             {{-- Información comercial --}}
             <x-ui.card style="margin-bottom:18px;">
                 <x-ui.section-title style="margin:0 0 16px;">Información Comercial</x-ui.section-title>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="rgrid-2">
                     <x-ui.form-group for="asesor" label="Asesor de Ventas">
                         <input id="asesor" type="text" value="{{ $customer->asesor?->name ?? auth()->user()?->name }}" readonly style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);" />
                     </x-ui.form-group>
@@ -81,7 +81,7 @@
             {{-- Información adicional --}}
             <x-ui.card>
                 <x-ui.section-title style="margin:0 0 16px;">Información Adicional</x-ui.section-title>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                <div style="margin-bottom:16px;">
                     <x-ui.form-group label="Dirección" name="direccion" placeholder="Dirección del cliente" :value="$customer->direccion" />
                 </div>
                 <x-ui.form-group label="Comentarios" for="comentarios">

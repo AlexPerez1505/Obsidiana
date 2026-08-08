@@ -1,7 +1,7 @@
 @extends('layouts.dashboard')
-@section('title', 'Cotizaciones')
-@section('page-title', 'Cotizaciones')
-@section('page-sub', 'Cotizaciones y planes de pago de clientes')
+@section('title', 'Remisiones')
+@section('page-title', 'Remisiones')
+@section('page-sub', 'Ventas definitivas y seguimiento de sus pagos')
 
 @section('content')
     <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap;">
@@ -25,42 +25,44 @@
                         <th>Producto / Paquete</th>
                         <th>Total</th>
                         <th>Pagos</th>
-                        <th>Estado</th>
+                        <th>Pagado</th>
+                        <th>Estado de pago</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($cotizaciones as $cot)
+                    @forelse($remisiones as $rem)
+                        @php
+                            $totalPagado = $rem->planPagos->flatMap(fn ($p) => $p->pagos->where('pagado', true))->sum('monto_pagado');
+                            $totalPagos = $rem->planPagos->count();
+                            $pagosCompletados = $rem->planPagos->filter(fn ($p) => $p->pagos->where('pagado', true)->isNotEmpty())->count();
+                            $liquidada = $totalPagos > 0 && $pagosCompletados === $totalPagos;
+                        @endphp
                         <tr>
-                            <td>{{ $cot->cliente?->nombre }} {{ $cot->cliente?->apellido }}</td>
+                            <td>{{ $rem->cliente?->nombre }} {{ $rem->cliente?->apellido }}</td>
                             <td>
-                                @if($cot->items->count() > 0)
-                                    <span style="font-size:13.5px;">{{ $cot->items->pluck('nombre')->implode(', ') }}</span>
+                                @if($rem->items->count() > 0)
+                                    <span style="font-size:13.5px;">{{ $rem->items->pluck('nombre')->implode(', ') }}</span>
                                 @else
                                     —
                                 @endif
                             </td>
-                            <td>${{ number_format($cot->total, 2) }}</td>
-                            <td>{{ $cot->planPagos->count() }} pago(s)</td>
+                            <td>${{ number_format($rem->total, 2) }}</td>
+                            <td>{{ $pagosCompletados }} / {{ $totalPagos }}</td>
+                            <td style="font-weight:700;">${{ number_format($totalPagado, 2) }}</td>
                             <td>
-                                <span class="badge {{ $cot->estado === 'remision' ? 'badge--ok' : 'badge--warn' }}">
-                                    {{ $cot->estado === 'remision' ? 'Remisión' : 'Cotización' }}
+                                <span class="badge {{ $liquidada ? 'badge--ok' : 'badge--warn' }}">
+                                    {{ $liquidada ? 'Liquidada' : 'En curso' }}
                                 </span>
                             </td>
-                            <td style="display:flex; gap:8px; flex-wrap:wrap;">
-                                <a href="{{ route('commercial.cotizaciones.show', $cot) }}" class="btn btn--ghost" style="padding:6px 12px; font-size:13px; text-decoration:none;">Ver detalle</a>
-                                @if($cot->estado !== 'remision')
-                                    <form method="POST" action="{{ route('commercial.cotizaciones.remision', $cot) }}" onsubmit="return confirm('¿Convertir esta cotización en remisión? Se volverá una venta definitiva.');">
-                                        @csrf
-                                        <button type="submit" class="btn" style="padding:6px 12px; font-size:13px;">Realizar remisión</button>
-                                    </form>
-                                @endif
+                            <td>
+                                <a href="{{ route('commercial.cotizaciones.show', $rem) }}" class="btn btn--ghost" style="padding:6px 12px; font-size:13px; text-decoration:none;">Ver detalle</a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" style="text-align:center; padding:32px; color:var(--muted);">
-                                No hay cotizaciones registradas.
+                            <td colspan="7" style="text-align:center; padding:32px; color:var(--muted);">
+                                No hay remisiones registradas. Convierte una cotización en remisión desde su detalle.
                             </td>
                         </tr>
                     @endforelse

@@ -17,7 +17,7 @@
             <div id="productos-container" style="display:flex; flex-direction:column; gap:12px;">
                 @php $index = 0; @endphp
                 @foreach($paquete->productos as $producto)
-                    <div class="producto-row" style="display:grid; grid-template-columns:1fr 100px 40px; gap:10px; align-items:end;">
+                    <div class="producto-row rgrid-producto-row">
                         <div>
                             <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--text);">Producto</label>
                             <select name="productos[{{ $index }}][id]" required class="producto-select" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">

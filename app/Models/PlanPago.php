@@ -17,11 +17,13 @@ class PlanPago extends Model
         'cotizacion_id',
         'plazo_pagar',
         'metodo_pago',
+        'monto',
     ];
 
     protected $casts = [
         'no_pago' => 'integer',
         'plazo_pagar' => 'date',
+        'monto' => 'decimal:2',
     ];
 
     public function cliente(): BelongsTo

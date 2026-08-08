@@ -305,6 +305,28 @@
             .page-title { font-size:20px; }
             .user-name { display:none; }
         }
+
+        /* ===== Utilidades responsive para formularios/paneles ===== */
+        .rgrid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .rgrid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+        .rgrid-4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:16px; }
+        .rgrid-sidebar { display:grid; grid-template-columns:1fr 300px; gap:18px; align-items:start; }
+        .rgrid-item-add { display:grid; grid-template-columns:1fr 1fr 90px 110px auto auto; gap:12px; align-items:end; }
+        .rgrid-producto-row { display:grid; grid-template-columns:1fr 100px 40px; gap:10px; align-items:end; }
+        @media (max-width:900px) {
+            .rgrid-4 { grid-template-columns:1fr 1fr; }
+            .rgrid-sidebar { grid-template-columns:1fr; }
+        }
+        @media (max-width:768px) {
+            .rgrid-2, .rgrid-3 { grid-template-columns:1fr; }
+            .rgrid-item-add { grid-template-columns:1fr 1fr; }
+        }
+        @media (max-width:640px) {
+            .rgrid-4 { grid-template-columns:1fr; }
+            .rgrid-item-add { grid-template-columns:1fr; }
+            .rgrid-producto-row { grid-template-columns:1fr; }
+        }
+        .responsive-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
     </style>
 </head>
 <body>
@@ -355,6 +377,10 @@
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.cotizaciones.*') ? 'active' : '' }}" href="{{ route('commercial.cotizaciones.index') }}" data-tip="Cotizaciones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cotizaciones</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.planesPago.*') ? 'active' : '' }}" href="{{ route('commercial.planesPago.index') }}" data-tip="Planes de Pago">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Planes de Pago</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.remisiones.*') ? 'active' : '' }}" href="{{ route('commercial.remisiones.index') }}" data-tip="Remisiones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
