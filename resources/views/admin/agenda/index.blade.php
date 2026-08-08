@@ -13,14 +13,94 @@
         'congress' => ['bg' => '#a9bcff', 'text' => '#053394', 'line' => '#a9bcff'],
     ];
 
-    $events = [
-        1 => [['time' => '10:00 am', 'title' => 'Capacitacion', 'type' => 'training']],
-        3 => [['time' => '08:00 am', 'title' => 'Entrega de equipo', 'type' => 'delivery']],
-        9 => [['time' => '08:00 am', 'title' => 'Instalacion', 'type' => 'install']],
-        13 => [['time' => '10:00 am', 'title' => 'Reunion', 'type' => 'meeting']],
-        25 => [['time' => '09:00 am', 'title' => 'Congreso', 'type' => 'congress']],
-        28 => [['time' => '11:00 am', 'title' => 'Mantenimiento', 'type' => 'maintenance']],
+    $eventList = [
+        [
+            'id' => 'evt-training',
+            'start_date' => '2026-07-01',
+            'end_date' => '2026-07-03',
+            'time' => '10:00 am',
+            'time_value' => '10:00',
+            'title' => 'Capacitacion',
+            'type' => 'training',
+            'notes' => 'Preparar materiales y confirmar asistentes.',
+            'participants' => 'Ricardo, Marina Sherlyn, Jose Alex',
+        ],
+        [
+            'id' => 'evt-delivery',
+            'start_date' => '2026-07-05',
+            'end_date' => '2026-07-05',
+            'time' => '08:00 am',
+            'time_value' => '08:00',
+            'title' => 'Entrega de equipo',
+            'type' => 'delivery',
+            'notes' => 'Confirmar recepcion y evidencia de entrega.',
+            'participants' => 'Ing. Joel Diaz, Almacen Central',
+        ],
+        [
+            'id' => 'evt-install',
+            'start_date' => '2026-07-09',
+            'end_date' => '2026-07-09',
+            'time' => '08:00 am',
+            'time_value' => '08:00',
+            'title' => 'Instalacion',
+            'type' => 'install',
+            'notes' => 'Validar acceso al area antes de iniciar.',
+            'participants' => 'Servicios, Cliente asignado',
+        ],
+        [
+            'id' => 'evt-meeting',
+            'start_date' => '2026-07-13',
+            'end_date' => '2026-07-13',
+            'time' => '10:00 am',
+            'time_value' => '10:00',
+            'title' => 'Reunion',
+            'type' => 'meeting',
+            'notes' => 'Revisar pendientes administrativos.',
+            'participants' => 'Direccion, Administracion',
+        ],
+        [
+            'id' => 'evt-congress',
+            'start_date' => '2026-07-25',
+            'end_date' => '2026-07-25',
+            'time' => '09:00 am',
+            'time_value' => '09:00',
+            'title' => 'Congreso',
+            'type' => 'congress',
+            'notes' => 'Confirmar agenda y participantes.',
+            'participants' => 'Marketing, Ventas, Direccion',
+        ],
+        [
+            'id' => 'evt-maintenance',
+            'start_date' => '2026-07-28',
+            'end_date' => '2026-07-28',
+            'time' => '11:00 am',
+            'time_value' => '11:00',
+            'title' => 'Mantenimiento',
+            'type' => 'maintenance',
+            'notes' => 'Programar revision preventiva del equipo.',
+            'participants' => 'Tecnico interno, Responsable de equipo',
+        ],
     ];
+
+    $events = [];
+
+    foreach ($eventList as $event) {
+        $start = new DateTimeImmutable($event['start_date']);
+        $end = new DateTimeImmutable($event['end_date']);
+
+        for ($cursor = $start; $cursor <= $end; $cursor = $cursor->modify('+1 day')) {
+            if ($cursor->format('Y-m') !== '2026-07') {
+                continue;
+            }
+
+            $dayNumber = (int) $cursor->format('j');
+            $events[$dayNumber][] = array_merge($event, [
+                'date' => $cursor->format('Y-m-d'),
+                'is_start' => $cursor->format('Y-m-d') === $event['start_date'],
+                'is_end' => $cursor->format('Y-m-d') === $event['end_date'],
+            ]);
+        }
+    }
 
     $calendar = [
         ['num' => 28, 'muted' => true],
@@ -60,14 +140,7 @@
         ['num' => 1, 'muted' => true],
     ];
 
-    $upcoming = [
-        ['time' => '10:00 am', 'title' => 'Capacitacion', 'type' => 'training'],
-        ['time' => '08:00 am', 'title' => 'Entrega de equipo', 'type' => 'delivery'],
-        ['time' => '08:00 am', 'title' => 'Instalacion', 'type' => 'install'],
-        ['time' => '11:00 am', 'title' => 'Mantenimiento', 'type' => 'maintenance'],
-        ['time' => '10:00 am', 'title' => 'Reunion', 'type' => 'meeting'],
-        ['time' => '09:00 am', 'title' => 'Congreso', 'type' => 'congress'],
-    ];
+    $upcoming = $eventList;
 @endphp
 
 @push('head')
@@ -270,9 +343,39 @@
         position: relative;
         min-height: 84px;
         padding: 10px 8px 8px;
+        border-top: 0;
+        border-left: 0;
         border-right: 1px solid var(--border);
         border-bottom: 1px solid var(--border);
         background: var(--surface);
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: background .16s ease, box-shadow .16s ease;
+    }
+
+    .calendar-cell:hover {
+        background: var(--surface-2);
+        box-shadow: inset 0 0 0 2px rgba(37, 99, 235, .2);
+    }
+
+    .calendar-cell.is-busy {
+        background: rgba(37, 99, 235, .08);
+        box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .22);
+    }
+
+    .calendar-cell.is-range-start {
+        box-shadow: inset 4px 0 0 rgba(37, 99, 235, .65), inset 0 0 0 1px rgba(37, 99, 235, .22);
+    }
+
+    .calendar-cell.is-range-end {
+        box-shadow: inset -4px 0 0 rgba(37, 99, 235, .45), inset 0 0 0 1px rgba(37, 99, 235, .22);
+    }
+
+    .calendar-cell:focus-visible {
+        outline: 3px solid rgba(37, 99, 235, .35);
+        outline-offset: -3px;
     }
 
     .calendar-cell:nth-child(7n) {
@@ -295,6 +398,11 @@
         color: #9ca3af;
     }
 
+    .calendar-cell.is-busy .calendar-number {
+        color: #2563eb;
+        font-weight: 900;
+    }
+
     .calendar-events {
         display: flex;
         flex-direction: column;
@@ -303,13 +411,27 @@
     }
 
     .calendar-event {
-        width: min(84px, 100%);
+        width: 100%;
         padding: 5px 7px 6px;
+        border: 0;
         border-radius: 5px;
         font-size: 10px;
         line-height: 1.05;
         font-weight: 700;
+        font-family: inherit;
+        text-align: left;
         overflow: hidden;
+        cursor: pointer;
+    }
+
+    .calendar-event:hover {
+        filter: saturate(1.08) brightness(.98);
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, .22);
+    }
+
+    .calendar-event:focus-visible {
+        outline: 2px solid rgba(37, 99, 235, .5);
+        outline-offset: 2px;
     }
 
     .calendar-event b,
@@ -323,6 +445,14 @@
     .upcoming-item span {
         display: block;
         line-height: 1.1;
+    }
+
+    .calendar-event small {
+        display: block;
+        margin-top: 3px;
+        font-size: 9px;
+        line-height: 1.1;
+        opacity: .82;
     }
 
     .agenda-side {
@@ -459,6 +589,10 @@
         gap: 12px;
     }
 
+    .agenda-form-row--three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .agenda-form input,
     .agenda-form select,
     .agenda-form textarea {
@@ -504,6 +638,14 @@
 
     :root[data-theme="dark"] .calendar-event {
         filter: saturate(.95) brightness(.95);
+    }
+
+    :root[data-theme="dark"] .calendar-cell:hover {
+        background: rgba(10, 132, 255, .12);
+    }
+
+    :root[data-theme="dark"] .calendar-cell.is-busy {
+        background: rgba(10, 132, 255, .13);
     }
 
     @media (max-width: 1100px) {
@@ -627,19 +769,56 @@
                     @foreach ($calendar as $day)
                         @php
                             $dayEvents = empty($day['muted']) ? ($events[$day['num']] ?? []) : [];
+                            $dateMonth = empty($day['muted']) ? '07' : ($loop->index < 3 ? '06' : '08');
+                            $selectedDate = '2026-'.$dateMonth.'-'.str_pad($day['num'], 2, '0', STR_PAD_LEFT);
+                            $dayClasses = ['calendar-cell'];
+
+                            if ($dayEvents) {
+                                $dayClasses[] = 'is-busy';
+
+                                if (collect($dayEvents)->contains('is_start', true)) {
+                                    $dayClasses[] = 'is-range-start';
+                                }
+
+                                if (collect($dayEvents)->contains('is_end', true)) {
+                                    $dayClasses[] = 'is-range-end';
+                                }
+                            }
                         @endphp
 
-                        <div class="calendar-cell">
+                        <div class="{{ implode(' ', $dayClasses) }}" role="button" tabindex="0" data-agenda-day data-agenda-date="{{ $selectedDate }}" aria-label="{{ $dayEvents ? 'Editar evento del '.$selectedDate : 'Registrar evento el '.$selectedDate }}">
                             <span class="calendar-number {{ ! empty($day['muted']) ? 'is-muted' : '' }}">{{ str_pad($day['num'], 2, '0', STR_PAD_LEFT) }}</span>
 
                             @if ($dayEvents)
                                 <div class="calendar-events">
                                     @foreach ($dayEvents as $event)
-                                        @php($color = $eventColors[$event['type']])
-                                        <div class="calendar-event" style="background: {{ $color['bg'] }}; color: {{ $color['text'] }};">
+                                        @php
+                                            $color = $eventColors[$event['type']];
+                                            $isMultiDay = $event['start_date'] !== $event['end_date'];
+                                            $rangeLabel = $event['is_start'] ? 'Inicia' : ($event['is_end'] ? 'Termina' : 'Continua');
+                                        @endphp
+                                        <button
+                                            class="calendar-event"
+                                            type="button"
+                                            data-agenda-event
+                                            data-agenda-id="{{ $event['id'] }}"
+                                            data-agenda-date="{{ $selectedDate }}"
+                                            data-agenda-start-date="{{ $event['start_date'] }}"
+                                            data-agenda-end-date="{{ $event['end_date'] }}"
+                                            data-agenda-title="{{ $event['title'] }}"
+                                            data-agenda-time="{{ $event['time_value'] }}"
+                                            data-agenda-type="{{ $event['type'] }}"
+                                            data-agenda-notes="{{ $event['notes'] }}"
+                                            data-agenda-participants="{{ $event['participants'] }}"
+                                            style="background: {{ $color['bg'] }}; color: {{ $color['text'] }};"
+                                            aria-label="Editar evento {{ $event['title'] }} del {{ $selectedDate }}"
+                                        >
                                             <b>{{ $event['time'] }}</b>
                                             <span>{{ $event['title'] }}</span>
-                                        </div>
+                                            @if ($isMultiDay)
+                                                <small>{{ $rangeLabel }}</small>
+                                            @endif
+                                        </button>
                                     @endforeach
                                 </div>
                             @endif
@@ -681,24 +860,28 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <form class="agenda-form" onsubmit="event.preventDefault(); closeAgendaModal();">
+            <form class="agenda-form" onsubmit="saveAgendaEvent(event);">
                 <div>
                     <label for="agenda-title">Titulo</label>
-                    <input id="agenda-title" type="text" value="Capacitacion">
+                    <input id="agenda-title" type="text" name="title" placeholder="Nombre del evento" required>
                 </div>
-                <div class="agenda-form-row">
+                <div class="agenda-form-row agenda-form-row--three">
                     <div>
-                        <label for="agenda-date">Fecha</label>
-                        <input id="agenda-date" type="date" value="2026-07-01">
+                        <label for="agenda-date">Fecha inicial</label>
+                        <input id="agenda-date" type="date" name="start_date" value="2026-07-04" required>
+                    </div>
+                    <div>
+                        <label for="agenda-end-date">Fecha final</label>
+                        <input id="agenda-end-date" type="date" name="end_date" value="2026-07-04" required>
                     </div>
                     <div>
                         <label for="agenda-time">Hora</label>
-                        <input id="agenda-time" type="time" value="10:00">
+                        <input id="agenda-time" type="time" name="time" value="09:00" required>
                     </div>
                 </div>
                 <div>
                     <label for="agenda-type">Tipo</label>
-                    <select id="agenda-type">
+                    <select id="agenda-type" name="type">
                         <option>Capacitacion</option>
                         <option>Entrega de equipo</option>
                         <option>Instalacion</option>
@@ -708,20 +891,82 @@
                     </select>
                 </div>
                 <div>
-                    <label for="agenda-notes">Notas</label>
-                    <textarea id="agenda-notes">Preparar materiales y confirmar asistentes.</textarea>
+                    <label for="agenda-participants">Participantes</label>
+                    <textarea id="agenda-participants" name="participants" placeholder="Nombre de participantes, separados por coma"></textarea>
                 </div>
-                <button class="agenda-save" type="submit">Guardar</button>
+                <div>
+                    <label for="agenda-notes">Notas</label>
+                    <textarea id="agenda-notes" name="notes" placeholder="Notas del evento"></textarea>
+                </div>
+                <button class="agenda-save" id="agendaSaveButton" type="submit">Guardar evento</button>
             </form>
         </div>
     </div>
 
     <script>
         const agendaModal = document.getElementById('agendaModal');
+        const agendaTitleInput = document.getElementById('agenda-title');
+        const agendaDateInput = document.getElementById('agenda-date');
+        const agendaEndDateInput = document.getElementById('agenda-end-date');
+        const agendaTimeInput = document.getElementById('agenda-time');
+        const agendaTypeInput = document.getElementById('agenda-type');
+        const agendaParticipantsInput = document.getElementById('agenda-participants');
+        const agendaNotesInput = document.getElementById('agenda-notes');
+        const agendaDialogTitle = document.getElementById('agendaDialogTitle');
+        const agendaSaveButton = document.getElementById('agendaSaveButton');
+        const agendaReservedEvents = @json($eventList);
+        const agendaTypeLabels = {
+            training: 'Capacitacion',
+            delivery: 'Entrega de equipo',
+            install: 'Instalacion',
+            maintenance: 'Mantenimiento',
+            meeting: 'Reunion',
+            congress: 'Congreso',
+        };
 
-        function openAgendaModal() {
+        function findAgendaEventByDate(date) {
+            return agendaReservedEvents.find((item) => date >= item.start_date && date <= item.end_date);
+        }
+
+        function rangeOverlapsReservedEvent(startDate, endDate, ignoredEventId) {
+            return agendaReservedEvents.some((item) => {
+                if (ignoredEventId && item.id === ignoredEventId) {
+                    return false;
+                }
+
+                return startDate <= item.end_date && endDate >= item.start_date;
+            });
+        }
+
+        function openAgendaModal(selectedDate, eventData) {
+            const date = typeof selectedDate === 'string' ? selectedDate : '2026-07-04';
+            const isEditing = !!eventData;
+            const normalizedEvent = isEditing ? {
+                id: eventData.id,
+                startDate: eventData.startDate || eventData.start_date,
+                endDate: eventData.endDate || eventData.end_date,
+                title: eventData.title,
+                time: eventData.time || eventData.time_value,
+                type: eventData.type,
+                notes: eventData.notes || '',
+                participants: eventData.participants || '',
+            } : null;
+
+            agendaModal.dataset.mode = isEditing ? 'edit' : 'create';
+            agendaModal.dataset.eventId = isEditing ? normalizedEvent.id : '';
+            agendaDialogTitle.textContent = isEditing ? 'Editar Evento' : 'Nuevo Evento';
+            agendaSaveButton.textContent = isEditing ? 'Guardar cambios' : 'Guardar evento';
+            agendaTitleInput.value = isEditing ? normalizedEvent.title : '';
+            agendaDateInput.value = isEditing ? normalizedEvent.startDate : date;
+            agendaEndDateInput.value = isEditing ? normalizedEvent.endDate : date;
+            agendaTimeInput.value = isEditing ? normalizedEvent.time : '09:00';
+            agendaTypeInput.value = isEditing ? (agendaTypeLabels[normalizedEvent.type] || normalizedEvent.type) : 'Capacitacion';
+            agendaParticipantsInput.value = isEditing ? normalizedEvent.participants : '';
+            agendaNotesInput.value = isEditing ? normalizedEvent.notes : '';
+
             agendaModal.classList.add('is-open');
             agendaModal.setAttribute('aria-hidden', 'false');
+            window.setTimeout(() => agendaTitleInput.focus(), 80);
         }
 
         function closeAgendaModal() {
@@ -729,8 +974,71 @@
             agendaModal.setAttribute('aria-hidden', 'true');
         }
 
+        function saveAgendaEvent(event) {
+            event.preventDefault();
+
+            if (agendaEndDateInput.value < agendaDateInput.value) {
+                if (window.showToast) {
+                    window.showToast('La fecha final no puede ser menor que la fecha inicial.');
+                }
+
+                return;
+            }
+
+            if (rangeOverlapsReservedEvent(agendaDateInput.value, agendaEndDateInput.value, agendaModal.dataset.eventId)) {
+                if (window.showToast) {
+                    window.showToast('Ya existe un evento registrado en ese rango de fechas.');
+                }
+
+                return;
+            }
+
+            if (window.showToast) {
+                const message = agendaModal.dataset.mode === 'edit'
+                    ? 'Evento actualizado para el ' + agendaDateInput.value + '.'
+                    : 'Evento registrado para el ' + agendaDateInput.value + '.';
+                window.showToast(message);
+            }
+
+            closeAgendaModal();
+        }
+
         document.querySelectorAll('[data-agenda-modal-open]').forEach((button) => {
-            button.addEventListener('click', openAgendaModal);
+            button.addEventListener('click', () => openAgendaModal());
+        });
+
+        document.querySelectorAll('[data-agenda-day]').forEach((day) => {
+            day.addEventListener('click', () => {
+                const currentEvent = findAgendaEventByDate(day.dataset.agendaDate);
+                openAgendaModal(day.dataset.agendaDate, currentEvent);
+            });
+            day.addEventListener('keydown', (event) => {
+                if (event.target.closest('[data-agenda-event]')) {
+                    return;
+                }
+
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    const currentEvent = findAgendaEventByDate(day.dataset.agendaDate);
+                    openAgendaModal(day.dataset.agendaDate, currentEvent);
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-agenda-event]').forEach((item) => {
+            item.addEventListener('click', (event) => {
+                event.stopPropagation();
+                openAgendaModal(item.dataset.agendaDate, {
+                    id: item.dataset.agendaId,
+                    startDate: item.dataset.agendaStartDate,
+                    endDate: item.dataset.agendaEndDate,
+                    title: item.dataset.agendaTitle,
+                    time: item.dataset.agendaTime,
+                    type: item.dataset.agendaType,
+                    notes: item.dataset.agendaNotes,
+                    participants: item.dataset.agendaParticipants,
+                });
+            });
         });
 
         document.querySelectorAll('[data-agenda-modal-close]').forEach((button) => {

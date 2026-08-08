@@ -523,7 +523,7 @@
             color: #fff;
             font-size: 14px;
             outline: none;
-            cursor: not-allowed;
+            cursor: text;
         }
         .search-box .search-icon {
             position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
