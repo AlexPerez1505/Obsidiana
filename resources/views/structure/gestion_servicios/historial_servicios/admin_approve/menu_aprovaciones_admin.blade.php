@@ -4,6 +4,9 @@
 
 @section('service_content')
 <div class="catalog-card service-section" style="padding:22px;">
+    <div style="margin-bottom:12px;">
+        <a href="{{ route('gestion.servicios.historial') }}" class="btn btn--ghost" style="font-size:13px; padding:6px 12px; text-decoration:none;">← Regresar</a>
+    </div>
     <div class="catalog-header" style="margin-bottom:16px;">
         <div>
             <h2 style="margin:0; color:#fff;">Aprobaciones pendientes</h2>

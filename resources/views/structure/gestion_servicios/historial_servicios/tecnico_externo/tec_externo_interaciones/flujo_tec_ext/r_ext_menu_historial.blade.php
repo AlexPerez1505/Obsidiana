@@ -130,9 +130,17 @@
 
     window.guardarServicio = function() {
         const form = document.getElementById('orden-form');
+        const btnPrimary = document.getElementById('btn-primary');
+        
         if (!form) {
             alert('No se encontró el formulario.');
             return;
+        }
+
+        // Deshabilitar el botón para evitar múltiples clicks
+        if (btnPrimary) {
+            btnPrimary.disabled = true;
+            btnPrimary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardando...';
         }
 
         const formData = new FormData(form);
@@ -173,14 +181,24 @@
                 btnGenerar.disabled = false;
             }
             
+            // Mostrar mensaje de éxito
             alert('✓ Servicio ' + data.service_number + ' guardado exitosamente.\n\nAhora puedes generar el QR haciendo click en "Generar QR".');
+            
+            // Redirigir al menú de historial después de 1.5 segundos
+            setTimeout(() => {
+                if (data.menu_url) {
+                    window.location.href = data.menu_url;
+                }
+            }, 1500);
         })
         .catch(err => {
             alert('Error al guardar servicio: ' + err.message);
             console.error(err);
-            const btnPrimary = document.getElementById('btn-primary');
+            
+            // Re-habilitar el botón en caso de error
             if (btnPrimary) {
                 btnPrimary.disabled = false;
+                btnPrimary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar nuevo servicio';
             }
         });
     };
