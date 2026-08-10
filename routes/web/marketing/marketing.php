@@ -60,7 +60,6 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/marketing/guia-de-marca', [GuiaDeMarcaController::class, 'update'])
         ->name('marketing.guia_de_marca.update');
 
-    Route::get('/gestion-marketing/inicio', function () {
-        return view('structure.gestion_marketing.inicio.menu_marketing');
-    })->name('marketing.inicio');
+    Route::get('/gestion-marketing/inicio', [TaskController::class, 'inicio'])
+        ->name('marketing.inicio');
 });
