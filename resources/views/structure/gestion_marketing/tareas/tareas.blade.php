@@ -549,12 +549,6 @@
                 <div id="projectImageEmpty" style="margin-top:8px;color:var(--muted);font-size:13px;">Aún no hay imagen del proyecto.</div>
             </div>
 
-            <div class="task-field">
-                <span class="field-label">Entrega — Imagen o video (vista previa del enlace)</span>
-                <div class="task-preview">
-                    Aún no hay imagen/video. Pega el enlace arriba y aquí lo verá todo el equipo.
-                </div>
-            </div>
         </div>
 
         <div class="task-footer">

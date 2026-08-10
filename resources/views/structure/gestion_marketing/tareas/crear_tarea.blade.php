@@ -394,13 +394,6 @@
                 <textarea id="description" name="description" placeholder="Texto de la publicación...">{{ old('description') }}</textarea>
             </div>
 
-            <div class="task-field">
-                <span class="field-label">Entrega — Imagen o video (vista previa del enlace)</span>
-                <div class="task-preview">
-                    Aún no hay imagen/video. Pega arriba el enlace (Canva, Google Drive, YouTube o imagen) y aparecerá aquí para que todo el equipo lo vea.
-                </div>
-            </div>
-
         </div>
 
         <div class="task-footer">

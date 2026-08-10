@@ -105,13 +105,12 @@
         font-size: 14px;
     }
     .galeria-grid {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
         gap: 16px;
     }
     .galeria-card {
-        flex: 1 1 240px;
-        max-width: 320px;
+        width: 100%;
         min-height: 150px;
         background: var(--surface);
         border: 1px solid var(--border);
