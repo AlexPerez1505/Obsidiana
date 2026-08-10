@@ -313,7 +313,11 @@
                             <div style="margin-top:24px;">
                                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
                                     <h3 class="checklist-title" style="margin:0;">Checklist de aprobación ( <span id="checkCount">0</span> /10)</h3>
-                                    <button type="button" class="review-btn" style="padding:6px 12px;font-size:12px;" onclick="selectAllChecklist()">Seleccionar todos</button>
+                                    <label class="select-all-toggle">
+                                        <input type="checkbox" id="selectAllCheck" onchange="toggleSelectAll()">
+                                        <span class="select-all-check"></span>
+                                        <span class="select-all-label">Seleccionar todos</span>
+                                    </label>
                                 </div>
                                 <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px;">
                                     <div class="check-bar" style="width:100%;"><div class="check-bar-fill" id="modalCheckBar" style="width:0%;"></div></div>
@@ -348,39 +352,6 @@
                     </div>
                 </div>
 
-                <div>
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
-                        <h3 class="checklist-title" style="margin:0;">Checklist de aprobación ( <span id="checkCount">0</span> /10)</h3>
-                        <label class="select-all-toggle">
-                            <input type="checkbox" id="selectAllCheck" onchange="toggleSelectAll()">
-                            <span class="select-all-check"></span>
-                            <span class="select-all-label">Seleccionar todos</span>
-                        </label>
-                    </div>
-                    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px;">
-                        <div class="check-bar" style="width:100%;"><div class="check-bar-fill" id="modalCheckBar" style="width:0%;"></div></div>
-                        <span class="check-text"><span id="checkPercent">0</span>% de aprobación</span>
-                    </div>
-                    <div class="checklist-grid" id="checklistGrid">
-                        @foreach ([
-                            'Nombre/modelo',
-                            'Specs verificados',
-                            'Marca/logo',
-                            'Precio/política',
-                            'Ortografía',
-                            'Datos de contacto',
-                            'Sin claims indebidos',
-                            'Formato de red',
-                            'Imagen nítida',
-                            'Leyenda salud'
-                        ] as $i => $item)
-                            <label class="checklist-item">
-                                <input type="checkbox" name="approval_checklist[]" value="{{ $i }}" onchange="updateCheckCount()">
-                                <span>{{ $item }}</span>
-                            </label>
-                        @endforeach
-                    </div>
-                </div>
 
 
             </div>

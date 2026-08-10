@@ -199,7 +199,112 @@
         height: 100%;
         object-fit: cover;
         display: block;
+        cursor: zoom-in;
     }
+    .galeria-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: auto;
+    }
+    .galeria-promo, .galeria-download {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: none;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .galeria-promo { background: var(--primary); color: #fff; }
+    .galeria-promo:hover { background: var(--primary-strong); }
+    .galeria-download { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+    .galeria-download:hover { background: var(--surface); }
+    .lightbox {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.72);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        z-index: 1000;
+    }
+    .lightbox.is-open { display: flex; }
+    .lightbox-card {
+        position: relative;
+        background: #fff;
+        border-radius: 18px;
+        padding: 12px;
+        max-width: 90vw;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,.45);
+    }
+    .lightbox-card img {
+        max-width: 80vw;
+        max-height: 76vh;
+        border-radius: 12px;
+        object-fit: contain;
+    }
+    .lightbox-close {
+        position: absolute;
+        top: -18px;
+        right: -18px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #fff;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        line-height: 1;
+        color: #333;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    }
+    .lightbox-close:hover { background: #f2f2f2; }
+    .lightbox-counter {
+        position: absolute;
+        bottom: -44px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,.6);
+        color: #fff;
+        padding: 7px 16px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+    .lightbox-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(0,0,0,.6);
+        color: #fff;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        line-height: 1;
+        cursor: pointer;
+        transition: background .15s;
+    }
+    .lightbox-nav:hover { background: rgba(0,0,0,.85); }
+    .lightbox-prev { left: -22px; }
+    .lightbox-next { right: -22px; }
     .galeria-image-empty {
         color: var(--muted);
         font-size: 13px;
@@ -285,17 +390,23 @@
             </div>
         @else
             <div class="galeria-grid">
+                @php $imageIndex = 0; @endphp
                 @foreach($flyers as $flyer)
-                    <a href="{{ route('marketing.biblioteca_catalogo.descargar_flyer', $flyer) }}" class="galeria-card" title="Ver flyer" target="_blank" rel="noopener">
+                    <div class="galeria-card">
                         <div class="galeria-image-wrap">
                             @if($flyer->project_image)
-                                <img src="{{ asset('storage/' . $flyer->project_image) }}" alt="{{ $flyer->title }}" class="galeria-image">
+                                <img src="{{ asset('storage/' . $flyer->project_image) }}" alt="{{ $flyer->title }}" class="galeria-image" onclick="openLightbox({{ $imageIndex }})">
+                                @php $imageIndex++; @endphp
                             @else
                                 <div class="galeria-image-empty">Sin imagen</div>
                             @endif
                         </div>
                         <div class="galeria-title">{{ $flyer->title }}</div>
-                    </a>
+                        <div class="galeria-actions">
+                            <button type="button" class="galeria-promo" onclick="alert('El apartado de promociones aún no está creado.')">Mandar a promociones</button>
+                            <a href="{{ route('marketing.biblioteca_catalogo.descargar_flyer', $flyer) }}" class="galeria-download" target="_blank" rel="noopener">Descargar</a>
+                        </div>
+                    </div>
                 @endforeach
             </div>
         @endif
@@ -306,4 +417,55 @@
         <div>grupomedibuy.com · WhatsApp 55 1867 / 722 448 5191</div>
     </div>
 </div>
+
+@php
+    $lightboxImages = $flyers->filter(fn($f) => !empty($f->project_image))->values()->map(fn($f) => asset('storage/' . $f->project_image));
+@endphp
+
+<div class="lightbox" id="lightbox">
+    <div class="lightbox-card" onclick="event.stopPropagation()">
+        <button type="button" class="lightbox-close" onclick="closeLightbox()">&times;</button>
+        <img id="lightboxImage" src="" alt="Imagen ampliada">
+        <div class="lightbox-counter" id="lightboxCounter">1 / 1</div>
+        <button type="button" class="lightbox-nav lightbox-prev" onclick="navLightbox(-1)">&#8249;</button>
+        <button type="button" class="lightbox-nav lightbox-next" onclick="navLightbox(1)">&#8250;</button>
+    </div>
+</div>
+
+<script>
+    const lightboxImages = @json($lightboxImages);
+    let currentImage = 0;
+
+    function openLightbox(index) {
+        currentImage = index;
+        updateLightbox();
+        document.getElementById('lightbox').classList.add('is-open');
+    }
+
+    function updateLightbox() {
+        const img = lightboxImages[currentImage] || '';
+        document.getElementById('lightboxImage').src = img;
+        document.getElementById('lightboxCounter').textContent = (currentImage + 1) + ' / ' + lightboxImages.length;
+    }
+
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.remove('is-open');
+    }
+
+    function navLightbox(dir) {
+        if (lightboxImages.length <= 1) return;
+        currentImage = (currentImage + dir + lightboxImages.length) % lightboxImages.length;
+        updateLightbox();
+    }
+
+    document.getElementById('lightbox').addEventListener('click', function(e) {
+        if (e.target.id === 'lightbox') closeLightbox();
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowLeft') navLightbox(-1);
+        if (e.key === 'ArrowRight') navLightbox(1);
+    });
+</script>
 @endsection

@@ -65,7 +65,7 @@
                 <h2 class="section-title" style="margin:0;">Paleta de color</h2>
                 <span style="font-size:12px; color:var(--muted);">(clic para copiar el HEX)</span>
             </div>
-            <a href="{{ route('marketing.guia_de_marca.create') }}" class="btn-primary" style="padding:9px 16px; font-size:14px; text-decoration:none;">Crear más colores</a>
+            <a href="{{ route('marketing.guia_de_marca.create') }}" class="btn-primary" style="padding:9px 16px; font-size:14px; text-decoration:none;">Personalizar marca</a>
         </div>
         <div class="palette-grid" id="palette-grid">
             @foreach ($brandGuide->colors as $i => $color)
@@ -133,9 +133,6 @@
         </div>
     </div>
 
-    <div class="card save-bar">
-        <button type="submit" class="btn-primary">Guardar cambios</button>
-    </div>
 </form>
 
 <script>

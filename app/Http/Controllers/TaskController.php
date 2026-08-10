@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class TaskController extends Controller
@@ -284,7 +285,9 @@ public function aprobacionFlyers(): View
         }
 
         if (!empty($task->project_image)) {
-            return redirect()->away(asset('storage/' . $task->project_image));
+            $extension = pathinfo($task->project_image, PATHINFO_EXTENSION) ?: 'jpg';
+            $filename = preg_replace('/[^A-Za-z0-9\-]/', '_', $task->title) . '_flyer.' . $extension;
+            return Storage::disk('public')->download($task->project_image, $filename);
         }
 
         try {
