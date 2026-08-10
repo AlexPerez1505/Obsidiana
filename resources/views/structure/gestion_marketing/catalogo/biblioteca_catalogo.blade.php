@@ -184,6 +184,27 @@
         font-weight: 700;
     }
     .galeria-link span { color: var(--muted); font-weight: 600; }
+    .galeria-image-wrap {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        background: var(--surface-2);
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .galeria-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    .galeria-image-empty {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 600;
+    }
     .catalogo-foot {
         display: flex;
         align-items: center;
@@ -256,27 +277,24 @@
 
     <div class="catalogo-section">
         <h2 class="catalogo-title" style="font-size: 20px;">Galería de piezas</h2>
-        <p class="catalogo-sub">Toca una tarjeta para ver el flyer en Canva / Drive.</p>
+        <p class="catalogo-sub">Toca una tarjeta para ver la imagen.</p>
 
         @if($flyers->isEmpty())
             <div class="galeria-empty">
-                Aún no hay flyers cargados. Cuando marques tareas como hechas con enlace de Canva o Drive, aparecerán aquí.
+                Aún no hay piezas aprobadas con imagen. Cuando una tarea con imagen se marque como aprobada, aparecerá aquí.
             </div>
         @else
             <div class="galeria-grid">
                 @foreach($flyers as $flyer)
-                    <a href="{{ route('marketing.biblioteca_catalogo.descargar_flyer', $flyer) }}" class="galeria-card" title="Descargar flyer">
-                        <div class="galeria-meta">
-                            @if($flyer->category)
-                                <span class="galeria-tag">{{ $flyer->category }}</span>
+                    <a href="{{ route('marketing.biblioteca_catalogo.descargar_flyer', $flyer) }}" class="galeria-card" title="Ver flyer" target="_blank" rel="noopener">
+                        <div class="galeria-image-wrap">
+                            @if($flyer->project_image)
+                                <img src="{{ asset('storage/' . $flyer->project_image) }}" alt="{{ $flyer->title }}" class="galeria-image">
+                            @else
+                                <div class="galeria-image-empty">Sin imagen</div>
                             @endif
-                            <span class="galeria-status">Hecho</span>
                         </div>
                         <div class="galeria-title">{{ $flyer->title }}</div>
-                        @if($flyer->description)
-                            <p class="galeria-copy">{{ Str::limit($flyer->description, 140) }}</p>
-                        @endif
-                        <div class="galeria-link">Descargar / abrir <span>→</span></div>
                     </a>
                 @endforeach
             </div>

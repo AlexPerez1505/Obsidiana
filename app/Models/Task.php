@@ -29,6 +29,7 @@ class Task extends Model
         'user_id',
         'linked_piece',
         'rejection_comment',
+        'project_image',
         'created_by',
         'approval_checklist',
     ];

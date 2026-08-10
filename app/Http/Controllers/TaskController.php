@@ -132,7 +132,12 @@ class TaskController extends Controller
             'platform.*' => ['string', 'max:255'],
             'has_video' => ['nullable', 'boolean'],
             'linked_piece' => ['nullable', 'string', 'max:255'],
+            'project_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
+
+        if ($request->hasFile('project_image')) {
+            $data['project_image'] = $request->file('project_image')->store('project_images', 'public');
+        }
 
         $data['status'] = 'pendiente';
         $tags = $data['tags'] ?? null;
@@ -172,7 +177,12 @@ class TaskController extends Controller
             'has_video' => ['nullable', 'boolean'],
             'linked_piece' => ['nullable', 'string', 'max:255'],
             'rejection_comment' => ['nullable', 'string'],
+            'project_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
+
+        if ($request->hasFile('project_image')) {
+            $data['project_image'] = $request->file('project_image')->store('project_images', 'public');
+        }
 
         $tags = $data['tags'] ?? null;
         $data['tags'] = $tags
@@ -252,8 +262,10 @@ public function aprobacionFlyers(): View
     public function bibliotecaCatalogo(): View
     {
         $flyers = Task::where('status', 'completada')
-            ->whereNotNull('delivery_link')
-            ->where('delivery_link', '!=', '')
+            ->where(function ($query) {
+                $query->whereNotNull('project_image')
+                    ->where('project_image', '!=', '');
+            })
             ->orderByDesc('updated_at')
             ->get();
 
@@ -267,8 +279,12 @@ public function aprobacionFlyers(): View
      */
     public function descargarFlyer(Task $task): RedirectResponse|\Symfony\Component\HttpFoundation\StreamedResponse
     {
-        if ($task->status !== 'completada' || empty($task->delivery_link)) {
+        if ($task->status !== 'completada' || (empty($task->delivery_link) && empty($task->project_image))) {
             abort(404);
+        }
+
+        if (!empty($task->project_image)) {
+            return redirect()->away(asset('storage/' . $task->project_image));
         }
 
         try {

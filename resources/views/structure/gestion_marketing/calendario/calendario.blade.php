@@ -336,12 +336,9 @@
     <div class="modal" onclick="event.stopPropagation()">
         <div class="modal-head">
             <div>
-                <p class="modal-sub">Editar tarea</p>
+                <p class="modal-sub">Ver tarea</p>
                 <h2 class="modal-title" id="view-task-title">Prueba</h2>
             </div>
-            <button type="button" class="modal-close" onclick="closeViewModal()" aria-label="Cerrar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
         </div>
 
         <div class="modal-body">
@@ -457,24 +454,7 @@
             </form>
         </div>
 
-        <div class="modal-foot">
-            <button type="submit" form="delete-task-form" class="btn-guardar" style="background:var(--danger); color:#fff;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                Eliminar
-            </button>
-            <button type="submit" form="approve-task-form" class="btn-guardar" style="background:var(--green); color:#fff;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
-                Aprobar revisión
-            </button>
-            <button type="submit" form="return-task-form" class="btn-guardar" style="background:var(--accent); color:#fff;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><path d="M3 12h18"/><path d="M9 18l-6-6 6-6"/></svg>
-                Devolver
-            </button>
-            <button type="submit" form="edit-task-form" class="btn-guardar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
-                Guardar
-            </button>
-        </div>
+
     </div>
 </div>
 
@@ -547,6 +527,12 @@
         }
     });
 
+    function setViewModalReadOnly(readonly) {
+        if (viewOverlay) {
+            viewOverlay.querySelectorAll('input, textarea, select').forEach(input => input.disabled = readonly);
+        }
+    }
+
     function openViewModal(el, event) {
         if (event) event.stopPropagation();
         const id = JSON.parse(el.dataset.id);
@@ -572,6 +558,7 @@
         const status = JSON.parse(el.dataset.status);
         editReviewStatus.textContent = status === 'completada' ? 'Aprobada' : 'Pendiente';
 
+        setViewModalReadOnly(true);
         viewOverlay.classList.add('active');
     }
 
@@ -585,6 +572,6 @@
         chip.addEventListener('click', () => {
             chip.classList.toggle('active');
         });
-    });
+  });
 </script>
 @endsection
