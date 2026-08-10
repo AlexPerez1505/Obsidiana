@@ -13,25 +13,28 @@ use App\Models\User;
 
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-servicios/historial-servicios', function () {
-        $cotizaciones = \Illuminate\Support\Facades\DB::table('cotizacion_servicios')
-            ->join('registro_servicios', 'registro_servicios.id_servicio', '=', 'cotizacion_servicios.id_servicio')
-            ->join('clientes', 'clientes.id', '=', 'registro_servicios.id_cliente')
+        $cotizaciones = \Illuminate\Support\Facades\DB::table('services')
+            ->join('clientes', 'clientes.id', '=', 'services.customer_id')
             ->select(
-                'cotizacion_servicios.id',
-                'cotizacion_servicios.id_servicio',
-                'cotizacion_servicios.tipo_cotizacion',
-                'cotizacion_servicios.estado',
-                'cotizacion_servicios.total',
-                'cotizacion_servicios.created_at',
+                'services.id',
+                'services.service_number',
+                'services.service_type',
+                'services.status',
+                'services.qr_token',
+                'services.created_at',
                 'clientes.nombre as cliente_nombre',
                 'clientes.apellido as cliente_apellido'
             )
-            ->orderByDesc('cotizacion_servicios.created_at')
+            ->orderByDesc('services.created_at')
             ->get();
 
         return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('cotizaciones'));
     })->name('gestion.servicios.historial');
-    Route::get('/gestion-servicios/historial-servicios/nueva-orden', function () {
+    Route::get('/gestion-servicios/historial-servicios/nueva-orden/tipo', function () {
+        return view('structure.gestion_servicios.historial_servicios.ext_o_int');
+    })->name('gestion.servicios.historial.nueva_orden.type');
+
+    Route::get('/gestion-servicios/historial-servicios/nueva-orden/externo', function () {
         $customers = Customer::with('asesor')->latest()->get();
 
         if ($clienteId = request('cliente_id')) {
@@ -50,9 +53,12 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->whereNull('deleted_at')
             ->orderBy('nombre')
             ->get();
-        $internalTechnicians = User::where('status', User::STATUS_APPROVED)->orderBy('name')->get();
 
-        return view('structure.gestion_servicios.historial_servicios.registro_servicio.c_registro_serv', compact('customers', 'equipmentTypes', 'brands', 'externalTechnicians', 'internalTechnicians'));
+        return view('structure.gestion_servicios.historial_servicios.tecnico_externo.registro_servicio_externo.c_tecnico_ext', compact('customers', 'equipmentTypes', 'brands', 'externalTechnicians'));
+    })->name('gestion.servicios.historial.nueva_orden.externo');
+
+    Route::get('/gestion-servicios/historial-servicios/nueva-orden', function () {
+        return redirect()->route('gestion.servicios.historial.nueva_orden.type');
     })->name('gestion.servicios.historial.nueva_orden');
 
     Route::get('/gestion-servicios/historial-servicios/nueva-orden/subtipos', function (Request $request) {

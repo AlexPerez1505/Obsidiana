@@ -19,3 +19,4 @@ require __DIR__.'/web/configuracion/tipo_equipo.php';
 require __DIR__.'/web/configuracion/refaciones.php';
 require __DIR__.'/web/inventory/inventory.php';
 require __DIR__.'/web/services/historial.php';
+require __DIR__.'/web/services/admin_approve.php';

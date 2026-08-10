@@ -26,7 +26,7 @@ class QrController extends Controller
 
         $service = $tracking->service;
 
-        return view('structure.gestion_servicios.historial_servicios.qr.scan', compact('tracking', 'service'));
+        return view('structure.gestion_servicios.historial_servicios.tec_externo.qr_externo.qr_externo', compact('tracking', 'service'));
     }
 
     public function update(Request $request, string $token)

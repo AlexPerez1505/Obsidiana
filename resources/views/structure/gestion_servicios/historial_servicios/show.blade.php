@@ -43,16 +43,10 @@
             @if($service->qr_token)
             @php
                 $qrUrl = route('qr.show', $service->qr_token);
-                $qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($qrUrl);
+                $qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' . urlencode($qrUrl);
             @endphp
-            <div style="margin-top:14px; text-align:center;">
-                <p class="muted" style="font-size:13px; margin:0 0 8px;">QR activo:</p>
-                <img src="{{ $qrImageUrl }}" alt="Código QR" style="max-width:100%; border-radius:12px; border:1px solid var(--border);" id="qr-image">
-                <div style="display:flex; gap:10px; justify-content:center; margin-top:12px; flex-wrap:wrap;">
-                    <a href="{{ $qrImageUrl }}" download="qr-{{ $service->service_number }}.png" class="btn" style="display:inline-flex;">Descargar QR</a>
-                    <button type="button" class="btn btn--ghost" onclick="window.print()">Imprimir</button>
-                    <a href="{{ $qrUrl }}" target="_blank" class="btn btn--ghost" style="display:inline-flex;">Abrir enlace</a>
-                </div>
+            <div class="qr-code" style="margin-top:14px; text-align:center;">
+                <img src="{{ $qrImageUrl }}" alt="Código QR" style="max-width:100%; border-radius:8px; border:1px solid var(--border);">
             </div>
             @endif
         </div>
@@ -93,37 +87,7 @@
         </div>
 
         <!-- Ruta de Trabajo -->
-        <div class="resumen-card" style="grid-column:1/-1;">
-            <h3 class="resumen-title">Ruta de Trabajo</h3>
-            @foreach($service->serviceTrackings as $track)
-                @php
-                    $stateClass = match($track->status) {
-                        'completado' => 'resumen-step--done',
-                        'pendiente' => $track->id === $service->serviceTrackings->last()->id ? 'resumen-step--active' : '',
-                        default => '',
-                    };
-                    $statusColor = match($track->status) {
-                        'completado' => 'var(--green)',
-                        'pendiente' => 'var(--primary)',
-                        default => 'var(--muted)',
-                    };
-                    $statusText = match($track->status) {
-                        'completado' => 'COMPLETADO',
-                        'pendiente' => 'PENDIENTE',
-                        default => strtoupper($track->status),
-                    };
-                @endphp
-                <div class="resumen-step {{ $stateClass }}">
-                    <div style="flex:1;">
-                        <div class="resumen-step-name">{{ $track->serviceStep?->name ?? 'Paso' }}</div>
-                        <div class="resumen-step-status" style="color:{{ $statusColor }};">{{ $statusText }}</div>
-                    </div>
-                    @if($track->qr_token)
-                        <a href="{{ route('qr.show', $track->qr_token) }}" target="_blank" class="btn btn--ghost" style="padding:6px 12px; font-size:12px;">QR</a>
-                    @endif
-                </div>
-            @endforeach
-        </div>
+        @include('structure.gestion_servicios.historial_servicios.tec_externo_interaciones.flujo_tec_ext.ruta_trajo', ['service' => $service, 'wide' => true])
 
         <!-- Evidencias -->
         @if($service->serviceEquipment && ($service->serviceEquipment->evidence_1_path || $service->serviceEquipment->evidence_2_path || $service->serviceEquipment->evidence_3_path || $service->serviceEquipment->video_path))
