@@ -233,6 +233,21 @@
         transition: background .15s;
     }
     .task-review:hover { background: #0284c7; }
+    .task-delete {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 22px;
+        border-radius: 12px;
+        border: none;
+        background: #ef4444;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background .15s;
+    }
+    .task-delete:hover { background: #dc2626; }
 
     .platform-choices {
         display: flex;
@@ -536,6 +551,9 @@
         </div>
 
         <div class="task-footer">
+            <button type="button" class="task-delete" id="btnEliminar" style="display:none;" onclick="eliminarTarea()">
+                Eliminar
+            </button>
             <button type="button" class="task-review" id="btnEnviarRevision" style="display:none;" onclick="enviarARevision()">
                 Mandar a revisión
             </button>
@@ -613,6 +631,7 @@
         }
         document.getElementById('btnGuardar').style.display = isPendiente ? '' : 'none';
         document.getElementById('btnEnviarRevision').style.display = isPendiente ? '' : 'none';
+        document.getElementById('btnEliminar').style.display = '';
 
         document.getElementById('taskModal').classList.add('is-open');
     }
@@ -626,6 +645,7 @@
 
         fetch('/marketing/tareas/' + currentTaskId + '/enviar-revision', {
             method: 'POST',
+            credentials: 'same-origin',
             body: formData,
         }).then(function(response) {
             if (response.ok) {
@@ -635,6 +655,30 @@
             }
         }).catch(function() {
             alert('No se pudo enviar a revisión. Intenta de nuevo.');
+        });
+    }
+
+    function eliminarTarea() {
+        if (!currentTaskId) return;
+        if (!confirm('¿Estás seguro de que deseas eliminar esta tarea?')) return;
+
+        var token = document.querySelector('#taskEditForm input[name="_token"]').value;
+        var formData = new FormData();
+        formData.append('_token', token);
+        formData.append('_method', 'DELETE');
+
+        fetch('/marketing/tareas/' + currentTaskId, {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: formData,
+        }).then(function(response) {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('No se pudo eliminar la tarea. Intenta de nuevo.');
+            }
+        }).catch(function() {
+            alert('No se pudo eliminar la tarea. Intenta de nuevo.');
         });
     }
 
