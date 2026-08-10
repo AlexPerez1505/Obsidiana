@@ -130,6 +130,12 @@ class ProductController extends Controller
             ProductOption::TYPE_SUBTYPE,
             $data['subtype'] ?? null
         );
+        $this->resolveOptionRelation(
+            ProductOption::TYPE_BRAND,
+            $data['brand'] ?? null,
+            ProductOption::TYPE_MODEL,
+            $data['model'] ?? null
+        );
         $data['name'] = trim((string) ($data['name'] ?? '')) ?: $this->generatedProductName($data);
         $data['price'] = (float) ($data['price'] ?? 0);
         $data['status'] = $data['status'] ?? $product?->status ?? Product::STATUS_ACTIVE;

@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('mantenimiento_interno', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_cotizacion')->constrained('cotizacion_interna_detalle')->cascadeOnDelete();
+            $table->foreignId('id_cotizacion')->constrained('cotizacion_interna_detalle', 'id_cotizacion')->cascadeOnDelete();
             $table->enum('tipo_mantenimiento', ['interno', 'externo']);
             $table->foreignId('id_rol')->constrained('roles')->cascadeOnDelete();
             $table->foreignId('id_tecnico_externo')->nullable()->constrained('tecnico_externo')->nullOnDelete();

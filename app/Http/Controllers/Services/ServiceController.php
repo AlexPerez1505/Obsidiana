@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Services;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Customer;
+use App\Models\EquipmentModel;
 use App\Models\EquipmentType;
 use App\Models\ExternalTechnician;
+use App\Models\Subtype;
 use App\Models\Service;
 use App\Models\ServiceEquipment;
 use App\Models\ServiceInvitation;
@@ -25,10 +27,16 @@ class ServiceController extends Controller
             abort(403, 'La invitación no es válida o ya fue usada.');
         }
 
-        $customers = Customer::with('seller')->latest()->get();
-        $equipmentTypes = EquipmentType::orderBy('name')->get();
-        $brands = Brand::orderBy('name')->get();
-        $externalTechnicians = ExternalTechnician::where('is_active', true)->orderBy('name')->get();
+        $customers = Customer::with('asesor')->latest()->get();
+        $equipmentTypes = EquipmentType::orderBy('name')->pluck('name')
+            ->map(fn ($name) => (object) ['name' => $name]);
+        $brands = Brand::orderBy('name')->pluck('name')
+            ->map(fn ($name) => (object) ['name' => $name]);
+        $externalTechnicians = \Illuminate\Support\Facades\DB::table('tecnico_externo')
+            ->selectRaw("id, CONCAT(nombre, ' ', apellidos) as name, telefono as phone, correo as email, especialidad as specialty, empresa as company, domicilio as location, NULL as photo")
+            ->whereNull('deleted_at')
+            ->orderBy('nombre')
+            ->get();
         $internalTechnicians = User::where('status', User::STATUS_APPROVED)->orderBy('name')->get();
 
         return view('structure.gestion_servicios.historial_servicios.registro_servicio.c_registro_serv', compact('customers', 'equipmentTypes', 'brands', 'externalTechnicians', 'internalTechnicians', 'invitation'));
@@ -84,11 +92,11 @@ class ServiceController extends Controller
     private function persistService(Request $request, int $registeredBy): Service
     {
         $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => 'required|exists:clientes,id',
             'mantenimiento_externo' => 'nullable|in:0,1',
             'mantenimiento_interno' => 'nullable|in:0,1',
             'internal_technician_id' => 'nullable|exists:users,id',
-            'external_technician_id' => 'nullable|exists:external_technicians,id',
+            'external_technician_id' => 'nullable|exists:tecnico_externo,id',
             'firma' => 'nullable|string',
             'tipo_equipo' => 'nullable|string|max:255',
             'subtipo' => 'nullable|string|max:255',
@@ -132,6 +140,8 @@ class ServiceController extends Controller
 
         $service->update(['service_number' => 'OS-' . $service->id]);
 
+        $this->registerCatalogNames($validated);
+
         $serviceEquipment = ServiceEquipment::create([
             'service_id' => $service->id,
             'product_code' => null,
@@ -160,6 +170,35 @@ class ServiceController extends Controller
         ]);
 
         return $service;
+    }
+
+    /**
+     * Registra en los catalogos unificados los nombres de tipo/subtipo/marca/modelo
+     * escritos en la orden, para que queden disponibles en inventario y servicios.
+     */
+    private function registerCatalogNames(array $validated): void
+    {
+        if ($typeName = trim((string) ($validated['tipo_equipo'] ?? ''))) {
+            $type = EquipmentType::firstOrCreate(['name' => $typeName]);
+
+            if ($subtypeName = trim((string) ($validated['subtipo'] ?? ''))) {
+                Subtype::firstOrCreate([
+                    'equipment_type_id' => $type->id,
+                    'name' => $subtypeName,
+                ]);
+            }
+        }
+
+        if ($brandName = trim((string) ($validated['marca'] ?? ''))) {
+            $brand = Brand::firstOrCreate(['name' => $brandName]);
+
+            if ($modelName = trim((string) ($validated['modelo'] ?? ''))) {
+                EquipmentModel::firstOrCreate([
+                    'brand_id' => $brand->id,
+                    'name' => $modelName,
+                ]);
+            }
+        }
     }
 
     private function storeEvidence(Request $request, string $field): ?string

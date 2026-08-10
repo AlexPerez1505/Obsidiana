@@ -69,7 +69,7 @@
                         </div>
                         <div class="form-group" style="margin-bottom:10px;">
                             <label>Roles</label>
-                            <input type="text" id="int-tech-roles" value="{{ $internalTechnicians->first()?->roles->pluck('name')->implode(', ') ?? '' }}" readonly>
+                            <input type="text" id="int-tech-roles" value="{{ $internalTechnicians->first()?->is_admin ? 'Administrador' : 'Empleado' }}" readonly>
                         </div>
                     </div>
                 </div>
@@ -92,7 +92,7 @@
         document.getElementById('active-int-tech-name').textContent = tech.name;
         document.getElementById('int-tech-email').value = tech.email || '';
         document.getElementById('int-tech-status').value = tech.status_label || tech.status || '';
-        document.getElementById('int-tech-roles').value = (tech.roles || []).map(r => r.name).join(', ');
+        document.getElementById('int-tech-roles').value = tech.is_admin ? 'Administrador' : 'Empleado';
         const technicianInput = document.getElementById('internal_technician_id');
         if (technicianInput) technicianInput.value = tech.id;
     }

@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id('id_cotizacion');
             $table->foreignId('id_cotizacion_servicios')->constrained('cotizacion_servicios')->cascadeOnDelete();
             $table->foreignId('id_tecnico')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('id_mantenimiento')->nullable()->constrained('mantenimiento_interno')->nullOnDelete();
+            $table->unsignedBigInteger('id_mantenimiento')->nullable();
             $table->decimal('costo_tecnico', 12, 2)->default(0);
             $table->timestamps();
             $table->softDeletes();

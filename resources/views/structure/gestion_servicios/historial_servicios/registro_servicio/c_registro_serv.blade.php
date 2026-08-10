@@ -96,9 +96,13 @@
 
 <div class="card hidden" id="wizard-card" style="position:relative;">
     <div class="wizard-actions" id="wizard-actions" style="position:absolute; top:18px; right:18px; z-index:10;">
-        <button type="button" class="btn btn--ghost" id="btn-secondary" style="display:inline-flex; align-items:center; gap:8px;">
+        <button type="button" class="btn btn--ghost" id="btn-cancel-wizard" style="display:inline-flex; align-items:center; gap:8px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            Cancelar
+            Cancelar e iniciar
+        </button>
+        <button type="button" class="btn btn--ghost" id="btn-secondary" style="display:inline-flex; align-items:center; gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+            Regresar
         </button>
         <button type="button" class="btn" id="btn-primary" style="display:inline-flex; align-items:center; gap:8px;">
             Siguiente: Equipo
@@ -123,7 +127,7 @@
         <div class="step" data-step="3"><span class="dot">3</span> Tecnico</div>
     </div>
 
-    <form id="orden-form" method="POST" action="{{ isset($invitation) ? route('public.nueva_orden.store', $invitation) : route('gestion.servicios.historial.nueva_orden.store') }}" autocomplete="off">
+    <form id="orden-form" method="POST" action="{{ isset($invitation) ? route('public.nueva_orden.store', $invitation) : route('gestion.servicios.historial.nueva_orden.store') }}" autocomplete="off" enctype="multipart/form-data">
         @csrf
         @if(isset($invitation))
             <input type="hidden" name="invitation_token" value="{{ $invitation->token }}">
@@ -135,7 +139,7 @@
         @include('structure.gestion_servicios.historial_servicios.registro_servicio.c2_resgistro_serv')
         @include('structure.gestion_servicios.historial_servicios.registro_servicio.c3_tecnico_Int', ['internalTechnicians' => $internalTechnicians])
         @include('structure.gestion_servicios.historial_servicios.registro_servicio.c3_tecnico_ext', ['externalTechnicians' => $externalTechnicians])
-        @include('structure.gestion_servicios.historial_servicios.acciones_mn_hit_ser.r_int_menu_historial')
+        @include('structure.gestion_servicios.historial_servicios.acciones_mn_hit_ser.r_ext_menu_historial')
     </form>
 
     @include('structure.gestion_servicios.historial_servicios.registro_servicio.tec_externo.c_tec_externo')
@@ -184,6 +188,7 @@
     const wizardIcon = document.getElementById('wizard-icon');
     const btnPrimary = document.getElementById('btn-primary');
     const btnSecondary = document.getElementById('btn-secondary');
+    const btnCancelWizard = document.getElementById('btn-cancel-wizard');
     const form = document.getElementById('orden-form');
 
     function saveFormState() {
@@ -271,6 +276,9 @@
             btnPrimary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Orden';
             btnPrimary.type = 'submit';
         }
+        if (btnCancelWizard) {
+            btnCancelWizard.style.display = currentStep === 1 ? 'none' : 'inline-flex';
+        }
         saveFormState();
     }
 
@@ -296,6 +304,12 @@
             currentStep--;
             updateStep();
         } else {
+            resetWizard();
+        }
+    });
+
+    btnCancelWizard.addEventListener('click', () => {
+        if (confirm('¿Estás seguro de cancelar el registro? Se perderán los datos ingresados.')) {
             resetWizard();
         }
     });

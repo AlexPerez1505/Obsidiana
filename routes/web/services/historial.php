@@ -13,14 +13,26 @@ use App\Models\User;
 
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-servicios/historial-servicios', function () {
-        $services = \App\Models\Service::with(['customer', 'internalTechnician', 'externalTechnician'])
-            ->latest()
+        $cotizaciones = \Illuminate\Support\Facades\DB::table('cotizacion_servicios')
+            ->join('registro_servicios', 'registro_servicios.id_servicio', '=', 'cotizacion_servicios.id_servicio')
+            ->join('clientes', 'clientes.id', '=', 'registro_servicios.id_cliente')
+            ->select(
+                'cotizacion_servicios.id',
+                'cotizacion_servicios.id_servicio',
+                'cotizacion_servicios.tipo_cotizacion',
+                'cotizacion_servicios.estado',
+                'cotizacion_servicios.total',
+                'cotizacion_servicios.created_at',
+                'clientes.nombre as cliente_nombre',
+                'clientes.apellido as cliente_apellido'
+            )
+            ->orderByDesc('cotizacion_servicios.created_at')
             ->get();
 
-        return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('services'));
+        return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('cotizaciones'));
     })->name('gestion.servicios.historial');
     Route::get('/gestion-servicios/historial-servicios/nueva-orden', function () {
-        $customers = Customer::with('seller')->latest()->get();
+        $customers = Customer::with('asesor')->latest()->get();
 
         if ($clienteId = request('cliente_id')) {
             $selected = $customers->firstWhere('id', $clienteId);
@@ -29,13 +41,43 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             }
         }
 
-        $equipmentTypes = EquipmentType::orderBy('name')->get();
-        $brands = Brand::orderBy('name')->get();
-        $externalTechnicians = ExternalTechnician::where('is_active', true)->orderBy('name')->get();
+        $equipmentTypes = EquipmentType::orderBy('name')->pluck('name')
+            ->map(fn ($name) => (object) ['name' => $name]);
+        $brands = Brand::orderBy('name')->pluck('name')
+            ->map(fn ($name) => (object) ['name' => $name]);
+        $externalTechnicians = \Illuminate\Support\Facades\DB::table('tecnico_externo')
+            ->selectRaw("id, CONCAT(nombre, ' ', apellidos) as name, telefono as phone, correo as email, especialidad as specialty, empresa as company, domicilio as location, NULL as photo")
+            ->whereNull('deleted_at')
+            ->orderBy('nombre')
+            ->get();
         $internalTechnicians = User::where('status', User::STATUS_APPROVED)->orderBy('name')->get();
 
         return view('structure.gestion_servicios.historial_servicios.registro_servicio.c_registro_serv', compact('customers', 'equipmentTypes', 'brands', 'externalTechnicians', 'internalTechnicians'));
     })->name('gestion.servicios.historial.nueva_orden');
+
+    Route::get('/gestion-servicios/historial-servicios/nueva-orden/subtipos', function (Request $request) {
+        $category = trim((string) $request->input('equipment_type_name'));
+
+        $subtypes = \App\Models\Subtype::whereHas('equipmentType', fn ($q) => $q->where('name', $category))
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($name, $i) => ['id' => $i + 1, 'name' => $name])
+            ->values();
+
+        return response()->json($subtypes);
+    })->name('gestion.servicios.historial.nueva_orden.subtipos');
+
+    Route::get('/gestion-servicios/historial-servicios/nueva-orden/modelos', function (Request $request) {
+        $brand = trim((string) $request->input('brand_name'));
+
+        $models = \App\Models\EquipmentModel::whereHas('brand', fn ($q) => $q->where('name', $brand))
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($name, $i) => ['id' => $i + 1, 'name' => $name])
+            ->values();
+
+        return response()->json($models);
+    })->name('gestion.servicios.historial.nueva_orden.modelos');
 
     Route::post('/gestion-servicios/historial-servicios/nueva-orden', [ServiceController::class, 'store'])
         ->name('gestion.servicios.historial.nueva_orden.store');
@@ -62,11 +104,23 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
-        if ($request->hasFile('photo')) {
-            $data['photo'] = Storage::disk('public')->putFile('external_technicians', $request->file('photo'));
-        }
+        $parts = preg_split('/\s+/', trim($data['name']), 2);
 
-        $technician = ExternalTechnician::create($data);
+        $id = \Illuminate\Support\Facades\DB::table('tecnico_externo')->insertGetId([
+            'nombre' => $parts[0],
+            'apellidos' => $parts[1] ?? '',
+            'telefono' => $data['phone'] ?? '',
+            'domicilio' => $data['address'] ?? ($data['location'] ?? ''),
+            'correo' => $data['email'] ?? '',
+            'especialidad' => $data['specialty'] ?? '',
+            'empresa' => $data['company'] ?? '',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $technician = \Illuminate\Support\Facades\DB::table('tecnico_externo')
+            ->selectRaw("id, CONCAT(nombre, ' ', apellidos) as name, telefono as phone, correo as email, especialidad as specialty, empresa as company, domicilio as location, NULL as photo")
+            ->find($id);
 
         if ($request->expectsJson()) {
             return response()->json($technician);

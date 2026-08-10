@@ -41,10 +41,18 @@
                 <span class="resumen-value" style="font-weight:700;">{{ $service->currentStep?->name ?? 'Completado' }}</span>
             </div>
             @if($service->qr_token)
-            <div style="margin-top:14px;">
+            @php
+                $qrUrl = route('qr.show', $service->qr_token);
+                $qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($qrUrl);
+            @endphp
+            <div style="margin-top:14px; text-align:center;">
                 <p class="muted" style="font-size:13px; margin:0 0 8px;">QR activo:</p>
-                <div class="qr-code">{{ $service->qr_token }}</div>
-                <a href="{{ route('qr.show', $service->qr_token) }}" target="_blank" class="btn" style="margin-top:12px; display:inline-flex;">Abrir enlace QR</a>
+                <img src="{{ $qrImageUrl }}" alt="Código QR" style="max-width:100%; border-radius:12px; border:1px solid var(--border);" id="qr-image">
+                <div style="display:flex; gap:10px; justify-content:center; margin-top:12px; flex-wrap:wrap;">
+                    <a href="{{ $qrImageUrl }}" download="qr-{{ $service->service_number }}.png" class="btn" style="display:inline-flex;">Descargar QR</a>
+                    <button type="button" class="btn btn--ghost" onclick="window.print()">Imprimir</button>
+                    <a href="{{ $qrUrl }}" target="_blank" class="btn btn--ghost" style="display:inline-flex;">Abrir enlace</a>
+                </div>
             </div>
             @endif
         </div>
@@ -116,6 +124,58 @@
                 </div>
             @endforeach
         </div>
+
+        <!-- Evidencias -->
+        @if($service->serviceEquipment && ($service->serviceEquipment->evidence_1_path || $service->serviceEquipment->evidence_2_path || $service->serviceEquipment->evidence_3_path || $service->serviceEquipment->video_path))
+        <div class="resumen-card" style="grid-column:1/-1;">
+            <h3 class="resumen-title">Evidencias</h3>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;">
+                @if($service->serviceEquipment->evidence_1_path)
+                <div style="border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--surface-2);">
+                    <img src="{{ asset('storage/' . $service->serviceEquipment->evidence_1_path) }}" alt="Evidencia 1" style="width:100%; height:150px; object-fit:cover; cursor:pointer;" onclick="openModal(this.src)">
+                </div>
+                @endif
+                @if($service->serviceEquipment->evidence_2_path)
+                <div style="border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--surface-2);">
+                    <img src="{{ asset('storage/' . $service->serviceEquipment->evidence_2_path) }}" alt="Evidencia 2" style="width:100%; height:150px; object-fit:cover; cursor:pointer;" onclick="openModal(this.src)">
+                </div>
+                @endif
+                @if($service->serviceEquipment->evidence_3_path)
+                <div style="border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--surface-2);">
+                    <img src="{{ asset('storage/' . $service->serviceEquipment->evidence_3_path) }}" alt="Evidencia 3" style="width:100%; height:150px; object-fit:cover; cursor:pointer;" onclick="openModal(this.src)">
+                </div>
+                @endif
+                @if($service->serviceEquipment->video_path)
+                <div style="border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--surface-2); position:relative;">
+                    <video style="width:100%; height:150px; object-fit:cover;" controls>
+                        <source src="{{ asset('storage/' . $service->serviceEquipment->video_path) }}" type="video/mp4">
+                    </video>
+                </div>
+                @endif
+            </div>
+        </div>
+        @endif
     </div>
 </div>
+
+<div id="modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
+    <div style="position:relative; max-width:90vw; max-height:90vh;">
+        <img id="modal-img" src="" alt="" style="max-width:100%; max-height:100%; object-fit:contain;">
+        <button onclick="closeModal()" style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.6); color:#fff; border:none; border-radius:6px; width:36px; height:36px; cursor:pointer; font-size:24px; display:flex; align-items:center; justify-content:center;">×</button>
+    </div>
+</div>
+
+<script>
+function openModal(src) {
+    document.getElementById('modal').style.display = 'flex';
+    document.getElementById('modal-img').src = src;
+}
+function closeModal() {
+    document.getElementById('modal').style.display = 'none';
+}
+document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+</script>
+
 @endsection

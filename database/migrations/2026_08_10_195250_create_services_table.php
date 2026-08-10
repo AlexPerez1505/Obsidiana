@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('services', function (Blueprint $table) {
             $table->id();
             $table->string('service_number')->nullable()->unique();
-            $table->foreignId('customer_id')->constrained('customers');
+            $table->foreignId('customer_id')->constrained('clientes');
             $table->enum('service_type', ['interno', 'externo']);
             $table->foreignId('internal_technician_id')->nullable()->constrained('users');
-            $table->foreignId('external_technician_id')->nullable()->constrained('external_technicians');
+            $table->foreignId('external_technician_id')->nullable()->constrained('tecnico_externo');
             $table->foreignId('registered_by')->constrained('users');
             $table->foreignId('current_step_id')->nullable()->constrained('service_steps');
             $table->string('qr_token')->nullable()->unique();

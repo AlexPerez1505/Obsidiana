@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Equipment;
 use App\Models\Producto;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,7 +40,9 @@ class ProductoController extends Controller
      */
     public function create(): View
     {
-        return view('structure.gestion_Inventario.productos.create');
+        return view('structure.gestion_Inventario.productos.create', [
+            'equipmentOptions' => $this->equipmentOptions(),
+        ]);
     }
 
     /**
@@ -48,6 +51,7 @@ class ProductoController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
+        $data = $this->syncFromEquipment($data);
 
         if ($request->hasFile('imagen')) {
             $data['imagen_path'] = $request->file('imagen')->store('productos', 'public');
@@ -65,6 +69,7 @@ class ProductoController extends Controller
     {
         return view('structure.gestion_Inventario.productos.edit', [
             'producto' => $producto,
+            'equipmentOptions' => $this->equipmentOptions(),
         ]);
     }
 
@@ -74,6 +79,7 @@ class ProductoController extends Controller
     public function update(Request $request, Producto $producto): RedirectResponse
     {
         $data = $this->validated($request);
+        $data = $this->syncFromEquipment($data);
 
         if ($request->hasFile('imagen')) {
             // Delete old image if exists
@@ -98,10 +104,62 @@ class ProductoController extends Controller
         return redirect()->route('inventory.productos.index')->with('status', 'Producto eliminado correctamente.');
     }
 
+    /**
+     * Equipos del inventario disponibles para convertir en producto.
+     */
+    private function equipmentOptions(): array
+    {
+        return Equipment::with(['equipmentType', 'subtype', 'brand', 'equipmentModel'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Equipment $equipo) => [
+                'id' => $equipo->id,
+                'code' => $equipo->code,
+                'name' => $equipo->name,
+                'tipo_equipo' => $equipo->equipmentType?->name ?? $equipo->name,
+                'subtipo' => $equipo->subtype?->name ?? '',
+                'marca' => $equipo->brand?->name ?? '',
+                'modelo' => $equipo->equipmentModel?->name ?? '',
+                'proveedor' => $equipo->supplier ?? '',
+                'no_serie' => $equipo->serial_number ?? '',
+                'descripcion' => $equipo->description ?? '',
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    /**
+     * Si el producto viene de un equipo del inventario, toma sus datos
+     * del catalogo para evitar duplicados escritos a mano.
+     */
+    private function syncFromEquipment(array $data): array
+    {
+        if (empty($data['equipment_id'])) {
+            return $data;
+        }
+
+        $equipo = Equipment::with(['equipmentType', 'subtype', 'brand', 'equipmentModel'])
+            ->find($data['equipment_id']);
+
+        if (!$equipo) {
+            return $data;
+        }
+
+        $data['tipo_equipo'] = $equipo->equipmentType?->name ?? $equipo->name;
+        $data['subtipo'] = $equipo->subtype?->name;
+        $data['marca'] = $equipo->brand?->name;
+        $data['modelo'] = $equipo->equipmentModel?->name;
+        $data['no_serie'] = $equipo->serial_number;
+        $data['proveedor'] = $equipo->supplier;
+
+        return $data;
+    }
+
     private function validated(Request $request): array
     {
         return $request->validate([
-            'tipo_equipo' => ['required', 'string', 'max:255'],
+            'equipment_id' => ['nullable', 'integer', 'exists:equipment,id'],
+            'tipo_equipo' => ['required_without:equipment_id', 'nullable', 'string', 'max:255'],
             'subtipo' => ['nullable', 'string', 'max:255'],
             'marca' => ['nullable', 'string', 'max:255'],
             'modelo' => ['nullable', 'string', 'max:255'],

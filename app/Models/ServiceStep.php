@@ -9,10 +9,12 @@ class ServiceStep extends Model
     protected $fillable = [
         'service_type',
         'name',
-        'code',
+        'slug',
+        'purpose',
         'order',
+        'description',
         'requires_qr',
-        'requires_signature',
+        'requires_approval',
         'is_final',
     ];
 }

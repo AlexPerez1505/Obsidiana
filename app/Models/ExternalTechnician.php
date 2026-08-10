@@ -10,6 +10,8 @@ class ExternalTechnician extends Model
     /** @use HasFactory<\Database\Factories\ExternalTechnicianFactory> */
     use HasFactory;
 
+    protected $table = 'tecnico_externo';
+
     protected $fillable = [
         'name',
         'phone',

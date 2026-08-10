@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('checklist', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_mantenimiento')->constrained('mantenimiento_interno')->cascadeOnDelete();
+            $table->unsignedBigInteger('id_mantenimiento')->nullable();
             $table->integer('numero_checklist');
             $table->string('paso1');
             $table->string('paso2');
