@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('cotizacion_interna_detalle', function (Blueprint $table) {
             $table->id('id_cotizacion');
             $table->foreignId('id_cotizacion_servicios')->constrained('cotizacion_servicios')->cascadeOnDelete();
-            $table->foreignId('id_mantenimiento')->nullable()->constrained('mantenimiento_interno')->nullOnDelete();
-            $table->foreignId('id_rol')->constrained('roles')->cascadeOnDelete();
+            $table->foreignId('id_mantenimiento')->nullable();
+            $table->foreignId('id_rol');
             $table->foreignId('id_refacciones')->constrained('refacciones')->cascadeOnDelete();
             $table->timestamps();
             $table->softDeletes();

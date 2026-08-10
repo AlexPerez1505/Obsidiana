@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('total', 12, 2)->default(0);
             $table->decimal('iva', 12, 2)->default(0);
             $table->foreignId('id_plan_pagos')->nullable()->constrained('plan_pagos')->nullOnDelete();
-            $table->foreignId('id_metodos_pagos')->nullable()->constrained('plan_pagos')->nullOnDelete();
+            $table->foreignId('id_metodos_pagos')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
