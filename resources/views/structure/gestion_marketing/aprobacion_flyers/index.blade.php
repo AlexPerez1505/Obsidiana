@@ -1,7 +1,7 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Base de datos · Contenido & Aprobación')
-@section('page-title', 'Base de datos · Contenido & Aprobación')
+@section('title', 'Contenido & Aprobación')
+@section('page-title', 'Contenido & Aprobación')
 @section('page-sub', 'Todas las piezas del plan de marketing con su estado, responsable, red y checklist de aprobación.')
 
 @section('content')
@@ -108,7 +108,7 @@
 <div class="approval-wrap">
     <div class="approval-header">
         <span class="approval-tag">NOTION · SINCRONIZADO</span>
-        <h1 class="approval-title">Base de datos · Contenido & Aprobación</h1>
+        <h1 class="approval-title">Contenido & Aprobación</h1>
         <p class="approval-sub">Todas las piezas del plan de marketing con su estado, responsable, red y checklist de aprobación. Filtra, busca y abre cada pieza para revisarla.</p>
     </div>
 
