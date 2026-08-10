@@ -300,7 +300,10 @@
                 </div>
 
                 <div>
-                    <h3 class="checklist-title">Checklist de aprobación ( <span id="checkCount">0</span> /10)</h3>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
+                        <h3 class="checklist-title" style="margin:0;">Checklist de aprobación ( <span id="checkCount">0</span> /10)</h3>
+                        <button type="button" class="review-btn" style="padding:6px 12px;font-size:12px;" onclick="selectAllChecklist()">Seleccionar todos</button>
+                    </div>
                     <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px;">
                         <div class="check-bar" style="width:100%;"><div class="check-bar-fill" id="modalCheckBar" style="width:0%;"></div></div>
                         <span class="check-text"><span id="checkPercent">0</span>% de aprobación</span>
@@ -405,6 +408,13 @@
         document.querySelectorAll('.checklist-grid .checklist-item').forEach(item => {
             item.classList.toggle('checked', item.querySelector('input').checked);
         });
+    }
+
+    function selectAllChecklist() {
+        document.querySelectorAll('.checklist-grid .checklist-item input:not([disabled])').forEach(cb => {
+            cb.checked = true;
+        });
+        updateCheckCount();
     }
 
     function submitAprobar() {
