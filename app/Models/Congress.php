@@ -13,7 +13,7 @@ class Congress extends Model
     /** @use HasFactory<\Database\Factories\CongressFactory> */
     use HasFactory;
 
-    protected $table = 'congress_events';
+    protected $table = 'eventos_congreso';
 
     protected $fillable = [
         'name',
@@ -55,7 +55,7 @@ class Congress extends Model
 
     public function notifiedUsers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'congress_event_user', 'congress_event_id', 'user_id')
+        return $this->belongsToMany(User::class, 'evento_congreso_usuario', 'congress_event_id', 'user_id')
             ->withPivot(['notified', 'notified_at'])
             ->withTimestamps();
     }
