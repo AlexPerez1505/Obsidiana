@@ -22,6 +22,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
     Route::get('/gestion-comercial/clientes/{cliente}', [CustomerController::class, 'show'])
         ->name('commercial.clientes.show');
+        
 
     Route::get('/gestion-comercial/clientes/{cliente}/editar', [CustomerController::class, 'edit'])
         ->name('commercial.clientes.edit');
@@ -66,6 +67,12 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
     Route::get('/gestion-comercial/cotizaciones/{cotizacion}', [CotizacionController::class, 'show'])
         ->name('commercial.cotizaciones.show');
+
+    Route::get('/gestion-comercial/cotizaciones/{cotizacion}/editar', [CotizacionController::class, 'edit'])
+        ->name('commercial.cotizaciones.edit');
+
+    Route::put('/gestion-comercial/cotizaciones/{cotizacion}', [CotizacionController::class, 'update'])
+        ->name('commercial.cotizaciones.update');
 
     Route::post('/gestion-comercial/cotizaciones/{cotizacion}/remision', [CotizacionController::class, 'convertirRemision'])
         ->name('commercial.cotizaciones.remision');
