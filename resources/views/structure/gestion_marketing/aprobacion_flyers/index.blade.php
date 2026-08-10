@@ -91,6 +91,11 @@
     .spec-value { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 14px; line-height: 1.5; word-break: break-word; white-space: pre-wrap; }
     .spec-value a { color: var(--primary); text-decoration: none; }
     .spec-value a:hover { text-decoration: underline; }
+    .select-all-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 12px; font-weight: 700; cursor: pointer; user-select: none; }
+    .select-all-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+    .select-all-check { width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--border); background: #fff; display: flex; align-items: center; justify-content: center; transition: .15s; }
+    .select-all-toggle input:checked + .select-all-check { background: #2563eb; border-color: #2563eb; }
+    .select-all-toggle input:checked + .select-all-check::after { content: ''; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); margin-top: -2px; }
 </style>
 
 <div class="approval-wrap">
@@ -302,7 +307,11 @@
                 <div>
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
                         <h3 class="checklist-title" style="margin:0;">Checklist de aprobación ( <span id="checkCount">0</span> /10)</h3>
-                        <button type="button" class="review-btn" style="padding:6px 12px;font-size:12px;" onclick="selectAllChecklist()">Seleccionar todos</button>
+                        <label class="select-all-toggle">
+                            <input type="checkbox" id="selectAllCheck" onchange="toggleSelectAll()">
+                            <span class="select-all-check"></span>
+                            <span class="select-all-label">Seleccionar todos</span>
+                        </label>
                     </div>
                     <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px;">
                         <div class="check-bar" style="width:100%;"><div class="check-bar-fill" id="modalCheckBar" style="width:0%;"></div></div>
@@ -385,6 +394,7 @@
             cb.closest('.checklist-item').classList.toggle('locked', isCompleted || !isRevision || isLocked);
         });
         document.querySelectorAll('.checklist-item').forEach(l => l.classList.remove('checked'));
+        document.getElementById('selectAllCheck').checked = false;
         document.getElementById('rejectionComment').value = '';
 
         document.querySelector('#approvalForm .comment-box').style.display = isRevision ? 'flex' : 'none';
@@ -408,11 +418,19 @@
         document.querySelectorAll('.checklist-grid .checklist-item').forEach(item => {
             item.classList.toggle('checked', item.querySelector('input').checked);
         });
+
+        const enabled = document.querySelectorAll('.checklist-grid .checklist-item input:not([disabled])');
+        const master = document.getElementById('selectAllCheck');
+        if (master && enabled.length) {
+            master.checked = enabled.length === document.querySelectorAll('.checklist-grid .checklist-item input:not([disabled]):checked').length;
+        }
     }
 
-    function selectAllChecklist() {
+    function toggleSelectAll() {
+        const master = document.getElementById('selectAllCheck');
+        const checked = master.checked;
         document.querySelectorAll('.checklist-grid .checklist-item input:not([disabled])').forEach(cb => {
-            cb.checked = true;
+            cb.checked = checked;
         });
         updateCheckCount();
     }
