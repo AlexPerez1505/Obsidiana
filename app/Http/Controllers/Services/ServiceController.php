@@ -190,6 +190,27 @@ class ServiceController extends Controller
             'started_at' => now(),
         ]);
 
+        // Para servicios externos, crear un tracking que requiera aprobación del admin
+        // después de generar el QR
+        if ($serviceType === 'externo') {
+            $approvalStep = ServiceStep::where('service_type', 'externo')
+                ->where('requires_approval', true)
+                ->orderBy('order')
+                ->first();
+
+            if ($approvalStep) {
+                ServiceTracking::create([
+                    'service_id' => $service->id,
+                    'service_step_id' => $approvalStep->id,
+                    'status' => 'pendiente',
+                    'qr_token' => $this->generateQrToken(),
+                    'qr_expires_at' => now()->addDay(),
+                    'started_at' => now(),
+                    'notes' => 'Pendiente de aprobación inicial del administrador',
+                ]);
+            }
+        }
+
         return $service;
     }
 
