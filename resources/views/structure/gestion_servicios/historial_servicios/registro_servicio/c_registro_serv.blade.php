@@ -1,10 +1,10 @@
 @extends('structure.gestion_servicios.layout')
 
-@section('title', 'Nueva Orden')
+@section('title', 'Nuevo servicio')
 
 @section('service_content')
 <style>
-.wizard-top { display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; margin-bottom:20px; }
+#wizard-actions { display:flex; align-items:center; gap:10px; }
 .breadcrumb { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--muted); }
 .breadcrumb a { color:var(--muted); text-decoration:none; }
 .breadcrumb a:hover { color:var(--primary); }
@@ -94,9 +94,8 @@
     </div>
 </div>
 
-<div class="wizard-top hidden" id="wizard-top">
-    <div class="breadcrumb"></div>
-    <div class="wizard-actions">
+<div class="card hidden" id="wizard-card" style="position:relative;">
+    <div class="wizard-actions" id="wizard-actions" style="position:absolute; top:18px; right:18px; z-index:10;">
         <button type="button" class="btn btn--ghost" id="btn-secondary" style="display:inline-flex; align-items:center; gap:8px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             Cancelar
@@ -106,16 +105,13 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
     </div>
-</div>
-
-<div class="card hidden" id="wizard-card">
     <div class="wizard-header">
         <div class="wizard-icon" id="wizard-icon">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         </div>
         <div>
-            <h1 class="section-title" style="font-size:24px; margin:0;" id="wizard-title">Nueva Orden</h1>
-            <p class="muted" style="margin:4px 0 0;" id="wizard-subtitle">Crea una nueva orden de servicio en dos sencillos pasos</p>
+            <h1 class="section-title" style="font-size:24px; margin:0;" id="wizard-title">Nuevo servicio</h1>
+            <p class="muted" style="margin:4px 0 0;" id="wizard-subtitle">Crea un nuevo servicio</p>
         </div>
     </div>
 
@@ -127,25 +123,31 @@
         <div class="step" data-step="3"><span class="dot">3</span> Tecnico</div>
     </div>
 
-    <form id="orden-form" method="POST" action="#" autocomplete="off">
+    <form id="orden-form" method="POST" action="{{ isset($invitation) ? route('public.nueva_orden.store', $invitation) : route('gestion.servicios.historial.nueva_orden.store') }}" autocomplete="off">
         @csrf
+        @if(isset($invitation))
+            <input type="hidden" name="invitation_token" value="{{ $invitation->token }}">
+        @endif
         <input type="hidden" name="mantenimiento_externo" id="mantenimiento_externo" value="0">
         <input type="hidden" name="mantenimiento_interno" id="mantenimiento_interno" value="0">
 
         @include('structure.gestion_servicios.historial_servicios.registro_servicio.c1_registro_serv', ['customers' => $customers])
         @include('structure.gestion_servicios.historial_servicios.registro_servicio.c2_resgistro_serv')
-        @include('structure.gestion_servicios.historial_servicios.registro_servicio.c3_registro')
-        @include('structure.gestion_servicios.historial_servicios.registro_servicio.reg_resumen')
+        @include('structure.gestion_servicios.historial_servicios.registro_servicio.c3_tecnico_Int', ['internalTechnicians' => $internalTechnicians])
+        @include('structure.gestion_servicios.historial_servicios.registro_servicio.c3_tecnico_ext', ['externalTechnicians' => $externalTechnicians])
+        @include('structure.gestion_servicios.historial_servicios.acciones_mn_hit_ser.r_int_menu_historial')
     </form>
+
+    @include('structure.gestion_servicios.historial_servicios.registro_servicio.tec_externo.c_tec_externo')
 </div>
 @endsection
 
 @push('scripts')
 <script>
     let currentStep = 1;
+    const FORM_STORAGE_KEY = 'nueva_orden_draft';
 
     const conditionScreen = document.getElementById('condition-screen');
-    const wizardTop = document.getElementById('wizard-top');
     const wizardCard = document.getElementById('wizard-card');
     const conditionCards = document.querySelectorAll('.condition-card');
     const btnStart = document.getElementById('btn-start');
@@ -161,7 +163,8 @@
 
     conditionCards.forEach(card => {
         card.addEventListener('click', () => {
-            card.classList.toggle('selected');
+            conditionCards.forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
             updateConditionSelection();
         });
     });
@@ -172,8 +175,8 @@
             return;
         }
         conditionScreen.classList.add('hidden');
-        wizardTop.classList.remove('hidden');
         wizardCard.classList.remove('hidden');
+        updateStep();
     });
 
     const wizardTitle = document.getElementById('wizard-title');
@@ -183,9 +186,55 @@
     const btnSecondary = document.getElementById('btn-secondary');
     const form = document.getElementById('orden-form');
 
+    function saveFormState() {
+        const state = { currentStep, externo: inputExterno.value, interno: inputInterno.value };
+        form.querySelectorAll('input:not([type="file"]):not([type="password"]):not([name="_token"]):not([type="checkbox"]):not([type="radio"]), select, textarea').forEach(el => {
+            if (el.name || el.id) state[el.name || el.id] = el.value;
+        });
+        form.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(el => {
+            if (el.name) state[el.name] = el.checked;
+        });
+        localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function restoreFormState() {
+        const saved = localStorage.getItem(FORM_STORAGE_KEY);
+        if (!saved) return;
+        const state = JSON.parse(saved);
+        if (state.currentStep) currentStep = parseInt(state.currentStep);
+        inputExterno.value = state.externo || '0';
+        inputInterno.value = state.interno || '0';
+        if (inputExterno.value === '1') document.querySelector('.condition-card[data-condition="externo"]')?.classList.add('selected');
+        if (inputInterno.value === '1') document.querySelector('.condition-card[data-condition="interno"]')?.classList.add('selected');
+
+        form.querySelectorAll('input:not([type="file"]):not([type="password"]):not([name="_token"]):not([type="checkbox"]):not([type="radio"]), select, textarea').forEach(el => {
+            const key = el.name || el.id;
+            if (key && state.hasOwnProperty(key)) el.value = state[key] || '';
+        });
+        form.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(el => {
+            if (el.name && state.hasOwnProperty(el.name)) el.checked = !!state[el.name];
+        });
+
+        if (inputExterno.value === '1' || inputInterno.value === '1') {
+            conditionScreen.classList.add('hidden');
+            wizardCard.classList.remove('hidden');
+            updateStep();
+        }
+    }
+
     function updateStep() {
         document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
-        document.querySelector(`.step-panel[data-step="${currentStep}"]`).classList.add('active');
+        if (currentStep === 3) {
+            const isExterno = parseInt(inputExterno.value);
+            const isInterno = parseInt(inputInterno.value);
+            if (isExterno) {
+                document.getElementById('step-panel-externo')?.classList.add('active');
+            } else if (isInterno) {
+                document.getElementById('step-panel-interno')?.classList.add('active');
+            }
+        } else {
+            document.querySelector(`.step-panel[data-step="${currentStep}"]`)?.classList.add('active');
+        }
         document.querySelectorAll('.step').forEach(s => {
             const step = parseInt(s.dataset.step);
             s.classList.remove('active','done');
@@ -194,8 +243,8 @@
         });
 
         if (currentStep === 1) {
-            wizardTitle.textContent = 'Nueva Orden';
-            wizardSubtitle.textContent = 'Crea una nueva orden de servicio en dos sencillos pasos';
+            wizardTitle.textContent = 'Nuevo servicio';
+            wizardSubtitle.textContent = 'Crea un nuevo servicio ';
             wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
             btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancelar';
             btnPrimary.innerHTML = 'Siguiente: Equipo <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
@@ -222,6 +271,7 @@
             btnPrimary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Orden';
             btnPrimary.type = 'submit';
         }
+        saveFormState();
     }
 
     btnPrimary.addEventListener('click', () => {
@@ -230,18 +280,29 @@
             updateStep();
         }
     });
+    function resetWizard() {
+        currentStep = 1;
+        inputExterno.value = '0';
+        inputInterno.value = '0';
+        conditionCards.forEach(c => c.classList.remove('selected'));
+        form.reset();
+        localStorage.removeItem(FORM_STORAGE_KEY);
+        wizardCard.classList.add('hidden');
+        conditionScreen.classList.remove('hidden');
+    }
+
     btnSecondary.addEventListener('click', () => {
         if (currentStep > 1) {
             currentStep--;
             updateStep();
         } else {
-            history.back();
+            resetWizard();
         }
     });
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        alert('Orden guardada (modo de prueba). Aqui conectaras el POST al backend.');
-    });
+
+    form.addEventListener('input', saveFormState);
+    form.addEventListener('change', saveFormState);
+    restoreFormState();
 
 </script>
 @endpush

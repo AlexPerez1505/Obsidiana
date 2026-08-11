@@ -2,7 +2,7 @@
 @section('title', 'Registrar Cliente')
 
 @section('content')
-    <form method="POST" action="{{ route('commercial.clientes.store') }}" style="display:grid; grid-template-columns:1fr 320px; gap:18px; align-items:start;">
+    <form method="POST" action="{{ route('commercial.clientes.store') }}" class="rgrid-sidebar">
         @csrf
         <input type="hidden" name="return_to" value="{{ $returnTo ?? '' }}">
 
@@ -19,10 +19,12 @@
                     <h2 class="page-title" style="margin:0;">Registrar Cliente</h2>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <a href="{{ $returnTo ?? route('commercial.clientes.index') }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-                        Regresar
-                    </a>
+                    @if(!empty($returnTo))
+                        <a href="{{ $returnTo }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                            Regresar
+                        </a>
+                    @endif
                     <x-ui.button>Guardar Cliente</x-ui.button>
                 </div>
             </div>
@@ -30,44 +32,42 @@
             {{-- Datos personales --}}
             <x-ui.card style="margin-bottom:18px;">
                 <x-ui.section-title style="margin:0 0 16px;">Datos Personales</x-ui.section-title>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="rgrid-2">
                     <x-ui.form-group label="Nombre *" name="nombre" placeholder="Ingrese el nombre" :required="true" />
-                    <x-ui.form-group label="Apellido Paterno *" name="apellido_paterno" placeholder="Ingrese el apellido paterno" :required="true" />
-                    <x-ui.form-group label="Apellido Materno *" name="apellido_materno" placeholder="Ingrese el apellido materno" :required="true" />
-                    <x-ui.form-group label="Teléfono (con lada) *" name="telefono" type="tel" placeholder="Ingrese el teléfono con lada" :required="true" inputmode="tel" maxlength="12" pattern="\d{10,12}" />
-                    <x-ui.form-group label="Correo Electrónico" name="correo" type="email" placeholder="Ingrese el correo" />
+                    <x-ui.form-group label="Apellido" name="apellido" placeholder="Ingrese el apellido" />
+                    <x-ui.form-group label="Teléfono" name="telefono" type="tel" placeholder="Ingrese el teléfono" inputmode="tel" maxlength="20" />
+                    <x-ui.form-group label="Correo (Gmail)" name="gmail" type="email" placeholder="Ingrese el correo" />
                 </div>
             </x-ui.card>
 
             {{-- Información comercial --}}
             <x-ui.card style="margin-bottom:18px;">
                 <x-ui.section-title style="margin:0 0 16px;">Información Comercial</x-ui.section-title>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="rgrid-2">
                     <x-ui.form-group for="asesor" label="Asesor de Ventas">
                         <input id="asesor" type="text" value="{{ auth()->user()?->name }}" readonly style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);" />
                     </x-ui.form-group>
-                    <x-ui.form-group for="category_id" label="Categoría *">
-                        <select id="category_id" name="category_id" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                            <option value="" disabled selected>Seleccione una categoría</option>
+                    <x-ui.form-group for="categoria_id" label="Categoría">
+                        <select id="categoria_id" name="categoria_id" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
+                            <option value="" selected>Sin categoría</option>
                             @foreach ($categories as $category)
-                                <option value="{{ $category->id }}" @selected(old('category_id') == $category->id)>{{ $category->name }}</option>
+                                <option value="{{ $category->id }}" @selected(old('categoria_id') == $category->id)>{{ $category->nombre }}</option>
                             @endforeach
                             <option value="__new__">+ Añadir categoría</option>
                         </select>
                     </x-ui.form-group>
-                    <x-ui.form-group for="congress_id" label="Congreso Conocido *">
-                        <select id="congress_id" name="congress_id" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                            <option value="" disabled selected>Seleccione un Congreso</option>
+                    <x-ui.form-group for="congreso_id" label="Congreso Conocido">
+                        <select id="congreso_id" name="congreso_id" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
+                            <option value="" selected>Sin congreso</option>
                             @foreach ($congresses as $congress)
-                                <option value="{{ $congress->id }}" @selected(old('congress_id') == $congress->id)>{{ $congress->name }}</option>
+                                <option value="{{ $congress->id }}" @selected(old('congreso_id') == $congress->id)>{{ $congress->nombre }}</option>
                             @endforeach
                         </select>
                     </x-ui.form-group>
-                    <x-ui.form-group label="RFC *" name="rfc" placeholder="PEGJ800815H54" maxlength="13" :required="true" />
-                    <x-ui.form-group for="receives_promotion" label="¿Recibe Promoción? *">
-                        <input type="hidden" name="receives_promotion" value="0">
+                    <x-ui.form-group for="recibe_promocion" label="¿Recibe Promoción?">
+                        <input type="hidden" name="recibe_promocion" value="0">
                         <label class="ui-switch">
-                            <input type="checkbox" id="receives_promotion" name="receives_promotion" value="1" @checked(old('receives_promotion') == '1' || old('receives_promotion') === true)>
+                            <input type="checkbox" id="recibe_promocion" name="recibe_promocion" value="1" @checked(old('recibe_promocion') == '1' || old('recibe_promocion') === true)>
                             <span class="slider"></span>
                         </label>
                     </x-ui.form-group>
@@ -77,8 +77,11 @@
             {{-- Información adicional --}}
             <x-ui.card>
                 <x-ui.section-title style="margin:0 0 16px;">Información Adicional</x-ui.section-title>
-                <x-ui.form-group label="Dirección y Comentarios" for="comentarios">
-                    <textarea id="comentarios" name="comentarios" rows="4" placeholder="Dirección y comentarios" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('comentarios') }}</textarea>
+                <div style="margin-bottom:16px;">
+                    <x-ui.form-group label="Dirección" name="direccion" placeholder="Dirección del cliente" />
+                </div>
+                <x-ui.form-group label="Comentarios" for="comentarios">
+                    <textarea id="comentarios" name="comentarios" rows="4" placeholder="Comentarios" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('comentarios') }}</textarea>
                 </x-ui.form-group>
             </x-ui.card>
         </div>
@@ -91,31 +94,16 @@
                     <x-ui.section-title style="margin:0;">Información</x-ui.section-title>
                 </div>
                 <p class="muted" style="margin:0; font-size:14px;">Completa los datos básicos del cliente.</p>
-                <p class="muted" style="margin:8px 0 0; font-size:14px;">Los campos marcados con * son obligatorios</p>
+                <p class="muted" style="margin:8px 0 0; font-size:14px;">Solo el nombre es obligatorio.</p>
             </x-ui.card>
 
             <x-ui.card>
                 <x-ui.section-title style="margin:0 0 12px;">Consejos</x-ui.section-title>
                 <ul style="margin:0; padding-left:18px; font-size:14px; color:var(--text); line-height:1.7;">
-                    <li>Verifica que el RFC sea correcto.</li>
-                    <li>Asigna un vendedor responsable.</li>
-                    <li>Agrega notas relevantes.</li>
+                    <li>Asigna una categoría para segmentar promociones.</li>
+                    <li>El asesor se asigna automáticamente (usuario actual).</li>
+                    <li>Agrega notas relevantes en comentarios.</li>
                 </ul>
-            </x-ui.card>
-
-            <x-ui.card>
-                <x-ui.section-title style="margin:0 0 14px;">Vista Previa</x-ui.section-title>
-                <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
-                    <div style="width:40px; height:40px; border-radius:50%; background:var(--primary-soft); display:flex; align-items:center; justify-content:center; color:var(--primary);">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    </div>
-                    <span class="muted" style="font-size:14px;">Nombre del Cliente</span>
-                </div>
-                <div style="font-size:14px; color:var(--text); line-height:1.8;">
-                    <p style="margin:0;">Apellido</p>
-                    <p style="margin:0;">Teléfono</p>
-                    <p style="margin:0;">Asesor</p>
-                </div>
             </x-ui.card>
         </div>
     </form>
@@ -125,7 +113,7 @@
             <h3 style="margin:0 0 14px; font-size:18px;">Nueva categoría</h3>
             <form id="form-new-category">
                 @csrf
-                <x-ui.form-group label="Nombre" name="name" placeholder="Ej. Cliente VIP" :required="true" />
+                <x-ui.form-group label="Nombre" name="nombre" placeholder="Ej. Cliente VIP" :required="true" />
                 <div class="modal-actions">
                     <button type="button" id="btn-cancel-category" class="btn btn--ghost">Cancelar</button>
                     <x-ui.button type="submit" id="btn-save-category" style="width:auto;">Guardar</x-ui.button>
@@ -147,11 +135,7 @@
     </style>
 
     <script>
-        document.getElementById('rfc').addEventListener('input', function (e) {
-            e.target.value = e.target.value.toUpperCase();
-        });
-
-        const categorySelect = document.getElementById('category_id');
+        const categorySelect = document.getElementById('categoria_id');
         const modal = document.getElementById('modal-category');
         const newCategoryForm = document.getElementById('form-new-category');
         const cancelCategoryBtn = document.getElementById('btn-cancel-category');
@@ -160,7 +144,7 @@
             if (this.value === '__new__') {
                 modal.style.display = 'flex';
                 this.value = '';
-                setTimeout(() => newCategoryForm.querySelector('input[name="name"]').focus(), 50);
+                setTimeout(() => newCategoryForm.querySelector('input[name="nombre"]').focus(), 50);
             }
         });
 
@@ -176,8 +160,8 @@
 
         newCategoryForm.addEventListener('submit', function (e) {
             e.preventDefault();
-            const name = this.querySelector('input[name="name"]').value.trim();
-            if (!name) return;
+            const nombre = this.querySelector('input[name="nombre"]').value.trim();
+            if (!nombre) return;
 
             const formData = new FormData(this);
             fetch('{{ route('commercial.clientes.categories.store') }}', {
@@ -189,7 +173,7 @@
             .then(data => {
                 const option = document.createElement('option');
                 option.value = data.id;
-                option.text = data.name;
+                option.text = data.nombre;
                 categorySelect.insertBefore(option, categorySelect.lastElementChild);
                 categorySelect.value = data.id;
                 closeCategoryModal();

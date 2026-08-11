@@ -4,7 +4,7 @@
 @section('page-sub', 'Gestion Administrativa > Solicitud de materiales')
 
 @php
-    $categories = [
+    $categories = $categories ?? [
         'Papelería',
         'Limpieza',
         'Herramientas',
@@ -27,6 +27,9 @@
         'Hojalatería y Pintura',
         'Otros',
     ];
+    $materialRequests = $materialRequests ?? [];
+    $pendingCount = $pendingCount ?? collect($materialRequests)->where('status', 'pendiente')->count();
+    $selectedUrgency = old('urgency', 'Normal');
 @endphp
 
 @push('head')
@@ -214,6 +217,30 @@
 
     .materials-control select {
         cursor: pointer;
+        background: var(--surface-2);
+        color: var(--text);
+    }
+
+    .materials-control select option {
+        background: #ffffff;
+        color: #111827;
+        font-weight: 700;
+    }
+
+    :root[data-theme="dark"] .materials-control select {
+        background: var(--surface-2);
+        color: var(--text);
+        color-scheme: dark;
+    }
+
+    :root[data-theme="dark"] .materials-control select option {
+        background: #0f1a30;
+        color: #e8eef8;
+    }
+
+    :root[data-theme="dark"] .materials-control select option:checked {
+        background: #1e40af;
+        color: #ffffff;
     }
 
     .quantity-control {
@@ -406,6 +433,150 @@
         color: var(--primary);
     }
 
+    .approvals-panel {
+        overflow: hidden;
+    }
+
+    .approvals-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .approvals-head h3 {
+        margin: 0;
+        color: var(--text);
+        font-size: 18px;
+    }
+
+    .approvals-head p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .approvals-count {
+        min-height: 32px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: var(--primary-soft);
+        color: var(--primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .approvals-table-wrap {
+        overflow-x: auto;
+    }
+
+    .approvals-table {
+        width: 100%;
+        min-width: 860px;
+        border-collapse: collapse;
+        color: var(--text);
+    }
+
+    .approvals-table th {
+        padding: 14px 16px;
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+        text-align: left;
+        text-transform: uppercase;
+    }
+
+    .approvals-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+        font-weight: 800;
+        vertical-align: middle;
+    }
+
+    .approvals-table td small {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .approval-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 26px;
+        padding: 0 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .approval-status.pending {
+        background: var(--accent-soft);
+        color: var(--accent);
+    }
+
+    .approval-status.approved {
+        background: var(--green-soft);
+        color: var(--green);
+    }
+
+    .approval-status.rejected {
+        background: var(--danger-soft);
+        color: var(--danger);
+    }
+
+    .approval-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .approval-action {
+        min-height: 32px;
+        padding: 0 11px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    .approval-action.approve {
+        border-color: color-mix(in srgb, var(--green) 45%, var(--border));
+        color: var(--green);
+    }
+
+    .approval-action.reject {
+        border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+        color: var(--danger);
+    }
+
+    .approval-action:hover {
+        background: var(--surface-2);
+    }
+
+    .approval-action:disabled {
+        cursor: not-allowed;
+        opacity: .45;
+    }
+
     @media (max-width: 1080px) {
         .materials-layout {
             grid-template-columns: 1fr;
@@ -465,7 +636,14 @@
 
         <div class="materials-layout">
             <section class="materials-panel" aria-label="Formulario para solicitar material">
-                <form class="materials-form" onsubmit="event.preventDefault(); showMaterialToast('Solicitud enviada a revisión.');">
+                <form class="materials-form" id="materialsForm" method="POST" action="{{ route('admin.materials.store') }}">
+                    @csrf
+
+                    @if ($errors->any())
+                        <div class="materials-panel" style="padding:12px 14px;border-color:rgba(220,38,38,.32);color:#dc2626;font-weight:800;">
+                            Revisa los campos de la solicitud antes de enviarla.
+                        </div>
+                    @endif
                     <div class="materials-field">
                         <label for="category">Categoría</label>
                         <div class="materials-control">
@@ -477,7 +655,7 @@
                             </span>
                             <select id="category" name="category">
                                 @foreach ($categories as $category)
-                                    <option value="{{ $category }}">{{ $category }}</option>
+                                    <option value="{{ $category }}" @selected(old('category') === $category)>{{ $category }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -493,7 +671,7 @@
                                         <path d="M3.27 6.96 12 12l8.73-5.04"></path>
                                     </svg>
                                 </span>
-                                <input id="material" name="material" type="text" autocomplete="off" placeholder="Ej. hojas carta, guantes, cable HDMI">
+                                <input id="material" name="material_name" type="text" value="{{ old('material_name') }}" autocomplete="off" placeholder="Ej. hojas carta, guantes, cable HDMI" required>
                             </div>
                         </div>
 
@@ -508,7 +686,7 @@
                                 </span>
                                 <div class="quantity-control">
                                     <button type="button" onclick="adjustQuantity(-1)" aria-label="Disminuir cantidad">-</button>
-                                    <input id="quantity" name="quantity" type="number" min="1" value="1" inputmode="numeric">
+                                    <input id="quantity" name="quantity" type="number" min="1" value="{{ old('quantity', 1) }}" inputmode="numeric" required>
                                     <button type="button" onclick="adjustQuantity(1)" aria-label="Aumentar cantidad">+</button>
                                 </div>
                             </div>
@@ -525,11 +703,9 @@
                                     </svg>
                                 </span>
                                 <select id="unit" name="unit">
-                                    <option>Pieza</option>
-                                    <option>Paquete</option>
-                                    <option>Caja</option>
-                                    <option>Kit</option>
-                                    <option>Servicio</option>
+                                    @foreach (['Pieza', 'Paquete', 'Caja', 'Kit', 'Servicio'] as $unitOption)
+                                        <option value="{{ $unitOption }}" @selected(old('unit', 'Pieza') === $unitOption)>{{ $unitOption }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
@@ -543,7 +719,7 @@
                                         <rect x="3" y="4" width="18" height="18" rx="2"></rect>
                                     </svg>
                                 </span>
-                                <input id="required-date" name="required_date" type="date" value="{{ now()->addDay()->format('Y-m-d') }}">
+                                <input id="required-date" name="required_date" type="date" value="{{ old('required_date', now()->addDay()->format('Y-m-d')) }}">
                             </div>
                         </div>
                     </div>
@@ -551,10 +727,11 @@
                     <div class="materials-field">
                         <label>Urgencia</label>
                         <div class="segmented" role="group" aria-label="Urgencia">
-                            <button class="segment is-active" type="button" data-urgency="Normal">Normal</button>
-                            <button class="segment" type="button" data-urgency="Urgente">Urgente</button>
-                            <button class="segment" type="button" data-urgency="Programada">Programada</button>
+                            <button class="segment {{ $selectedUrgency === 'Normal' ? 'is-active' : '' }}" type="button" data-urgency="Normal">Normal</button>
+                            <button class="segment {{ $selectedUrgency === 'Urgente' ? 'is-active' : '' }}" type="button" data-urgency="Urgente">Urgente</button>
+                            <button class="segment {{ $selectedUrgency === 'Programada' ? 'is-active' : '' }}" type="button" data-urgency="Programada">Programada</button>
                         </div>
+                        <input type="hidden" id="urgency" name="urgency" value="{{ $selectedUrgency }}">
                     </div>
 
                     <div class="materials-field">
@@ -566,7 +743,7 @@
                                     <path d="M14 2v6h6M8 13h8M8 17h5"></path>
                                 </svg>
                             </span>
-                            <textarea id="justification" name="justification" placeholder="Describe la necesidad del equipo o insumo solicitado, su uso y urgencia."></textarea>
+                            <textarea id="justification" name="justification" placeholder="Describe la necesidad del equipo o insumo solicitado, su uso y urgencia.">{{ old('justification') }}</textarea>
                         </div>
                     </div>
 
@@ -631,15 +808,83 @@
                 </div>
             </aside>
         </div>
+
+        <section class="materials-panel approvals-panel" aria-label="Revision de solicitudes de material">
+            <div class="approvals-head">
+                <div>
+                    <h3>Revision de solicitudes</h3>
+                    <p>Aqui se aprueban o rechazan las solicitudes enviadas.</p>
+                </div>
+                <span class="approvals-count" id="approvalCount">{{ $pendingCount }} {{ $pendingCount === 1 ? 'pendiente' : 'pendientes' }}</span>
+            </div>
+
+            <div class="approvals-table-wrap">
+                <table class="approvals-table">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Material</th>
+                            <th>Cantidad</th>
+                            <th>Fecha requerida</th>
+                            <th>Urgencia</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="materialsApprovalBody">
+                        @forelse ($materialRequests as $requestRow)
+                            <tr>
+                                <td>{{ $requestRow['folio'] }}</td>
+                                <td>{{ $requestRow['material_name'] }}<small>{{ $requestRow['category'] }}</small></td>
+                                <td>{{ $requestRow['quantity'] }} {{ $requestRow['unit'] }}</td>
+                                <td>{{ $requestRow['required_date'] }}</td>
+                                <td>{{ $requestRow['urgency'] }}</td>
+                                <td><span class="approval-status {{ $requestRow['status_class'] }}">{{ $requestRow['status_label'] }}</span></td>
+                                <td>
+                                    <div class="approval-actions">
+                                        @if (auth()->user()?->isAdmin() && $requestRow['can_review'])
+                                            <form method="POST" action="{{ route('admin.materials.review', $requestRow['id']) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <input type="hidden" name="decision" value="approve">
+                                                <button class="approval-action approve" type="submit">Aprobar</button>
+                                            </form>
+                                            <form method="POST" action="{{ route('admin.materials.review', $requestRow['id']) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <input type="hidden" name="decision" value="reject">
+                                                <button class="approval-action reject" type="submit">Rechazar</button>
+                                            </form>
+                                        @else
+                                            <button class="approval-action" type="button" disabled>Sin acciones</button>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7">No hay solicitudes registradas.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </section>
 
     <script>
         const category = document.getElementById('category');
+        const material = document.getElementById('material');
         const quantity = document.getElementById('quantity');
         const unit = document.getElementById('unit');
+        const urgencyInput = document.getElementById('urgency');
+        const requiredDate = document.getElementById('required-date');
+        const materialsApprovalBody = document.getElementById('materialsApprovalBody');
+        const approvalCount = document.getElementById('approvalCount');
         const summaryCategory = document.getElementById('summaryCategory');
         const summaryQuantity = document.getElementById('summaryQuantity');
         const summaryUrgency = document.getElementById('summaryUrgency');
+        let materialRequestSequence = 9;
 
         function updateSummary() {
             summaryCategory.textContent = category.value;
@@ -658,14 +903,83 @@
             }
         }
 
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function currentUrgency() {
+            return urgencyInput?.value || document.querySelector('.segment.is-active')?.dataset.urgency || 'Normal';
+        }
+
+        function updateApprovalCount() {
+            const pending = materialsApprovalBody.querySelectorAll('.approval-status.pending').length;
+            approvalCount.textContent = pending === 1 ? '1 pendiente' : `${pending} pendientes`;
+        }
+
+        function bindApprovalButtons(scope = document) {
+            scope.querySelectorAll('[data-approval-action]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const row = button.closest('tr');
+                    const status = row.querySelector('.approval-status');
+                    const action = button.dataset.approvalAction;
+                    const approved = action === 'approve';
+
+                    status.className = `approval-status ${approved ? 'approved' : 'rejected'}`;
+                    status.textContent = approved ? 'Aprobada' : 'Rechazada';
+                    row.querySelectorAll('[data-approval-action]').forEach((item) => item.disabled = true);
+                    updateApprovalCount();
+                    showMaterialToast(approved ? 'Solicitud aprobada.' : 'Solicitud rechazada.');
+                });
+            });
+        }
+
+        function submitMaterialRequest(event) {
+            event.preventDefault();
+
+            const materialName = material.value.trim() || 'Material sin nombre';
+            const folio = `SOL-${String(materialRequestSequence).padStart(4, '0')}`;
+            materialRequestSequence += 1;
+
+            materialsApprovalBody.insertAdjacentHTML('afterbegin', `
+                <tr>
+                    <td>${folio}</td>
+                    <td>${escapeHtml(materialName)}<small>${escapeHtml(category.value)}</small></td>
+                    <td>${escapeHtml(quantity.value || 1)} ${escapeHtml(unit.value)}</td>
+                    <td>${escapeHtml(requiredDate.value)}</td>
+                    <td>${escapeHtml(currentUrgency())}</td>
+                    <td><span class="approval-status pending">Pendiente</span></td>
+                    <td>
+                        <div class="approval-actions">
+                            <button class="approval-action approve" type="button" data-approval-action="approve">Aprobar</button>
+                            <button class="approval-action reject" type="button" data-approval-action="reject">Rechazar</button>
+                        </div>
+                    </td>
+                </tr>
+            `);
+
+            bindApprovalButtons(materialsApprovalBody.firstElementChild);
+            updateApprovalCount();
+            showMaterialToast('Solicitud enviada a revision. Ahora aparece en Revision de solicitudes.');
+        }
+
         category.addEventListener('change', updateSummary);
         quantity.addEventListener('input', updateSummary);
         unit.addEventListener('change', updateSummary);
+        bindApprovalButtons();
+        updateApprovalCount();
 
         document.querySelectorAll('.segment').forEach((button) => {
             button.addEventListener('click', () => {
                 document.querySelectorAll('.segment').forEach((item) => item.classList.remove('is-active'));
                 button.classList.add('is-active');
+                if (urgencyInput) {
+                    urgencyInput.value = button.dataset.urgency;
+                }
                 summaryUrgency.textContent = button.dataset.urgency;
             });
         });

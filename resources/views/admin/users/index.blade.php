@@ -55,225 +55,11 @@
 @endphp
 
 @push('head')
-<style>
-    /* ===== Toolbar de Control de Usuarios ===== */
-    .uc-toolbar {
-        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-        margin-bottom: 20px;
-    }
-    .uc-search {
-        position: relative; flex: 1; min-width: 240px; max-width: 420px;
-    }
-    .uc-search input {
-        width: 100%; padding: 11px 12px 11px 42px;
-        border: 1px solid var(--border); border-radius: 10px;
-        font-size: 14.5px; font-family: inherit;
-        background: var(--surface); color: var(--text);
-        outline: none; transition: border .15s, box-shadow .15s;
-    }
-    .uc-search input:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(0,122,255,.12);
-    }
-    .uc-search svg {
-        position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
-        width: 18px; height: 18px; color: var(--muted); pointer-events: none;
-    }
-    .uc-filter {
-        position: relative;
-    }
-    .uc-filter select {
-        appearance: none; -webkit-appearance: none;
-        padding: 11px 36px 11px 14px;
-        border: 1px solid var(--border); border-radius: 10px;
-        font-size: 14.5px; font-family: inherit; font-weight: 600;
-        background: var(--surface); color: var(--text);
-        cursor: pointer; outline: none; transition: border .15s;
-    }
-    .uc-filter select:focus { border-color: var(--primary); }
-    .uc-filter::after {
-        content: ''; position: absolute; right: 14px; top: 50%;
-        transform: translateY(-50%) rotate(45deg);
-        width: 7px; height: 7px;
-        border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
-        pointer-events: none;
-    }
-    .uc-spacer { flex: 1; }
-    .uc-btn-add {
-        display: inline-flex; align-items: center; gap: 7px;
-        padding: 10px 18px; border: none; border-radius: 10px;
-        background: var(--primary); color: #fff;
-        font-size: 14.5px; font-weight: 700; cursor: pointer;
-        text-decoration: none; transition: background .15s;
-    }
-    .uc-btn-add:hover { background: var(--primary-strong); }
-    .uc-btn-add svg { width: 18px; height: 18px; }
-    .uc-view-toggle {
-        display: inline-flex; border: 1px solid var(--border); border-radius: 10px;
-        overflow: hidden; flex: 0 0 auto;
-    }
-    .uc-view-toggle button {
-        padding: 10px 12px; border: none; background: var(--surface);
-        color: var(--muted); cursor: pointer; transition: background .15s, color .15s;
-        display: flex; align-items: center; justify-content: center;
-    }
-    .uc-view-toggle button.active {
-        background: var(--primary-soft); color: var(--primary);
-    }
-    .uc-view-toggle button svg { width: 18px; height: 18px; }
-
-    /* ===== Grid de tarjetas ===== */
-    .uc-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 18px;
-    }
-    .uc-grid.uc-list-view {
-        grid-template-columns: 1fr;
-    }
-
-    /* ===== Tarjeta de usuario ===== */
-    .uc-card {
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: 16px; padding: 22px; box-shadow: var(--shadow);
-        position: relative; transition: box-shadow .2s, transform .2s;
-        display: flex; flex-direction: column; gap: 14px;
-    }
-    .uc-card:hover {
-        box-shadow: 0 8px 30px rgba(17,24,39,.10);
-        transform: translateY(-2px);
-    }
-    .uc-card-top {
-        display: flex; align-items: flex-start; gap: 14px;
-    }
-
-    /* ===== Avatar con status dot ===== */
-    .uc-avatar-wrap {
-        position: relative; flex: 0 0 auto;
-    }
-    .uc-avatar {
-        width: 64px; height: 64px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-weight: 700; font-size: 22px; overflow: hidden;
-        border: 2px solid var(--border);
-    }
-    .uc-avatar img {
-        width: 100%; height: 100%; object-fit: cover; display: block;
-    }
-    .uc-status-dot {
-        position: absolute; bottom: 2px; right: 2px;
-        width: 14px; height: 14px; border-radius: 50%;
-        border: 3px solid var(--surface);
-    }
-    .uc-status-dot.green { background: #22c55e; }
-    .uc-status-dot.yellow { background: #f59e0b; }
-    .uc-status-dot.red { background: #ef4444; }
-
-    /* ===== Info del usuario ===== */
-    .uc-info { flex: 1; min-width: 0; }
-    .uc-name {
-        font-size: 16px; font-weight: 700; margin: 0;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .uc-role {
-        font-size: 13px; color: var(--muted); margin: 3px 0 0;
-    }
-    .uc-status-badge {
-        display: inline-flex; align-items: center; gap: 5px;
-        font-size: 12px; font-weight: 600; margin-top: 6px;
-    }
-    .uc-status-badge .dot {
-        width: 7px; height: 7px; border-radius: 50%;
-    }
-    .uc-status-badge .dot.green { background: #22c55e; }
-    .uc-status-badge .dot.yellow { background: #f59e0b; }
-    .uc-status-badge .dot.red { background: #ef4444; }
-    .uc-status-badge.active { color: #22c55e; }
-    .uc-status-badge.leave { color: #f59e0b; }
-    .uc-status-badge.banned { color: #ef4444; }
-
-    /* ===== Three-dots menu ===== */
-    .uc-dots {
-        position: absolute; bottom: 18px; right: 18px;
-        width: 32px; height: 32px; border-radius: 8px;
-        border: none; background: var(--surface-2); color: var(--muted);
-        cursor: pointer; display: flex; align-items: center; justify-content: center;
-        transition: background .15s, color .15s;
-    }
-    .uc-dots:hover { background: var(--primary-soft); color: var(--primary); }
-    .uc-dots svg { width: 18px; height: 18px; }
-    .uc-dots-menu {
-        position: absolute; bottom: 54px; right: 18px;
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: 12px; box-shadow: 0 10px 30px rgba(17,24,39,.14);
-        padding: 6px; min-width: 180px; z-index: 20;
-        opacity: 0; visibility: hidden; transform: translateY(6px) scale(.97);
-        transform-origin: bottom right; pointer-events: none;
-        transition: opacity .16s, transform .18s, visibility .16s;
-    }
-    .uc-dots-menu.open {
-        opacity: 1; visibility: visible; transform: translateY(0) scale(1);
-        pointer-events: auto;
-    }
-    .uc-dots-menu a, .uc-dots-menu button {
-        display: flex; align-items: center; gap: 10px;
-        padding: 9px 12px; border-radius: 8px;
-        font-size: 13.5px; font-weight: 600; color: var(--text);
-        text-decoration: none; border: none; background: none;
-        cursor: pointer; width: 100%; text-align: left; font-family: inherit;
-        transition: background .12s;
-    }
-    .uc-dots-menu a:hover, .uc-dots-menu button:hover {
-        background: var(--surface-2);
-    }
-    .uc-dots-menu .danger { color: var(--danger); }
-    .uc-dots-menu .ok { color: var(--green); }
-    .uc-dots-menu svg { width: 16px; height: 16px; flex: 0 0 auto; }
-
-    /* ===== Contact details ===== */
-    .uc-contact {
-        display: flex; flex-direction: column; gap: 5px;
-        font-size: 13px; color: var(--muted);
-    }
-    .uc-contact-row {
-        display: flex; align-items: center; gap: 8px;
-    }
-    .uc-contact-row svg { width: 15px; height: 15px; flex: 0 0 auto; opacity: .7; }
-    .uc-contact-row span {
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    /* ===== List view ===== */
-    .uc-list-view .uc-card {
-        flex-direction: row; align-items: center; gap: 18px;
-        padding: 16px 22px;
-    }
-    .uc-list-view .uc-card-top { flex: 1; }
-    .uc-list-view .uc-contact {
-        flex-direction: row; gap: 20px; align-items: center;
-    }
-    .uc-list-view .uc-dots { position: relative; bottom: auto; right: auto; }
-    .uc-list-view .uc-dots-menu {
-        position: absolute; bottom: auto; top: 100%; right: 0;
-        transform-origin: top right; transform: translateY(-6px) scale(.97);
-    }
-    .uc-list-view .uc-dots-menu.open { transform: translateY(0) scale(1); }
-
-    .uc-empty {
-        text-align: center; padding: 60px 20px; color: var(--muted);
-    }
-    .uc-empty svg { width: 48px; height: 48px; margin: 0 auto 14px; opacity: .4; }
-    .uc-empty p { font-size: 15px; font-weight: 600; margin: 0; }
-
-    @media (max-width: 640px) {
-        .uc-grid { grid-template-columns: 1fr; }
-        .uc-list-view .uc-card { flex-direction: column; align-items: flex-start; }
-        .uc-list-view .uc-contact { flex-direction: column; gap: 5px; }
-    }
-</style>
+    @include('admin.users.partials._styles')
 @endpush
 
 @section('content')
+<div class="uc-wrap">
     <div class="grid stat-row" style="margin-bottom:18px;">
         <x-ui.stat-card
             :value="$users->count()"
@@ -306,7 +92,7 @@
         </x-ui.stat-card>
     </div>
 
-    {{-- Toolbar: búsqueda, filtro, agregar, toggle vista --}}
+    {{-- Toolbar unificada: búsqueda, filtros, agregar y toggle de vista --}}
     <form method="GET" action="{{ route('admin.users.index') }}" class="uc-toolbar">
         <div class="uc-search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -331,14 +117,13 @@
         </div>
         @endif
         <button type="submit" style="display:none;">Filtrar</button>
-    </form>
 
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
         <div class="uc-spacer"></div>
-        <a href="#" class="uc-btn-add">
+
+        <button type="button" class="uc-btn-add" onclick="document.getElementById('modal-hr-profile').style.display='flex'">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             Agregar usuario
-        </a>
+        </button>
         <div class="uc-view-toggle">
             <button type="button" class="uc-view-btn active" data-view="grid" title="Vista de cuadrícula">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -347,7 +132,236 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
             </button>
         </div>
+    </form>
+
+    {{-- Modal: completar datos de RH de un usuario ya registrado --}}
+    <div id="modal-hr-profile" class="modal-overlay" style="display:none;">
+        <div class="hr-modal">
+            <div class="hr-modal-head">
+                <div>
+                    <h3>Agregar usuario a Recursos Humanos</h3>
+                    <p>Selecciona un usuario ya registrado y completa sus datos. No se crean cuentas nuevas.</p>
+                </div>
+                <button type="button" class="hr-modal-close" onclick="document.getElementById('modal-hr-profile').style.display='none'" aria-label="Cerrar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <form method="POST" action="{{ route('admin.users.hrProfile.update') }}" enctype="multipart/form-data" class="hr-modal-body">
+                @csrf
+
+                <select id="hr_user_id" name="user_id" required onchange="rellenarDatosRhUsuario(this)" class="hr-select">
+                    <option value="">— Selecciona un usuario —</option>
+                    @foreach($users as $u)
+                        <option value="{{ $u->id }}"
+                            data-position="{{ $u->position }}"
+                            data-cargo="{{ $u->cargo }}"
+                            data-phone="{{ $u->phone }}"
+                            data-payroll="{{ $u->payroll_number }}"
+                            data-checador="{{ $u->checador_id }}"
+                            data-curp="{{ $u->curp }}"
+                            data-ine="{{ $u->ine }}"
+                            data-acta="{{ $u->acta_nacimiento }}"
+                            data-licencia="{{ $u->licencia }}"
+                            data-domicilio="{{ $u->domicilio }}"
+                            data-fecha-ingreso="{{ optional($u->fecha_ingreso)->format('Y-m-d') }}"
+                            data-vacaciones="{{ $u->vacaciones_disponibles }}"
+                            data-nce="{{ $u->nombre_contacto_emergencia }}"
+                            data-numce="{{ $u->numero_contacto_emergencia }}"
+                            data-domce="{{ $u->domicilio_contacto_emergencia }}"
+                            data-nces="{{ $u->nombre_contacto_emergencia_secundario }}"
+                            data-numces="{{ $u->numero_contacto_emergencia_secundario }}"
+                            data-domces="{{ $u->domicilio_contacto_emergencia_secundario }}"
+                            data-roles="{{ $u->roles->pluck('id')->implode(',') }}"
+                            data-docs='@json($u->employeeDocuments->pluck("file_path", "name")->map(fn ($p) => \Illuminate\Support\Facades\Storage::url($p)))'>
+                            {{ $u->name }} — {{ $u->email }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <div class="hr-section">
+                    <p class="hr-section-title">Datos laborales</p>
+                    <div class="hr-grid-2">
+                        <label class="hr-field"><span>Puesto</span><input type="text" name="position" placeholder="Ej. Ingeniero de sistemas"></label>
+                        <label class="hr-field"><span>Cargo</span><input type="text" name="cargo" placeholder="Ej. Ingeniero, Licenciado"></label>
+                        <label class="hr-field"><span>Teléfono</span><input type="text" name="phone"></label>
+                        <label class="hr-field"><span>Número de nómina</span><input type="text" name="payroll_number"></label>
+                        <label class="hr-field"><span>ID de checador</span><input type="text" name="checador_id"></label>
+                        <label class="hr-field"><span>Fecha de ingreso</span><input type="date" name="fecha_ingreso"></label>
+                        <label class="hr-field hr-field--full"><span>Vacaciones disponibles (días)</span><input type="number" name="vacaciones_disponibles" min="0"></label>
+                    </div>
+                </div>
+
+                <div class="hr-section">
+                    <p class="hr-section-title">Roles</p>
+                    <div class="hr-roles">
+                        @foreach($roles as $role)
+                            <label class="hr-chip">
+                                <input type="checkbox" name="roles[]" value="{{ $role->id }}">
+                                <span>{{ $role->label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="hr-section">
+                    <p class="hr-section-title">Identificación</p>
+                    <p class="hr-hint">Captura el número/folio y, si quieres, sube el documento escaneado (PDF o imagen, máx. 5MB).</p>
+                    <div class="hr-grid-2">
+                        <div class="hr-doc">
+                            <label class="hr-field"><span>CURP</span><input type="text" name="curp" maxlength="18"></label>
+                            <x-ui.file-chip name="curp_file" doc="CURP" />
+                        </div>
+                        <div class="hr-doc">
+                            <label class="hr-field"><span>INE</span><input type="text" name="ine"></label>
+                            <x-ui.file-chip name="ine_file" doc="INE" />
+                        </div>
+                        <div class="hr-doc">
+                            <label class="hr-field"><span>Acta de nacimiento</span><input type="text" name="acta_nacimiento"></label>
+                            <x-ui.file-chip name="acta_nacimiento_file" doc="Acta de nacimiento" />
+                        </div>
+                        <div class="hr-doc">
+                            <label class="hr-field"><span>Licencia de manejo</span><input type="text" name="licencia"></label>
+                            <x-ui.file-chip name="licencia_file" doc="Licencia de manejo" />
+                        </div>
+                    </div>
+                    <label class="hr-field"><span>Domicilio</span><input type="text" name="domicilio"></label>
+                </div>
+
+                <div class="hr-section">
+                    <p class="hr-section-title">Contacto de emergencia</p>
+                    <div class="hr-grid-2">
+                        <label class="hr-field"><span>Nombre</span><input type="text" name="nombre_contacto_emergencia"></label>
+                        <label class="hr-field"><span>Teléfono</span><input type="text" name="numero_contacto_emergencia"></label>
+                    </div>
+                    <label class="hr-field"><span>Domicilio del contacto</span><input type="text" name="domicilio_contacto_emergencia"></label>
+                </div>
+
+                <div class="hr-section hr-section--last">
+                    <p class="hr-section-title">Contacto de emergencia secundario</p>
+                    <div class="hr-grid-2">
+                        <label class="hr-field"><span>Nombre</span><input type="text" name="nombre_contacto_emergencia_secundario"></label>
+                        <label class="hr-field"><span>Teléfono</span><input type="text" name="numero_contacto_emergencia_secundario"></label>
+                    </div>
+                    <label class="hr-field"><span>Domicilio del contacto</span><input type="text" name="domicilio_contacto_emergencia_secundario"></label>
+                </div>
+
+                <div class="hr-modal-foot">
+                    <button type="button" class="btn btn--ghost" onclick="document.getElementById('modal-hr-profile').style.display='none'">Cancelar</button>
+                    <x-ui.button type="submit" style="width:auto;">Guardar</x-ui.button>
+                </div>
+            </form>
+        </div>
     </div>
+
+    <style>
+        :root { --field-border: #c9ccd2; }
+        :root[data-theme="dark"] { --field-border: var(--border); }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15,17,21,0.5); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
+
+        .hr-modal { background: var(--surface); border-radius: 16px; width: 100%; max-width: 620px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.25); overflow: hidden; }
+
+        .hr-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 22px 26px 18px; border-bottom: 1px solid var(--border); }
+        .hr-modal-head h3 { margin: 0 0 4px; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+        .hr-modal-head p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.4; max-width: 440px; }
+        .hr-modal-close { flex-shrink: 0; width: 30px; height: 30px; border: none; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s, color .15s; }
+        .hr-modal-close:hover { background: var(--surface-2); color: var(--text); }
+        .hr-modal-close svg { width: 16px; height: 16px; }
+
+        .hr-modal-body { padding: 20px 26px 0; overflow-y: auto; flex: 1; }
+
+        .hr-select { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--field-border, var(--border)); background: var(--surface); color: var(--text); font-size: 14px; margin-bottom: 4px; }
+
+        .hr-section { padding: 16px 0; border-bottom: 1px solid var(--border); }
+        .hr-section--last { border-bottom: none; padding-bottom: 4px; }
+        .hr-section-title { margin: 0 0 2px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+        .hr-hint { margin: 2px 0 10px; font-size: 12px; color: var(--muted); }
+
+        .hr-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
+        .hr-field { display: flex; flex-direction: column; gap: 5px; margin: 8px 0; font-size: 12.5px; color: var(--muted); }
+        .hr-field--full { grid-column: 1 / -1; }
+        .hr-field input { padding: 9px 12px; border-radius: 9px; border: 1px solid var(--field-border, var(--border)); background: var(--surface); color: var(--text); font-size: 13.5px; }
+        .hr-field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
+
+        .hr-roles { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+        .hr-chip { position: relative; }
+        .hr-chip input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .hr-chip span { display: inline-flex; align-items: center; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--field-border, var(--border)); font-size: 13px; color: var(--text); cursor: pointer; transition: background .15s, border-color .15s, color .15s; user-select: none; }
+        .hr-chip input:checked + span { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+        .hr-doc { margin-bottom: 4px; }
+
+        .hr-file-chip { display: flex; align-items: center; gap: 10px; margin: 2px 0 8px; flex-wrap: wrap; }
+        .hr-file-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px dashed var(--field-border, var(--border)); font-size: 12px; color: var(--muted); cursor: pointer; transition: border-color .15s, color .15s; }
+        .hr-file-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .hr-file-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+        .hr-file-btn input[type="file"] { position: absolute; opacity: 0; width: 0; height: 0; }
+        .hr-file-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .hr-file-link { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--primary); text-decoration: none; }
+        .hr-file-link svg { width: 13px; height: 13px; }
+        .hr-file-link:hover { text-decoration: underline; }
+
+        .hr-modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 18px 0 22px; margin-top: 6px; }
+    </style>
+
+    <script>
+        function rellenarDatosRhUsuario(select) {
+            const opt = select.options[select.selectedIndex];
+            const modal = document.getElementById('modal-hr-profile');
+            const set = (name, value) => {
+                const el = modal.querySelector('[name="' + name + '"]');
+                if (el) el.value = value || '';
+            };
+            set('position', opt.dataset.position);
+            set('cargo', opt.dataset.cargo);
+            set('phone', opt.dataset.phone);
+            set('payroll_number', opt.dataset.payroll);
+            set('checador_id', opt.dataset.checador);
+            set('curp', opt.dataset.curp);
+            set('ine', opt.dataset.ine);
+            set('acta_nacimiento', opt.dataset.acta);
+            set('licencia', opt.dataset.licencia);
+            set('domicilio', opt.dataset.domicilio);
+            set('fecha_ingreso', opt.dataset.fechaIngreso);
+            set('vacaciones_disponibles', opt.dataset.vacaciones);
+            set('nombre_contacto_emergencia', opt.dataset.nce);
+            set('numero_contacto_emergencia', opt.dataset.numce);
+            set('domicilio_contacto_emergencia', opt.dataset.domce);
+            set('nombre_contacto_emergencia_secundario', opt.dataset.nces);
+            set('numero_contacto_emergencia_secundario', opt.dataset.numces);
+            set('domicilio_contacto_emergencia_secundario', opt.dataset.domces);
+
+            const selectedRoleIds = (opt.dataset.roles || '').split(',').filter(Boolean);
+            modal.querySelectorAll('input[name="roles[]"]').forEach(cb => {
+                cb.checked = selectedRoleIds.includes(cb.value);
+            });
+
+            let docs = {};
+            try { docs = JSON.parse(opt.dataset.docs || '{}'); } catch (e) { docs = {}; }
+            modal.querySelectorAll('.hr-file-link').forEach(link => {
+                const url = docs[link.dataset.doc];
+                if (url) {
+                    link.href = url;
+                    link.style.display = 'inline-flex';
+                } else {
+                    link.href = '#';
+                    link.style.display = 'none';
+                }
+            });
+        }
+
+        document.getElementById('modal-hr-profile').addEventListener('click', function (e) {
+            if (e.target === this) this.style.display = 'none';
+        });
+
+        document.querySelectorAll('.hr-file-input').forEach(function (input) {
+            input.addEventListener('change', function () {
+                const label = input.closest('.hr-file-chip').querySelector('.hr-file-name');
+                label.textContent = input.files.length ? input.files[0].name : 'Subir documento';
+            });
+        });
+    </script>
 
     @if($users->isEmpty())
         <x-ui.card>
@@ -480,4 +494,5 @@
             }
         })();
     </script>
+</div>
 @endsection

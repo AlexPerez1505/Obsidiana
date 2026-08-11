@@ -89,11 +89,11 @@ class PermissionController extends Controller
     public function userPermissions(User $user): View
     {
         $permissions = Permission::orderBy('label')->get();
-        $userPermissions = $user->permissions->pluck('id')->toArray();
+        $userPermissions = $user->permissions->pluck('pivot.level', 'id')->toArray();
 
         return view('admin.users.permissions', [
-            'user' => $user,
-            'permissions' => $permissions,
+            'user'            => $user,
+            'permissions'     => $permissions,
             'userPermissions' => $userPermissions,
         ]);
     }
@@ -103,8 +103,17 @@ class PermissionController extends Controller
      */
     public function updateUserPermissions(Request $request, User $user): RedirectResponse
     {
-        $permissionIds = $request->input('permissions', []);
-        $user->permissions()->sync($permissionIds);
+        $data = $request->validate([
+            'permissions'         => ['array'],
+            'permissions.*.id'    => ['required', 'exists:permissions,id'],
+            'permissions.*.level' => ['required', 'in:enabled,read_only,edit,admin'],
+        ]);
+
+        $sync = [];
+        foreach ($data['permissions'] ?? [] as $perm) {
+            $sync[$perm['id']] = ['level' => $perm['level']];
+        }
+        $user->permissions()->sync($sync);
 
         return back()->with('status', 'Permisos de '.$user->name.' actualizados.');
     }

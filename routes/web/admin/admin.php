@@ -1,7 +1,12 @@
 <?php
 
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\MaterialRequestController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\TripController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\VehicleController;
+use App\Http\Controllers\Admin\ViaticController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -11,18 +16,44 @@ use Illuminate\Support\Facades\Route;
 */
 Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admin.')->group(function () {
     Route::view('/agenda', 'admin.agenda.index')->name('agenda.index');
-    Route::view('/materiales', 'admin.materiales.index')->name('materials.index');
-    Route::view('/reportes', 'admin.reportes.index')->name('reports.index');
-    Route::view('/viaticos', 'admin.viaticos.index')->name('viatics.index');
+    Route::get('/materiales', [MaterialRequestController::class, 'index'])->name('materials.index');
+    Route::post('/materiales', [MaterialRequestController::class, 'store'])->name('materials.store');
+    Route::get('/reportes', [ReportController::class, 'index'])->name('reports.index');
 });
 
 Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/usuarios', [UserController::class, 'index'])->name('users.index');
+    Route::post('/usuarios/perfil-rh', [UserController::class, 'updateHrProfile'])->name('users.hrProfile.update');
     Route::get('/usuarios/{user}', [UserController::class, 'show'])->name('users.show');
     Route::post('/usuarios/{user}/admin', [UserController::class, 'toggleAdmin'])->name('users.toggleAdmin');
     Route::post('/usuarios/{user}/aprobar', [UserController::class, 'approve'])->name('users.approve');
     Route::post('/usuarios/{user}/banear', [UserController::class, 'ban'])->name('users.ban');
     Route::post('/usuarios/{user}/desbanear', [UserController::class, 'unban'])->name('users.unban');
+    Route::post('/reportes', [ReportController::class, 'store'])->name('reports.store');
+    Route::patch('/materiales/{materialRequest}/revision', [MaterialRequestController::class, 'review'])->name('materials.review');
+
+    // Vehículos
+    Route::get('/vehiculos', [VehicleController::class, 'index'])->name('vehicles.index');
+    Route::post('/vehiculos', [VehicleController::class, 'store'])->name('vehicles.store');
+    Route::get('/vehiculos/{vehicle}', [VehicleController::class, 'show'])->name('vehicles.show');
+
+    Route::get('/viaticos', [ViaticController::class, 'index'])->name('viatics.index');
+    Route::get('/viaticos/crear', [ViaticController::class, 'create'])->name('viatics.create');
+    Route::post('/viaticos', [ViaticController::class, 'store'])->name('viatics.store');
+    Route::get('/viaticos/{viatic}/editar', [ViaticController::class, 'edit'])->name('viatics.edit');
+    Route::patch('/viaticos/{viatic}', [ViaticController::class, 'update'])->name('viatics.update');
+    Route::delete('/viaticos/{viatic}', [ViaticController::class, 'destroy'])->name('viatics.destroy');
+    Route::get('/viaticos/{viatic}', [ViaticController::class, 'show'])->name('viatics.show');
+    Route::post('/viaticos/{viatic}/gastos', [ViaticController::class, 'addExpense'])->name('viatics.expense');
+    Route::patch('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'updateExpense'])->name('viatics.expense.update');
+    Route::delete('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'destroyExpense'])->name('viatics.expense.destroy');
+
+    Route::post('/viajes', [TripController::class, 'store'])->name('trips.store');
+    Route::get('/viajes/{trip}', [TripController::class, 'show'])->name('trips.show');
+    Route::post('/viajes/{trip}/gastos', [TripController::class, 'addExpense'])->name('trips.expense');
+    Route::patch('/viajes/{trip}/gastos/{expense}', [TripController::class, 'updateExpense'])->name('trips.expense.update');
+    Route::delete('/viajes/{trip}/gastos/{expense}', [TripController::class, 'destroyExpense'])->name('trips.expense.destroy');
+    Route::post('/viajes/{trip}/finalizar', [TripController::class, 'finish'])->name('trips.finish');
 
     // Permisos
     Route::get('/permisos', [PermissionController::class, 'index'])->name('permissions.index');

@@ -4,7 +4,17 @@
 @section('page-sub', 'Gestion Administrativa > Reporte')
 
 @php
-    $metrics = [
+    $employees = $employees ?? [
+        ['name' => 'Ricardo', 'initials' => 'R', 'area' => 'Gestion Administrativa', 'attendance' => '94%', 'pending' => '0', 'status' => 'Al dia'],
+        ['name' => 'Marina Sherlyn', 'initials' => 'MS', 'area' => 'Marketing', 'attendance' => '96%', 'pending' => '1', 'status' => 'Vacaciones'],
+        ['name' => 'Jose Alex', 'initials' => 'JA', 'area' => 'Inventario', 'attendance' => '91%', 'pending' => '1', 'status' => 'Permiso'],
+        ['name' => 'Andrea Ramirez', 'initials' => 'AR', 'area' => 'Servicios', 'attendance' => '88%', 'pending' => '1', 'status' => 'Justificar'],
+        ['name' => 'Dylan Santiago', 'initials' => 'DS', 'area' => 'Comercial', 'attendance' => '90%', 'pending' => '1', 'status' => 'Revision'],
+        ['name' => 'Fernanda Lopez', 'initials' => 'FL', 'area' => 'Administracion', 'attendance' => '97%', 'pending' => '0', 'status' => 'Al dia'],
+    ];
+
+    $metrics = $metrics ?? [
+        ['label' => 'Colaboradores', 'value' => count($employees), 'trend' => 'En seguimiento', 'type' => 'employee'],
         ['label' => 'Asistencias', 'value' => '94%', 'trend' => '+3%', 'type' => 'attendance'],
         ['label' => 'Faltas', 'value' => '7', 'trend' => '-2', 'type' => 'absence'],
         ['label' => 'Vacaciones', 'value' => '4', 'trend' => 'Activas', 'type' => 'vacation'],
@@ -12,7 +22,7 @@
         ['label' => 'Incidencias', 'value' => '3', 'trend' => 'Revision', 'type' => 'incident'],
     ];
 
-    $records = [
+    $records = $records ?? [
         ['employee' => 'Ricardo', 'area' => 'Gestion Administrativa', 'type' => 'attendance', 'label' => 'Asistencia', 'date' => '03 Ago 2026', 'detail' => 'Entrada 08:02 - salida 17:01', 'status' => 'Validada'],
         ['employee' => 'Marina Sherlyn', 'area' => 'Marketing', 'type' => 'vacation', 'label' => 'Vacaciones', 'date' => '05-09 Ago 2026', 'detail' => 'Periodo solicitado por descanso anual', 'status' => 'Aprobada'],
         ['employee' => 'Jose Alex', 'area' => 'Inventario', 'type' => 'permission', 'label' => 'Permiso', 'date' => '04 Ago 2026', 'detail' => 'Salida personal de 12:00 a 14:00', 'status' => 'Pendiente'],
@@ -29,14 +39,31 @@
         'incident' => ['label' => 'Incidencia', 'class' => 'incident'],
     ];
 
-    $weekly = [
-        ['day' => 'Lun', 'value' => 92],
-        ['day' => 'Mar', 'value' => 96],
-        ['day' => 'Mie', 'value' => 89],
-        ['day' => 'Jue', 'value' => 94],
-        ['day' => 'Vie', 'value' => 91],
-        ['day' => 'Sab', 'value' => 78],
+    $pendingModules = $pendingModules ?? [
+        ['type' => 'permission', 'count' => 2, 'title' => 'Permisos por aprobar', 'detail' => 'Solicitudes de salida personal en espera.', 'tone' => 'permission'],
+        ['type' => 'absence', 'count' => 1, 'title' => 'Faltas por justificar', 'detail' => 'Registros sin evidencia cargada.', 'tone' => 'absence'],
+        ['type' => 'incident', 'count' => 3, 'title' => 'Incidencias abiertas', 'detail' => 'Retardos y ajustes de asistencia.', 'tone' => 'incident'],
+        ['type' => 'vacation', 'count' => 1, 'title' => 'Vacaciones por validar', 'detail' => 'Periodos pendientes de autorizacion.', 'tone' => 'vacation'],
+        ['type' => 'attendance', 'count' => 2, 'title' => 'Asistencias por revisar', 'detail' => 'Entradas y salidas pendientes de cierre.', 'tone' => 'attendance'],
     ];
+
+    $areas = $areas ?? collect($employees)->pluck('area')->filter()->unique()->values()->all();
+    $filters = array_merge([
+        'start_date' => '2026-08-01',
+        'end_date' => '2026-08-31',
+        'area' => 'all',
+        'person' => '',
+    ], $filters ?? []);
+    $reportStatuses = [
+        'pendiente' => 'Pendiente',
+        'validada' => 'Validada',
+        'aprobada' => 'Aprobada',
+        'justificar' => 'Justificar',
+        'revision' => 'Revision',
+        'rechazada' => 'Rechazada',
+        'cancelada' => 'Cancelada',
+    ];
+    $isReportGeneratorOpen = $errors->any();
 @endphp
 
 @push('head')
@@ -66,6 +93,14 @@
         justify-content: space-between;
         align-items: center;
         gap: 16px;
+    }
+
+    .reports-header-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
     }
 
     .reports-heading {
@@ -148,10 +183,11 @@
     }
 
     .reports-field input,
-    .reports-field select {
+    .reports-field select,
+    .reports-field textarea {
         width: 100%;
-        height: 42px;
-        padding: 0 11px;
+        min-height: 42px;
+        padding: 10px 11px;
         border: 1px solid var(--border);
         border-radius: 8px;
         background: var(--surface);
@@ -160,8 +196,14 @@
         outline: none;
     }
 
+    .reports-field textarea {
+        min-height: 86px;
+        resize: vertical;
+    }
+
     .reports-field input:focus,
-    .reports-field select:focus {
+    .reports-field select:focus,
+    .reports-field textarea:focus {
         border-color: var(--primary);
         box-shadow: 0 0 0 3px rgba(0, 122, 255, .12);
     }
@@ -179,9 +221,52 @@
         gap: 8px;
     }
 
+    .report-generator {
+        display: grid;
+    }
+
+    .report-generator[hidden] {
+        display: none;
+    }
+
+    .report-generator-form {
+        display: grid;
+        gap: 16px;
+        padding: 18px 20px 20px;
+    }
+
+    .report-form-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .reports-field--wide {
+        grid-column: 1 / -1;
+    }
+
+    .report-form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .report-errors {
+        margin: 0;
+        padding: 12px 14px;
+        border-radius: 8px;
+        border: 1px solid rgba(220, 38, 38, .28);
+        background: rgba(220, 38, 38, .08);
+        color: #dc2626;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
     .reports-metrics {
         display: grid;
-        grid-template-columns: repeat(5, minmax(140px, 1fr));
+        grid-template-columns: repeat(6, minmax(140px, 1fr));
         gap: 12px;
     }
 
@@ -213,6 +298,7 @@
         background: var(--surface-2);
     }
 
+    .metric-box.employee .reports-icon { color: #0891b2; background: #cffafe; }
     .metric-box.attendance .reports-icon { color: #2563eb; background: #dbeafe; }
     .metric-box.absence .reports-icon { color: #dc2626; background: #fee2e2; }
     .metric-box.vacation .reports-icon { color: #059669; background: #d1fae5; }
@@ -357,48 +443,15 @@
         gap: 18px;
     }
 
-    .chart-body {
-        padding: 18px 20px 20px;
-        display: grid;
-        gap: 14px;
-    }
-
-    .chart-row {
-        display: grid;
-        grid-template-columns: 38px 1fr 44px;
-        gap: 10px;
-        align-items: center;
-    }
-
-    .chart-row span {
-        color: var(--muted);
-        font-size: 12.5px;
-        font-weight: 800;
-    }
-
-    .chart-track {
-        height: 10px;
-        overflow: hidden;
-        border-radius: 999px;
-        background: var(--surface-2);
-        border: 1px solid var(--border);
-    }
-
-    .chart-fill {
-        height: 100%;
-        border-radius: inherit;
-        background: linear-gradient(90deg, #2563eb, #22c55e);
-    }
-
-    .pending-list {
+    .employee-summary-list {
         display: grid;
         gap: 10px;
         padding: 14px;
     }
 
-    .pending-item {
+    .employee-summary-item {
         display: grid;
-        grid-template-columns: 36px 1fr;
+        grid-template-columns: 38px 1fr;
         gap: 10px;
         align-items: start;
         padding: 12px;
@@ -407,9 +460,92 @@
         background: var(--surface);
     }
 
+    .employee-summary-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    .employee-summary-main {
+        min-width: 0;
+    }
+
+    .employee-summary-main strong,
+    .employee-summary-area,
+    .employee-summary-stats span {
+        display: block;
+    }
+
+    .employee-summary-main strong {
+        color: var(--text);
+        font-size: 14px;
+    }
+
+    .employee-summary-area {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12.5px;
+        font-weight: 700;
+    }
+
+    .employee-summary-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .employee-summary-stats span {
+        min-width: 0;
+        padding: 7px 8px;
+        border-radius: 8px;
+        background: var(--surface-2);
+        color: var(--muted);
+        font-size: 11.5px;
+        font-weight: 800;
+        line-height: 1.25;
+    }
+
+    .employee-summary-stats b {
+        display: block;
+        color: var(--text);
+        font-size: 12px;
+    }
+
+    .pending-list {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 14px;
+    }
+
+    .pending-item {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+    }
+
+    .pending-item-head {
+        display: grid;
+        grid-template-columns: 38px 1fr;
+        gap: 10px;
+        align-items: start;
+    }
+
     .pending-dot {
-        width: 36px;
-        height: 36px;
+        width: 38px;
+        height: 38px;
         border-radius: 10px;
         display: inline-flex;
         align-items: center;
@@ -418,6 +554,12 @@
         color: var(--accent);
         font-weight: 900;
     }
+
+    .pending-item.permission .pending-dot { background: #ffedd5; color: #b45309; }
+    .pending-item.absence .pending-dot { background: #fee2e2; color: #b91c1c; }
+    .pending-item.incident .pending-dot { background: #ede9fe; color: #6d28d9; }
+    .pending-item.vacation .pending-dot { background: #d1fae5; color: #047857; }
+    .pending-item.attendance .pending-dot { background: #dbeafe; color: #1d4ed8; }
 
     .pending-item strong {
         display: block;
@@ -434,6 +576,25 @@
         line-height: 1.35;
     }
 
+    .pending-action {
+        width: 100%;
+        min-height: 34px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface-2);
+        color: var(--primary);
+        font: inherit;
+        font-size: 12.5px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    .pending-action:hover {
+        border-color: rgba(37, 99, 235, .45);
+        background: var(--primary-soft);
+    }
+
+    :root[data-theme="dark"] .metric-box.employee .reports-icon { background: rgba(8, 145, 178, .18); color: #67e8f9; }
     :root[data-theme="dark"] .metric-box.attendance .reports-icon,
     :root[data-theme="dark"] .type-pill.attendance { background: rgba(37, 99, 235, .18); color: #93c5fd; }
     :root[data-theme="dark"] .metric-box.absence .reports-icon,
@@ -444,6 +605,11 @@
     :root[data-theme="dark"] .type-pill.permission { background: rgba(217, 119, 6, .18); color: #fdba74; }
     :root[data-theme="dark"] .metric-box.incident .reports-icon,
     :root[data-theme="dark"] .type-pill.incident { background: rgba(124, 58, 237, .2); color: #c4b5fd; }
+    :root[data-theme="dark"] .pending-item.permission .pending-dot { background: rgba(217, 119, 6, .18); color: #fdba74; }
+    :root[data-theme="dark"] .pending-item.absence .pending-dot { background: rgba(220, 38, 38, .18); color: #fca5a5; }
+    :root[data-theme="dark"] .pending-item.incident .pending-dot { background: rgba(124, 58, 237, .2); color: #c4b5fd; }
+    :root[data-theme="dark"] .pending-item.vacation .pending-dot { background: rgba(16, 185, 129, .16); color: #86efac; }
+    :root[data-theme="dark"] .pending-item.attendance .pending-dot { background: rgba(37, 99, 235, .18); color: #93c5fd; }
 
     @media (max-width: 1180px) {
         .reports-metrics {
@@ -456,7 +622,8 @@
     }
 
     @media (max-width: 860px) {
-        .reports-filters {
+        .reports-filters,
+        .report-form-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
@@ -467,13 +634,16 @@
             flex-direction: column;
         }
 
+        .reports-header-actions,
         .reports-primary,
-        .reports-light {
+        .reports-light,
+        .report-form-actions {
             width: 100%;
         }
 
         .reports-filters,
-        .reports-metrics {
+        .reports-metrics,
+        .report-form-grid {
             grid-template-columns: 1fr;
         }
 
@@ -502,39 +672,159 @@
                 </svg>
                 <div>
                     <h2>Reportes administrativos</h2>
-                    <p>Asistencias, faltas, vacaciones, permisos e incidencias.</p>
+                    <p>Control por colaborador de asistencias, faltas, vacaciones, permisos e incidencias.</p>
                 </div>
             </div>
 
-            <button class="reports-primary" type="button" onclick="exportReport()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
-                Exportar reporte
-            </button>
+            <div class="reports-header-actions">
+                @if (auth()->user()?->isAdmin())
+                    <button class="reports-primary" type="button" data-report-generator-open>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+                        Generar reporte
+                    </button>
+                @endif
+                <button class="reports-light" type="button" onclick="exportReport()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
+                    Exportar reporte
+                </button>
+            </div>
         </div>
 
-        <form class="reports-filters" onsubmit="event.preventDefault(); filterReportRows();">
+        @if (auth()->user()?->isAdmin())
+            <section class="reports-panel report-generator" id="reportGenerator" @unless($isReportGeneratorOpen) hidden @endunless>
+                <div class="reports-panel-head">
+                    <div>
+                        <h3>Generar reporte</h3>
+                        <p>Registra un movimiento administrativo para el colaborador.</p>
+                    </div>
+                    <button class="reports-light" type="button" data-report-generator-close>Cerrar</button>
+                </div>
+
+                <form class="report-generator-form" method="POST" action="{{ route('admin.reports.store') }}">
+                    @csrf
+
+                    @if ($errors->any())
+                        <div class="report-errors">
+                            Revisa los campos marcados antes de guardar el reporte.
+                        </div>
+                    @endif
+
+                    <div class="report-form-grid">
+                        <div class="reports-field">
+                            <label for="new-report-employee">Colaborador</label>
+                            <input id="new-report-employee" name="employee_name" type="text" value="{{ old('employee_name') }}" list="report-employees" required>
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-area">Area</label>
+                            <input id="new-report-area" name="area" type="text" value="{{ old('area') }}" list="report-areas" required>
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-type">Tipo</label>
+                            <select id="new-report-type" name="type" required>
+                                <option value="asistencia" @selected(old('type') === 'asistencia')>Asistencia</option>
+                                <option value="falta" @selected(old('type') === 'falta')>Falta</option>
+                                <option value="vacaciones" @selected(old('type') === 'vacaciones')>Vacaciones</option>
+                                <option value="permiso" @selected(old('type') === 'permiso')>Permiso</option>
+                                <option value="incidencia" @selected(old('type') === 'incidencia')>Incidencia</option>
+                            </select>
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-status">Estado</label>
+                            <select id="new-report-status" name="status" required>
+                                @foreach ($reportStatuses as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('status', 'pendiente') === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-start">Fecha inicio</label>
+                            <input id="new-report-start" name="start_date" type="date" value="{{ old('start_date', now()->format('Y-m-d')) }}" required>
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-end">Fecha fin</label>
+                            <input id="new-report-end" name="end_date" type="date" value="{{ old('end_date') }}">
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-check-in">Entrada</label>
+                            <input id="new-report-check-in" name="check_in" type="time" value="{{ old('check_in') }}">
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-check-out">Salida</label>
+                            <input id="new-report-check-out" name="check_out" type="time" value="{{ old('check_out') }}">
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-late">Minutos tarde</label>
+                            <input id="new-report-late" name="late_minutes" type="number" min="0" step="1" value="{{ old('late_minutes') }}">
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-attendance">Asistencia %</label>
+                            <input id="new-report-attendance" name="attendance" type="number" min="0" max="100" step="1" value="{{ old('attendance') }}">
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-pending">Pendientes</label>
+                            <input id="new-report-pending" name="pending" type="number" min="0" step="1" value="{{ old('pending', 0) }}">
+                        </div>
+
+                        <div class="reports-field">
+                            <label for="new-report-summary">Estado resumen</label>
+                            <input id="new-report-summary" name="summary_status" type="text" value="{{ old('summary_status') }}">
+                        </div>
+
+                        <div class="reports-field reports-field--wide">
+                            <label for="new-report-detail">Detalle</label>
+                            <textarea id="new-report-detail" name="detail" required>{{ old('detail') }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="report-form-actions">
+                        <button class="reports-light" type="button" data-report-generator-close>Cancelar</button>
+                        <button class="reports-primary" type="submit">Guardar reporte</button>
+                    </div>
+                </form>
+            </section>
+        @endif
+
+        <form class="reports-filters" method="GET" action="{{ route('admin.reports.index') }}" onsubmit="filterReportRows();">
             <div class="reports-field">
                 <label for="report-start">Desde</label>
-                <input id="report-start" type="date" value="2026-08-01">
+                <input id="report-start" name="start_date" type="date" value="{{ $filters['start_date'] }}">
             </div>
             <div class="reports-field">
                 <label for="report-end">Hasta</label>
-                <input id="report-end" type="date" value="2026-08-31">
+                <input id="report-end" name="end_date" type="date" value="{{ $filters['end_date'] }}">
             </div>
             <div class="reports-field">
                 <label for="report-area">Area</label>
-                <select id="report-area">
-                    <option value="all">Todas</option>
-                    <option>Gestion Administrativa</option>
-                    <option>Marketing</option>
-                    <option>Inventario</option>
-                    <option>Servicios</option>
-                    <option>Comercial</option>
+                <select id="report-area" name="area">
+                    <option value="all" @selected($filters['area'] === 'all')>Todas</option>
+                    @foreach ($areas as $area)
+                        <option value="{{ $area }}" @selected($filters['area'] === $area)>{{ $area }}</option>
+                    @endforeach
                 </select>
             </div>
             <div class="reports-field">
                 <label for="report-person">Colaborador</label>
-                <input id="report-person" type="text" placeholder="Buscar nombre">
+                <input id="report-person" name="person" type="text" placeholder="Buscar nombre" list="report-employees" value="{{ $filters['person'] }}">
+                <datalist id="report-employees">
+                    @foreach ($employees as $employee)
+                        <option value="{{ $employee['name'] }}"></option>
+                    @endforeach
+                </datalist>
+                <datalist id="report-areas">
+                    @foreach ($areas as $area)
+                        <option value="{{ $area }}"></option>
+                    @endforeach
+                </datalist>
             </div>
             <button class="reports-light" type="submit">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 3H2l8 9.5V20l4-2v-5.5L22 3z"></path></svg>
@@ -548,7 +838,9 @@
                     <div class="metric-top">
                         <span class="metric-label">{{ $metric['label'] }}</span>
                         <span class="reports-icon">
-                            @if ($metric['type'] === 'attendance')
+                            @if ($metric['type'] === 'employee')
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            @elseif ($metric['type'] === 'attendance')
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
                             @elseif ($metric['type'] === 'absence')
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
@@ -620,18 +912,24 @@
                 <div class="reports-panel">
                     <div class="reports-panel-head">
                         <div>
-                            <h3>Asistencia semanal</h3>
-                            <p>Porcentaje registrado.</p>
+                            <h3>Colaboradores monitoreados</h3>
+                            <p>Resumen individual del periodo.</p>
                         </div>
+                        <span class="status-pill" id="employeeCount">{{ count($employees) }} empleados</span>
                     </div>
-                    <div class="chart-body">
-                        @foreach ($weekly as $item)
-                            <div class="chart-row">
-                                <span>{{ $item['day'] }}</span>
-                                <div class="chart-track">
-                                    <div class="chart-fill" style="width: {{ $item['value'] }}%;"></div>
-                                </div>
-                                <span>{{ $item['value'] }}%</span>
+                    <div class="employee-summary-list" id="employeeSummaryList">
+                        @foreach ($employees as $employee)
+                            <div class="employee-summary-item" data-employee="{{ strtolower($employee['name']) }}" data-area="{{ $employee['area'] }}">
+                                <span class="employee-summary-avatar">{{ $employee['initials'] }}</span>
+                                <span class="employee-summary-main">
+                                    <strong>{{ $employee['name'] }}</strong>
+                                    <span class="employee-summary-area">{{ $employee['area'] }}</span>
+                                    <span class="employee-summary-stats">
+                                        <span><b>{{ $employee['attendance'] }}</b> Asistencia</span>
+                                        <span><b>{{ $employee['pending'] }}</b> Pendientes</span>
+                                        <span><b>{{ $employee['status'] }}</b> Estado</span>
+                                    </span>
+                                </span>
                             </div>
                         @endforeach
                     </div>
@@ -645,18 +943,20 @@
                         </div>
                     </div>
                     <div class="pending-list">
-                        <div class="pending-item">
-                            <span class="pending-dot">2</span>
-                            <span><strong>Permisos por aprobar</strong><span>Solicitudes de salida personal en espera.</span></span>
-                        </div>
-                        <div class="pending-item">
-                            <span class="pending-dot">1</span>
-                            <span><strong>Falta por justificar</strong><span>Registro sin evidencia cargada.</span></span>
-                        </div>
-                        <div class="pending-item">
-                            <span class="pending-dot">3</span>
-                            <span><strong>Incidencias abiertas</strong><span>Retardos y ajustes de asistencia.</span></span>
-                        </div>
+                        @foreach ($pendingModules as $module)
+                            <div class="pending-item {{ $module['tone'] }}">
+                                <div class="pending-item-head">
+                                    <span class="pending-dot">{{ $module['count'] }}</span>
+                                    <span>
+                                        <strong>{{ $module['title'] }}</strong>
+                                        <span>{{ $module['detail'] }}</span>
+                                    </span>
+                                </div>
+                                <button class="pending-action" type="button" data-pending-module="{{ $module['type'] }}">
+                                    Revisar modulo
+                                </button>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             </aside>
@@ -665,20 +965,54 @@
 
     <script>
         let activeReportType = 'all';
+        const reportGenerator = document.getElementById('reportGenerator');
+
+        document.querySelectorAll('[data-report-generator-open]').forEach((button) => {
+            button.addEventListener('click', () => {
+                if (reportGenerator) {
+                    reportGenerator.hidden = false;
+                    reportGenerator.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-report-generator-close]').forEach((button) => {
+            button.addEventListener('click', () => {
+                if (reportGenerator) {
+                    reportGenerator.hidden = true;
+                }
+            });
+        });
 
         document.querySelectorAll('.reports-tab').forEach((button) => {
             button.addEventListener('click', () => {
-                document.querySelectorAll('.reports-tab').forEach((item) => item.classList.remove('is-active'));
-                button.classList.add('is-active');
-                activeReportType = button.dataset.reportType;
-                filterReportRows();
+                setReportType(button.dataset.reportType);
             });
         });
+
+        document.querySelectorAll('[data-pending-module]').forEach((button) => {
+            button.addEventListener('click', () => {
+                setReportType(button.dataset.pendingModule);
+
+                if (typeof window.showToast === 'function') {
+                    window.showToast('Modulo de pendientes filtrado.');
+                }
+            });
+        });
+
+        function setReportType(type) {
+            activeReportType = type;
+            document.querySelectorAll('.reports-tab').forEach((item) => {
+                item.classList.toggle('is-active', item.dataset.reportType === type);
+            });
+            filterReportRows();
+        }
 
         function filterReportRows() {
             const person = document.getElementById('report-person').value.trim().toLowerCase();
             const area = document.getElementById('report-area').value;
             let visible = 0;
+            let visibleEmployees = 0;
 
             document.querySelectorAll('#recordsBody tr').forEach((row) => {
                 const matchesType = activeReportType === 'all' || row.dataset.type === activeReportType;
@@ -690,7 +1024,17 @@
                 if (show) visible += 1;
             });
 
+            document.querySelectorAll('#employeeSummaryList .employee-summary-item').forEach((item) => {
+                const matchesPerson = !person || item.dataset.employee.includes(person);
+                const matchesArea = area === 'all' || item.dataset.area === area;
+                const show = matchesPerson && matchesArea;
+
+                item.style.display = show ? '' : 'none';
+                if (show) visibleEmployees += 1;
+            });
+
             document.getElementById('reportCount').textContent = visible + (visible === 1 ? ' registro' : ' registros');
+            document.getElementById('employeeCount').textContent = visibleEmployees + (visibleEmployees === 1 ? ' empleado' : ' empleados');
         }
 
         function exportReport() {

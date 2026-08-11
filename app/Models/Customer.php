@@ -2,47 +2,60 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Customer extends Model
 {
-    /** @use HasFactory<\Database\Factories\CustomerFactory> */
-    use HasFactory;
+    protected $table = 'clientes';
 
     protected $fillable = [
         'nombre',
         'apellido',
         'telefono',
-        'correo',
-        'rfc',
+        'gmail',
+        'direccion',
         'comentarios',
-        'seller_id',
-        'category_id',
-        'congress_id',
-        'receives_promotion',
+        'congreso_id',
+        'categoria_id',
+        'recibe_promocion',
+        'activo',
+        'asesor_id',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'receives_promotion' => 'boolean',
-        ];
-    }
+    protected $casts = [
+        'recibe_promocion' => 'boolean',
+        'activo' => 'boolean',
+    ];
 
-    public function seller(): BelongsTo
+    public function asesor(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'seller_id');
+        return $this->belongsTo(User::class, 'asesor_id');
     }
 
     public function category(): BelongsTo
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(Category::class, 'categoria_id');
     }
 
     public function congress(): BelongsTo
     {
-        return $this->belongsTo(Congress::class, 'congress_id');
+        return $this->belongsTo(Congress::class, 'congreso_id');
+    }
+
+    public function cotizaciones(): HasMany
+    {
+        return $this->hasMany(Cotizacion::class, 'cliente_id');
+    }
+
+    public function planPagos(): HasMany
+    {
+        return $this->hasMany(PlanPago::class, 'cliente_id');
+    }
+
+    public function pagos(): HasMany
+    {
+        return $this->hasMany(Pago::class, 'cliente_id');
     }
 }

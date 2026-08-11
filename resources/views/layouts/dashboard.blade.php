@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8">
@@ -305,6 +305,28 @@
             .page-title { font-size:20px; }
             .user-name { display:none; }
         }
+
+        /* ===== Utilidades responsive para formularios/paneles ===== */
+        .rgrid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .rgrid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+        .rgrid-4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:16px; }
+        .rgrid-sidebar { display:grid; grid-template-columns:1fr 300px; gap:18px; align-items:start; }
+        .rgrid-item-add { display:grid; grid-template-columns:1fr 1fr 90px 110px auto auto; gap:12px; align-items:end; }
+        .rgrid-producto-row { display:grid; grid-template-columns:1fr 100px 40px; gap:10px; align-items:end; }
+        @media (max-width:900px) {
+            .rgrid-4 { grid-template-columns:1fr 1fr; }
+            .rgrid-sidebar { grid-template-columns:1fr; }
+        }
+        @media (max-width:768px) {
+            .rgrid-2, .rgrid-3 { grid-template-columns:1fr; }
+            .rgrid-item-add { grid-template-columns:1fr 1fr; }
+        }
+        @media (max-width:640px) {
+            .rgrid-4 { grid-template-columns:1fr; }
+            .rgrid-item-add { grid-template-columns:1fr; }
+            .rgrid-producto-row { grid-template-columns:1fr; }
+        }
+        .responsive-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
     </style>
 </head>
 <body>
@@ -341,7 +363,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
                 <span class="nav-label">Dashboard</span>
             </a>
-            <div class="nav-group">
+            <div class="nav-group {{ request()->routeIs('commercial.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Comercial">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 5a3 3 0 0 1 0 6"/><path d="M20 20c0-2.5-1.3-4.2-3.5-5"/></svg>
                     <span class="nav-label">Gestión Comercial</span>
@@ -352,32 +374,32 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Clientes</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Cotizaciones">
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.cotizaciones.*') ? 'active' : '' }}" href="{{ route('commercial.cotizaciones.index') }}" data-tip="Cotizaciones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cotizaciones</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Ventas">
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.planesPago.*') ? 'active' : '' }}" href="{{ route('commercial.planesPago.index') }}" data-tip="Planes de Pago">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Ventas</span>
+                        <span class="nav-label">Planes de Pago</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Facturación">
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.remisiones.*') ? 'active' : '' }}" href="{{ route('commercial.remisiones.index') }}" data-tip="Remisiones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Facturación</span>
+                        <span class="nav-label">Remisiones</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Promociones">
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.promociones.*') ? 'active' : '' }}" href="{{ route('commercial.promociones.index') }}" data-tip="Promociones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Promociones</span>
                     </a>
                 </div>
             </div>
-            <div class="nav-group">
+            <div class="nav-group {{ request()->routeIs('inventory.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Inventario">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                     <span class="nav-label">Gestión de Inventario</span>
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-                    <a class="nav-item nav-sub" href="#" data-tip="Entrada / Salida">
+                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.movimientos.*') ? 'active' : '' }}" href="{{ route('inventory.movimientos.index') }}" data-tip="Entrada / Salida">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Entrada / Salida</span>
                     </a>
@@ -385,20 +407,41 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Equipos</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Productos">
+                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.productos.*') ? 'active' : '' }}" href="{{ route('inventory.productos.index') }}" data-tip="Productos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Productos</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Stock">
+                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.paquetes.*') ? 'active' : '' }}" href="{{ route('inventory.paquetes.index') }}" data-tip="Paquetes">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Stock</span>
+                        <span class="nav-label">Paquetes</span>
                     </a>
                 </div>
             </div>
-            <a class="nav-item" href="#" data-tip="Gestión de Servicios">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                <span class="nav-label">Gestión de Servicios</span>
-            </a>
+            <div class="nav-group {{ request()->is('gestion-servicios*') ? 'open' : '' }}">
+                <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Servicios">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                    <span class="nav-label">Gestión de Servicios</span>
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+                </a>
+                <div class="submenu">
+                    <a class="nav-item nav-sub" href="#" data-tip="Cartas de Garantía">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Cartas de Garantía</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="{{ route('gestion.servicios.historial') }}" data-tip="Historial de Servicios">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Historial de Servicios</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Mantenimiento">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Mantenimiento</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Servicios">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Servicios</span>
+                    </a>
+                </div>
+            </div>
             <div class="nav-group {{ request()->routeIs('admin.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Administrativa">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
@@ -414,7 +457,7 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Viáticos</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Vehículos">
+                    <a class="nav-item nav-sub {{ request()->routeIs('admin.vehicles.*') ? 'active' : '' }}" href="{{ route('admin.vehicles.index') }}" data-tip="Vehículos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Vehículos</span>
                     </a>
@@ -484,10 +527,6 @@
                     <a class="nav-item nav-sub" href="{{ route('configuracion.tipos_equipo.index') }}" data-tip="Tipos de Equipo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Tipos de Equipo</span>
-                    </a>
-                    <a class="nav-item nav-sub" href="{{ route('configuracion.refaciones.index') }}" data-tip="Tipos de Equipo">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Refacciones</span>
                     </a>
                 </div>
             </div>
