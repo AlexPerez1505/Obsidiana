@@ -89,7 +89,7 @@
     </div>
 
     <!-- Ruta de Trabajo -->
-    @include('structure.gestion_servicios.historial_servicios.tecnico_externo.tec_externo_interaciones.flujo_tec_ext.ruta_trajo', ['modo_preview' => true])
+    @include('structure.gestion_servicios.historial_servicios.tecnico_externo.tec_externo_interaciones.flujo_tec_ext.ruta_trajo', ['modo_ver' => $modo_ver ?? false])
 
     <!-- Auditoría de Movimientos -->
     <div class="resumen-card">

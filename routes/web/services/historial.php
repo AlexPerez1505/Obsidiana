@@ -91,6 +91,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'show'])
         ->name('gestion.servicios.historial.show');
     Route::get('/gestion-servicios/historial-servicios/externo/{service}', function (Service $service) {
+        $service->load(['serviceTrackings.serviceStep', 'currentStep']);
         return view('structure.gestion_servicios.historial_servicios.tecnico_externo.acciones.ver_externo', compact('service'));
     })->name('gestion.servicios.historial.externo.show');
     Route::get('/gestion-servicios/historial-servicios/invitar', [ServiceController::class, 'invite'])
