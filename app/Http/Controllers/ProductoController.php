@@ -39,7 +39,9 @@ class ProductoController extends Controller
      */
     public function create(): View
     {
-        return view('structure.gestion_Inventario.productos.create');
+        return view('structure.gestion_Inventario.productos.create', [
+            'productoOptions' => $this->productoOptions(),
+        ]);
     }
 
     /**
@@ -111,6 +113,40 @@ class ProductoController extends Controller
             'proveedor' => ['nullable', 'string', 'max:255'],
             'no_serie' => ['nullable', 'string', 'max:255'],
             'imagen' => ['nullable', 'image', 'max:5120'], // max 5MB
+        ]);
+    }
+
+    private function productoOptions(): array
+    {
+        $options = collect(['tipo_equipo', 'subtipo', 'marca', 'modelo', 'proveedor'])
+            ->mapWithKeys(function (string $column): array {
+                return [
+                    $column => Producto::query()
+                        ->whereNotNull($column)
+                        ->where($column, '!=', '')
+                        ->distinct()
+                        ->orderBy($column)
+                        ->pluck($column)
+                        ->values()
+                        ->all(),
+                ];
+            })
+            ->all();
+
+        $subtypesByType = Producto::query()
+            ->whereNotNull('tipo_equipo')
+            ->where('tipo_equipo', '!=', '')
+            ->whereNotNull('subtipo')
+            ->where('subtipo', '!=', '')
+            ->orderBy('tipo_equipo')
+            ->orderBy('subtipo')
+            ->get(['tipo_equipo', 'subtipo'])
+            ->groupBy('tipo_equipo')
+            ->map(fn ($rows) => $rows->pluck('subtipo')->unique()->values()->all())
+            ->all();
+
+        return array_merge($options, [
+            'subtypes_by_type' => $subtypesByType,
         ]);
     }
 }
