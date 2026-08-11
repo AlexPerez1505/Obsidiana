@@ -159,7 +159,7 @@ class ServiceController extends Controller
             'started_at' => now(),
         ]);
 
-        $service->update(['service_number' => 'OS-' . $service->id]);
+        $service->update(['service_number' => 'NS-' . $service->id]);
 
         $this->registerCatalogNames($validated);
 

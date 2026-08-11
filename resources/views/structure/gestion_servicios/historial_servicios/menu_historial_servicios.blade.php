@@ -36,7 +36,7 @@
             <tbody>
                 @forelse ($cotizaciones as $cotizacion)
                     <tr style="border-bottom:1px solid var(--border, rgba(255,255,255,0.06));">
-                        <td style="padding:12px 10px; font-weight:600; color:#00A8FF;">{{ $cotizacion->service_number ?? 'OS-' . $cotizacion->id }}</td>
+                        <td style="padding:12px 10px; font-weight:600; color:#00A8FF;">{{ $cotizacion->service_number ?? 'NS-' . $cotizacion->id }}</td>
                         <td style="padding:12px 10px;">{{ trim(($cotizacion->cliente_nombre ?? '') . ' ' . ($cotizacion->cliente_apellido ?? '')) ?: '—' }}</td>
                         <td style="padding:12px 10px;">
                             @if ($cotizacion->service_type === 'externo')
