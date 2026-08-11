@@ -5,7 +5,6 @@
     $isAdmin = auth()->check() && auth()->user()->isAdmin();
 
     $defaultSteps = [
-        ['name' => 'Registro de servicio', 'slug' => 'registro', 'status' => 'completado'],
         ['name' => 'Llenado de informacion de equipo', 'slug' => 'llenado_informacion', 'status' => 'completado'],
         ['name' => 'Generacion de QR', 'slug' => 'generacion_qr', 'status' => 'activo'],
         ['name' => 'Validacion de Nuevo servicio', 'slug' => 'validacion_os', 'status' => 'pendiente'],

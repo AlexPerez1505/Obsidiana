@@ -1,5 +1,5 @@
-        <!-- Paso 3: Tecnico externo -->
-        <div class="step-panel" data-step="3" id="step-panel-externo">
+        <!-- Paso 2: Tecnico externo -->
+        <div class="step-panel" data-step="2" id="step-panel-externo">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:22px;">
                 <div style="display:flex; align-items:center; gap:12px;">
                     <div class="client-avatar" id="tech-client-avatar">JD</div>
