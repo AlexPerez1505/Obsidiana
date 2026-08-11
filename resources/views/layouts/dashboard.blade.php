@@ -432,7 +432,7 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Historial de Servicios</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Mantenimiento">
+                    <a class="nav-item nav-sub" href="{{ route('service-tracking.maintenance') }}" data-tip="Mantenimiento">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Mantenimiento</span>
                     </a>

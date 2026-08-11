@@ -44,18 +44,18 @@
                             </span>
                         </td>
                         <td>
-                            <div style="display:flex; gap:8px; justify-content:center;">
-                                <a href="{{ route('gestion.servicios.historial.show', $track->service) }}" class="btn btn--ghost" style="padding:6px 12px; font-size:12px;">Ver</a>
+                            <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+                                <a href="{{ $track->service->service_type === 'externo' ? route('gestion.servicios.historial.externo.show', $track->service) : route('gestion.servicios.historial.show', $track->service) }}" class="btn btn--ghost" style="padding:6px 12px; font-size:12px;">Ver</a>
 
                                 @if(in_array($track->status, ['pendiente', 'rechazado']))
-                                    <form method="POST" action="{{ route('service-tracking.approve', $track) }}" style="display:inline;" onsubmit="return confirm('¿Aprobar este paso?');">
+                                    <form method="POST" action="{{ route('service-tracking.approve', $track->id) }}" style="display:inline;" onsubmit="return confirm('¿Aprobar este paso?');">
                                         @csrf
                                         <button type="submit" class="btn" style="padding:6px 12px; font-size:12px; background:var(--green); color:#fff; border:none; cursor:pointer;">Aprobar</button>
                                     </form>
                                 @endif
 
                                 @if($track->status !== 'rechazado')
-                                    <form method="POST" action="{{ route('service-tracking.reject', $track) }}" style="display:inline;" onsubmit="return confirm('¿Rechazar este paso?');">
+                                    <form method="POST" action="{{ route('service-tracking.reject', $track->id) }}" style="display:inline;" onsubmit="return confirm('¿Rechazar este paso?');">
                                         @csrf
                                         <button type="submit" class="btn" style="padding:6px 12px; font-size:12px; background:var(--danger); color:#fff; border:none; cursor:pointer;">Rechazar</button>
                                     </form>

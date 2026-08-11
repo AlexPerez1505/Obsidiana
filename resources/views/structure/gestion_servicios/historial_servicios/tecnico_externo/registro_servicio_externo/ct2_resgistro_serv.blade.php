@@ -1,15 +1,11 @@
-        <!-- Paso 1: Equipo -->
-        <div class="step-panel active" data-step="1">
-            <input type="hidden" name="customer_id" id="customer_id" value="">
-            
+        <!-- Paso 2: Equipo -->
+        <div class="step-panel" data-step="2">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:22px;">
                 <div style="display:flex; align-items:center; gap:12px;">
                     <div class="client-avatar" id="sel-client-avatar">JD</div>
                     <div>
-                        <div class="client-name" id="sel-client-name">Selecciona un cliente</div>
-                        <div class="client-info" id="sel-client-info">
-                            <a href="#" style="color:var(--primary); text-decoration:none; font-size:12px;" onclick="document.getElementById('client-search-modal').style.display='block'; return false;">Buscar cliente</a>
-                        </div>
+                        <div class="client-name" id="sel-client-name">DR. Jhone Doe</div>
+                        <div class="client-info" id="sel-client-info">Cliente seleccionado</div>
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:12px; color:var(--muted); font-size:14px;">
@@ -487,91 +483,5 @@
         typeInput.addEventListener('input', debounce(loadSubtypes, 250));
         brandInput.addEventListener('input', debounce(loadModels, 250));
     })();
-
-    // Cliente selection
-    const customerIdInput = document.getElementById('customer_id');
-    const clientAvatarEl = document.getElementById('sel-client-avatar');
-    const clientNameEl = document.getElementById('sel-client-name');
-    const clientInfoEl = document.getElementById('sel-client-info');
-
-    function selectClient(index, name, phone, email, id) {
-        customerIdInput.value = id;
-        clientNameEl.textContent = name;
-        clientInfoEl.innerHTML = phone ? `<span>${phone}</span><span>${email || 'Sin correo'}</span>` : 'Cliente seleccionado';
-        const initials = name.split(' ').length >= 2 
-            ? (name.split(' ')[0][0] + name.split(' ')[1][0]).toUpperCase()
-            : name.substring(0, 2).toUpperCase();
-        clientAvatarEl.textContent = initials;
-        document.getElementById('client-search-modal').style.display = 'none';
-    }
-    window.selectClient = selectClient;
 </script>
 @endpush
-
-<style>
-    #client-search-modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.4);
-    }
-    .client-search-modal-content {
-        background-color: var(--surface);
-        margin: 5% auto;
-        padding: 20px;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        width: 90%;
-        max-width: 500px;
-        max-height: 70vh;
-        overflow-y: auto;
-    }
-    .client-search-modal-close {
-        color: var(--muted);
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-        cursor: pointer;
-    }
-    .client-search-modal-close:hover {
-        color: var(--text);
-    }
-</style>
-
-<div id="client-search-modal" style="display:none;">
-    <div class="client-search-modal-content">
-        <span class="client-search-modal-close" onclick="document.getElementById('client-search-modal').style.display='none'">&times;</span>
-        <h2 style="margin-top:0;">Seleccionar Cliente</h2>
-        <div class="search-box" style="margin-bottom:16px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            <input type="text" placeholder="Buscar por nombre, teléfono o correo" id="client-search-input" style="width:100%; padding:12px 12px 12px 40px; border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--text); font-size:14px;">
-        </div>
-        <div id="client-list-modal" style="max-height:400px; overflow-y:auto;">
-            @forelse($customers as $customer)
-                @php
-                    $customerNames = explode(' ', trim($customer->nombre . ' ' . $customer->apellido));
-                    $initials = count($customerNames) >= 2
-                        ? strtoupper(substr($customerNames[0], 0, 1) . substr($customerNames[1], 0, 1))
-                        : (count($customerNames) === 1 ? strtoupper(substr($customerNames[0], 0, 2)) : 'CL');
-                    $fullName = trim($customer->nombre . ' ' . $customer->apellido) ?: 'Sin nombre';
-                @endphp
-                <div class="client-card" style="cursor:pointer; margin-bottom:10px;" onclick="selectClient({{ $loop->index }}, '{{ $fullName }}', '{{ $customer->telefono ?? '' }}', '{{ $customer->correo ?? '' }}', '{{ $customer->id }}')">
-                    <div class="client-avatar" style="background:var(--primary);">{{ $initials }}</div>
-                    <div class="client-meta">
-                        <div class="client-name">{{ $fullName }}</div>
-                        <div class="client-info">
-                            <span>{{ $customer->telefono ?? 'Sin teléfono' }}</span>
-                            <span>{{ $customer->correo ?? 'Sin correo' }}</span>
-                        </div>
-                    </div>
-                </div>
-            @empty
-                <p class="muted" style="text-align:center; margin:14px 0; font-size:13px;">No hay clientes registrados.</p>
-            @endforelse
-        </div>
-    </div>
-</div>

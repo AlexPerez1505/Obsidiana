@@ -14,20 +14,30 @@ use App\Models\User;
 
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-servicios/historial-servicios', function () {
-        $cotizaciones = \Illuminate\Support\Facades\DB::table('services')
-            ->join('clientes', 'clientes.id', '=', 'services.customer_id')
-            ->select(
-                'services.id',
-                'services.service_number',
-                'services.service_type',
-                'services.status',
-                'services.qr_token',
-                'services.created_at',
-                'clientes.nombre as cliente_nombre',
-                'clientes.apellido as cliente_apellido'
-            )
-            ->orderByDesc('services.created_at')
-            ->get();
+        // Cargar servicios con todas sus relaciones
+        $services = Service::with([
+            'customer',
+            'serviceTrackings' => function ($query) {
+                $query->with('serviceStep')->orderBy('created_at');
+            }
+        ])
+        ->orderByDesc('created_at')
+        ->get();
+
+        // Transformar a formato compatible con la vista
+        $cotizaciones = $services->map(function ($service) {
+            return (object) [
+                'id' => $service->id,
+                'service_number' => $service->service_number,
+                'service_type' => $service->service_type,
+                'status' => $service->status,
+                'qr_token' => $service->qr_token,
+                'created_at' => $service->created_at,
+                'cliente_nombre' => $service->customer?->nombre ?? '',
+                'cliente_apellido' => $service->customer?->apellido ?? '',
+                'service' => $service, // Pasar el objeto completo para acceder a relaciones
+            ];
+        });
 
         return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('cotizaciones'));
     })->name('gestion.servicios.historial');
@@ -90,8 +100,14 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('gestion.servicios.historial.nueva_orden.store');
     Route::get('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'show'])
         ->name('gestion.servicios.historial.show');
+    Route::post('/gestion-servicios/historial-servicios/{service}/entregar', [ServiceController::class, 'deliver'])
+        ->name('gestion.servicios.historial.entregar');
     Route::get('/gestion-servicios/historial-servicios/externo/{service}', function (Service $service) {
-        $service->load(['serviceTrackings.serviceStep', 'currentStep']);
+        // Forzar recarga de datos desde la BD
+        $service->refresh();
+        $service->load(['serviceTrackings' => function ($query) {
+            $query->with('serviceStep')->orderBy('created_at');
+        }, 'currentStep']);
         return view('structure.gestion_servicios.historial_servicios.tecnico_externo.acciones.ver_externo', compact('service'));
     })->name('gestion.servicios.historial.externo.show');
     Route::get('/gestion-servicios/historial-servicios/invitar', [ServiceController::class, 'invite'])

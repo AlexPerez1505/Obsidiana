@@ -89,7 +89,7 @@
     </div>
 
     <!-- Ruta de Trabajo -->
-    @include('structure.gestion_servicios.historial_servicios.tecnico_externo.tec_externo_interaciones.flujo_tec_ext.ruta_trajo', ['modo_ver' => $modo_ver ?? false])
+    @include('structure.gestion_servicios.historial_servicios.tecnico_externo.tec_externo_interaciones.flujo_tec_ext.ruta_trajo', ['service' => $service ?? null, 'modo_ver' => $modo_ver ?? false])
 
     <!-- Auditoría de Movimientos -->
     <div class="resumen-card">
@@ -172,25 +172,8 @@
             });
         })
         .then(data => {
-            // Guardar los datos del servicio en localStorage
-            localStorage.setItem('current_service_qr', JSON.stringify({
-                id: data.id,
-                service_number: data.service_number,
-                qr_token: data.qr_token,
-                qr_url: data.qr_url,
-                show_url: data.show_url,
-                approvals_url: data.approvals_url,
-                menu_url: data.menu_url,
-            }));
-            
-            // Habilitar el botón de generar QR
-            const btnGenerar = document.getElementById('btn-generar-qr');
-            if (btnGenerar) {
-                btnGenerar.disabled = false;
-            }
-            
             // Mostrar mensaje de éxito
-            alert('✓ Servicio ' + data.service_number + ' guardado exitosamente.\n\nAhora puedes generar el QR haciendo click en "Generar QR".');
+            alert('Servicio ' + data.service_number + ' guardado exitosamente.\n\nAhora puedes generar el QR haciendo click en "Generar QR".');
             
             // Redirigir al menú de historial después de 1.5 segundos
             setTimeout(() => {
@@ -222,11 +205,15 @@
         const savedQrData = localStorage.getItem('current_service_qr');
         if (savedQrData) {
             const data = JSON.parse(savedQrData);
-            mostrarQr(data);
-            return;
+            if (data.qr_token) {
+                mostrarQr(data);
+                return;
+            }
+            localStorage.removeItem('current_service_qr');
         }
 
         const formData = new FormData(form);
+        formData.append('generate_qr', '1');
 
         fetch(form.action, {
             method: 'POST',
@@ -400,4 +387,14 @@
             }
         }
     };
+
+    @if(isset($service) && $service->qr_token)
+    mostrarQr({
+        qr_token: @json($service->qr_token),
+        qr_url: @json(route('qr.show', $service->qr_token)),
+        service_number: @json($service->service_number),
+        show_url: @json(route('gestion.servicios.historial.show', $service)),
+        approvals_url: @json(route('service-tracking.approvals')),
+    });
+    @endif
 </script>

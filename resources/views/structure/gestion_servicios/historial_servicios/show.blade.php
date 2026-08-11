@@ -87,7 +87,7 @@
         </div>
 
         <!-- Ruta de Trabajo -->
-        @include('structure.gestion_servicios.historial_servicios.tec_externo_interaciones.flujo_tec_ext.ruta_trajo', ['service' => $service, 'wide' => true])
+        @include('structure.gestion_servicios.historial_servicios.tecnico_externo.tec_externo_interaciones.flujo_tec_ext.ruta_trajo', ['service' => $service, 'wide' => true])
 
         <!-- Evidencias -->
         @if($service->serviceEquipment && ($service->serviceEquipment->evidence_1_path || $service->serviceEquipment->evidence_2_path || $service->serviceEquipment->evidence_3_path || $service->serviceEquipment->video_path))

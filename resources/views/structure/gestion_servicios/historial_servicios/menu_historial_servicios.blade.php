@@ -56,12 +56,24 @@
                                     'entregado' => ['bg' => 'rgba(34,197,94,0.15)', 'color' => '#22C55E', 'text' => 'Entregado'],
                                     'cancelado' => ['bg' => 'rgba(239,68,68,0.15)', 'color' => '#EF4444', 'text' => 'Cancelado'],
                                 ];
+                                
+                                // Contar pasos completados - Asegurar que se cargan correctamente
+                                $completedCount = 0;
+                                if ($cotizacion->service && $cotizacion->service->serviceTrackings) {
+                                    $completedCount = $cotizacion->service->serviceTrackings
+                                        ->where('status', 'completado')
+                                        ->count();
+                                }
+                                
                                 $status = $statusColors[$cotizacion->status] ?? ['bg' => 'rgba(107,114,128,0.15)', 'color' => '#9CA3AF', 'text' => ucfirst(str_replace('_', ' ', $cotizacion->status))];
                             @endphp
                             <span style="background:{{ $status['bg'] }}; color:{{ $status['color'] }}; padding:4px 10px; border-radius:8px; font-size:12.5px; font-weight:600;">
                                 {{ $status['text'] }}
+                                @if ($completedCount > 0)
+                                    <span style="margin-left:4px;">({{ $completedCount }} paso{{ $completedCount > 1 ? 's' : '' }})</span>
+                                @endif
                                 @if (!$cotizacion->qr_token)
-                                    <span style="margin-left:4px;">⚠️ Sin QR</span>
+                                    <span style="margin-left:4px;">Sin QR</span>
                                 @endif
                             </span>
                         </td>

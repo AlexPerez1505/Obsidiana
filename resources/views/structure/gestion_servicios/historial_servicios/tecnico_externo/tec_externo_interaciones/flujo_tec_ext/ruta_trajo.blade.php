@@ -4,44 +4,68 @@
     $hasService = isset($service) && $service instanceof \App\Models\Service;
     $isAdmin = auth()->check() && auth()->user()->isAdmin();
 
-    $defaultSteps = [
-        ['name' => 'Llenado de informacion de equipo', 'slug' => 'llenado_informacion', 'status' => 'completado'],
-        ['name' => 'Generacion de QR', 'slug' => 'generacion_qr', 'status' => 'activo'],
-        ['name' => 'Validacion de Nuevo servicio', 'slug' => 'validacion_os', 'status' => 'pendiente'],
-        ['name' => 'Entrada del equipo', 'slug' => 'entrada_equipo', 'status' => 'pendiente'],
-        ['name' => 'Salida foranea', 'slug' => 'salida_foranea', 'status' => 'pendiente'],
-        ['name' => 'Notificacion de llegada del tecnico externo', 'slug' => 'notificacion_llegada', 'status' => 'pendiente'],
-        ['name' => 'Llenado de mantenimiento', 'slug' => 'llenado_mantenimiento', 'status' => 'pendiente'],
-        ['name' => 'Notificacion de finalizado de mantenimiento externo', 'slug' => 'notificacion_finalizado', 'status' => 'pendiente'],
-        ['name' => 'Regreso foranea', 'slug' => 'regreso_foranea', 'status' => 'pendiente'],
-        ['name' => 'Generacion de OS por parte de Victor', 'slug' => 'generacion_os', 'status' => 'pendiente'],
-        ['name' => 'Salida para cliente', 'slug' => 'salida_cliente', 'status' => 'pendiente'],
-        ['name' => 'Escaneo antes de salir con el cliente', 'slug' => 'escaneo_salida', 'status' => 'pendiente'],
-        ['name' => 'Cliente feliz', 'slug' => 'cliente_feliz', 'status' => 'pendiente'],
-    ];
+    // Obtener los pasos reales de la BD en lugar de usar valores hardcodeados
+    $defaultSteps = \App\Models\ServiceStep::where('service_type', 'externo')
+        ->orderBy('order')
+        ->get()
+        ->map(fn($step) => [
+            'name' => $step->name,
+            'slug' => $step->slug,
+            'status' => 'pendiente',
+        ])
+        ->toArray();
 
     $serviceSteps = collect();
     $tracksBySlug = [];
-    $maxCompletedNumber = 0;
+    $completedSteps = [];
     $currentStepNumber = null;
 
     if ($hasService) {
         $serviceSteps = \App\Models\ServiceStep::where('service_type', 'externo')->get()->keyBy('slug');
-        $tracksBySlug = $service->serviceTrackings
-            ->mapWithKeys(fn ($t) => [($t->serviceStep?->slug ?? uniqid()) => $t])
-            ->all();
-
-        foreach ($defaultSteps as $index => $step) {
-            $slug = $step['slug'];
-            $realStep = $serviceSteps[$slug] ?? null;
-            $track = $realStep ? ($tracksBySlug[$slug] ?? null) : null;
-
-            if ($track?->status === 'completado') {
-                $maxCompletedNumber = $index + 1;
+        
+        // Mapear trackings por slug del paso - Forzar recarga desde BD
+        $service->refresh();
+        $service->load(['serviceTrackings' => function ($query) {
+            $query->with('serviceStep')->orderBy('created_at');
+        }]);
+        
+        if ($service->serviceTrackings && count($service->serviceTrackings) > 0) {
+            foreach ($service->serviceTrackings as $tracking) {
+                // Cargar serviceStep si no está cargado
+                if (!$tracking->serviceStep) {
+                    $tracking->load('serviceStep');
+                }
+                
+                if ($tracking->serviceStep && $tracking->serviceStep->slug) {
+                    // Normalizar slug: convertir guiones bajos a guiones
+                    $normalizedSlug = str_replace('_', '-', $tracking->serviceStep->slug);
+                    $tracksBySlug[$normalizedSlug] = $tracking;
+                }
             }
         }
 
+        // Recopilar todos los pasos completados (sin importar el orden)
+        foreach ($defaultSteps as $index => $step) {
+            $slug = $step['slug'];
+            $track = $tracksBySlug[$slug] ?? null;
+
+            // El Paso 1 se marca automáticamente como completado
+            // porque ya se completó durante el registro del servicio
+            if ($index === 0) {
+                $completedSteps[] = $index + 1;
+            } elseif ($track && $track->status === 'completado') {
+                $completedSteps[] = $index + 1;
+            }
+        }
+
+        
+
+
         $currentSlug = $service->currentStep?->slug ?? null;
+        // Normalizar el slug actual también
+        if ($currentSlug) {
+            $currentSlug = str_replace('_', '-', $currentSlug);
+        }
         foreach ($defaultSteps as $index => $step) {
             if ($step['slug'] === $currentSlug) {
                 $currentStepNumber = $index + 1;
@@ -105,20 +129,18 @@
                 $stepName = $step['name'];
                 $stepSlug = $step['slug'];
 
-                $realStep = $serviceSteps[$stepSlug] ?? null;
-                $track = $realStep ? ($tracksBySlug[$stepSlug] ?? null) : null;
-
+                $track = $tracksBySlug[$stepSlug] ?? null;
                 $rawStatus = $track?->status;
 
                 $isCurrent = $hasService && $currentStepNumber === $stepNumber;
-                $isCompleted = $hasService && $stepNumber <= $maxCompletedNumber;
+                $isCompleted = $hasService && in_array($stepNumber, $completedSteps);
                 $isRejected = $track?->status === 'rechazado';
 
                 $display = match (true) {
                     !$hasService => $step['status'],
                     $isRejected => 'rechazado',
-                    $isCurrent => 'activo',
                     $isCompleted => 'completado',
+                    $isCurrent => 'activo',
                     default => 'pendiente',
                 };
 
@@ -146,7 +168,7 @@
                 $canValidate = !$modoVer
                     && $isAdmin
                     && $track
-                    && ($realStep?->requires_approval ?? false)
+                    && ($track->serviceStep?->requires_approval ?? false)
                     && in_array($rawStatus, ['pendiente', 'en_progreso', 'rechazado']);
             @endphp
 

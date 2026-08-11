@@ -63,7 +63,7 @@
             Regresar
         </button>
         <button type="button" class="btn" id="btn-primary" style="display:inline-flex; align-items:center; gap:8px;">
-            Siguiente: Tecnico
+            Siguiente: Equipo
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
     </div>
@@ -79,9 +79,11 @@
     </div>
 
     <div class="stepper">
-        <div class="step active" data-step="1"><span class="dot">1</span> Equipo</div>
+        <div class="step active" data-step="1"><span class="dot">1</span> Cliente</div>
         <div class="line"></div>
-        <div class="step" data-step="2"><span class="dot">2</span> Tecnico</div>
+        <div class="step" data-step="2"><span class="dot">2</span> Equipo</div>
+        <div class="line"></div>
+        <div class="step" data-step="3"><span class="dot">3</span> Tecnico</div>
     </div>
 
     <form id="orden-form" method="POST" action="{{ isset($invitation) ? route('public.nueva_orden.store', $invitation) : route('gestion.servicios.historial.nueva_orden.store') }}" autocomplete="off" enctype="multipart/form-data">
@@ -91,6 +93,7 @@
         @endif
         <input type="hidden" name="mantenimiento_externo" id="mantenimiento_externo" value="1">
 
+        @include('structure.gestion_servicios.historial_servicios.tecnico_externo.registro_servicio_externo.ct1_registro_serv', ['customers' => $customers])
         @include('structure.gestion_servicios.historial_servicios.tecnico_externo.registro_servicio_externo.ct2_resgistro_serv')
         @include('structure.gestion_servicios.historial_servicios.tecnico_externo.registro_servicio_externo.ct3_tecnico_ext', ['externalTechnicians' => $externalTechnicians])
         @include('structure.gestion_servicios.historial_servicios.tecnico_externo.acciones.r_ext_ver_historial')
@@ -105,7 +108,6 @@
     let currentStep = 1;
     let isSaving = false;
     const FORM_STORAGE_KEY = 'nueva_orden_draft_externo';
-    const MAX_STEPS = 3;
 
     const wizardTitle = document.getElementById('wizard-title');
     const wizardSubtitle = document.getElementById('wizard-subtitle');
@@ -197,14 +199,22 @@
         });
 
         if (currentStep === 1) {
-            wizardTitle.textContent = 'Registro del equipo';
-            wizardSubtitle.textContent = 'Completa la información del equipo para continuar';
-            wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
+            wizardTitle.textContent = 'Nuevo servicio externo';
+            wizardSubtitle.textContent = 'Selecciona el cliente para el servicio';
+            wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
             btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancelar';
-            btnPrimary.innerHTML = 'Siguiente: Tecnico <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+            btnPrimary.innerHTML = 'Siguiente: Equipo <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
             btnPrimary.type = 'button';
             btnPrimary.removeAttribute('form');
         } else if (currentStep === 2) {
+            wizardTitle.textContent = 'Registro del equipo';
+            wizardSubtitle.textContent = 'Completa la información del equipo para continuar';
+            wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
+            btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Regresar';
+            btnPrimary.innerHTML = 'Siguiente: Tecnico <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+            btnPrimary.type = 'button';
+            btnPrimary.removeAttribute('form');
+        } else if (currentStep === 3) {
             wizardTitle.textContent = 'Asignar técnico';
             wizardSubtitle.textContent = 'Selecciona un técnico especializado para el servicio';
             wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
@@ -212,7 +222,7 @@
             btnPrimary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar registro';
             btnPrimary.type = 'button';
             btnPrimary.removeAttribute('form');
-        } else if (currentStep === 3) {
+        } else {
             wizardTitle.textContent = 'Resumen de Orden';
             wizardSubtitle.textContent = 'Revisa la información antes de guardar';
             wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
@@ -228,10 +238,10 @@
 
     btnPrimary.addEventListener('click', () => {
         if (isSaving) return;
-        if (currentStep < MAX_STEPS) {
+        if (currentStep < 4) {
             currentStep++;
             updateStep();
-        } else if (currentStep === MAX_STEPS) {
+        } else if (currentStep === 4) {
             isSaving = true;
             btnPrimary.disabled = true;
             window.guardarServicio();
@@ -276,7 +286,7 @@
             e.preventDefault();
             return;
         }
-        if (currentStep === MAX_STEPS) {
+        if (currentStep === 4) {
             e.preventDefault();
             isSaving = true;
             const formData = new FormData(form);
