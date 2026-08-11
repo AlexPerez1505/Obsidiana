@@ -11,6 +11,8 @@ class Task extends Model
     /** @use HasFactory<\Database\Factories\TaskFactory> */
     use HasFactory;
 
+    protected $table = 'tareas';
+
     protected $fillable = [
         'title',
         'description',
@@ -29,6 +31,7 @@ class Task extends Model
         'user_id',
         'linked_piece',
         'rejection_comment',
+        'project_image',
         'created_by',
         'approval_checklist',
     ];

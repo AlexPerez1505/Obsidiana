@@ -1,7 +1,7 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Base de datos · Contenido & Aprobación')
-@section('page-title', 'Base de datos · Contenido & Aprobación')
+@section('title', 'Contenido & Aprobación')
+@section('page-title', 'Contenido & Aprobación')
 @section('page-sub', 'Todas las piezas del plan de marketing con su estado, responsable, red y checklist de aprobación.')
 
 @section('content')
@@ -12,7 +12,7 @@
     .approval-title { margin: 0; font-size: 32px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
     .approval-sub { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.5; max-width: 760px; }
 
-    .stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
     .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
     .stat-number { font-size: 28px; font-weight: 800; line-height: 1; }
     .stat-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
@@ -59,7 +59,7 @@
 
     .approval-modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 1000; }
     .approval-modal.is-open { display: flex; }
-    .approval-modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 22px; width: 100%; max-width: 720px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+    .approval-modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 22px; width: 100%; max-width: 1200px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
     #approvalForm { display: flex; flex-direction: column; flex: 1; min-height: 0; }
     .approval-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 22px 26px; border-bottom: 1px solid var(--border); }
     .approval-modal-title { margin: 0; font-size: 22px; font-weight: 800; }
@@ -78,7 +78,7 @@
     .comment-box label { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
     .modal-actions { display: flex; gap: 10px; padding: 18px 26px; border-top: 1px solid var(--border); background: var(--surface-2); }
     .modal-actions form { flex: 1; }
-    .modal-btn { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 18px; border-radius: 10px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; color: #fff; }
+    .modal-btn { width: auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; border-radius: 10px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; color: #fff; }
     .modal-btn-green { background: #2563eb; }
     .modal-btn-green:hover { background: #1d4ed8; }
     .modal-btn-amber { background: #60a5fa; }
@@ -86,17 +86,29 @@
     .spec-section { display: flex; flex-direction: column; gap: 16px; }
     .spec-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
     @media (max-width: 640px) { .spec-grid { grid-template-columns: 1fr; } }
+    .spec-split { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 24px; align-items: start; }
+    @media (max-width: 840px) { .spec-split { grid-template-columns: 1fr; } }
+    .spec-image-col { background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; min-height: 320px; display: flex; align-items: center; justify-content: center; position: sticky; top: 20px; align-self: start; order: 2; }
+    .spec-info-col { order: 1; }
+    .spec-image-col img { max-width: 100%; max-height: 72vh; width: auto; height: auto; border-radius: 12px; object-fit: contain; display: block; }
+    .spec-image-empty { color: var(--muted); font-size: 14px; font-weight: 600; }
+    .spec-info-col .spec-grid { grid-template-columns: 1fr; }
     .spec-field { display: flex; flex-direction: column; gap: 6px; }
     .spec-label { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
     .spec-value { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 14px; line-height: 1.5; word-break: break-word; white-space: pre-wrap; }
     .spec-value a { color: var(--primary); text-decoration: none; }
     .spec-value a:hover { text-decoration: underline; }
+    .select-all-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 12px; font-weight: 700; cursor: pointer; user-select: none; }
+    .select-all-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+    .select-all-check { width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--border); background: #fff; display: flex; align-items: center; justify-content: center; transition: .15s; }
+    .select-all-toggle input:checked + .select-all-check { background: #2563eb; border-color: #2563eb; }
+    .select-all-toggle input:checked + .select-all-check::after { content: ''; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); margin-top: -2px; }
 </style>
 
 <div class="approval-wrap">
     <div class="approval-header">
         <span class="approval-tag">NOTION · SINCRONIZADO</span>
-        <h1 class="approval-title">Base de datos · Contenido & Aprobación</h1>
+        <h1 class="approval-title">Contenido & Aprobación</h1>
         <p class="approval-sub">Todas las piezas del plan de marketing con su estado, responsable, red y checklist de aprobación. Filtra, busca y abre cada pieza para revisarla.</p>
     </div>
 
@@ -200,6 +212,7 @@
                             'platform' => $task->platform,
                             'has_video' => $task->has_video,
                             'delivery_link' => $task->delivery_link,
+                            'project_image' => $task->project_image ? asset('storage/' . $task->project_image) : null,
                             'task_description' => $task->task_description,
                             'description' => $task->description,
                             'rejection_comment' => $task->rejection_comment,
@@ -283,53 +296,64 @@
             <div class="approval-modal-scroll">
                 <div class="spec-section">
                     <h3 class="checklist-title">Especificaciones de la pieza</h3>
-                    <div class="spec-grid">
-                        <div class="spec-field"><span class="spec-label">Pieza / Título</span><div class="spec-value" id="specTitle">—</div></div>
-                        <div class="spec-field"><span class="spec-label">Categoría</span><div class="spec-value" id="specCategory">—</div></div>
-                        <div class="spec-field"><span class="spec-label">Fecha</span><div class="spec-value" id="specDueDate">—</div></div>
-                        <div class="spec-field"><span class="spec-label">Responsable</span><div class="spec-value" id="specUser">—</div></div>
-                        <div class="spec-field"><span class="spec-label">Revisor</span><div class="spec-value" id="specReviewer">—</div></div>
-                        <div class="spec-field"><span class="spec-label">Producto / Equipo</span><div class="spec-value" id="specProduct">—</div></div>
-                        <div class="spec-field"><span class="spec-label">Plataforma destino</span><div class="spec-value" id="specPlatforms">—</div></div>
-                        <div class="spec-field"><span class="spec-label">Video</span><div class="spec-value" id="specVideo">—</div></div>
-                        <div class="spec-field"><span class="spec-label">Enlace</span><div class="spec-value" id="specLink">—</div></div>
-                        <div class="spec-field"><span class="spec-label">Descripción</span><div class="spec-value" id="specTaskDesc">—</div></div>
-                        <div class="spec-field"><span class="spec-label">Copy / Texto del post</span><div class="spec-value" id="specCopy">—</div></div>
-                        <div class="spec-field"><span class="spec-label">Comentarios del revisor</span><div class="spec-value" id="specComments">—</div></div>
+                    <div class="spec-split">
+                        <div class="spec-image-col">
+                            <div id="specImageWrap" style="display:none;">
+                                <img id="specImage" src="" alt="Imagen del proyecto">
+                            </div>
+                            <div id="specImageEmpty" class="spec-image-empty" style="display:block;">—</div>
+                        </div>
+                        <div class="spec-info-col">
+                            <div class="spec-grid">
+                                <div class="spec-field"><span class="spec-label">Categoría</span><div class="spec-value" id="specCategory">—</div></div>
+                                <div class="spec-field"><span class="spec-label">Copy / Texto del post</span><div class="spec-value" id="specCopy">—</div></div>
+                                <div class="spec-field"><span class="spec-label">Comentarios del revisor</span><div class="spec-value" id="specComments">—</div></div>
+                            </div>
+
+                            <div style="margin-top:24px;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
+                                    <h3 class="checklist-title" style="margin:0;">Checklist de aprobación ( <span id="checkCount">0</span> /10)</h3>
+                                    <label class="select-all-toggle">
+                                        <input type="checkbox" id="selectAllCheck" onchange="toggleSelectAll()">
+                                        <span class="select-all-check"></span>
+                                        <span class="select-all-label">Seleccionar todos</span>
+                                    </label>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px;">
+                                    <div class="check-bar" style="width:100%;"><div class="check-bar-fill" id="modalCheckBar" style="width:0%;"></div></div>
+                                    <span class="check-text"><span id="checkPercent">0</span>% de aprobación</span>
+                                </div>
+                                <div class="checklist-grid" id="checklistGrid">
+                                    @foreach ([
+                                        'Nombre/modelo',
+                                        'Specs verificados',
+                                        'Marca/logo',
+                                        'Precio/política',
+                                        'Ortografía',
+                                        'Datos de contacto',
+                                        'Sin claims indebidos',
+                                        'Formato de red',
+                                        'Imagen nítida',
+                                        'Leyenda salud'
+                                    ] as $i => $item)
+                                        <label class="checklist-item">
+                                            <input type="checkbox" name="approval_checklist[]" value="{{ $i }}" onchange="updateCheckCount()">
+                                            <span>{{ $item }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <div class="comment-box" style="margin-top:24px;">
+                                <label for="rejectionComment">Comentario de solicitud de cambios</label>
+                                <textarea id="rejectionComment" name="rejection_comment" placeholder="Especifica qué le falta o qué debe corregirse..."></textarea>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div>
-                    <h3 class="checklist-title">Checklist de aprobación ( <span id="checkCount">0</span> /10)</h3>
-                    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px;">
-                        <div class="check-bar" style="width:100%;"><div class="check-bar-fill" id="modalCheckBar" style="width:0%;"></div></div>
-                        <span class="check-text"><span id="checkPercent">0</span>% de aprobación</span>
-                    </div>
-                    <div class="checklist-grid" id="checklistGrid">
-                        @foreach ([
-                            'Nombre/modelo',
-                            'Specs verificados',
-                            'Marca/logo',
-                            'Precio/política',
-                            'Ortografía',
-                            'Datos de contacto',
-                            'Sin claims indebidos',
-                            'Formato de red',
-                            'Imagen nítida',
-                            'Leyenda salud'
-                        ] as $i => $item)
-                            <label class="checklist-item">
-                                <input type="checkbox" name="approval_checklist[]" value="{{ $i }}" onchange="updateCheckCount()">
-                                <span>{{ $item }}</span>
-                            </label>
-                        @endforeach
-                    </div>
-                </div>
 
-                <div class="comment-box">
-                    <label for="rejectionComment">Comentario de solicitud de cambios</label>
-                    <textarea id="rejectionComment" name="rejection_comment" placeholder="Especifica qué le falta o qué debe corregirse..."></textarea>
-                </div>
+
             </div>
             <div class="modal-actions">
                 <button type="button" class="modal-btn modal-btn-green" id="btnAprobar" onclick="submitAprobar()">Aprobar</button>
@@ -351,26 +375,24 @@
         document.getElementById('approvalForm').action = `${base}/${data.id}/aprobar`;
         document.getElementById('modalTitle').textContent = data.title || 'Revisar pieza';
 
-        document.getElementById('specTitle').textContent = data.title || '—';
         document.getElementById('specCategory').textContent = data.category || '—';
-        document.getElementById('specDueDate').textContent = data.due_date || '—';
-        document.getElementById('specUser').textContent = data.user || '—';
-        document.getElementById('specReviewer').textContent = data.reviewer || '—';
-        document.getElementById('specProduct').textContent = data.linked_piece || '—';
-        document.getElementById('specVideo').textContent = data.has_video ? 'Sí' : 'No';
-        document.getElementById('specTaskDesc').textContent = data.task_description || '—';
         document.getElementById('specCopy').textContent = data.description || '—';
+
+        const specImage = document.getElementById('specImage');
+        const specImageWrap = document.getElementById('specImageWrap');
+        const specImageEmpty = document.getElementById('specImageEmpty');
+        if (data.project_image) {
+            specImage.src = data.project_image;
+            specImageWrap.style.display = 'block';
+            specImageEmpty.style.display = 'none';
+        } else {
+            specImage.src = '';
+            specImageWrap.style.display = 'none';
+            specImageEmpty.style.display = 'block';
+        }
         document.getElementById('specComments').textContent = data.rejection_comment || '—';
 
-        const platforms = Array.isArray(data.platform) ? data.platform : [];
-        document.getElementById('specPlatforms').innerHTML = platforms.length
-            ? platforms.map(p => `<span class="platform-item" style="display:inline-block;margin:2px 4px 2px 0;">${p}</span>`).join('')
-            : '—';
 
-        const link = data.delivery_link || '';
-        document.getElementById('specLink').innerHTML = link
-            ? `<a href="${link}" target="_blank" rel="noopener">${link}</a>`
-            : '—';
 
         const isRevision = data.status === 'revision';
         const isCompleted = data.status === 'completada';
@@ -382,6 +404,7 @@
             cb.closest('.checklist-item').classList.toggle('locked', isCompleted || !isRevision || isLocked);
         });
         document.querySelectorAll('.checklist-item').forEach(l => l.classList.remove('checked'));
+        document.getElementById('selectAllCheck').checked = false;
         document.getElementById('rejectionComment').value = '';
 
         document.querySelector('#approvalForm .comment-box').style.display = isRevision ? 'flex' : 'none';
@@ -405,6 +428,21 @@
         document.querySelectorAll('.checklist-grid .checklist-item').forEach(item => {
             item.classList.toggle('checked', item.querySelector('input').checked);
         });
+
+        const enabled = document.querySelectorAll('.checklist-grid .checklist-item input:not([disabled])');
+        const master = document.getElementById('selectAllCheck');
+        if (master && enabled.length) {
+            master.checked = enabled.length === document.querySelectorAll('.checklist-grid .checklist-item input:not([disabled]):checked').length;
+        }
+    }
+
+    function toggleSelectAll() {
+        const master = document.getElementById('selectAllCheck');
+        const checked = master.checked;
+        document.querySelectorAll('.checklist-grid .checklist-item input:not([disabled])').forEach(cb => {
+            cb.checked = checked;
+        });
+        updateCheckCount();
     }
 
     function submitAprobar() {

@@ -304,19 +304,19 @@
 
     <div class="stat-row">
         <div class="card stat-card">
-            <div class="stat-number" style="background:var(--accent-soft); color:var(--accent);">0</div>
+            <div class="stat-number" style="background:var(--accent-soft); color:var(--accent);">{{ $inicioStats['cambios_solicitados'] }}</div>
             <div class="stat-label">Cambios solicitados</div>
         </div>
         <div class="card stat-card">
-            <div class="stat-number" style="background:var(--primary-soft); color:var(--primary);">0</div>
+            <div class="stat-number" style="background:var(--primary-soft); color:var(--primary);">{{ $inicioStats['en_revision'] }}</div>
             <div class="stat-label">En revisión</div>
         </div>
         <div class="card stat-card">
-            <div class="stat-number" style="background:var(--accent-soft); color:var(--accent);">0</div>
+            <div class="stat-number" style="background:var(--accent-soft); color:var(--accent);">{{ $inicioStats['pendiente_por_tomar'] }}</div>
             <div class="stat-label">Pendiente por tomar</div>
         </div>
         <div class="card stat-card">
-            <div class="stat-number" style="background:var(--green-soft); color:var(--green);">8</div>
+            <div class="stat-number" style="background:var(--green-soft); color:var(--green);">{{ $inicioStats['areas_especializadas'] }}</div>
             <div class="stat-label">Áreas especializadas</div>
         </div>
     </div>

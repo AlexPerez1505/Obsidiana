@@ -8,6 +8,8 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class TaskController extends Controller
@@ -133,7 +135,12 @@ class TaskController extends Controller
             'platform.*' => ['string', 'max:255'],
             'has_video' => ['nullable', 'boolean'],
             'linked_piece' => ['nullable', 'string', 'max:255'],
+            'project_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
+
+        if ($request->hasFile('project_image')) {
+            $data['project_image'] = $request->file('project_image')->store('project_images', 'public');
+        }
 
         $data['status'] = 'pendiente';
         $tags = $data['tags'] ?? null;
@@ -173,7 +180,12 @@ class TaskController extends Controller
             'has_video' => ['nullable', 'boolean'],
             'linked_piece' => ['nullable', 'string', 'max:255'],
             'rejection_comment' => ['nullable', 'string'],
+            'project_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
+
+        if ($request->hasFile('project_image')) {
+            $data['project_image'] = $request->file('project_image')->store('project_images', 'public');
+        }
 
         $tags = $data['tags'] ?? null;
         $data['tags'] = $tags
@@ -210,6 +222,34 @@ public function aprobacionFlyers(): View
 }
 
     /**
+     * Muestra el inicio del módulo de marketing con estadísticas en vivo.
+     */
+    public function inicio(): View
+    {
+        $cambiosSolicitados = Task::where('status', 'pendiente')
+            ->whereNotNull('rejection_comment')
+            ->count();
+
+        $enRevision = Task::where('status', 'revision')->count();
+
+        $pendientePorTomar = Task::where('status', 'pendiente')->count();
+
+        $areasEspecializadas = Task::whereNotNull('category')
+            ->where('category', '!=', '')
+            ->distinct()
+            ->count('category');
+
+        return view('structure.gestion_marketing.inicio.menu_marketing', [
+            'inicioStats' => [
+                'cambios_solicitados' => $cambiosSolicitados,
+                'en_revision' => $enRevision,
+                'pendiente_por_tomar' => $pendientePorTomar,
+                'areas_especializadas' => $areasEspecializadas,
+            ],
+        ]);
+    }
+
+    /**
      * Muestra el calendario de contenido del plan editorial.
      */
     public function agenda(): View
@@ -224,7 +264,59 @@ public function aprobacionFlyers(): View
      */
     public function bibliotecaCatalogo(): View
     {
-        return view('structure.gestion_marketing.catalogo.biblioteca_catalogo');
+        $flyers = Task::where('status', 'completada')
+            ->where(function ($query) {
+                $query->whereNotNull('project_image')
+                    ->where('project_image', '!=', '');
+            })
+            ->orderByDesc('updated_at')
+            ->get();
+
+        return view('structure.gestion_marketing.catalogo.biblioteca_catalogo', [
+            'flyers' => $flyers,
+        ]);
+    }
+
+    /**
+     * Descarga el flyer asociado a una tarea completada.
+     */
+    public function descargarFlyer(Task $task): RedirectResponse|\Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        if ($task->status !== 'completada' || (empty($task->delivery_link) && empty($task->project_image))) {
+            abort(404);
+        }
+
+        if (!empty($task->project_image)) {
+            $extension = pathinfo($task->project_image, PATHINFO_EXTENSION) ?: 'jpg';
+            $filename = preg_replace('/[^A-Za-z0-9\-]/', '_', $task->title) . '_flyer.' . $extension;
+            return Storage::disk('public')->download($task->project_image, $filename);
+        }
+
+        try {
+            $response = Http::timeout(30)->get($task->delivery_link);
+        } catch (\Exception $e) {
+            return redirect()->away($task->delivery_link);
+        }
+
+        $contentType = $response->header('Content-Type') ?: 'application/octet-stream';
+
+        // Si Canva/Google devuelve HTML, lo mejor es abrir la URL original.
+        if (str_contains($contentType, 'text/html')) {
+            return redirect()->away($task->delivery_link);
+        }
+
+        $extension = 'file';
+        if (preg_match('/\.([a-zA-Z0-9]{2,8})(?:[?#]|$)/', $task->delivery_link, $matches)) {
+            $extension = $matches[1];
+        }
+
+        $filename = preg_replace('/[^A-Za-z0-9\-]/', '_', $task->title) . '_flyer.' . $extension;
+
+        return response()->streamDownload(function () use ($response) {
+            echo $response->body();
+        }, $filename, [
+            'Content-Type' => $contentType,
+        ]);
     }
 
     /**

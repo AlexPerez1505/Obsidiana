@@ -233,6 +233,21 @@
         transition: background .15s;
     }
     .task-review:hover { background: #0284c7; }
+    .task-delete {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 22px;
+        border-radius: 12px;
+        border: none;
+        background: #ef4444;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background .15s;
+    }
+    .task-delete:hover { background: #dc2626; }
 
     .platform-choices {
         display: flex;
@@ -366,7 +381,7 @@
                                 : 'Sin fecha';
                         @endphp
 
-                        <div class="kanban-card" style="border-left:{{ $borderLeft }};" data-json="{{ json_encode(['id' => $task->id, 'title' => $task->title, 'category' => $task->category, 'reviewer' => $task->reviewer?->name, 'reviewer_id' => $task->reviewer_id, 'due_date' => $task->due_date?->format('Y-m-d'), 'user' => $task->user?->name, 'user_id' => $task->user_id, 'status' => $task->status, 'priority' => $task->priority, 'progress' => $task->progress, 'linked_piece' => $task->linked_piece, 'delivery_link' => $task->delivery_link, 'platform' => $task->platform, 'has_video' => $task->has_video, 'approval_checklist' => $task->approval_checklist ?? [], 'rejection_comment' => $task->rejection_comment, 'task_description' => $task->task_description, 'description' => $task->description], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}" onclick="openTaskModal(this)">
+                        <div class="kanban-card" style="border-left:{{ $borderLeft }};" data-json="{{ json_encode(['id' => $task->id, 'title' => $task->title, 'category' => $task->category, 'reviewer' => $task->reviewer?->name, 'reviewer_id' => $task->reviewer_id, 'due_date' => $task->due_date?->format('Y-m-d'), 'user' => $task->user?->name, 'user_id' => $task->user_id, 'status' => $task->status, 'priority' => $task->priority, 'progress' => $task->progress, 'linked_piece' => $task->linked_piece, 'delivery_link' => $task->delivery_link, 'project_image' => $task->project_image ? asset('storage/' . $task->project_image) : null, 'platform' => $task->platform, 'has_video' => $task->has_video, 'approval_checklist' => $task->approval_checklist ?? [], 'rejection_comment' => $task->rejection_comment, 'task_description' => $task->task_description, 'description' => $task->description], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}" onclick="openTaskModal(this)">
                             <h3 class="kanban-card-title">{{ $task->title }}</h3>
 
                             <div class="kanban-card-line">
@@ -407,7 +422,7 @@
 </div>
 
 <div class="task-modal" id="taskModal" onclick="if(event.target === this) closeTaskModal()">
-    <form method="POST" id="taskEditForm" class="task-modal-card">
+    <form method="POST" id="taskEditForm" class="task-modal-card" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         <input type="hidden" id="editStatus" name="status">
@@ -527,15 +542,19 @@
                 <textarea id="editCopy" name="description" placeholder="Texto de la publicación..."></textarea>
             </div>
 
-            <div class="task-field">
-                <span class="field-label">Entrega — Imagen o video (vista previa del enlace)</span>
-                <div class="task-preview">
-                    Aún no hay imagen/video. Pega el enlace arriba y aquí lo verá todo el equipo.
-                </div>
+            <div class="task-field" id="projectImageField" style="display:none;">
+                <label for="projectImageInput" class="field-label">Imagen del proyecto</label>
+                <input type="file" id="projectImageInput" name="project_image" accept="image/*">
+                <img id="projectImagePreview" src="" alt="Vista previa de la imagen del proyecto" style="display:none;max-width:100%;max-height:260px;width:auto;height:auto;border-radius:10px;margin-top:10px;">
+                <div id="projectImageEmpty" style="margin-top:8px;color:var(--muted);font-size:13px;">Aún no hay imagen del proyecto.</div>
             </div>
+
         </div>
 
         <div class="task-footer">
+            <button type="button" class="task-delete" id="btnEliminar" style="display:none;" onclick="eliminarTarea()">
+                Eliminar
+            </button>
             <button type="button" class="task-review" id="btnEnviarRevision" style="display:none;" onclick="enviarARevision()">
                 Mandar a revisión
             </button>
@@ -582,6 +601,24 @@
         document.getElementById('editPriority').value = data.priority || 'media';
         document.getElementById('editProgress').value = data.progress || 0;
 
+        var projectImageInput = document.getElementById('projectImageInput');
+        var projectImagePreview = document.getElementById('projectImagePreview');
+        var projectImageEmpty = document.getElementById('projectImageEmpty');
+        if (projectImageInput) projectImageInput.value = '';
+        if (data.project_image) {
+            if (projectImagePreview) {
+                projectImagePreview.src = data.project_image;
+                projectImagePreview.style.display = 'block';
+            }
+            if (projectImageEmpty) projectImageEmpty.style.display = 'none';
+        } else {
+            if (projectImagePreview) {
+                projectImagePreview.style.display = 'none';
+                projectImagePreview.src = '';
+            }
+            if (projectImageEmpty) projectImageEmpty.style.display = 'block';
+        }
+
         Array.prototype.forEach.call(document.querySelectorAll('.edit-platform'), function(cb) {
             cb.checked = data.platform && data.platform.indexOf(cb.value) !== -1;
         });
@@ -613,6 +650,12 @@
         }
         document.getElementById('btnGuardar').style.display = isPendiente ? '' : 'none';
         document.getElementById('btnEnviarRevision').style.display = isPendiente ? '' : 'none';
+        document.getElementById('btnEliminar').style.display = '';
+
+        var projectImageField = document.getElementById('projectImageField');
+        if (projectImageField) {
+            projectImageField.style.display = isPendiente ? '' : 'none';
+        }
 
         document.getElementById('taskModal').classList.add('is-open');
     }
@@ -626,6 +669,7 @@
 
         fetch('/marketing/tareas/' + currentTaskId + '/enviar-revision', {
             method: 'POST',
+            credentials: 'same-origin',
             body: formData,
         }).then(function(response) {
             if (response.ok) {
@@ -638,12 +682,51 @@
         });
     }
 
+    function eliminarTarea() {
+        if (!currentTaskId) return;
+        if (!confirm('¿Estás seguro de que deseas eliminar esta tarea?')) return;
+
+        var token = document.querySelector('#taskEditForm input[name="_token"]').value;
+        var formData = new FormData();
+        formData.append('_token', token);
+        formData.append('_method', 'DELETE');
+
+        fetch('/marketing/tareas/' + currentTaskId, {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: formData,
+        }).then(function(response) {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('No se pudo eliminar la tarea. Intenta de nuevo.');
+            }
+        }).catch(function() {
+            alert('No se pudo eliminar la tarea. Intenta de nuevo.');
+        });
+    }
+
     function closeTaskModal() {
         document.getElementById('taskModal').classList.remove('is-open');
     }
 
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeTaskModal();
+    });
+
+    document.getElementById('projectImageInput').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        var preview = document.getElementById('projectImagePreview');
+        var empty = document.getElementById('projectImageEmpty');
+        if (file) {
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+            empty.style.display = 'none';
+        } else {
+            preview.style.display = 'none';
+            preview.src = '';
+            empty.style.display = 'block';
+        }
     });
 </script>
 @endsection
