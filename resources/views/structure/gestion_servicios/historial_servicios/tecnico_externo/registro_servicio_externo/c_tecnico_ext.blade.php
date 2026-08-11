@@ -96,7 +96,7 @@
         @include('structure.gestion_servicios.historial_servicios.tecnico_externo.registro_servicio_externo.ct1_registro_serv', ['customers' => $customers])
         @include('structure.gestion_servicios.historial_servicios.tecnico_externo.registro_servicio_externo.ct2_resgistro_serv')
         @include('structure.gestion_servicios.historial_servicios.tecnico_externo.registro_servicio_externo.ct3_tecnico_ext', ['externalTechnicians' => $externalTechnicians])
-        @include('structure.gestion_servicios.historial_servicios.tecnico_externo.tec_externo_interaciones.flujo_tec_ext.r_ext_menu_historial')
+        @include('structure.gestion_servicios.historial_servicios.tecnico_externo.acciones.r_ext_ver_historial')
     </form>
 
     @include('structure.gestion_servicios.historial_servicios.tecnico_externo.registro_servicio_externo.tec_externo.c_tec_externo')

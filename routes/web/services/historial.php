@@ -9,6 +9,7 @@ use App\Models\Brand;
 use App\Models\Customer;
 use App\Models\EquipmentType;
 use App\Models\ExternalTechnician;
+use App\Models\Service;
 use App\Models\User;
 
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
@@ -89,6 +90,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('gestion.servicios.historial.nueva_orden.store');
     Route::get('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'show'])
         ->name('gestion.servicios.historial.show');
+    Route::get('/gestion-servicios/historial-servicios/externo/{service}', function (Service $service) {
+        return view('structure.gestion_servicios.historial_servicios.tecnico_externo.acciones.ver_externo', compact('service'));
+    })->name('gestion.servicios.historial.externo.show');
     Route::get('/gestion-servicios/historial-servicios/invitar', [ServiceController::class, 'invite'])
         ->name('gestion.servicios.historial.invite');
 
