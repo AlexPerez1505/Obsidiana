@@ -31,8 +31,23 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'phone',
         'position',
+        'cargo',
         'payroll_number',
+        'checador_id',
         'avatar',
+        'curp',
+        'ine',
+        'acta_nacimiento',
+        'licencia',
+        'domicilio',
+        'fecha_ingreso',
+        'vacaciones_disponibles',
+        'nombre_contacto_emergencia',
+        'numero_contacto_emergencia',
+        'domicilio_contacto_emergencia',
+        'nombre_contacto_emergencia_secundario',
+        'numero_contacto_emergencia_secundario',
+        'domicilio_contacto_emergencia_secundario',
     ];
 
     /**
@@ -44,6 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'remember_token',
         'verification_code',
+        'approval_pin_hash',
     ];
 
     /**
@@ -60,6 +76,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'is_admin' => 'boolean',
             'approved_at' => 'datetime',
             'password' => 'hashed',
+            'fecha_ingreso' => 'date',
+            'vacaciones_disponibles' => 'integer',
         ];
     }
 
@@ -259,6 +277,90 @@ class User extends Authenticatable implements MustVerifyEmail
     public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class)->withPivot('level');
+    }
+
+    /**
+     * Roles etiqueta asignados al usuario (admin, supervisor, empleado, etc.).
+     */
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class);
+    }
+
+    /**
+     * ¿El usuario tiene el rol indicado?
+     */
+    public function hasRole(string $name): bool
+    {
+        return $this->roles()->where('name', $name)->exists();
+    }
+
+    /**
+     * Genera y guarda el hash de un nuevo PIN de aprobación rápida.
+     */
+    public function setApprovalPin(string $pin): void
+    {
+        $this->forceFill([
+            'approval_pin_hash' => Hash::make($pin),
+        ])->save();
+    }
+
+    /**
+     * Verifica el PIN de aprobación rápida.
+     */
+    public function checkApprovalPin(string $pin): bool
+    {
+        if (! $this->approval_pin_hash) {
+            return false;
+        }
+
+        return Hash::check($pin, $this->approval_pin_hash);
+    }
+
+    /**
+     * Días de vacaciones ya utilizados (solicitudes aprobadas).
+     */
+    public function vacacionesUtilizadas(): int
+    {
+        return (int) $this->vacationRequests()
+            ->where('status', 'aprobada')
+            ->sum('days_requested');
+    }
+
+    /**
+     * Permisos utilizados (solicitudes de permiso aprobadas).
+     */
+    public function permisosUtilizados(): int
+    {
+        return $this->permissionRequests()
+            ->where('status', 'aprobada')
+            ->count();
+    }
+
+    /**
+     * Retardos registrados como incidencia.
+     */
+    public function retardosCount(): int
+    {
+        return $this->incidents()
+            ->where('incident_type', 'retardo')
+            ->count();
+    }
+
+    /**
+     * Faltas registradas.
+     */
+    public function faltasCount(): int
+    {
+        return $this->absences()->count();
+    }
+
+    /**
+     * Asistencias registradas.
+     */
+    public function asistenciasCount(): int
+    {
+        return $this->attendances()->count();
     }
 
     public function employeeDocuments(): HasMany

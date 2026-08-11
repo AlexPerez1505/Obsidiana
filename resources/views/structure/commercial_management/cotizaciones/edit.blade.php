@@ -1,19 +1,20 @@
 @extends('layouts.dashboard')
-@section('title', 'Nueva Cotización')
-@section('page-title', 'Nueva Cotización')
-@section('page-sub', 'Selecciona un cliente, un producto o paquete, y define el plan de pagos')
+@section('title', 'Editar Cotización #'.$cotizacion->id)
+@section('page-title', 'Editar Cotización #'.$cotizacion->id)
+@section('page-sub', 'Ajusta productos, montos y el plan de pagos')
 
 @section('content')
-    <form method="POST" action="{{ route('commercial.cotizaciones.store') }}" id="form-cotizacion">
+    <form method="POST" action="{{ route('commercial.cotizaciones.update', $cotizacion) }}" id="form-cotizacion">
         @csrf
+        @method('PUT')
 
         {{-- Cliente --}}
         <x-ui.card style="margin-bottom:18px;">
             <x-ui.section-title style="margin:0 0 16px;">Cliente</x-ui.section-title>
 
-            <input type="hidden" name="cliente_id" id="cliente_id" value="{{ $clienteSeleccionado?->id }}">
+            <input type="hidden" name="cliente_id" id="cliente_id" value="{{ $cotizacion->cliente_id }}">
 
-            <div id="cliente-buscador" style="{{ $clienteSeleccionado ? 'display:none;' : '' }}">
+            <div id="cliente-buscador" style="display:none;">
                 <div style="position:relative;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                     <input type="text" id="cliente-search" placeholder="Buscar cliente por nombre o teléfono..." autocomplete="off"
@@ -25,11 +26,9 @@
                 </button>
             </div>
 
-            <div id="cliente-seleccionado" style="{{ $clienteSeleccionado ? '' : 'display:none;' }} display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--field-border); border-radius:9px; cursor:pointer;" title="Clic para buscar otro cliente">
+            <div id="cliente-seleccionado" style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--field-border); border-radius:9px; cursor:pointer;" title="Clic para buscar otro cliente">
                 <span id="cliente-seleccionado-nombre">
-                    @if($clienteSeleccionado)
-                        {{ $clienteSeleccionado->nombre }} {{ $clienteSeleccionado->apellido }} — {{ $clienteSeleccionado->telefono }}
-                    @endif
+                    {{ $cotizacion->cliente?->nombre }} {{ $cotizacion->cliente?->apellido }} — {{ $cotizacion->cliente?->telefono ?: 'sin teléfono' }}
                 </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted); flex:0 0 auto;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
             </div>
@@ -42,8 +41,8 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                 </div>
                 <div>
-                    <div style="font-weight:700; font-size:16px;">Agregar productos o paquetes</div>
-                    <div class="muted" style="font-size:13px;">Selecciona productos o paquetes para agregarlos a la orden.</div>
+                    <div style="font-weight:700; font-size:16px;">Productos o paquetes</div>
+                    <div class="muted" style="font-size:13px;">Agrega, quita o ajusta los productos/paquetes de esta cotización.</div>
                 </div>
             </div>
 
@@ -102,7 +101,7 @@
                     </span>
                     <div style="position:relative; margin-top:8px;">
                         <span class="qprefix">$</span>
-                        <input id="descuentos" name="descuentos" type="number" step="0.01" min="0" value="0" class="qinput" style="padding-left:26px;">
+                        <input id="descuentos" name="descuentos" type="number" step="0.01" min="0" value="{{ $cotizacion->descuentos }}" class="qinput" style="padding-left:26px;">
                     </div>
                 </div>
 
@@ -113,7 +112,7 @@
                     </div>
                     <div style="position:relative; margin-top:8px;">
                         <span class="qprefix">$</span>
-                        <input id="costo_envio" name="costo_envio" type="number" step="0.01" min="0" value="0" class="qinput" style="padding-left:26px;">
+                        <input id="costo_envio" name="costo_envio" type="number" step="0.01" min="0" value="{{ $cotizacion->costo_envio }}" class="qinput" style="padding-left:26px;">
                     </div>
                 </div>
                 <div class="qbox">
@@ -121,11 +120,11 @@
                         <div class="qbox-ico orange"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
                         <span class="qbox-label">Lugar de entrega</span>
                     </div>
-                    <input id="lugar" name="lugar" type="text" placeholder="Lugar de entrega" class="qinput" style="margin-top:8px;">
+                    <input id="lugar" name="lugar" type="text" placeholder="Lugar de entrega" value="{{ $cotizacion->lugar }}" class="qinput" style="margin-top:8px;">
                 </div>
                 <div class="qbox" style="justify-content:center;">
                     <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-                        <input type="checkbox" id="aplica_iva" name="aplica_iva" value="1" style="width:18px; height:18px;">
+                        <input type="checkbox" id="aplica_iva" name="aplica_iva" value="1" {{ $cotizacion->aplica_iva ? 'checked' : '' }} style="width:18px; height:18px;">
                         <span style="font-size:14px; font-weight:600; color:var(--text);">¿Aplica IVA?</span>
                         <span class="badge badge--info">16%</span>
                     </label>
@@ -142,14 +141,22 @@
                 <div class="qbox">
                     <div class="qbox-head">
                         <div class="qbox-ico green"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-                        <span class="qbox-label" title="Monto que el cliente adelanta. Se resta del total antes de repartirlo en el plan de pagos.">Anticipo
+                        <span class="qbox-label" title="Monto que el cliente ya adelantó. Se resta del total antes de repartirlo en el plan de pagos.">Anticipo
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 1.8-2.5 3.5"/><path d="M12 17h.01"/></svg>
                         </span>
                     </div>
                     <div style="position:relative; margin-top:8px;">
                         <span class="qprefix">$</span>
-                        <input id="anticipo" name="anticipo" type="number" step="0.01" min="0" value="0" class="qinput" style="padding-left:26px;">
+                        @if($tienePagosRegistrados)
+                            <input id="anticipo" type="number" step="0.01" min="0" value="{{ $cotizacion->anticipo }}" class="qinput" style="padding-left:26px;" disabled>
+                            <input type="hidden" name="anticipo" value="{{ $cotizacion->anticipo }}">
+                        @else
+                            <input id="anticipo" name="anticipo" type="number" step="0.01" min="0" value="{{ $cotizacion->anticipo }}" class="qinput" style="padding-left:26px;">
+                        @endif
                     </div>
+                    @if($tienePagosRegistrados)
+                        <div class="muted" style="font-size:11.5px; margin-top:4px;">Ya se registró este anticipo como pago; no se puede modificar.</div>
+                    @endif
                 </div>
             </div>
 
@@ -170,102 +177,131 @@
                 </div>
                 <div>
                     <div style="font-weight:700; font-size:16px;">Plan de Pagos</div>
-                    <div class="muted" style="font-size:13px;">Selecciona un plan ya registrado y ajusta los montos si lo necesitas.</div>
-                </div>
-            </div>
-
-            {{-- Selección de plan de pago (siempre visible) --}}
-            <div id="plan-pagos-form">
-                <div class="qgrid" style="grid-template-columns:repeat(3, 1fr);">
-                    <div class="qbox">
-                        <label class="qlabel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h8M8 14h4"/></svg> Plan de pago *</label>
-                        <select id="plan-pago-plantilla" class="qinput" required>
-                            <option value="">— Selecciona un plan de pago —</option>
-                            @foreach($planesPago as $plan)
-                                <option value="{{ $plan->id }}" data-numero-pagos="{{ $plan->numero_pagos }}" data-dias-entre-pagos="{{ $plan->dias_entre_pagos }}" data-metodo-pago="{{ $plan->metodo_pago }}">
-                                    {{ $plan->nombre }} ({{ $plan->numero_pagos }} pagos cada {{ $plan->dias_entre_pagos }} días)
-                                </option>
-                            @endforeach
-                        </select>
-                        @if($planesPago->isEmpty())
-                            <div class="muted" style="font-size:12px; margin-top:6px;">No hay planes de pago registrados. <a href="{{ route('commercial.planesPago.create') }}" target="_blank" class="link">Crear uno</a></div>
+                    <div class="muted" style="font-size:13px;">
+                        @if($tienePagosRegistrados)
+                            Ya hay pagos registrados; el plan de pagos no se puede modificar.
                         @else
-                            <div class="muted" style="font-size:12px; margin-top:6px;"><a href="{{ route('commercial.planesPago.create') }}" target="_blank" class="link">+ Administrar planes de pago</a></div>
+                            Selecciona un plan para sustituir las cuotas actuales, o deja esto sin tocar para conservarlas.
                         @endif
                     </div>
-                    <div class="qbox">
-                        <label class="qlabel" for="metodo_pago"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Método de pago *</label>
-                        <select id="metodo_pago" name="metodo_pago" required class="qinput">
-                            <option value="Efectivo">Efectivo</option>
-                            <option value="Transferencia">Transferencia</option>
-                            <option value="Tarjeta">Tarjeta</option>
-                            <option value="Cheque">Cheque</option>
-                        </select>
-                    </div>
-                    <div class="qbox">
-                        <label class="qlabel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Fecha del primer pago *</label>
-                        <input id="fecha_inicio" name="fecha_inicio" type="date" value="{{ now()->toDateString() }}" required class="qinput">
-                    </div>
                 </div>
-                <input type="hidden" id="numero_pagos" name="numero_pagos" value="">
-                <input type="hidden" id="dias_entre_pagos" name="dias_entre_pagos" value="">
             </div>
 
-            {{-- Estado vacío: aún no se ha seleccionado un plan --}}
-            <div id="plan-pagos-empty" style="text-align:center; padding:24px 16px;">
-                <div class="muted" style="font-size:13.5px;">Selecciona un plan de pago arriba para ver y ajustar las fechas y montos de cada cuota.</div>
-            </div>
-
-            {{-- Resumen: cómo se organizarán los pagos --}}
-            <div id="plan-pagos-resumen" style="display:none; margin-top:20px;">
-                <div class="qgrid" style="grid-template-columns:repeat(3, 1fr);">
-                    <div class="qbox">
-                        <div class="qbox-head">
-                            <div class="qbox-ico blue"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
-                            <span class="qbox-label">Método de pago</span>
-                        </div>
-                        <div class="qbox-value" id="resumen-metodo" style="font-size:16px;">—</div>
-                    </div>
-                    <div class="qbox">
-                        <div class="qbox-head">
-                            <div class="qbox-ico green"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg></div>
-                            <span class="qbox-label">Monto por pago (estimado)</span>
-                        </div>
-                        <div class="qbox-value" id="resumen-monto-pago" style="color:var(--green);">$0.00</div>
-                    </div>
-                    <div class="qbox">
-                        <div class="qbox-head">
-                            <div class="qbox-ico orange"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
-                            <span class="qbox-label">Número de pagos</span>
-                        </div>
-                        <div class="qbox-value" id="resumen-numero-pagos">—</div>
-                    </div>
-                </div>
-
-                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:16px;">
-                    <div style="font-size:13.5px;">Restante por asignar (total - anticipo): <strong id="resumen-restante" style="font-size:15px;">$0.00</strong></div>
-                    <button type="button" id="btn-redistribuir-pagos" class="btn btn--ghost" style="padding:7px 14px; font-size:13px;">Distribuir equitativamente</button>
-                </div>
-
-                <div class="responsive-table-wrap" style="margin-top:10px;">
+            {{-- Plan de pagos actual (solo lectura) --}}
+            <div style="margin-bottom:20px;">
+                <div class="muted" style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">Cuotas actuales</div>
+                <div class="responsive-table-wrap">
                     <table>
                         <thead>
                             <tr>
-                                <th>No. de pago</th>
-                                <th>Fecha estimada</th>
-                                <th>Monto (editable)</th>
+                                <th>No.</th>
+                                <th>Fecha</th>
+                                <th>Monto</th>
+                                <th>Método</th>
+                                <th>Estado</th>
                             </tr>
                         </thead>
-                        <tbody id="resumen-pagos-body"></tbody>
+                        <tbody>
+                            @forelse($cotizacion->planPagos->sortBy('no_pago') as $plan)
+                                @php $pagado = $plan->pagos->where('pagado', true)->isNotEmpty(); @endphp
+                                <tr>
+                                    <td>{{ $plan->no_pago === 0 ? 'Anticipo' : $plan->no_pago }}</td>
+                                    <td>{{ $plan->plazo_pagar?->format('d/m/Y') }}</td>
+                                    <td style="font-weight:700;">${{ number_format($plan->monto ?? 0, 2) }}</td>
+                                    <td>{{ $plan->metodo_pago }}</td>
+                                    <td><span class="badge {{ $pagado ? 'badge--ok' : 'badge--warn' }}">{{ $pagado ? 'Pagado' : 'Pendiente' }}</span></td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="5" style="text-align:center; padding:16px; color:var(--muted);">Sin cuotas registradas.</td></tr>
+                            @endforelse
+                        </tbody>
                     </table>
                 </div>
             </div>
+
+            @unless($tienePagosRegistrados)
+                {{-- Selección de un nuevo plan de pago (opcional: sustituye las cuotas de arriba) --}}
+                <div id="plan-pagos-form">
+                    <div class="qgrid" style="grid-template-columns:repeat(3, 1fr);">
+                        <div class="qbox">
+                            <label class="qlabel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h8M8 14h4"/></svg> Nuevo plan de pago</label>
+                            <select id="plan-pago-plantilla" class="qinput">
+                                <option value="">— Conservar cuotas actuales —</option>
+                                @foreach($planesPago as $plan)
+                                    <option value="{{ $plan->id }}" data-numero-pagos="{{ $plan->numero_pagos }}" data-dias-entre-pagos="{{ $plan->dias_entre_pagos }}" data-metodo-pago="{{ $plan->metodo_pago }}">
+                                        {{ $plan->nombre }} ({{ $plan->numero_pagos }} pagos cada {{ $plan->dias_entre_pagos }} días)
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="qbox">
+                            <label class="qlabel" for="metodo_pago"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Método de pago</label>
+                            <select id="metodo_pago" name="metodo_pago" class="qinput">
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Cheque">Cheque</option>
+                            </select>
+                        </div>
+                        <div class="qbox">
+                            <label class="qlabel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Fecha del primer pago</label>
+                            <input id="fecha_inicio" name="fecha_inicio" type="date" value="{{ now()->toDateString() }}" class="qinput">
+                        </div>
+                    </div>
+                    <input type="hidden" id="numero_pagos" name="numero_pagos" value="">
+                    <input type="hidden" id="dias_entre_pagos" name="dias_entre_pagos" value="">
+                </div>
+
+                {{-- Resumen: cómo se organizarán las nuevas cuotas --}}
+                <div id="plan-pagos-resumen" style="display:none; margin-top:20px;">
+                    <div class="qgrid" style="grid-template-columns:repeat(3, 1fr);">
+                        <div class="qbox">
+                            <div class="qbox-head">
+                                <div class="qbox-ico blue"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+                                <span class="qbox-label">Método de pago</span>
+                            </div>
+                            <div class="qbox-value" id="resumen-metodo" style="font-size:16px;">—</div>
+                        </div>
+                        <div class="qbox">
+                            <div class="qbox-head">
+                                <div class="qbox-ico green"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg></div>
+                                <span class="qbox-label">Monto por pago (estimado)</span>
+                            </div>
+                            <div class="qbox-value" id="resumen-monto-pago" style="color:var(--green);">$0.00</div>
+                        </div>
+                        <div class="qbox">
+                            <div class="qbox-head">
+                                <div class="qbox-ico orange"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+                                <span class="qbox-label">Número de pagos</span>
+                            </div>
+                            <div class="qbox-value" id="resumen-numero-pagos">—</div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:16px;">
+                        <div style="font-size:13.5px;">Restante por asignar (total - anticipo): <strong id="resumen-restante" style="font-size:15px;">$0.00</strong></div>
+                        <button type="button" id="btn-redistribuir-pagos" class="btn btn--ghost" style="padding:7px 14px; font-size:13px;">Distribuir equitativamente</button>
+                    </div>
+
+                    <div class="responsive-table-wrap" style="margin-top:10px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>No. de pago</th>
+                                    <th>Fecha estimada</th>
+                                    <th>Monto (editable)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resumen-pagos-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            @endunless
         </x-ui.card>
 
         <div style="display:flex; gap:10px;">
-            <button type="submit" name="accion" value="cotizacion" class="btn btn--ghost">Guardar como cotización</button>
-            <button type="submit" name="accion" value="remision" class="btn">Realizar remisión</button>
-            <a href="{{ route('commercial.cotizaciones.index') }}" class="btn btn--ghost" style="text-decoration:none;">Cancelar</a>
+            <button type="submit" class="btn">Guardar cambios</button>
+            <a href="{{ route('commercial.cotizaciones.show', $cotizacion) }}" class="btn btn--ghost" style="text-decoration:none;">Cancelar</a>
         </div>
     </form>
 
@@ -307,28 +343,18 @@
         .ui-switch input:checked + .slider { background-color: var(--green, #22c55e); }
         .ui-switch input:checked + .slider:before { transform: translateX(24px); }
 
-        /* ===== Nuevo estilo de cotización ===== */
+        /* ===== Estilo de cotización ===== */
         .qbox-ico { border-radius:11px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
         .qbox-ico.blue { background:var(--primary-soft); color:var(--primary); }
         .qbox-ico.green { background:var(--green-soft); color:var(--green); }
         .qbox-ico.orange { background:var(--accent-soft); color:var(--accent); }
         .qbox-ico.purple { background:rgba(147,51,234,.12); color:#9333ea; }
 
-        .qflow-row { display:flex; flex-wrap:wrap; gap:14px; align-items:end; }
         .qlabel { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--text); }
         .qinput { width:100%; padding:11px 12px; border:1px solid var(--field-border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); }
         .qinput:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,122,255,.15); }
+        .qinput:disabled { opacity:.6; cursor:not-allowed; }
         .qprefix { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:14px; pointer-events:none; }
-
-        .qstepper { display:flex; align-items:center; border:1px solid var(--field-border); border-radius:9px; overflow:hidden; background:var(--surface); }
-        .qstepper button { width:36px; height:44px; border:none; background:var(--surface-2); color:var(--text); cursor:pointer; font-size:18px; flex:0 0 auto; }
-        .qstepper button:hover { background:var(--border); }
-        .qstepper input { flex:1; min-width:0; width:100%; text-align:center; border:none; background:transparent; color:var(--text); font-size:15px; padding:11px 2px; -moz-appearance:textfield; }
-        .qstepper input::-webkit-outer-spin-button, .qstepper input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
-
-        .qchip { display:flex; align-items:center; gap:8px; border:1px solid var(--field-border); border-radius:9px; padding:11px 16px; cursor:pointer; white-space:nowrap; user-select:none; color:var(--text); background:var(--surface); transition:border-color .15s, color .15s, background .15s; }
-        .qchip input { width:16px; height:16px; margin-left:2px; }
-        .qchip:has(input:checked) { border-color:var(--primary); color:var(--primary); background:var(--primary-soft); }
 
         .qgrid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
         .qbox { border:1px solid var(--field-border); border-radius:12px; padding:14px 16px; background:var(--surface); display:flex; flex-direction:column; }
@@ -338,7 +364,7 @@
         .qbox-value { font-size:21px; font-weight:800; }
 
         @media (max-width:900px) { .qgrid { grid-template-columns:repeat(2, 1fr); } }
-        @media (max-width:640px) { .qgrid { grid-template-columns:1fr; } .qflow-row > * { width:100% !important; flex:1 1 100% !important; } }
+        @media (max-width:640px) { .qgrid { grid-template-columns:1fr; } }
     </style>
 
     @php
@@ -385,6 +411,25 @@
                 'stockInfo' => implode(', ', $stockInfo),
             ];
         }
+
+        // Items ya guardados en la cotización, con el mismo formato que usa el JS de items[].
+        $itemsExistentes = [];
+        foreach ($cotizacion->items as $item) {
+            $itemsExistentes[] = [
+                'id' => $item->producto_id,
+                'tipo_equipo' => $item->producto?->tipo_equipo,
+                'marca' => $item->producto?->marca,
+                'modelo' => $item->producto?->modelo,
+                'imagen' => $item->producto?->imagen_path ? asset('storage/'.$item->producto->imagen_path) : null,
+                'cantidad' => $item->cantidad,
+                'precioOriginal' => (float) $item->precio_original,
+                'sobreprecio' => (float) $item->sobreprecio,
+                'esRegalo' => (bool) $item->es_regalo,
+                'paqueteOrigenId' => $item->paquete_id,
+                'paqueteOrigenNombre' => $item->paquete?->nombre,
+                'nombreGuardado' => $item->nombre,
+            ];
+        }
     @endphp
 
     <script>
@@ -394,6 +439,8 @@
         const paquetesDesglose = @json($paquetesDesgloseData);
         const paquetesNombres = @json($paquetesNombres);
         const paquetesInfo = @json($paquetesInfo);
+        // Items ya guardados en esta cotización (precarga)
+        const itemsExistentes = @json($itemsExistentes);
 
         // Búsqueda de cliente
         const clienteSearch = document.getElementById('cliente-search');
@@ -448,7 +495,6 @@
             debounceTimer = setTimeout(() => buscarClientes(q), 250);
         });
 
-        // Al enfocar el buscador (vacío) se muestran los clientes más recientes
         clienteSearch?.addEventListener('focus', function () {
             if (this.value.trim().length === 0) buscarClientes('');
         });
@@ -459,7 +505,6 @@
             }
         });
 
-        // Clic en el cliente ya seleccionado reabre el buscador (sin botón "Cambiar")
         clienteSeleccionadoBox.addEventListener('click', function () {
             clienteIdInput.value = '';
             clienteBuscador.style.display = 'block';
@@ -494,9 +539,22 @@
             .catch(() => alert('No se pudo guardar el cliente.'));
         });
 
-        // ---- Manejo de items (productos / paquetes) ----
-        let items = [];
+        // ---- Manejo de items (productos / paquetes), precargados desde la cotización ----
         let itemSeq = 0;
+        let items = itemsExistentes.map(it => ({
+            seq: itemSeq++,
+            id: it.id,
+            tipo_equipo: it.tipo_equipo || it.nombreGuardado,
+            marca: it.marca,
+            modelo: it.modelo,
+            imagen: it.imagen,
+            cantidad: it.cantidad,
+            precioOriginal: it.precioOriginal,
+            sobreprecio: it.sobreprecio,
+            esRegalo: it.esRegalo,
+            paqueteOrigenId: it.paqueteOrigenId,
+            paqueteOrigenNombre: it.paqueteOrigenNombre,
+        }));
 
         const buscadorItems = document.getElementById('buscador-items');
         const resultadosItems = document.getElementById('resultados-items');
@@ -520,7 +578,6 @@
             });
         }
 
-        // ---- Buscador combinado de productos y paquetes (misma UX que el buscador de clientes) ----
         function renderResultadosItems(q) {
             const texto = q.trim().toLowerCase();
 
@@ -696,8 +753,12 @@
             actualizarTotales();
         }
 
+        function calcularSubtotalGlobal() {
+            return items.reduce((sum, item) => sum + calcularSubtotalLinea(item), 0);
+        }
+
         function actualizarTotales() {
-            const subtotal = items.reduce((sum, item) => sum + calcularSubtotalLinea(item), 0);
+            const subtotal = calcularSubtotalGlobal();
             const descuentos = parseFloat(document.getElementById('descuentos').value) || 0;
             const costoEnvio = parseFloat(document.getElementById('costo_envio').value) || 0;
             const aplicaIva = document.getElementById('aplica_iva').checked;
@@ -710,194 +771,169 @@
             document.getElementById('descuentos-display').textContent = '$' + descuentos.toFixed(2);
             document.getElementById('iva-display').textContent = '$' + iva.toFixed(2);
             document.getElementById('total-display').textContent = '$' + total.toFixed(2);
+
+            if (typeof refrescarResumenSiConfigurado === 'function') refrescarResumenSiConfigurado();
         }
 
         document.getElementById('descuentos').addEventListener('input', actualizarTotales);
         document.getElementById('costo_envio').addEventListener('input', actualizarTotales);
         document.getElementById('aplica_iva').addEventListener('change', actualizarTotales);
-        document.getElementById('anticipo').addEventListener('input', actualizarTotales);
+        document.getElementById('anticipo')?.addEventListener('input', actualizarTotales);
 
-        // ---- Plan de pagos: selección directa / resumen editable ----
-        const planPagosEmpty = document.getElementById('plan-pagos-empty');
-        const planPagosResumen = document.getElementById('plan-pagos-resumen');
+        // ---- Plan de pagos: solo si aún no hay pagos registrados ----
         const selectorPlanPlantilla = document.getElementById('plan-pago-plantilla');
-        const numeroPagosHidden = document.getElementById('numero_pagos');
-        const diasEntrePagosHidden = document.getElementById('dias_entre_pagos');
         let planConfigurado = false;
+        let refrescarResumenSiConfigurado = function () {};
 
-        // Al seleccionar un plan de pago guardado, autocompleta número de pagos, frecuencia y método
-        // y muestra el resumen editable de inmediato (sin botón "Configurar").
-        selectorPlanPlantilla.addEventListener('change', function () {
-            const opt = this.options[this.selectedIndex];
-            if (!this.value) {
-                numeroPagosHidden.value = '';
-                diasEntrePagosHidden.value = '';
-                planConfigurado = false;
-                mostrarVacioPlan();
-                return;
-            }
-            numeroPagosHidden.value = opt.dataset.numeroPagos;
-            diasEntrePagosHidden.value = opt.dataset.diasEntrePagos;
-            document.getElementById('metodo_pago').value = opt.dataset.metodoPago;
-            planConfigurado = true;
-            mostrarResumenPlan();
-        });
+        if (selectorPlanPlantilla) {
+            const planPagosResumen = document.getElementById('plan-pagos-resumen');
+            const numeroPagosHidden = document.getElementById('numero_pagos');
+            const diasEntrePagosHidden = document.getElementById('dias_entre_pagos');
 
-        // Cambiar el método de pago o la fecha del primer pago también refresca el resumen ya visible.
-        document.getElementById('metodo_pago').addEventListener('change', function () {
-            if (planConfigurado) generarResumenPagos(false);
-        });
-        document.getElementById('fecha_inicio').addEventListener('change', function () {
-            if (planConfigurado) actualizarFechasPagos();
-        });
-
-        function mostrarResumenPlan() {
-            generarResumenPagos(true);
-            planPagosEmpty.style.display = 'none';
-            planPagosResumen.style.display = 'block';
-        }
-
-        function mostrarVacioPlan() {
-            planPagosResumen.style.display = 'none';
-            planPagosEmpty.style.display = 'block';
-        }
-
-        function calcularTotalCotizacion() {
-            const subtotal = items.reduce((sum, item) => sum + calcularSubtotalLinea(item), 0);
-            const descuentos = parseFloat(document.getElementById('descuentos').value) || 0;
-            const costoEnvio = parseFloat(document.getElementById('costo_envio').value) || 0;
-            const aplicaIva = document.getElementById('aplica_iva').checked;
-            const baseIva = Math.max(subtotal - descuentos, 0);
-            const iva = aplicaIva ? Math.round(baseIva * 0.16 * 100) / 100 : 0;
-            const anticipo = parseFloat(document.getElementById('anticipo').value) || 0;
-            return Math.max(subtotal - descuentos + iva + costoEnvio - anticipo, 0);
-        }
-
-        function actualizarRestantePagos() {
-            const total = calcularTotalCotizacion();
-            const inputsMonto = document.querySelectorAll('.monto-pago-input');
-            let suma = 0;
-            inputsMonto.forEach(input => suma += parseFloat(input.value) || 0);
-            const restante = total - suma;
-            const restanteEl = document.getElementById('resumen-restante');
-            restanteEl.textContent = '$' + restante.toFixed(2);
-            restanteEl.style.color = Math.abs(restante) < 0.01 ? 'var(--green)' : '#dc2626';
-        }
-
-        // Refresca únicamente las fechas estimadas de cada cuota, sin tocar los montos ya editados.
-        function actualizarFechasPagos() {
-            const diasEntrePagos = Math.max(1, parseInt(document.getElementById('dias_entre_pagos').value) || 1);
-            const fechaInicioVal = document.getElementById('fecha_inicio').value;
-            const filas = document.querySelectorAll('#resumen-pagos-body tr');
-            filas.forEach((tr, index) => {
-                let fechaTexto = '—';
-                if (fechaInicioVal) {
-                    const fecha = new Date(fechaInicioVal + 'T00:00:00');
-                    fecha.setDate(fecha.getDate() + diasEntrePagos * index);
-                    fechaTexto = fecha.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            selectorPlanPlantilla.addEventListener('change', function () {
+                const opt = this.options[this.selectedIndex];
+                if (!this.value) {
+                    numeroPagosHidden.value = '';
+                    diasEntrePagosHidden.value = '';
+                    planConfigurado = false;
+                    planPagosResumen.style.display = 'none';
+                    return;
                 }
-                tr.children[1].textContent = fechaTexto;
+                numeroPagosHidden.value = opt.dataset.numeroPagos;
+                diasEntrePagosHidden.value = opt.dataset.diasEntrePagos;
+                document.getElementById('metodo_pago').value = opt.dataset.metodoPago;
+                planConfigurado = true;
+                generarResumenPagos(true);
+                planPagosResumen.style.display = 'block';
             });
-        }
 
-        // Al editar el monto de un pago, se redistribuye automáticamente el resto del total
-        // entre los demás pagos (en partes iguales) para que la suma siempre cubra el total.
-        function manejarEdicionMonto(e) {
-            const inputs = Array.from(document.querySelectorAll('.monto-pago-input'));
-            const actual = e.target;
-            const total = calcularTotalCotizacion();
-            const valorActual = parseFloat(actual.value) || 0;
-            const otros = inputs.filter(inp => inp !== actual);
+            document.getElementById('metodo_pago').addEventListener('change', function () {
+                if (planConfigurado) generarResumenPagos(false);
+            });
+            document.getElementById('fecha_inicio').addEventListener('change', function () {
+                if (planConfigurado) actualizarFechasPagos();
+            });
 
-            if (otros.length > 0) {
-                const restante = total - valorActual;
-                const base = Math.floor((restante / otros.length) * 100) / 100;
-                otros.forEach((inp, idx) => {
-                    if (idx === otros.length - 1) {
-                        // El último de los "otros" absorbe el ajuste de redondeo para que la suma sea exacta.
-                        const sumaBase = base * (otros.length - 1);
-                        inp.value = (restante - sumaBase).toFixed(2);
-                    } else {
-                        inp.value = base.toFixed(2);
+            function calcularRestanteCotizacion() {
+                const total = calcularSubtotalGlobal()
+                    - (parseFloat(document.getElementById('descuentos').value) || 0)
+                    + (document.getElementById('aplica_iva').checked ? Math.round(Math.max(calcularSubtotalGlobal() - (parseFloat(document.getElementById('descuentos').value) || 0), 0) * 0.16 * 100) / 100 : 0)
+                    + (parseFloat(document.getElementById('costo_envio').value) || 0);
+                const anticipo = parseFloat(document.getElementById('anticipo')?.value) || 0;
+                return Math.max(total - anticipo, 0);
+            }
+
+            function actualizarRestantePagos() {
+                const restante = calcularRestanteCotizacion();
+                const inputsMonto = document.querySelectorAll('.monto-pago-input');
+                let suma = 0;
+                inputsMonto.forEach(input => suma += parseFloat(input.value) || 0);
+                const diff = restante - suma;
+                const restanteEl = document.getElementById('resumen-restante');
+                restanteEl.textContent = '$' + diff.toFixed(2);
+                restanteEl.style.color = Math.abs(diff) < 0.01 ? 'var(--green)' : '#dc2626';
+            }
+
+            function actualizarFechasPagos() {
+                const diasEntrePagos = Math.max(1, parseInt(diasEntrePagosHidden.value) || 1);
+                const fechaInicioVal = document.getElementById('fecha_inicio').value;
+                const filas = document.querySelectorAll('#resumen-pagos-body tr');
+                filas.forEach((tr, index) => {
+                    let fechaTexto = '—';
+                    if (fechaInicioVal) {
+                        const fecha = new Date(fechaInicioVal + 'T00:00:00');
+                        fecha.setDate(fecha.getDate() + diasEntrePagos * index);
+                        fechaTexto = fecha.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     }
+                    tr.children[1].textContent = fechaTexto;
                 });
             }
 
-            actualizarRestantePagos();
-        }
+            function manejarEdicionMonto(e) {
+                const inputs = Array.from(document.querySelectorAll('.monto-pago-input'));
+                const actual = e.target;
+                const restante = calcularRestanteCotizacion();
+                const valorActual = parseFloat(actual.value) || 0;
+                const otros = inputs.filter(inp => inp !== actual);
 
-        function generarResumenPagos(reconstruir = true) {
-            const total = calcularTotalCotizacion();
-            const numeroPagos = Math.max(1, parseInt(document.getElementById('numero_pagos').value) || 1);
-            const diasEntrePagos = Math.max(1, parseInt(document.getElementById('dias_entre_pagos').value) || 1);
-            const fechaInicioVal = document.getElementById('fecha_inicio').value;
-            const metodoPago = document.getElementById('metodo_pago').value;
-            const montoPorPago = total / numeroPagos;
-
-            document.getElementById('resumen-metodo').textContent = metodoPago;
-            document.getElementById('resumen-numero-pagos').textContent = numeroPagos;
-            document.getElementById('resumen-monto-pago').textContent = '$' + montoPorPago.toFixed(2);
-
-            const tbody = document.getElementById('resumen-pagos-body');
-
-            // Si sólo cambió el total pero el número de filas es el mismo, se conservan los montos
-            // ya editados manualmente por el usuario y solo se refresca el indicador de restante.
-            if (!reconstruir && tbody.querySelectorAll('tr').length === numeroPagos) {
-                actualizarRestantePagos();
-                return;
-            }
-
-            tbody.innerHTML = '';
-            for (let i = 1; i <= numeroPagos; i++) {
-                let fechaTexto = '—';
-                if (fechaInicioVal) {
-                    const fecha = new Date(fechaInicioVal + 'T00:00:00');
-                    fecha.setDate(fecha.getDate() + diasEntrePagos * (i - 1));
-                    fechaTexto = fecha.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                if (otros.length > 0) {
+                    const sobrante = restante - valorActual;
+                    const base = Math.floor((sobrante / otros.length) * 100) / 100;
+                    otros.forEach((inp, idx) => {
+                        if (idx === otros.length - 1) {
+                            const sumaBase = base * (otros.length - 1);
+                            inp.value = (sobrante - sumaBase).toFixed(2);
+                        } else {
+                            inp.value = base.toFixed(2);
+                        }
+                    });
                 }
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>Pago ${i} de ${numeroPagos}</td>
-                    <td>${fechaTexto}</td>
-                    <td>
-                        <div style="position:relative; max-width:140px;">
-                            <span class="qprefix" style="left:8px;">$</span>
-                            <input type="number" class="monto-pago-input qinput" min="0" step="0.01" value="${montoPorPago.toFixed(2)}" style="padding:8px 8px 8px 22px; font-weight:700;">
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+
+                actualizarRestantePagos();
             }
 
-            tbody.querySelectorAll('.monto-pago-input').forEach(input => {
-                input.addEventListener('input', manejarEdicionMonto);
+            function generarResumenPagos(reconstruir = true) {
+                const restante = calcularRestanteCotizacion();
+                const numeroPagos = Math.max(1, parseInt(numeroPagosHidden.value) || 1);
+                const diasEntrePagos = Math.max(1, parseInt(diasEntrePagosHidden.value) || 1);
+                const fechaInicioVal = document.getElementById('fecha_inicio').value;
+                const metodoPago = document.getElementById('metodo_pago').value;
+                const montoPorPago = restante / numeroPagos;
+
+                document.getElementById('resumen-metodo').textContent = metodoPago;
+                document.getElementById('resumen-numero-pagos').textContent = numeroPagos;
+                document.getElementById('resumen-monto-pago').textContent = '$' + montoPorPago.toFixed(2);
+
+                const tbody = document.getElementById('resumen-pagos-body');
+
+                if (!reconstruir && tbody.querySelectorAll('tr').length === numeroPagos) {
+                    actualizarRestantePagos();
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                for (let i = 1; i <= numeroPagos; i++) {
+                    let fechaTexto = '—';
+                    if (fechaInicioVal) {
+                        const fecha = new Date(fechaInicioVal + 'T00:00:00');
+                        fecha.setDate(fecha.getDate() + diasEntrePagos * (i - 1));
+                        fechaTexto = fecha.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    }
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>Pago ${i} de ${numeroPagos}</td>
+                        <td>${fechaTexto}</td>
+                        <td>
+                            <div style="position:relative; max-width:140px;">
+                                <span class="qprefix" style="left:8px;">$</span>
+                                <input type="number" class="monto-pago-input qinput" min="0" step="0.01" value="${montoPorPago.toFixed(2)}" style="padding:8px 8px 8px 22px; font-weight:700;">
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+
+                tbody.querySelectorAll('.monto-pago-input').forEach(input => {
+                    input.addEventListener('input', manejarEdicionMonto);
+                });
+
+                actualizarRestantePagos();
+            }
+
+            document.getElementById('btn-redistribuir-pagos').addEventListener('click', function () {
+                generarResumenPagos(true);
             });
 
-            actualizarRestantePagos();
+            refrescarResumenSiConfigurado = function () {
+                if (planConfigurado) generarResumenPagos(false);
+            };
         }
-
-        document.getElementById('btn-redistribuir-pagos').addEventListener('click', function () {
-            generarResumenPagos(true);
-        });
-
-        const actualizarTotalesOriginal = actualizarTotales;
-        actualizarTotales = function () {
-            actualizarTotalesOriginal();
-            if (planConfigurado) generarResumenPagos(false);
-        };
 
         // Inyecta los hidden inputs de items al enviar el formulario
         document.getElementById('form-cotizacion').addEventListener('submit', function (e) {
             if (items.length === 0) {
                 e.preventDefault();
                 alert('Agrega al menos un producto o paquete a la cotización.');
-                return;
-            }
-
-            if (!planConfigurado) {
-                e.preventDefault();
-                alert('Selecciona un plan de pago antes de guardar la cotización.');
-                selectorPlanPlantilla.focus();
                 return;
             }
 

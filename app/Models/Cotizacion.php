@@ -20,6 +20,7 @@ class Cotizacion extends Model
         'aplica_iva',
         'lugar',
         'costo_envio',
+        'anticipo',
         'total',
         'plan_pago_id',
         'estado',
@@ -33,6 +34,7 @@ class Cotizacion extends Model
         'iva' => 'decimal:2',
         'aplica_iva' => 'boolean',
         'costo_envio' => 'decimal:2',
+        'anticipo' => 'decimal:2',
         'total' => 'decimal:2',
         'regalo' => 'boolean',
     ];
