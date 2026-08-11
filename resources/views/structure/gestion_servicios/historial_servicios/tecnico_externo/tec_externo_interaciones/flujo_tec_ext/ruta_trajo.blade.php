@@ -1,8 +1,9 @@
 @php
+    $modoPreview = $modo_preview ?? false;
     $hasService = isset($service) && $service instanceof \App\Models\Service;
     $isAdmin = auth()->check() && auth()->user()->isAdmin();
 
-    if ($hasService) {
+    if ($hasService && !$modoPreview) {
         $tracks = $service->serviceTrackings
             ->sortBy(fn ($t) => $t->serviceStep?->order ?? 0)
             ->values();

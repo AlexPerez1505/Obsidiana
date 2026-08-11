@@ -12,6 +12,7 @@
             <span>Registro protegido. Requiere captura vía formulario QR para asegurar identidad y firmas.</span>
         </div>
 
+        @if(!($modo_ver ?? false))
         <div class="resumen-actions">
             <button type="button" class="resumen-btn resumen-btn--primary" id="btn-generar-qr" onclick="generarQrSinGuardar()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h4v4H7z"/><path d="M13 7h4v4h-4z"/><path d="M7 13h4v4H7z"/><path d="M13 13h4v4h-4z"/></svg>
@@ -28,6 +29,7 @@
             </button>
             @endif
         </div>
+        @endif
 
         <div id="resumen-qr-preview" style="display:none; margin-top:14px; text-align:center;">
             <p class="muted" style="font-size:13px; margin:0 0 8px;">QR generado:</p>
@@ -87,7 +89,7 @@
     </div>
 
     <!-- Ruta de Trabajo -->
-    @include('structure.gestion_servicios.historial_servicios.tecnico_externo.tec_externo_interaciones.flujo_tec_ext.ruta_trajo')
+    @include('structure.gestion_servicios.historial_servicios.tecnico_externo.tec_externo_interaciones.flujo_tec_ext.ruta_trajo', ['modo_preview' => true])
 
     <!-- Auditoría de Movimientos -->
     <div class="resumen-card">
