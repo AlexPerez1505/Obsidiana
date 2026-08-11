@@ -2,11 +2,11 @@
 @section('title', 'Registrar Cliente')
 
 @section('content')
-    <form method="POST" action="{{ route('commercial.clientes.store') }}" class="rgrid-sidebar">
+    <form method="POST" action="{{ route('commercial.clientes.store') }}" style="width:100%;">
         @csrf
         <input type="hidden" name="return_to" value="{{ $returnTo ?? '' }}">
 
-        <div>
+        <div style="width:100%;">
             {{-- Header --}}
             <div class="card" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
                 <div style="display:flex; align-items:center; gap:12px;">
@@ -86,26 +86,6 @@
             </x-ui.card>
         </div>
 
-        {{-- Sidebar --}}
-        <div style="display:flex; flex-direction:column; gap:18px;">
-            <x-ui.card>
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" width="26" height="26"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                    <x-ui.section-title style="margin:0;">Información</x-ui.section-title>
-                </div>
-                <p class="muted" style="margin:0; font-size:14px;">Completa los datos básicos del cliente.</p>
-                <p class="muted" style="margin:8px 0 0; font-size:14px;">Solo el nombre es obligatorio.</p>
-            </x-ui.card>
-
-            <x-ui.card>
-                <x-ui.section-title style="margin:0 0 12px;">Consejos</x-ui.section-title>
-                <ul style="margin:0; padding-left:18px; font-size:14px; color:var(--text); line-height:1.7;">
-                    <li>Asigna una categoría para segmentar promociones.</li>
-                    <li>El asesor se asigna automáticamente (usuario actual).</li>
-                    <li>Agrega notas relevantes en comentarios.</li>
-                </ul>
-            </x-ui.card>
-        </div>
     </form>
 
     <div id="modal-category" class="modal-overlay" style="display:none;">
