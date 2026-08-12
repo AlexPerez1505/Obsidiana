@@ -13,6 +13,7 @@ class ServiceTracking extends Model
         'performed_by',
         'qr_token',
         'qr_expires_at',
+        'verification_code',
         'notes',
         'evidence_1_path',
         'evidence_2_path',
