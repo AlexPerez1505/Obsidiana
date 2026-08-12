@@ -66,14 +66,33 @@
         font-weight: 700;
         white-space: nowrap;
     }
-    .equipment-state.green { color: #16a329; border: 1px solid #22c943; background: #f7fff8; }
-    .equipment-state.blue { color: #1689ff; border: 1px solid #1689ff; background: #f5fbff; }
-    .equipment-state.red { color: #ff3131; border: 1px solid #ff4b4b; background: #fff8f8; }
+    .equipment-state.green {
+        color: #34d355;
+        border: 1px solid #22c943;
+        background: rgba(34,201,67,0.12);
+        box-shadow: 0 0 8px rgba(34,201,67,0.55), 0 0 16px rgba(34,201,67,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .equipment-state.blue {
+        color: #42a5ff;
+        border: 1px solid #1689ff;
+        background: rgba(22,137,255,0.12);
+        box-shadow: 0 0 8px rgba(22,137,255,0.55), 0 0 16px rgba(22,137,255,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .equipment-state.red {
+        color: #ff6b6b;
+        border: 1px solid #ff4b4b;
+        background: rgba(255,75,75,0.12);
+        box-shadow: 0 0 8px rgba(255,75,75,0.55), 0 0 16px rgba(255,75,75,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    :root[data-theme="light"] .equipment-state.green { color: #16a329; border: 1px solid #22c943; background: #f7fff8; box-shadow: none; }
+    :root[data-theme="light"] .equipment-state.blue { color: #1689ff; border: 1px solid #1689ff; background: #f5fbff; box-shadow: none; }
+    :root[data-theme="light"] .equipment-state.red { color: #ff3131; border: 1px solid #ff4b4b; background: #fff8f8; box-shadow: none; }
     .equipment-action-menu { position: relative; display: inline-flex; }
     .equipment-action-list {
         position: absolute;
-        right: 0;
-        top: calc(100% + 6px);
+        right: 100%;
+        top: 0;
+        margin-right: 6px;
         min-width: 210px;
         padding: 6px;
         border: 1px solid var(--border);
@@ -95,18 +114,90 @@
     .equipment-action-list .danger { color: #ef4444; }
     .equipment-action-list .danger:hover { background: #fff1f2; color: #dc2626; }
     .equipment-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; color: var(--muted); font-size: 13px; font-weight: 600; }
+    .equipment-menu.card {
+        padding: 20px;
+        border-radius: 14px;
+        background: linear-gradient(145deg, rgba(8,18,40,0.88), rgba(4,12,30,0.88));
+        border: 1px solid rgba(0,168,255,0.55);
+        box-shadow: 0 8px 28px rgba(0,0,0,0.35), 0 0 14px rgba(0,168,255,0.2), inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+    .equipment-menu .btn, .equipment-menu-header .btn {
+        background: linear-gradient(135deg, #00A8FF, #7C3AED);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 12px;
+        box-shadow: 0 0 12px rgba(59,130,246,0.35), 0 0 30px rgba(124,58,237,0.2);
+        transition: all 0.2s ease;
+    }
+    .equipment-menu .btn:hover, .equipment-menu-header .btn:hover { filter: brightness(1.1); }
+    .equipment-menu .btn--ghost, .equipment-menu-header .btn--ghost {
+        background: rgba(8,18,40,0.45);
+        color: #00A8FF;
+        border: 1px solid rgba(0,168,255,0.55);
+    }
+    .equipment-menu .btn--ghost:hover, .equipment-menu-header .btn--ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
+    .equipment-search input { background: rgba(4,10,24,0.72); border-color: rgba(0,168,255,0.55); color: #fff; }
+    .equipment-search input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.45); outline: none; }
+    .equipment-search svg { color: #00A8FF; }
+    .equipment-foot { color: rgba(255,255,255,0.55); }
+    :root[data-theme="light"] .equipment-menu.card {
+        background: linear-gradient(145deg, rgba(15,23,42,0.04), rgba(15,23,42,0.08));
+        border-color: rgba(0,168,255,0.55);
+        box-shadow: 0 8px 28px rgba(0,0,0,0.1), 0 0 14px rgba(0,168,255,0.18), inset 0 1px 0 rgba(255,255,255,0.5);
+    }
+    :root[data-theme="light"] .equipment-menu .btn--ghost {
+        background: rgba(0,168,255,0.08);
+        border-color: rgba(0,168,255,0.55);
+        color: #00A8FF;
+    }
+    :root[data-theme="light"] .equipment-menu .btn--ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
+    :root[data-theme="light"] .equipment-search input { background: #fff; color: var(--text); border-color: rgba(0,168,255,0.35); }
+    :root[data-theme="light"] .equipment-search input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.12), 0 0 18px rgba(0,168,255,0.25); outline: none; }
+    :root[data-theme="light"] .equipment-search svg { color: #00A8FF; }
+    :root[data-theme="light"] .equipment-foot {
+        color: #3730a3;
+        background: linear-gradient(180deg, #e0e7ff, #dbeafe);
+        padding: 14px 20px;
+        margin: 14px -20px -20px -20px;
+        border-radius: 0 0 12px 12px;
+    }
+    :root[data-theme="light"] .equipment-menu .equipment-state.green { color: #16a329; background: #f7fff8; border: 1px solid #22c943; box-shadow: none; }
+    :root[data-theme="light"] .equipment-menu .equipment-state.blue { color: #1689ff; background: #f5fbff; border: 1px solid #1689ff; box-shadow: none; }
+    :root[data-theme="light"] .equipment-menu .equipment-state.red { color: #ff3131; background: #fff8f8; border: 1px solid #ff4b4b; box-shadow: none; }
+    .equipment-menu .card { overflow: visible; }
+    .equipment-action-list { z-index: 50; }
+    .equipment-menu th {
+        color: rgba(255,255,255,0.75);
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        padding: 12px 8px;
+        border-bottom: 1px solid rgba(0,168,255,0.35);
+    }
+    :root[data-theme="light"] .equipment-menu th {
+        background: linear-gradient(180deg, #e0e7ff, #dbeafe);
+        color: #3730a3;
+        border-bottom: 1px solid rgba(15,23,42,0.08);
+    }
+    .equipment-menu table { width: 100%; border-collapse: collapse; }
+    :root[data-theme="light"] .equipment-menu table, :root[data-theme="light"] .equipment-menu tbody { background: #ffffff; }
+    .equipment-menu td { padding: 12px 8px; border-bottom: 1px solid rgba(0,168,255,0.18); }
+    :root[data-theme="light"] .equipment-menu tbody tr { background: #ffffff; }
+    :root[data-theme="light"] .equipment-menu tr { border-bottom: 1px solid rgba(0,168,255,0.35); }
+    :root[data-theme="light"] .equipment-menu tbody tr:hover { background: #f5f9ff; }
 </style>
 @endpush
 
 @section('content')
-    <div style="display:flex; justify-content:flex-end; margin-bottom:18px;">
+    <div class="equipment-menu-header" style="display:flex; justify-content:flex-end; margin-bottom:18px;">
         <a href="{{ route('inventory.equipos.create') }}" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             Nuevo Equipo
         </a>
     </div>
 
-    <x-ui.card>
+    <x-ui.card class="equipment-menu">
         <div class="equipment-search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="7"></circle>
@@ -156,28 +247,20 @@
                                     <div class="equipment-action-list" role="menu">
                                         <a href="{{ route('inventory.equipos.show', ['equipo' => $equipment['code']]) }}" role="menuitem">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                                            Ver detalle
+                                            Visualizar
                                         </a>
                                         <a href="{{ route('inventory.equipos.edit', ['equipo' => $equipment['code']]) }}" role="menuitem">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
-                                            Editar
+                                            Actualizar
                                         </a>
-                                        <button type="button" role="menuitem" data-equipment-action-message="Asignacion de responsable pendiente de conectar.">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
-                                            Asignar responsable
-                                        </button>
-                                        <button type="button" role="menuitem" data-equipment-action-message="Cambio de ubicacion pendiente de conectar.">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                            Cambiar ubicacion
-                                        </button>
-                                        <button type="button" role="menuitem" data-equipment-action-message="Registro de mantenimiento pendiente de conectar.">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1a6 6 0 0 1-7.8 7.8l-5.7 5.7a2.1 2.1 0 0 1-3-3l5.7-5.7a6 6 0 0 1 7.8-7.8l-3.1 3.1z"/></svg>
-                                            Registrar mantenimiento
-                                        </button>
-                                        <button type="button" class="danger" role="menuitem" data-equipment-action-message="Eliminacion de equipo pendiente de confirmar.">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>
-                                            Eliminar
-                                        </button>
+                                        <form method="POST" action="{{ route('inventory.equipos.destroy', ['equipo' => $equipment['code']]) }}" onsubmit="return confirm('¿Eliminar este equipo?');" role="none">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="danger" role="menuitem">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>
+                                                Eliminar
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </td>
@@ -238,8 +321,28 @@
             if (!toggle) return;
 
             const menu = toggle.closest('[data-equipment-action-menu]');
+            const list = menu.querySelector('.equipment-action-list');
             const isOpen = menu.classList.toggle('is-open');
             toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+
+            if (list) {
+                const rect = toggle.getBoundingClientRect();
+                const listWidth = list.offsetWidth || 220;
+                let left = rect.left + rect.width - listWidth;
+                if (left < 8) left = 8;
+
+                if (isOpen) {
+                    list.style.position = 'fixed';
+                    list.style.top = (rect.bottom + 6) + 'px';
+                    list.style.left = left + 'px';
+                    list.style.zIndex = '9999';
+                } else {
+                    list.style.position = '';
+                    list.style.top = '';
+                    list.style.left = '';
+                    list.style.zIndex = '';
+                }
+            }
         });
 
         document.addEventListener('keydown', (event) => {
