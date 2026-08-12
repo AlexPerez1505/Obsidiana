@@ -155,6 +155,36 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
         return back();
     })->name('gestion.servicios.historial.external_technicians.store');
+
+    // Cartas de garantía
+    Route::get('/gestion-servicios/cartas-garantia', function () {
+        $cartas = \App\Models\CartaGarantia::with(['tipoEquipo', 'subtipo'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('structure.gestion_servicios.Cartas_garantia.menu_carta', compact('cartas'));
+    })->name('cartas.garantia.index');
+
+    Route::get('/gestion-servicios/cartas-garantia/crear', function () {
+        $productos = \App\Models\Producto::all();
+
+        return view('structure.gestion_servicios.Cartas_garantia.Cartas_form', compact('productos'));
+    })->name('cartas.garantia.create');
+
+    Route::post('/gestion-servicios/cartas-garantia', function (\Illuminate\Http\Request $request) {
+        $data = $request->validate([
+            'id_tipo_equipo' => 'required|exists:productos,id',
+            'id_subtipo' => 'required|exists:productos,id',
+            'nombre' => 'required|string|max:255',
+            'archivo_carta' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp',
+        ]);
+
+        $data['archivo_carta'] = $request->file('archivo_carta')->store('cartas_garantia', 'public');
+
+        \App\Models\CartaGarantia::create($data);
+
+        return redirect()->route('cartas.garantia.index')->with('success', 'Carta de garantía guardada correctamente.');
+    })->name('cartas.garantia.store');
 });
 
 Route::get('/nueva-orden/{invitation}', [ServiceController::class, 'createFromInvitation'])
