@@ -41,6 +41,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('inventory.productos.create');
     Route::post('/gestion-inventario/productos', [ProductoController::class, 'store'])
         ->name('inventory.productos.store');
+    Route::post('/gestion-inventario/productos/sincronizar', [ProductoController::class, 'sync'])
+        ->name('inventory.productos.sync');
     Route::get('/gestion-inventario/productos/{producto}/editar', [ProductoController::class, 'edit'])
         ->name('inventory.productos.edit');
     Route::put('/gestion-inventario/productos/{producto}', [ProductoController::class, 'update'])
