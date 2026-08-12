@@ -102,9 +102,6 @@
             <x-ui.card>
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
                     <x-ui.section-title style="margin:0;">Plan de Pagos</x-ui.section-title>
-                    <button type="button" class="btn btn--ghost" style="padding:6px 12px; font-size:13px;" onclick="document.getElementById('modal-plan-pago').style.display='flex'">
-                        + Agregar plan de pago
-                    </button>
                 </div>
 
                 <div style="overflow-x:auto;">
@@ -171,29 +168,6 @@
                 <p class="muted" style="margin:2px 0 0; font-size:13.5px;">{{ $cotizacion->cliente?->gmail ?: 'Sin correo' }}</p>
                 <a href="{{ route('commercial.clientes.show', $cotizacion->cliente) }}" class="link" style="display:inline-block; margin-top:10px; font-size:13.5px;">Ver perfil completo →</a>
             </x-ui.card>
-        </div>
-    </div>
-
-    {{-- Modal: nuevo plan de pago --}}
-    <div id="modal-plan-pago" class="modal-overlay" style="display:none;">
-        <div class="modal-card">
-            <h3 style="margin:0 0 14px; font-size:18px;">Agregar plan de pago</h3>
-            <form method="POST" action="{{ route('commercial.cotizaciones.planPagos.store', $cotizacion) }}">
-                @csrf
-                <x-ui.form-group label="Fecha límite *" name="plazo_pagar" type="date" :required="true" />
-                <x-ui.form-group for="metodo_pago" label="Método de pago *">
-                    <select id="metodo_pago" name="metodo_pago" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                        <option value="Efectivo">Efectivo</option>
-                        <option value="Transferencia">Transferencia</option>
-                        <option value="Tarjeta">Tarjeta</option>
-                        <option value="Cheque">Cheque</option>
-                    </select>
-                </x-ui.form-group>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn--ghost" onclick="document.getElementById('modal-plan-pago').style.display='none'">Cancelar</button>
-                    <x-ui.button type="submit" style="width:auto;">Guardar</x-ui.button>
-                </div>
-            </form>
         </div>
     </div>
 

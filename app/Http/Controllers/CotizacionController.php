@@ -3,16 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cotizacion;
+use App\Models\Category;
+use App\Models\Congress;
 use App\Models\Customer;
 use App\Models\Pago;
 use App\Models\PlanPago;
-use App\Models\PlanPagoPlantilla;
 use App\Models\Paquete;
 use App\Models\Producto;
+use App\Support\SimplePdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class CotizacionController extends Controller
@@ -46,16 +49,26 @@ class CotizacionController extends Controller
             ->where('estado', 'remision')
             ->latest();
 
-        if ($search = $request->get('search')) {
-            $query->whereHas('cliente', function ($q) use ($search) {
-                $q->where('nombre', 'like', "%{$search}%")
-                    ->orWhere('apellido', 'like', "%{$search}%");
+        $search = trim((string) $request->get('search', ''));
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('cliente', function ($cliente) use ($search) {
+                    $cliente->where('nombre', 'like', "%{$search}%")
+                        ->orWhere('apellido', 'like', "%{$search}%")
+                        ->orWhere('telefono', 'like', "%{$search}%")
+                        ->orWhere('gmail', 'like', "%{$search}%");
+                })
+                ->orWhereHas('items', function ($items) use ($search) {
+                    $items->where('nombre', 'like', "%{$search}%");
+                })
+                ->orWhere('id', 'like', "%{$search}%")
+                ->orWhere('total', 'like', "%{$search}%");
             });
         }
 
         return view('structure.commercial_management.cotizaciones.remisiones', [
             'remisiones' => $query->get(),
-            'filters' => $request->only('search'),
+            'filters' => ['search' => $search],
         ]);
     }
 
@@ -73,7 +86,9 @@ class CotizacionController extends Controller
             'clientes' => Customer::query()->orderBy('nombre')->get(),
             'productos' => Producto::query()->orderBy('tipo_equipo')->get(),
             'paquetes' => Paquete::with('productos')->orderBy('nombre')->get(),
-            'planesPago' => PlanPagoPlantilla::orderBy('nombre')->get(),
+            'planesPago' => $this->planesPagoPredeterminados(),
+            'categories' => Category::query()->orderBy('nombre')->get(),
+            'congresses' => Congress::query()->latest()->get(),
             'clienteSeleccionado' => $clienteSeleccionado,
         ]);
     }
@@ -156,6 +171,81 @@ class CotizacionController extends Controller
         ]);
     }
 
+    public function descargarRemisionPdf(Cotizacion $cotizacion)
+    {
+        abort_unless($cotizacion->esRemision(), 404);
+
+        $cotizacion->load(['cliente', 'items', 'planPagos.pagos']);
+        $pdf = $this->crearPdfRemision($cotizacion);
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="remision-' . $cotizacion->id . '.pdf"',
+        ]);
+    }
+
+    private function crearPdfRemision(Cotizacion $cotizacion): string
+    {
+        $pdf = new SimplePdf();
+        $cliente = trim(($cotizacion->cliente?->nombre ?? '') . ' ' . ($cotizacion->cliente?->apellido ?? '')) ?: 'Sin cliente';
+        $totalPagado = $cotizacion->planPagos
+            ->flatMap(fn ($plan) => $plan->pagos->where('pagado', true))
+            ->sum('monto_pagado');
+
+        $pdf->title('Remision #' . $cotizacion->id);
+        $pdf->subtitle('Venta definitiva - ' . now()->format('d/m/Y H:i'));
+
+        $pdf->section('Cliente');
+        $pdf->keyValue('Cliente', $cliente);
+        $pdf->keyValue('Telefono', $cotizacion->cliente?->telefono ?: 'Sin telefono');
+        $pdf->keyValue('Correo', $cotizacion->cliente?->gmail ?: 'Sin correo');
+        $pdf->keyValue('Lugar', $cotizacion->lugar ?: 'Sin lugar');
+
+        $pdf->section('Productos / Paquetes');
+        $pdf->table(
+            ['Concepto', 'Cant.', 'Precio', 'Sobreprecio', 'Subtotal'],
+            $cotizacion->items->map(function ($item) {
+                return [
+                    $item->nombre,
+                    (string) $item->cantidad,
+                    '$' . number_format((float) $item->precio_original, 2),
+                    '$' . number_format((float) $item->sobreprecio, 2),
+                    $item->es_regalo ? 'Obsequio' : '$' . number_format((float) $item->subtotal_linea, 2),
+                ];
+            })->values()->all(),
+            [210, 48, 82, 82, 88]
+        );
+
+        $pdf->section('Resumen');
+        $pdf->keyValue('Subtotal', '$' . number_format((float) $cotizacion->subtotal, 2));
+        $pdf->keyValue('Descuentos', '$' . number_format((float) $cotizacion->descuentos, 2));
+        $pdf->keyValue('IVA', '$' . number_format((float) $cotizacion->iva, 2));
+        $pdf->keyValue('Costo de envio', '$' . number_format((float) $cotizacion->costo_envio, 2));
+        $pdf->keyValue('Anticipo', '$' . number_format((float) $cotizacion->anticipo, 2));
+        $pdf->keyValue('Total', '$' . number_format((float) $cotizacion->total, 2));
+        $pdf->keyValue('Pagado', '$' . number_format((float) $totalPagado, 2));
+        $pdf->keyValue('Saldo', '$' . number_format(max((float) $cotizacion->total - (float) $totalPagado, 0), 2));
+
+        $pdf->section('Plan de pagos');
+        $pdf->table(
+            ['No.', 'Fecha limite', 'Metodo', 'Monto', 'Estado'],
+            $cotizacion->planPagos->sortBy('no_pago')->map(function ($plan) {
+                $pagado = $plan->pagos->where('pagado', true)->isNotEmpty();
+
+                return [
+                    $plan->no_pago === 0 ? 'Anticipo' : (string) $plan->no_pago,
+                    $plan->plazo_pagar?->format('d/m/Y') ?? '-',
+                    $plan->metodo_pago ?: '-',
+                    '$' . number_format((float) $plan->monto, 2),
+                    $pagado ? 'Pagado' : 'Pendiente',
+                ];
+            })->values()->all(),
+            [70, 100, 130, 100, 110]
+        );
+
+        return $pdf->output();
+    }
+
     /**
      * Muestra el formulario de edición de una cotización existente.
      */
@@ -167,7 +257,9 @@ class CotizacionController extends Controller
             'cotizacion' => $cotizacion,
             'productos' => Producto::query()->orderBy('tipo_equipo')->get(),
             'paquetes' => Paquete::with('productos')->orderBy('nombre')->get(),
-            'planesPago' => PlanPagoPlantilla::orderBy('nombre')->get(),
+            'planesPago' => $this->planesPagoPredeterminados(),
+            'categories' => Category::query()->orderBy('nombre')->get(),
+            'congresses' => Congress::query()->latest()->get(),
             'tienePagosRegistrados' => $this->tienePagosRegistrados($cotizacion),
         ]);
     }
@@ -222,6 +314,60 @@ class CotizacionController extends Controller
         return $cotizacion->planPagos()
             ->whereHas('pagos', fn ($q) => $q->where('pagado', true))
             ->exists();
+    }
+
+    private function planesPagoPredeterminados(): Collection
+    {
+        return collect([
+            [
+                'id' => 'contado',
+                'nombre' => 'Contado',
+                'descripcion' => 'Pago completo en una sola exhibicion',
+                'numero_pagos' => 1,
+                'dias_entre_pagos' => 1,
+                'metodo_pago' => 'Efectivo',
+            ],
+            [
+                'id' => 'dos_quincenas',
+                'nombre' => '2 pagos quincenales',
+                'descripcion' => '2 pagos cada 15 dias',
+                'numero_pagos' => 2,
+                'dias_entre_pagos' => 15,
+                'metodo_pago' => 'Transferencia',
+            ],
+            [
+                'id' => 'tres_quincenas',
+                'nombre' => '3 pagos quincenales',
+                'descripcion' => '3 pagos cada 15 dias',
+                'numero_pagos' => 3,
+                'dias_entre_pagos' => 15,
+                'metodo_pago' => 'Transferencia',
+            ],
+            [
+                'id' => 'cuatro_quincenas',
+                'nombre' => '4 pagos quincenales',
+                'descripcion' => '4 pagos cada 15 dias',
+                'numero_pagos' => 4,
+                'dias_entre_pagos' => 15,
+                'metodo_pago' => 'Transferencia',
+            ],
+            [
+                'id' => 'tres_meses',
+                'nombre' => '3 pagos mensuales',
+                'descripcion' => '3 pagos cada 30 dias',
+                'numero_pagos' => 3,
+                'dias_entre_pagos' => 30,
+                'metodo_pago' => 'Transferencia',
+            ],
+            [
+                'id' => 'seis_meses',
+                'nombre' => '6 pagos mensuales',
+                'descripcion' => '6 pagos cada 30 dias',
+                'numero_pagos' => 6,
+                'dias_entre_pagos' => 30,
+                'metodo_pago' => 'Transferencia',
+            ],
+        ])->map(fn (array $plan) => (object) $plan);
     }
 
     /**
@@ -422,31 +568,6 @@ class CotizacionController extends Controller
 
         return redirect()->route('commercial.cotizaciones.show', $cotizacion)
             ->with('status', 'La cotización se convirtió en remisión. Ahora es una venta definitiva.');
-    }
-
-    /**
-     * Agrega un plan de pago extra a una cotización existente.
-     */
-    public function storePlanPago(Request $request, Cotizacion $cotizacion): RedirectResponse
-    {
-        $data = $request->validate([
-            'plazo_pagar' => ['required', 'date'],
-            'metodo_pago' => ['required', 'string', 'max:255'],
-        ]);
-
-        $siguienteNumero = ($cotizacion->planPagos()->max('no_pago') ?? 0) + 1;
-
-        PlanPago::create([
-            'nombre' => "Pago {$siguienteNumero} (extra)",
-            'no_pago' => $siguienteNumero,
-            'cliente_id' => $cotizacion->cliente_id,
-            'cotizacion_id' => $cotizacion->id,
-            'plazo_pagar' => $data['plazo_pagar'],
-            'metodo_pago' => $data['metodo_pago'],
-        ]);
-
-        return redirect()->route('commercial.cotizaciones.show', $cotizacion)
-            ->with('status', 'Plan de pago agregado correctamente.');
     }
 
     /**

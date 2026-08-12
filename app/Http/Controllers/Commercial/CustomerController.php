@@ -10,6 +10,7 @@ use App\Models\Customer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -52,16 +53,22 @@ class CustomerController extends Controller
      */
     public function store(Request $request): RedirectResponse|JsonResponse
     {
+        $this->normalizeCustomerInput($request);
+
         $data = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
-            'apellido' => ['nullable', 'string', 'max:255'],
-            'telefono' => ['nullable', 'string', 'max:20'],
+            'apellido' => ['required', 'string', 'max:255'],
+            'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')],
+            'rfc' => ['required', 'string', 'max:13', Rule::unique('clientes', 'rfc')],
             'gmail' => ['nullable', 'email', 'max:255'],
-            'direccion' => ['nullable', 'string', 'max:255'],
+            'direccion' => ['required', 'string', 'max:255'],
             'comentarios' => ['nullable', 'string'],
-            'categoria_id' => ['nullable', 'exists:categorias,id'],
-            'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
+            'categoria_id' => ['required', 'exists:categorias,id'],
+            'congreso_id' => ['required', 'exists:congresos_eventos,id'],
             'recibe_promocion' => ['nullable', 'boolean'],
+        ], [
+            'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
+            'rfc.unique' => 'Este RFC ya está registrado en otro cliente.',
         ]);
 
         $data['recibe_promocion'] = $request->boolean('recibe_promocion');
@@ -99,17 +106,23 @@ class CustomerController extends Controller
      */
     public function update(Request $request, Customer $cliente): RedirectResponse
     {
+        $this->normalizeCustomerInput($request);
+
         $data = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
-            'apellido' => ['nullable', 'string', 'max:255'],
-            'telefono' => ['nullable', 'string', 'max:20'],
+            'apellido' => ['required', 'string', 'max:255'],
+            'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')->ignore($cliente->id)],
+            'rfc' => ['required', 'string', 'max:13', Rule::unique('clientes', 'rfc')->ignore($cliente->id)],
             'gmail' => ['nullable', 'email', 'max:255'],
-            'direccion' => ['nullable', 'string', 'max:255'],
+            'direccion' => ['required', 'string', 'max:255'],
             'comentarios' => ['nullable', 'string'],
-            'categoria_id' => ['nullable', 'exists:categorias,id'],
-            'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
+            'categoria_id' => ['required', 'exists:categorias,id'],
+            'congreso_id' => ['required', 'exists:congresos_eventos,id'],
             'recibe_promocion' => ['nullable', 'boolean'],
             'activo' => ['nullable', 'boolean'],
+        ], [
+            'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
+            'rfc.unique' => 'Este RFC ya está registrado en otro cliente.',
         ]);
 
         $data['recibe_promocion'] = $request->boolean('recibe_promocion');
@@ -118,6 +131,14 @@ class CustomerController extends Controller
         $cliente->update($data);
 
         return redirect()->route('commercial.clientes.index')->with('status', 'Cliente actualizado correctamente.');
+    }
+
+    private function normalizeCustomerInput(Request $request): void
+    {
+        $request->merge([
+            'telefono' => trim((string) $request->input('telefono')),
+            'rfc' => strtoupper(trim((string) $request->input('rfc'))),
+        ]);
     }
 
     /**

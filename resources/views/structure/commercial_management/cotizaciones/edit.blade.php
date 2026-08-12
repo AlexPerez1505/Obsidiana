@@ -181,7 +181,7 @@
                         @if($tienePagosRegistrados)
                             Ya hay pagos registrados; el plan de pagos no se puede modificar.
                         @else
-                            Selecciona un plan para sustituir las cuotas actuales, o deja esto sin tocar para conservarlas.
+                            Selecciona un plan predeterminado para sustituir las cuotas actuales, o deja esto sin tocar para conservarlas.
                         @endif
                     </div>
                 </div>
@@ -229,7 +229,7 @@
                                 <option value="">— Conservar cuotas actuales —</option>
                                 @foreach($planesPago as $plan)
                                     <option value="{{ $plan->id }}" data-numero-pagos="{{ $plan->numero_pagos }}" data-dias-entre-pagos="{{ $plan->dias_entre_pagos }}" data-metodo-pago="{{ $plan->metodo_pago }}">
-                                        {{ $plan->nombre }} ({{ $plan->numero_pagos }} pagos cada {{ $plan->dias_entre_pagos }} días)
+                                        {{ $plan->nombre }} - {{ $plan->descripcion }}
                                     </option>
                                 @endforeach
                             </select>
@@ -313,9 +313,27 @@
                 @csrf
                 <div class="rgrid-2">
                     <x-ui.form-group label="Nombre *" name="nombre" :required="true" />
-                    <x-ui.form-group label="Apellido" name="apellido" />
-                    <x-ui.form-group label="Teléfono" name="telefono" />
+                    <x-ui.form-group label="Apellido *" name="apellido" :required="true" />
+                    <x-ui.form-group label="Teléfono *" name="telefono" type="tel" inputmode="tel" maxlength="20" :required="true" />
+                    <x-ui.form-group label="RFC *" name="rfc" maxlength="13" :required="true" />
                     <x-ui.form-group label="Correo (Gmail)" name="gmail" type="email" />
+                    <x-ui.form-group label="Dirección *" name="direccion" :required="true" />
+                    <x-ui.form-group for="categoria_id" label="Categoría *">
+                        <select id="categoria_id" name="categoria_id" required class="qinput">
+                            <option value="" disabled selected>Selecciona una categoría</option>
+                            @foreach ($categories as $category)
+                                <option value="{{ $category->id }}">{{ $category->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </x-ui.form-group>
+                    <x-ui.form-group for="congreso_id" label="Congreso Conocido *">
+                        <select id="congreso_id" name="congreso_id" required class="qinput">
+                            <option value="" disabled selected>Selecciona un congreso</option>
+                            @foreach ($congresses as $congress)
+                                <option value="{{ $congress->id }}">{{ $congress->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </x-ui.form-group>
                 </div>
                 <div class="modal-actions">
                     <button type="button" id="btn-cancelar-cliente" class="btn btn--ghost">Cancelar</button>
@@ -530,13 +548,19 @@
                 headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
                 body: formData,
             })
-            .then(r => r.json())
+            .then(async r => {
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) {
+                    throw new Error(data.message || 'No se pudo guardar el cliente.');
+                }
+                return data;
+            })
             .then(data => {
                 seleccionarCliente(data);
                 modalCliente.style.display = 'none';
                 formNuevoCliente.reset();
             })
-            .catch(() => alert('No se pudo guardar el cliente.'));
+            .catch(error => alert(error.message || 'No se pudo guardar el cliente.'));
         });
 
         // ---- Manejo de items (productos / paquetes), precargados desde la cotización ----

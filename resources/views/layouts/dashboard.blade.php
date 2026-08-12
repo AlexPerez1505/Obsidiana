@@ -378,10 +378,6 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cotizaciones</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.planesPago.*') ? 'active' : '' }}" href="{{ route('commercial.planesPago.index') }}" data-tip="Planes de Pago">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Planes de Pago</span>
-                    </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.remisiones.*') ? 'active' : '' }}" href="{{ route('commercial.remisiones.index') }}" data-tip="Remisiones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Remisiones</span>
