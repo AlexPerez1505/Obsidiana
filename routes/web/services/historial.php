@@ -1,193 +1,41 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Services\QrController;
 use App\Http\Controllers\Services\ServiceController;
-use App\Models\Brand;
-use App\Models\Customer;
-use App\Models\EquipmentType;
-use App\Models\ExternalTechnician;
-use App\Models\Service;
-use App\Models\User;
+use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified', 'approved'])->group(function () {
-    Route::get('/gestion-servicios/historial-servicios', function () {
-        // Cargar servicios con todas sus relaciones
-        $services = Service::with([
-            'customer',
-            'serviceTrackings' => function ($query) {
-                $query->with('serviceStep')->orderBy('created_at');
-            }
-        ])
-        ->orderByDesc('created_at')
-        ->get();
+Route::middleware(['auth', 'verified', 'approved'])
+    ->prefix('gestion-servicios/historial-servicios')
+    ->group(function () {
+        // Índice del historial de servicios
+        Route::get('/', [ServiceController::class, 'index'])
+            ->name('gestion.servicios.historial');
 
-        // Transformar a formato compatible con la vista
-        $cotizaciones = $services->map(function ($service) {
-            return (object) [
-                'id' => $service->id,
-                'service_number' => $service->service_number,
-                'service_type' => $service->service_type,
-                'status' => $service->status,
-                'qr_token' => $service->qr_token,
-                'created_at' => $service->created_at,
-                'cliente_nombre' => $service->customer?->nombre ?? '',
-                'cliente_apellido' => $service->customer?->apellido ?? '',
-                'service' => $service, // Pasar el objeto completo para acceder a relaciones
-            ];
-        });
+        // Selección de tipo de servicio (nuevo servicio)
+        Route::get('/nuevo-servicio', [ServiceController::class, 'create'])
+            ->name('gestion.servicios.nuevo');
 
-        return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('cotizaciones'));
-    })->name('gestion.servicios.historial');
-    Route::get('/gestion-servicios/historial-servicios/nueva-orden/tipo', function () {
-        return view('structure.gestion_servicios.historial_servicios.ext_o_int');
-    })->name('gestion.servicios.historial.nueva_orden.type');
+        // Formularios de registro según tipo de mantenimiento
+        Route::view('/nuevo-servicio/interno', 'structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario_int')
+            ->name('gestion.servicios.nuevo.interno');
 
-    Route::get('/gestion-servicios/historial-servicios/nueva-orden/externo', function () {
-        $customers = Customer::with('asesor')->latest()->get();
+        Route::get('/nuevo-servicio/externo', [ServiceController::class, 'createExternal'])
+            ->name('gestion.servicios.nuevo.externo');
 
-        if ($clienteId = request('cliente_id')) {
-            $selected = $customers->firstWhere('id', $clienteId);
-            if ($selected) {
-                $customers = $customers->filter(fn ($customer) => $customer->id != $clienteId)->prepend($selected)->values();
-            }
-        }
+        // Paso 2: Registro del equipo
+        Route::get('/nuevo-servicio/externo/equipo', [ServiceController::class, 'createEquipment'])
+            ->name('gestion.servicios.nuevo.externo.equipo');
+        Route::post('/nuevo-servicio/externo/equipo', [ServiceController::class, 'storeEquipment'])
+            ->name('gestion.servicios.nuevo.externo.equipo.store');
 
-        $equipmentTypes = EquipmentType::orderBy('name')->pluck('name')
-            ->map(fn ($name) => (object) ['name' => $name]);
-        $brands = Brand::orderBy('name')->pluck('name')
-            ->map(fn ($name) => (object) ['name' => $name]);
-        $externalTechnicians = \Illuminate\Support\Facades\DB::table('tecnico_externo')
-            ->selectRaw("id, CONCAT(nombre, ' ', apellidos) as name, telefono as phone, correo as email, especialidad as specialty, empresa as company, domicilio as location, NULL as photo")
-            ->whereNull('deleted_at')
-            ->orderBy('nombre')
-            ->get();
+        // Paso 3: Selección del técnico
+        Route::get('/nuevo-servicio/externo/tecnico', [ServiceController::class, 'createTechnician'])
+            ->name('gestion.servicios.nuevo.externo.tecnico');
+        Route::post('/nuevo-servicio/externo/tecnico', [ServiceController::class, 'storeTechnician'])
+            ->name('gestion.servicios.nuevo.externo.tecnico.store');
+        Route::post('/nuevo-servicio/externo/guardar', [ServiceController::class, 'storeService'])
+            ->name('gestion.servicios.nuevo.externo.guardar');
 
-        return view('structure.gestion_servicios.historial_servicios.tecnico_externo.registro_servicio_externo.c_tecnico_ext', compact('customers', 'equipmentTypes', 'brands', 'externalTechnicians'));
-    })->name('gestion.servicios.historial.nueva_orden.externo');
-
-    Route::get('/gestion-servicios/historial-servicios/nueva-orden', function () {
-        return redirect()->route('gestion.servicios.historial.nueva_orden.type');
-    })->name('gestion.servicios.historial.nueva_orden');
-
-    Route::get('/gestion-servicios/historial-servicios/nueva-orden/subtipos', function (Request $request) {
-        $category = trim((string) $request->input('equipment_type_name'));
-
-        $subtypes = \App\Models\Subtype::whereHas('equipmentType', fn ($q) => $q->where('name', $category))
-            ->orderBy('name')
-            ->pluck('name')
-            ->map(fn ($name, $i) => ['id' => $i + 1, 'name' => $name])
-            ->values();
-
-        return response()->json($subtypes);
-    })->name('gestion.servicios.historial.nueva_orden.subtipos');
-
-    Route::get('/gestion-servicios/historial-servicios/nueva-orden/modelos', function (Request $request) {
-        $brand = trim((string) $request->input('brand_name'));
-
-        $models = \App\Models\EquipmentModel::whereHas('brand', fn ($q) => $q->where('name', $brand))
-            ->orderBy('name')
-            ->pluck('name')
-            ->map(fn ($name, $i) => ['id' => $i + 1, 'name' => $name])
-            ->values();
-
-        return response()->json($models);
-    })->name('gestion.servicios.historial.nueva_orden.modelos');
-
-    Route::post('/gestion-servicios/historial-servicios/nueva-orden', [ServiceController::class, 'store'])
-        ->name('gestion.servicios.historial.nueva_orden.store');
-    Route::get('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'show'])
-        ->name('gestion.servicios.historial.show');
-    Route::post('/gestion-servicios/historial-servicios/{service}/entregar', [ServiceController::class, 'deliver'])
-        ->name('gestion.servicios.historial.entregar');
-    Route::get('/gestion-servicios/historial-servicios/externo/{service}', function (Service $service) {
-        // Forzar recarga de datos desde la BD
-        $service->refresh();
-        $service->load(['serviceTrackings' => function ($query) {
-            $query->with('serviceStep')->orderBy('created_at');
-        }, 'currentStep']);
-        return view('structure.gestion_servicios.historial_servicios.tecnico_externo.acciones.ver_externo', compact('service'));
-    })->name('gestion.servicios.historial.externo.show');
-    Route::get('/gestion-servicios/historial-servicios/invitar', [ServiceController::class, 'invite'])
-        ->name('gestion.servicios.historial.invite');
-
-    Route::get('/qr/{token}', [QrController::class, 'show'])
-        ->name('qr.show');
-    Route::post('/qr/{token}', [QrController::class, 'update'])
-        ->name('qr.update');
-
-    Route::post('/gestion-servicios/historial-servicios/nueva-orden/external-technicians', function (Request $request) {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|regex:/^[0-9\s+\-()]{7,30}$/|max:255',
-            'email' => 'nullable|email:filter|max:255',
-            'company' => 'nullable|string|max:255',
-            'specialty' => 'nullable|string|max:255',
-            'address' => 'nullable|string',
-            'location' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-        ]);
-
-        $parts = preg_split('/\s+/', trim($data['name']), 2);
-
-        $id = \Illuminate\Support\Facades\DB::table('tecnico_externo')->insertGetId([
-            'nombre' => $parts[0],
-            'apellidos' => $parts[1] ?? '',
-            'telefono' => $data['phone'] ?? '',
-            'domicilio' => $data['address'] ?? ($data['location'] ?? ''),
-            'correo' => $data['email'] ?? '',
-            'especialidad' => $data['specialty'] ?? '',
-            'empresa' => $data['company'] ?? '',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $technician = \Illuminate\Support\Facades\DB::table('tecnico_externo')
-            ->selectRaw("id, CONCAT(nombre, ' ', apellidos) as name, telefono as phone, correo as email, especialidad as specialty, empresa as company, domicilio as location, NULL as photo")
-            ->find($id);
-
-        if ($request->expectsJson()) {
-            return response()->json($technician);
-        }
-
-        return back();
-    })->name('gestion.servicios.historial.external_technicians.store');
-
-    // Cartas de garantía
-    Route::get('/gestion-servicios/cartas-garantia', function () {
-        $cartas = \App\Models\CartaGarantia::with(['tipoEquipo', 'subtipo'])
-            ->orderByDesc('created_at')
-            ->get();
-
-        return view('structure.gestion_servicios.Cartas_garantia.menu_carta', compact('cartas'));
-    })->name('cartas.garantia.index');
-
-    Route::get('/gestion-servicios/cartas-garantia/crear', function () {
-        $productos = \App\Models\Producto::all();
-
-        return view('structure.gestion_servicios.Cartas_garantia.Cartas_form', compact('productos'));
-    })->name('cartas.garantia.create');
-
-    Route::post('/gestion-servicios/cartas-garantia', function (\Illuminate\Http\Request $request) {
-        $data = $request->validate([
-            'id_tipo_equipo' => 'required|exists:productos,id',
-            'id_subtipo' => 'required|exists:productos,id',
-            'nombre' => 'required|string|max:255',
-            'archivo_carta' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp',
-        ]);
-
-        $data['archivo_carta'] = $request->file('archivo_carta')->store('cartas_garantia', 'public');
-
-        \App\Models\CartaGarantia::create($data);
-
-        return redirect()->route('cartas.garantia.index')->with('success', 'Carta de garantía guardada correctamente.');
-    })->name('cartas.garantia.store');
-});
-
-Route::get('/nueva-orden/{invitation}', [ServiceController::class, 'createFromInvitation'])
-    ->name('public.nueva_orden');
-Route::post('/nueva-orden/{invitation}', [ServiceController::class, 'publicStore'])
-    ->name('public.nueva_orden.store');
+        // Resumen de orden tras guardar
+        Route::get('/nuevo-servicio/externo/resumen/{service}', [ServiceController::class, 'showSummary'])
+            ->name('gestion.servicios.nuevo.externo.resumen');
+    });

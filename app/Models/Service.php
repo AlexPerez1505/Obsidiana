@@ -60,4 +60,14 @@ class Service extends Model
     {
         return $this->belongsTo(ExternalTechnician::class, 'external_technician_id');
     }
+
+    /**
+     * Obtener el código de verificación del paso 6 (notificacion-llegada-tecnico)
+     */
+    public function getVerificationCode()
+    {
+        return $this->serviceTrackings()
+            ->whereHas('serviceStep', fn($q) => $q->where('slug', 'notificacion-llegada-tecnico'))
+            ->value('verification_code');
+    }
 }

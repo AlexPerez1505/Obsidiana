@@ -8,118 +8,65 @@ use App\Models\Customer;
 use App\Models\EquipmentModel;
 use App\Models\EquipmentType;
 use App\Models\ExternalTechnician;
-use App\Models\Subtype;
 use App\Models\Service;
 use App\Models\ServiceEquipment;
-use App\Models\ServiceInvitation;
 use App\Models\ServiceStep;
 use App\Models\ServiceTracking;
-use App\Models\User;
+use App\Models\Subtype;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ServiceController extends Controller
 {
-    public function createFromInvitation(ServiceInvitation $invitation)
+    public function index()
     {
-        if (!$invitation->isValid()) {
-            abort(403, 'La invitación no es válida o ya fue usada.');
-        }
+        return view('structure.gestion_servicios.Historial_se.menuhistorial');
+    }
 
-        $customers = Customer::with('asesor')->latest()->get();
-        $equipmentTypes = EquipmentType::orderBy('name')->pluck('name')
-            ->map(fn ($name) => (object) ['name' => $name]);
-        $brands = Brand::orderBy('name')->pluck('name')
-            ->map(fn ($name) => (object) ['name' => $name]);
-        $externalTechnicians = \Illuminate\Support\Facades\DB::table('tecnico_externo')
-            ->selectRaw("id, CONCAT(nombre, ' ', apellidos) as name, telefono as phone, correo as email, especialidad as specialty, empresa as company, domicilio as location, NULL as photo")
-            ->whereNull('deleted_at')
+    public function create()
+    {
+        return view('structure.gestion_servicios.Historial_se.tipo_m');
+    }
+
+    public function createExternal(Request $request)
+    {
+        $search = $request->input('search');
+
+        $customers = Customer::query()
+            ->when($search, function ($query, $search) {
+                $term = '%' . $search . '%';
+                $query->whereRaw("CONCAT(nombre, ' ', COALESCE(apellido, '')) LIKE ?", [$term])
+                    ->orWhere('telefono', 'LIKE', $term)
+                    ->orWhere('gmail', 'LIKE', $term);
+            })
             ->orderBy('nombre')
+            ->limit(50)
             ->get();
-        $internalTechnicians = User::where('status', User::STATUS_APPROVED)->orderBy('name')->get();
 
-        return view('structure.gestion_servicios.historial_servicios.registro_servicio.c_registro_serv', compact('customers', 'equipmentTypes', 'brands', 'externalTechnicians', 'internalTechnicians', 'invitation'));
-    }
-
-    public function publicStore(Request $request, ServiceInvitation $invitation)
-    {
-        if (!$invitation->isValid()) {
-            return back()->with('error', 'La invitación no es válida o ya fue usada.');
-        }
-
-        $service = $this->persistService($request, $invitation->invited_by);
-
-        $invitation->update([
-            'status' => 'used',
-            'used_at' => now(),
-        ]);
-
-        return redirect()->route('gestion.servicios.historial.show', $service)
-            ->with('success', "Servicio {$service->service_number} creado.");
-    }
-
-    public function store(Request $request)
-    {
-        $service = $this->persistService($request, auth()->id());
-
-        if ($request->ajax()) {
-            return response()->json([
-                'id' => $service->id,
-                'service_number' => $service->service_number,
-                'qr_token' => $service->qr_token,
-                'qr_url' => $service->qr_token ? route('qr.show', $service->qr_token) : null,
-                'show_url' => route('gestion.servicios.historial.show', $service),
-                'approvals_url' => route('service-tracking.approvals'),
-                'menu_url' => route('gestion.servicios.historial'),
-            ]);
-        }
-
-        return redirect()->route('gestion.servicios.historial.show', $service)
-            ->with('success', "Servicio {$service->service_number} creado.");
-    }
-
-    public function show(Service $service)
-    {
-        // Cargar todas las relaciones necesarias
-        $service->load([
-            'customer',
-            'serviceEquipment',
-            'serviceTrackings' => function ($query) {
-                $query->with('serviceStep')->orderBy('created_at');
-            },
-            'currentStep',
-            'internalTechnician',
-            'externalTechnician'
-        ]);
-
-        return view('structure.gestion_servicios.historial_servicios.show', compact('service'));
-    }
-
-    public function invite()
-    {
-        $invitation = ServiceInvitation::create([
-            'token' => $this->generateInvitationToken(),
-            'invited_by' => auth()->id(),
-            'expires_at' => now()->addDay(),
-        ]);
-
-        return response()->json([
-            'link' => route('public.nueva_orden', $invitation),
-            'token' => $invitation->token,
-            'expires_at' => $invitation->expires_at,
+        return view('structure.gestion_servicios.Historial_se.registro_NS.externo.formulario.formulario_ext', [
+            'customers' => $customers,
+            'search' => $search,
         ]);
     }
 
-    private function persistService(Request $request, int $registeredBy): Service
+    public function createEquipment(Request $request)
+    {
+        $customer = Customer::findOrFail($request->input('customer_id'));
+
+        return view('structure.gestion_servicios.Historial_se.registro_NS.externo.formulario.equipo', [
+            'customer' => $customer,
+            'equipmentTypes' => EquipmentType::orderBy('name')->get(),
+            'subtypes' => Subtype::with('equipmentType')->orderBy('name')->get(),
+            'brands' => Brand::orderBy('name')->get(),
+            'models' => EquipmentModel::with('brand')->orderBy('name')->get(),
+        ]);
+    }
+
+    public function storeEquipment(Request $request)
     {
         $validated = $request->validate([
             'customer_id' => 'required|exists:clientes,id',
-            'mantenimiento_externo' => 'nullable|in:0,1',
-            'mantenimiento_interno' => 'nullable|in:0,1',
-            'internal_technician_id' => 'nullable|exists:users,id',
-            'external_technician_id' => 'nullable|exists:tecnico_externo,id',
-            'firma' => 'nullable|string',
             'tipo_equipo' => 'nullable|string|max:255',
             'subtipo' => 'nullable|string|max:255',
             'marca' => 'nullable|string|max:255',
@@ -131,149 +78,324 @@ class ServiceController extends Controller
             'evidencia_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
             'evidencia_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
             'evidencia_video' => 'nullable|mimetypes:video/mp4,video/quicktime,video/x-m4v|max:10240',
+            'firma' => 'nullable|string',
         ]);
 
-        if ($request->input('mantenimiento_externo')) {
-            $serviceType = 'externo';
-        } elseif ($request->input('mantenimiento_interno')) {
-            $serviceType = 'interno';
-        } else {
-            abort(422, 'Selecciona el tipo de servicio.');
+        $validated['evidencia_1_path'] = $this->storeEvidence($request->file('evidencia_1'));
+        $validated['evidencia_2_path'] = $this->storeEvidence($request->file('evidencia_2'));
+        $validated['evidencia_3_path'] = $this->storeEvidence($request->file('evidencia_3'));
+        $validated['video_path'] = $this->storeEvidence($request->file('evidencia_video'));
+
+        session(['service_new.equipment' => $validated]);
+
+        return redirect()->route('gestion.servicios.nuevo.externo.tecnico', [
+            'customer_id' => $validated['customer_id'],
+        ]);
+    }
+
+    public function createTechnician(Request $request)
+    {
+        $customer = Customer::find($request->input('customer_id'));
+
+        if (! session('service_new.equipment') || ! $customer) {
+            return redirect()->route('gestion.servicios.nuevo.externo.equipo', [
+                'customer_id' => $request->input('customer_id'),
+            ])->with('error', 'Debes registrar el equipo primero.');
         }
 
-        $step = ServiceStep::where('service_type', $serviceType)
+        return view('structure.gestion_servicios.Historial_se.registro_NS.externo.formulario.eleccion_tecnico', [
+            'customer' => $customer,
+            'technicians' => \Illuminate\Support\Facades\DB::table('tecnico_externo')
+                ->whereNull('deleted_at')
+                ->orderBy('nombre')
+                ->get(),
+        ]);
+    }
+
+    public function storeTechnician(Request $request)
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100',
+            'apellidos' => 'nullable|string|max:100',
+            'telefono' => 'nullable|string|max:10',
+            'domicilio' => 'nullable|string|max:100',
+            'correo' => 'nullable|email|max:100',
+            'especialidad' => 'nullable|string|max:100',
+            'empresa' => 'nullable|string|max:100',
+        ]);
+
+        $technician = ExternalTechnician::create($validated);
+
+        return redirect()->route('gestion.servicios.nuevo.externo.tecnico', [
+            'customer_id' => $request->input('customer_id'),
+        ])->with('success', 'Técnico agregado correctamente.');
+    }
+
+    public function storeService(Request $request)
+    {
+        $customer = Customer::findOrFail($request->input('customer_id'));
+        $equipment = session('service_new.equipment');
+
+        if (! $equipment) {
+            return redirect()->route('gestion.servicios.nuevo.externo.equipo', [
+                'customer_id' => $customer->id,
+            ])->with('error', 'Debes registrar el equipo primero.');
+        }
+
+        $validated = $request->validate([
+            'external_technician_id' => 'required_without:nuevo_tecnico|exists:tecnico_externo,id',
+            'nuevo_tecnico' => 'nullable|string',
+            'nombre' => 'required_with:nuevo_tecnico|string|max:100',
+            'apellidos' => 'nullable|string|max:100',
+            'telefono' => 'nullable|string|max:10',
+            'domicilio' => 'nullable|string|max:100',
+            'correo' => 'nullable|email|max:100',
+            'especialidad' => 'nullable|string|max:100',
+            'empresa' => 'nullable|string|max:100',
+        ]);
+
+        $externalTechnicianId = $validated['external_technician_id'] ?? null;
+
+        if ($request->input('nuevo_tecnico')) {
+            $technician = ExternalTechnician::create([
+                'nombre' => $validated['nombre'],
+                'apellidos' => $validated['apellidos'],
+                'telefono' => $validated['telefono'],
+                'domicilio' => $validated['domicilio'],
+                'correo' => $validated['correo'],
+                'especialidad' => $validated['especialidad'],
+                'empresa' => $validated['empresa'],
+            ]);
+            $externalTechnicianId = $technician->id;
+        }
+
+        $firstStep = ServiceStep::where('service_type', 'externo')
             ->orderBy('order')
             ->first();
 
-        $generateQr = $request->boolean('generate_qr');
-
-        // Prevenir duplicados: verificar si ya existe un servicio reciente para este cliente
-        $recentService = Service::where('customer_id', $validated['customer_id'])
-            ->where('created_at', '>=', now()->subSeconds(5))
-            ->first();
-
-        if ($recentService) {
-            if ($generateQr && ! $recentService->qr_token) {
-                $token = $this->generateQrToken();
-                $recentService->update(['qr_token' => $token, 'qr_expires_at' => now()->addDay()]);
-                $firstTracking = ServiceTracking::where('service_id', $recentService->id)
-                    ->where('service_step_id', $step?->id)
-                    ->first();
-                if ($firstTracking) {
-                    $firstTracking->update(['qr_token' => $token, 'qr_expires_at' => now()->addDay()]);
-                }
-            }
-            return $recentService;
-        }
-
         $service = Service::create([
             'service_number' => null,
-            'customer_id' => $validated['customer_id'],
-            'service_type' => $serviceType,
-            'internal_technician_id' => $serviceType === 'interno' ? ($validated['internal_technician_id'] ?? null) : null,
-            'external_technician_id' => $serviceType === 'externo' ? ($validated['external_technician_id'] ?? null) : null,
-            'registered_by' => $registeredBy,
-            'current_step_id' => $step?->id,
-            'qr_token' => $generateQr ? $this->generateQrToken() : null,
-            'qr_expires_at' => $generateQr ? now()->addDay() : null,
-            'signature' => $validated['firma'] ?? null,
+            'customer_id' => $customer->id,
+            'service_type' => 'externo',
+            'external_technician_id' => $externalTechnicianId,
+            'registered_by' => auth()->id(),
+            'current_step_id' => $firstStep?->id,
+            'signature' => $equipment['firma'] ?? null,
             'status' => 'registrado',
             'started_at' => now(),
         ]);
 
         $service->update(['service_number' => 'NS-' . $service->id]);
 
-        $this->registerCatalogNames($validated);
-
         $serviceEquipment = ServiceEquipment::create([
             'service_id' => $service->id,
             'product_code' => null,
-            'type_text' => $validated['tipo_equipo'] ?? null,
-            'subtype_text' => $validated['subtipo'] ?? null,
-            'brand_text' => $validated['marca'] ?? null,
-            'model_text' => $validated['modelo'] ?? null,
-            'serial_number' => $validated['serie'] ?? null,
-            'description' => $validated['descripcion_equipo'] ?? null,
-            'observations' => $validated['observaciones'] ?? null,
-            'evidence_1_path' => $this->storeEvidence($request, 'evidencia_1'),
-            'evidence_2_path' => $this->storeEvidence($request, 'evidencia_2'),
-            'evidence_3_path' => $this->storeEvidence($request, 'evidencia_3'),
-            'video_path' => $this->storeEvidence($request, 'evidencia_video'),
+            'type_text' => $equipment['tipo_equipo'] ?? null,
+            'subtype_text' => $equipment['subtipo'] ?? null,
+            'brand_text' => $equipment['marca'] ?? null,
+            'model_text' => $equipment['modelo'] ?? null,
+            'serial_number' => $equipment['serie'] ?? null,
+            'description' => $equipment['descripcion_equipo'] ?? null,
+            'observations' => $equipment['observaciones'] ?? null,
+            'evidence_1_path' => $equipment['evidencia_1_path'] ?? null,
+            'evidence_2_path' => $equipment['evidencia_2_path'] ?? null,
+            'evidence_3_path' => $equipment['evidencia_3_path'] ?? null,
+            'video_path' => $equipment['video_path'] ?? null,
         ]);
 
         $serviceEquipment->update(['product_code' => 'PRD-' . $serviceEquipment->id]);
 
-        // Crear trackings para todos los pasos iniciales hasta el primer paso que requiere aprobación
-        $allSteps = ServiceStep::where('service_type', $serviceType)
+        $allSteps = ServiceStep::where('service_type', 'externo')
             ->orderBy('order')
             ->get();
-        
+
         $firstApprovalStep = $allSteps->firstWhere('requires_approval', true);
-        $stepsToCreate = $allSteps->filter(function ($s) use ($firstApprovalStep) {
-            // Crear pasos hasta e incluyendo el primer paso que requiere aprobación
-            return !$firstApprovalStep || $s->order <= $firstApprovalStep->order;
-        });
-        
-        foreach ($stepsToCreate as $stepToCreate) {
-            $qrToken = null;
-            $qrExpires = null;
-            
-            // Solo el primer paso tiene QR si se generó
-            if ($stepToCreate->id === $step?->id) {
-                $qrToken = $service->qr_token;
-                $qrExpires = $service->qr_expires_at;
+
+        foreach ($allSteps as $step) {
+            if ($firstApprovalStep && $step->order > $firstApprovalStep->order) {
+                break;
             }
-            
+
+            $isBeforeApproval = $firstApprovalStep && $step->order < $firstApprovalStep->order;
+
+            $qrToken = $step->requires_qr ? $this->generateQrToken() : null;
+            $verificationCode = $step->slug === 'notificacion-llegada-tecnico'
+                ? str_pad(random_int(0, 9999), 4, '0', STR_PAD_LEFT)
+                : null;
+
             ServiceTracking::create([
                 'service_id' => $service->id,
-                'service_step_id' => $stepToCreate->id,
-                'status' => 'pendiente',
+                'service_step_id' => $step->id,
+                'status' => $isBeforeApproval ? 'completado' : 'pendiente',
                 'qr_token' => $qrToken,
-                'qr_expires_at' => $qrExpires,
+                'qr_expires_at' => $qrToken ? now()->addDay() : null,
+                'verification_code' => $verificationCode,
                 'started_at' => now(),
-                'notes' => $stepToCreate->requires_approval ? 'Pendiente de aprobación del administrador' : null,
+                'finished_at' => $isBeforeApproval ? now() : null,
+                'notes' => $step->requires_approval ? 'Pendiente de aprobación del administrador' : null,
             ]);
         }
 
-        return $service;
+        $service->update([
+            'current_step_id' => $firstApprovalStep?->id ?? $firstStep?->id,
+            'qr_token' => $this->generateQrToken(),
+            'qr_expires_at' => now()->addDay(),
+        ]);
+
+        session()->forget('service_new');
+
+        return redirect()->route('gestion.servicios.nuevo.externo.resumen', $service);
     }
 
-    /**
-     * Registra en los catalogos unificados los nombres de tipo/subtipo/marca/modelo
-     * escritos en la orden, para que queden disponibles en inventario y servicios.
-     */
-    private function registerCatalogNames(array $validated): void
+    public function showSummary(Service $service)
     {
-        if ($typeName = trim((string) ($validated['tipo_equipo'] ?? ''))) {
-            $type = EquipmentType::firstOrCreate(['name' => $typeName]);
+        $service->load(['customer', 'externalTechnician', 'serviceEquipment']);
 
-            if ($subtypeName = trim((string) ($validated['subtipo'] ?? ''))) {
-                Subtype::firstOrCreate([
-                    'equipment_type_id' => $type->id,
-                    'name' => $subtypeName,
+        $qrUrl = url('/qr/' . $service->qr_token);
+
+        return view('structure.gestion_servicios.Historial_se.registro_NS.externo.formulario.resumen', [
+            'service' => $service,
+            'qrUrl' => $qrUrl,
+        ]);
+    }
+
+    public function pendingApprovals()
+    {
+        $trackings = ServiceTracking::with([
+                'service.customer',
+                'service.externalTechnician',
+                'service.serviceEquipment',
+                'service.serviceTrackings.serviceStep',
+                'serviceStep',
+            ])
+            ->whereHas('serviceStep', function ($query) {
+                $query->where('requires_approval', true);
+            })
+            ->whereIn('status', ['pendiente', 'completado'])
+            ->orderByRaw("FIELD(status, 'pendiente', 'completado')")
+            ->latest('service_trackings.created_at')
+            ->get();
+
+        return view('structure.gestion_servicios.aprovaciones_admin.menu_aprobaciones', [
+            'trackings' => $trackings,
+        ]);
+    }
+
+    public function approveService(ServiceTracking $tracking)
+    {
+        $tracking->load('serviceStep', 'service');
+
+        if ($tracking->status !== 'pendiente') {
+            return redirect()->route('gestion.servicios.aprobaciones')
+                ->with('error', 'Este paso ya fue procesado.');
+        }
+
+        $tracking->update([
+            'status' => 'completado',
+            'finished_at' => now(),
+            'performed_by' => auth()->id(),
+        ]);
+
+        $service = $tracking->service;
+        $currentStep = $tracking->serviceStep;
+
+        $nextSteps = ServiceStep::where('service_type', $service->service_type)
+            ->where('order', '>', $currentStep->order)
+            ->orderBy('order')
+            ->get();
+
+        if ($currentStep->slug === 'aprobacion-autoridades') {
+            $stepsToCreate = $nextSteps->take(3);
+            $firstNextId = null;
+
+            foreach ($stepsToCreate as $step) {
+                $verificationCode = $step->slug === 'notificacion-llegada-tecnico'
+                    ? str_pad(random_int(0, 9999), 4, '0', STR_PAD_LEFT)
+                    : null;
+
+                $created = ServiceTracking::create([
+                    'service_id' => $service->id,
+                    'service_step_id' => $step->id,
+                    'status' => 'pendiente',
+                    'qr_token' => $step->requires_qr ? $this->generateQrToken() : null,
+                    'qr_expires_at' => $step->requires_qr ? now()->addDay() : null,
+                    'verification_code' => $verificationCode,
+                    'started_at' => now(),
+                ]);
+
+                if ($firstNextId === null) {
+                    $firstNextId = $step->id;
+                }
+            }
+
+            $service->update([
+                'status' => 'en_progreso',
+                'current_step_id' => $firstNextId ?? $service->current_step_id,
+            ]);
+        } elseif ($currentStep->slug === 'validacion-os') {
+            $nextStep = $nextSteps->first();
+
+            if ($nextStep) {
+                ServiceTracking::create([
+                    'service_id' => $service->id,
+                    'service_step_id' => $nextStep->id,
+                    'status' => 'pendiente',
+                    'started_at' => now(),
+                ]);
+
+                $service->update([
+                    'status' => 'en_progreso',
+                    'current_step_id' => $nextStep->id,
+                ]);
+            } else {
+                $service->update([
+                    'status' => 'entregado',
+                    'finished_at' => now(),
+                ]);
+            }
+        } else {
+            $nextStep = $nextSteps->first();
+
+            if ($nextStep) {
+                ServiceTracking::create([
+                    'service_id' => $service->id,
+                    'service_step_id' => $nextStep->id,
+                    'status' => 'pendiente',
+                    'started_at' => now(),
+                ]);
+
+                $service->update(['current_step_id' => $nextStep->id]);
+            } else {
+                $service->update([
+                    'status' => 'entregado',
+                    'finished_at' => now(),
                 ]);
             }
         }
 
-        if ($brandName = trim((string) ($validated['marca'] ?? ''))) {
-            $brand = Brand::firstOrCreate(['name' => $brandName]);
-
-            if ($modelName = trim((string) ($validated['modelo'] ?? ''))) {
-                EquipmentModel::firstOrCreate([
-                    'brand_id' => $brand->id,
-                    'name' => $modelName,
-                ]);
-            }
-        }
+        return redirect()->route('gestion.servicios.aprobaciones')
+            ->with('success', 'Servicio aprobado correctamente.');
     }
 
-    private function storeEvidence(Request $request, string $field): ?string
+    public function maintenanceOrders()
     {
-        if (!$request->hasFile($field)) {
+        $services = Service::with(['customer', 'externalTechnician', 'serviceEquipment', 'currentStep'])
+            ->where('status', 'en_progreso')
+            ->latest()
+            ->get();
+
+        return view('structure.gestion_servicios.mantenimiento.menu_mantenimiento', [
+            'services' => $services,
+        ]);
+    }
+
+    private function storeEvidence($file): ?string
+    {
+        if (! $file) {
             return null;
         }
 
-        return Storage::disk('public')->putFile('evidencias', $request->file($field));
+        return Storage::disk('public')->putFile('evidencias', $file);
     }
 
     private function generateQrToken(): string
@@ -283,131 +405,5 @@ class ServiceController extends Controller
         } while (Service::where('qr_token', $token)->exists() || ServiceTracking::where('qr_token', $token)->exists());
 
         return $token;
-    }
-
-    private function generateInvitationToken(): string
-    {
-        do {
-            $token = Str::random(32);
-        } while (ServiceInvitation::where('token', $token)->exists());
-
-        return $token;
-    }
-
-    public function approveStep($id)
-    {
-        abort_unless(auth()->user()?->isAdmin(), 403);
-
-        $tracking = ServiceTracking::findOrFail($id);
-
-        if (! in_array($tracking->status, ['pendiente', 'rechazado'])) {
-            return back()->with('error', 'El paso no puede aprobarse en su estado actual.');
-        }
-
-        try {
-            // Actualizar el tracking con status completado
-            $tracking->status = 'completado';
-            $tracking->finished_at = now();
-            $tracking->performed_by = auth()->id();
-            $tracking->save();
-
-            $service = $tracking->service;
-            $currentOrder = $tracking->serviceStep->order;
-
-            $nextStep = ServiceStep::where('service_type', $service->service_type)
-                ->where('order', '>', $currentOrder)
-                ->orderBy('order')
-                ->first();
-
-            if ($nextStep) {
-                $newToken = $nextStep->requires_qr ? $this->generateQrToken() : null;
-
-                ServiceTracking::create([
-                    'service_id' => $service->id,
-                    'service_step_id' => $nextStep->id,
-                    'status' => 'pendiente',
-                    'qr_token' => $newToken,
-                    'qr_expires_at' => $nextStep->requires_qr ? now()->addDay() : null,
-                    'started_at' => now(),
-                ]);
-
-                $service->update([
-                    'current_step_id' => $nextStep->id,
-                    'qr_token' => $newToken,
-                    'qr_expires_at' => $nextStep->requires_qr ? now()->addDay() : null,
-                    'status' => 'en_progreso',
-                ]);
-            } else {
-                $service->update([
-                    'current_step_id' => null,
-                    'qr_token' => null,
-                    'qr_expires_at' => null,
-                    'status' => 'entregado',
-                    'finished_at' => now(),
-                ]);
-            }
-
-            return redirect()->route('gestion.servicios.historial.show', $service)->with('success', 'Paso aprobado y avanzado.');
-        } catch (\Exception $e) {
-            \Log::error('Error approving step', ['error' => $e->getMessage(), 'tracking_id' => $id]);
-            return back()->with('error', 'Error al aprobar el paso: ' . $e->getMessage());
-        }
-    }
-
-    public function pendingApprovals()
-    {
-        abort_unless(auth()->user()?->isAdmin(), 403);
-
-        $approvals = ServiceTracking::with(['service.customer', 'serviceStep'])
-            ->whereIn('status', ['pendiente', 'rechazado'])
-            ->whereHas('serviceStep', fn ($q) => $q->where('requires_approval', true))
-            ->orderByDesc('created_at')
-            ->get();
-
-        return view('structure.gestion_servicios.historial_servicios.admin_approve.menu_aprovaciones_admin', compact('approvals'));
-    }
-
-    public function approvedMaintenance()
-    {
-        $approved = ServiceTracking::with(['service.customer', 'serviceStep'])
-            ->where('status', 'completado')
-            ->whereHas('serviceStep', fn ($q) => $q->where('requires_approval', true))
-            ->orderByDesc('finished_at')
-            ->get();
-
-        return view('structure.gestion_servicios.mantenimineto.menu_mantenimiento', compact('approved'));
-    }
-
-    public function rejectStep($id)
-    {
-        abort_unless(auth()->user()?->isAdmin(), 403);
-
-        $tracking = ServiceTracking::findOrFail($id);
-
-        try {
-            $tracking->status = 'rechazado';
-            $tracking->finished_at = now();
-            $tracking->performed_by = auth()->id();
-            $tracking->save();
-
-            return redirect()->route('gestion.servicios.historial.show', $tracking->service)->with('error', 'Paso rechazado.');
-        } catch (\Exception $e) {
-            \Log::error('Error rejecting step', ['error' => $e->getMessage(), 'tracking_id' => $id]);
-            return back()->with('error', 'Error al rechazar el paso: ' . $e->getMessage());
-        }
-    }
-
-    public function deliver(Service $service)
-    {
-        $service->update([
-            'status' => 'entregado',
-            'finished_at' => now(),
-            'current_step_id' => null,
-            'qr_token' => null,
-            'qr_expires_at' => null,
-        ]);
-
-        return redirect()->route('service-tracking.maintenance')
-            ->with('success', "Servicio {$service->service_number} marcado como entregado.");
     }
 }
