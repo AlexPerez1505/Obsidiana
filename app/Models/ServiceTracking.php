@@ -13,6 +13,7 @@ class ServiceTracking extends Model
         'performed_by',
         'qr_token',
         'qr_expires_at',
+        'verification_code',
         'notes',
         'evidence_1_path',
         'evidence_2_path',
@@ -22,6 +23,21 @@ class ServiceTracking extends Model
         'started_at',
         'finished_at',
     ];
+
+    public function serviceStep()
+    {
+        return $this->belongsTo(ServiceStep::class);
+    }
+
+    public function service()
+    {
+        return $this->belongsTo(Service::class);
+    }
+
+    public function performedBy()
+    {
+        return $this->belongsTo(User::class, 'performed_by');
+    }
 
     protected function casts(): array
     {

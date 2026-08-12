@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\ProductoController;
 use Illuminate\Support\Facades\Route;
@@ -10,83 +11,6 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
-    $equipmentCatalog = static function (): array {
-        return [
-            'PRO-0001' => [
-                'code' => 'PRO-0001',
-                'name' => 'Torre de endoscopia',
-                'category' => 'Endoscopia',
-                'serial_number' => 'TE-2026-001',
-                'brand' => 'Olimpus',
-                'model' => 'EVIS EXERA III',
-                'description' => 'Torre de endoscopia para procedimientos diagnosticos y terapeuticos',
-                'stock_current' => 1,
-                'stock_max' => 2,
-                'stock_min' => 1,
-                'warehouse' => 'Quirofano 1',
-                'assigned_to' => 'Ing. Joel Diaz',
-                'department' => 'Endoscopia',
-                'service_date' => '2026-07-27',
-                'next_maintenance' => '2026-10-27',
-                'notes' => 'Equipo activo en quirofano 1.',
-                'voltage' => '127 V',
-                'frequency' => '60 Hz',
-                'power' => '800 W',
-                'weight' => '38',
-                'dimensions' => '70 x 60 x 140',
-                'color' => 'Blanco',
-                'technical_specs' => 'Monitor, procesador, fuente de luz y carro movil.',
-                'supplier' => 'Olimpus Mexico S.A. de C.V',
-                'contact' => 'Soporte tecnico',
-                'phone' => '555-0101',
-                'email' => 'soporte@olimpus.mx',
-                'invoice_number' => 'FAC-000125',
-                'invoice_date' => '2026-07-27',
-                'thumb' => 'tower',
-            ],
-            'PRO-0002' => [
-                'code' => 'PRO-0002',
-                'name' => 'Torre de endoscopia',
-                'category' => 'Endoscopia',
-                'serial_number' => 'TE-2026-002',
-                'brand' => 'Olimpus',
-                'model' => 'EVIS LUCERA',
-                'description' => 'Equipo programado para mantenimiento preventivo',
-                'stock_current' => 1,
-                'stock_max' => 2,
-                'stock_min' => 1,
-                'warehouse' => 'Quirofano 1',
-                'assigned_to' => 'Ing. Joel Diaz',
-                'department' => 'Endoscopia',
-                'service_date' => '2026-06-18',
-                'next_maintenance' => '2026-09-18',
-                'notes' => 'Requiere revision de monitor.',
-                'voltage' => '127 V',
-                'frequency' => '60 Hz',
-                'power' => '750 W',
-                'weight' => '35',
-                'dimensions' => '68 x 58 x 138',
-                'color' => 'Blanco',
-                'technical_specs' => 'Monitor y procesador con accesorios principales.',
-                'supplier' => 'Olimpus Mexico S.A. de C.V',
-                'contact' => 'Mesa de ayuda',
-                'phone' => '555-0102',
-                'email' => 'servicio@olimpus.mx',
-                'invoice_number' => 'FAC-000126',
-                'invoice_date' => '2026-06-18',
-                'thumb' => 'monitor',
-            ],
-        ];
-    };
-
-    $findEquipment = static function (string $equipo) use ($equipmentCatalog): array {
-        $equipmentRows = $equipmentCatalog();
-
-        return $equipmentRows[$equipo] ?? array_merge($equipmentRows['PRO-0001'], [
-            'code' => $equipo,
-        ]);
-    };
-
     Route::get('/gestion-inventario/entrada-salida', function () {
         return view('structure.gestion_Inventario.entrada_salida.index');
     })->name('inventory.movimientos.index');
@@ -95,26 +19,20 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         return view('structure.gestion_Inventario.entrada_salida.create');
     })->name('inventory.movimientos.create');
 
-    Route::get('/gestion-inventario/equipos', function () {
-        return view('structure.gestion_Inventario.equipos.menu_equipos');
-    })->name('inventory.equipos.index');
-
-    Route::get('/gestion-inventario/equipos/crear', function () {
-        return view('structure.gestion_Inventario.equipos.c_equipos');
-    })->name('inventory.equipos.create');
-
-    Route::get('/gestion-inventario/equipos/{equipo}/editar', function (string $equipo) use ($findEquipment) {
-        return view('structure.gestion_Inventario.equipos.c_equipos', [
-            'mode' => 'edit',
-            'equipment' => $findEquipment($equipo),
-        ]);
-    })->name('inventory.equipos.edit');
-
-    Route::get('/gestion-inventario/equipos/{equipo}/detalle', function (string $equipo) use ($findEquipment) {
-        return view('structure.gestion_Inventario.equipos.detalle_equipo', [
-            'equipment' => $findEquipment($equipo),
-        ]);
-    })->name('inventory.equipos.show');
+    Route::get('/gestion-inventario/equipos', [EquipmentController::class, 'index'])
+        ->name('inventory.equipos.index');
+    Route::get('/gestion-inventario/equipos/crear', [EquipmentController::class, 'create'])
+        ->name('inventory.equipos.create');
+    Route::post('/gestion-inventario/equipos', [EquipmentController::class, 'store'])
+        ->name('inventory.equipos.store');
+    Route::get('/gestion-inventario/equipos/{equipo}/editar', [EquipmentController::class, 'edit'])
+        ->name('inventory.equipos.edit');
+    Route::put('/gestion-inventario/equipos/{equipo}', [EquipmentController::class, 'update'])
+        ->name('inventory.equipos.update');
+    Route::delete('/gestion-inventario/equipos/{equipo}', [EquipmentController::class, 'destroy'])
+        ->name('inventory.equipos.destroy');
+    Route::get('/gestion-inventario/equipos/{equipo}/detalle', [EquipmentController::class, 'show'])
+        ->name('inventory.equipos.show');
 
     // Productos (stock real, contra base de datos)
     Route::get('/gestion-inventario/productos', [ProductoController::class, 'index'])

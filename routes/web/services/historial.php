@@ -1,77 +1,49 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Services\QrController;
 use App\Http\Controllers\Services\ServiceController;
-use App\Models\Brand;
-use App\Models\Customer;
-use App\Models\EquipmentType;
-use App\Models\ExternalTechnician;
-use App\Models\User;
+use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified', 'approved'])->group(function () {
-    Route::view('/gestion-servicios/historial-servicios', 'structure.gestion_servicios.historial_servicios.menu_historial_servicios')
-        ->name('gestion.servicios.historial');
-    Route::get('/gestion-servicios/historial-servicios/nueva-orden', function () {
-        $customers = Customer::with('seller')->latest()->get();
+Route::middleware(['auth', 'verified', 'approved'])
+    ->prefix('gestion-servicios/historial-servicios')
+    ->group(function () {
+        // Índice del historial de servicios
+        Route::get('/', [ServiceController::class, 'index'])
+            ->name('gestion.servicios.historial');
 
-        if ($clienteId = request('cliente_id')) {
-            $selected = $customers->firstWhere('id', $clienteId);
-            if ($selected) {
-                $customers = $customers->filter(fn ($customer) => $customer->id != $clienteId)->prepend($selected)->values();
-            }
-        }
+        // Selección de tipo de servicio (nuevo servicio)
+        Route::get('/nuevo-servicio', [ServiceController::class, 'create'])
+            ->name('gestion.servicios.nuevo');
 
-        $equipmentTypes = EquipmentType::orderBy('name')->get();
-        $brands = Brand::orderBy('name')->get();
-        $externalTechnicians = ExternalTechnician::where('is_active', true)->orderBy('name')->get();
-        $internalTechnicians = User::where('status', User::STATUS_APPROVED)->orderBy('name')->get();
+        // Formularios de registro según tipo de mantenimiento
+        Route::view('/nuevo-servicio/interno', 'structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario_int')
+            ->name('gestion.servicios.nuevo.interno');
 
-        return view('structure.gestion_servicios.historial_servicios.registro_servicio.c_registro_serv', compact('customers', 'equipmentTypes', 'brands', 'externalTechnicians', 'internalTechnicians'));
-    })->name('gestion.servicios.historial.nueva_orden');
+        Route::get('/nuevo-servicio/externo', [ServiceController::class, 'createExternal'])
+            ->name('gestion.servicios.nuevo.externo');
 
-    Route::post('/gestion-servicios/historial-servicios/nueva-orden', [ServiceController::class, 'store'])
-        ->name('gestion.servicios.historial.nueva_orden.store');
-    Route::get('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'show'])
-        ->name('gestion.servicios.historial.show');
-    Route::get('/gestion-servicios/historial-servicios/invitar', [ServiceController::class, 'invite'])
-        ->name('gestion.servicios.historial.invite');
+        // Paso 2: Registro del equipo
+        Route::get('/nuevo-servicio/externo/equipo', [ServiceController::class, 'createEquipment'])
+            ->name('gestion.servicios.nuevo.externo.equipo');
+        Route::post('/nuevo-servicio/externo/equipo', [ServiceController::class, 'storeEquipment'])
+            ->name('gestion.servicios.nuevo.externo.equipo.store');
 
-    Route::get('/qr/{token}', [QrController::class, 'show'])
-        ->name('qr.show');
-    Route::post('/qr/{token}', [QrController::class, 'update'])
-        ->name('qr.update');
+        // Paso 3: Selección del técnico
+        Route::get('/nuevo-servicio/externo/tecnico', [ServiceController::class, 'createTechnician'])
+            ->name('gestion.servicios.nuevo.externo.tecnico');
+        Route::post('/nuevo-servicio/externo/tecnico', [ServiceController::class, 'storeTechnician'])
+            ->name('gestion.servicios.nuevo.externo.tecnico.store');
+        Route::post('/nuevo-servicio/externo/guardar', [ServiceController::class, 'storeService'])
+            ->name('gestion.servicios.nuevo.externo.guardar');
 
-    Route::post('/gestion-servicios/historial-servicios/nueva-orden/external-technicians', function (Request $request) {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|regex:/^[0-9\s+\-()]{7,30}$/|max:255',
-            'email' => 'nullable|email:filter|max:255',
-            'company' => 'nullable|string|max:255',
-            'specialty' => 'nullable|string|max:255',
-            'address' => 'nullable|string',
-            'location' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-        ]);
+        // Resumen de orden tras guardar
+        Route::get('/nuevo-servicio/externo/resumen/{service}', [ServiceController::class, 'showSummary'])
+            ->name('gestion.servicios.nuevo.externo.resumen');
 
-        if ($request->hasFile('photo')) {
-            $data['photo'] = Storage::disk('public')->putFile('external_technicians', $request->file('photo'));
-        }
+        // Eliminar orden de servicio
+        Route::delete('/{service}', [ServiceController::class, 'destroy'])
+            ->name('gestion.servicios.destroy');
 
-        $technician = ExternalTechnician::create($data);
-
-        if ($request->expectsJson()) {
-            return response()->json($technician);
-        }
-
-        return back();
-    })->name('gestion.servicios.historial.external_technicians.store');
-});
-
-Route::get('/nueva-orden/{invitation}', [ServiceController::class, 'createFromInvitation'])
-    ->name('public.nueva_orden');
-Route::post('/nueva-orden/{invitation}', [ServiceController::class, 'publicStore'])
-    ->name('public.nueva_orden.store');
+        // Completar paso actual desde modal de mantenimiento
+        Route::post('/{service}/complete-step', [ServiceController::class, 'completeCurrentStep'])
+            ->name('gestion.servicios.completeStep');
+    });

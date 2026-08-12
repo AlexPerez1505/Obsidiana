@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -11,6 +12,7 @@ class Producto extends Model
     protected $table = 'productos';
 
     protected $fillable = [
+        'equipment_id',
         'tipo_equipo',
         'subtipo',
         'marca',
@@ -27,6 +29,11 @@ class Producto extends Model
         'precio' => 'decimal:2',
         'stock' => 'integer',
     ];
+
+    public function equipment(): BelongsTo
+    {
+        return $this->belongsTo(Equipment::class);
+    }
 
     public function paquetes(): BelongsToMany
     {

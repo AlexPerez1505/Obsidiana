@@ -5,14 +5,25 @@
 @section('page-sub', 'Gestion de Inventario > Equipos')
 
 @php
-    $equipmentRows = [
-        ['code' => 'PRO-0001', 'name' => 'Torre de endoscopia', 'type' => 'Endoscopia', 'location' => 'Quirofano 1', 'owner' => 'Ing. Joel Diaz', 'status' => 'Bueno', 'tone' => 'green', 'thumb' => 'tower'],
-        ['code' => 'PRO-0002', 'name' => 'Torre de endoscopia', 'type' => 'Endoscopia', 'location' => 'Quirofano 1', 'owner' => 'Ing. Joel Diaz', 'status' => 'Mantenimiento', 'tone' => 'blue', 'thumb' => 'monitor'],
-        ['code' => 'PRO-0003', 'name' => 'Torre de endoscopia', 'type' => 'Endoscopia', 'location' => 'Quirofano 1', 'owner' => 'Ing. Joel Diaz', 'status' => 'Mantenimiento', 'tone' => 'blue', 'thumb' => 'stack'],
-        ['code' => 'PRO-0004', 'name' => 'Torre de endoscopia', 'type' => 'Endoscopia', 'location' => 'Quirofano 1', 'owner' => 'Ing. Joel Diaz', 'status' => 'Malo', 'tone' => 'red', 'thumb' => 'scope'],
-        ['code' => 'PRO-0005', 'name' => 'Torre de endoscopia', 'type' => 'Endoscopia', 'location' => 'Quirofano 1', 'owner' => 'Ing. Joel Diaz', 'status' => 'Bueno', 'tone' => 'green', 'thumb' => 'cart'],
-        ['code' => 'PRO-0006', 'name' => 'Torre de endoscopia', 'type' => 'Endoscopia', 'location' => 'Quirofano 1', 'owner' => 'Ing. Joel Diaz', 'status' => 'Malo', 'tone' => 'red', 'thumb' => 'unit'],
+    $statusTones = [
+        'Activo' => 'green',
+        'Bueno' => 'green',
+        'Mantenimiento' => 'blue',
+        'Malo' => 'red',
     ];
+
+    $equipmentRows = collect($equipmentList ?? [])->map(function ($equipo) use ($statusTones) {
+        return [
+            'code' => $equipo->code,
+            'name' => $equipo->name,
+            'type' => $equipo->equipmentType?->name ?? 'Sin tipo',
+            'location' => $equipo->warehouse ?? 'Sin ubicacion',
+            'owner' => $equipo->assigned_to ?? 'Sin asignar',
+            'status' => $equipo->status ?? 'Activo',
+            'tone' => $statusTones[$equipo->status] ?? 'green',
+            'thumb' => $equipo->thumb ?? 'tower',
+        ];
+    })->all();
 @endphp
 
 @push('head')
@@ -482,7 +493,7 @@
                 </table>
             </div>
             <div class="equipment-foot">
-                <span id="equipmentCount">Mostrando 1 a {{ count($equipmentRows) }} de 25 resultados</span>
+                <span id="equipmentCount">Mostrando {{ count($equipmentRows) ? 1 : 0 }} a {{ count($equipmentRows) }} de {{ count($equipmentRows) }} resultados</span>
                 <button type="button">Ver mas &gt;</button>
             </div>
         </div>

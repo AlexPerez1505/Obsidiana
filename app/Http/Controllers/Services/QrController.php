@@ -3,116 +3,154 @@
 namespace App\Http\Controllers\Services;
 
 use App\Http\Controllers\Controller;
-
 use App\Models\Service;
 use App\Models\ServiceStep;
 use App\Models\ServiceTracking;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class QrController extends Controller
 {
-    public function show(string $token)
+    public function show($token)
     {
         $tracking = ServiceTracking::with(['service', 'serviceStep'])
             ->where('qr_token', $token)
-            ->where('status', 'pendiente')
-            ->firstOrFail();
+            ->first();
 
-        if ($tracking->qr_expires_at && $tracking->qr_expires_at->isPast()) {
-            abort(403, 'Este QR ha expirado.');
+        if (! $tracking) {
+            $service = Service::where('qr_token', $token)->firstOrFail();
+            $tracking = $service->serviceTrackings()
+                ->with('serviceStep')
+                ->where('service_step_id', $service->current_step_id)
+                ->first();
         }
 
-        $service = $tracking->service;
+        if (! $tracking) {
+            abort(404);
+        }
 
-        return view('structure.gestion_servicios.historial_servicios.qr.scan', compact('tracking', 'service'));
+        $tracking->load('service.customer', 'service.serviceEquipment', 'service.externalTechnician');
+
+        return view('structure.gestion_servicios.Historial_se.registro_NS.externo.qr.scan', [
+            'tracking' => $tracking,
+            'service' => $tracking->service,
+        ]);
     }
 
-    public function update(Request $request, string $token)
+    public function verifyCode(Request $request, $token)
     {
-        $tracking = ServiceTracking::with(['service.serviceEquipment', 'serviceStep'])
+        $tracking = ServiceTracking::with('service', 'serviceStep')
             ->where('qr_token', $token)
-            ->where('status', 'pendiente')
-            ->firstOrFail();
+            ->first();
 
-        if ($tracking->qr_expires_at && $tracking->qr_expires_at->isPast()) {
-            return back()->with('error', 'El QR ha expirado.');
+        if (! $tracking) {
+            $service = Service::where('qr_token', $token)->firstOrFail();
+            $tracking = $service->serviceTrackings()
+                ->with('serviceStep')
+                ->where('service_step_id', $service->current_step_id)
+                ->first();
         }
 
-        $validated = $request->validate([
-            'evidencia_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
-            'evidencia_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
-            'evidencia_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
-            'evidencia_video' => 'nullable|mimetypes:video/mp4,video/quicktime,video/x-m4v|max:10240',
-            'firma' => 'nullable|string',
-            'notes' => 'nullable|string',
+        if (! $tracking) {
+            abort(404);
+        }
+
+        $request->validate([
+            'verification_code' => 'required|string|size:4',
         ]);
+
+        if ($tracking->status !== 'pendiente' || $tracking->verification_code !== $request->input('verification_code')) {
+            return back()->with('error', 'Código de verificación incorrecto o paso ya procesado.');
+        }
 
         $tracking->update([
             'status' => 'completado',
             'finished_at' => now(),
-            'performed_by' => auth()->id(),
-            'notes' => $validated['notes'] ?? null,
-            'evidence_1_path' => $this->storeEvidence($request, 'evidencia_1', $tracking->service_id),
-            'evidence_2_path' => $this->storeEvidence($request, 'evidencia_2', $tracking->service_id),
-            'evidence_3_path' => $this->storeEvidence($request, 'evidencia_3', $tracking->service_id),
-            'video_path' => $this->storeEvidence($request, 'evidencia_video', $tracking->service_id),
-            'signature' => $validated['firma'] ?? null,
         ]);
 
         $service = $tracking->service;
-        $currentOrder = $tracking->serviceStep->order;
 
         $nextStep = ServiceStep::where('service_type', $service->service_type)
-            ->where('order', '>', $currentOrder)
+            ->where('order', '>', $tracking->serviceStep->order)
             ->orderBy('order')
             ->first();
 
         if ($nextStep) {
-            $newToken = $this->generateQrToken();
-
             ServiceTracking::create([
                 'service_id' => $service->id,
                 'service_step_id' => $nextStep->id,
                 'status' => 'pendiente',
-                'qr_token' => $newToken,
-                'qr_expires_at' => now()->addDay(),
+                'qr_token' => $nextStep->requires_qr ? $this->generateQrToken() : null,
+                'qr_expires_at' => $nextStep->requires_qr ? now()->addDay() : null,
                 'started_at' => now(),
             ]);
 
+            $service->update(['current_step_id' => $nextStep->id]);
+        } else {
             $service->update([
-                'current_step_id' => $nextStep->id,
-                'qr_token' => $newToken,
-                'qr_expires_at' => now()->addDay(),
-                'status' => 'en_progreso',
+                'status' => 'entregado',
+                'finished_at' => now(),
             ]);
-
-            return redirect()->route('qr.show', $newToken)
-                ->with('success', 'Paso completado. Escanea el nuevo QR para continuar.');
         }
 
-        $service->update([
-            'current_step_id' => null,
-            'qr_token' => null,
-            'qr_expires_at' => null,
-            'status' => 'entregado',
+        return redirect()->route('gestion.servicios.maintenance.form', ['service' => $tracking->service])
+            ->with('success', 'Código correcto. Bienvenido, completa el mantenimiento.');
+    }
+
+    public function complete(Request $request, $token)
+    {
+        $tracking = ServiceTracking::with('service', 'serviceStep')
+            ->where('qr_token', $token)
+            ->first();
+
+        if (! $tracking) {
+            $service = Service::where('qr_token', $token)->firstOrFail();
+            $tracking = $service->serviceTrackings()
+                ->with('serviceStep')
+                ->where('service_step_id', $service->current_step_id)
+                ->first();
+        }
+
+        if (! $tracking) {
+            abort(404);
+        }
+
+        if ($tracking->status !== 'pendiente') {
+            return back()->with('error', 'Este paso ya fue procesado.');
+        }
+
+        $tracking->update([
+            'status' => 'completado',
             'finished_at' => now(),
         ]);
 
-        return redirect()->route('gestion.servicios.historial')
-            ->with('success', 'Servicio completado.');
-    }
+        $service = $tracking->service;
 
-    private function storeEvidence(Request $request, string $field, int $serviceId): ?string
-    {
-        if (!$request->hasFile($field)) {
-            return null;
+        $nextStep = ServiceStep::where('service_type', $service->service_type)
+            ->where('order', '>', $tracking->serviceStep->order)
+            ->orderBy('order')
+            ->first();
+
+        if ($nextStep) {
+            ServiceTracking::create([
+                'service_id' => $service->id,
+                'service_step_id' => $nextStep->id,
+                'status' => 'pendiente',
+                'qr_token' => $nextStep->requires_qr ? $this->generateQrToken() : null,
+                'qr_expires_at' => $nextStep->requires_qr ? now()->addDay() : null,
+                'started_at' => now(),
+            ]);
+
+            $service->update(['current_step_id' => $nextStep->id]);
+        } else {
+            $service->update([
+                'status' => 'entregado',
+                'finished_at' => now(),
+            ]);
         }
 
-        $path = "evidencias/{$serviceId}/" . date('Ymd_His');
-
-        return Storage::disk('public')->putFile($path, $request->file($field));
+        return redirect()->route('qr.show', ['token' => $token])
+            ->with('success', 'Paso completado correctamente.');
     }
 
     private function generateQrToken(): string

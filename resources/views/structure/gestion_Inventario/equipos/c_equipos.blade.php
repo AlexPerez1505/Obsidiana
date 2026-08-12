@@ -7,6 +7,7 @@
         'code' => '',
         'name' => '',
         'category' => '',
+        'subcategory' => '',
         'serial_number' => '',
         'brand' => '',
         'model' => '',
@@ -33,12 +34,13 @@
         'email' => '',
         'invoice_number' => '',
         'invoice_date' => '',
+        'image_path' => null,
         'thumb' => 'tower',
     ], $equipment ?? []);
+    $catalogs = $catalogs ?? ['types' => [], 'brands' => []];
     $pageTitle = $isEdit ? 'Editar Equipo' : 'Nuevo Equipo';
     $pageSub = $isEdit ? 'Gestion de Inventario > Equipos > Editar Equipo' : 'Gestion de Inventario > Equipos > Nuevo Equipo';
     $introText = $isEdit ? 'Actualiza la informacion del equipo del inventario.' : 'Registra un nuevo equipo del inventario.';
-    $toastMessage = $isEdit ? 'Cambios del equipo preparados para guardar.' : 'Equipo preparado para guardar.';
 @endphp
 
 @section('title', $pageTitle)
@@ -278,8 +280,22 @@
 @endpush
 
 @section('content')
-    <form class="equipment-form" id="equipmentCreateForm" method="POST" action="#" enctype="multipart/form-data">
+    <form class="equipment-form" id="equipmentCreateForm" method="POST" action="{{ $isEdit ? route('inventory.equipos.update', ['equipo' => $equipmentData['code']]) : route('inventory.equipos.store') }}" enctype="multipart/form-data">
         @csrf
+        @if ($isEdit)
+            @method('PUT')
+        @endif
+
+        @if ($errors->any())
+            <div class="equipment-panel" style="border-color:#ef4444; color:#ef4444;" role="alert">
+                <strong>Revisa los siguientes campos:</strong>
+                <ul style="margin:8px 0 0; padding-left:18px;">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         <div class="equipment-form__bar">
             <p class="equipment-form__intro">{{ $introText }}</p>
@@ -299,7 +315,11 @@
                 <h3 class="equipment-panel__title" id="equipment-image-title">Imagen del equipo</h3>
 
                 <div class="equipment-image-card__preview" id="equipmentImagePreview">
-                    @include('structure.gestion_Inventario.equipos.partials.equipment-thumb', ['type' => $equipmentData['thumb']])
+                    @if (!empty($equipmentData['image_path']))
+                        <img src="{{ asset('storage/' . $equipmentData['image_path']) }}" alt="Imagen del equipo">
+                    @else
+                        @include('structure.gestion_Inventario.equipos.partials.equipment-thumb', ['type' => $equipmentData['thumb']])
+                    @endif
                 </div>
 
                 <label class="equipment-image-card__button" for="equipment_image">Seleccionar imagen</label>
@@ -324,13 +344,16 @@
                     </div>
 
                     <div class="equipment-field">
-                        <label for="category">Categoria</label>
-                        <select class="equipment-select" id="category" name="category">
+                        <label for="category">Tipo de equipo</label>
+                        <select class="equipment-select" id="category" name="category" data-selected="{{ old('category', $equipmentData['category']) }}">
                             <option value="">Seleccionar</option>
-                            <option value="Endoscopia" @selected(old('category', $equipmentData['category']) === 'Endoscopia')>Endoscopia</option>
-                            <option value="Imagenologia" @selected(old('category', $equipmentData['category']) === 'Imagenologia')>Imagenologia</option>
-                            <option value="Monitoreo" @selected(old('category', $equipmentData['category']) === 'Monitoreo')>Monitoreo</option>
-                            <option value="Quirofano" @selected(old('category', $equipmentData['category']) === 'Quirofano')>Quirofano</option>
+                        </select>
+                    </div>
+
+                    <div class="equipment-field">
+                        <label for="subcategory">Subtipo</label>
+                        <select class="equipment-select" id="subcategory" name="subcategory" data-selected="{{ old('subcategory', $equipmentData['subcategory']) }}" disabled>
+                            <option value="">Seleccionar tipo primero</option>
                         </select>
                     </div>
 
@@ -341,12 +364,16 @@
 
                     <div class="equipment-field">
                         <label for="brand">Marca</label>
-                        <input class="equipment-input" type="text" id="brand" name="brand" value="{{ old('brand', $equipmentData['brand']) }}" autocomplete="off">
+                        <select class="equipment-select" id="brand" name="brand" data-selected="{{ old('brand', $equipmentData['brand']) }}">
+                            <option value="">Seleccionar</option>
+                        </select>
                     </div>
 
                     <div class="equipment-field">
                         <label for="model">Modelo</label>
-                        <input class="equipment-input" type="text" id="model" name="model" value="{{ old('model', $equipmentData['model']) }}" autocomplete="off">
+                        <select class="equipment-select" id="model" name="model" data-selected="{{ old('model', $equipmentData['model']) }}" disabled>
+                            <option value="">Seleccionar marca primero</option>
+                        </select>
                     </div>
 
                     <div class="equipment-field equipment-field--wide">
@@ -505,19 +532,119 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const form = document.getElementById('equipmentCreateForm');
             const imageInput = document.getElementById('equipment_image');
             const imagePreview = document.getElementById('equipmentImagePreview');
 
-            if (form) {
-                form.addEventListener('submit', function (event) {
-                    event.preventDefault();
+            const categoryCatalog = @json($catalogs['types']);
+            const brandCatalog = @json($catalogs['brands']);
 
-                    if (window.showToast) {
-                        window.showToast(@json($toastMessage));
+            const NEW_OPTION = '__new__';
+
+            function fillSelect(select, options, placeholder, addLabel) {
+                const selected = select.dataset.selected || '';
+                select.innerHTML = '';
+
+                const first = document.createElement('option');
+                first.value = '';
+                first.textContent = placeholder;
+                select.appendChild(first);
+
+                options.forEach(function (value) {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    option.textContent = value;
+                    option.selected = value === selected;
+                    select.appendChild(option);
+                });
+
+                if (addLabel) {
+                    const addOption = document.createElement('option');
+                    addOption.value = NEW_OPTION;
+                    addOption.textContent = addLabel;
+                    select.appendChild(addOption);
+                }
+            }
+
+            function bindCascade(config) {
+                const parent = document.getElementById(config.parentId);
+                const child = document.getElementById(config.childId);
+                const catalog = config.catalog;
+
+                if (!parent || !child) {
+                    return;
+                }
+
+                function renderParent() {
+                    fillSelect(parent, Object.keys(catalog), 'Seleccionar', config.addParentLabel);
+                }
+
+                function renderChild() {
+                    const hasParent = parent.value !== '' && parent.value !== NEW_OPTION;
+                    const options = hasParent ? (catalog[parent.value] || []) : [];
+                    fillSelect(child, options, hasParent ? 'Seleccionar' : config.emptyPlaceholder, hasParent ? config.addChildLabel : null);
+                    child.disabled = !hasParent;
+                }
+
+                parent.addEventListener('change', function () {
+                    if (parent.value === NEW_OPTION) {
+                        const name = (prompt(config.promptParent) || '').trim();
+
+                        if (name && !catalog[name]) {
+                            catalog[name] = [];
+                        }
+
+                        parent.dataset.selected = name && catalog[name] ? name : '';
+                        renderParent();
+                    } else {
+                        parent.dataset.selected = parent.value;
+                    }
+
+                    child.dataset.selected = '';
+                    renderChild();
+                });
+
+                child.addEventListener('change', function () {
+                    if (child.value === NEW_OPTION) {
+                        const name = (prompt(config.promptChild) || '').trim();
+                        const options = catalog[parent.value] || [];
+
+                        if (name && !options.includes(name)) {
+                            options.push(name);
+                            catalog[parent.value] = options;
+                        }
+
+                        child.dataset.selected = name && options.includes(name) ? name : '';
+                        renderChild();
+                    } else {
+                        child.dataset.selected = child.value;
                     }
                 });
+
+                renderParent();
+                renderChild();
             }
+
+            bindCascade({
+                parentId: 'category',
+                childId: 'subcategory',
+                catalog: categoryCatalog,
+                emptyPlaceholder: 'Seleccionar tipo primero',
+                addParentLabel: '+ Agregar nuevo tipo...',
+                addChildLabel: '+ Agregar nuevo subtipo...',
+                promptParent: 'Nombre del nuevo tipo de equipo:',
+                promptChild: 'Nombre del nuevo subtipo:'
+            });
+
+            bindCascade({
+                parentId: 'brand',
+                childId: 'model',
+                catalog: brandCatalog,
+                emptyPlaceholder: 'Seleccionar marca primero',
+                addParentLabel: '+ Agregar nueva marca...',
+                addChildLabel: '+ Agregar nuevo modelo...',
+                promptParent: 'Nombre de la nueva marca:',
+                promptChild: 'Nombre del nuevo modelo:'
+            });
 
             if (imageInput && imagePreview) {
                 imageInput.addEventListener('change', function () {

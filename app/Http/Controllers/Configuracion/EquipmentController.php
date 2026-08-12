@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Configuracion;
 use App\Http\Controllers\Controller;
 
 use App\Models\Brand;
-use App\Models\Equipment;
 use App\Models\EquipmentModel;
 use App\Models\EquipmentType;
 use App\Models\Subtype;
@@ -71,7 +70,7 @@ class EquipmentController extends Controller
             ['description' => $data['type_description'] ?? null]
         );
 
-        $subtype = Subtype::firstOrCreate(
+        Subtype::firstOrCreate(
             ['equipment_type_id' => $equipmentType->id, 'name' => $data['subtype_name']],
             ['description' => $data['subtype_description'] ?? null]
         );
@@ -81,24 +80,13 @@ class EquipmentController extends Controller
             ['description' => $data['brand_description'] ?? null]
         );
 
-        $model = EquipmentModel::firstOrCreate(
+        EquipmentModel::firstOrCreate(
             ['brand_id' => $brand->id, 'name' => $data['equipment_model_name']],
             ['description' => $data['model_description'] ?? null]
         );
 
-        Equipment::create([
-            'equipment_type_id' => $equipmentType->id,
-            'subtype_id' => $subtype->id,
-            'brand_id' => $brand->id,
-            'equipment_model_id' => $model->id,
-            'type_description' => $data['type_description'] ?? null,
-            'subtype_description' => $data['subtype_description'] ?? null,
-            'brand_description' => $data['brand_description'] ?? null,
-            'model_description' => $data['model_description'] ?? null,
-        ]);
-
         return redirect()->route('configuracion.tipos_equipo.index')
-            ->with('status', 'Equipo guardado correctamente.');
+            ->with('status', 'Catalogo de equipo guardado correctamente.');
     }
 
     public function subtypes(Request $request): JsonResponse
