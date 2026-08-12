@@ -14,6 +14,7 @@ use App\Models\ServiceStep;
 use App\Models\ServiceTracking;
 use App\Models\Subtype;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -21,7 +22,12 @@ class ServiceController extends Controller
 {
     public function index()
     {
-        return view('structure.gestion_servicios.Historial_se.menuhistorial');
+        $services = Service::with(['customer', 'externalTechnician', 'serviceEquipment', 'currentStep'])
+            ->where('status', 'registrado')
+            ->latest()
+            ->get();
+
+        return view('structure.gestion_servicios.Historial_se.menuhistorial', compact('services'));
     }
 
     public function create()
@@ -379,13 +385,81 @@ class ServiceController extends Controller
 
     public function maintenanceOrders()
     {
-        $services = Service::with(['customer', 'externalTechnician', 'serviceEquipment', 'currentStep'])
+        $services = Service::with(['customer', 'externalTechnician', 'serviceEquipment', 'currentStep', 'serviceTrackings'])
             ->where('status', 'en_progreso')
             ->latest()
             ->get();
 
         return view('structure.gestion_servicios.mantenimiento.menu_mantenimiento', [
             'services' => $services,
+        ]);
+    }
+
+    public function destroy(Service $service)
+    {
+        $service->load('serviceEquipment');
+
+        DB::transaction(function () use ($service) {
+            if ($service->serviceEquipment) {
+                $service->serviceEquipment->delete();
+            }
+            $service->serviceTrackings()->delete();
+            $service->delete();
+        });
+
+        return redirect()->route('gestion.servicios.mantenimiento')
+            ->with('success', 'Orden de servicio eliminada correctamente.');
+    }
+
+    public function completeCurrentStep(Request $request, Service $service)
+    {
+        $tracking = $service->serviceTrackings()
+            ->with('serviceStep')
+            ->where('service_step_id', $service->current_step_id)
+            ->first();
+
+        if (! $tracking || $tracking->status !== 'pendiente') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Paso no disponible o ya completado.',
+            ], 422);
+        }
+
+        $tracking->update([
+            'status' => 'completado',
+            'finished_at' => now(),
+        ]);
+
+        $nextStep = ServiceStep::where('service_type', $service->service_type)
+            ->where('order', '>', $tracking->serviceStep->order)
+            ->orderBy('order')
+            ->first();
+
+        if ($nextStep) {
+            ServiceTracking::create([
+                'service_id' => $service->id,
+                'service_step_id' => $nextStep->id,
+                'status' => 'pendiente',
+                'qr_token' => $nextStep->requires_qr ? $this->generateQrToken() : null,
+                'qr_expires_at' => $nextStep->requires_qr ? now()->addDay() : null,
+                'started_at' => now(),
+            ]);
+
+            $service->update(['current_step_id' => $nextStep->id]);
+        } else {
+            $service->update([
+                'status' => 'entregado',
+                'finished_at' => now(),
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Paso completado correctamente.',
+            'service_number' => $service->service_number,
+            'step_name' => $tracking->serviceStep->name,
+            'status' => 'Completado',
+            'new_step_name' => $nextStep?->name,
         ]);
     }
 

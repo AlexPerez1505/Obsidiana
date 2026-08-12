@@ -38,4 +38,12 @@ Route::middleware(['auth', 'verified', 'approved'])
         // Resumen de orden tras guardar
         Route::get('/nuevo-servicio/externo/resumen/{service}', [ServiceController::class, 'showSummary'])
             ->name('gestion.servicios.nuevo.externo.resumen');
+
+        // Eliminar orden de servicio
+        Route::delete('/{service}', [ServiceController::class, 'destroy'])
+            ->name('gestion.servicios.destroy');
+
+        // Completar paso actual desde modal de mantenimiento
+        Route::post('/{service}/complete-step', [ServiceController::class, 'completeCurrentStep'])
+            ->name('gestion.servicios.completeStep');
     });

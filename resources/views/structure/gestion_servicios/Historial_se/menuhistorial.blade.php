@@ -101,9 +101,29 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="7" class="service-table-empty">No hay servicios registrados.</td>
-                    </tr>
+                    @forelse ($services as $service)
+                        @php
+                            $customerName = trim(($service->customer->nombre ?? '') . ' ' . ($service->customer->apellido ?? ''));
+                            $techName = trim(($service->externalTechnician->nombre ?? '') . ' ' . ($service->externalTechnician->apellidos ?? ''));
+                        @endphp
+                        <tr>
+                            <td>{{ $service->service_number ?? 'N/A' }}</td>
+                            <td>{{ $customerName ?: 'N/A' }}</td>
+                            <td>{{ $techName ?: 'N/A' }}</td>
+                            <td>{{ ucfirst($service->status) }}</td>
+                            <td>N/A</td>
+                            <td>{{ $service->created_at?->format('d/m/Y H:i') }}</td>
+                            <td>
+                                <a href="{{ route('gestion.servicios.nuevo.externo.resumen', $service) }}" class="service-action-btn" title="Ver resumen">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="service-table-empty">No hay servicios registrados.</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
