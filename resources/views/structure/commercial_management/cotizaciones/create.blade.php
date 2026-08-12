@@ -274,7 +274,7 @@
                     <x-ui.form-group label="Nombre *" name="nombre" :required="true" />
                     <x-ui.form-group label="Apellido *" name="apellido" :required="true" />
                     <x-ui.form-group label="Teléfono *" name="telefono" type="tel" inputmode="tel" maxlength="20" :required="true" />
-                    <x-ui.form-group label="RFC *" name="rfc" maxlength="13" :required="true" />
+                    <x-ui.form-group label="RFC" name="rfc" maxlength="13" />
                     <x-ui.form-group label="Correo (Gmail)" name="gmail" type="email" />
                     <x-ui.form-group label="Dirección *" name="direccion" :required="true" />
                     <x-ui.form-group for="categoria_id" label="Categoría *">

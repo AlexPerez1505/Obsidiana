@@ -34,7 +34,7 @@
                     <x-ui.form-group label="Nombre *" name="nombre" placeholder="Ingrese el nombre" :value="$customer->nombre" :required="true" />
                     <x-ui.form-group label="Apellido *" name="apellido" placeholder="Ingrese el apellido" :value="$customer->apellido" :required="true" />
                     <x-ui.form-group label="Teléfono *" name="telefono" type="tel" placeholder="Ingrese el teléfono" :value="$customer->telefono" inputmode="tel" maxlength="20" :required="true" />
-                    <x-ui.form-group label="RFC *" name="rfc" placeholder="Ingrese el RFC" :value="$customer->rfc" maxlength="13" :required="true" />
+                    <x-ui.form-group label="RFC" name="rfc" placeholder="Ingrese el RFC" :value="$customer->rfc" maxlength="13" />
                     <x-ui.form-group label="Correo (Gmail)" name="gmail" type="email" placeholder="Ingrese el correo" :value="$customer->gmail" />
                 </div>
             </x-ui.card>
