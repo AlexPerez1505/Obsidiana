@@ -20,7 +20,11 @@ class Equipment extends Model
         'brand_id',
         'equipment_model_id',
         'serial_number',
+        'base_serial',
         'description',
+        'acquisition_date',
+        'registered_by',
+        'observations',
         'stock_current',
         'stock_max',
         'stock_min',
@@ -52,6 +56,7 @@ class Equipment extends Model
         'service_date' => 'date',
         'next_maintenance' => 'date',
         'invoice_date' => 'date',
+        'acquisition_date' => 'date',
     ];
 
     public function getRouteKeyName(): string

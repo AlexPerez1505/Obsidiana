@@ -5,12 +5,10 @@
 @section('page-sub', 'Gestion de Inventario > Entrada / Salida')
 
 @php
-    $movements = [
-        ['date' => '27/07/2026', 'type' => 'Entrada', 'tone' => 'green', 'folio' => 'EN-000125', 'warehouse' => 'Almacen Central', 'product' => 'Endoscopia flexible', 'quantity' => '1Pza', 'reference' => 'Olimpus Mexico S.A de C.V'],
-        ['date' => '27/07/2026', 'type' => 'Transferencia', 'tone' => 'blue', 'folio' => 'EN-000125', 'warehouse' => 'Almacen Central', 'product' => 'Endoscopia flexible', 'quantity' => '1Pza', 'reference' => 'Olimpus Mexico S.A de C.V'],
-        ['date' => '27/07/2026', 'type' => 'Salida', 'tone' => 'red', 'folio' => 'EN-000125', 'warehouse' => 'Almacen Central', 'product' => 'Endoscopia flexible', 'quantity' => '1Pza', 'reference' => 'Olimpus Mexico S.A de C.V'],
-        ['date' => '27/07/2026', 'type' => 'Entrada', 'tone' => 'green', 'folio' => 'EN-000125', 'warehouse' => 'Almacen Central', 'product' => 'Endoscopia flexible', 'quantity' => '1Pza', 'reference' => 'Olimpus Mexico S.A de C.V'],
-        ['date' => '27/07/2026', 'type' => 'Transferencia', 'tone' => 'blue', 'folio' => 'EN-000125', 'warehouse' => 'Almacen Central', 'product' => 'Endoscopia flexible', 'quantity' => '1Pza', 'reference' => 'Olimpus Mexico S.A de C.V'],
+    $toneMap = [
+        'entrada' => 'green',
+        'salida' => 'red',
+        'transferencia' => 'blue',
     ];
 @endphp
 
@@ -201,7 +199,7 @@
         border: 0;
         border-radius: 50%;
         background: transparent;
-        color: #111827;
+        color: var(--text);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -209,7 +207,7 @@
     }
 
     .movement-action:hover {
-        background: #eef4ff;
+        background: var(--surface-2);
     }
 
     .movement-foot {
@@ -267,6 +265,9 @@
     :root[data-theme="dark"] .movement-tab.is-active {
         color: var(--primary);
     }
+
+    .movement-actions-list.is-open { display:block !important; }
+    .movement-actions-list .action-link:hover { background:var(--surface-2); }
 
     @media (max-width: 860px) {
         .movement-filters {
@@ -364,26 +365,52 @@
                         </tr>
                     </thead>
                     <tbody id="movementBody">
-                        @foreach ($movements as $movement)
-                            <tr data-type="{{ strtolower($movement['type']) }}" data-warehouse="{{ strtolower($movement['warehouse']) }}" data-date="{{ $movement['date'] }}">
-                                <td>{{ $movement['date'] }}</td>
-                                <td><span class="movement-pill {{ $movement['tone'] }}">{{ $movement['type'] }}</span></td>
-                                <td>{{ $movement['folio'] }}</td>
-                                <td>{{ $movement['warehouse'] }}</td>
-                                <td>{{ $movement['product'] }}</td>
-                                <td>{{ $movement['quantity'] }}</td>
-                                <td>{{ $movement['reference'] }}</td>
+                        @forelse ($movements as $movement)
+                            <tr data-type="{{ $movement->movement_type }}" data-warehouse="{{ strtolower($movement->warehouse) }}" data-date="{{ $movement->movement_date->format('Y-m-d') }}">
+                                <td>{{ $movement->movement_date->format('d/m/Y') }}</td>
+                                <td><span class="movement-pill {{ $toneMap[$movement->movement_type] ?? 'blue' }}">{{ ucfirst($movement->movement_type) }}</span></td>
+                                <td>{{ $movement->folio }}</td>
+                                <td>{{ $movement->warehouse }}</td>
+                                <td>{{ $movement->item_name }}</td>
+                                <td>{{ $movement->quantity }} {{ $movement->unit }}</td>
+                                <td>{{ $movement->reference ?: ($movement->supplier ?: '-') }}</td>
                                 <td>
-                                    <button class="movement-action" type="button" aria-label="Acciones de {{ $movement['folio'] }}">
-                                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                            <circle cx="12" cy="5" r="1.8"></circle>
-                                            <circle cx="12" cy="12" r="1.8"></circle>
-                                            <circle cx="12" cy="19" r="1.8"></circle>
-                                        </svg>
-                                    </button>
+                                    <div class="movement-actions-menu" style="position:relative; display:inline-block;">
+                                        <button type="button" class="movement-action" aria-label="Acciones de {{ $movement->folio }}" onclick="this.nextElementSibling.classList.toggle('is-open')">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                                <circle cx="12" cy="5" r="1.8"></circle>
+                                                <circle cx="12" cy="12" r="1.8"></circle>
+                                                <circle cx="12" cy="19" r="1.8"></circle>
+                                            </svg>
+                                        </button>
+                                        <ul class="movement-actions-list" style="display:none; position:absolute; right:0; top:100%; margin-top:6px; min-width:160px; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,.12); z-index:100; list-style:none; padding:8px 0; margin:0; text-align:left;">
+                                            <li>
+                                                <a href="{{ route('inventory.movimientos.show', $movement) }}" class="action-link" style="display:flex; align-items:center; gap:8px; padding:9px 14px; color:var(--text); text-decoration:none; font-size:13px; font-weight:600;">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                                    Ver detalle
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a href="{{ route('inventory.movimientos.edit', $movement) }}" class="action-link" style="display:flex; align-items:center; gap:8px; padding:9px 14px; color:var(--text); text-decoration:none; font-size:13px; font-weight:600;">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                    Editar
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <button type="button" class="action-link delete-movement-btn" data-url="{{ route('inventory.movimientos.destroy', $movement) }}" data-folio="{{ $movement->folio }}" style="display:flex; align-items:center; gap:8px; width:100%; padding:9px 14px; color:var(--danger); background:none; border:none; cursor:pointer; font-size:13px; font-weight:600; text-align:left;">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                                    Eliminar
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="8" style="text-align:center; padding:32px; color:#718096;">No hay movimientos registrados.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
@@ -394,11 +421,38 @@
         </div>
     </section>
 
+    <div id="deleteModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center; padding:16px;">
+        <div style="width:100%; max-width:420px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow:0 20px 40px rgba(0,0,0,0.2); text-align:center;">
+            <div style="width:56px; height:56px; background:var(--danger-soft); color:var(--danger); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <h3 style="margin:0 0 8px; font-size:18px;">Confirmar eliminación</h3>
+            <p class="muted" style="margin:0 0 20px; font-size:14px;">Ingresa tu contraseña para eliminar el movimiento <strong id="deleteFolio"></strong>.</p>
+
+            <form id="deleteForm" method="POST" action="" style="text-align:left;">
+                @csrf
+                @method('DELETE')
+
+                <div style="margin-bottom:18px;">
+                    <label for="deletePassword" style="display:block; margin:0 0 6px; font-size:13px; font-weight:700; color:var(--text);">Contraseña</label>
+                    <input id="deletePassword" name="password" type="password" required placeholder="Tu contraseña" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:flex-end; gap:12px;">
+                    <button type="button" id="cancelDelete" class="btn btn--ghost">Cancelar</button>
+                    <button type="submit" class="btn" style="background:var(--danger); border-color:var(--danger); color:#fff;">Eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         let activeMovementType = 'all';
         const movementRows = Array.from(document.querySelectorAll('#movementBody tr'));
         const movementTypeSelect = document.getElementById('movement-type');
         const movementWarehouse = document.getElementById('movement-warehouse');
+        const movementStart = document.getElementById('movement-start');
+        const movementEnd = document.getElementById('movement-end');
         const movementCount = document.getElementById('movementCount');
 
         document.querySelectorAll('.movement-tab').forEach((button) => {
@@ -420,16 +474,23 @@
         });
 
         movementWarehouse.addEventListener('change', filterMovements);
+        movementStart.addEventListener('change', filterMovements);
+        movementEnd.addEventListener('change', filterMovements);
 
         function filterMovements() {
             const type = activeMovementType;
             const warehouse = movementWarehouse.value;
+            const start = movementStart.value;
+            const end = movementEnd.value;
             let visible = 0;
 
             movementRows.forEach((row) => {
                 const matchesType = type === 'all' || row.dataset.type === type;
                 const matchesWarehouse = warehouse === 'all' || row.dataset.warehouse === warehouse;
-                const show = matchesType && matchesWarehouse;
+                const rowDate = row.dataset.date;
+                const matchesStart = !start || (rowDate && rowDate >= start);
+                const matchesEnd = !end || (rowDate && rowDate <= end);
+                const show = matchesType && matchesWarehouse && matchesStart && matchesEnd;
 
                 row.style.display = show ? '' : 'none';
                 if (show) visible += 1;
@@ -437,7 +498,32 @@
 
             movementCount.textContent = visible === 0
                 ? 'Sin resultados'
-                : 'Mostrando 1 a ' + visible + ' de 25 resultados';
+                : 'Mostrando ' + visible + ' movimiento' + (visible === 1 ? '' : 's');
         }
+
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteForm = document.getElementById('deleteForm');
+        const deleteFolio = document.getElementById('deleteFolio');
+        const deletePassword = document.getElementById('deletePassword');
+        const cancelDelete = document.getElementById('cancelDelete');
+
+        document.querySelectorAll('.delete-movement-btn').forEach((button) => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteForm.action = button.dataset.url;
+                deleteFolio.textContent = button.dataset.folio;
+                deletePassword.value = '';
+                deleteModal.style.display = 'flex';
+            });
+        });
+
+        function closeDeleteModal() {
+            deleteModal.style.display = 'none';
+        }
+
+        cancelDelete.addEventListener('click', closeDeleteModal);
+        deleteModal.addEventListener('click', (e) => {
+            if (e.target === deleteModal) closeDeleteModal();
+        });
     </script>
 @endsection

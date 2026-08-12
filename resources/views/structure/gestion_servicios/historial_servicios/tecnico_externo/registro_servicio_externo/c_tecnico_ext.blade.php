@@ -1,13 +1,10 @@
 @extends('structure.gestion_servicios.layout')
 
-@section('title', 'Nuevo servicio')
+@section('title', 'Nuevo servicio externo')
 
 @section('service_content')
 <style>
 #wizard-actions { display:flex; align-items:center; gap:10px; }
-.breadcrumb { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--muted); }
-.breadcrumb a { color:var(--muted); text-decoration:none; }
-.breadcrumb a:hover { color:var(--primary); }
 .wizard-actions { display:flex; align-items:center; gap:10px; }
 .wizard-header { display:flex; align-items:center; gap:14px; margin-bottom:22px; }
 .wizard-icon { width:52px; height:52px; border-radius:14px; background:var(--primary-soft); color:var(--primary); display:flex; align-items:center; justify-content:center; }
@@ -55,46 +52,7 @@
 .hidden { display:none !important; }
 </style>
 
-<div class="card condition-screen" id="condition-screen">
-    <div class="wizard-header">
-        <div class="wizard-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        </div>
-        <div>
-            <h1 class="section-title" style="font-size:24px; margin:0;">Tipo de servicio</h1>
-            <p class="muted" style="margin:4px 0 0;">Selecciona el tipo de mantenimiento a registrar</p>
-        </div>
-    </div>
-
-    <div class="condition-card condition-card--externo" data-condition="externo">
-        <div class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
-        <div class="info">
-            <strong>Mantenimiento externo</strong>
-            <span>El equipo se atiende fuera de las instalaciones del cliente.</span>
-        </div>
-    </div>
-
-    <div class="condition-card condition-card--interno" data-condition="interno">
-        <div class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
-        <div class="info">
-            <strong>Mantenimiento interno</strong>
-            <span>El tecnico asiste en las instalaciones del cliente.</span>
-        </div>
-    </div>
-
-    <div style="display:flex; gap:10px; margin-top:8px;">
-        <button type="button" class="btn btn--ghost" onclick="history.back()" style="flex:1; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            Cancelar
-        </button>
-        <button type="button" class="btn" id="btn-start" style="flex:1; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
-            Continuar
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
-    </div>
-</div>
-
-<div class="card hidden" id="wizard-card" style="position:relative;">
+<div class="card" id="wizard-card" style="position:relative;">
     <div class="wizard-actions" id="wizard-actions" style="position:absolute; top:18px; right:18px; z-index:10;">
         <button type="button" class="btn btn--ghost" id="btn-cancel-wizard" style="display:inline-flex; align-items:center; gap:8px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -109,13 +67,14 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
     </div>
+    
     <div class="wizard-header">
         <div class="wizard-icon" id="wizard-icon">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         </div>
         <div>
-            <h1 class="section-title" style="font-size:24px; margin:0;" id="wizard-title">Nuevo servicio</h1>
-            <p class="muted" style="margin:4px 0 0;" id="wizard-subtitle">Crea un nuevo servicio</p>
+            <h1 class="section-title" style="font-size:24px; margin:0;" id="wizard-title">Nuevo servicio externo</h1>
+            <p class="muted" style="margin:4px 0 0;" id="wizard-subtitle">Crea un nuevo servicio de mantenimiento externo</p>
         </div>
     </div>
 
@@ -132,56 +91,23 @@
         @if(isset($invitation))
             <input type="hidden" name="invitation_token" value="{{ $invitation->token }}">
         @endif
-        <input type="hidden" name="mantenimiento_externo" id="mantenimiento_externo" value="0">
-        <input type="hidden" name="mantenimiento_interno" id="mantenimiento_interno" value="0">
+        <input type="hidden" name="mantenimiento_externo" id="mantenimiento_externo" value="1">
 
-        @include('structure.gestion_servicios.historial_servicios.registro_servicio.c1_registro_serv', ['customers' => $customers])
-        @include('structure.gestion_servicios.historial_servicios.registro_servicio.c2_resgistro_serv')
-        @include('structure.gestion_servicios.historial_servicios.registro_servicio.c3_tecnico_Int', ['internalTechnicians' => $internalTechnicians])
-        @include('structure.gestion_servicios.historial_servicios.registro_servicio.c3_tecnico_ext', ['externalTechnicians' => $externalTechnicians])
-        @include('structure.gestion_servicios.historial_servicios.acciones_mn_hit_ser.r_ext_menu_historial')
+        @include('structure.gestion_servicios.historial_servicios.tecnico_externo.registro_servicio_externo.ct1_registro_serv', ['customers' => $customers])
+        @include('structure.gestion_servicios.historial_servicios.tecnico_externo.registro_servicio_externo.ct2_resgistro_serv')
+        @include('structure.gestion_servicios.historial_servicios.tecnico_externo.registro_servicio_externo.ct3_tecnico_ext', ['externalTechnicians' => $externalTechnicians])
+        @include('structure.gestion_servicios.historial_servicios.tecnico_externo.tec_externo_interaciones.flujo_tec_ext.r_ext_menu_historial')
     </form>
 
-    @include('structure.gestion_servicios.historial_servicios.registro_servicio.tec_externo.c_tec_externo')
+    @include('structure.gestion_servicios.historial_servicios.tecnico_externo.registro_servicio_externo.tec_externo.c_tec_externo')
 </div>
 @endsection
 
 @push('scripts')
 <script>
     let currentStep = 1;
-    const FORM_STORAGE_KEY = 'nueva_orden_draft';
-
-    const conditionScreen = document.getElementById('condition-screen');
-    const wizardCard = document.getElementById('wizard-card');
-    const conditionCards = document.querySelectorAll('.condition-card');
-    const btnStart = document.getElementById('btn-start');
-    const inputExterno = document.getElementById('mantenimiento_externo');
-    const inputInterno = document.getElementById('mantenimiento_interno');
-
-    function updateConditionSelection() {
-        const externo = document.querySelector('.condition-card[data-condition="externo"]').classList.contains('selected');
-        const interno = document.querySelector('.condition-card[data-condition="interno"]').classList.contains('selected');
-        inputExterno.value = externo ? 1 : 0;
-        inputInterno.value = interno ? 1 : 0;
-    }
-
-    conditionCards.forEach(card => {
-        card.addEventListener('click', () => {
-            conditionCards.forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            updateConditionSelection();
-        });
-    });
-
-    btnStart.addEventListener('click', () => {
-        if (!parseInt(inputExterno.value) && !parseInt(inputInterno.value)) {
-            alert('Selecciona al menos un tipo de mantenimiento.');
-            return;
-        }
-        conditionScreen.classList.add('hidden');
-        wizardCard.classList.remove('hidden');
-        updateStep();
-    });
+    let isSaving = false;
+    const FORM_STORAGE_KEY = 'nueva_orden_draft_externo';
 
     const wizardTitle = document.getElementById('wizard-title');
     const wizardSubtitle = document.getElementById('wizard-subtitle');
@@ -192,7 +118,7 @@
     const form = document.getElementById('orden-form');
 
     function saveFormState() {
-        const state = { currentStep, externo: inputExterno.value, interno: inputInterno.value };
+        const state = { currentStep };
         form.querySelectorAll('input:not([type="file"]):not([type="password"]):not([name="_token"]):not([type="checkbox"]):not([type="radio"]), select, textarea').forEach(el => {
             if (el.name || el.id) state[el.name || el.id] = el.value;
         });
@@ -207,10 +133,6 @@
         if (!saved) return;
         const state = JSON.parse(saved);
         if (state.currentStep) currentStep = parseInt(state.currentStep);
-        inputExterno.value = state.externo || '0';
-        inputInterno.value = state.interno || '0';
-        if (inputExterno.value === '1') document.querySelector('.condition-card[data-condition="externo"]')?.classList.add('selected');
-        if (inputInterno.value === '1') document.querySelector('.condition-card[data-condition="interno"]')?.classList.add('selected');
 
         form.querySelectorAll('input:not([type="file"]):not([type="password"]):not([name="_token"]):not([type="checkbox"]):not([type="radio"]), select, textarea').forEach(el => {
             const key = el.name || el.id;
@@ -220,26 +142,55 @@
             if (el.name && state.hasOwnProperty(el.name)) el.checked = !!state[el.name];
         });
 
-        if (inputExterno.value === '1' || inputInterno.value === '1') {
-            conditionScreen.classList.add('hidden');
-            wizardCard.classList.remove('hidden');
-            updateStep();
+        const savedQr = localStorage.getItem('saved_service_qr');
+        if (savedQr) {
+            const data = JSON.parse(savedQr);
+            if (!data.show_url) {
+                localStorage.removeItem('saved_service_qr');
+                return;
+            }
+            const qrPreview = document.getElementById('resumen-qr-preview');
+            const qrImage = document.getElementById('resumen-qr-image');
+            const qrToken = document.getElementById('resumen-qr-token');
+            const qrLink = document.getElementById('resumen-qr-link');
+            const qrDownload = document.getElementById('resumen-qr-download');
+            if (qrPreview && qrImage) {
+                qrImage.src = data.qr_image_url;
+                if (qrToken) qrToken.textContent = data.qr_token;
+                if (qrLink) qrLink.href = data.qr_url;
+                if (qrDownload) {
+                    qrDownload.href = data.qr_image_url;
+                    qrDownload.download = 'qr-' + data.service_number + '.png';
+                }
+                const showLink = document.getElementById('resumen-show-link');
+                const approvalsLink = document.getElementById('resumen-approvals-link');
+                const orderLinks = document.getElementById('resumen-order-links');
+                if (showLink) showLink.href = data.show_url ?? '#';
+                if (approvalsLink) approvalsLink.href = data.approvals_url ?? '#';
+                if (orderLinks) orderLinks.style.display = 'flex';
+                qrPreview.style.display = 'block';
+                window.markRutaQrCompletado();
+            }
+            const resumenBtn = document.querySelector('#step-externo .resumen-btn--primary');
+            if (resumenBtn) {
+                resumenBtn.disabled = true;
+                resumenBtn.innerHTML = 'QR generado';
+            }
+            if (btnPrimary && data.show_url) {
+                btnPrimary.type = 'button';
+                btnPrimary.removeAttribute('form');
+                btnPrimary.disabled = true;
+            }
+            isSaving = true;
         }
+
+        updateStep();
     }
 
     function updateStep() {
         document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
-        if (currentStep === 3) {
-            const isExterno = parseInt(inputExterno.value);
-            const isInterno = parseInt(inputInterno.value);
-            if (isExterno) {
-                document.getElementById('step-panel-externo')?.classList.add('active');
-            } else if (isInterno) {
-                document.getElementById('step-panel-interno')?.classList.add('active');
-            }
-        } else {
-            document.querySelector(`.step-panel[data-step="${currentStep}"]`)?.classList.add('active');
-        }
+        document.querySelector(`.step-panel[data-step="${currentStep}"]`)?.classList.add('active');
+        
         document.querySelectorAll('.step').forEach(s => {
             const step = parseInt(s.dataset.step);
             s.classList.remove('active','done');
@@ -248,55 +199,71 @@
         });
 
         if (currentStep === 1) {
-            wizardTitle.textContent = 'Nuevo servicio';
-            wizardSubtitle.textContent = 'Crea un nuevo servicio ';
-            wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
+            wizardTitle.textContent = 'Nuevo servicio externo';
+            wizardSubtitle.textContent = 'Selecciona el cliente para el servicio';
+            wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
             btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancelar';
             btnPrimary.innerHTML = 'Siguiente: Equipo <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
             btnPrimary.type = 'button';
+            btnPrimary.removeAttribute('form');
         } else if (currentStep === 2) {
-            wizardTitle.textContent = 'Registro';
-            wizardSubtitle.textContent = 'Completa la informacion del equipo para continuar';
-            wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
+            wizardTitle.textContent = 'Registro del equipo';
+            wizardSubtitle.textContent = 'Completa la información del equipo para continuar';
+            wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
             btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Regresar';
             btnPrimary.innerHTML = 'Siguiente: Tecnico <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
             btnPrimary.type = 'button';
+            btnPrimary.removeAttribute('form');
         } else if (currentStep === 3) {
-            wizardTitle.textContent = 'Final tecnico';
-            wizardSubtitle.textContent = 'Asigna un especialista al servicio programmado';
-            wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+            wizardTitle.textContent = 'Asignar técnico';
+            wizardSubtitle.textContent = 'Selecciona un técnico especializado para el servicio';
+            wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
             btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Regresar';
             btnPrimary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar registro';
             btnPrimary.type = 'button';
+            btnPrimary.removeAttribute('form');
         } else {
             wizardTitle.textContent = 'Resumen de Orden';
-            wizardSubtitle.textContent = 'Revisa la informacion antes de guardar';
+            wizardSubtitle.textContent = 'Revisa la información antes de guardar';
             wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
             btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Regresar';
-            btnPrimary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Orden';
-            btnPrimary.type = 'submit';
+            btnPrimary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar nuevo servicio';
+            btnPrimary.type = 'button';
+            btnPrimary.removeAttribute('form');
         }
-        if (btnCancelWizard) {
-            btnCancelWizard.style.display = currentStep === 1 ? 'none' : 'inline-flex';
-        }
+        
+        btnCancelWizard.style.display = currentStep === 1 ? 'none' : 'inline-flex';
         saveFormState();
     }
 
     btnPrimary.addEventListener('click', () => {
+        if (isSaving) return;
         if (currentStep < 4) {
             currentStep++;
             updateStep();
+        } else if (currentStep === 4) {
+            isSaving = true;
+            btnPrimary.disabled = true;
+            window.guardarServicio();
         }
     });
+
     function resetWizard() {
         currentStep = 1;
-        inputExterno.value = '0';
-        inputInterno.value = '0';
-        conditionCards.forEach(c => c.classList.remove('selected'));
         form.reset();
         localStorage.removeItem(FORM_STORAGE_KEY);
-        wizardCard.classList.add('hidden');
-        conditionScreen.classList.remove('hidden');
+        localStorage.removeItem('saved_service_qr');
+
+        const resumenBtn = document.querySelector('#step-externo .resumen-btn--primary');
+        if (resumenBtn) {
+            resumenBtn.disabled = false;
+            resumenBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h4v4H7z"/><path d="M13 7h4v4h-4z"/><path d="M7 13h4v4H7z"/><path d="M13 13h4v4h-4z"/></svg> Guardar y generar QR`;
+        }
+        if (btnPrimary) {
+            btnPrimary.disabled = false;
+        }
+
+        window.location.href = '{{ route("gestion.servicios.historial.nueva_orden.type") }}';
     }
 
     btnSecondary.addEventListener('click', () => {
@@ -314,9 +281,110 @@
         }
     });
 
+    form.addEventListener('submit', function(e) {
+        if (isSaving) {
+            e.preventDefault();
+            return;
+        }
+        if (currentStep === 4) {
+            e.preventDefault();
+            isSaving = true;
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Error ' + r.status);
+                return r.text().then(text => {
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Respuesta del servidor no es JSON:', text.substring(0, 500));
+                        throw new Error('El servidor no devolvió JSON. Verifica la consola.');
+                    }
+                });
+            })
+            .then(data => {
+                const qrPreview = document.getElementById('resumen-qr-preview');
+                const qrImage = document.getElementById('resumen-qr-image');
+                const qrToken = document.getElementById('resumen-qr-token');
+                const qrLink = document.getElementById('resumen-qr-link');
+                const showLink = document.getElementById('resumen-show-link');
+                const approvalsLink = document.getElementById('resumen-approvals-link');
+                const orderLinks = document.getElementById('resumen-order-links');
+
+                if (qrPreview && qrImage && data.qr_url && data.qr_token) {
+                    const imageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(data.qr_url);
+                    qrImage.src = imageUrl;
+                    if (qrToken) qrToken.textContent = data.qr_token;
+                    if (qrLink) {
+                        qrLink.href = data.qr_url;
+                        qrLink.textContent = 'Abrir enlace';
+                    }
+                    const qrDownload = document.getElementById('resumen-qr-download');
+                    if (qrDownload) {
+                        qrDownload.href = imageUrl;
+                        qrDownload.download = 'qr-' + data.service_number + '.png';
+                    }
+                    qrPreview.style.display = 'block';
+                    window.markRutaQrCompletado();
+                    qrPreview.scrollIntoView({ behavior: 'smooth' });
+
+                    const resumenBtn = document.querySelector('#step-externo .resumen-btn--primary');
+                    if (resumenBtn) {
+                        resumenBtn.disabled = true;
+                        resumenBtn.innerHTML = 'QR generado';
+                    }
+
+                    if (btnPrimary) {
+                        btnPrimary.type = 'button';
+                        btnPrimary.removeAttribute('form');
+                        btnPrimary.disabled = true;
+                    }
+
+                    if (showLink) {
+                        showLink.href = data.show_url;
+                    }
+                    if (approvalsLink) {
+                        approvalsLink.href = data.approvals_url ?? '#';
+                    }
+                    if (orderLinks) {
+                        orderLinks.style.display = 'flex';
+                    }
+
+                    localStorage.setItem('saved_service_qr', JSON.stringify({
+                        id: data.id,
+                        service_number: data.service_number,
+                        qr_token: data.qr_token,
+                        qr_url: data.qr_url,
+                        qr_image_url: imageUrl,
+                        show_url: data.show_url,
+                        approvals_url: data.approvals_url,
+                        menu_url: data.menu_url,
+                    }));
+
+                    setTimeout(() => {
+                        if (data.menu_url) window.location.href = data.menu_url;
+                    }, 1500);
+                }
+            })
+            .catch(err => {
+                isSaving = false;
+                alert('Error al guardar: ' + err.message);
+                console.error(err);
+            });
+        } else {
+            form.submit();
+        }
+    });
+
     form.addEventListener('input', saveFormState);
     form.addEventListener('change', saveFormState);
+    localStorage.removeItem('saved_service_qr');
     restoreFormState();
-
 </script>
 @endpush

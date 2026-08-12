@@ -11,19 +11,6 @@
         'Mantenimiento' => 'blue',
         'Malo' => 'red',
     ];
-
-    $equipmentRows = collect($equipmentList ?? [])->map(function ($equipo) use ($statusTones) {
-        return [
-            'code' => $equipo->code,
-            'name' => $equipo->name,
-            'type' => $equipo->equipmentType?->name ?? 'Sin tipo',
-            'location' => $equipo->warehouse ?? 'Sin ubicacion',
-            'owner' => $equipo->assigned_to ?? 'Sin asignar',
-            'status' => $equipo->status ?? 'Activo',
-            'tone' => $statusTones[$equipo->status] ?? 'green',
-            'thumb' => $equipo->thumb ?? 'tower',
-        ];
-    })->all();
 @endphp
 
 @push('head')
@@ -32,7 +19,8 @@
         position: relative;
         margin-bottom: 18px;
     }
-    .equipment-search svg {
+    .equipment-search svg,
+    .equipment-search__icon {
         position: absolute;
         left: 14px;
         top: 50%;
@@ -40,20 +28,23 @@
         color: var(--muted);
         width: 18px;
         height: 18px;
+        pointer-events: none;
     }
+    .equipment-search { position: relative; margin-bottom: 18px; }
     .equipment-search input {
         width: 100%;
         padding: 11px 14px 11px 42px;
-        border: 1px solid var(--border);
-        border-radius: 9px;
-        background: var(--surface);
-        color: var(--text);
+        border: 1px solid rgba(0,168,255,0.55);
+        border-radius: 10px;
+        background: rgba(4,10,24,0.72);
+        color: #fff;
         font: inherit;
         font-size: 15px;
     }
     .equipment-search input:focus {
         outline: none;
-        border-color: #7c3aed;
+        border-color: #00A8FF;
+        box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.45);
     }
     .equipment-state {
         display: inline-flex;
@@ -136,23 +127,29 @@
         border: 1px solid rgba(0,168,255,0.55);
     }
     .equipment-menu .btn--ghost:hover, .equipment-menu-header .btn--ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
-    .equipment-search input { background: rgba(4,10,24,0.72); border-color: rgba(0,168,255,0.55); color: #fff; }
-    .equipment-search input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.45); outline: none; }
+    .equipment-search input,
+    .equipment-search select { background: rgba(4,10,24,0.72); border-color: rgba(0,168,255,0.55); color: #fff; }
+    .equipment-search input:focus,
+    .equipment-search select:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.45); outline: none; }
     .equipment-search svg { color: #00A8FF; }
     .equipment-foot { color: rgba(255,255,255,0.55); }
     :root[data-theme="light"] .equipment-menu.card {
-        background: linear-gradient(145deg, rgba(15,23,42,0.04), rgba(15,23,42,0.08));
+        background: #ffffff;
         border-color: rgba(0,168,255,0.55);
-        box-shadow: 0 8px 28px rgba(0,0,0,0.1), 0 0 14px rgba(0,168,255,0.18), inset 0 1px 0 rgba(255,255,255,0.5);
+        box-shadow: 0 8px 28px rgba(0,168,255,0.12), 0 0 14px rgba(0,168,255,0.18), inset 0 1px 0 rgba(255,255,255,0.6);
     }
-    :root[data-theme="light"] .equipment-menu .btn--ghost {
+    :root[data-theme="light"] .equipment-menu .btn,
+    :root[data-theme="light"] .equipment-menu-header .btn { color: #fff; }
+    :root[data-theme="light"] .equipment-menu .btn--ghost,
+    :root[data-theme="light"] .equipment-menu-header .btn--ghost {
         background: rgba(0,168,255,0.08);
         border-color: rgba(0,168,255,0.55);
         color: #00A8FF;
     }
-    :root[data-theme="light"] .equipment-menu .btn--ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
-    :root[data-theme="light"] .equipment-search input { background: #fff; color: var(--text); border-color: rgba(0,168,255,0.35); }
-    :root[data-theme="light"] .equipment-search input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.12), 0 0 18px rgba(0,168,255,0.25); outline: none; }
+    :root[data-theme="light"] .equipment-menu .btn--ghost:hover,
+    :root[data-theme="light"] .equipment-menu-header .btn--ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
+    :root[data-theme="light"] .equipment-search input { background: #ffffff; color: #1e1b4b; border-color: rgba(0,168,255,0.55); }
+    :root[data-theme="light"] .equipment-search input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.35); outline: none; }
     :root[data-theme="light"] .equipment-search svg { color: #00A8FF; }
     :root[data-theme="light"] .equipment-foot {
         color: #3730a3;
@@ -186,6 +183,18 @@
     :root[data-theme="light"] .equipment-menu tbody tr { background: #ffffff; }
     :root[data-theme="light"] .equipment-menu tr { border-bottom: 1px solid rgba(0,168,255,0.35); }
     :root[data-theme="light"] .equipment-menu tbody tr:hover { background: #f5f9ff; }
+    .equipment-pin-modal { position: fixed; inset: 0; z-index: 1000; display: none; }
+    .equipment-pin-modal__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: grid; place-items: center; padding: 20px; }
+    .equipment-pin-modal__card { width: 100%; max-width: 360px; padding: 24px; border-radius: 14px; background: var(--surface); border: 1px solid rgba(0,168,255,0.55); box-shadow: 0 0 20px rgba(0,168,255,0.35); }
+    .equipment-pin-modal__title { margin: 0 0 12px; color: var(--text); font-size: 1.1rem; font-weight: 800; }
+    .equipment-pin-modal__text { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+    .equipment-pin-modal__input { width: 100%; padding: 9px 12px; border: 1px solid rgba(0,168,255,0.55); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; box-sizing: border-box; }
+    .equipment-pin-modal__actions { display: flex; gap: 12px; margin-top: 18px; }
+    .equipment-pin-modal__btn { display: inline-flex; align-items: center; justify-content: center; flex: 1; padding: 10px 14px; background: linear-gradient(135deg, #00A8FF, #7C3AED); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 0 12px rgba(59,130,246,0.35), 0 0 30px rgba(124,58,237,0.2); transition: all 0.2s ease; }
+    .equipment-pin-modal__btn:hover { filter: brightness(1.1); }
+    .equipment-pin-modal__btn--ghost { background: rgba(0,168,255,0.12); color: #00A8FF; border: 1px solid rgba(0,168,255,0.55); box-shadow: 0 0 10px rgba(0,168,255,0.15); }
+    .equipment-pin-modal__btn--ghost:hover { background: rgba(0,168,255,0.22); border-color: #00A8FF; }
+    :root[data-theme="light"] .equipment-pin-modal__btn--ghost { background: rgba(0,168,255,0.08); color: #00A8FF; }
 </style>
 @endpush
 
@@ -198,42 +207,40 @@
     </div>
 
     <x-ui.card class="equipment-menu">
-        <div class="equipment-search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <form method="GET" class="equipment-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" class="equipment-search__icon">
                 <circle cx="11" cy="11" r="7"></circle>
                 <path d="m20 20-3.5-3.5"></path>
             </svg>
-            <input id="equipmentSearch" type="search" placeholder="Buscar por nombre, codigo o categoria..." autocomplete="off">
-        </div>
+            <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por equipo, codigo, serie..." autocomplete="off">
+        </form>
 
         <div style="overflow-x:auto;">
             <table>
                 <thead>
                     <tr>
-                        <th>Codigo</th>
-                        <th>Imagen</th>
                         <th>Equipo</th>
-                        <th>Tipo</th>
-                        <th>Ubicacion</th>
-                        <th>Responsable</th>
                         <th>Estado</th>
+                        <th>Serie</th>
+                        <th>Fecha de adquisicion</th>
+                        <th>Registrado por</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="equipmentBody">
-                    @forelse ($equipmentRows as $equipment)
-                        <tr data-search="{{ strtolower($equipment['code'].' '.$equipment['name'].' '.$equipment['type'].' '.$equipment['location'].' '.$equipment['owner'].' '.$equipment['status']) }}">
-                            <td style="font-weight:700;">{{ $equipment['code'] }}</td>
+                <tbody>
+                    @forelse ($equipmentList as $equipo)
+                        <tr>
                             <td>
-                                <span class="equipment-thumb" aria-label="Imagen de {{ $equipment['name'] }}">
-                                    @include('structure.gestion_Inventario.equipos.partials.equipment-thumb', ['type' => $equipment['thumb']])
-                                </span>
+                                <div style="font-weight:700;">{{ $equipo->name }}</div>
+                                <small style="color:var(--muted);">{{ $equipo->code }}</small>
                             </td>
-                            <td>{{ $equipment['name'] }}</td>
-                            <td>{{ $equipment['type'] }}</td>
-                            <td>{{ $equipment['location'] }}</td>
-                            <td>{{ $equipment['owner'] }}</td>
-                            <td><span class="equipment-state {{ $equipment['tone'] }}">{{ $equipment['status'] }}</span></td>
+                            <td><span class="equipment-state {{ $statusTones[$equipo->status] ?? 'green' }}">{{ $equipo->status ?? 'Activo' }}</span></td>
+                            <td>
+                                <div>{{ $equipo->serial_number ?: '—' }}</div>
+                                <small style="color:var(--muted);">{{ $equipo->base_serial ?: '' }}</small>
+                            </td>
+                            <td>{{ $equipo->acquisition_date?->format('d/m/Y') ?? '—' }}</td>
+                            <td>{{ $equipo->registered_by ?? '—' }}</td>
                             <td>
                                 <div class="equipment-action-menu" data-equipment-action-menu>
                                     <button type="button" class="btn btn--ghost" style="padding:6px;" aria-haspopup="true" aria-expanded="false" data-equipment-action-toggle>
@@ -245,17 +252,22 @@
                                     </button>
 
                                     <div class="equipment-action-list" role="menu">
-                                        <a href="{{ route('inventory.equipos.show', ['equipo' => $equipment['code']]) }}" role="menuitem">
+                                        <a href="{{ route('inventory.equipos.show', $equipo) }}" role="menuitem">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                                            Visualizar
+                                            Ver
                                         </a>
-                                        <a href="{{ route('inventory.equipos.edit', ['equipo' => $equipment['code']]) }}" role="menuitem">
+                                        <a href="{{ route('inventory.equipos.edit', $equipo) }}" role="menuitem">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
-                                            Actualizar
+                                            Editar
                                         </a>
-                                        <form method="POST" action="{{ route('inventory.equipos.destroy', ['equipo' => $equipment['code']]) }}" onsubmit="return confirm('¿Eliminar este equipo?');" role="none">
+                                        <a href="{{ route('inventory.equipos.download', $equipo) }}" role="menuitem">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                            Descargar
+                                        </a>
+                                        <form method="POST" action="{{ route('inventory.equipos.destroy', $equipo) }}" data-delete-form role="none">
                                             @csrf
                                             @method('DELETE')
+                                            <input type="hidden" name="pin" value="">
                                             <button type="submit" class="danger" role="menuitem">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>
                                                 Eliminar
@@ -267,7 +279,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" style="text-align:center; padding:32px; color:var(--muted);">
+                            <td colspan="6" style="text-align:center; padding:32px; color:var(--muted);">
                                 No hay equipos registrados. Agrega uno para gestionar el inventario.
                             </td>
                         </tr>
@@ -277,31 +289,26 @@
         </div>
 
         <div class="equipment-foot">
-            <span id="equipmentCount">Mostrando {{ count($equipmentRows) ? 1 : 0 }} a {{ count($equipmentRows) }} de {{ count($equipmentRows) }} resultados</span>
+            <span id="equipmentCount">Mostrando {{ $equipmentList->count() ? 1 : 0 }} a {{ $equipmentList->count() }} de {{ $equipmentList->count() }} resultados</span>
             <button type="button" class="btn btn--ghost" style="font-size:13px;">Ver mas &gt;</button>
         </div>
     </x-ui.card>
 
+    <div id="equipmentPinModal" class="equipment-pin-modal">
+        <div class="equipment-pin-modal__overlay">
+            <div class="equipment-pin-modal__card">
+                <h3 class="equipment-pin-modal__title">Confirmar eliminacion</h3>
+                <p class="equipment-pin-modal__text">Ingrese el PIN de acceso para eliminar:</p>
+                <input type="password" id="equipmentPinInput" class="equipment-pin-modal__input" placeholder="PIN" autocomplete="off">
+                <div class="equipment-pin-modal__actions">
+                    <button type="button" id="equipmentPinCancel" class="equipment-pin-modal__btn equipment-pin-modal__btn--ghost">Cancelar</button>
+                    <button type="button" id="equipmentPinAccept" class="equipment-pin-modal__btn">Aceptar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const equipmentSearch = document.getElementById('equipmentSearch');
-        const equipmentRows = Array.from(document.querySelectorAll('#equipmentBody tr'));
-        const equipmentCount = document.getElementById('equipmentCount');
-
-        equipmentSearch.addEventListener('input', () => {
-            const query = equipmentSearch.value.trim().toLowerCase();
-            let visible = 0;
-
-            equipmentRows.forEach((row) => {
-                const show = !query || row.dataset.search.includes(query);
-                row.style.display = show ? '' : 'none';
-                if (show) visible += 1;
-            });
-
-            equipmentCount.textContent = visible === 0
-                ? 'Sin resultados'
-                : 'Mostrando 1 a ' + visible + ' de 25 resultados';
-        });
-
         document.addEventListener('click', (event) => {
             const toggle = event.target.closest('[data-equipment-action-toggle]');
             const actionButton = event.target.closest('[data-equipment-action-message]');
@@ -353,6 +360,38 @@
                 const button = menu.querySelector('[data-equipment-action-toggle]');
                 if (button) button.setAttribute('aria-expanded', 'false');
             });
+        });
+
+        const equipmentPinModal = document.getElementById('equipmentPinModal');
+        const equipmentPinInput = document.getElementById('equipmentPinInput');
+        let currentEquipmentDeleteForm = null;
+
+        document.querySelectorAll('[data-delete-form]').forEach(form => {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                currentEquipmentDeleteForm = form;
+                equipmentPinInput.value = '';
+                equipmentPinModal.style.display = 'block';
+                equipmentPinInput.focus();
+            });
+        });
+
+        document.getElementById('equipmentPinAccept').addEventListener('click', () => {
+            if (!currentEquipmentDeleteForm) return;
+            const pin = equipmentPinInput.value.trim();
+            if (!pin) return;
+            currentEquipmentDeleteForm.querySelector('input[name="pin"]').value = pin;
+            currentEquipmentDeleteForm.submit();
+        });
+
+        function closeEquipmentPinModal() {
+            equipmentPinModal.style.display = 'none';
+            currentEquipmentDeleteForm = null;
+        }
+
+        document.getElementById('equipmentPinCancel').addEventListener('click', closeEquipmentPinModal);
+        equipmentPinModal.querySelector('.equipment-pin-modal__overlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeEquipmentPinModal();
         });
     </script>
 @endsection

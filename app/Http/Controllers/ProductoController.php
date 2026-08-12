@@ -89,8 +89,8 @@ class ProductoController extends Controller
      */
     public function edit(Request $request, Producto $producto): View|RedirectResponse
     {
-        if ($request->get('nip') !== '123456') {
-            return redirect()->route('inventory.productos.index')->with('error', 'NIP incorrecto. No se puede editar.');
+        if ($request->get('pin') !== '123456') {
+            return redirect()->route('inventory.productos.index')->with('error', 'PIN incorrecto. No se puede editar.');
         }
 
         return view('structure.gestion_Inventario.productos.edit', [
@@ -125,8 +125,8 @@ class ProductoController extends Controller
      */
     public function destroy(Request $request, Producto $producto): RedirectResponse
     {
-        if ($request->input('nip') !== '123456') {
-            return back()->with('error', 'NIP incorrecto. El producto no se eliminó.');
+        if ($request->input('pin') !== '123456') {
+            return back()->with('error', 'PIN incorrecto. El producto no se eliminó.');
         }
 
         $producto->delete();

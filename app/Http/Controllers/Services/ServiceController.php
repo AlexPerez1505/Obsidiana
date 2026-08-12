@@ -63,6 +63,18 @@ class ServiceController extends Controller
     {
         $service = $this->persistService($request, auth()->id());
 
+        if ($request->ajax()) {
+            return response()->json([
+                'id' => $service->id,
+                'service_number' => $service->service_number,
+                'qr_token' => $service->qr_token,
+                'qr_url' => route('qr.show', $service->qr_token),
+                'show_url' => route('gestion.servicios.historial.show', $service),
+                'approvals_url' => route('service-tracking.approvals'),
+                'menu_url' => route('gestion.servicios.historial'),
+            ]);
+        }
+
         return redirect()->route('gestion.servicios.historial.show', $service)
             ->with('success', "Servicio {$service->service_number} creado.");
     }
@@ -119,6 +131,15 @@ class ServiceController extends Controller
             abort(422, 'Selecciona el tipo de servicio.');
         }
 
+        // Prevenir duplicados: verificar si ya existe un servicio reciente para este cliente
+        $recentService = Service::where('customer_id', $validated['customer_id'])
+            ->where('created_at', '>=', now()->subSeconds(5))
+            ->first();
+
+        if ($recentService) {
+            return $recentService;
+        }
+
         $step = ServiceStep::where('service_type', $serviceType)
             ->orderBy('order')
             ->first();
@@ -168,6 +189,27 @@ class ServiceController extends Controller
             'qr_expires_at' => $service->qr_expires_at,
             'started_at' => now(),
         ]);
+
+        // Para servicios externos, crear un tracking que requiera aprobación del admin
+        // después de generar el QR
+        if ($serviceType === 'externo') {
+            $approvalStep = ServiceStep::where('service_type', 'externo')
+                ->where('requires_approval', true)
+                ->orderBy('order')
+                ->first();
+
+            if ($approvalStep) {
+                ServiceTracking::create([
+                    'service_id' => $service->id,
+                    'service_step_id' => $approvalStep->id,
+                    'status' => 'pendiente',
+                    'qr_token' => $this->generateQrToken(),
+                    'qr_expires_at' => now()->addDay(),
+                    'started_at' => now(),
+                    'notes' => 'Pendiente de aprobación inicial del administrador',
+                ]);
+            }
+        }
 
         return $service;
     }
@@ -226,5 +268,84 @@ class ServiceController extends Controller
         } while (ServiceInvitation::where('token', $token)->exists());
 
         return $token;
+    }
+
+    public function approveStep(ServiceTracking $tracking)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        if (! in_array($tracking->status, ['pendiente', 'rechazado'])) {
+            return back()->with('error', 'El paso no puede aprobarse en su estado actual.');
+        }
+
+        $tracking->update([
+            'status' => 'completado',
+            'finished_at' => now(),
+            'performed_by' => auth()->id(),
+        ]);
+
+        $service = $tracking->service;
+        $currentOrder = $tracking->serviceStep->order;
+
+        $nextStep = ServiceStep::where('service_type', $service->service_type)
+            ->where('order', '>', $currentOrder)
+            ->orderBy('order')
+            ->first();
+
+        if ($nextStep) {
+            $newToken = $nextStep->requires_qr ? $this->generateQrToken() : null;
+
+            ServiceTracking::create([
+                'service_id' => $service->id,
+                'service_step_id' => $nextStep->id,
+                'status' => 'pendiente',
+                'qr_token' => $newToken,
+                'qr_expires_at' => $nextStep->requires_qr ? now()->addDay() : null,
+                'started_at' => now(),
+            ]);
+
+            $service->update([
+                'current_step_id' => $nextStep->id,
+                'qr_token' => $newToken,
+                'qr_expires_at' => $nextStep->requires_qr ? now()->addDay() : null,
+                'status' => 'en_progreso',
+            ]);
+        } else {
+            $service->update([
+                'current_step_id' => null,
+                'qr_token' => null,
+                'qr_expires_at' => null,
+                'status' => 'entregado',
+                'finished_at' => now(),
+            ]);
+        }
+
+        return back()->with('success', 'Paso aprobado y avanzado.');
+    }
+
+    public function pendingApprovals()
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $approvals = ServiceTracking::with(['service.customer', 'serviceStep'])
+            ->whereIn('status', ['pendiente', 'rechazado'])
+            ->whereHas('serviceStep', fn ($q) => $q->where('requires_approval', true))
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('structure.gestion_servicios.historial_servicios.admin_approve.menu_aprovaciones_admin', compact('approvals'));
+    }
+
+    public function rejectStep(ServiceTracking $tracking)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $tracking->update([
+            'status' => 'rechazado',
+            'finished_at' => now(),
+            'performed_by' => auth()->id(),
+        ]);
+
+        return back()->with('error', 'Paso rechazado.');
     }
 }

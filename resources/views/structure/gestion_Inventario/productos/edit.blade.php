@@ -17,6 +17,13 @@
     .product-edit-btn:hover { filter: brightness(1.1); }
     .product-edit-btn--ghost { background: rgba(0,168,255,0.12); color: #00A8FF; border: 1px solid rgba(0,168,255,0.55); box-shadow: 0 0 10px rgba(0,168,255,0.15); }
     .product-edit-btn--ghost:hover { background: rgba(0,168,255,0.22); border-color: #00A8FF; }
+    :root[data-theme="light"] .product-edit-card { background: #ffffff; border-color: rgba(0,168,255,0.55); box-shadow: 0 0 14px rgba(0,168,255,0.2), inset 0 1px 0 rgba(255,255,255,0.6); }
+    :root[data-theme="light"] .product-edit-title { color: #00A8FF; }
+    :root[data-theme="light"] .product-edit-card label { color: #3730a3; }
+    :root[data-theme="light"] .product-edit-card input[type="text"], :root[data-theme="light"] .product-edit-card input[type="number"], :root[data-theme="light"] .product-edit-card input[type="file"], :root[data-theme="light"] .product-edit-card select, :root[data-theme="light"] .product-edit-card textarea { background: #ffffff; color: #1e1b4b; border-color: rgba(0,168,255,0.55); }
+    :root[data-theme="light"] .product-edit-card input:focus, :root[data-theme="light"] .product-edit-card select:focus, :root[data-theme="light"] .product-edit-card textarea:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.35); }
+    :root[data-theme="light"] .product-edit-btn--ghost { background: rgba(0,168,255,0.08); color: #00A8FF; border-color: rgba(0,168,255,0.55); }
+    :root[data-theme="light"] .product-edit-btn--ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
 </style>
 @endpush
 

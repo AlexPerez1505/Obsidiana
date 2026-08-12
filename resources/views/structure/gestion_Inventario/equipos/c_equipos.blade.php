@@ -9,9 +9,13 @@
         'category' => '',
         'subcategory' => '',
         'serial_number' => '',
+        'base_serial' => '',
         'brand' => '',
         'model' => '',
         'description' => '',
+        'acquisition_date' => '',
+        'registered_by' => '',
+        'observations' => '',
         'stock_current' => '',
         'stock_max' => '',
         'stock_min' => '',
@@ -151,15 +155,30 @@
         transition: background .16s ease, border-color .16s ease;
     }
     .equipment-ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
-    :root[data-theme="light"] .equipment-card { background: linear-gradient(145deg, rgba(15,23,42,0.04), rgba(15,23,42,0.08)); border-color: rgba(15,23,42,0.14); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    :root[data-theme="light"] .equipment-input { background: #fff; color: var(--text); border-color: rgba(15,23,42,0.18); }
-    :root[data-theme="light"] .equipment-input::placeholder { color: var(--muted); }
-    :root[data-theme="light"] .equipment-field label { color: var(--text); }
-    :root[data-theme="light"] .equipment-unit__suffix { background: rgba(15,23,42,0.06); color: var(--text); border-color: rgba(15,23,42,0.18); }
-    :root[data-theme="light"] .equipment-dropzone { background: rgba(15,23,42,0.04); border-color: rgba(15,23,42,0.18); }
-    :root[data-theme="light"] .equipment-dropzone__text { color: var(--muted); }
+    :root[data-theme="light"] .equipment-card { background: #ffffff; border: 1px solid rgba(0,168,255,0.55); box-shadow: 0 8px 28px rgba(0,168,255,0.12), 0 0 14px rgba(0,168,255,0.18), inset 0 1px 0 rgba(255,255,255,0.6); }
+    :root[data-theme="light"] .equipment-card__title { color: #00A8FF; }
+    :root[data-theme="light"] .equipment-input { background: #ffffff; color: #1e1b4b; border-color: rgba(0,168,255,0.55); }
+    :root[data-theme="light"] .equipment-input::placeholder { color: rgba(0,168,255,0.45); }
+    :root[data-theme="light"] .equipment-input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.35); }
+    :root[data-theme="light"] .equipment-field label { color: #3730a3; }
+    :root[data-theme="light"] .equipment-unit__suffix { background: #e8f2ff; color: #00A8FF; border-color: rgba(0,168,255,0.55); }
+    :root[data-theme="light"] .equipment-dropzone { background: rgba(0,168,255,0.06); border: 1px dashed rgba(0,168,255,0.55); }
+    :root[data-theme="light"] .equipment-dropzone__text { color: #3730a3; }
     :root[data-theme="light"] .equipment-dropzone__link { color: #00A8FF; }
-    :root[data-theme="light"] .equipment-ghost { background: rgba(15,23,42,0.04); border-color: rgba(15,23,42,0.18); color: var(--text); }
+    :root[data-theme="light"] .equipment-ghost { background: rgba(0,168,255,0.08); color: #00A8FF; border-color: rgba(0,168,255,0.55); }
+    :root[data-theme="light"] .equipment-ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
+    .catalog-modal { position: fixed; inset: 0; z-index: 1000; display: none; }
+    .catalog-modal__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: grid; place-items: center; padding: 20px; }
+    .catalog-modal__card { width: 100%; max-width: 360px; padding: 24px; border-radius: 14px; background: var(--surface); border: 1px solid rgba(0,168,255,0.55); box-shadow: 0 0 20px rgba(0,168,255,0.35); }
+    .catalog-modal__title { margin: 0 0 12px; color: var(--text); font-size: 1.1rem; font-weight: 800; }
+    .catalog-modal__text { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+    .catalog-modal__input { width: 100%; padding: 11px 14px; border: 1px solid rgba(0,168,255,0.55); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 15px; box-sizing: border-box; }
+    .catalog-modal__input:focus { outline: none; border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.45); }
+    .catalog-modal__actions { display: flex; gap: 12px; margin-top: 18px; }
+    .catalog-btn { display: inline-flex; align-items: center; justify-content: center; flex: 1; padding: 11px 22px; border-radius: 12px; background: linear-gradient(135deg, #00A8FF, #7C3AED); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 0 12px rgba(59,130,246,0.35), 0 0 30px rgba(124,58,237,0.2); transition: all 0.2s ease; text-decoration: none; border: 1px solid rgba(0,168,255,0.55); }
+    .catalog-btn:hover { filter: brightness(1.1); }
+    .catalog-btn--ghost { background: rgba(0,168,255,0.12); color: #00A8FF; border: 1px solid rgba(0,168,255,0.55); box-shadow: 0 0 10px rgba(0,168,255,0.15); }
+    .catalog-btn--ghost:hover { background: rgba(0,168,255,0.22); border-color: #00A8FF; }
 </style>
 @endpush
 
@@ -245,6 +264,10 @@
                     <div class="equipment-field" style="grid-column:1 / -1;">
                         <label for="description">Descripcion</label>
                         <input class="equipment-input" id="description" name="description" value="{{ old('description', $equipmentData['description']) }}" type="text" autocomplete="off">
+                    </div>
+                    <div class="equipment-field" style="grid-column:1 / -1;">
+                        <label for="base_serial">Serie base (generada automaticamente)</label>
+                        <input class="equipment-input" id="base_serial" name="base_serial" value="{{ old('base_serial', $equipmentData['base_serial']) }}" type="text" readonly style="cursor:default;">
                     </div>
                 </div>
             </div>
@@ -381,7 +404,39 @@
                     </div>
                 </div>
             </div>
+
+            <div class="equipment-card">
+                <h3 class="equipment-card__title">Registro</h3>
+                <div class="rgrid-2">
+                    <div class="equipment-field">
+                        <label for="acquisition_date">Fecha de adquisicion</label>
+                        <input class="equipment-input" id="acquisition_date" name="acquisition_date" value="{{ old('acquisition_date', $equipmentData['acquisition_date']) }}" type="date">
+                    </div>
+                    <div class="equipment-field">
+                        <label for="registered_by">Firma de quien registro</label>
+                        <input class="equipment-input" id="registered_by" name="registered_by" value="{{ old('registered_by', $equipmentData['registered_by'] ?: auth()->user()->name) }}" type="text" readonly style="cursor:default;">
+                    </div>
+                    <div class="equipment-field" style="grid-column:1 / -1;">
+                        <label for="observations">Observaciones</label>
+                        <textarea class="equipment-input equipment-note" id="observations" name="observations">{{ old('observations', $equipmentData['observations']) }}</textarea>
+                    </div>
+                </div>
+            </div>
         </form>
+    </div>
+
+    <div id="catalogModal" class="catalog-modal">
+        <div class="catalog-modal__overlay">
+            <div class="catalog-modal__card">
+                <h3 id="catalogModalTitle" class="catalog-modal__title">Agregar</h3>
+                <p id="catalogModalText" class="catalog-modal__text">Ingresa el nombre:</p>
+                <input type="text" id="catalogModalInput" class="catalog-modal__input" placeholder="Nombre" autocomplete="off">
+                <div class="catalog-modal__actions">
+                    <button type="button" id="catalogModalCancel" class="catalog-btn catalog-btn--ghost">Cancelar</button>
+                    <button type="button" id="catalogModalAccept" class="catalog-btn">Aceptar</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -417,6 +472,38 @@
             }
         }
 
+        let catalogModalResolve = null;
+        const catalogModal = document.getElementById('catalogModal');
+        const catalogModalTitle = document.getElementById('catalogModalTitle');
+        const catalogModalText = document.getElementById('catalogModalText');
+        const catalogModalInput = document.getElementById('catalogModalInput');
+
+        function openCatalogModal(title, text, callback) {
+            catalogModalTitle.textContent = title;
+            catalogModalText.textContent = text;
+            catalogModalInput.value = '';
+            catalogModalResolve = callback;
+            catalogModal.style.display = 'block';
+            catalogModalInput.focus();
+        }
+
+        function closeCatalogModal(accepted) {
+            catalogModal.style.display = 'none';
+            if (catalogModalResolve) {
+                catalogModalResolve(accepted ? catalogModalInput.value : null);
+                catalogModalResolve = null;
+            }
+        }
+
+        document.getElementById('catalogModalAccept').addEventListener('click', function () { closeCatalogModal(true); });
+        document.getElementById('catalogModalCancel').addEventListener('click', function () { closeCatalogModal(false); });
+        catalogModal.querySelector('.catalog-modal__overlay').addEventListener('click', function (e) {
+            if (e.target === e.currentTarget) closeCatalogModal(false);
+        });
+        catalogModalInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') closeCatalogModal(true);
+        });
+
         function bindCascade(config) {
             const parent = document.getElementById(config.parentId);
             const child = document.getElementById(config.childId);
@@ -437,27 +524,33 @@
 
             parent.addEventListener('change', function () {
                 if (parent.value === NEW_OPTION) {
-                    const name = (prompt(config.promptParent) || '').trim();
-                    if (name && !catalog[name]) catalog[name] = [];
-                    parent.dataset.selected = name && catalog[name] ? name : '';
-                    renderParent();
+                    openCatalogModal(config.promptParent, 'Ingresa el nombre y presiona Aceptar.', function (name) {
+                        name = (name || '').trim();
+                        if (name && !catalog[name]) catalog[name] = [];
+                        parent.dataset.selected = name && catalog[name] ? name : '';
+                        child.dataset.selected = '';
+                        renderParent();
+                        renderChild();
+                    });
                 } else {
                     parent.dataset.selected = parent.value;
+                    child.dataset.selected = '';
+                    renderChild();
                 }
-                child.dataset.selected = '';
-                renderChild();
             });
 
             child.addEventListener('change', function () {
                 if (child.value === NEW_OPTION) {
-                    const name = (prompt(config.promptChild) || '').trim();
-                    const options = catalog[parent.value] || [];
-                    if (name && !options.includes(name)) {
-                        options.push(name);
-                        catalog[parent.value] = options;
-                    }
-                    child.dataset.selected = name && options.includes(name) ? name : '';
-                    renderChild();
+                    openCatalogModal(config.promptChild, 'Ingresa el nombre y presiona Aceptar.', function (name) {
+                        name = (name || '').trim();
+                        const options = catalog[parent.value] || [];
+                        if (name && !options.includes(name)) {
+                            options.push(name);
+                            catalog[parent.value] = options;
+                        }
+                        child.dataset.selected = name && options.includes(name) ? name : '';
+                        renderChild();
+                    });
                 } else {
                     child.dataset.selected = child.value;
                 }
@@ -489,6 +582,31 @@
             promptChild: 'Nombre del nuevo modelo:'
         });
 
+        const baseSerialInput = document.getElementById('base_serial');
+
+        function updateBaseSerial() {
+            if (!baseSerialInput) return;
+            const type = document.getElementById('category')?.value || '';
+            const brand = document.getElementById('brand')?.value || '';
+            const model = document.getElementById('model')?.value || '';
+            const serial = document.getElementById('serial_number')?.value || '';
+
+            const clean = function (value) {
+                return value.replace(/[^A-Za-z0-9]/g, '').substring(0, 4).toUpperCase();
+            };
+
+            baseSerialInput.value = [clean(type), clean(brand), clean(model), clean(serial)].filter(Boolean).join('-');
+        }
+
+        ['category', 'brand', 'model', 'serial_number'].forEach(function (id) {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', updateBaseSerial);
+        });
+
+        document.getElementById('catalogModalAccept')?.addEventListener('click', function () {
+            setTimeout(updateBaseSerial, 50);
+        });
+
         if (equipmentImageInput && equipmentImagePreview) {
             equipmentImageInput.addEventListener('change', function () {
                 const file = equipmentImageInput.files && equipmentImageInput.files[0];
@@ -505,5 +623,7 @@
                 reader.readAsDataURL(file);
             });
         }
+
+        updateBaseSerial();
     </script>
 @endsection

@@ -24,17 +24,36 @@ class EquipmentController extends Controller
             ->latest();
 
         if ($search = $request->get('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('code', 'like', "%{$search}%")
-                    ->orWhere('name', 'like', "%{$search}%")
-                    ->orWhere('serial_number', 'like', "%{$search}%")
-                    ->orWhereHas('brand', fn ($b) => $b->where('name', 'like', "%{$search}%"));
+            $term = "%{$search}%";
+            $query->where(function ($q) use ($term) {
+                $q->where('code', 'like', $term)
+                    ->orWhere('name', 'like', $term)
+                    ->orWhere('serial_number', 'like', $term)
+                    ->orWhere('base_serial', 'like', $term)
+                    ->orWhereHas('equipmentType', fn ($b) => $b->where('name', 'like', $term))
+                    ->orWhereHas('brand', fn ($b) => $b->where('name', 'like', $term))
+                    ->orWhereHas('equipmentModel', fn ($b) => $b->where('name', 'like', $term));
             });
+        }
+
+        if ($tipo = $request->get('tipo')) {
+            $query->whereHas('equipmentType', fn ($q) => $q->where('name', $tipo));
+        }
+
+        if ($marca = $request->get('marca')) {
+            $query->whereHas('brand', fn ($q) => $q->where('name', $marca));
+        }
+
+        if ($estado = $request->get('estado')) {
+            $query->where('status', $estado);
         }
 
         return view('structure.gestion_Inventario.equipos.menu_equipos', [
             'equipmentList' => $query->get(),
-            'filters' => $request->only('search'),
+            'tipos' => EquipmentType::orderBy('name')->pluck('name'),
+            'marcas' => Brand::orderBy('name')->pluck('name'),
+            'estados' => Equipment::select('status')->distinct()->orderBy('status')->pluck('status')->filter()->values(),
+            'filters' => $request->only('search', 'tipo', 'marca', 'estado'),
         ]);
     }
 
@@ -54,6 +73,8 @@ class EquipmentController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
+        $data['base_serial'] = $this->generateBaseSerial($request);
+        $data['registered_by'] = auth()->user()->name ?? 'Sistema';
         $data = $this->resolveCatalogs($request, $data);
 
         if (empty($data['code'])) {
@@ -97,6 +118,8 @@ class EquipmentController extends Controller
     public function update(Request $request, Equipment $equipo): RedirectResponse
     {
         $data = $this->validated($request, $equipo->id);
+        $data['base_serial'] = $this->generateBaseSerial($request);
+        $data['registered_by'] = auth()->user()->name ?? 'Sistema';
         $data = $this->resolveCatalogs($request, $data);
 
         if ($request->hasFile('equipment_image')) {
@@ -114,8 +137,12 @@ class EquipmentController extends Controller
     /**
      * Elimina un equipo.
      */
-    public function destroy(Equipment $equipo): RedirectResponse
+    public function destroy(Request $request, Equipment $equipo): RedirectResponse
     {
+        if ($request->input('pin') !== '123456') {
+            return back()->with('error', 'PIN incorrecto. El equipo no se elimino.');
+        }
+
         $equipo->delete();
 
         return redirect()->route('inventory.equipos.index')->with('status', 'Equipo eliminado correctamente.');
@@ -221,6 +248,10 @@ class EquipmentController extends Controller
             'email' => $equipo->email ?? '',
             'invoice_number' => $equipo->invoice_number ?? '',
             'invoice_date' => $equipo->invoice_date?->format('Y-m-d') ?? '',
+            'acquisition_date' => $equipo->acquisition_date?->format('Y-m-d') ?? '',
+            'registered_by' => $equipo->registered_by ?? '',
+            'observations' => $equipo->observations ?? '',
+            'base_serial' => $equipo->base_serial ?? '',
             'image_path' => $equipo->image_path,
             'thumb' => $equipo->thumb ?? 'tower',
         ];
@@ -231,6 +262,36 @@ class EquipmentController extends Controller
         $last = Equipment::withTrashed()->max('id') ?? 0;
 
         return sprintf('EQP-%04d', $last + 1);
+    }
+
+    private function generateBaseSerial(Request $request): string
+    {
+        $type = $request->input('category', '');
+        $brand = $request->input('brand', '');
+        $model = $request->input('model', '');
+        $serial = $request->input('serial_number', '');
+
+        $clean = fn ($value) => substr(preg_replace('/[^A-Za-z0-9]/', '', $value), 0, 4);
+
+        return strtoupper($clean($type) . '-' . $clean($brand) . '-' . $clean($model) . '-' . $clean($serial));
+    }
+
+    public function download(Equipment $equipo)
+    {
+        $content = "Equipo: {$equipo->name}\n";
+        $content .= "Codigo: {$equipo->code}\n";
+        $content .= "Serie: {$equipo->serial_number}\n";
+        $content .= "Serie base: {$equipo->base_serial}\n";
+        $content .= "Estado: {$equipo->status}\n";
+        $content .= "Fecha de adquisicion: " . ($equipo->acquisition_date?->format('d/m/Y') ?? '') . "\n";
+        $content .= "Registrado por: {$equipo->registered_by}\n";
+
+        $filename = 'equipo-' . $equipo->code . '.txt';
+
+        return response($content, 200, [
+            'Content-Type' => 'text/plain; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
     private function validated(Request $request, ?int $ignoreId = null): array
@@ -266,6 +327,8 @@ class EquipmentController extends Controller
             'email' => ['nullable', 'email', 'max:150'],
             'invoice_number' => ['nullable', 'string', 'max:100'],
             'invoice_date' => ['nullable', 'date'],
+            'acquisition_date' => ['nullable', 'date'],
+            'observations' => ['nullable', 'string', 'max:2000'],
             'equipment_image' => ['nullable', 'image', 'max:5120'],
         ]);
     }

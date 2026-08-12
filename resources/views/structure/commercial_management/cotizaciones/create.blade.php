@@ -15,16 +15,17 @@
 
             <div id="cliente-buscador" style="{{ $clienteSeleccionado ? 'display:none;' : '' }}">
                 <div style="position:relative;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                     <input type="text" id="cliente-search" placeholder="Buscar cliente por nombre o teléfono..." autocomplete="off"
-                           style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                    <div id="cliente-resultados" style="position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--border); border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:20; display:none; max-height:220px; overflow-y:auto;"></div>
+                           style="width:100%; padding:11px 12px 11px 38px; border:1px solid var(--field-border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
+                    <div id="cliente-resultados" style="position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--field-border); border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:20; display:none; max-height:220px; overflow-y:auto;"></div>
                 </div>
                 <button type="button" id="btn-nuevo-cliente" class="btn btn--ghost" style="margin-top:10px;">
                     + Agregar cliente nuevo
                 </button>
             </div>
 
-            <div id="cliente-seleccionado" style="{{ $clienteSeleccionado ? '' : 'display:none;' }} display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--border); border-radius:9px; cursor:pointer;" title="Clic para buscar otro cliente">
+            <div id="cliente-seleccionado" style="{{ $clienteSeleccionado ? '' : 'display:none;' }} display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--field-border); border-radius:9px; cursor:pointer;" title="Clic para buscar otro cliente">
                 <span id="cliente-seleccionado-nombre">
                     @if($clienteSeleccionado)
                         {{ $clienteSeleccionado->nombre }} {{ $clienteSeleccionado->apellido }} — {{ $clienteSeleccionado->telefono }}
@@ -47,10 +48,11 @@
             </div>
 
             <div style="max-width:520px;">
-                <label class="qlabel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Buscar producto o paquete</label>
+                <label class="qlabel">Buscar producto o paquete</label>
                 <div style="position:relative;">
-                    <input type="text" id="buscador-items" class="qinput" placeholder="Escribe el nombre, marca o modelo..." autocomplete="off">
-                    <div id="resultados-items" style="position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--border); border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:20; display:none; max-height:320px; overflow-y:auto;"></div>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <input type="text" id="buscador-items" class="qinput" placeholder="Escribe el nombre, marca o modelo..." autocomplete="off" style="padding-left:38px;">
+                    <div id="resultados-items" style="position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--field-border); border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:20; display:none; max-height:320px; overflow-y:auto;"></div>
                 </div>
             </div>
 
@@ -136,9 +138,22 @@
                     </div>
                     <div class="qbox-value" id="iva-display" style="color:#9333ea;">$0.00</div>
                 </div>
+
+                <div class="qbox">
+                    <div class="qbox-head">
+                        <div class="qbox-ico green"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+                        <span class="qbox-label" title="Monto que el cliente adelanta. Se resta del total antes de repartirlo en el plan de pagos.">Anticipo
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 1.8-2.5 3.5"/><path d="M12 17h.01"/></svg>
+                        </span>
+                    </div>
+                    <div style="position:relative; margin-top:8px;">
+                        <span class="qprefix">$</span>
+                        <input id="anticipo" name="anticipo" type="number" step="0.01" min="0" value="0" class="qinput" style="padding-left:26px;">
+                    </div>
+                </div>
             </div>
 
-            <div style="margin-top:16px; padding:18px 20px; border:1px solid var(--border); border-radius:12px; display:flex; justify-content:space-between; align-items:center; background:var(--surface-2);">
+            <div style="margin-top:16px; padding:18px 20px; border:1px solid var(--field-border); border-radius:12px; display:flex; justify-content:space-between; align-items:center; background:var(--surface-2);">
                 <div>
                     <div style="font-size:16px; font-weight:700;">Total</div>
                     <div class="muted" style="font-size:13px;">Importe final a pagar</div>
@@ -228,7 +243,7 @@
                 </div>
 
                 <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:16px;">
-                    <div style="font-size:13.5px;">Restante por asignar: <strong id="resumen-restante" style="font-size:15px;">$0.00</strong></div>
+                    <div style="font-size:13.5px;">Restante por asignar (total - anticipo): <strong id="resumen-restante" style="font-size:15px;">$0.00</strong></div>
                     <button type="button" id="btn-redistribuir-pagos" class="btn btn--ghost" style="padding:7px 14px; font-size:13px;">Distribuir equitativamente</button>
                 </div>
 
@@ -275,8 +290,11 @@
     </div>
 
     <style>
+        :root { --field-border: #c9ccd2; }
+        :root[data-theme="dark"] { --field-border: var(--border); }
+
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; width: 100%; box-shadow: 0 12px 32px rgba(0,0,0,0.2); }
+        .modal-card { background: var(--surface); border: 1px solid var(--field-border); border-radius: 12px; padding: 22px; width: 100%; box-shadow: 0 12px 32px rgba(0,0,0,0.2); }
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
         .resultado-item { padding:10px 12px; cursor:pointer; font-size:14px; }
         .resultado-item:hover { background: var(--surface-2); }
@@ -298,22 +316,22 @@
 
         .qflow-row { display:flex; flex-wrap:wrap; gap:14px; align-items:end; }
         .qlabel { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--text); }
-        .qinput { width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); }
+        .qinput { width:100%; padding:11px 12px; border:1px solid var(--field-border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); }
         .qinput:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,122,255,.15); }
         .qprefix { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:14px; pointer-events:none; }
 
-        .qstepper { display:flex; align-items:center; border:1px solid var(--border); border-radius:9px; overflow:hidden; background:var(--surface); }
+        .qstepper { display:flex; align-items:center; border:1px solid var(--field-border); border-radius:9px; overflow:hidden; background:var(--surface); }
         .qstepper button { width:36px; height:44px; border:none; background:var(--surface-2); color:var(--text); cursor:pointer; font-size:18px; flex:0 0 auto; }
         .qstepper button:hover { background:var(--border); }
         .qstepper input { flex:1; min-width:0; width:100%; text-align:center; border:none; background:transparent; color:var(--text); font-size:15px; padding:11px 2px; -moz-appearance:textfield; }
         .qstepper input::-webkit-outer-spin-button, .qstepper input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
 
-        .qchip { display:flex; align-items:center; gap:8px; border:1px solid var(--border); border-radius:9px; padding:11px 16px; cursor:pointer; white-space:nowrap; user-select:none; color:var(--text); background:var(--surface); transition:border-color .15s, color .15s, background .15s; }
+        .qchip { display:flex; align-items:center; gap:8px; border:1px solid var(--field-border); border-radius:9px; padding:11px 16px; cursor:pointer; white-space:nowrap; user-select:none; color:var(--text); background:var(--surface); transition:border-color .15s, color .15s, background .15s; }
         .qchip input { width:16px; height:16px; margin-left:2px; }
         .qchip:has(input:checked) { border-color:var(--primary); color:var(--primary); background:var(--primary-soft); }
 
         .qgrid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
-        .qbox { border:1px solid var(--border); border-radius:12px; padding:14px 16px; background:var(--surface); display:flex; flex-direction:column; }
+        .qbox { border:1px solid var(--field-border); border-radius:12px; padding:14px 16px; background:var(--surface); display:flex; flex-direction:column; }
         .qbox-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
         .qbox-head .qbox-ico { width:32px; height:32px; }
         .qbox-label { font-size:13px; font-weight:600; color:var(--muted); }
@@ -697,6 +715,7 @@
         document.getElementById('descuentos').addEventListener('input', actualizarTotales);
         document.getElementById('costo_envio').addEventListener('input', actualizarTotales);
         document.getElementById('aplica_iva').addEventListener('change', actualizarTotales);
+        document.getElementById('anticipo').addEventListener('input', actualizarTotales);
 
         // ---- Plan de pagos: selección directa / resumen editable ----
         const planPagosEmpty = document.getElementById('plan-pagos-empty');
@@ -750,7 +769,8 @@
             const aplicaIva = document.getElementById('aplica_iva').checked;
             const baseIva = Math.max(subtotal - descuentos, 0);
             const iva = aplicaIva ? Math.round(baseIva * 0.16 * 100) / 100 : 0;
-            return subtotal - descuentos + iva + costoEnvio;
+            const anticipo = parseFloat(document.getElementById('anticipo').value) || 0;
+            return Math.max(subtotal - descuentos + iva + costoEnvio - anticipo, 0);
         }
 
         function actualizarRestantePagos() {

@@ -62,13 +62,13 @@
     .product-alert--error { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.55); }
     .product-empty { text-align: center; padding: 32px; color: var(--muted); }
     .product-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; color: var(--muted); font-size: 13px; font-weight: 600; }
-    .nip-modal { position: fixed; inset: 0; z-index: 1000; display: none; }
-    .nip-modal__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: grid; place-items: center; padding: 20px; }
-    .nip-modal__card { width: 100%; max-width: 360px; padding: 24px; border-radius: 14px; background: var(--surface); border: 1px solid rgba(0,168,255,0.55); box-shadow: 0 0 20px rgba(0,168,255,0.35); }
-    .nip-modal__title { margin: 0 0 12px; color: var(--text); font-size: 1.1rem; font-weight: 800; }
-    .nip-modal__text { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
-    .nip-modal__actions { display: flex; gap: 12px; margin-top: 18px; }
-    .nip-modal__actions .product-card__btn { margin: 0; }
+    .pin-modal { position: fixed; inset: 0; z-index: 1000; display: none; }
+    .pin-modal__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: grid; place-items: center; padding: 20px; }
+    .pin-modal__card { width: 100%; max-width: 360px; padding: 24px; border-radius: 14px; background: var(--surface); border: 1px solid rgba(0,168,255,0.55); box-shadow: 0 0 20px rgba(0,168,255,0.35); }
+    .pin-modal__title { margin: 0 0 12px; color: var(--text); font-size: 1.1rem; font-weight: 800; }
+    .pin-modal__text { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+    .pin-modal__actions { display: flex; gap: 12px; margin-top: 18px; }
+    .pin-modal__actions .product-card__btn { margin: 0; }
 </style>
 @endpush
 
@@ -145,7 +145,7 @@
                                 <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}" data-delete-form>
                                     @csrf
                                     @method('DELETE')
-                                    <input type="hidden" name="nip" value="">
+                                    <input type="hidden" name="pin" value="">
                                     <button type="submit" class="product-card__btn product-card__btn--danger">Eliminar</button>
                                 </form>
                             </div>
@@ -160,96 +160,96 @@
         @endif
     </div>
 
-    <div id="nipModal" class="nip-modal">
-        <div class="nip-modal__overlay">
-            <div class="nip-modal__card">
-                <h3 class="nip-modal__title">Confirmar eliminación</h3>
-                <p class="nip-modal__text">Ingrese el NIP de acceso para eliminar:</p>
-                <input type="password" id="nipInput" class="product-card__input" placeholder="NIP" autocomplete="off">
-                <div class="nip-modal__actions">
-                    <button type="button" id="nipCancel" class="product-card__btn product-card__btn--ghost">Cancelar</button>
-                    <button type="button" id="nipAccept" class="product-card__btn">Aceptar</button>
+    <div id="pinModal" class="pin-modal">
+        <div class="pin-modal__overlay">
+            <div class="pin-modal__card">
+                <h3 class="pin-modal__title">Confirmar eliminación</h3>
+                <p class="pin-modal__text">Ingrese el PIN de acceso para eliminar:</p>
+                <input type="password" id="pinInput" class="product-card__input" placeholder="PIN" autocomplete="off">
+                <div class="pin-modal__actions">
+                    <button type="button" id="pinCancel" class="product-card__btn product-card__btn--ghost">Cancelar</button>
+                    <button type="button" id="pinAccept" class="product-card__btn">Aceptar</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="editNipModal" class="nip-modal">
-        <div class="nip-modal__overlay">
-            <div class="nip-modal__card">
-                <h3 class="nip-modal__title">Confirmar edición</h3>
-                <p class="nip-modal__text">Ingrese el NIP de acceso para editar:</p>
-                <input type="password" id="editNipInput" class="product-card__input" placeholder="NIP" autocomplete="off">
-                <div class="nip-modal__actions">
-                    <button type="button" id="editNipCancel" class="product-card__btn product-card__btn--ghost">Cancelar</button>
-                    <button type="button" id="editNipAccept" class="product-card__btn">Aceptar</button>
+    <div id="editPinModal" class="pin-modal">
+        <div class="pin-modal__overlay">
+            <div class="pin-modal__card">
+                <h3 class="pin-modal__title">Confirmar edición</h3>
+                <p class="pin-modal__text">Ingrese el PIN de acceso para editar:</p>
+                <input type="password" id="editPinInput" class="product-card__input" placeholder="PIN" autocomplete="off">
+                <div class="pin-modal__actions">
+                    <button type="button" id="editPinCancel" class="product-card__btn product-card__btn--ghost">Cancelar</button>
+                    <button type="button" id="editPinAccept" class="product-card__btn">Aceptar</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const nipModal = document.getElementById('nipModal');
-        const nipInput = document.getElementById('nipInput');
+        const pinModal = document.getElementById('pinModal');
+        const pinInput = document.getElementById('pinInput');
         let currentDeleteForm = null;
 
-        const editNipModal = document.getElementById('editNipModal');
-        const editNipInput = document.getElementById('editNipInput');
+        const editPinModal = document.getElementById('editPinModal');
+        const editPinInput = document.getElementById('editPinInput');
         let currentEditHref = null;
 
         document.querySelectorAll('[data-delete-form]').forEach(form => {
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
                 currentDeleteForm = form;
-                nipInput.value = '';
-                nipModal.style.display = 'block';
-                nipInput.focus();
+                pinInput.value = '';
+                pinModal.style.display = 'block';
+                pinInput.focus();
             });
         });
 
         document.querySelectorAll('[data-edit-href]').forEach(btn => {
             btn.addEventListener('click', () => {
                 currentEditHref = btn.dataset.editHref;
-                editNipInput.value = '';
-                editNipModal.style.display = 'block';
-                editNipInput.focus();
+                editPinInput.value = '';
+                editPinModal.style.display = 'block';
+                editPinInput.focus();
             });
         });
 
-        document.getElementById('nipAccept').addEventListener('click', () => {
+        document.getElementById('pinAccept').addEventListener('click', () => {
             if (!currentDeleteForm) return;
-            const nip = nipInput.value.trim();
-            if (!nip) return;
-            currentDeleteForm.querySelector('input[name="nip"]').value = nip;
+            const pin = pinInput.value.trim();
+            if (!pin) return;
+            currentDeleteForm.querySelector('input[name="pin"]').value = pin;
             currentDeleteForm.submit();
         });
 
-        document.getElementById('editNipAccept').addEventListener('click', () => {
+        document.getElementById('editPinAccept').addEventListener('click', () => {
             if (!currentEditHref) return;
-            const nip = editNipInput.value.trim();
-            if (!nip) return;
-            window.location.href = currentEditHref + (currentEditHref.includes('?') ? '&' : '?') + 'nip=' + encodeURIComponent(nip);
+            const pin = editPinInput.value.trim();
+            if (!pin) return;
+            window.location.href = currentEditHref + (currentEditHref.includes('?') ? '&' : '?') + 'pin=' + encodeURIComponent(pin);
         });
 
-        function closeNipModal() {
-            nipModal.style.display = 'none';
+        function closePinModal() {
+            pinModal.style.display = 'none';
             currentDeleteForm = null;
         }
 
-        function closeEditNipModal() {
-            editNipModal.style.display = 'none';
+        function closeEditPinModal() {
+            editPinModal.style.display = 'none';
             currentEditHref = null;
         }
 
-        document.getElementById('nipCancel').addEventListener('click', closeNipModal);
-        document.getElementById('editNipCancel').addEventListener('click', closeEditNipModal);
+        document.getElementById('pinCancel').addEventListener('click', closePinModal);
+        document.getElementById('editPinCancel').addEventListener('click', closeEditPinModal);
 
-        nipModal.querySelector('.nip-modal__overlay').addEventListener('click', (e) => {
-            if (e.target === e.currentTarget) closeNipModal();
+        pinModal.querySelector('.pin-modal__overlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closePinModal();
         });
 
-        editNipModal.querySelector('.nip-modal__overlay').addEventListener('click', (e) => {
-            if (e.target === e.currentTarget) closeEditNipModal();
+        editPinModal.querySelector('.pin-modal__overlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeEditPinModal();
         });
     </script>
 @endsection
