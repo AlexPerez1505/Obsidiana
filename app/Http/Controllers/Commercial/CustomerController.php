@@ -59,7 +59,7 @@ class CustomerController extends Controller
             'nombre' => ['required', 'string', 'max:255'],
             'apellido' => ['required', 'string', 'max:255'],
             'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')],
-            'rfc' => ['required', 'string', 'max:13', Rule::unique('clientes', 'rfc')],
+            'rfc' => ['nullable', 'string', 'max:13', Rule::unique('clientes', 'rfc')],
             'gmail' => ['nullable', 'email', 'max:255'],
             'direccion' => ['required', 'string', 'max:255'],
             'comentarios' => ['nullable', 'string'],
@@ -112,7 +112,7 @@ class CustomerController extends Controller
             'nombre' => ['required', 'string', 'max:255'],
             'apellido' => ['required', 'string', 'max:255'],
             'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')->ignore($cliente->id)],
-            'rfc' => ['required', 'string', 'max:13', Rule::unique('clientes', 'rfc')->ignore($cliente->id)],
+            'rfc' => ['nullable', 'string', 'max:13', Rule::unique('clientes', 'rfc')->ignore($cliente->id)],
             'gmail' => ['nullable', 'email', 'max:255'],
             'direccion' => ['required', 'string', 'max:255'],
             'comentarios' => ['nullable', 'string'],
@@ -135,9 +135,11 @@ class CustomerController extends Controller
 
     private function normalizeCustomerInput(Request $request): void
     {
+        $rfc = trim((string) $request->input('rfc'));
+
         $request->merge([
             'telefono' => trim((string) $request->input('telefono')),
-            'rfc' => strtoupper(trim((string) $request->input('rfc'))),
+            'rfc' => $rfc === '' ? null : strtoupper($rfc),
         ]);
     }
 
