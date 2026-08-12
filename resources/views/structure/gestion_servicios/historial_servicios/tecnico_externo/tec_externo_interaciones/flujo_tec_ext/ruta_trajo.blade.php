@@ -4,16 +4,21 @@
     $hasService = isset($service) && $service instanceof \App\Models\Service;
     $isAdmin = auth()->check() && auth()->user()->isAdmin();
 
-    // Obtener los pasos reales de la BD en lugar de usar valores hardcodeados
-    $defaultSteps = \App\Models\ServiceStep::where('service_type', 'externo')
+    // Cargar los pasos reales de la BD
+    $defaultSteps = [];
+    $serviceType = $service->service_type ?? 'externo';
+    
+    $allSteps = \App\Models\ServiceStep::where('service_type', $serviceType)
         ->orderBy('order')
-        ->get()
-        ->map(fn($step) => [
+        ->get();
+    
+    foreach ($allSteps as $step) {
+        $defaultSteps[] = [
             'name' => $step->name,
-            'slug' => $step->slug,
+            'slug' => str_replace('_', '-', $step->slug),
             'status' => 'pendiente',
-        ])
-        ->toArray();
+        ];
+    }
 
     $serviceSteps = collect();
     $tracksBySlug = [];
@@ -49,11 +54,8 @@
             $slug = $step['slug'];
             $track = $tracksBySlug[$slug] ?? null;
 
-            // El Paso 1 se marca automáticamente como completado
-            // porque ya se completó durante el registro del servicio
-            if ($index === 0) {
-                $completedSteps[] = $index + 1;
-            } elseif ($track && $track->status === 'completado') {
+            // Si hay un tracking para este paso y está completado, agregarlo
+            if ($track && $track->status === 'completado') {
                 $completedSteps[] = $index + 1;
             }
         }
