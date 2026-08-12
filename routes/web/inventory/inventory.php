@@ -100,6 +100,18 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ]);
     })->name('inventory.movimientos.show');
 
+    Route::post('/gestion-inventario/entrada-salida/{movimiento}/verificar-edicion', function (Request $request, InventoryMovement $movimiento) {
+        $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        if (! \Illuminate\Support\Facades\Hash::check($request->input('password'), auth()->user()->password)) {
+            return back()->with('error', 'El PIN no es correcto.')->withInput();
+        }
+
+        return redirect()->route('inventory.movimientos.edit', $movimiento);
+    })->name('inventory.movimientos.verify-edit');
+
     Route::get('/gestion-inventario/entrada-salida/{movimiento}/editar', function (InventoryMovement $movimiento) {
         $productos = Producto::orderBy('tipo_equipo')->get();
 
@@ -145,7 +157,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ]);
 
         if (! \Illuminate\Support\Facades\Hash::check($request->input('password'), auth()->user()->password)) {
-            return back()->with('error', 'La contraseña no es correcta. No se eliminó el movimiento.');
+            return back()->with('error', 'El PIN no es correcto. No se eliminó el movimiento.');
         }
 
         $movimiento->delete();
