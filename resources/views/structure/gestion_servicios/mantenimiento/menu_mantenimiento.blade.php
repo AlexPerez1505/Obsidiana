@@ -135,6 +135,7 @@
                             $osNumber = preg_replace('/^NS-/', 'OS-', $service->service_number ?? '');
                             $menuId = 'menu-' . $service->id;
 
+                            $currentTracking = $service->serviceTrackings->firstWhere('service_step_id', $service->current_step_id);
                             $currentSlug = $service->currentStep->slug ?? null;
                             $stepActionLabel = match ($currentSlug) {
                                 'entrada-equipo' => 'Registrar entrada de equipo',
@@ -143,6 +144,10 @@
                                 'llenado-mantenimiento' => 'Llenar mantenimiento',
                                 default => 'Completar: ' . ($service->currentStep->name ?? 'paso actual'),
                             };
+
+                            if ($currentSlug === 'llenado-mantenimiento' && $service->maintenance) {
+                                $stepActionLabel = 'Ver formulario de técnico externo';
+                            }
                         @endphp
                         <tr>
                             <td>{{ $osNumber ?: ('OS-' . $service->id) }}</td>
@@ -175,18 +180,46 @@
                                         </form>
 
                                         @if ($service->currentStep)
-                                            <button type="button" class="actions-menu-item complete-step-btn"
-                                                    data-url="{{ route('gestion.servicios.completeStep', $service) }}"
-                                                    data-service-number="{{ $service->service_number }}"
-                                                    data-step-name="{{ $service->currentStep->name }}"
-                                                    data-customer="{{ $customerName ?: 'N/A' }}"
-                                                    data-tech="{{ $techName ?: 'N/A' }}"
-                                                    data-equipment="{{ ($equipment->type_text ?? 'N/A') . ' ' . ($equipment->brand_text ?? '') }}"
-                                                    data-label="{{ $stepActionLabel }}"
-                                                    onclick="openCompleteModal(this)">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                                                {{ $stepActionLabel }}
-                                            </button>
+                                            @if ($currentSlug === 'llenado-mantenimiento' && $service->maintenance)
+                                                <a href="{{ route('gestion.servicios.maintenance.form', $service) }}" target="_blank" class="actions-menu-item">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                                    {{ $stepActionLabel }}
+                                                </a>
+                                            @else
+                                                <button type="button" class="actions-menu-item complete-step-btn"
+                                                        data-url="{{ route('gestion.servicios.completeStep', $service) }}"
+                                                        data-service-number="{{ $service->service_number }}"
+                                                        data-step-name="{{ $service->currentStep->name }}"
+                                                        data-customer="{{ $customerName ?: 'N/A' }}"
+                                                        data-tech="{{ $techName ?: 'N/A' }}"
+                                                        data-equipment="{{ ($equipment->type_text ?? 'N/A') . ' ' . ($equipment->brand_text ?? '') }}"
+                                                        data-label="{{ $stepActionLabel }}"
+                                                        onclick="openCompleteModal(this)">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                                    {{ $stepActionLabel }}
+                                                </button>
+                                            @endif
+
+                                            @if (($service->maintenance || ($service->currentStep && $service->currentStep->order > 7)) && $currentSlug !== 'llenado-mantenimiento')
+                                                <a href="{{ route('gestion.servicios.maintenance.form', $service) }}" target="_blank" class="actions-menu-item">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                                    Ver formulario de técnico externo
+                                                </a>
+                                            @endif
+
+                                            @if ($service->currentStep && $service->currentStep->requires_qr)
+                                                <button type="button" class="actions-menu-item"
+                                                        data-qr-url="{{ ($currentTracking && $currentTracking->qr_token) ? url('/qr/' . $currentTracking->qr_token) : '#' }}"
+                                                        @if ($currentTracking && $currentTracking->qr_token)
+                                                            onclick="openQrModal(this)"
+                                                        @else
+                                                            onclick="alert('No hay QR generado para este paso.')"
+                                                        @endif
+                                                >
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                                    Ver QR del paso
+                                                </button>
+                                            @endif
                                         @endif
                                     </div>
                                 </div>
@@ -242,6 +275,24 @@
         </div>
     </div>
 
+    <div id="qrModal" class="modal-overlay" onclick="closeQrModalFromOverlay(event)">
+        <div class="modal-box" onclick="event.stopPropagation()" style="max-width: 360px; text-align: center;">
+            <div class="modal-header">
+                <h3>QR del paso</h3>
+                <button type="button" class="modal-close" onclick="closeQrModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-step">Escanea este código con la cámara de tu teléfono.</p>
+                <div id="qrStepContainer" style="display:none;"></div>
+                <img id="qrStepImage" src="" alt="QR del paso" style="width: 180px; height: 180px; border-radius: 12px; background: #fff; padding: 10px; margin: 0 auto; display: block;">
+                <p class="modal-step" style="word-break: break-all; margin-top: 14px;" id="qrStepUrl"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ asset('js/qrcode.min.js') }}"></script>
     <script>
         let currentCompleteUrl = null;
 
@@ -320,6 +371,42 @@
                 document.getElementById('modalAlert').textContent = 'Error de conexión.';
                 btn.disabled = false;
                 btn.textContent = 'Reintentar';
+            }
+        }
+
+        function openQrModal(button) {
+            document.querySelectorAll('.actions-menu').forEach(m => m.classList.remove('open'));
+
+            const url = button.dataset.qrUrl;
+            document.getElementById('qrStepUrl').textContent = url;
+
+            const container = document.getElementById('qrStepContainer');
+            container.innerHTML = '';
+            new QRCode(container, {
+                text: url,
+                width: 180,
+                height: 180,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H,
+            });
+
+            const canvas = container.querySelector('canvas');
+            const img = document.getElementById('qrStepImage');
+            if (canvas) {
+                img.src = canvas.toDataURL('image/png');
+            }
+
+            document.getElementById('qrModal').classList.add('open');
+        }
+
+        function closeQrModal() {
+            document.getElementById('qrModal').classList.remove('open');
+        }
+
+        function closeQrModalFromOverlay(event) {
+            if (event.target === document.getElementById('qrModal')) {
+                closeQrModal();
             }
         }
     </script>

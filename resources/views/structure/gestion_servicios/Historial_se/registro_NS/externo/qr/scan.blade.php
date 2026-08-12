@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.qr')
 
 @section('title', 'Verificación QR - ' . ($service->service_number ?? 'Servicio'))
 

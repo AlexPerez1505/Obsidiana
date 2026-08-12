@@ -61,6 +61,11 @@ class Service extends Model
         return $this->belongsTo(ExternalTechnician::class, 'external_technician_id');
     }
 
+    public function maintenance()
+    {
+        return $this->hasOne(ServiceMaintenance::class);
+    }
+
     /**
      * Obtener el código de verificación del paso 6 (notificacion-llegada-tecnico)
      */

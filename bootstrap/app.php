@@ -15,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'approved' => \App\Http\Middleware\EnsureAccountApproved::class,
         ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'qr/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -10,6 +10,7 @@ use App\Models\EquipmentType;
 use App\Models\ExternalTechnician;
 use App\Models\Service;
 use App\Models\ServiceEquipment;
+use App\Models\ServiceMaintenance;
 use App\Models\ServiceStep;
 use App\Models\ServiceTracking;
 use App\Models\Subtype;
@@ -385,7 +386,7 @@ class ServiceController extends Controller
 
     public function maintenanceOrders()
     {
-        $services = Service::with(['customer', 'externalTechnician', 'serviceEquipment', 'currentStep', 'serviceTrackings'])
+        $services = Service::with(['customer', 'externalTechnician', 'serviceEquipment', 'currentStep', 'serviceTrackings', 'maintenance'])
             ->where('status', 'en_progreso')
             ->latest()
             ->get();
@@ -430,6 +431,16 @@ class ServiceController extends Controller
             'finished_at' => now(),
         ]);
 
+        if ($tracking->serviceStep->slug === 'salida-tecnico-externo') {
+            ServiceMaintenance::firstOrCreate(
+                ['service_id' => $service->id],
+                [
+                    'tipo_mantenimiento' => 'externo',
+                    'tecnico_externo_id' => $service->external_technician_id,
+                ]
+            );
+        }
+
         $nextStep = ServiceStep::where('service_type', $service->service_type)
             ->where('order', '>', $tracking->serviceStep->order)
             ->orderBy('order')
@@ -461,6 +472,87 @@ class ServiceController extends Controller
             'status' => 'Completado',
             'new_step_name' => $nextStep?->name,
         ]);
+    }
+
+    public function maintenanceForm(Service $service)
+    {
+        $service->load(['customer', 'externalTechnician', 'serviceEquipment', 'currentStep', 'serviceTrackings', 'maintenance']);
+
+        $currentTracking = $service->serviceTrackings
+            ->firstWhere('service_step_id', $service->current_step_id);
+
+        return view('structure.gestion_servicios.mantenimiento.tecnico_externo.formulario_externo', [
+            'service' => $service,
+            'currentTracking' => $currentTracking,
+        ]);
+    }
+
+    public function storeMaintenance(Request $request, Service $service)
+    {
+        $service->load(['currentStep', 'serviceTrackings']);
+        $currentTracking = $service->serviceTrackings
+            ->firstWhere('service_step_id', $service->current_step_id);
+
+        $data = $request->validate([
+            'tipo_mantenimiento' => 'required|in:interno,externo',
+            'tipo_reparacion' => 'nullable|in:preventivo,correctivo,mixto',
+            'descripcion' => 'nullable|string',
+            'fallas_encontradas' => 'nullable|string',
+            'checklist' => 'nullable|array',
+            'refacciones' => 'nullable|array',
+            'proximo_mantenimiento' => 'nullable|date',
+            'carta_garantia' => 'nullable|string',
+            'evidencia_1' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+            'evidencia_2' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+            'evidencia_3' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+        ]);
+
+        $evidences = [];
+        foreach (['evidencia_1', 'evidencia_2', 'evidencia_3'] as $field) {
+            if ($request->hasFile($field)) {
+                $evidences[$field] = $request->file($field)->store('evidencias', 'public');
+            }
+        }
+
+        ServiceMaintenance::updateOrCreate(
+            ['service_id' => $service->id],
+            array_merge($data, $evidences, [
+                'tecnico_externo_id' => $service->external_technician_id,
+            ])
+        );
+
+        if ($currentTracking && $currentTracking->status === 'pendiente') {
+            $currentTracking->update([
+                'status' => 'completado',
+                'finished_at' => now(),
+            ]);
+
+            $nextStep = ServiceStep::where('service_type', $service->service_type)
+                ->where('order', '>', $service->currentStep->order)
+                ->orderBy('order')
+                ->first();
+
+            if ($nextStep) {
+                ServiceTracking::create([
+                    'service_id' => $service->id,
+                    'service_step_id' => $nextStep->id,
+                    'status' => 'pendiente',
+                    'qr_token' => $nextStep->requires_qr ? $this->generateQrToken() : null,
+                    'qr_expires_at' => $nextStep->requires_qr ? now()->addDay() : null,
+                    'started_at' => now(),
+                ]);
+
+                $service->update(['current_step_id' => $nextStep->id]);
+            } else {
+                $service->update([
+                    'status' => 'entregado',
+                    'finished_at' => now(),
+                ]);
+            }
+        }
+
+        return redirect()->route('gestion.servicios.maintenance.form', ['service' => $service])
+            ->with('success', 'Mantenimiento guardado.');
     }
 
     private function storeEvidence($file): ?string

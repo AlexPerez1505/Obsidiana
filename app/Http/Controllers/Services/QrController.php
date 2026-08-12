@@ -93,8 +93,8 @@ class QrController extends Controller
             ]);
         }
 
-        return redirect()->route('qr.show', ['token' => $token])
-            ->with('success', 'Código correcto. Paso completado.');
+        return redirect()->route('gestion.servicios.maintenance.form', ['service' => $tracking->service])
+            ->with('success', 'Código correcto. Bienvenido, completa el mantenimiento.');
     }
 
     public function complete(Request $request, $token)
