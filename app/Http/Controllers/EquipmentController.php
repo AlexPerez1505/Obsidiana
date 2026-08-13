@@ -73,6 +73,7 @@ class EquipmentController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
+        $data['name'] = $this->generateName($data);
         $data['base_serial'] = $this->generateBaseSerial($request);
         $data['registered_by'] = auth()->user()->name ?? 'Sistema';
         $data = $this->resolveCatalogs($request, $data);
@@ -118,6 +119,7 @@ class EquipmentController extends Controller
     public function update(Request $request, Equipment $equipo): RedirectResponse
     {
         $data = $this->validated($request, $equipo->id);
+        $data['name'] = $this->generateName($data);
         $data['base_serial'] = $this->generateBaseSerial($request);
         $data['registered_by'] = auth()->user()->name ?? 'Sistema';
         $data = $this->resolveCatalogs($request, $data);
@@ -276,6 +278,17 @@ class EquipmentController extends Controller
         return strtoupper($clean($type) . '-' . $clean($brand) . '-' . $clean($model) . '-' . $clean($serial));
     }
 
+    private function generateName(array $data): string
+    {
+        $type = $data['category'] ?? '';
+        $brand = $data['brand'] ?? '';
+        $model = $data['model'] ?? '';
+
+        $name = trim("{$type} {$brand} {$model}");
+
+        return $name ?: 'Equipo sin nombre';
+    }
+
     public function download(Equipment $equipo)
     {
         $content = "Equipo: {$equipo->name}\n";
@@ -297,36 +310,13 @@ class EquipmentController extends Controller
     private function validated(Request $request, ?int $ignoreId = null): array
     {
         return $request->validate([
-            'code' => ['nullable', 'string', 'max:30', 'unique:equipment,code' . ($ignoreId ? ",{$ignoreId}" : '')],
-            'name' => ['required', 'string', 'max:150'],
+            'name' => ['nullable', 'string', 'max:150'],
             'category' => ['required', 'string', 'max:150'],
             'subcategory' => ['nullable', 'string', 'max:150'],
-            'brand' => ['nullable', 'string', 'max:150'],
-            'model' => ['nullable', 'string', 'max:150'],
+            'brand' => ['required', 'string', 'max:150'],
+            'model' => ['required', 'string', 'max:150'],
             'serial_number' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:1000'],
-            'stock_current' => ['nullable', 'integer', 'min:0'],
-            'stock_max' => ['nullable', 'integer', 'min:0'],
-            'stock_min' => ['nullable', 'integer', 'min:0'],
-            'warehouse' => ['nullable', 'string', 'max:100'],
-            'assigned_to' => ['nullable', 'string', 'max:150'],
-            'department' => ['nullable', 'string', 'max:100'],
-            'service_date' => ['nullable', 'date'],
-            'next_maintenance' => ['nullable', 'date'],
-            'notes' => ['nullable', 'string', 'max:2000'],
-            'voltage' => ['nullable', 'string', 'max:50'],
-            'frequency' => ['nullable', 'string', 'max:50'],
-            'power' => ['nullable', 'string', 'max:50'],
-            'weight' => ['nullable', 'numeric', 'min:0'],
-            'dimensions' => ['nullable', 'string', 'max:100'],
-            'color' => ['nullable', 'string', 'max:50'],
-            'technical_specs' => ['nullable', 'string', 'max:2000'],
-            'supplier' => ['nullable', 'string', 'max:150'],
-            'contact' => ['nullable', 'string', 'max:150'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'email' => ['nullable', 'email', 'max:150'],
-            'invoice_number' => ['nullable', 'string', 'max:100'],
-            'invoice_date' => ['nullable', 'date'],
             'acquisition_date' => ['nullable', 'date'],
             'observations' => ['nullable', 'string', 'max:2000'],
             'equipment_image' => ['nullable', 'image', 'max:5120'],

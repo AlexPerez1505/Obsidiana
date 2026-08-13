@@ -223,19 +223,13 @@
             </div>
 
             <div class="equipment-card">
-                <h3 class="equipment-card__title">Informacion general</h3>
+                <h3 class="equipment-card__title">Datos del equipo</h3>
                 <div class="rgrid-2">
                     <div class="equipment-field">
-                        <label for="code">Codigo del equipo</label>
-                        <input class="equipment-input" id="code" name="code" value="{{ old('code', $equipmentData['code']) }}" type="text" autocomplete="off">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="serial_number">Numero de serie</label>
-                        <input class="equipment-input" id="serial_number" name="serial_number" value="{{ old('serial_number', $equipmentData['serial_number']) }}" type="text" autocomplete="off">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="name">Nombre del equipo</label>
-                        <input class="equipment-input" id="name" name="name" value="{{ old('name', $equipmentData['name']) }}" type="text" autocomplete="off">
+                        <label for="category">Tipo de equipo *</label>
+                        <select class="equipment-input equipment-select" id="category" name="category" data-selected="{{ old('category', $equipmentData['category']) }}" required>
+                            <option value="">Seleccionar</option>
+                        </select>
                     </div>
                     <div class="equipment-field">
                         <label for="brand">Marca *</label>
@@ -244,9 +238,9 @@
                         </select>
                     </div>
                     <div class="equipment-field">
-                        <label for="category">Tipo de equipo *</label>
-                        <select class="equipment-input equipment-select" id="category" name="category" data-selected="{{ old('category', $equipmentData['category']) }}" required>
-                            <option value="">Seleccionar</option>
+                        <label for="subcategory">Subtipo *</label>
+                        <select class="equipment-input equipment-select" id="subcategory" name="subcategory" data-selected="{{ old('subcategory', $equipmentData['subcategory']) }}" disabled required>
+                            <option value="">Seleccionar tipo primero</option>
                         </select>
                     </div>
                     <div class="equipment-field">
@@ -255,152 +249,17 @@
                             <option value="">Seleccionar marca primero</option>
                         </select>
                     </div>
-                    <div class="equipment-field" style="grid-column:1 / -1;">
-                        <label for="subcategory">Subtipo *</label>
-                        <select class="equipment-input equipment-select" id="subcategory" name="subcategory" data-selected="{{ old('subcategory', $equipmentData['subcategory']) }}" disabled required>
-                            <option value="">Seleccionar tipo primero</option>
-                        </select>
+                    <div class="equipment-field">
+                        <label for="serial_number">Numero de serie</label>
+                        <input class="equipment-input" id="serial_number" name="serial_number" value="{{ old('serial_number', $equipmentData['serial_number']) }}" type="text" autocomplete="off">
+                    </div>
+                    <div class="equipment-field">
+                        <label for="base_serial">Serie base (generada automaticamente)</label>
+                        <input class="equipment-input" id="base_serial" name="base_serial" value="{{ old('base_serial', $equipmentData['base_serial']) }}" type="text" readonly style="cursor:default;">
                     </div>
                     <div class="equipment-field" style="grid-column:1 / -1;">
                         <label for="description">Descripcion</label>
                         <input class="equipment-input" id="description" name="description" value="{{ old('description', $equipmentData['description']) }}" type="text" autocomplete="off">
-                    </div>
-                    <div class="equipment-field" style="grid-column:1 / -1;">
-                        <label for="base_serial">Serie base (generada automaticamente)</label>
-                        <input class="equipment-input" id="base_serial" name="base_serial" value="{{ old('base_serial', $equipmentData['base_serial']) }}" type="text" readonly style="cursor:default;">
-                    </div>
-                </div>
-            </div>
-
-            <div class="equipment-card">
-                <h3 class="equipment-card__title">Control de existencias</h3>
-                <div class="rgrid-2">
-                    <div class="equipment-field">
-                        <label for="stock_current">Stock real</label>
-                        <input class="equipment-input" id="stock_current" name="stock_current" value="{{ old('stock_current', $equipmentData['stock_current']) }}" type="number" min="0">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="stock_max">Maximo de existencias</label>
-                        <input class="equipment-input" id="stock_max" name="stock_max" value="{{ old('stock_max', $equipmentData['stock_max']) }}" type="number" min="0">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="stock_min">Stock minimo</label>
-                        <input class="equipment-input" id="stock_min" name="stock_min" value="{{ old('stock_min', $equipmentData['stock_min']) }}" type="number" min="0">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="warehouse">Almacen predeterminado *</label>
-                        <select class="equipment-input equipment-select" id="warehouse" name="warehouse" required>
-                            <option value="">Seleccionar</option>
-                            <option value="Almacen Central" @selected(old('warehouse', $equipmentData['warehouse']) === 'Almacen Central')>Almacen Central</option>
-                            <option value="Quirofano 1" @selected(old('warehouse', $equipmentData['warehouse']) === 'Quirofano 1')>Quirofano 1</option>
-                            <option value="Quirofano 2" @selected(old('warehouse', $equipmentData['warehouse']) === 'Quirofano 2')>Quirofano 2</option>
-                            <option value="Servicio tecnico" @selected(old('warehouse', $equipmentData['warehouse']) === 'Servicio tecnico')>Servicio tecnico</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="equipment-card">
-                <h3 class="equipment-card__title">Informacion adicional</h3>
-                <div class="rgrid-2">
-                    <div class="equipment-field">
-                        <label for="assigned_to">Responsable asignado</label>
-                        <input class="equipment-input" id="assigned_to" name="assigned_to" value="{{ old('assigned_to', $equipmentData['assigned_to']) }}" type="text" autocomplete="off">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="department">Departamento</label>
-                        <input class="equipment-input" id="department" name="department" value="{{ old('department', $equipmentData['department']) }}" type="text" autocomplete="off">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="service_date">Fecha de puesta en servicio</label>
-                        <input class="equipment-input" id="service_date" name="service_date" value="{{ old('service_date', $equipmentData['service_date']) }}" type="date">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="next_maintenance">Proximo mantenimiento</label>
-                        <input class="equipment-input" id="next_maintenance" name="next_maintenance" value="{{ old('next_maintenance', $equipmentData['next_maintenance']) }}" type="date">
-                    </div>
-                    <div class="equipment-field" style="grid-column:1 / -1;">
-                        <label for="notes">Notas</label>
-                        <textarea class="equipment-input equipment-note" id="notes" name="notes">{{ old('notes', $equipmentData['notes']) }}</textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="equipment-card">
-                <h3 class="equipment-card__title">Informacion tecnica</h3>
-                <div class="rgrid-2">
-                    <div class="equipment-field">
-                        <label for="voltage">Voltaje</label>
-                        <div class="equipment-unit">
-                            <input class="equipment-input" id="voltage" name="voltage" value="{{ old('voltage', $equipmentData['voltage']) }}" type="number" min="0" step="0.1">
-                            <span class="equipment-unit__suffix">V</span>
-                        </div>
-                    </div>
-                    <div class="equipment-field">
-                        <label for="dimensions">Dimensiones (cm)</label>
-                        <div class="equipment-unit">
-                            <input class="equipment-input" id="dimensions" name="dimensions" value="{{ old('dimensions', $equipmentData['dimensions']) }}" type="text" autocomplete="off">
-                            <span class="equipment-unit__suffix">cm</span>
-                        </div>
-                    </div>
-                    <div class="equipment-field">
-                        <label for="frequency">Frecuencia</label>
-                        <div class="equipment-unit">
-                            <input class="equipment-input" id="frequency" name="frequency" value="{{ old('frequency', $equipmentData['frequency']) }}" type="number" min="0">
-                            <span class="equipment-unit__suffix">Hz</span>
-                        </div>
-                    </div>
-                    <div class="equipment-field">
-                        <label for="color">Color</label>
-                        <input class="equipment-input" id="color" name="color" value="{{ old('color', $equipmentData['color']) }}" type="text" autocomplete="off">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="power">Potencia</label>
-                        <div class="equipment-unit">
-                            <input class="equipment-input" id="power" name="power" value="{{ old('power', $equipmentData['power']) }}" type="number" min="0">
-                            <span class="equipment-unit__suffix">W</span>
-                        </div>
-                    </div>
-                    <div class="equipment-field">
-                        <label for="weight">Peso (kg)</label>
-                        <div class="equipment-unit">
-                            <input class="equipment-input" id="weight" name="weight" value="{{ old('weight', $equipmentData['weight']) }}" type="number" min="0" step="0.01">
-                            <span class="equipment-unit__suffix">kg</span>
-                        </div>
-                    </div>
-                    <div class="equipment-field" style="grid-column:1 / -1;">
-                        <label for="technical_specs">Especificaciones tecnicas</label>
-                        <textarea class="equipment-input equipment-note" id="technical_specs" name="technical_specs">{{ old('technical_specs', $equipmentData['technical_specs']) }}</textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="equipment-card">
-                <h3 class="equipment-card__title">Proveedor</h3>
-                <div class="rgrid-2">
-                    <div class="equipment-field">
-                        <label for="supplier">Proveedor</label>
-                        <input class="equipment-input" id="supplier" name="supplier" value="{{ old('supplier', $equipmentData['supplier']) }}" type="text" autocomplete="off">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="email">Correo electronico</label>
-                        <input class="equipment-input" id="email" name="email" value="{{ old('email', $equipmentData['email']) }}" type="email" autocomplete="off">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="contact">Contacto</label>
-                        <input class="equipment-input" id="contact" name="contact" value="{{ old('contact', $equipmentData['contact']) }}" type="text" autocomplete="off">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="invoice_number">Numero de factura</label>
-                        <input class="equipment-input" id="invoice_number" name="invoice_number" value="{{ old('invoice_number', $equipmentData['invoice_number']) }}" type="text" autocomplete="off">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="phone">Telefono</label>
-                        <input class="equipment-input" id="phone" name="phone" value="{{ old('phone', $equipmentData['phone']) }}" type="tel" autocomplete="off">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="invoice_date">Fecha de factura</label>
-                        <input class="equipment-input" id="invoice_date" name="invoice_date" value="{{ old('invoice_date', $equipmentData['invoice_date']) }}" type="date">
                     </div>
                 </div>
             </div>

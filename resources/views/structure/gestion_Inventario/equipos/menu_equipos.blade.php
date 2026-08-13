@@ -16,35 +16,43 @@
 @push('head')
 <style>
     .equipment-search {
-        position: relative;
-        margin-bottom: 18px;
-    }
-    .equipment-search svg,
-    .equipment-search__icon {
-        position: absolute;
-        left: 14px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--muted);
-        width: 18px;
-        height: 18px;
-        pointer-events: none;
-    }
-    .equipment-search { position: relative; margin-bottom: 18px; }
-    .equipment-search input {
-        width: 100%;
-        padding: 11px 14px 11px 42px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 12px 0 26px;
+        padding: 10px 14px;
         border: 1px solid rgba(0,168,255,0.55);
         border-radius: 10px;
         background: rgba(4,10,24,0.72);
+    }
+    .equipment-search svg,
+    .equipment-search__icon {
+        color: rgba(160,174,192,0.85);
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
+    }
+    .equipment-search input {
+        flex: 1;
+        background: transparent;
+        border: 0;
         color: #fff;
         font: inherit;
         font-size: 15px;
-    }
-    .equipment-search input:focus {
+        padding: 0;
         outline: none;
-        border-color: #00A8FF;
-        box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.45);
+    }
+    .equipment-search input::placeholder {
+        color: rgba(255,255,255,0.45);
+    }
+    :root[data-theme="light"] .equipment-search {
+        background: #ffffff;
+    }
+    :root[data-theme="light"] .equipment-search input {
+        color: #1e1b4b;
+    }
+    :root[data-theme="light"] .equipment-search input::placeholder {
+        color: rgba(30,27,75,0.45);
     }
     .equipment-state {
         display: inline-flex;
@@ -199,7 +207,7 @@
 @endpush
 
 @section('content')
-    <div class="equipment-menu-header" style="display:flex; justify-content:flex-end; margin-bottom:18px;">
+    <div class="equipment-menu-header" style="display:flex; justify-content:flex-end; margin-bottom:22px;">
         <a href="{{ route('inventory.equipos.create') }}" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             Nuevo Equipo
@@ -207,12 +215,14 @@
     </div>
 
     <x-ui.card class="equipment-menu">
-        <form method="GET" class="equipment-search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" class="equipment-search__icon">
-                <circle cx="11" cy="11" r="7"></circle>
-                <path d="m20 20-3.5-3.5"></path>
-            </svg>
-            <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por equipo, codigo, serie..." autocomplete="off">
+        <form method="GET">
+            <div class="equipment-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" class="equipment-search__icon">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <path d="m20 20-3.5-3.5"></path>
+                </svg>
+                <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar equipo..." autocomplete="off">
+            </div>
         </form>
 
         <div style="overflow-x:auto;">
