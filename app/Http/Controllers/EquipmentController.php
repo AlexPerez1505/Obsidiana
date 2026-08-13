@@ -121,7 +121,6 @@ class EquipmentController extends Controller
         $data = $this->validated($request, $equipo->id);
         $data['name'] = $this->generateName($data);
         $data['base_serial'] = $this->generateBaseSerial($request);
-        $data['registered_by'] = auth()->user()->name ?? 'Sistema';
         $data = $this->resolveCatalogs($request, $data);
 
         if ($request->hasFile('equipment_image')) {

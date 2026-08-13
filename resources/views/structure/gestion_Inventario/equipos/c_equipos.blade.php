@@ -271,10 +271,6 @@
                         <label for="acquisition_date">Fecha de adquisicion</label>
                         <input class="equipment-input" id="acquisition_date" name="acquisition_date" value="{{ old('acquisition_date', $equipmentData['acquisition_date']) }}" type="date">
                     </div>
-                    <div class="equipment-field">
-                        <label for="registered_by">Firma de quien registro</label>
-                        <input class="equipment-input" id="registered_by" name="registered_by" value="{{ old('registered_by', $equipmentData['registered_by'] ?: auth()->user()->name) }}" type="text" readonly style="cursor:default;">
-                    </div>
                     <div class="equipment-field" style="grid-column:1 / -1;">
                         <label for="observations">Observaciones</label>
                         <textarea class="equipment-input equipment-note" id="observations" name="observations">{{ old('observations', $equipmentData['observations']) }}</textarea>
