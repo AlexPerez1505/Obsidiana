@@ -308,34 +308,28 @@
 
             <div class="ns-columns">
                 <div class="catalog-card service-section">
-                    <div class="ns-section-title" style="justify-content: space-between;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                            Asignar tecnico responsable
-                        </div>
-                        <button type="button" class="ns-btn ns-btn--primary" onclick="openTechnicianModal()" style="padding: 8px 14px; font-size: 12px;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Crear tecnico
-                        </button>
+                    <div class="ns-section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        Asignar tecnico responsable
                     </div>
-                    <p class="ns-section-subtitle">Selecciona alguno de los tecnicos disponibles</p>
+                    <p class="ns-section-subtitle">Selecciona alguno de los tecnicos internos disponibles</p>
 
                     <div class="ns-technician-list">
                         @foreach ($technicians as $tech)
                             @php
-                                $techInitials = collect([$tech->nombre, $tech->apellidos])->filter()->map(fn($n) => mb_substr($n, 0, 1))->implode('');
+                                $techInitials = $tech->name ? mb_substr($tech->name, 0, 1) : 'T';
                                 $techServices = $servicesByTech->get($tech->id) ?? collect();
                                 $activeCount = $techServices->count();
                                 if ($activeCount <= 3) { $badgeClass = 'green'; }
                                 elseif ($activeCount <= 7) { $badgeClass = 'yellow'; }
                                 else { $badgeClass = 'red'; }
                             @endphp
-                            <div class="ns-technician-card" data-id="{{ $tech->id }}" data-name="{{ $tech->nombre }}" data-count="{{ $activeCount }}" onclick="selectTechnician({{ $tech->id }})">
+                            <div class="ns-technician-card" data-id="{{ $tech->id }}" data-name="{{ $tech->name }}" data-count="{{ $activeCount }}" onclick="selectTechnician({{ $tech->id }})">
                                 <div class="ns-technician-main">
-                                    <div class="ns-technician-avatar">{{ $techInitials ?: 'T' }}</div>
+                                    <div class="ns-technician-avatar">{{ $techInitials }}</div>
                                     <div class="ns-technician-info">
-                                        <h4>{{ $tech->nombre }}</h4>
-                                        <p>Especialidad: {{ $tech->especialidad ?: 'Sin especialidad' }}</p>
+                                        <h4>{{ $tech->name }}</h4>
+                                        <p>{{ $tech->cargo ?: ($tech->position ?: 'Sin puesto') }} &nbsp;|&nbsp; {{ $tech->phone ?: 'Sin teléfono' }}</p>
                                     </div>
                                 </div>
                                 <div class="ns-technician-badge {{ $badgeClass }}">{{ $activeCount }} activos</div>
@@ -371,45 +365,6 @@
 
 
                 </div>
-            </div>
-        </form>
-    </div>
-
-    <div class="ns-modal-overlay" id="technicianModal" onclick="if(event.target === this) closeTechnicianModal()">
-        <form class="ns-modal" method="POST" action="{{ route('gestion.servicios.nuevo.interno.tecnico.store') }}" onclick="event.stopPropagation()">
-            @csrf
-            <input type="hidden" name="customer_id" value="{{ $customer->id }}">
-            <div class="ns-modal-header">
-                <div class="ns-modal-title">Crear nuevo tecnico</div>
-                <button type="button" class="ns-modal-close" onclick="closeTechnicianModal()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-            </div>
-            <div class="ns-modal-grid">
-                <div class="ns-modal-field">
-                    <label>Nombre</label>
-                    <input type="text" name="nombre" placeholder="Ej. Joel" required>
-                </div>
-                <div class="ns-modal-field">
-                    <label>Apellidos</label>
-                    <input type="text" name="apellidos" placeholder="Ej. Garcia">
-                </div>
-                <div class="ns-modal-field">
-                    <label>Telefono</label>
-                    <input type="text" name="telefono" placeholder="Ej. 5512345678">
-                </div>
-                <div class="ns-modal-field">
-                    <label>Especialidad</label>
-                    <input type="text" name="especialidad" placeholder="Ej. Endoscopia">
-                </div>
-                <div class="ns-modal-field" style="grid-column: 1 / -1;">
-                    <label>Correo</label>
-                    <input type="email" name="correo" placeholder="Ej. tecnico@correo.com">
-                </div>
-            </div>
-            <div class="ns-modal-footer">
-                <button type="button" class="ns-btn ns-btn--ghost" onclick="closeTechnicianModal()">Cancelar</button>
-                <button type="submit" class="ns-btn ns-btn--primary">Guardar tecnico</button>
             </div>
         </form>
     </div>
@@ -450,14 +405,6 @@
                 alert('Selecciona un técnico antes de guardar la orden.');
             }
         });
-
-        function openTechnicianModal() {
-            document.getElementById('technicianModal').classList.add('active');
-        }
-
-        function closeTechnicianModal() {
-            document.getElementById('technicianModal').classList.remove('active');
-        }
 
         // Select first technician by default
         const firstCard = document.querySelector('.ns-technician-card');

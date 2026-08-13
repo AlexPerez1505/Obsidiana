@@ -15,6 +15,7 @@ use App\Models\Refaccion;
 use App\Models\ServiceStep;
 use App\Models\ServiceTracking;
 use App\Models\Subtype;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -124,10 +125,31 @@ class ServiceController extends Controller
             'firma' => 'nullable|string',
         ]);
 
+        if (! empty($validated['tipo_equipo'])) {
+            $type = EquipmentType::firstOrCreate(['name' => trim($validated['tipo_equipo'])]);
+        }
+        if (! empty($validated['subtipo']) && isset($type)) {
+            Subtype::firstOrCreate([
+                'equipment_type_id' => $type->id,
+                'name' => trim($validated['subtipo']),
+            ]);
+        }
+        if (! empty($validated['marca'])) {
+            $brand = Brand::firstOrCreate(['name' => trim($validated['marca'])]);
+        }
+        if (! empty($validated['modelo']) && isset($brand)) {
+            EquipmentModel::firstOrCreate([
+                'brand_id' => $brand->id,
+                'name' => trim($validated['modelo']),
+            ]);
+        }
+
         $validated['evidencia_1_path'] = $this->storeEvidence($request->file('evidencia_1'));
         $validated['evidencia_2_path'] = $this->storeEvidence($request->file('evidencia_2'));
         $validated['evidencia_3_path'] = $this->storeEvidence($request->file('evidencia_3'));
         $validated['video_path'] = $this->storeEvidence($request->file('evidencia_video'));
+
+        unset($validated['evidencia_1'], $validated['evidencia_2'], $validated['evidencia_3'], $validated['evidencia_video']);
 
         session(['service_new.equipment' => $validated]);
 
@@ -158,6 +180,8 @@ class ServiceController extends Controller
         $validated['evidencia_2_path'] = $this->storeEvidence($request->file('evidencia_2'));
         $validated['evidencia_3_path'] = $this->storeEvidence($request->file('evidencia_3'));
         $validated['video_path'] = $this->storeEvidence($request->file('evidencia_video'));
+
+        unset($validated['evidencia_1'], $validated['evidencia_2'], $validated['evidencia_3'], $validated['evidencia_video']);
 
         session(['service_new.equipment' => $validated]);
 
@@ -195,16 +219,16 @@ class ServiceController extends Controller
             ])->with('error', 'Debes registrar el equipo primero.');
         }
 
-        $technicians = \Illuminate\Support\Facades\DB::table('tecnico_externo')
-            ->whereNull('deleted_at')
-            ->orderBy('nombre')
+        $technicians = User::where('status', 'approved')
+            ->where('is_admin', false)
+            ->orderBy('name')
             ->get();
 
-        $servicesByTech = Service::whereIn('external_technician_id', $technicians->pluck('id'))
+        $servicesByTech = Service::whereIn('internal_technician_id', $technicians->pluck('id'))
             ->whereIn('status', ['registrado', 'en_progreso'])
             ->with('customer')
             ->get()
-            ->groupBy('external_technician_id');
+            ->groupBy('internal_technician_id');
 
         return view('structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario.eleccion_tecnico', [
             'customer' => $customer,
@@ -216,7 +240,7 @@ class ServiceController extends Controller
     public function createInternalCotizacion(Request $request)
     {
         $customer = Customer::findOrFail($request->input('customer_id'));
-        $technician = ExternalTechnician::findOrFail($request->input('technician_id'));
+        $technician = User::findOrFail($request->input('technician_id'));
 
         if (! session('service_new.equipment')) {
             return redirect()->route('gestion.servicios.nuevo.interno.equipo', [
@@ -243,7 +267,15 @@ class ServiceController extends Controller
             'empresa' => 'nullable|string|max:100',
         ]);
 
-        $technician = ExternalTechnician::create($validated);
+        $technician = ExternalTechnician::create([
+            'nombre' => $validated['nombre'],
+            'apellidos' => $validated['apellidos'] ?? '',
+            'telefono' => $validated['telefono'] ?? '',
+            'domicilio' => $validated['domicilio'] ?? '',
+            'correo' => $validated['correo'] ?? '',
+            'especialidad' => $validated['especialidad'] ?? '',
+            'empresa' => $validated['empresa'] ?? '',
+        ]);
 
         return redirect()->route('gestion.servicios.nuevo.externo.tecnico', [
             'customer_id' => $request->input('customer_id'),
@@ -262,7 +294,15 @@ class ServiceController extends Controller
             'empresa' => 'nullable|string|max:100',
         ]);
 
-        ExternalTechnician::create($validated);
+        ExternalTechnician::create([
+            'nombre' => $validated['nombre'],
+            'apellidos' => $validated['apellidos'] ?? '',
+            'telefono' => $validated['telefono'] ?? '',
+            'domicilio' => $validated['domicilio'] ?? '',
+            'correo' => $validated['correo'] ?? '',
+            'especialidad' => $validated['especialidad'] ?? '',
+            'empresa' => $validated['empresa'] ?? '',
+        ]);
 
         return redirect()->route('gestion.servicios.nuevo.interno.tecnico', [
             'customer_id' => $request->input('customer_id'),
@@ -297,12 +337,12 @@ class ServiceController extends Controller
         if ($request->input('nuevo_tecnico')) {
             $technician = ExternalTechnician::create([
                 'nombre' => $validated['nombre'],
-                'apellidos' => $validated['apellidos'],
-                'telefono' => $validated['telefono'],
-                'domicilio' => $validated['domicilio'],
-                'correo' => $validated['correo'],
-                'especialidad' => $validated['especialidad'],
-                'empresa' => $validated['empresa'],
+                'apellidos' => $validated['apellidos'] ?? '',
+                'telefono' => $validated['telefono'] ?? '',
+                'domicilio' => $validated['domicilio'] ?? '',
+                'correo' => $validated['correo'] ?? '',
+                'especialidad' => $validated['especialidad'] ?? '',
+                'empresa' => $validated['empresa'] ?? '',
             ]);
             $externalTechnicianId = $technician->id;
         }
@@ -397,14 +437,14 @@ class ServiceController extends Controller
         }
 
         $validated = $request->validate([
-            'technician_id' => 'required|exists:tecnico_externo,id',
+            'technician_id' => 'required|exists:users,id',
         ]);
 
         $service = Service::create([
             'service_number' => null,
             'customer_id' => $customer->id,
             'service_type' => 'interno',
-            'external_technician_id' => $validated['technician_id'],
+            'internal_technician_id' => $validated['technician_id'],
             'registered_by' => auth()->id(),
             'current_step_id' => null,
             'signature' => $equipment['firma'] ?? null,
@@ -497,6 +537,47 @@ class ServiceController extends Controller
 
         return view('structure.gestion_servicios.aprovaciones_admin.menu_aprobaciones', [
             'trackings' => $trackings,
+        ]);
+    }
+
+    public function osValidations()
+    {
+        $step = ServiceStep::where('slug', 'validacion-os')->first();
+
+        $trackings = ServiceTracking::with([
+                'service.customer',
+                'service.externalTechnician',
+                'service.serviceEquipment',
+                'service.maintenance',
+                'serviceStep',
+            ])
+            ->when($step, function ($query) use ($step) {
+                $query->where('service_step_id', $step->id);
+            })
+            ->whereIn('status', ['pendiente', 'completado'])
+            ->orderByRaw("FIELD(status, 'pendiente', 'completado')")
+            ->latest('service_trackings.created_at')
+            ->get();
+
+        return view('structure.gestion_servicios.aprovaciones_admin.menu_validacion_OS', [
+            'trackings' => $trackings,
+        ]);
+    }
+
+    public function rutaTrabajo(Service $service)
+    {
+        $service->load(['serviceTrackings.serviceStep', 'customer', 'externalTechnician', 'internalTechnician', 'serviceEquipment', 'currentStep']);
+
+        $steps = ServiceStep::where('service_type', $service->service_type)
+            ->orderBy('order')
+            ->get();
+
+        $trackingsByStep = $service->serviceTrackings->keyBy('service_step_id');
+
+        return view('structure.gestion_servicios.servicios.ruta_trabajo', [
+            'service' => $service,
+            'steps' => $steps,
+            'trackingsByStep' => $trackingsByStep,
         ]);
     }
 
@@ -657,6 +738,21 @@ class ServiceController extends Controller
             ->where('order', '>', $tracking->serviceStep->order)
             ->orderBy('order')
             ->first();
+
+        while ($nextStep && $nextStep->slug === 'notificacion-envio-servicio') {
+            ServiceTracking::create([
+                'service_id' => $service->id,
+                'service_step_id' => $nextStep->id,
+                'status' => 'completado',
+                'started_at' => now(),
+                'finished_at' => now(),
+            ]);
+
+            $nextStep = ServiceStep::where('service_type', $service->service_type)
+                ->where('order', '>', $nextStep->order)
+                ->orderBy('order')
+                ->first();
+        }
 
         if ($nextStep) {
             ServiceTracking::create([

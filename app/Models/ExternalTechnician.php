@@ -13,16 +13,13 @@ class ExternalTechnician extends Model
     protected $table = 'tecnico_externo';
 
     protected $fillable = [
-        'name',
-        'phone',
-        'email',
-        'company',
-        'specialty',
-        'address',
-        'location',
-        'description',
-        'photo',
-        'is_active',
+        'nombre',
+        'apellidos',
+        'telefono',
+        'domicilio',
+        'correo',
+        'especialidad',
+        'empresa',
     ];
 
     protected function casts(): array
