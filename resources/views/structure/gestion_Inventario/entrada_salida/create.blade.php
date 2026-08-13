@@ -13,7 +13,7 @@
         <x-ui.card>
             <x-ui.section-title style="margin:0 0 18px; color:var(--primary, #1689ff);">Datos del movimiento</x-ui.section-title>
 
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:18px;">
+            <div style="display:grid; grid-template-columns:1fr; gap:18px; max-width:720px;">
                 <x-ui.form-group for="movement_type" label="Tipo de movimiento *">
                     <select id="movement_type" name="movement_type" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
                         <option value="" disabled @selected(!old('movement_type', $defaultType))>Selecciona una opción</option>
@@ -40,7 +40,7 @@
                     <input id="folio" type="text" value="Se generará al guardar el movimiento" readonly style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface-2); color:var(--muted);" />
                 </x-ui.form-group>
 
-                <div style="grid-column:1 / -1; min-width:0;">
+                <div style="min-width:0;">
                     <label for="item_id" style="display:block; margin:0 0 7px; color:var(--text); font-size:13px; font-weight:700;">Producto *</label>
                     <div style="display:flex; align-items:center; gap:12px; min-width:0;">
                         <select id="item_id" name="item_id" required style="flex:1; min-width:0; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
