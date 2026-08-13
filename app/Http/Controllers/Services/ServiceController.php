@@ -57,11 +57,45 @@ class ServiceController extends Controller
         ]);
     }
 
+    public function createInternal(Request $request)
+    {
+        $search = $request->input('search');
+
+        $customers = Customer::query()
+            ->when($search, function ($query, $search) {
+                $term = '%' . $search . '%';
+                $query->whereRaw("CONCAT(nombre, ' ', COALESCE(apellido, '')) LIKE ?", [$term])
+                    ->orWhere('telefono', 'LIKE', $term)
+                    ->orWhere('gmail', 'LIKE', $term);
+            })
+            ->orderBy('nombre')
+            ->limit(50)
+            ->get();
+
+        return view('structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario_int', [
+            'customers' => $customers,
+            'search' => $search,
+        ]);
+    }
+
     public function createEquipment(Request $request)
     {
         $customer = Customer::findOrFail($request->input('customer_id'));
 
         return view('structure.gestion_servicios.Historial_se.registro_NS.externo.formulario.equipo', [
+            'customer' => $customer,
+            'equipmentTypes' => EquipmentType::orderBy('name')->get(),
+            'subtypes' => Subtype::with('equipmentType')->orderBy('name')->get(),
+            'brands' => Brand::orderBy('name')->get(),
+            'models' => EquipmentModel::with('brand')->orderBy('name')->get(),
+        ]);
+    }
+
+    public function createInternalEquipment(Request $request)
+    {
+        $customer = Customer::findOrFail($request->input('customer_id'));
+
+        return view('structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario.equipo', [
             'customer' => $customer,
             'equipmentTypes' => EquipmentType::orderBy('name')->get(),
             'subtypes' => Subtype::with('equipmentType')->orderBy('name')->get(),
@@ -100,6 +134,36 @@ class ServiceController extends Controller
         ]);
     }
 
+    public function storeInternalEquipment(Request $request)
+    {
+        $validated = $request->validate([
+            'customer_id' => 'required|exists:clientes,id',
+            'tipo_equipo' => 'nullable|string|max:255',
+            'subtipo' => 'nullable|string|max:255',
+            'marca' => 'nullable|string|max:255',
+            'modelo' => 'nullable|string|max:255',
+            'serie' => 'nullable|string|max:255',
+            'descripcion_equipo' => 'nullable|string',
+            'observaciones' => 'nullable|string',
+            'evidencia_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'evidencia_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'evidencia_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'evidencia_video' => 'nullable|mimetypes:video/mp4,video/quicktime,video/x-m4v|max:10240',
+            'firma' => 'nullable|string',
+        ]);
+
+        $validated['evidencia_1_path'] = $this->storeEvidence($request->file('evidencia_1'));
+        $validated['evidencia_2_path'] = $this->storeEvidence($request->file('evidencia_2'));
+        $validated['evidencia_3_path'] = $this->storeEvidence($request->file('evidencia_3'));
+        $validated['video_path'] = $this->storeEvidence($request->file('evidencia_video'));
+
+        session(['service_new.equipment' => $validated]);
+
+        return redirect()->route('gestion.servicios.nuevo.interno.tecnico', [
+            'customer_id' => $validated['customer_id'],
+        ]);
+    }
+
     public function createTechnician(Request $request)
     {
         $customer = Customer::find($request->input('customer_id'));
@@ -119,6 +183,51 @@ class ServiceController extends Controller
         ]);
     }
 
+    public function createInternalTechnician(Request $request)
+    {
+        $customer = Customer::find($request->input('customer_id'));
+
+        if (! session('service_new.equipment') || ! $customer) {
+            return redirect()->route('gestion.servicios.nuevo.interno.equipo', [
+                'customer_id' => $request->input('customer_id'),
+            ])->with('error', 'Debes registrar el equipo primero.');
+        }
+
+        $technicians = \Illuminate\Support\Facades\DB::table('tecnico_externo')
+            ->whereNull('deleted_at')
+            ->orderBy('nombre')
+            ->get();
+
+        $servicesByTech = Service::whereIn('external_technician_id', $technicians->pluck('id'))
+            ->whereIn('status', ['registrado', 'en_progreso'])
+            ->with('customer')
+            ->get()
+            ->groupBy('external_technician_id');
+
+        return view('structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario.eleccion_tecnico', [
+            'customer' => $customer,
+            'technicians' => $technicians,
+            'servicesByTech' => $servicesByTech,
+        ]);
+    }
+
+    public function createInternalCotizacion(Request $request)
+    {
+        $customer = Customer::findOrFail($request->input('customer_id'));
+        $technician = ExternalTechnician::findOrFail($request->input('technician_id'));
+
+        if (! session('service_new.equipment')) {
+            return redirect()->route('gestion.servicios.nuevo.interno.equipo', [
+                'customer_id' => $customer->id,
+            ])->with('error', 'Debes registrar el equipo primero.');
+        }
+
+        return view('structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario.Cotizacion', [
+            'customer' => $customer,
+            'technician' => $technician,
+        ]);
+    }
+
     public function storeTechnician(Request $request)
     {
         $validated = $request->validate([
@@ -134,6 +243,25 @@ class ServiceController extends Controller
         $technician = ExternalTechnician::create($validated);
 
         return redirect()->route('gestion.servicios.nuevo.externo.tecnico', [
+            'customer_id' => $request->input('customer_id'),
+        ])->with('success', 'Técnico agregado correctamente.');
+    }
+
+    public function storeInternalTechnician(Request $request)
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100',
+            'apellidos' => 'nullable|string|max:100',
+            'telefono' => 'nullable|string|max:10',
+            'domicilio' => 'nullable|string|max:100',
+            'correo' => 'nullable|email|max:100',
+            'especialidad' => 'nullable|string|max:100',
+            'empresa' => 'nullable|string|max:100',
+        ]);
+
+        ExternalTechnician::create($validated);
+
+        return redirect()->route('gestion.servicios.nuevo.interno.tecnico', [
             'customer_id' => $request->input('customer_id'),
         ])->with('success', 'Técnico agregado correctamente.');
     }
@@ -254,6 +382,78 @@ class ServiceController extends Controller
         return redirect()->route('gestion.servicios.nuevo.externo.resumen', $service);
     }
 
+    public function storeInternalService(Request $request)
+    {
+        $customer = Customer::findOrFail($request->input('customer_id'));
+        $equipment = session('service_new.equipment');
+
+        if (! $equipment) {
+            return redirect()->route('gestion.servicios.nuevo.interno.equipo', [
+                'customer_id' => $customer->id,
+            ])->with('error', 'Debes registrar el equipo primero.');
+        }
+
+        $validated = $request->validate([
+            'technician_id' => 'required|exists:tecnico_externo,id',
+        ]);
+
+        $service = Service::create([
+            'service_number' => null,
+            'customer_id' => $customer->id,
+            'service_type' => 'interno',
+            'external_technician_id' => $validated['technician_id'],
+            'registered_by' => auth()->id(),
+            'current_step_id' => null,
+            'signature' => $equipment['firma'] ?? null,
+            'status' => 'registrado',
+            'started_at' => now(),
+        ]);
+
+        $service->update(['service_number' => 'NS-' . $service->id]);
+
+        ServiceEquipment::create([
+            'service_id' => $service->id,
+            'product_code' => null,
+            'type_text' => $equipment['tipo_equipo'] ?? null,
+            'subtype_text' => $equipment['subtipo'] ?? null,
+            'brand_text' => $equipment['marca'] ?? null,
+            'model_text' => $equipment['modelo'] ?? null,
+            'serial_number' => $equipment['serie'] ?? null,
+            'description' => $equipment['descripcion_equipo'] ?? null,
+            'observations' => $equipment['observaciones'] ?? null,
+            'evidence_1_path' => $equipment['evidencia_1_path'] ?? null,
+            'evidence_2_path' => $equipment['evidencia_2_path'] ?? null,
+            'evidence_3_path' => $equipment['evidencia_3_path'] ?? null,
+            'video_path' => $equipment['video_path'] ?? null,
+        ]);
+
+        $approvalStep = ServiceStep::firstOrCreate(
+            ['service_type' => 'interno', 'slug' => 'aprobacion-interna'],
+            [
+                'name' => 'Aprobacion de Servicio Interno',
+                'purpose' => 'aprobacion',
+                'order' => 1,
+                'requires_qr' => false,
+                'requires_approval' => true,
+                'description' => 'Pendiente de aprobacion del administrador',
+            ]
+        );
+
+        ServiceTracking::create([
+            'service_id' => $service->id,
+            'service_step_id' => $approvalStep->id,
+            'status' => 'pendiente',
+            'started_at' => now(),
+            'notes' => 'Pendiente de aprobacion del administrador',
+        ]);
+
+        $service->update(['current_step_id' => $approvalStep->id]);
+
+        session()->forget('service_new');
+
+        return redirect()->route('gestion.servicios.nuevo.interno.resumen', $service)->withInput();
+    }
+
     public function showSummary(Service $service)
     {
         $service->load(['customer', 'externalTechnician', 'serviceEquipment']);
@@ -263,6 +463,15 @@ class ServiceController extends Controller
         return view('structure.gestion_servicios.Historial_se.registro_NS.externo.formulario.resumen', [
             'service' => $service,
             'qrUrl' => $qrUrl,
+        ]);
+    }
+
+    public function showInternalSummary(Service $service)
+    {
+        $service->load(['customer', 'externalTechnician', 'serviceEquipment']);
+
+        return view('structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario.resumen', [
+            'service' => $service,
         ]);
     }
 

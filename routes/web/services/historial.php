@@ -15,8 +15,22 @@ Route::middleware(['auth', 'verified', 'approved'])
             ->name('gestion.servicios.nuevo');
 
         // Formularios de registro según tipo de mantenimiento
-        Route::view('/nuevo-servicio/interno', 'structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario_int')
+        Route::get('/nuevo-servicio/interno', [ServiceController::class, 'createInternal'])
             ->name('gestion.servicios.nuevo.interno');
+        Route::get('/nuevo-servicio/interno/equipo', [ServiceController::class, 'createInternalEquipment'])
+            ->name('gestion.servicios.nuevo.interno.equipo');
+        Route::post('/nuevo-servicio/interno/equipo', [ServiceController::class, 'storeInternalEquipment'])
+            ->name('gestion.servicios.nuevo.interno.equipo.store');
+        Route::get('/nuevo-servicio/interno/tecnico', [ServiceController::class, 'createInternalTechnician'])
+            ->name('gestion.servicios.nuevo.interno.tecnico');
+        Route::post('/nuevo-servicio/interno/tecnico', [ServiceController::class, 'storeInternalTechnician'])
+            ->name('gestion.servicios.nuevo.interno.tecnico.store');
+        Route::post('/nuevo-servicio/interno/cotizacion', [ServiceController::class, 'createInternalCotizacion'])
+            ->name('gestion.servicios.nuevo.interno.cotizacion');
+        Route::post('/nuevo-servicio/interno/guardar', [ServiceController::class, 'storeInternalService'])
+            ->name('gestion.servicios.nuevo.interno.guardar');
+        Route::get('/nuevo-servicio/interno/resumen/{service}', [ServiceController::class, 'showInternalSummary'])
+            ->name('gestion.servicios.nuevo.interno.resumen');
 
         Route::get('/nuevo-servicio/externo', [ServiceController::class, 'createExternal'])
             ->name('gestion.servicios.nuevo.externo');
@@ -46,4 +60,38 @@ Route::middleware(['auth', 'verified', 'approved'])
         // Completar paso actual desde modal de mantenimiento
         Route::post('/{service}/complete-step', [ServiceController::class, 'completeCurrentStep'])
             ->name('gestion.servicios.completeStep');
+    });
+
+// Cartas de garantía
+Route::middleware(['auth', 'verified', 'approved'])
+    ->prefix('gestion-servicios')
+    ->group(function () {
+        Route::get('/cartas-garantia', function () {
+            $cartas = \App\Models\CartaGarantia::with(['tipoEquipo', 'subtipo'])
+                ->orderByDesc('created_at')
+                ->get();
+
+            return view('structure.gestion_servicios.Cartas_garantia.menu_carta', compact('cartas'));
+        })->name('cartas.garantia.index');
+
+        Route::get('/cartas-garantia/crear', function () {
+            $productos = \App\Models\Producto::all();
+
+            return view('structure.gestion_servicios.Cartas_garantia.Cartas_form', compact('productos'));
+        })->name('cartas.garantia.create');
+
+        Route::post('/cartas-garantia', function (\Illuminate\Http\Request $request) {
+            $data = $request->validate([
+                'id_tipo_equipo' => 'required|exists:productos,id',
+                'id_subtipo' => 'required|exists:productos,id',
+                'nombre' => 'required|string|max:255',
+                'archivo_carta' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp',
+            ]);
+
+            $data['archivo_carta'] = $request->file('archivo_carta')->store('cartas_garantia', 'public');
+
+            \App\Models\CartaGarantia::create($data);
+
+            return redirect()->route('cartas.garantia.index')->with('success', 'Carta de garantía guardada correctamente.');
+        })->name('cartas.garantia.store');
     });
