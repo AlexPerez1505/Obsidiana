@@ -144,6 +144,40 @@
             border: 1px solid rgba(0,0,0,0.2); background: rgba(0,0,0,0.6);
             color: #fff; font-size: 11px; cursor: pointer;
         }
+        .ns-sig-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+        .ns-sig-tab {
+            padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.12); background: transparent;
+            color: rgba(255,255,255,0.65); cursor: pointer; transition: all .16s ease;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .ns-sig-tab svg { width: 15px; height: 15px; }
+        :root[data-theme="light"] .ns-sig-tab { border-color: rgba(15,23,42,0.14); color: var(--muted); }
+        .ns-sig-tab:hover { border-color: #007AFF; color: #007AFF; }
+        .ns-sig-tab.active { background: #007AFF; border-color: #007AFF; color: #fff; }
+        .ns-sig-upload {
+            border: 1px dashed rgba(255,255,255,0.2); border-radius: 14px;
+            background: rgba(8,18,40,0.35); color: rgba(255,255,255,0.65);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 8px; cursor: pointer; position: relative; overflow: hidden;
+            width: 100%; height: 160px;
+        }
+        :root[data-theme="light"] .ns-sig-upload { background: rgba(15,23,42,0.04); border-color: rgba(15,23,42,0.18); color: var(--muted); }
+        .ns-sig-upload:hover { border-color: #007AFF; background: rgba(0,122,255,0.08); }
+        .ns-sig-upload svg { width: 28px; height: 28px; }
+        .ns-sig-upload .ns-sig-label { font-size: 13px; font-weight: 700; }
+        .ns-sig-upload .ns-sig-hint { font-size: 11px; opacity: 0.7; }
+        .ns-sig-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        .ns-sig-preview {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: contain; background: #fff; display: none;
+        }
+        .ns-sig-clear-upload {
+            position: absolute; right: 10px; bottom: 10px;
+            padding: 6px 12px; border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.2); background: rgba(0,0,0,0.6);
+            color: #fff; font-size: 11px; cursor: pointer; display: none; z-index: 2;
+        }
         .ns-hidden { display: none; }
     </style>
 
@@ -195,6 +229,11 @@
             <div class="ns-step">
                 <div class="ns-step-number">3</div>
                 <span>Tecnico</span>
+            </div>
+            <div class="ns-step-line"></div>
+            <div class="ns-step">
+                <div class="ns-step-number">4</div>
+                <span>Cotizacion</span>
             </div>
         </div>
 
@@ -317,10 +356,34 @@
 
             <div class="catalog-card service-section">
                 <div class="ns-section-title">Firma Digital</div>
-                <div class="ns-signature">
+
+                <div class="ns-sig-tabs">
+                    <button type="button" class="ns-sig-tab active" id="tab-draw" onclick="switchSigMode('draw')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                        Dibujar
+                    </button>
+                    <button type="button" class="ns-sig-tab" id="tab-upload" onclick="switchSigMode('upload')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Subir imagen
+                    </button>
+                </div>
+
+                <div id="sig-draw-mode" class="ns-signature">
                     <canvas id="signaturePad"></canvas>
                     <button type="button" class="ns-signature-clear" onclick="clearSignature()">Limpiar</button>
                 </div>
+
+                <div id="sig-upload-mode" class="ns-hidden" style="position: relative;">
+                    <label class="ns-sig-upload" id="sigUploadBox">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <span class="ns-sig-label">Subir firma</span>
+                        <span class="ns-sig-hint">JPG o PNG · fondo transparente recomendado</span>
+                        <input type="file" id="sigUploadInput" accept="image/png,image/jpeg,image/jpg" onchange="loadSignatureImage(this)">
+                        <img id="sigPreview" class="ns-sig-preview" alt="">
+                    </label>
+                    <button type="button" class="ns-sig-clear-upload" id="sigClearUpload" onclick="clearUploadSignature()">Quitar</button>
+                </div>
+
                 <input type="hidden" name="firma" id="signatureInput">
             </div>
         </form>
@@ -350,6 +413,56 @@
         const canvas = document.getElementById('signaturePad');
         const ctx = canvas.getContext('2d');
         let drawing = false;
+        let sigMode = 'draw';
+        let uploadedSignature = '';
+
+        function switchSigMode(mode) {
+            sigMode = mode;
+            document.getElementById('tab-draw').classList.toggle('active', mode === 'draw');
+            document.getElementById('tab-upload').classList.toggle('active', mode === 'upload');
+            document.getElementById('sig-draw-mode').classList.toggle('ns-hidden', mode !== 'draw');
+            document.getElementById('sig-upload-mode').classList.toggle('ns-hidden', mode !== 'upload');
+            syncSignatureInput();
+        }
+
+        function syncSignatureInput() {
+            const input = document.getElementById('signatureInput');
+            if (sigMode === 'upload') {
+                input.value = uploadedSignature;
+            } else {
+                input.value = canvas.toDataURL();
+            }
+        }
+
+        function loadSignatureImage(inputEl) {
+            const file = inputEl.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                alert('La imagen es demasiado grande. Máximo 5MB.');
+                inputEl.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById('sigPreview');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                uploadedSignature = e.target.result;
+                document.getElementById('sigClearUpload').style.display = 'block';
+                syncSignatureInput();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearUploadSignature() {
+            uploadedSignature = '';
+            document.getElementById('sigUploadInput').value = '';
+            const img = document.getElementById('sigPreview');
+            img.src = '';
+            img.style.display = 'none';
+            document.getElementById('sigClearUpload').style.display = 'none';
+            syncSignatureInput();
+        }
 
         function resizeCanvas() {
             const rect = canvas.getBoundingClientRect();
@@ -404,8 +517,20 @@
             document.getElementById('signatureInput').value = '';
         }
 
-        document.getElementById('equipmentForm').addEventListener('submit', function() {
-            document.getElementById('signatureInput').value = canvas.toDataURL();
+        document.getElementById('equipmentForm').addEventListener('submit', function(e) {
+            syncSignatureInput();
+            const value = document.getElementById('signatureInput').value || '';
+            const isBlank = sigMode === 'draw' ? isBlankSignature(canvas) : !uploadedSignature;
+            if (! value || isBlank) {
+                e.preventDefault();
+                alert('Debes firmar o subir una firma antes de continuar.');
+            }
         });
+
+        function isBlankSignature(canvas) {
+            const ctx = canvas.getContext('2d');
+            const pixelBuffer = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
+            return ! pixelBuffer.some(color => color !== 0);
+        }
     </script>
 @endsection

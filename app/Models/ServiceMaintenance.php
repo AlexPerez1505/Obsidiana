@@ -38,6 +38,9 @@ class ServiceMaintenance extends Model
         'refacciones' => 'array',
         'partidas_remision' => 'array',
         'requiere_iva' => 'boolean',
+        'subtotal' => 'decimal:2',
+        'descuento' => 'decimal:2',
+        'total' => 'decimal:2',
         'proximo_mantenimiento' => 'date',
         'os_generated_at' => 'datetime',
     ];

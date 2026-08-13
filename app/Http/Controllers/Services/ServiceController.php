@@ -221,8 +221,18 @@ class ServiceController extends Controller
 
         $technicians = User::where('status', 'approved')
             ->where('is_admin', false)
+            ->whereHas('roles', fn ($q) => $q->where('name', 'tecnico'))
             ->orderBy('name')
             ->get();
+
+        $roleFallback = false;
+        if ($technicians->isEmpty()) {
+            $technicians = User::where('status', 'approved')
+                ->where('is_admin', false)
+                ->orderBy('name')
+                ->get();
+            $roleFallback = true;
+        }
 
         $servicesByTech = Service::whereIn('internal_technician_id', $technicians->pluck('id'))
             ->whereIn('status', ['registrado', 'en_progreso'])
@@ -234,6 +244,7 @@ class ServiceController extends Controller
             'customer' => $customer,
             'technicians' => $technicians,
             'servicesByTech' => $servicesByTech,
+            'roleFallback' => $roleFallback,
         ]);
     }
 
@@ -438,7 +449,35 @@ class ServiceController extends Controller
 
         $validated = $request->validate([
             'technician_id' => 'required|exists:users,id',
+            'refacciones' => 'nullable|array',
+            'refacciones.*.refaccion_id' => 'nullable|integer',
+            'refacciones.*.concepto' => 'required_with:refacciones|string|max:255',
+            'refacciones.*.cantidad' => 'required_with:refacciones|numeric|min:0',
+            'refacciones.*.precio' => 'required_with:refacciones|numeric|min:0',
+            'costo_envio' => 'nullable|numeric|min:0',
+            'descuento' => 'nullable|numeric|min:0',
+            'aplica_iva' => 'nullable|boolean',
         ]);
+
+        $refacciones = collect($validated['refacciones'] ?? [])
+            ->filter(fn ($r) => ! empty($r['concepto']))
+            ->map(fn ($r) => [
+                'refaccion_id' => $r['refaccion_id'] ?? null,
+                'concepto' => $r['concepto'],
+                'cantidad' => (float) ($r['cantidad'] ?? 0),
+                'precio' => (float) ($r['precio'] ?? 0),
+                'total' => (float) ($r['cantidad'] ?? 0) * (float) ($r['precio'] ?? 0),
+            ])
+            ->values()
+            ->all();
+
+        $subtotal = collect($refacciones)->sum('total');
+        $envio = (float) ($validated['costo_envio'] ?? 0);
+        $descuento = (float) ($validated['descuento'] ?? 0);
+        $aplicaIva = (bool) ($validated['aplica_iva'] ?? false);
+        $base = max(0, $subtotal + $envio - $descuento);
+        $iva = $aplicaIva ? $base * 0.16 : 0;
+        $total = $base + $iva;
 
         $service = Service::create([
             'service_number' => null,
@@ -470,6 +509,19 @@ class ServiceController extends Controller
             'video_path' => $equipment['video_path'] ?? null,
         ]);
 
+        ServiceMaintenance::create([
+            'service_id' => $service->id,
+            'tipo_mantenimiento' => 'interno',
+            'internal_technician_id' => $validated['technician_id'],
+            'refacciones' => $refacciones,
+            'envio' => $envio,
+            'anticipo' => 0,
+            'requiere_iva' => $aplicaIva,
+            'subtotal' => $subtotal,
+            'descuento' => $descuento,
+            'total' => $total,
+        ]);
+
         $approvalStep = ServiceStep::firstOrCreate(
             ['service_type' => 'interno', 'slug' => 'aprobacion-interna'],
             [
@@ -494,7 +546,7 @@ class ServiceController extends Controller
 
         session()->forget('service_new');
 
-        return redirect()->route('gestion.servicios.nuevo.interno.resumen', $service)->withInput();
+        return redirect()->route('gestion.servicios.nuevo.interno.resumen', $service);
     }
 
     public function showSummary(Service $service)
@@ -511,7 +563,7 @@ class ServiceController extends Controller
 
     public function showInternalSummary(Service $service)
     {
-        $service->load(['customer', 'externalTechnician', 'serviceEquipment']);
+        $service->load(['customer', 'internalTechnician', 'serviceEquipment', 'maintenance']);
 
         return view('structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario.resumen', [
             'service' => $service,
