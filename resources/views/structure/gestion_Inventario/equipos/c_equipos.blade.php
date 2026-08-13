@@ -239,14 +239,14 @@
                     </div>
                     <div class="equipment-field">
                         <label for="subcategory">Subtipo *</label>
-                        <select class="equipment-input equipment-select" id="subcategory" name="subcategory" data-selected="{{ old('subcategory', $equipmentData['subcategory']) }}" disabled required>
-                            <option value="">Seleccionar tipo primero</option>
+                        <select class="equipment-input equipment-select" id="subcategory" name="subcategory" data-selected="{{ old('subcategory', $equipmentData['subcategory']) }}" required>
+                            <option value="">Seleccionar</option>
                         </select>
                     </div>
                     <div class="equipment-field">
                         <label for="model">Modelo *</label>
-                        <select class="equipment-input equipment-select" id="model" name="model" data-selected="{{ old('model', $equipmentData['model']) }}" disabled required>
-                            <option value="">Seleccionar marca primero</option>
+                        <select class="equipment-input equipment-select" id="model" name="model" data-selected="{{ old('model', $equipmentData['model']) }}" required>
+                            <option value="">Seleccionar</option>
                         </select>
                     </div>
                     <div class="equipment-field" style="grid-column:1 / -1;">
@@ -327,60 +327,31 @@
             }
         }
 
-        function bindCascade(config) {
-            const parent = document.getElementById(config.parentId);
-            const child = document.getElementById(config.childId);
+        function bindCatalogSelect(config) {
+            const select = document.getElementById(config.selectId);
             const catalog = config.catalog;
+            if (!select) return;
 
-            if (!parent || !child) return;
-
-            function renderParent() {
-                fillSelect(parent, Object.keys(catalog), 'Seleccionar', config.addParentLabel);
+            function render(options) {
+                fillSelect(select, options, 'Seleccionar', config.addLabel);
             }
 
-            function renderChild() {
-                const hasParent = parent.value !== '' && parent.value !== NEW_OPTION;
-                const options = hasParent ? (catalog[parent.value] || []) : [];
-                fillSelect(child, options, hasParent ? 'Seleccionar' : config.emptyPlaceholder, hasParent ? config.addChildLabel : null);
-                child.disabled = !hasParent;
-            }
-
-            parent.addEventListener('change', function () {
-                if (parent.value === NEW_OPTION) {
-                    openCatalogModal(config.promptParent, 'Ingresa el nombre y presiona Aceptar.', function (name) {
+            select.addEventListener('change', function () {
+                if (select.value === NEW_OPTION) {
+                    openCatalogModal(config.prompt, 'Ingresa el nombre y presiona Aceptar.', function (name) {
                         name = (name || '').trim();
-                        if (name && !catalog[name]) catalog[name] = [];
-                        parent.dataset.selected = name && catalog[name] ? name : '';
-                        child.dataset.selected = '';
-                        renderParent();
-                        renderChild();
-                    });
-                } else {
-                    parent.dataset.selected = parent.value;
-                    child.dataset.selected = '';
-                    renderChild();
-                }
-            });
-
-            child.addEventListener('change', function () {
-                if (child.value === NEW_OPTION) {
-                    openCatalogModal(config.promptChild, 'Ingresa el nombre y presiona Aceptar.', function (name) {
-                        name = (name || '').trim();
-                        const options = catalog[parent.value] || [];
-                        if (name && !options.includes(name)) {
-                            options.push(name);
-                            catalog[parent.value] = options;
+                        if (name && !catalog.includes(name)) {
+                            catalog.push(name);
                         }
-                        child.dataset.selected = name && options.includes(name) ? name : '';
-                        renderChild();
+                        select.dataset.selected = name && catalog.includes(name) ? name : '';
+                        render(catalog);
                     });
                 } else {
-                    child.dataset.selected = child.value;
+                    select.dataset.selected = select.value;
                 }
             });
 
-            renderParent();
-            renderChild();
+            render(catalog);
         }
 
         let catalogModalResolve = null;
@@ -415,26 +386,35 @@
             if (e.key === 'Enter') closeCatalogModal(true);
         });
 
-        bindCascade({
-            parentId: 'category',
-            childId: 'subcategory',
-            catalog: categoryCatalog,
-            emptyPlaceholder: 'Seleccionar tipo primero',
-            addParentLabel: '+ Agregar nuevo tipo...',
-            addChildLabel: '+ Agregar nuevo subtipo...',
-            promptParent: 'Nombre del nuevo tipo de equipo:',
-            promptChild: 'Nombre del nuevo subtipo:'
+        const allSubtypes = Object.values(categoryCatalog).flat();
+        const allModels = Object.values(brandCatalog).flat();
+
+        bindCatalogSelect({
+            selectId: 'category',
+            catalog: Object.keys(categoryCatalog),
+            addLabel: '+ Agregar nuevo tipo...',
+            prompt: 'Nombre del nuevo tipo de equipo:'
         });
 
-        bindCascade({
-            parentId: 'brand',
-            childId: 'model',
-            catalog: brandCatalog,
-            emptyPlaceholder: 'Seleccionar marca primero',
-            addParentLabel: '+ Agregar nueva marca...',
-            addChildLabel: '+ Agregar nuevo modelo...',
-            promptParent: 'Nombre de la nueva marca:',
-            promptChild: 'Nombre del nuevo modelo:'
+        bindCatalogSelect({
+            selectId: 'brand',
+            catalog: Object.keys(brandCatalog),
+            addLabel: '+ Agregar nueva marca...',
+            prompt: 'Nombre de la nueva marca:'
+        });
+
+        bindCatalogSelect({
+            selectId: 'subcategory',
+            catalog: allSubtypes,
+            addLabel: '+ Agregar nuevo subtipo...',
+            prompt: 'Nombre del nuevo subtipo:'
+        });
+
+        bindCatalogSelect({
+            selectId: 'model',
+            catalog: allModels,
+            addLabel: '+ Agregar nuevo modelo...',
+            prompt: 'Nombre del nuevo modelo:'
         });
 
         const baseSerialPreview = document.getElementById('base_serial_preview');
