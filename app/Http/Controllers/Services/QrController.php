@@ -76,14 +76,23 @@ class QrController extends Controller
             ->first();
 
         if ($nextStep) {
-            ServiceTracking::create([
+            $verificationCode = $nextStep->slug === 'notificacion-llegada-tecnico'
+                ? str_pad(random_int(0, 9999), 4, '0', STR_PAD_LEFT)
+                : null;
+
+            $nextTracking = ServiceTracking::firstOrNew([
                 'service_id' => $service->id,
                 'service_step_id' => $nextStep->id,
-                'status' => 'pendiente',
-                'qr_token' => $nextStep->requires_qr ? $this->generateQrToken() : null,
-                'qr_expires_at' => $nextStep->requires_qr ? now()->addDay() : null,
-                'started_at' => now(),
             ]);
+            $nextTracking->fill([
+                'status' => 'pendiente',
+                'qr_token' => $nextTracking->exists && $nextTracking->qr_token ? $nextTracking->qr_token : ($nextStep->requires_qr ? $this->generateQrToken() : null),
+                'qr_expires_at' => $nextTracking->exists && $nextTracking->qr_expires_at ? $nextTracking->qr_expires_at : ($nextStep->requires_qr ? now()->addDay() : null),
+                'verification_code' => $nextTracking->exists && $nextTracking->verification_code ? $nextTracking->verification_code : $verificationCode,
+                'started_at' => $nextTracking->exists ? $nextTracking->started_at : now(),
+                'finished_at' => null,
+            ]);
+            $nextTracking->save();
 
             $service->update(['current_step_id' => $nextStep->id]);
         } else {
@@ -132,13 +141,16 @@ class QrController extends Controller
             ->first();
 
         while ($nextStep && $nextStep->slug === 'notificacion-envio-servicio') {
-            ServiceTracking::create([
+            $existing = ServiceTracking::firstOrNew([
                 'service_id' => $service->id,
                 'service_step_id' => $nextStep->id,
+            ]);
+            $existing->fill([
                 'status' => 'completado',
-                'started_at' => now(),
+                'started_at' => $existing->exists ? $existing->started_at : now(),
                 'finished_at' => now(),
             ]);
+            $existing->save();
 
             $nextStep = ServiceStep::where('service_type', $service->service_type)
                 ->where('order', '>', $nextStep->order)
@@ -147,14 +159,23 @@ class QrController extends Controller
         }
 
         if ($nextStep) {
-            ServiceTracking::create([
+            $verificationCode = $nextStep->slug === 'notificacion-llegada-tecnico'
+                ? str_pad(random_int(0, 9999), 4, '0', STR_PAD_LEFT)
+                : null;
+
+            $nextTracking = ServiceTracking::firstOrNew([
                 'service_id' => $service->id,
                 'service_step_id' => $nextStep->id,
-                'status' => 'pendiente',
-                'qr_token' => $nextStep->requires_qr ? $this->generateQrToken() : null,
-                'qr_expires_at' => $nextStep->requires_qr ? now()->addDay() : null,
-                'started_at' => now(),
             ]);
+            $nextTracking->fill([
+                'status' => 'pendiente',
+                'qr_token' => $nextTracking->exists && $nextTracking->qr_token ? $nextTracking->qr_token : ($nextStep->requires_qr ? $this->generateQrToken() : null),
+                'qr_expires_at' => $nextTracking->exists && $nextTracking->qr_expires_at ? $nextTracking->qr_expires_at : ($nextStep->requires_qr ? now()->addDay() : null),
+                'verification_code' => $nextTracking->exists && $nextTracking->verification_code ? $nextTracking->verification_code : $verificationCode,
+                'started_at' => $nextTracking->exists ? $nextTracking->started_at : now(),
+                'finished_at' => null,
+            ]);
+            $nextTracking->save();
 
             $service->update(['current_step_id' => $nextStep->id]);
         } else {
