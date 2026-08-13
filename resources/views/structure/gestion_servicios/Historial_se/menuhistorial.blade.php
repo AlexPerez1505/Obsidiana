@@ -10,7 +10,7 @@
             justify-content: space-between;
             gap: 16px;
             flex-wrap: wrap;
-            margin-bottom: 24px;
+            margin-bottom: 0;
         }
         .service-page-header .title-group h2 {
             margin: 0;
@@ -46,11 +46,11 @@
         }
         .service-btn:hover { transform: translateY(-1px); }
         .service-btn--green {
-            background: #22C55E;
+            background: #1677ff;
             color: #fff;
-            box-shadow: 0 0 16px rgba(34,197,94,0.35);
+            box-shadow: 0 0 16px rgba(22,119,255, 0.7);
         }
-        .service-btn--green:hover { background: #16A34A; box-shadow: 0 0 22px rgba(34,197,94,0.5); }
+        .service-btn--green:hover { background: #0e5ce0; box-shadow: 0 0 22px rgba(22,119,255, 0.85); }
         .service-btn--blue {
             background: linear-gradient(135deg, #007AFF, #6366F1);
             color: #fff;
@@ -58,6 +58,31 @@
         }
         .service-btn--blue:hover { background: linear-gradient(135deg, #005FCC, #4F46E5); box-shadow: 0 0 22px rgba(0,122,255,0.5); }
         .service-btn svg { width: 18px; height: 18px; }
+        .service-tabs {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+            border-bottom: 1px solid rgba(22, 119, 255, 0.6);
+        }
+        .service-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 18px;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color .16s ease, border-color .16s ease;
+        }
+        .service-tab:hover { color: #fff; }
+        .service-tab.active { color: #1677ff; border-bottom-color: #1677ff; }
+        .service-tab svg { width: 18px; height: 18px; }
+        :root[data-theme="light"] .service-tab { color: var(--muted); }
+        :root[data-theme="light"] .service-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
         .service-table-empty {
             padding: 36px 14px;
             text-align: center;
@@ -65,13 +90,95 @@
             font-size: 14px;
         }
         :root[data-theme="light"] .service-table-empty { color: var(--muted); }
+
+        /* ===== Volumen visual: elevation y glow ===== */
+        .service-page-header {
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(22, 119, 255, 0.45);
+        }
+
+        .service-btn {
+            box-shadow:
+                0 8px 22px rgba(31, 105, 255, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+        .service-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .service-btn--green, .service-btn--blue {
+            transition: all 0.2s ease;
+        }
+        .service-btn--green {
+            background: linear-gradient(135deg, #1677ff, #3b8cff);
+            box-shadow:
+                0 8px 22px rgba(31, 105, 255, 0.25),
+                0 0 18px rgba(22, 119, 255, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.10);
+        }
+        .service-btn--green:hover {
+            background: linear-gradient(135deg, #0e5ce0, #2a75ff);
+            box-shadow:
+                0 10px 28px rgba(31, 105, 255, 0.40),
+                0 0 24px rgba(22, 119, 255, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        }
+        .service-btn--blue {
+            background: linear-gradient(135deg, #1677ff, #635bff);
+            box-shadow:
+                0 8px 22px rgba(99, 91, 255, 0.6),
+                0 0 18px rgba(99, 91, 255, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.10);
+        }
+        .service-btn--blue:hover {
+            background: linear-gradient(135deg, #0e5ce0, #4f46e5);
+            box-shadow:
+                0 10px 28px rgba(99, 91, 255, 0.75),
+                0 0 24px rgba(99, 91, 255, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        }
+
+        .service-tabs {
+            background: rgba(5, 11, 24, 0.55);
+            border: 1px solid rgba(22, 119, 255, 0.47);
+            border-radius: 14px;
+            padding: 5px;
+            gap: 6px;
+            margin-top: 12px;
+            box-shadow:
+                inset 0 1px 3px rgba(0, 0, 0, 0.35),
+                0 6px 16px rgba(0, 0, 0, 0.25);
+        }
+        .service-tab {
+            flex: 1;
+            justify-content: center;
+            border-bottom: none;
+            border-radius: 10px;
+            padding: 12px 16px;
+            background: transparent;
+            transition: all .16s ease;
+            box-shadow: none;
+        }
+        .service-tab:hover {
+            background: rgba(22, 119, 255, 0.43);
+            color: #fff;
+        }
+        .service-tab.active {
+            color: #fff;
+            background: linear-gradient(135deg, rgba(22, 119, 255, 0.57), rgba(99, 91, 255, 0.51));
+            border: 1px solid rgba(30, 125, 255, 0.9);
+            box-shadow:
+                0 0 20px rgba(30, 125, 255, 0.47),
+                0 10px 35px rgba(0, 0, 0, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
     </style>
 
     <div class="catalog-card service-section">
         <div class="service-page-header">
             <div class="title-group">
                 <h2>Historial de Servicios</h2>
-                <p>Registro y seguimiento de Nuevo servicio.</p>
+                <p>Consulta y da seguimiento a los servicios realizados.</p>
             </div>
             <div class="service-page-actions">
                 <a href="{{ route('gestion.servicios.aprobaciones') }}" class="service-btn service-btn--green">
@@ -83,6 +190,21 @@
                     Nuevo Servicio
                 </a>
             </div>
+        </div>
+
+        <div class="service-tabs">
+            <button type="button" class="service-tab active" data-type="all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM3 9h18M9 21V9"/></svg>
+                Todos
+            </button>
+            <button type="button" class="service-tab" data-type="interno">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Servicio Interno
+            </button>
+            <button type="button" class="service-tab" data-type="externo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Servicio Externo
+            </button>
         </div>
     </div>
 
@@ -106,7 +228,7 @@
                             $customerName = trim(($service->customer->nombre ?? '') . ' ' . ($service->customer->apellido ?? ''));
                             $techName = trim(($service->externalTechnician->nombre ?? '') . ' ' . ($service->externalTechnician->apellidos ?? ''));
                         @endphp
-                        <tr>
+                        <tr data-type="{{ $service->service_type }}">
                             <td>{{ $service->service_number ?? 'N/A' }}</td>
                             <td>{{ $customerName ?: 'N/A' }}</td>
                             <td>{{ $techName ?: 'N/A' }}</td>
@@ -131,4 +253,23 @@
             </table>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabs = document.querySelectorAll('.service-tab');
+            const rows = document.querySelectorAll('.service-table tbody tr[data-type]');
+
+            tabs.forEach(function (tab) {
+                tab.addEventListener('click', function () {
+                    tabs.forEach(function (t) { t.classList.remove('active'); });
+                    tab.classList.add('active');
+
+                    const type = tab.dataset.type;
+                    rows.forEach(function (row) {
+                        row.style.display = (type === 'all' || row.dataset.type === type) ? '' : 'none';
+                    });
+                });
+            });
+        });
+    </script>
 @endsection
