@@ -15,6 +15,13 @@ class ServiceMaintenance extends Model
         'descripcion',
         'fallas_encontradas',
         'refacciones',
+        'partidas_remision',
+        'envio',
+        'anticipo',
+        'requiere_iva',
+        'descripcion_general',
+        'os_pdf_path',
+        'os_generated_at',
         'evidencia_1',
         'evidencia_2',
         'evidencia_3',
@@ -25,7 +32,10 @@ class ServiceMaintenance extends Model
     protected $casts = [
         'checklist' => 'array',
         'refacciones' => 'array',
+        'partidas_remision' => 'array',
+        'requiere_iva' => 'boolean',
         'proximo_mantenimiento' => 'date',
+        'os_generated_at' => 'datetime',
     ];
 
     public function service()

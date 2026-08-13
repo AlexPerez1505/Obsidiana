@@ -64,6 +64,9 @@
                 <h2>Aprobaciones</h2>
                 <p>Servicios pendientes y aprobados por autoridades.</p>
             </div>
+            <a href="{{ route('gestion.servicios.validaciones.os') }}" class="catalog-create" style="width:auto; padding: 9px 16px; margin:0;">
+                Validaciones OS
+            </a>
         </div>
 
         <div class="service-table-wrap">

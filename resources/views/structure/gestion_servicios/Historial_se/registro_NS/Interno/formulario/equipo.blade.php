@@ -145,33 +145,6 @@
             color: #fff; font-size: 11px; cursor: pointer;
         }
         .ns-hidden { display: none; }
-
-        .ns-combo { position: relative; }
-        .ns-combo input { padding-right: 40px !important; }
-        .ns-combo-toggle {
-            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-            width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
-            border: 0; background: transparent; color: rgba(255,255,255,0.55); cursor: pointer; padding: 0;
-        }
-        .ns-combo-toggle:hover { color: #007AFF; }
-        .ns-combo-list {
-            position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 50;
-            display: none; flex-direction: column; gap: 2px;
-            max-height: 260px; overflow-y: auto;
-            background: #0b1a35; border: 1px solid rgba(34,197,94,0.55); border-radius: 10px;
-            padding: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-        }
-        .ns-combo-list.open { display: flex; }
-        .ns-combo-item {
-            border: 0; background: transparent; color: #fff; text-align: left;
-            padding: 8px 10px; border-radius: 6px; font-size: 14px; cursor: pointer;
-        }
-        .ns-combo-item:hover, .ns-combo-item.active { background: rgba(34,197,94,0.14); }
-        :root[data-theme="light"] .ns-combo-toggle { color: #334155; }
-        :root[data-theme="light"] .ns-combo-toggle:hover { color: #007AFF; }
-        :root[data-theme="light"] .ns-combo-list { background: #fff; border-color: rgba(15,23,42,0.14); box-shadow: 0 8px 24px rgba(15,23,42,0.18); }
-        :root[data-theme="light"] .ns-combo-item { color: #0f172a; }
-        :root[data-theme="light"] .ns-combo-item:hover, :root[data-theme="light"] .ns-combo-item.active { background: rgba(0,122,255,0.08); }
     </style>
 
     @php
@@ -195,7 +168,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     Cancelar e iniciar
                 </a>
-                <a href="{{ route('gestion.servicios.nuevo.externo') }}" class="ns-btn ns-btn--ghost">
+                <a href="{{ route('gestion.servicios.nuevo.interno') }}" class="ns-btn ns-btn--ghost">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                     Regresar
                 </a>
@@ -239,7 +212,7 @@
             </div>
         </div>
 
-        <form id="equipmentForm" method="POST" action="{{ route('gestion.servicios.nuevo.externo.equipo.store') }}" enctype="multipart/form-data">
+        <form id="equipmentForm" method="POST" action="{{ route('gestion.servicios.nuevo.interno.equipo.store') }}" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="customer_id" value="{{ $customer->id }}">
 
@@ -253,63 +226,43 @@
                 <div class="ns-form-grid">
                     <div class="ns-field">
                         <label>Tipo de equipo</label>
-                        <div class="ns-combo" data-combo>
-                            <input type="text" name="tipo_equipo" value="{{ old('tipo_equipo') }}" placeholder="Ej. Equipo médico" autocomplete="off">
-                            <button type="button" class="ns-combo-toggle" aria-label="Mostrar opciones">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                            </button>
-                            <div class="ns-combo-list">
-                                @foreach ($equipmentTypes as $type)
-                                    <button type="button" class="ns-combo-item" data-value="{{ $type->name }}">{{ $type->name }}</button>
-                                @endforeach
-                            </div>
-                        </div>
+                        <select name="tipo_equipo">
+                            <option value="">Ej. Equipo médico</option>
+                            @foreach ($equipmentTypes as $type)
+                                <option value="{{ $type->name }}">{{ $type->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="ns-field">
                         <label>Subtipo</label>
-                        <div class="ns-combo" data-combo>
-                            <input type="text" name="subtipo" value="{{ old('subtipo') }}" placeholder="Ej. Monitor de signos vitales" autocomplete="off">
-                            <button type="button" class="ns-combo-toggle" aria-label="Mostrar opciones">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                            </button>
-                            <div class="ns-combo-list">
-                                @foreach ($subtypes as $subtype)
-                                    <button type="button" class="ns-combo-item" data-value="{{ $subtype->name }}">{{ $subtype->name }}</button>
-                                @endforeach
-                            </div>
-                        </div>
+                        <select name="subtipo">
+                            <option value="">Ej. Monitor de signos vitales</option>
+                            @foreach ($subtypes as $subtype)
+                                <option value="{{ $subtype->name }}">{{ $subtype->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="ns-field">
                         <label>Marca</label>
-                        <div class="ns-combo" data-combo>
-                            <input type="text" name="marca" value="{{ old('marca') }}" placeholder="Ej. Olympus" autocomplete="off">
-                            <button type="button" class="ns-combo-toggle" aria-label="Mostrar opciones">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                            </button>
-                            <div class="ns-combo-list">
-                                @foreach ($brands as $brand)
-                                    <button type="button" class="ns-combo-item" data-value="{{ $brand->name }}">{{ $brand->name }}</button>
-                                @endforeach
-                            </div>
-                        </div>
+                        <select name="marca">
+                            <option value="">Ej. Olympus</option>
+                            @foreach ($brands as $brand)
+                                <option value="{{ $brand->name }}">{{ $brand->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="ns-field">
                         <label>Modelo</label>
-                        <div class="ns-combo" data-combo>
-                            <input type="text" name="modelo" value="{{ old('modelo') }}" placeholder="Ej. C-90" autocomplete="off">
-                            <button type="button" class="ns-combo-toggle" aria-label="Mostrar opciones">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                            </button>
-                            <div class="ns-combo-list">
-                                @foreach ($models as $model)
-                                    <button type="button" class="ns-combo-item" data-value="{{ $model->name }}">{{ $model->name }}</button>
-                                @endforeach
-                            </div>
-                        </div>
+                        <select name="modelo">
+                            <option value="">Ej. C-90</option>
+                            @foreach ($models as $model)
+                                <option value="{{ $model->name }}">{{ $model->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="ns-field">
                         <label>Numero de serie</label>
-                        <input type="text" name="serie" value="{{ old('serie') }}" placeholder="Ej. SN-893-832">
+                        <input type="text" name="serie" placeholder="Ej. SN-893-832">
                     </div>
                 </div>
 
@@ -453,61 +406,6 @@
 
         document.getElementById('equipmentForm').addEventListener('submit', function() {
             document.getElementById('signatureInput').value = canvas.toDataURL();
-        });
-
-        document.querySelectorAll('[data-combo]').forEach(function (combo) {
-            const input = combo.querySelector('input[type="text"]');
-            const list = combo.querySelector('.ns-combo-list');
-            const toggle = combo.querySelector('.ns-combo-toggle');
-            const items = Array.from(list.querySelectorAll('.ns-combo-item'));
-
-            const normalize = function (value) {
-                return (value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            };
-
-            const filter = function () {
-                const query = normalize(input.value);
-                let count = 0;
-                items.forEach(function (item) {
-                    const show = !query || normalize(item.dataset.value).includes(query);
-                    item.style.display = show ? 'block' : 'none';
-                    item.classList.remove('active');
-                    if (show) count++;
-                });
-                return count;
-            };
-
-            const open = function () {
-                if (filter() > 0) list.classList.add('open');
-            };
-
-            const close = function () {
-                list.classList.remove('open');
-            };
-
-            input.addEventListener('focus', open);
-            input.addEventListener('input', open);
-            toggle.addEventListener('click', function (e) {
-                e.preventDefault();
-                if (list.classList.contains('open')) {
-                    close();
-                } else {
-                    input.focus();
-                    open();
-                }
-            });
-            list.addEventListener('click', function (e) {
-                const item = e.target.closest('.ns-combo-item');
-                if (!item) return;
-                input.value = item.dataset.value;
-                close();
-            });
-            document.addEventListener('click', function (e) {
-                if (!combo.contains(e.target)) close();
-            });
-            input.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') close();
-            });
         });
     </script>
 @endsection

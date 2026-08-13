@@ -19,6 +19,9 @@ Route::middleware(['auth', 'verified', 'approved', 'admin'])
         Route::get('/aprobaciones', [ServiceController::class, 'pendingApprovals'])
             ->name('gestion.servicios.aprobaciones');
 
+        Route::get('/validaciones-os', [ServiceController::class, 'osValidations'])
+            ->name('gestion.servicios.validaciones.os');
+
         Route::post('/seguimiento/{tracking}/aprobar', [ServiceController::class, 'approveService'])
             ->name('gestion.servicios.tracking.aprobar');
     });
@@ -28,4 +31,9 @@ Route::middleware(['auth', 'verified', 'approved'])
     ->group(function () {
         Route::get('/mantenimiento', [ServiceController::class, 'maintenanceOrders'])
             ->name('gestion.servicios.mantenimiento');
+
+        Route::get('/mantenimiento/{service}/os', [ServiceController::class, 'osForm'])
+            ->name('gestion.servicios.os.form');
+        Route::post('/mantenimiento/{service}/os', [ServiceController::class, 'storeOs'])
+            ->name('gestion.servicios.os.store');
     });
