@@ -227,15 +227,11 @@
                 <div class="rgrid-2">
                     <div class="equipment-field">
                         <label for="category">Tipo de equipo *</label>
-                        <select class="equipment-input equipment-select" id="category" name="category" data-selected="{{ old('category', $equipmentData['category']) }}" required>
-                            <option value="">Seleccionar</option>
-                        </select>
+                        <input class="equipment-input" id="category" name="category" value="{{ old('category', $equipmentData['category']) }}" type="text" placeholder="Ingresa o agrega un tipo" autocomplete="off" required>
                     </div>
                     <div class="equipment-field">
                         <label for="brand">Marca *</label>
-                        <select class="equipment-input equipment-select" id="brand" name="brand" data-selected="{{ old('brand', $equipmentData['brand']) }}" required>
-                            <option value="">Seleccionar</option>
-                        </select>
+                        <input class="equipment-input" id="brand" name="brand" value="{{ old('brand', $equipmentData['brand']) }}" type="text" placeholder="Ingresa o agrega una marca" autocomplete="off" required>
                     </div>
                     <div class="equipment-field">
                         <label for="subcategory">Subtipo *</label>
@@ -293,100 +289,6 @@
     <script>
         const equipmentImagePreview = document.getElementById('equipmentImagePreview');
         const equipmentImageInput = document.getElementById('equipment_image');
-
-        const categoryCatalog = @json($catalogs['types']);
-        const brandCatalog = @json($catalogs['brands']);
-        const NEW_OPTION = '__new__';
-
-        function fillSelect(select, options, placeholder, addLabel) {
-            const selected = select.dataset.selected || '';
-            select.innerHTML = '';
-
-            const first = document.createElement('option');
-            first.value = '';
-            first.textContent = placeholder;
-            select.appendChild(first);
-
-            options.forEach(function (value) {
-                const option = document.createElement('option');
-                option.value = value;
-                option.textContent = value;
-                option.selected = value === selected;
-                select.appendChild(option);
-            });
-
-            if (addLabel) {
-                const addOption = document.createElement('option');
-                addOption.value = NEW_OPTION;
-                addOption.textContent = addLabel;
-                select.appendChild(addOption);
-            }
-        }
-
-        let catalogModalResolve = null;
-        const catalogModal = document.getElementById('catalogModal');
-        const catalogModalTitle = document.getElementById('catalogModalTitle');
-        const catalogModalText = document.getElementById('catalogModalText');
-        const catalogModalInput = document.getElementById('catalogModalInput');
-
-        function openCatalogModal(title, text, callback) {
-            catalogModalTitle.textContent = title;
-            catalogModalText.textContent = text;
-            catalogModalInput.value = '';
-            catalogModalResolve = callback;
-            catalogModal.style.display = 'block';
-            catalogModalInput.focus();
-        }
-
-        function closeCatalogModal(accepted) {
-            catalogModal.style.display = 'none';
-            if (catalogModalResolve) {
-                catalogModalResolve(accepted ? catalogModalInput.value : null);
-                catalogModalResolve = null;
-            }
-        }
-
-        document.getElementById('catalogModalAccept').addEventListener('click', function () { closeCatalogModal(true); });
-        document.getElementById('catalogModalCancel').addEventListener('click', function () { closeCatalogModal(false); });
-        catalogModal.querySelector('.catalog-modal__overlay').addEventListener('click', function (e) {
-            if (e.target === e.currentTarget) closeCatalogModal(false);
-        });
-        catalogModalInput.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') closeCatalogModal(true);
-        });
-
-        const categorySelect = document.getElementById('category');
-        const brandSelect = document.getElementById('brand');
-
-        fillSelect(categorySelect, Object.keys(categoryCatalog), 'Seleccionar', '+ Agregar nuevo tipo...');
-        fillSelect(brandSelect, Object.keys(brandCatalog), 'Seleccionar', '+ Agregar nueva marca...');
-
-        categorySelect.addEventListener('change', function () {
-            if (categorySelect.value === NEW_OPTION) {
-                openCatalogModal('Nombre del nuevo tipo de equipo:', 'Ingresa el nombre y presiona Aceptar.', function (name) {
-                    name = (name || '').trim();
-                    if (name && !categoryCatalog[name]) categoryCatalog[name] = [];
-                    categorySelect.dataset.selected = name && categoryCatalog[name] ? name : '';
-                    fillSelect(categorySelect, Object.keys(categoryCatalog), 'Seleccionar', '+ Agregar nuevo tipo...');
-                });
-            } else {
-                categorySelect.dataset.selected = categorySelect.value;
-            }
-        });
-
-        brandSelect.addEventListener('change', function () {
-            if (brandSelect.value === NEW_OPTION) {
-                openCatalogModal('Nombre de la nueva marca:', 'Ingresa el nombre y presiona Aceptar.', function (name) {
-                    name = (name || '').trim();
-                    if (name && !brandCatalog[name]) brandCatalog[name] = [];
-                    brandSelect.dataset.selected = name && brandCatalog[name] ? name : '';
-                    fillSelect(brandSelect, Object.keys(brandCatalog), 'Seleccionar', '+ Agregar nueva marca...');
-                });
-            } else {
-                brandSelect.dataset.selected = brandSelect.value;
-            }
-        });
-
         const baseSerialPreview = document.getElementById('base_serial_preview');
 
         function updateBaseSerial() {
