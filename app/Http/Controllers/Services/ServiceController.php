@@ -124,6 +124,25 @@ class ServiceController extends Controller
             'firma' => 'nullable|string',
         ]);
 
+        if (! empty($validated['tipo_equipo'])) {
+            $type = EquipmentType::firstOrCreate(['name' => trim($validated['tipo_equipo'])]);
+        }
+        if (! empty($validated['subtipo']) && isset($type)) {
+            Subtype::firstOrCreate([
+                'equipment_type_id' => $type->id,
+                'name' => trim($validated['subtipo']),
+            ]);
+        }
+        if (! empty($validated['marca'])) {
+            $brand = Brand::firstOrCreate(['name' => trim($validated['marca'])]);
+        }
+        if (! empty($validated['modelo']) && isset($brand)) {
+            EquipmentModel::firstOrCreate([
+                'brand_id' => $brand->id,
+                'name' => trim($validated['modelo']),
+            ]);
+        }
+
         $validated['evidencia_1_path'] = $this->storeEvidence($request->file('evidencia_1'));
         $validated['evidencia_2_path'] = $this->storeEvidence($request->file('evidencia_2'));
         $validated['evidencia_3_path'] = $this->storeEvidence($request->file('evidencia_3'));
