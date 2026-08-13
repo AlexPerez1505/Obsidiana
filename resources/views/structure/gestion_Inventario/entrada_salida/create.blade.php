@@ -115,7 +115,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('inventory.movimientos.store') }}" class="movement-form">
+    <form method="POST" action="{{ route('inventory.movimientos.store') }}" class="movement-form" enctype="multipart/form-data">
         @csrf
 
         <div class="form-section">
@@ -309,6 +309,16 @@
                             <option value="Express" @selected(old('metadata.salida.envio.prioridad') == 'Express')>Express</option>
                         </select>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Evidencias fotograficas</h3>
+            <div class="form-grid">
+                <div class="form-field" style="grid-column: 1 / -1;">
+                    <label for="evidencias">Subir imagenes (puedes seleccionar varias)</label>
+                    <input id="evidencias" type="file" name="evidencias[]" accept="image/*" multiple style="padding:6px 0;">
                 </div>
             </div>
         </div>

@@ -421,6 +421,20 @@
                                                 <p style="margin: 4px 0;">{{ $movement['metadata']['notas'] ?? 'Sin detalles adicionales' }}</p>
                                             </div>
                                         @endif
+                                        <div>
+                                            <strong style="color: #111827;">Evidencias</strong>
+                                            @if(!empty($movement['metadata']['evidencias']))
+                                                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;">
+                                                    @foreach($movement['metadata']['evidencias'] as $evidencia)
+                                                        <a href="{{ asset('storage/' . $evidencia) }}" target="_blank" style="display:inline-block;">
+                                                            <img src="{{ asset('storage/' . $evidencia) }}" alt="Evidencia" style="width:80px; height:60px; object-fit:cover; border-radius:4px; border:1px solid #cbd5e1;">
+                                                        </a>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <p style="margin: 4px 0;">Sin imagenes</p>
+                                            @endif
+                                        </div>
                                     </div>
                                 </td>
                             </tr>

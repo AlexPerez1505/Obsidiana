@@ -132,6 +132,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             'supplier' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'metadata' => ['nullable', 'array'],
+            'evidencias' => ['nullable', 'array'],
+            'evidencias.*' => ['image', 'max:5120'],
         ]);
 
         $producto = \App\Models\Producto::findOrFail($validated['producto_id']);
@@ -141,6 +143,14 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             'transferencia' => 'TR',
         };
         $folio = $prefix . '-' . now()->format('YmdHisu');
+
+        $metadata = $validated['metadata'] ?? [];
+        if ($request->hasFile('evidencias')) {
+            $metadata['evidencias'] = array_map(
+                fn ($file) => $file->store('movimientos', 'public'),
+                $request->file('evidencias')
+            );
+        }
 
         \App\Models\InventoryMovement::create([
             'folio' => $folio,
@@ -156,7 +166,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             'supplier' => $validated['supplier'],
             'movement_date' => $validated['movement_date'],
             'notes' => $validated['notes'],
-            'metadata' => $validated['metadata'] ?? [],
+            'metadata' => $metadata,
             'created_by' => auth()->id(),
         ]);
 
