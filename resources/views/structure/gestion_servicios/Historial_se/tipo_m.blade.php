@@ -7,12 +7,13 @@
         .type-page {
             max-width: 720px;
             margin: 0 auto;
+            padding: 24px 0 40px;
         }
         .type-page-header {
             display: flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 26px;
+            gap: 20px;
+            margin-bottom: 40px;
         }
         .type-page-icon {
             width: 54px;
@@ -43,52 +44,59 @@
             position: relative;
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 20px;
+            gap: 20px;
+            padding: 24px;
             border: 1px solid rgba(255,255,255,0.12);
             border-radius: 16px;
             background: rgba(8,18,40,0.55);
             cursor: pointer;
-            margin-bottom: 16px;
+            margin-bottom: 22px;
             transition: all .18s ease;
         }
         :root[data-theme="light"] .type-option { background: rgba(15,23,42,0.04); border-color: rgba(15,23,42,0.14); }
-        .type-option:hover { border-color: rgba(0,122,255,0.45); }
+        .type-option:hover { border-color: rgba(0,122,255,0.45); transform: translateY(-2px); }
         .type-option.selected {
             border-color: #007AFF;
             background: rgba(0,122,255,0.12);
-            box-shadow: 0 0 24px rgba(0,122,255,0.25), inset 0 1px 0 rgba(255,255,255,0.04);
+            box-shadow: 0 0 28px rgba(0,122,255,0.32), inset 0 1px 0 rgba(255,255,255,0.08);
         }
-        :root[data-theme="light"] .type-option.selected { background: rgba(0,122,255,0.08); box-shadow: 0 0 16px rgba(0,122,255,0.12); }
+        :root[data-theme="light"] .type-option.selected { background: rgba(0,122,255,0.08); box-shadow: 0 0 18px rgba(0,122,255,0.18); }
 
         .type-option.selected--externo {
             border-color: #f59e0b;
             background: rgba(245,158,11,0.12);
-            box-shadow: 0 0 24px rgba(245,158,11,0.25), inset 0 1px 0 rgba(255,255,255,0.04);
+            box-shadow: 0 0 28px rgba(245,158,11,0.32), inset 0 1px 0 rgba(255,255,255,0.08);
         }
-        :root[data-theme="light"] .type-option.selected--externo { background: rgba(245,158,11,0.08); box-shadow: 0 0 16px rgba(245,158,11,0.12); }
+        :root[data-theme="light"] .type-option.selected--externo { background: rgba(245,158,11,0.08); box-shadow: 0 0 18px rgba(245,158,11,0.18); }
 
-        .type-check {
-            width: 26px;
-            height: 26px;
-            border-radius: 7px;
-            border: 2px solid rgba(255,255,255,0.25);
+        .type-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.04);
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            color: transparent;
+            color: rgba(255,255,255,0.55);
             transition: all .18s ease;
         }
-        :root[data-theme="light"] .type-check { border-color: rgba(15,23,42,0.25); }
-        .type-option.selected .type-check,
-        .type-option.selected--externo .type-check {
+        :root[data-theme="light"] .type-icon { border-color: rgba(15,23,42,0.12); background: rgba(15,23,42,0.04); color: var(--muted); }
+        .type-option:hover .type-icon { border-color: rgba(0,122,255,0.45); color: #fff; }
+        .type-option.selected .type-icon {
             background: #007AFF;
             border-color: #007AFF;
             color: #fff;
+            box-shadow: 0 0 18px rgba(0,122,255,0.55);
         }
-        .type-option.selected--externo .type-check { background: #f59e0b; border-color: #f59e0b; }
-        .type-check svg { width: 14px; height: 14px; }
+        .type-option.selected--externo .type-icon {
+            background: #f59e0b;
+            border-color: #f59e0b;
+            color: #fff;
+            box-shadow: 0 0 18px rgba(245,158,11,0.55);
+        }
+        .type-icon svg { width: 26px; height: 26px; }
 
         .type-option-body h3 {
             margin: 0 0 4px;
@@ -109,8 +117,8 @@
         .type-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 14px;
-            margin-top: 28px;
+            gap: 16px;
+            margin-top: 40px;
         }
         .type-btn {
             display: inline-flex;
@@ -159,8 +167,8 @@
         </div>
 
         <div class="type-option selected--externo" data-value="externo" onclick="selectType('externo')">
-            <div class="type-check">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <div class="type-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
             </div>
             <div class="type-option-body">
                 <h3>Mantenimiento externo</h3>
@@ -169,8 +177,8 @@
         </div>
 
         <div class="type-option" data-value="interno" onclick="selectType('interno')">
-            <div class="type-check">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <div class="type-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             </div>
             <div class="type-option-body">
                 <h3>Mantenimiento interno</h3>

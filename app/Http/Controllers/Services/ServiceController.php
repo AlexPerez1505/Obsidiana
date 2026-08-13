@@ -671,6 +671,39 @@ class ServiceController extends Controller
         ]);
     }
 
+    public function rutaTrabajoInterno(Service $service)
+    {
+        if ($service->service_type !== 'interno') {
+            return redirect()->route('gestion.servicios.ruta', $service)
+                ->with('error', 'Este servicio no es interno.');
+        }
+
+        $service->load(['serviceTrackings.serviceStep', 'customer', 'internalTechnician', 'serviceEquipment', 'currentStep']);
+
+        $steps = ServiceStep::where('service_type', 'interno')
+            ->orderBy('order')
+            ->get();
+
+        $trackingsByStep = $service->serviceTrackings
+            ->sort(function ($a, $b) {
+                $order = ['completado' => 0, 'rechazado' => 1, 'en_progreso' => 2, 'pendiente' => 3];
+                $cmp = ($order[$a->status] ?? 4) <=> ($order[$b->status] ?? 4);
+                if ($cmp !== 0) {
+                    return $cmp;
+                }
+
+                return ($b->created_at->getTimestamp() <=> $a->created_at->getTimestamp());
+            })
+            ->unique('service_step_id')
+            ->keyBy('service_step_id');
+
+        return view('structure.gestion_servicios.mantenimiento.tecnico_Interno.ruta_trabajo.interno', [
+            'service' => $service,
+            'steps' => $steps,
+            'trackingsByStep' => $trackingsByStep,
+        ]);
+    }
+
     public function approveService(ServiceTracking $tracking)
     {
         $tracking->load('serviceStep', 'service');

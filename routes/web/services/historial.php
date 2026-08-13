@@ -66,6 +66,10 @@ Route::middleware(['auth', 'verified', 'approved'])
         // Visualizar ruta de trabajo del servicio
         Route::get('/{service}/ruta-trabajo', [ServiceController::class, 'rutaTrabajo'])
             ->name('gestion.servicios.ruta');
+
+        // Visualizar ruta de trabajo del servicio interno
+        Route::get('/{service}/ruta-trabajo-interno', [ServiceController::class, 'rutaTrabajoInterno'])
+            ->name('gestion.servicios.ruta.interno');
     });
 
 // Cartas de garantía

@@ -45,6 +45,51 @@
         .modal-btn--primary { background: #22C55E; color: #fff; }
         .modal-btn--ghost { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; }
         :root[data-theme="light"] .modal-btn--ghost { border-color: rgba(15,23,42,0.2); color: var(--text); }
+
+        .service-tabs {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+            background: rgba(5, 11, 24, 0.55);
+            border: 1px solid rgba(22, 119, 255, 0.47);
+            border-radius: 14px;
+            padding: 5px;
+            box-shadow:
+                inset 0 1px 3px rgba(0, 0, 0, 0.35),
+                0 6px 16px rgba(0, 0, 0, 0.25);
+        }
+        .service-tab {
+            flex: 1;
+            justify-content: center;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border: none;
+            border-bottom: none;
+            border-radius: 10px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .16s ease;
+            box-shadow: none;
+        }
+        .service-tab:hover {
+            background: rgba(22, 119, 255, 0.43);
+            color: #fff;
+        }
+        .service-tab.active {
+            color: #fff;
+            background: linear-gradient(135deg, rgba(22, 119, 255, 0.57), rgba(99, 91, 255, 0.51));
+            border: 1px solid rgba(30, 125, 255, 0.9);
+            box-shadow:
+                0 0 20px rgba(30, 125, 255, 0.47),
+                0 10px 35px rgba(0, 0, 0, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+        .service-tab svg { width: 18px; height: 18px; }
     </style>
 
     @if (session('success'))
@@ -67,6 +112,21 @@
             <a href="{{ route('gestion.servicios.validaciones.os') }}" class="catalog-create" style="width:auto; padding: 9px 16px; margin:0;">
                 Validaciones OS
             </a>
+        </div>
+
+        <div class="service-tabs">
+            <button type="button" class="service-tab active" data-type="all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM3 9h18M9 21V9"/></svg>
+                Todos
+            </button>
+            <button type="button" class="service-tab" data-type="interno">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Servicio Interno
+            </button>
+            <button type="button" class="service-tab" data-type="externo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Servicio Externo
+            </button>
         </div>
 
         <div class="service-table-wrap">
@@ -92,7 +152,7 @@
                             $codeTracking = $service->serviceTrackings->firstWhere('serviceStep.slug', 'notificacion-llegada-tecnico');
                             $verificationCode = $codeTracking?->verification_code;
                         @endphp
-                        <tr>
+                        <tr data-type="{{ $service->service_type }}">
                             <td>{{ $service->service_number ?? 'N/A' }}</td>
                             <td>{{ $tracking->serviceStep->name ?? 'N/A' }}</td>
                             <td>{{ $customerName ?: 'N/A' }}</td>
@@ -158,5 +218,22 @@
             const code = document.getElementById('modalCode').textContent.trim();
             navigator.clipboard.writeText(code).catch(() => {});
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabs = document.querySelectorAll('.service-tab');
+            const rows = document.querySelectorAll('.service-table tbody tr[data-type]');
+
+            tabs.forEach(function (tab) {
+                tab.addEventListener('click', function () {
+                    tabs.forEach(function (t) { t.classList.remove('active'); });
+                    tab.classList.add('active');
+
+                    const type = tab.dataset.type;
+                    rows.forEach(function (row) {
+                        row.style.display = (type === 'all' || row.dataset.type === type) ? '' : 'none';
+                    });
+                });
+            });
+        });
     </script>
 @endsection
