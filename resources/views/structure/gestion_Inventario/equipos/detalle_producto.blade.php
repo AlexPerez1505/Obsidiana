@@ -26,249 +26,157 @@
 
 @push('head')
 <style>
-    .product-detail {
-        display: grid;
-        gap: 18px;
+    .product-detail { max-width: 1200px; margin: 0 auto; }
+    .product-detail .rgrid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    @media (max-width: 820px) { .product-detail .rgrid-2 { grid-template-columns: 1fr; } }
+    .detail-card {
+        padding: 20px;
+        border-radius: 14px;
+        background: linear-gradient(145deg, rgba(8,18,40,0.88), rgba(4,12,30,0.88));
+        border: 1px solid rgba(0,168,255,0.55);
+        box-shadow: 0 8px 28px rgba(0,0,0,0.35), 0 0 14px rgba(0,168,255,0.2), inset 0 1px 0 rgba(255,255,255,0.04);
     }
-
-    .product-detail__bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        flex-wrap: wrap;
-    }
-
-    .product-detail__intro {
-        color: var(--muted);
-        margin: 0;
-        font-size: 0.94rem;
-        font-weight: 600;
-    }
-
-    .product-detail__actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .product-detail-card {
-        display: grid;
-        grid-template-columns: minmax(150px, 0.5fr) minmax(320px, 1.5fr) minmax(170px, 0.55fr);
-        gap: 28px;
-        align-items: center;
-        min-height: 260px;
-        padding: 30px 44px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        box-shadow: var(--shadow);
-    }
-
-    .product-detail-image {
-        min-height: 170px;
+    .detail-card__title { font-size: 16px; font-weight: 700; margin: 0 0 18px; color: #00A8FF; }
+    .detail-thumb-box {
+        width: 120px;
+        height: 120px;
         display: grid;
         place-items: center;
+        border: 1px dashed rgba(0,168,255,0.55);
+        border-radius: 12px;
+        background: rgba(4,10,24,0.6);
+        overflow: hidden;
+        padding: 8px;
     }
-
-    .product-detail-image svg {
-        width: min(170px, 92%);
-        height: auto;
+    .detail-thumb-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+    .detail-thumb-box svg { max-width: 100px; max-height: 100px; }
+    .detail-name { margin: 0 0 8px; font-size: 1.25rem; font-weight: 800; color: #fff; }
+    .detail-muted { color: rgba(255,255,255,0.55); margin: 0; }
+    .detail-list { display: grid; gap: 10px; margin: 0; }
+    .detail-row { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; }
+    .detail-label { color: rgba(255,255,255,0.55); margin: 0; }
+    .detail-value { margin: 0; font-weight: 700; color: #fff; }
+    .detail-stat-label { color: rgba(255,255,255,0.55); margin: 0 0 4px; font-size: 0.9rem; font-weight: 700; }
+    .detail-stat-value { margin: 0; font-size: 1.5rem; font-weight: 800; color: #fff; }
+    .detail-actions { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 18px; }
+    .detail-btn {
+        background: linear-gradient(135deg, #00A8FF, #7C3AED);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.15);
+        padding: 10px 18px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 0 12px rgba(59,130,246,0.35), 0 0 30px rgba(124,58,237,0.2);
+        transition: all 0.2s ease;
     }
-
-    .product-detail-image img {
-        width: min(220px, 100%);
-        aspect-ratio: 1 / 1;
-        object-fit: cover;
-        border-radius: 8px;
-        display: block;
+    .detail-btn:hover { filter: brightness(1.1); }
+    .detail-ghost {
+        padding: 10px 18px;
+        border: 1px solid rgba(0,168,255,0.55);
+        border-radius: 12px;
+        background: rgba(8,18,40,0.45);
+        color: #00A8FF;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background .16s ease, border-color .16s ease;
     }
-
-    .product-detail-main {
-        min-width: 0;
-    }
-
-    .product-detail-main h3 {
-        color: var(--text);
-        font-size: 1.18rem;
-        font-weight: 900;
-        margin: 0 0 22px;
-    }
-
-    .product-detail-list {
-        display: grid;
-        gap: 10px;
-        margin: 0;
-    }
-
-    .product-detail-item {
-        display: grid;
-        grid-template-columns: 150px minmax(0, 1fr);
-        gap: 18px;
-        align-items: baseline;
-    }
-
-    .product-detail-item dt {
-        color: var(--muted);
-        font-size: 0.95rem;
-        font-weight: 700;
-        margin: 0;
-    }
-
-    .product-detail-item dd {
-        color: var(--text);
-        font-size: 0.9rem;
-        font-weight: 900;
-        margin: 0;
-        overflow-wrap: anywhere;
-    }
-
-    .product-detail-stock {
-        display: grid;
-        gap: 18px;
-        align-content: center;
-    }
-
-    .product-detail-stock__label {
-        color: var(--muted);
-        display: block;
-        font-size: 0.96rem;
-        font-weight: 700;
-        margin-bottom: 8px;
-    }
-
-    .product-detail-stock__value {
-        color: var(--text);
-        display: block;
-        font-size: 1.25rem;
-        font-weight: 900;
-        line-height: 1.1;
-    }
-
-    @media (max-width: 980px) {
-        .product-detail-card {
-            grid-template-columns: 1fr;
-            padding: 24px;
-            align-items: start;
-        }
-
-        .product-detail-image {
-            min-height: 120px;
-            justify-content: start;
-        }
-
-        .product-detail-stock {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
-
-    @media (max-width: 680px) {
-        .product-detail__bar,
-        .product-detail__actions {
-            align-items: stretch;
-            justify-content: stretch;
-        }
-
-        .product-detail__actions,
-        .product-detail__actions .btn {
-            width: 100%;
-        }
-
-        .product-detail-item {
-            grid-template-columns: 1fr;
-            gap: 4px;
-        }
-
-        .product-detail-stock {
-            grid-template-columns: 1fr;
-        }
-    }
+    .detail-ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
+    :root[data-theme="light"] .detail-card { background: linear-gradient(145deg, rgba(15,23,42,0.04), rgba(15,23,42,0.08)); border-color: rgba(15,23,42,0.14); }
+    :root[data-theme="light"] .detail-card__title { color: var(--primary, #00A8FF); }
+    :root[data-theme="light"] .detail-name { color: var(--text); }
+    :root[data-theme="light"] .detail-muted { color: var(--muted); }
+    :root[data-theme="light"] .detail-label { color: var(--muted); }
+    :root[data-theme="light"] .detail-value { color: var(--text); }
+    :root[data-theme="light"] .detail-stat-label { color: var(--muted); }
+    :root[data-theme="light"] .detail-stat-value { color: var(--text); }
+    :root[data-theme="light"] .detail-thumb-box { background: rgba(15,23,42,0.04); border-color: rgba(15,23,42,0.18); }
+    :root[data-theme="light"] .detail-ghost { background: rgba(15,23,42,0.04); border-color: rgba(15,23,42,0.18); color: var(--text); }
 </style>
 @endpush
 
 @section('content')
-    <section class="product-detail">
-        <div class="product-detail__bar">
-            <p class="product-detail__intro">Consulta el detalle del producto registrado en inventario.</p>
-
-            <div class="product-detail__actions">
-                <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost" style="text-decoration:none;">
-                    Cancelar
-                </a>
-                <a href="{{ route('inventory.stock.index', ['producto' => $productData['id']]) }}" class="btn" style="text-decoration:none;">
-                    Aplicar ajuste
-                </a>
-            </div>
+    <div class="product-detail">
+        <div class="detail-actions">
+            <a href="{{ route('inventory.productos.index') }}" class="detail-ghost" style="text-decoration:none;">Volver</a>
+            <a href="{{ route('inventory.productos.edit', ['producto' => $productData['id']]) }}" class="detail-btn" style="text-decoration:none;">Editar producto</a>
         </div>
 
-        <article class="product-detail-card">
-            <div class="product-detail-image" aria-label="Imagen de {{ $productData['name'] }}">
-                @if(! empty($productData['image_path']))
-                    <img src="{{ asset($productData['image_path']) }}" alt="Imagen de {{ $productData['name'] }}">
-                @else
-                    @include('structure.gestion_Inventario.equipos.partials.product-thumb', ['type' => $productData['thumb']])
-                @endif
-            </div>
+        <div class="rgrid-2">
+            <div class="detail-card">
+                <h3 class="detail-card__title">Informacion general</h3>
+                <div style="display:flex; align-items:center; gap:18px; margin-bottom:18px; flex-wrap:wrap;">
+                    <div class="detail-thumb-box">
+                        @if(! empty($productData['image_path']))
+                            <img src="{{ asset($productData['image_path']) }}" alt="Imagen de {{ $productData['name'] }}">
+                        @else
+                            @include('structure.gestion_Inventario.equipos.partials.product-thumb', ['type' => $productData['thumb']])
+                        @endif
+                    </div>
+                    <div>
+                        <h2 class="detail-name">{{ $productData['name'] }}</h2>
+                        <p class="detail-muted">No. serie: {{ $productData['serial_number'] }}</p>
+                        <p class="detail-muted" style="margin-top:4px;">Estado: {{ $productData['status'] }}</p>
+                    </div>
+                </div>
 
-            <div class="product-detail-main">
-                <h3>{{ $productData['name'] }}</h3>
-
-                <dl class="product-detail-list">
-                    <div class="product-detail-item">
-                        <dt>Numero de serie:</dt>
-                        <dd>{{ $productData['serial_number'] }}</dd>
+                <dl class="detail-list">
+                    <div class="detail-row">
+                        <dt class="detail-label">Tipo de equipo:</dt>
+                        <dd class="detail-value">{{ $productData['category'] }}</dd>
                     </div>
-                    <div class="product-detail-item">
-                        <dt>Tipo de equipo:</dt>
-                        <dd>{{ $productData['category'] }}</dd>
+                    <div class="detail-row">
+                        <dt class="detail-label">Subtipo:</dt>
+                        <dd class="detail-value">{{ $productData['subtype'] }}</dd>
                     </div>
-                    <div class="product-detail-item">
-                        <dt>Subtipo:</dt>
-                        <dd>{{ $productData['subtype'] }}</dd>
+                    <div class="detail-row">
+                        <dt class="detail-label">Marca:</dt>
+                        <dd class="detail-value">{{ $productData['brand'] }}</dd>
                     </div>
-                    <div class="product-detail-item">
-                        <dt>Marca:</dt>
-                        <dd>{{ $productData['brand'] }}</dd>
+                    <div class="detail-row">
+                        <dt class="detail-label">Modelo:</dt>
+                        <dd class="detail-value">{{ $productData['model'] }}</dd>
                     </div>
-                    <div class="product-detail-item">
-                        <dt>Modelo:</dt>
-                        <dd>{{ $productData['model'] }}</dd>
+                    <div class="detail-row">
+                        <dt class="detail-label">Unidad:</dt>
+                        <dd class="detail-value">{{ $productData['unit'] }}</dd>
                     </div>
-                    <div class="product-detail-item">
-                        <dt>Unidad:</dt>
-                        <dd>{{ $productData['unit'] }}</dd>
+                    <div class="detail-row">
+                        <dt class="detail-label">Almacen:</dt>
+                        <dd class="detail-value">{{ $productData['warehouse'] }}</dd>
                     </div>
-                    <div class="product-detail-item">
-                        <dt>Precio:</dt>
-                        <dd>${{ number_format((float) $productData['price'], 2) }} MXN</dd>
-                    </div>
-                    <div class="product-detail-item">
-                        <dt>Almacen:</dt>
-                        <dd>{{ $productData['warehouse'] }}</dd>
-                    </div>
-                    <div class="product-detail-item">
-                        <dt>Descripcion:</dt>
-                        <dd>{{ $productData['description'] }}</dd>
+                    <div class="detail-row">
+                        <dt class="detail-label">Descripcion:</dt>
+                        <dd class="detail-value">{{ $productData['description'] }}</dd>
                     </div>
                 </dl>
             </div>
 
-            <aside class="product-detail-stock" aria-label="Resumen de stock">
-                <div>
-                    <span class="product-detail-stock__label">Stock</span>
-                    <strong class="product-detail-stock__value">{{ $productData['stock_current'] }} {{ $productData['unit'] }}</strong>
+            <div class="detail-card">
+                <h3 class="detail-card__title">Resumen</h3>
+                <div style="display:grid; gap:14px;">
+                    <div>
+                        <p class="detail-stat-label">Stock</p>
+                        <p class="detail-stat-value">{{ $productData['stock_current'] }} {{ $productData['unit'] }}</p>
+                    </div>
+                    <div>
+                        <p class="detail-stat-label">Precio</p>
+                        <p class="detail-stat-value">${{ number_format((float) $productData['price'], 2) }} MXN</p>
+                    </div>
+                    <div>
+                        <p class="detail-stat-label">Estado</p>
+                        <p class="detail-stat-value">{{ $productData['status'] }}</p>
+                    </div>
                 </div>
-                <div>
-                    <span class="product-detail-stock__label">Precio</span>
-                    <strong class="product-detail-stock__value">${{ number_format((float) $productData['price'], 2) }} MXN</strong>
-                </div>
-                <div>
-                    <span class="product-detail-stock__label">Estado</span>
-                    <strong class="product-detail-stock__value">{{ $productData['status'] }}</strong>
-                </div>
-            </aside>
-        </article>
-    </section>
+            </div>
+        </div>
+    </div>
 @endsection

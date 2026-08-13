@@ -24,233 +24,148 @@
 
 @push('head')
 <style>
-    .equipment-detail {
-        display: grid;
-        gap: 18px;
+    .equipment-detail { max-width: 1200px; margin: 0 auto; }
+    .equipment-detail .rgrid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    @media (max-width: 820px) { .equipment-detail .rgrid-2 { grid-template-columns: 1fr; } }
+    .detail-card {
+        padding: 20px;
+        border-radius: 14px;
+        background: linear-gradient(145deg, rgba(8,18,40,0.88), rgba(4,12,30,0.88));
+        border: 1px solid rgba(0,168,255,0.55);
+        box-shadow: 0 8px 28px rgba(0,0,0,0.35), 0 0 14px rgba(0,168,255,0.2), inset 0 1px 0 rgba(255,255,255,0.04);
     }
-
-    .equipment-detail__bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        flex-wrap: wrap;
-    }
-
-    .equipment-detail__intro {
-        color: var(--muted);
-        margin: 0;
-        font-size: 0.94rem;
-        font-weight: 600;
-    }
-
-    .equipment-detail__actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .equipment-detail-card {
-        display: grid;
-        grid-template-columns: minmax(150px, 0.5fr) minmax(320px, 1.5fr) minmax(170px, 0.55fr);
-        gap: 28px;
-        align-items: center;
-        min-height: 260px;
-        padding: 30px 44px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        box-shadow: var(--shadow);
-    }
-
-    .equipment-detail-image {
-        min-height: 170px;
+    .detail-card__title { font-size: 16px; font-weight: 700; margin: 0 0 18px; color: #00A8FF; }
+    .detail-thumb-box {
+        width: 120px;
+        height: 120px;
         display: grid;
         place-items: center;
+        border: 1px dashed rgba(0,168,255,0.55);
+        border-radius: 12px;
+        background: rgba(4,10,24,0.6);
+        overflow: hidden;
+        padding: 8px;
     }
-
-    .equipment-detail-image svg {
-        width: min(170px, 92%);
-        height: auto;
+    .detail-thumb-box svg { max-width: 100px; max-height: 100px; }
+    .detail-name { margin: 0 0 8px; font-size: 1.25rem; font-weight: 800; color: #fff; }
+    .detail-muted { color: rgba(255,255,255,0.55); margin: 0; }
+    .detail-list { display: grid; gap: 10px; margin: 0; }
+    .detail-row { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; }
+    .detail-label { color: rgba(255,255,255,0.55); margin: 0; }
+    .detail-value { margin: 0; font-weight: 700; color: #fff; }
+    .detail-stat-label { color: rgba(255,255,255,0.55); margin: 0 0 4px; font-size: 0.9rem; font-weight: 700; }
+    .detail-stat-value { margin: 0; font-size: 1.5rem; font-weight: 800; color: #fff; }
+    .detail-actions { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 18px; }
+    .detail-btn {
+        background: linear-gradient(135deg, #00A8FF, #7C3AED);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.15);
+        padding: 10px 18px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 0 12px rgba(59,130,246,0.35), 0 0 30px rgba(124,58,237,0.2);
+        transition: all 0.2s ease;
     }
-
-    .equipment-detail-main {
-        min-width: 0;
+    .detail-btn:hover { filter: brightness(1.1); }
+    .detail-ghost {
+        padding: 10px 18px;
+        border: 1px solid rgba(0,168,255,0.55);
+        border-radius: 12px;
+        background: rgba(8,18,40,0.45);
+        color: #00A8FF;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background .16s ease, border-color .16s ease;
     }
-
-    .equipment-detail-main h3 {
-        color: var(--text);
-        font-size: 1.18rem;
-        font-weight: 900;
-        margin: 0 0 22px;
-    }
-
-    .equipment-detail-list {
-        display: grid;
-        gap: 10px;
-        margin: 0;
-    }
-
-    .equipment-detail-item {
-        display: grid;
-        grid-template-columns: 150px minmax(0, 1fr);
-        gap: 18px;
-        align-items: baseline;
-    }
-
-    .equipment-detail-item dt {
-        color: var(--muted);
-        font-size: 0.95rem;
-        font-weight: 700;
-        margin: 0;
-    }
-
-    .equipment-detail-item dd {
-        color: var(--text);
-        font-size: 0.9rem;
-        font-weight: 900;
-        margin: 0;
-        overflow-wrap: anywhere;
-    }
-
-    .equipment-detail-stock {
-        display: grid;
-        gap: 18px;
-        align-content: center;
-    }
-
-    .equipment-detail-stock__label {
-        color: var(--muted);
-        display: block;
-        font-size: 0.96rem;
-        font-weight: 700;
-        margin-bottom: 8px;
-    }
-
-    .equipment-detail-stock__value {
-        color: var(--text);
-        display: block;
-        font-size: 1.25rem;
-        font-weight: 900;
-        line-height: 1.1;
-    }
-
-    @media (max-width: 980px) {
-        .equipment-detail-card {
-            grid-template-columns: 1fr;
-            padding: 24px;
-            align-items: start;
-        }
-
-        .equipment-detail-image {
-            min-height: 120px;
-            justify-content: start;
-        }
-
-        .equipment-detail-stock {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
-
-    @media (max-width: 680px) {
-        .equipment-detail__bar,
-        .equipment-detail__actions {
-            align-items: stretch;
-            justify-content: stretch;
-        }
-
-        .equipment-detail__actions,
-        .equipment-detail__actions .btn {
-            width: 100%;
-        }
-
-        .equipment-detail-item {
-            grid-template-columns: 1fr;
-            gap: 4px;
-        }
-
-        .equipment-detail-stock {
-            grid-template-columns: 1fr;
-        }
-    }
+    .detail-ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
+    :root[data-theme="light"] .detail-card { background: linear-gradient(145deg, rgba(15,23,42,0.04), rgba(15,23,42,0.08)); border-color: rgba(15,23,42,0.14); }
+    :root[data-theme="light"] .detail-card__title { color: var(--primary, #00A8FF); }
+    :root[data-theme="light"] .detail-name { color: var(--text); }
+    :root[data-theme="light"] .detail-muted { color: var(--muted); }
+    :root[data-theme="light"] .detail-label { color: var(--muted); }
+    :root[data-theme="light"] .detail-value { color: var(--text); }
+    :root[data-theme="light"] .detail-stat-label { color: var(--muted); }
+    :root[data-theme="light"] .detail-stat-value { color: var(--text); }
+    :root[data-theme="light"] .detail-thumb-box { background: rgba(15,23,42,0.04); border-color: rgba(15,23,42,0.18); }
+    :root[data-theme="light"] .detail-ghost { background: rgba(15,23,42,0.04); border-color: rgba(15,23,42,0.18); color: var(--text); }
 </style>
 @endpush
 
 @section('content')
-    <section class="equipment-detail">
-        <div class="equipment-detail__bar">
-            <p class="equipment-detail__intro">Consulta el detalle del equipo registrado en inventario.</p>
-
-            <div class="equipment-detail__actions">
-                <a href="{{ route('inventory.equipos.index') }}" class="btn btn--ghost" style="text-decoration:none;">
-                    Cancelar
-                </a>
-                <a href="{{ route('inventory.equipos.edit', ['equipo' => $equipmentData['code']]) }}" class="btn" style="text-decoration:none;">
-                    Aplicar ajuste
-                </a>
-            </div>
+    <div class="equipment-detail">
+        <div class="detail-actions">
+            <a href="{{ route('inventory.equipos.index') }}" class="detail-ghost" style="text-decoration:none;">Volver</a>
+            <a href="{{ route('inventory.equipos.edit', ['equipo' => $equipmentData['code']]) }}" class="detail-btn" style="text-decoration:none;">Editar equipo</a>
         </div>
 
-        <article class="equipment-detail-card">
-            <div class="equipment-detail-image" aria-label="Imagen de {{ $equipmentData['name'] }}">
-                @include('structure.gestion_Inventario.equipos.partials.equipment-thumb', ['type' => $equipmentData['thumb']])
-            </div>
+        <div class="rgrid-2">
+            <div class="detail-card">
+                <h3 class="detail-card__title">Informacion general</h3>
+                <div style="display:flex; align-items:center; gap:18px; margin-bottom:18px; flex-wrap:wrap;">
+                    <div class="detail-thumb-box">
+                        @include('structure.gestion_Inventario.equipos.partials.equipment-thumb', ['type' => $equipmentData['thumb']])
+                    </div>
+                    <div>
+                        <h2 class="detail-name">{{ $equipmentData['name'] }}</h2>
+                        <p class="detail-muted">Codigo: {{ $equipmentData['code'] }}</p>
+                        <p class="detail-muted" style="margin-top:4px;">Estado: {{ $equipmentData['status'] }}</p>
+                    </div>
+                </div>
 
-            <div class="equipment-detail-main">
-                <h3>{{ $equipmentData['name'] }}</h3>
-
-                <dl class="equipment-detail-list">
-                    <div class="equipment-detail-item">
-                        <dt>Codigo:</dt>
-                        <dd>{{ $equipmentData['code'] }}</dd>
+                <dl class="detail-list">
+                    <div class="detail-row">
+                        <dt class="detail-label">Categoria:</dt>
+                        <dd class="detail-value">{{ $equipmentData['category'] }}</dd>
                     </div>
-                    <div class="equipment-detail-item">
-                        <dt>Categoria:</dt>
-                        <dd>{{ $equipmentData['category'] }}</dd>
+                    <div class="detail-row">
+                        <dt class="detail-label">Marca:</dt>
+                        <dd class="detail-value">{{ $equipmentData['brand'] }}</dd>
                     </div>
-                    <div class="equipment-detail-item">
-                        <dt>Marca:</dt>
-                        <dd>{{ $equipmentData['brand'] }}</dd>
+                    <div class="detail-row">
+                        <dt class="detail-label">Modelo:</dt>
+                        <dd class="detail-value">{{ $equipmentData['model'] }}</dd>
                     </div>
-                    <div class="equipment-detail-item">
-                        <dt>Modelo:</dt>
-                        <dd>{{ $equipmentData['model'] }}</dd>
+                    <div class="detail-row">
+                        <dt class="detail-label">No. serie:</dt>
+                        <dd class="detail-value">{{ $equipmentData['serial_number'] }}</dd>
                     </div>
-                    <div class="equipment-detail-item">
-                        <dt>Numero de serie:</dt>
-                        <dd>{{ $equipmentData['serial_number'] }}</dd>
+                    <div class="detail-row">
+                        <dt class="detail-label">Ubicacion:</dt>
+                        <dd class="detail-value">{{ $equipmentData['warehouse'] }}</dd>
                     </div>
-                    <div class="equipment-detail-item">
-                        <dt>Ubicacion:</dt>
-                        <dd>{{ $equipmentData['warehouse'] }}</dd>
-                    </div>
-                    <div class="equipment-detail-item">
-                        <dt>Descripcion:</dt>
-                        <dd>{{ $equipmentData['description'] }}</dd>
+                    <div class="detail-row">
+                        <dt class="detail-label">Descripcion:</dt>
+                        <dd class="detail-value">{{ $equipmentData['description'] }}</dd>
                     </div>
                 </dl>
             </div>
 
-            <aside class="equipment-detail-stock" aria-label="Resumen de stock">
-                <div>
-                    <span class="equipment-detail-stock__label">Stock actual</span>
-                    <strong class="equipment-detail-stock__value">{{ $equipmentData['stock_current'] }} Pza</strong>
+            <div class="detail-card">
+                <h3 class="detail-card__title">Resumen de stock</h3>
+                <div style="display:grid; gap:14px;">
+                    <div>
+                        <p class="detail-stat-label">Stock actual</p>
+                        <p class="detail-stat-value">{{ $equipmentData['stock_current'] }} Pza</p>
+                    </div>
+                    <div>
+                        <p class="detail-stat-label">Stock minimo</p>
+                        <p class="detail-stat-value">{{ $equipmentData['stock_min'] }} Pza</p>
+                    </div>
+                    <div>
+                        <p class="detail-stat-label">Stock maximo</p>
+                        <p class="detail-stat-value">{{ $equipmentData['stock_max'] }} Pza</p>
+                    </div>
                 </div>
-                <div>
-                    <span class="equipment-detail-stock__label">Stock minimo</span>
-                    <strong class="equipment-detail-stock__value">{{ $equipmentData['stock_min'] }} Pza</strong>
-                </div>
-                <div>
-                    <span class="equipment-detail-stock__label">Stock maximo</span>
-                    <strong class="equipment-detail-stock__value">{{ $equipmentData['stock_max'] }} Pza</strong>
-                </div>
-                <div>
-                    <span class="equipment-detail-stock__label">Estado</span>
-                    <strong class="equipment-detail-stock__value">{{ $equipmentData['status'] }}</strong>
-                </div>
-            </aside>
-        </article>
-    </section>
+            </div>
+        </div>
+    </div>
 @endsection

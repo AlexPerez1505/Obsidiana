@@ -50,475 +50,268 @@
 
 @push('head')
 <style>
-    .product-create {
-        max-width: 1040px;
-        margin: 0 auto;
-    }
-
-    .product-card {
-        overflow: visible;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: var(--surface);
-        box-shadow: var(--shadow);
-    }
-
-    .product-card__header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 18px;
-        padding: 26px 30px;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .product-card__header h2 {
-        margin: 0;
-        color: var(--text);
-        font-size: clamp(1.7rem, 3vw, 2.45rem);
-        font-weight: 900;
-        line-height: 1.05;
-    }
-
-    .product-card__header p {
-        margin: 8px 0 0;
-        color: var(--muted);
-        font-size: 0.98rem;
-        font-weight: 600;
-    }
-
-    .product-card__body {
-        display: grid;
-        gap: 22px;
-        padding: 30px;
-    }
-
-    .product-form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 24px 26px;
-    }
-
-    .product-field {
-        display: grid;
-        gap: 7px;
-        min-width: 0;
-    }
-
-    .product-field label {
-        color: var(--muted);
-        font-size: 0.86rem;
-        font-weight: 800;
-    }
-
-    .product-input,
-    .product-money {
-        width: 100%;
-        min-height: 58px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: var(--surface-2);
-        color: var(--text);
-        font: inherit;
-        font-size: 1rem;
-        outline: none;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-    }
-
-    .product-input {
-        padding: 0 16px;
-    }
-
-    .product-input:focus,
-    .product-money:focus-within {
-        border-color: rgba(37, 99, 235, 0.9);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
-    }
-
     .product-combo {
         position: relative;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 50px;
-        align-items: stretch;
+        display: flex;
+        align-items: center;
     }
-
-    .product-combo .product-input {
-        border-radius: 8px 0 0 8px;
-    }
-
-    .product-combo__toggle {
+    .product-combo input {
+        width: 100%;
+        padding: 11px 38px 11px 12px;
         border: 1px solid var(--border);
-        border-left: 0;
-        border-radius: 0 8px 8px 0;
-        background: var(--surface-2);
-        color: var(--muted);
-        cursor: pointer;
-        display: inline-flex;
+        border-radius: 9px;
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        font-size: 15px;
+    }
+    .product-combo__toggle {
+        position: absolute;
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 30px;
+        height: 30px;
+        display: flex;
         align-items: center;
         justify-content: center;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
     }
-
-    .product-combo__toggle svg {
-        width: 18px;
-        height: 18px;
-        transition: transform 0.15s ease;
-    }
-
-    .product-combo.is-open .product-combo__toggle svg {
-        transform: rotate(180deg);
-    }
-
     .product-combo__menu {
         position: absolute;
         left: 0;
-        right: 0;
-        top: calc(100% + 6px);
-        z-index: 40;
-        display: none;
-        max-height: 230px;
+        top: calc(100% + 4px);
+        width: 100%;
+        max-height: 220px;
         overflow-y: auto;
         padding: 6px;
         border: 1px solid var(--border);
-        border-radius: 8px;
+        border-radius: 10px;
         background: var(--surface);
         box-shadow: var(--shadow);
+        display: none;
+        z-index: 20;
     }
-
-    .product-combo.is-open .product-combo__menu {
-        display: grid;
-        gap: 3px;
-    }
-
+    .product-combo.is-open .product-combo__menu { display: grid; gap: 2px; }
     .product-combo__option {
-        min-height: 36px;
+        padding: 8px 10px;
         border: 0;
-        border-radius: 6px;
+        border-radius: 7px;
         background: transparent;
         color: var(--text);
-        cursor: pointer;
-        font: inherit;
-        font-weight: 700;
-        padding: 0 10px;
         text-align: left;
+        font-size: 14px;
+        cursor: pointer;
     }
-
-    .product-combo__option:hover,
-    .product-combo__option:focus {
-        background: rgba(21, 139, 232, 0.16);
-        outline: none;
-    }
-
+    .product-combo__option:hover { background: #eef4ff; color: #0879d0; }
     .product-money {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 10px;
-        padding: 0 16px;
-    }
-
-    .product-money__prefix,
-    .product-money__suffix {
-        color: var(--muted);
-        font-weight: 900;
-        white-space: nowrap;
-    }
-
-    .product-money__input {
-        min-width: 0;
-        width: 100%;
-        border: 0;
-        background: transparent;
-        color: var(--text);
-        font: inherit;
-        font-size: 1rem;
-        outline: none;
-        padding: 12px 0;
-    }
-
-    .product-money__input::-webkit-outer-spin-button,
-    .product-money__input::-webkit-inner-spin-button {
-        margin: 0;
-    }
-
-    .product-image-upload {
         display: flex;
         align-items: center;
-        gap: 18px;
-        min-height: 190px;
-        padding: 18px;
-        border: 1px dashed var(--border);
-        border-radius: 8px;
-        background: rgba(37, 99, 235, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        overflow: hidden;
     }
-
+    .product-money__prefix,
+    .product-money__suffix {
+        padding: 0 12px;
+        color: var(--muted);
+        font-weight: 700;
+        font-size: 15px;
+    }
+    .product-money__input {
+        flex: 1;
+        min-width: 0;
+        padding: 11px 8px;
+        border: 0;
+        border-left: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        font-size: 15px;
+    }
+    .product-image-upload {
+        display: grid;
+        gap: 14px;
+    }
     .product-image-preview {
-        width: 158px;
-        aspect-ratio: 1 / 1;
-        flex: 0 0 auto;
+        border: 1px dashed rgba(37, 99, 235, 0.55);
+        background: rgba(37, 99, 235, 0.04);
         border-radius: 8px;
-        background: var(--surface-2);
+        min-height: 154px;
         display: grid;
         place-items: center;
         overflow: hidden;
     }
-
-    .product-image-preview svg {
-        width: 90px;
-        height: auto;
-    }
-
-    .product-image-preview img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
-
-    .product-image-actions {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        flex-wrap: wrap;
-        min-width: 0;
-    }
-
+    .product-image-preview img { width: 100%; height: 100%; object-fit: contain; padding: 12px; }
     .product-upload-button {
-        min-height: 50px;
-        padding: 0 22px;
-        border-radius: 8px;
-        background: #45cdb4;
-        color: #fff;
-        cursor: pointer;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
-        font-size: 0.95rem;
-        font-weight: 900;
-        box-shadow: 0 14px 28px rgba(69, 205, 180, 0.22);
+        gap: 7px;
+        padding: 9px 14px;
+        border-radius: 8px;
+        background: #1e90ff;
+        color: #fff;
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
     }
-
-    .product-upload-button svg {
-        width: 18px;
-        height: 18px;
-    }
-
     .product-image-help {
         margin: 0;
         color: var(--muted);
-        font-size: 0.88rem;
-        font-weight: 700;
+        font-size: 13px;
+        text-align: center;
     }
-
-    .product-file-input {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    .product-card__footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 14px;
-        padding: 0 30px 30px;
-    }
-
-    .product-error-box {
-        border: 1px solid rgba(239, 68, 68, 0.35);
-        border-radius: 8px;
-        background: rgba(239, 68, 68, 0.1);
-        color: #fca5a5;
-        padding: 14px 16px;
-        font-weight: 700;
-    }
-
-    .product-error-box ul {
-        margin: 8px 0 0;
-        padding-left: 18px;
-    }
-
-    @media (max-width: 760px) {
-        .product-card__header,
-        .product-card__footer {
-            padding-left: 18px;
-            padding-right: 18px;
-        }
-
-        .product-card__header,
-        .product-card__footer,
-        .product-image-upload,
-        .product-image-actions {
-            align-items: stretch;
-            flex-direction: column;
-        }
-
-        .product-card__body {
-            padding: 22px 18px;
-        }
-
-        .product-form-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .product-image-preview {
-            width: 100%;
-            max-width: 190px;
-        }
-
-        .product-card__header .btn,
-        .product-card__footer .btn,
-        .product-upload-button {
-            width: 100%;
-        }
-    }
+    .product-file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 </style>
 @endpush
 
 @section('content')
-    <form class="product-create" id="productCreateForm" method="POST" action="{{ $isEdit ? route('inventory.productos.update', ['producto' => $productData['id']]) : route('inventory.productos.store') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ $isEdit ? route('inventory.productos.update', ['producto' => $productData['id']]) : route('inventory.productos.store') }}" enctype="multipart/form-data" style="max-width:1040px; margin:0 auto; display:grid; gap:18px;">
         @csrf
         @if($isEdit)
             @method('PATCH')
         @endif
 
-        <section class="product-card" aria-labelledby="product-form-title">
-            <div class="product-card__header">
+        <x-ui.card>
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:18px; flex-wrap:wrap;">
                 <div>
-                    <h2 id="product-form-title">{{ $cardTitle }}</h2>
-                    <p>{{ $cardSub }}</p>
+                    <x-ui.section-title style="margin:0;">{{ $cardTitle }}</x-ui.section-title>
+                    <p class="muted" style="margin:4px 0 0; font-weight:600;">{{ $cardSub }}</p>
                 </div>
-
-                <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost" style="text-decoration:none;">
-                    Volver
-                </a>
+                <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost" style="text-decoration:none;">Volver</a>
             </div>
 
-            <div class="product-card__body">
-                @if ($errors->any())
-                    <div class="product-error-box">
-                        Revisa los datos del producto.
-                        <ul>
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
+            @if ($errors->any())
+                <div style="border:1px solid #ef4444; border-radius:9px; padding:14px; color:#ef4444; margin-top:18px; background:rgba(239,68,68,0.05);">
+                    <strong>Revisa los datos del producto.</strong>
+                    <ul style="margin:8px 0 0; padding-left:18px;">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <div class="rgrid-2" style="margin-top:18px; gap:14px;">
+                <div class="equipment-field" style="display:grid; gap:6px;">
+                    <label for="category">Tipo de equipo</label>
+                    <div class="product-combo" data-combo data-combo-name="category">
+                        <input type="text" id="category" name="category" value="{{ $currentCategory }}" autocomplete="off" data-combo-input>
+                        <button class="product-combo__toggle" type="button" aria-label="Mostrar tipos de equipo" data-combo-toggle>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="m6 9 6 6 6-6"></path></svg>
+                        </button>
+                        <div class="product-combo__menu" role="listbox" data-combo-menu>
+                            @foreach($selectOptions['categories'] as $category)
+                                <button class="product-combo__option" type="button" data-combo-option="{{ $category }}">{{ $category }}</button>
                             @endforeach
-                        </ul>
-                    </div>
-                @endif
-
-                <div class="product-form-grid">
-                    <div class="product-field">
-                        <label for="category">Tipo de equipo</label>
-                        <div class="product-combo" data-combo data-combo-name="category">
-                            <input class="product-input" type="text" id="category" name="category" value="{{ $currentCategory }}" autocomplete="off" data-combo-input>
-                            <button class="product-combo__toggle" type="button" aria-label="Mostrar tipos de equipo" data-combo-toggle>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="m6 9 6 6 6-6"></path>
-                                </svg>
-                            </button>
-                            <div class="product-combo__menu" role="listbox" data-combo-menu>
-                                @foreach($selectOptions['categories'] as $category)
-                                    <button class="product-combo__option" type="button" data-combo-option="{{ $category }}">{{ $category }}</button>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="product-field">
-                        <label for="subtype">Subtipo</label>
-                        <div class="product-combo" data-combo data-combo-name="subtype">
-                            <input class="product-input" type="text" id="subtype" name="subtype" value="{{ $currentSubtype }}" autocomplete="off" data-combo-input>
-                            <button class="product-combo__toggle" type="button" aria-label="Mostrar subtipos" data-combo-toggle>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="m6 9 6 6 6-6"></path>
-                                </svg>
-                            </button>
-                            <div class="product-combo__menu" role="listbox" data-combo-menu>
-                                @foreach($selectOptions['subtypes'] as $subtype)
-                                    <button class="product-combo__option" type="button" data-combo-option="{{ $subtype }}">{{ $subtype }}</button>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="product-field">
-                        <label for="brand">Marca</label>
-                        <div class="product-combo" data-combo data-combo-name="brand">
-                            <input class="product-input" type="text" id="brand" name="brand" value="{{ $currentBrand }}" autocomplete="off" data-combo-input>
-                            <button class="product-combo__toggle" type="button" aria-label="Mostrar marcas" data-combo-toggle>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="m6 9 6 6 6-6"></path>
-                                </svg>
-                            </button>
-                            <div class="product-combo__menu" role="listbox" data-combo-menu>
-                                @foreach($selectOptions['brands'] as $brand)
-                                    <button class="product-combo__option" type="button" data-combo-option="{{ $brand }}">{{ $brand }}</button>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="product-field">
-                        <label for="model">Modelo</label>
-                        <div class="product-combo" data-combo data-combo-name="model">
-                            <input class="product-input" type="text" id="model" name="model" value="{{ $currentModel }}" autocomplete="off" data-combo-input>
-                            <button class="product-combo__toggle" type="button" aria-label="Mostrar modelos" data-combo-toggle>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="m6 9 6 6 6-6"></path>
-                                </svg>
-                            </button>
-                            <div class="product-combo__menu" role="listbox" data-combo-menu>
-                                @foreach($selectOptions['models'] as $model)
-                                    <button class="product-combo__option" type="button" data-combo-option="{{ $model }}">{{ $model }}</button>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="product-field">
-                        <label for="price">Precio</label>
-                        <div class="product-money">
-                            <span class="product-money__prefix">$</span>
-                            <input class="product-money__input" type="number" id="price" name="price" value="{{ old('price', $productData['price']) }}" min="0" step="0.01" inputmode="decimal">
-                            <span class="product-money__suffix">MXN</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="product-image-upload">
-                    <div class="product-image-preview" id="productImagePreview" aria-label="Vista previa">
-                        @if($imageUrl)
-                            <img src="{{ $imageUrl }}" alt="Vista previa del producto">
-                        @else
-                            @include('structure.gestion_Inventario.equipos.partials.product-thumb', ['type' => $productData['thumb']])
-                        @endif
+                <div class="equipment-field" style="display:grid; gap:6px;">
+                    <label for="subtype">Subtipo</label>
+                    <div class="product-combo" data-combo data-combo-name="subtype">
+                        <input type="text" id="subtype" name="subtype" value="{{ $currentSubtype }}" autocomplete="off" data-combo-input>
+                        <button class="product-combo__toggle" type="button" aria-label="Mostrar subtipos" data-combo-toggle>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="m6 9 6 6 6-6"></path></svg>
+                        </button>
+                        <div class="product-combo__menu" role="listbox" data-combo-menu>
+                            @foreach($selectOptions['subtypes'] as $subtype)
+                                <button class="product-combo__option" type="button" data-combo-option="{{ $subtype }}">{{ $subtype }}</button>
+                            @endforeach
+                        </div>
                     </div>
-
-                    <div class="product-image-actions">
-                        <label class="product-upload-button" for="product_image">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M12 5v14"></path>
-                                <path d="M5 12h14"></path>
-                            </svg>
-                            {{ $imageAction }}
-                        </label>
-                        <p class="product-image-help">Formatos: JPG/PNG. Max 2MB.</p>
-                    </div>
-
-                    <input class="product-file-input" type="file" id="product_image" name="product_image" accept="image/jpeg,image/png">
                 </div>
+
+                <div class="equipment-field" style="display:grid; gap:6px;">
+                    <label for="brand">Marca</label>
+                    <div class="product-combo" data-combo data-combo-name="brand">
+                        <input type="text" id="brand" name="brand" value="{{ $currentBrand }}" autocomplete="off" data-combo-input>
+                        <button class="product-combo__toggle" type="button" aria-label="Mostrar marcas" data-combo-toggle>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="m6 9 6 6 6-6"></path></svg>
+                        </button>
+                        <div class="product-combo__menu" role="listbox" data-combo-menu>
+                            @foreach($selectOptions['brands'] as $brand)
+                                <button class="product-combo__option" type="button" data-combo-option="{{ $brand }}">{{ $brand }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <div class="equipment-field" style="display:grid; gap:6px;">
+                    <label for="model">Modelo</label>
+                    <div class="product-combo" data-combo data-combo-name="model">
+                        <input type="text" id="model" name="model" value="{{ $currentModel }}" autocomplete="off" data-combo-input>
+                        <button class="product-combo__toggle" type="button" aria-label="Mostrar modelos" data-combo-toggle>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="m6 9 6 6 6-6"></path></svg>
+                        </button>
+                        <div class="product-combo__menu" role="listbox" data-combo-menu>
+                            @foreach($selectOptions['models'] as $model)
+                                <button class="product-combo__option" type="button" data-combo-option="{{ $model }}">{{ $model }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <x-ui.form-group label="Serial number" name="serial_number" :value="$productData['serial_number']" />
+                <x-ui.form-group label="Nombre del producto" name="name" :value="$productData['name']" />
+                <x-ui.form-group label="Unidad" name="unit" :value="$productData['unit']" placeholder="Ej. Pza" />
+                <x-ui.form-group label="Stock actual" name="stock_current" type="number" :value="$productData['stock_current']" />
+                <x-ui.form-group for="warehouse" label="Almacen predeterminado" style="grid-column:1 / -1;">
+                    <select id="warehouse" name="warehouse" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
+                        <option value="">Seleccionar</option>
+                        <option value="Almacen Central" @selected(old('warehouse', $productData['warehouse']) === 'Almacen Central')>Almacen Central</option>
+                        <option value="Quirofano 1" @selected(old('warehouse', $productData['warehouse']) === 'Quirofano 1')>Quirofano 1</option>
+                        <option value="Quirofano 2" @selected(old('warehouse', $productData['warehouse']) === 'Quirofano 2')>Quirofano 2</option>
+                        <option value="Servicio tecnico" @selected(old('warehouse', $productData['warehouse']) === 'Servicio tecnico')>Servicio tecnico</option>
+                    </select>
+                </x-ui.form-group>
+
+                <div class="equipment-field" style="display:grid; gap:6px; grid-column:1 / -1;">
+                    <label for="price">Precio</label>
+                    <div class="product-money">
+                        <span class="product-money__prefix">$</span>
+                        <input class="product-money__input" type="number" id="price" name="price" value="{{ old('price', $productData['price']) }}" min="0" step="0.01" inputmode="decimal">
+                        <span class="product-money__suffix">MXN</span>
+                    </div>
+                </div>
+
+                <x-ui.form-group for="description" label="Descripcion" style="grid-column:1 / -1;">
+                    <input id="description" name="description" value="{{ old('description', $productData['description']) }}" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);" autocomplete="off">
+                </x-ui.form-group>
             </div>
 
-            <div class="product-card__footer">
-                <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost" style="text-decoration:none;">
-                    Cancelar
-                </a>
-                <button type="submit" class="btn btn--primary">
-                    {{ $submitLabel }}
-                </button>
+            <div class="product-image-upload" style="margin-top:24px;">
+                <x-ui.section-title style="margin:0;">Imagen del producto</x-ui.section-title>
+                <div class="product-image-preview" id="productImagePreview" aria-label="Vista previa">
+                    @if($imageUrl)
+                        <img src="{{ $imageUrl }}" alt="Vista previa del producto">
+                    @else
+                        @include('structure.gestion_Inventario.equipos.partials.product-thumb', ['type' => $productData['thumb']])
+                    @endif
+                </div>
+
+                <div style="display:grid; place-items:center; gap:6px;">
+                    <label class="product-upload-button" for="product_image">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                        {{ $imageAction }}
+                    </label>
+                    <p class="product-image-help">Formatos: JPG/PNG. Max 2MB.</p>
+                </div>
+                <input class="product-file-input" type="file" id="product_image" name="product_image" accept="image/jpeg,image/png">
             </div>
-        </section>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:24px; padding-top:18px; border-top:1px solid var(--border);">
+                <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost" style="text-decoration:none;">Cancelar</a>
+                <x-ui.button>{{ $submitLabel }}</x-ui.button>
+            </div>
+        </x-ui.card>
     </form>
 
     <script>
@@ -584,9 +377,7 @@
             const renderComboOptions = function (combo, input, values) {
                 const menu = combo.querySelector('[data-combo-menu]');
 
-                if (!menu) {
-                    return;
-                }
+                if (!menu) return;
 
                 menu.innerHTML = '';
                 uniqueSorted(values).forEach(function (value) {
@@ -682,9 +473,7 @@
                 imageInput.addEventListener('change', function () {
                     const file = imageInput.files && imageInput.files[0];
 
-                    if (!file) {
-                        return;
-                    }
+                    if (!file) return;
 
                     const reader = new FileReader();
                     reader.onload = function () {

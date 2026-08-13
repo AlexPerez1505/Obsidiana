@@ -11,514 +11,304 @@
         'Mantenimiento' => 'blue',
         'Malo' => 'red',
     ];
-
-    $equipmentRows = collect($equipmentList ?? [])->map(function ($equipo) use ($statusTones) {
-        return [
-            'code' => $equipo->code,
-            'name' => $equipo->name,
-            'type' => $equipo->equipmentType?->name ?? 'Sin tipo',
-            'location' => $equipo->warehouse ?? 'Sin ubicacion',
-            'owner' => $equipo->assigned_to ?? 'Sin asignar',
-            'status' => $equipo->status ?? 'Activo',
-            'tone' => $statusTones[$equipo->status] ?? 'green',
-            'thumb' => $equipo->thumb ?? 'tower',
-        ];
-    })->all();
 @endphp
 
 @push('head')
 <style>
-    .equipment-page {
-        display: grid;
-        gap: 18px;
-    }
-
-    .equipment-head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-    }
-
-    .equipment-head p {
-        margin: 0;
-        color: #718096;
-        font-size: 14px;
-        font-weight: 600;
-    }
-
-    .equipment-create {
-        min-height: 38px;
-        margin-top: 22px;
-        padding: 0 14px;
-        border-radius: 4px;
-        background: #158be8;
-        color: #fff;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        text-decoration: none;
-        font-size: 12px;
-        font-weight: 900;
-        box-shadow: 0 7px 16px rgba(21, 139, 232, .22);
-        white-space: nowrap;
-    }
-
-    .equipment-create:hover {
-        background: #0879d0;
-    }
-
-    .equipment-create svg,
-    .equipment-search svg,
-    .equipment-action svg {
-        width: 16px;
-        height: 16px;
-        flex: 0 0 auto;
-    }
-
     .equipment-search {
         position: relative;
-        padding: 13px 16px;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, .62);
-        border: 1px solid rgba(226, 232, 240, .78);
+        margin-bottom: 18px;
     }
-
-    .equipment-search svg {
+    .equipment-search svg,
+    .equipment-search__icon {
         position: absolute;
-        left: 28px;
+        left: 14px;
         top: 50%;
         transform: translateY(-50%);
-        color: #718096;
+        color: var(--muted);
+        width: 18px;
+        height: 18px;
         pointer-events: none;
     }
-
+    .equipment-search { position: relative; margin-bottom: 18px; }
     .equipment-search input {
         width: 100%;
-        height: 40px;
-        padding: 0 14px 0 42px;
-        border: 1px solid #cbd5e1;
-        border-radius: 5px;
-        background: #f8fafc;
-        color: #1f2937;
+        padding: 11px 14px 11px 42px;
+        border: 1px solid rgba(0,168,255,0.55);
+        border-radius: 10px;
+        background: rgba(4,10,24,0.72);
+        color: #fff;
         font: inherit;
-        font-size: 13px;
-        outline: none;
+        font-size: 15px;
     }
-
     .equipment-search input:focus {
-        border-color: #158be8;
-        box-shadow: 0 0 0 3px rgba(21, 139, 232, .14);
+        outline: none;
+        border-color: #00A8FF;
+        box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.45);
     }
-
-    .equipment-table-panel {
-        overflow: hidden;
-        border: 1px solid #a8c5ff;
-        border-radius: 5px;
-        background: #fff;
-    }
-
-    .equipment-table-wrap {
-        overflow-x: auto;
-    }
-
-    .equipment-table {
-        width: 100%;
-        min-width: 940px;
-        border-collapse: collapse;
-        color: #202938;
-        font-size: 13px;
-    }
-
-    .equipment-table th {
-        padding: 17px 16px;
-        background: #d8e2ff;
-        color: #111827;
-        font-size: 12px;
-        font-weight: 900;
-        text-align: left;
-        border-bottom: 1px solid #a8c5ff;
-    }
-
-    .equipment-table td {
-        height: 70px;
-        padding: 11px 16px;
-        border-bottom: 1px solid #a8c5ff;
-        background: #fff;
-        vertical-align: middle;
-        font-weight: 600;
-    }
-
-    .equipment-thumb {
-        width: 82px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .equipment-thumb svg {
-        width: 58px;
-        height: 46px;
-        display: block;
-    }
-
     .equipment-state {
-        min-width: 70px;
-        min-height: 24px;
-        padding: 0 10px;
-        border-radius: 999px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        min-width: 70px;
+        padding: 4px 10px;
+        border-radius: 999px;
         font-size: 12px;
-        font-weight: 800;
-        line-height: 1;
+        font-weight: 700;
         white-space: nowrap;
     }
-
     .equipment-state.green {
-        color: #16a329;
+        color: #34d355;
         border: 1px solid #22c943;
-        background: #f7fff8;
+        background: rgba(34,201,67,0.12);
+        box-shadow: 0 0 8px rgba(34,201,67,0.55), 0 0 16px rgba(34,201,67,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
     }
-
     .equipment-state.blue {
-        color: #1689ff;
+        color: #42a5ff;
         border: 1px solid #1689ff;
-        background: #f5fbff;
+        background: rgba(22,137,255,0.12);
+        box-shadow: 0 0 8px rgba(22,137,255,0.55), 0 0 16px rgba(22,137,255,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
     }
-
     .equipment-state.red {
-        color: #ff3131;
+        color: #ff6b6b;
         border: 1px solid #ff4b4b;
-        background: #fff8f8;
+        background: rgba(255,75,75,0.12);
+        box-shadow: 0 0 8px rgba(255,75,75,0.55), 0 0 16px rgba(255,75,75,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
     }
-
-    .equipment-action {
-        width: 32px;
-        height: 32px;
-        border: 0;
-        border-radius: 50%;
-        background: transparent;
-        color: #111827;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-    }
-
-    .equipment-action:hover {
-        background: #eef4ff;
-    }
-
-    .equipment-action-menu {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
+    :root[data-theme="light"] .equipment-state.green { color: #16a329; border: 1px solid #22c943; background: #f7fff8; box-shadow: none; }
+    :root[data-theme="light"] .equipment-state.blue { color: #1689ff; border: 1px solid #1689ff; background: #f5fbff; box-shadow: none; }
+    :root[data-theme="light"] .equipment-state.red { color: #ff3131; border: 1px solid #ff4b4b; background: #fff8f8; box-shadow: none; }
+    .equipment-action-menu { position: relative; display: inline-flex; }
     .equipment-action-list {
         position: absolute;
-        right: 0;
-        top: calc(100% + 6px);
+        right: 100%;
+        top: 0;
+        margin-right: 6px;
         min-width: 210px;
         padding: 6px;
-        border: 1px solid #cbd5e1;
-        border-radius: 8px;
-        background: #fff;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, .14);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
         display: none;
         z-index: 20;
     }
-
-    .equipment-action-menu.is-open .equipment-action-list {
-        display: grid;
-        gap: 3px;
+    .equipment-action-menu.is-open .equipment-action-list { display: grid; gap: 3px; }
+    .equipment-action-list a, .equipment-action-list button {
+        display: flex; align-items: center; gap: 8px;
+        width: 100%; min-height: 34px; padding: 0 10px;
+        border: 0; border-radius: 7px; background: transparent;
+        color: var(--text); text-decoration: none; font-size: 13px; font-weight: 700;
+        text-align: left; white-space: nowrap; cursor: pointer;
     }
-
-    .equipment-action-list a,
-    .equipment-action-list button {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        width: 100%;
-        min-height: 34px;
-        padding: 0 10px;
-        border: 0;
-        border-radius: 6px;
-        background: transparent;
-        color: #111827;
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 800;
-        font-family: inherit;
-        text-align: left;
-        white-space: nowrap;
-        cursor: pointer;
+    .equipment-action-list a:hover, .equipment-action-list button:hover { background: #eef4ff; color: #0879d0; }
+    .equipment-action-list .danger { color: #ef4444; }
+    .equipment-action-list .danger:hover { background: #fff1f2; color: #dc2626; }
+    .equipment-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; color: var(--muted); font-size: 13px; font-weight: 600; }
+    .equipment-menu.card {
+        padding: 20px;
+        border-radius: 14px;
+        background: linear-gradient(145deg, rgba(8,18,40,0.88), rgba(4,12,30,0.88));
+        border: 1px solid rgba(0,168,255,0.55);
+        box-shadow: 0 8px 28px rgba(0,0,0,0.35), 0 0 14px rgba(0,168,255,0.2), inset 0 1px 0 rgba(255,255,255,0.04);
     }
-
-    .equipment-action-list a:hover,
-    .equipment-action-list button:hover {
-        background: #eef4ff;
-        color: #0879d0;
+    .equipment-menu .btn, .equipment-menu-header .btn {
+        background: linear-gradient(135deg, #00A8FF, #7C3AED);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 12px;
+        box-shadow: 0 0 12px rgba(59,130,246,0.35), 0 0 30px rgba(124,58,237,0.2);
+        transition: all 0.2s ease;
     }
-
-    .equipment-action-list a svg,
-    .equipment-action-list button svg {
-        width: 15px;
-        height: 15px;
-        flex: 0 0 auto;
+    .equipment-menu .btn:hover, .equipment-menu-header .btn:hover { filter: brightness(1.1); }
+    .equipment-menu .btn--ghost, .equipment-menu-header .btn--ghost {
+        background: rgba(8,18,40,0.45);
+        color: #00A8FF;
+        border: 1px solid rgba(0,168,255,0.55);
     }
-
-    .equipment-action-list .equipment-action-danger {
-        color: #ef4444;
+    .equipment-menu .btn--ghost:hover, .equipment-menu-header .btn--ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
+    .equipment-search input,
+    .equipment-search select { background: rgba(4,10,24,0.72); border-color: rgba(0,168,255,0.55); color: #fff; }
+    .equipment-search input:focus,
+    .equipment-search select:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.45); outline: none; }
+    .equipment-search svg { color: #00A8FF; }
+    .equipment-foot { color: rgba(255,255,255,0.55); }
+    :root[data-theme="light"] .equipment-menu.card {
+        background: #ffffff;
+        border-color: rgba(0,168,255,0.55);
+        box-shadow: 0 8px 28px rgba(0,168,255,0.12), 0 0 14px rgba(0,168,255,0.18), inset 0 1px 0 rgba(255,255,255,0.6);
     }
-
-    .equipment-action-list .equipment-action-danger:hover {
-        background: #fff1f2;
-        color: #dc2626;
+    :root[data-theme="light"] .equipment-menu .btn,
+    :root[data-theme="light"] .equipment-menu-header .btn { color: #fff; }
+    :root[data-theme="light"] .equipment-menu .btn--ghost,
+    :root[data-theme="light"] .equipment-menu-header .btn--ghost {
+        background: rgba(0,168,255,0.08);
+        border-color: rgba(0,168,255,0.55);
+        color: #00A8FF;
     }
-
-    .equipment-foot {
-        min-height: 40px;
-        padding: 0 16px;
-        background: #d7e9ff;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-        color: #1689ff;
-        font-size: 12px;
+    :root[data-theme="light"] .equipment-menu .btn--ghost:hover,
+    :root[data-theme="light"] .equipment-menu-header .btn--ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
+    :root[data-theme="light"] .equipment-search input { background: #ffffff; color: #1e1b4b; border-color: rgba(0,168,255,0.55); }
+    :root[data-theme="light"] .equipment-search input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.35); outline: none; }
+    :root[data-theme="light"] .equipment-search svg { color: #00A8FF; }
+    :root[data-theme="light"] .equipment-foot {
+        color: #3730a3;
+        background: linear-gradient(180deg, #e0e7ff, #dbeafe);
+        padding: 14px 20px;
+        margin: 14px -20px -20px -20px;
+        border-radius: 0 0 12px 12px;
+    }
+    :root[data-theme="light"] .equipment-menu .equipment-state.green { color: #16a329; background: #f7fff8; border: 1px solid #22c943; box-shadow: none; }
+    :root[data-theme="light"] .equipment-menu .equipment-state.blue { color: #1689ff; background: #f5fbff; border: 1px solid #1689ff; box-shadow: none; }
+    :root[data-theme="light"] .equipment-menu .equipment-state.red { color: #ff3131; background: #fff8f8; border: 1px solid #ff4b4b; box-shadow: none; }
+    .equipment-menu .card { overflow: visible; }
+    .equipment-action-list { z-index: 50; }
+    .equipment-menu th {
+        color: rgba(255,255,255,0.75);
         font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        padding: 12px 8px;
+        border-bottom: 1px solid rgba(0,168,255,0.35);
     }
-
-    .equipment-foot button {
-        border: 0;
-        background: transparent;
-        color: #1689ff;
-        font: inherit;
-        font-weight: 800;
-        cursor: pointer;
+    :root[data-theme="light"] .equipment-menu th {
+        background: linear-gradient(180deg, #e0e7ff, #dbeafe);
+        color: #3730a3;
+        border-bottom: 1px solid rgba(15,23,42,0.08);
     }
-
-    :root[data-theme="dark"] .equipment-search,
-    :root[data-theme="dark"] .equipment-table-panel {
-        background: var(--surface);
-        border-color: var(--border);
-    }
-
-    :root[data-theme="dark"] .equipment-search input,
-    :root[data-theme="dark"] .equipment-table td {
-        background: var(--surface-2);
-        color: var(--text);
-        border-color: var(--border);
-    }
-
-    :root[data-theme="dark"] .equipment-table th {
-        background: rgba(10, 132, 255, .18);
-        color: var(--text);
-        border-color: var(--border);
-    }
-
-    :root[data-theme="dark"] .equipment-foot {
-        background: rgba(10, 132, 255, .14);
-    }
-
-    :root[data-theme="dark"] .equipment-action {
-        color: var(--text);
-    }
-
-    :root[data-theme="dark"] .equipment-action:hover,
-    :root[data-theme="dark"] .equipment-action-list a:hover,
-    :root[data-theme="dark"] .equipment-action-list button:hover {
-        background: rgba(10, 132, 255, .16);
-    }
-
-    :root[data-theme="dark"] .equipment-action-list {
-        background: var(--surface);
-        border-color: var(--border);
-        box-shadow: var(--shadow);
-    }
-
-    :root[data-theme="dark"] .equipment-action-list a,
-    :root[data-theme="dark"] .equipment-action-list button {
-        color: var(--text);
-    }
-
-    :root[data-theme="dark"] .equipment-action-list .equipment-action-danger {
-        color: #f87171;
-    }
-
-    :root[data-theme="dark"] .equipment-action-list .equipment-action-danger:hover {
-        background: rgba(248, 113, 113, .14);
-        color: #fca5a5;
-    }
-
-    :root[data-theme="dark"] .equipment-head p,
-    :root[data-theme="dark"] .equipment-search svg {
-        color: var(--muted);
-    }
-
-    @media (max-width: 760px) {
-        .equipment-head {
-            align-items: stretch;
-            flex-direction: column;
-        }
-
-        .equipment-create {
-            width: 100%;
-            margin-top: 0;
-        }
-    }
+    .equipment-menu table { width: 100%; border-collapse: collapse; }
+    :root[data-theme="light"] .equipment-menu table, :root[data-theme="light"] .equipment-menu tbody { background: #ffffff; }
+    .equipment-menu td { padding: 12px 8px; border-bottom: 1px solid rgba(0,168,255,0.18); }
+    :root[data-theme="light"] .equipment-menu tbody tr { background: #ffffff; }
+    :root[data-theme="light"] .equipment-menu tr { border-bottom: 1px solid rgba(0,168,255,0.35); }
+    :root[data-theme="light"] .equipment-menu tbody tr:hover { background: #f5f9ff; }
+    .equipment-pin-modal { position: fixed; inset: 0; z-index: 1000; display: none; }
+    .equipment-pin-modal__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: grid; place-items: center; padding: 20px; }
+    .equipment-pin-modal__card { width: 100%; max-width: 360px; padding: 24px; border-radius: 14px; background: var(--surface); border: 1px solid rgba(0,168,255,0.55); box-shadow: 0 0 20px rgba(0,168,255,0.35); }
+    .equipment-pin-modal__title { margin: 0 0 12px; color: var(--text); font-size: 1.1rem; font-weight: 800; }
+    .equipment-pin-modal__text { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+    .equipment-pin-modal__input { width: 100%; padding: 9px 12px; border: 1px solid rgba(0,168,255,0.55); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; box-sizing: border-box; }
+    .equipment-pin-modal__actions { display: flex; gap: 12px; margin-top: 18px; }
+    .equipment-pin-modal__btn { display: inline-flex; align-items: center; justify-content: center; flex: 1; padding: 10px 14px; background: linear-gradient(135deg, #00A8FF, #7C3AED); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 0 12px rgba(59,130,246,0.35), 0 0 30px rgba(124,58,237,0.2); transition: all 0.2s ease; }
+    .equipment-pin-modal__btn:hover { filter: brightness(1.1); }
+    .equipment-pin-modal__btn--ghost { background: rgba(0,168,255,0.12); color: #00A8FF; border: 1px solid rgba(0,168,255,0.55); box-shadow: 0 0 10px rgba(0,168,255,0.15); }
+    .equipment-pin-modal__btn--ghost:hover { background: rgba(0,168,255,0.22); border-color: #00A8FF; }
+    :root[data-theme="light"] .equipment-pin-modal__btn--ghost { background: rgba(0,168,255,0.08); color: #00A8FF; }
 </style>
 @endpush
 
 @section('content')
-    <section class="equipment-page">
-        <div class="equipment-head">
-            <div>
-                <p>Administra todos los equipos del inventario.</p>
-            </div>
+    <div class="equipment-menu-header" style="display:flex; justify-content:flex-end; margin-bottom:18px;">
+        <a href="{{ route('inventory.equipos.create') }}" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            Nuevo Equipo
+        </a>
+    </div>
 
-            <a href="{{ route('inventory.equipos.create') }}" class="equipment-create">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 5v14"></path>
-                    <path d="M5 12h14"></path>
-                </svg>
-                Nuevo Equipo
-            </a>
-        </div>
-
-        <div class="equipment-search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <x-ui.card class="equipment-menu">
+        <form method="GET" class="equipment-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" class="equipment-search__icon">
                 <circle cx="11" cy="11" r="7"></circle>
                 <path d="m20 20-3.5-3.5"></path>
             </svg>
-            <input id="equipmentSearch" type="search" placeholder="Buscar por nombre, codigo o categoria..." autocomplete="off">
-        </div>
+            <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por equipo, codigo, serie..." autocomplete="off">
+        </form>
 
-        <div class="equipment-table-panel">
-            <div class="equipment-table-wrap">
-                <table class="equipment-table">
-                    <thead>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Equipo</th>
+                        <th>Estado</th>
+                        <th>Serie</th>
+                        <th>Fecha de adquisicion</th>
+                        <th>Registrado por</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($equipmentList as $equipo)
                         <tr>
-                            <th>Codigo</th>
-                            <th>Imagen</th>
-                            <th>Equipo</th>
-                            <th>Tipo</th>
-                            <th>Ubicacion</th>
-                            <th>Responsable</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="equipmentBody">
-                        @foreach ($equipmentRows as $equipment)
-                            <tr data-search="{{ strtolower($equipment['code'].' '.$equipment['name'].' '.$equipment['type'].' '.$equipment['location'].' '.$equipment['owner'].' '.$equipment['status']) }}">
-                                <td>{{ $equipment['code'] }}</td>
-                                <td>
-                                    <span class="equipment-thumb" aria-label="Imagen de {{ $equipment['name'] }}">
-                                        @include('structure.gestion_Inventario.equipos.partials.equipment-thumb', ['type' => $equipment['thumb']])
-                                    </span>
-                                </td>
-                                <td>{{ $equipment['name'] }}</td>
-                                <td>{{ $equipment['type'] }}</td>
-                                <td>{{ $equipment['location'] }}</td>
-                                <td>{{ $equipment['owner'] }}</td>
-                                <td><span class="equipment-state {{ $equipment['tone'] }}">{{ $equipment['status'] }}</span></td>
-                                <td>
-                                    <div class="equipment-action-menu" data-equipment-action-menu>
-                                        <button class="equipment-action" type="button" aria-label="Acciones de {{ $equipment['code'] }}" aria-haspopup="true" aria-expanded="false" data-equipment-action-toggle>
-                                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                                <circle cx="12" cy="5" r="1.8"></circle>
-                                                <circle cx="12" cy="12" r="1.8"></circle>
-                                                <circle cx="12" cy="19" r="1.8"></circle>
-                                            </svg>
-                                        </button>
+                            <td>
+                                <div style="font-weight:700;">{{ $equipo->name }}</div>
+                                <small style="color:var(--muted);">{{ $equipo->code }}</small>
+                            </td>
+                            <td><span class="equipment-state {{ $statusTones[$equipo->status] ?? 'green' }}">{{ $equipo->status ?? 'Activo' }}</span></td>
+                            <td>
+                                <div>{{ $equipo->serial_number ?: '—' }}</div>
+                                <small style="color:var(--muted);">{{ $equipo->base_serial ?: '' }}</small>
+                            </td>
+                            <td>{{ $equipo->acquisition_date?->format('d/m/Y') ?? '—' }}</td>
+                            <td>{{ $equipo->registered_by ?? '—' }}</td>
+                            <td>
+                                <div class="equipment-action-menu" data-equipment-action-menu>
+                                    <button type="button" class="btn btn--ghost" style="padding:6px;" aria-haspopup="true" aria-expanded="false" data-equipment-action-toggle>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                            <circle cx="12" cy="5" r="1.8"></circle>
+                                            <circle cx="12" cy="12" r="1.8"></circle>
+                                            <circle cx="12" cy="19" r="1.8"></circle>
+                                        </svg>
+                                    </button>
 
-                                        <div class="equipment-action-list" role="menu">
-                                            <a href="{{ route('inventory.equipos.show', ['equipo' => $equipment['code']]) }}" role="menuitem">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path>
-                                                    <circle cx="12" cy="12" r="3"></circle>
-                                                </svg>
-                                                Ver detalle
-                                            </a>
-                                            <a href="{{ route('inventory.equipos.edit', ['equipo' => $equipment['code']]) }}" role="menuitem">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M12 20h9"></path>
-                                                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
-                                                </svg>
-                                                Editar
-                                            </a>
-                                            <button type="button" role="menuitem" data-equipment-action-message="Asignacion de responsable pendiente de conectar.">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M20 21a8 8 0 0 0-16 0"></path>
-                                                    <circle cx="12" cy="7" r="4"></circle>
-                                                </svg>
-                                                Asignar responsable
-                                            </button>
-                                            <button type="button" role="menuitem" data-equipment-action-message="Cambio de ubicacion pendiente de conectar.">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z"></path>
-                                                    <circle cx="12" cy="10" r="3"></circle>
-                                                </svg>
-                                                Cambiar ubicacion
-                                            </button>
-                                            <button type="button" role="menuitem" data-equipment-action-message="Registro de mantenimiento pendiente de conectar.">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1a6 6 0 0 1-7.8 7.8l-5.7 5.7a2.1 2.1 0 0 1-3-3l5.7-5.7a6 6 0 0 1 7.8-7.8l-3.1 3.1z"></path>
-                                                </svg>
-                                                Registrar mantenimiento
-                                            </button>
-                                            <button type="button" class="equipment-action-danger" role="menuitem" data-equipment-action-message="Eliminacion de equipo pendiente de confirmar.">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M3 6h18"></path>
-                                                    <path d="M8 6V4h8v2"></path>
-                                                    <path d="M19 6l-1 14H6L5 6"></path>
-                                                    <path d="M10 11v5"></path>
-                                                    <path d="M14 11v5"></path>
-                                                </svg>
+                                    <div class="equipment-action-list" role="menu">
+                                        <a href="{{ route('inventory.equipos.show', $equipo) }}" role="menuitem">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            Ver
+                                        </a>
+                                        <a href="{{ route('inventory.equipos.edit', $equipo) }}" role="menuitem">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                                            Editar
+                                        </a>
+                                        <a href="{{ route('inventory.equipos.download', $equipo) }}" role="menuitem">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                            Descargar
+                                        </a>
+                                        <form method="POST" action="{{ route('inventory.equipos.destroy', $equipo) }}" data-delete-form role="none">
+                                            @csrf
+                                            @method('DELETE')
+                                            <input type="hidden" name="pin" value="">
+                                            <button type="submit" class="danger" role="menuitem">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>
                                                 Eliminar
                                             </button>
-                                        </div>
+                                        </form>
                                     </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-            <div class="equipment-foot">
-                <span id="equipmentCount">Mostrando {{ count($equipmentRows) ? 1 : 0 }} a {{ count($equipmentRows) }} de {{ count($equipmentRows) }} resultados</span>
-                <button type="button">Ver mas &gt;</button>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" style="text-align:center; padding:32px; color:var(--muted);">
+                                No hay equipos registrados. Agrega uno para gestionar el inventario.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="equipment-foot">
+            <span id="equipmentCount">Mostrando {{ $equipmentList->count() ? 1 : 0 }} a {{ $equipmentList->count() }} de {{ $equipmentList->count() }} resultados</span>
+            <button type="button" class="btn btn--ghost" style="font-size:13px;">Ver mas &gt;</button>
+        </div>
+    </x-ui.card>
+
+    <div id="equipmentPinModal" class="equipment-pin-modal">
+        <div class="equipment-pin-modal__overlay">
+            <div class="equipment-pin-modal__card">
+                <h3 class="equipment-pin-modal__title">Confirmar eliminacion</h3>
+                <p class="equipment-pin-modal__text">Ingrese el PIN de acceso para eliminar:</p>
+                <input type="password" id="equipmentPinInput" class="equipment-pin-modal__input" placeholder="PIN" autocomplete="off">
+                <div class="equipment-pin-modal__actions">
+                    <button type="button" id="equipmentPinCancel" class="equipment-pin-modal__btn equipment-pin-modal__btn--ghost">Cancelar</button>
+                    <button type="button" id="equipmentPinAccept" class="equipment-pin-modal__btn">Aceptar</button>
+                </div>
             </div>
         </div>
-    </section>
+    </div>
 
     <script>
-        const equipmentSearch = document.getElementById('equipmentSearch');
-        const equipmentRows = Array.from(document.querySelectorAll('#equipmentBody tr'));
-        const equipmentCount = document.getElementById('equipmentCount');
-
-        equipmentSearch.addEventListener('input', () => {
-            const query = equipmentSearch.value.trim().toLowerCase();
-            let visible = 0;
-
-            equipmentRows.forEach((row) => {
-                const show = !query || row.dataset.search.includes(query);
-                row.style.display = show ? '' : 'none';
-                if (show) visible += 1;
-            });
-
-            equipmentCount.textContent = visible === 0
-                ? 'Sin resultados'
-                : 'Mostrando 1 a ' + visible + ' de 25 resultados';
-        });
-
         document.addEventListener('click', (event) => {
             const toggle = event.target.closest('[data-equipment-action-toggle]');
             const actionButton = event.target.closest('[data-equipment-action-message]');
@@ -531,33 +321,77 @@
                 if (!toggle || menu !== toggle.closest('[data-equipment-action-menu]')) {
                     menu.classList.remove('is-open');
                     const button = menu.querySelector('[data-equipment-action-toggle]');
-                    if (button) {
-                        button.setAttribute('aria-expanded', 'false');
-                    }
+                    if (button) button.setAttribute('aria-expanded', 'false');
                 }
             });
 
-            if (!toggle) {
-                return;
-            }
+            if (!toggle) return;
 
             const menu = toggle.closest('[data-equipment-action-menu]');
+            const list = menu.querySelector('.equipment-action-list');
             const isOpen = menu.classList.toggle('is-open');
             toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+
+            if (list) {
+                const rect = toggle.getBoundingClientRect();
+                const listWidth = list.offsetWidth || 220;
+                let left = rect.left + rect.width - listWidth;
+                if (left < 8) left = 8;
+
+                if (isOpen) {
+                    list.style.position = 'fixed';
+                    list.style.top = (rect.bottom + 6) + 'px';
+                    list.style.left = left + 'px';
+                    list.style.zIndex = '9999';
+                } else {
+                    list.style.position = '';
+                    list.style.top = '';
+                    list.style.left = '';
+                    list.style.zIndex = '';
+                }
+            }
         });
 
         document.addEventListener('keydown', (event) => {
-            if (event.key !== 'Escape') {
-                return;
-            }
+            if (event.key !== 'Escape') return;
 
             document.querySelectorAll('[data-equipment-action-menu]').forEach((menu) => {
                 menu.classList.remove('is-open');
                 const button = menu.querySelector('[data-equipment-action-toggle]');
-                if (button) {
-                    button.setAttribute('aria-expanded', 'false');
-                }
+                if (button) button.setAttribute('aria-expanded', 'false');
             });
+        });
+
+        const equipmentPinModal = document.getElementById('equipmentPinModal');
+        const equipmentPinInput = document.getElementById('equipmentPinInput');
+        let currentEquipmentDeleteForm = null;
+
+        document.querySelectorAll('[data-delete-form]').forEach(form => {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                currentEquipmentDeleteForm = form;
+                equipmentPinInput.value = '';
+                equipmentPinModal.style.display = 'block';
+                equipmentPinInput.focus();
+            });
+        });
+
+        document.getElementById('equipmentPinAccept').addEventListener('click', () => {
+            if (!currentEquipmentDeleteForm) return;
+            const pin = equipmentPinInput.value.trim();
+            if (!pin) return;
+            currentEquipmentDeleteForm.querySelector('input[name="pin"]').value = pin;
+            currentEquipmentDeleteForm.submit();
+        });
+
+        function closeEquipmentPinModal() {
+            equipmentPinModal.style.display = 'none';
+            currentEquipmentDeleteForm = null;
+        }
+
+        document.getElementById('equipmentPinCancel').addEventListener('click', closeEquipmentPinModal);
+        equipmentPinModal.querySelector('.equipment-pin-modal__overlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeEquipmentPinModal();
         });
     </script>
 @endsection
