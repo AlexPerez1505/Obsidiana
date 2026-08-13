@@ -159,7 +159,7 @@
                             <button type="submit" class="product-card__btn">Guardar</button>
                         </form>
 
-                        <div class="product-card__actions">
+                        <div class="product-card__actions" style="display:flex; gap:8px;">
                             @if($producto)
                                 <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}" data-delete-form style="width:100%;">
                                     @csrf
@@ -168,7 +168,7 @@
                                     <button type="submit" class="product-card__btn product-card__btn--danger" style="width:100%;">Eliminar</button>
                                 </form>
                             @else
-                                <button type="button" class="product-card__btn product-card__btn--danger" disabled style="width:100%; opacity:0.45; cursor:not-allowed;">Eliminar</button>
+                                <button type="button" class="product-card__btn product-card__btn--danger" onclick="alert('Primero guarda el producto para poder eliminarlo.')" style="width:100%;">Eliminar</button>
                             @endif
                         </div>
                     </div>
