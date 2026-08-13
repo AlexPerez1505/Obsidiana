@@ -221,6 +221,7 @@ class ServiceController extends Controller
 
         $technicians = User::where('status', 'approved')
             ->where('is_admin', false)
+            ->where('is_internal_technician', true)
             ->orderBy('name')
             ->get();
 
@@ -235,6 +236,33 @@ class ServiceController extends Controller
             'technicians' => $technicians,
             'servicesByTech' => $servicesByTech,
         ]);
+    }
+
+    public function storeInternalTechnicianAccount(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'especialidad' => ['nullable', 'string', 'max:100'],
+            'customer_id' => ['required', 'exists:clientes,id'],
+        ]);
+
+        User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'position' => $validated['especialidad'] ?? null,
+            'password' => Str::random(12),
+            'status' => 'approved',
+            'is_admin' => false,
+            'is_internal_technician' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        return redirect()->route('gestion.servicios.nuevo.interno.tecnico', [
+            'customer_id' => $validated['customer_id'],
+        ])->with('success', 'Técnico interno creado correctamente.');
     }
 
     public function createInternalCotizacion(Request $request)

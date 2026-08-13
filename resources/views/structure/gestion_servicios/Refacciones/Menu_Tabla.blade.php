@@ -47,7 +47,7 @@
                         <td style="padding:12px 10px; font-weight:600;">#{{ $refaccion->id }}</td>
                         <td style="padding:12px 10px;">
                             @if($refaccion->photo)
-                                <img src="{{ asset('storage/' . $refaccion->photo) }}" alt="{{ $refaccion->name }}" style="width:46px; height:46px; object-fit:cover; border-radius:10px; border:1px solid rgba(34,197,94,0.35);">
+                                <img src="{{ asset('storage/' . $refaccion->photo) }}" alt="{{ $refaccion->name }}" onclick="openRefaccionImageModal('{{ asset('storage/' . $refaccion->photo) }}')" style="width:46px; height:46px; object-fit:cover; border-radius:10px; border:1px solid rgba(34,197,94,0.35); cursor:pointer;" title="Ver imagen">
                             @else
                                 <div style="width:46px; height:46px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:rgba(34,197,94,0.10); border:1px solid rgba(34,197,94,0.35); color:#22C55E;">—</div>
                             @endif
@@ -65,11 +65,8 @@
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                                 </button>
                                 <div class="action-dropdown" style="display:none; position:absolute; right:0; top:100%; margin-top:6px; background:var(--surface-2, #1f2937); border:1px solid var(--border, rgba(255,255,255,0.1)); border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,0.3); min-width:150px; z-index:50; overflow:hidden; text-align:left;">
-                                    <a href="#" style="display:flex; align-items:center; gap:10px; padding:10px 14px; color:var(--text, #e5e7eb); text-decoration:none; font-size:13.5px; transition:all 0.15s;" onmouseover="this.style.background='rgba(0,168,255,0.1)'" onmouseout="this.style.background='transparent'">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00A8FF" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                        Ver
-                                    </a>
-                                    <a href="#" style="display:flex; align-items:center; gap:10px; padding:10px 14px; color:var(--text, #e5e7eb); text-decoration:none; font-size:13.5px; transition:all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.1)'" onmouseout="this.style.background='transparent'">
+
+                                    <a href="{{ route('refacciones.edit', $refaccion) }}" style="display:flex; align-items:center; gap:10px; padding:10px 14px; color:var(--text, #e5e7eb); text-decoration:none; font-size:13.5px; transition:all 0.15s;" onmouseover="this.style.background='rgba(245,158,11,0.1)'" onmouseout="this.style.background='transparent'">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                         Editar
                                     </a>
@@ -101,6 +98,16 @@
     @endif
 </div>
 
+<div id="refaccionImageModal" style="display:none; position:fixed; inset:0; z-index:100; align-items:center; justify-content:center; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); padding:20px;" onclick="closeRefaccionImageModal()">
+    <div style="position:relative; max-width:90vw; max-height:90vh;">
+        <img id="refaccionImageModalImg" src="" alt="" style="max-width:100%; max-height:85vh; border-radius:12px; border:1px solid rgba(255,255,255,0.15); box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+        <button type="button" onclick="closeRefaccionImageModal()" style="position:absolute; top:-36px; right:0; background:transparent; border:none; color:#fff; font-size:14px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Cerrar
+        </button>
+    </div>
+</div>
+
 <script>
     function toggleActionMenu(btn) {
         const dropdown = btn.nextElementSibling;
@@ -113,5 +120,15 @@
             document.querySelectorAll('.action-dropdown').forEach(d => d.style.display = 'none');
         }
     });
+
+    function openRefaccionImageModal(src) {
+        const modal = document.getElementById('refaccionImageModal');
+        document.getElementById('refaccionImageModalImg').src = src;
+        modal.style.display = 'flex';
+    }
+
+    function closeRefaccionImageModal() {
+        document.getElementById('refaccionImageModal').style.display = 'none';
+    }
 </script>
 @endsection
