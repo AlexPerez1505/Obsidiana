@@ -223,6 +223,27 @@
                 </svg>
                 <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar equipo..." autocomplete="off">
             </div>
+
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:18px;">
+                <select class="equipment-input" name="tipo" onchange="this.form.submit()">
+                    <option value="">Todos los tipos</option>
+                    @foreach ($tipos as $tipo)
+                        <option value="{{ $tipo }}" @selected(($filters['tipo'] ?? '') === $tipo)>{{ $tipo }}</option>
+                    @endforeach
+                </select>
+                <select class="equipment-input" name="marca" onchange="this.form.submit()">
+                    <option value="">Todas las marcas</option>
+                    @foreach ($marcas as $marca)
+                        <option value="{{ $marca }}" @selected(($filters['marca'] ?? '') === $marca)>{{ $marca }}</option>
+                    @endforeach
+                </select>
+                <select class="equipment-input" name="estado" onchange="this.form.submit()">
+                    <option value="">Todos los estados</option>
+                    @foreach ($estados as $estado)
+                        <option value="{{ $estado }}" @selected(($filters['estado'] ?? '') === $estado)>{{ $estado }}</option>
+                    @endforeach
+                </select>
+            </div>
         </form>
 
         <div style="overflow-x:auto;">
