@@ -249,13 +249,9 @@
                             <option value="">Seleccionar marca primero</option>
                         </select>
                     </div>
-                    <div class="equipment-field">
+                    <div class="equipment-field" style="grid-column:1 / -1;">
                         <label for="serial_number">Numero de serie</label>
                         <input class="equipment-input" id="serial_number" name="serial_number" value="{{ old('serial_number', $equipmentData['serial_number']) }}" type="text" autocomplete="off">
-                    </div>
-                    <div class="equipment-field">
-                        <label for="base_serial">Serie base (generada automaticamente)</label>
-                        <input class="equipment-input" id="base_serial" name="base_serial" value="{{ old('base_serial', $equipmentData['base_serial']) }}" type="text" readonly style="cursor:default;">
                     </div>
                     <div class="equipment-field" style="grid-column:1 / -1;">
                         <label for="description">Descripcion</label>
