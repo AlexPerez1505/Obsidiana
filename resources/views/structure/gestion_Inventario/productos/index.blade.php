@@ -148,6 +148,8 @@
                                     <input type="hidden" name="pin" value="">
                                     <button type="submit" class="product-card__btn product-card__btn--danger">Eliminar</button>
                                 </form>
+                            @else
+                                <button type="button" class="product-card__btn product-card__btn--danger" disabled style="flex:1; opacity:0.45; cursor:not-allowed;">Eliminar</button>
                             @endif
                         </div>
                     </div>
