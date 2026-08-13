@@ -40,16 +40,20 @@
     }
     .equipment-filters input,
     .equipment-filters select {
-        min-height: 38px;
-        padding: 0 12px;
-        border: 1px solid #cbd5e1;
-        border-radius: 5px;
-        background: #f8fafc;
-        color: #1f2937;
+        min-height: 40px;
+        padding: 0 14px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--text);
         font: inherit;
         font-size: 13px;
+        outline: none;
+        transition: border .15s, box-shadow .15s;
     }
-    .equipment-filters input { min-width: 220px; }
+    .equipment-filters input:focus,
+    .equipment-filters select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
+    .equipment-filters input { min-width: 260px; }
     .equipment-table-panel {
         overflow: hidden;
         border: 1px solid #a8c5ff;
@@ -171,105 +175,18 @@
             </a>
         </div>
 
-        <form class="equipment-filters" method="GET" action="{{ route('inventory.equipos.index') }}">
-            <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar equipo, serie, marca o modelo...">
-            <select name="estado">
+        <form class="equipment-filters" id="equipmentFilterForm" method="GET" action="{{ route('inventory.equipos.index') }}">
+            <input type="text" name="search" id="equipmentSearch" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar equipo, serie, marca o modelo..." style="min-width:260px;">
+            <select name="estado" id="equipmentEstado">
                 <option value="">Todos los estados</option>
                 @foreach($estados as $estado)
                     <option value="{{ $estado }}" @selected(($filters['estado'] ?? '') === $estado)>{{ $estado }}</option>
                 @endforeach
             </select>
-            <button type="submit" class="btn" style="min-height:38px;">Filtrar</button>
-            <a href="{{ route('inventory.equipos.index') }}" class="btn btn--ghost" style="min-height:38px; text-decoration:none;">Limpiar</a>
+            <a href="{{ route('inventory.equipos.index') }}" class="btn btn--ghost" style="min-height:40px; text-decoration:none;">Limpiar</a>
         </form>
 
-        <div class="equipment-table-panel">
-            <div class="equipment-table-wrap">
-                <table class="equipment-table">
-                    <thead>
-                        <tr>
-                            <th>Equipo</th>
-                            <th>Estado</th>
-                            <th>Serie</th>
-                            <th>Fecha de adquisición</th>
-                            <th>Registrado por</th>
-                            <th style="width: 70px; text-align:center;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($equipos as $equipo)
-                            @php
-                                $tone = match($equipo->estado) {
-                                    'Mantenimiento' => 'blue',
-                                    'Inactivo', 'Dañado', 'Baja' => 'red',
-                                    default => 'green',
-                                };
-                            @endphp
-                            <tr>
-                                <td>
-                                    <div style="font-weight:800;">{{ $equipo->tipo_equipo }}</div>
-                                    @if($equipo->subtipo)
-                                        <div style="font-size:12px; color:#718096;">{{ $equipo->subtipo }}</div>
-                                    @endif
-                                    @if($equipo->marca || $equipo->modelo)
-                                        <div style="font-size:12px; color:#718096;">{{ $equipo->marca }} {{ $equipo->modelo }}</div>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="state-pill {{ $tone }}">{{ $equipo->estado ?: 'Activo' }}</span>
-                                </td>
-                                <td>{{ $equipo->no_serie ?: '—' }}</td>
-                                <td>{{ $equipo->fecha_adquisicion ? $equipo->fecha_adquisicion->format('d/m/Y') : '—' }}</td>
-                                <td>{{ $equipo->registradoPor?->name ?? '—' }}</td>
-                                <td>
-                                    <div class="action-dots" data-action-dots>
-                                        <button type="button" class="dots-btn" aria-label="Acciones">&#8942;</button>
-                                        <div class="action-menu">
-                                            <a href="{{ route('inventory.equipos.show', $equipo) }}">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                                Ver detalle
-                                            </a>
-                                            <a href="{{ route('inventory.equipos.edit', $equipo) }}">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                                Editar
-                                            </a>
-                                            <a href="#" onclick="window.open('{{ route('inventory.equipos.show', $equipo) }}?etiqueta=1', '_blank', 'width=400,height=260'); return false;">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 1 18 1 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                                                Imprimir etiqueta
-                                            </a>
-                                            <button type="button" class="qr-btn" onclick="openQrModal({{ $equipo->id }}, '{{ $equipo->no_serie ?: ($equipo->no_serie_base ?: $equipo->id) }}')">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
-                                                Generar QR
-                                            </button>
-                                            <form method="POST" action="{{ route('inventory.equipos.destroy', $equipo) }}" style="display:inline;">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" title="Eliminar" class="danger">
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                                    Eliminar
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" style="text-align:center; padding:32px; color:#718096;">
-                                    No hay equipos registrados.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            @if($equipos->hasPages())
-                <div class="equipment-foot">
-                    <span>Mostrando {{ $equipos->firstItem() }}–{{ $equipos->lastItem() }} de {{ $equipos->total() }}</span>
-                    {{ $equipos->links() }}
-                </div>
-            @endif
-        </div>
+        @include('structure.gestion_Inventario.equipos._table')
     </div>
 
     {{-- Modal del código QR --}}
@@ -293,17 +210,70 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('[data-action-dots]').forEach(function (dots) {
-            var btn = dots.querySelector('.dots-btn');
-            btn.addEventListener('click', function (e) {
+        var form = document.getElementById('equipmentFilterForm');
+        var searchInput = document.getElementById('equipmentSearch');
+        var searchTimeout;
+
+        function updateTable(html) {
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(html, 'text/html');
+            var newPanel = doc.getElementById('equipmentTablePanel');
+            var currentPanel = document.getElementById('equipmentTablePanel');
+            if (newPanel && currentPanel) {
+                currentPanel.outerHTML = newPanel.outerHTML;
+            }
+        }
+
+        function fetchEquipos() {
+            var url = form.getAttribute('action') + '?' + new URLSearchParams(new FormData(form)).toString();
+            var currentPanel = document.getElementById('equipmentTablePanel');
+            if (currentPanel) currentPanel.style.opacity = '0.6';
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
+            })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                updateTable(html);
+                if (window.history.replaceState) {
+                    window.history.replaceState({}, '', url);
+                }
+            })
+            .catch(function (err) {
+                console.error('Error al buscar equipos:', err);
+            })
+            .finally(function () {
+                var currentPanel = document.getElementById('equipmentTablePanel');
+                if (currentPanel) currentPanel.style.opacity = '1';
+            });
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(fetchEquipos, 300);
+            });
+        }
+
+        form.querySelectorAll('select').forEach(function (select) {
+            select.addEventListener('change', fetchEquipos);
+        });
+
+        var tablePanel = document.getElementById('equipmentTablePanel');
+        if (tablePanel) {
+            tablePanel.addEventListener('click', function (e) {
+                var btn = e.target.closest('.dots-btn');
+                if (!btn) return;
                 e.stopPropagation();
+                var dots = btn.closest('[data-action-dots]');
                 var isOpen = dots.classList.contains('open');
                 document.querySelectorAll('[data-action-dots].open').forEach(function (d) {
                     d.classList.remove('open');
                 });
                 if (!isOpen) dots.classList.add('open');
             });
-        });
+        }
 
         document.addEventListener('click', function () {
             document.querySelectorAll('[data-action-dots].open').forEach(function (d) {

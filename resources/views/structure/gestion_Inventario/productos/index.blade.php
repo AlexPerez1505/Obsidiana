@@ -88,104 +88,84 @@
             </div>
         </div>
 
-        <form class="product-toolbar" method="GET" action="{{ route('inventory.productos.index') }}">
-            <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar producto, serie, marca o modelo..." style="min-width:260px;">
-            <select name="categoria">
+        <form class="product-toolbar" id="productFilterForm" method="GET" action="/gestion-inventario/productos">
+            <input type="text" name="search" id="productSearch" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar producto, serie, marca o modelo..." style="min-width:260px;">
+            <select name="categoria" id="filterCategoria">
                 <option value="">Categoría</option>
                 @foreach($categorias as $categoria)
                     <option value="{{ $categoria }}" @selected(($filters['categoria'] ?? '') === $categoria)>{{ $categoria }}</option>
                 @endforeach
             </select>
-            <select name="marca">
+            <select name="marca" id="filterMarca">
                 <option value="">Marca</option>
                 @foreach($marcas as $marca)
                     <option value="{{ $marca }}" @selected(($filters['marca'] ?? '') === $marca)>{{ $marca }}</option>
                 @endforeach
             </select>
-            <select name="modelo">
+            <select name="modelo" id="filterModelo">
                 <option value="">Modelo</option>
                 @foreach($modelos as $modelo)
                     <option value="{{ $modelo }}" @selected(($filters['modelo'] ?? '') === $modelo)>{{ $modelo }}</option>
                 @endforeach
             </select>
-            <button type="submit" class="btn" style="min-height:40px;">Filtrar</button>
             <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost" style="min-height:40px; text-decoration:none;">Limpiar</a>
         </form>
 
-        <div class="product-catalog">
-            @forelse($productos as $producto)
-                <article class="product-card">
-                    <div class="product-image">
-                        @if($producto->imagen_path)
-                            <img src="{{ asset('storage/' . $producto->imagen_path) }}" alt="{{ $producto->tipo_equipo }}">
-                        @else
-                            <div class="no-img">—</div>
-                        @endif
-                    </div>
-
-                    <div class="product-info">
-                        <h3 class="product-name">{{ $producto->tipo_equipo }}</h3>
-                        <div class="product-meta">
-                            <strong>Marca / Modelo:</strong> {{ $producto->marca ?: '—' }} {{ $producto->modelo }}
-                        </div>
-                        <div class="product-meta">
-                            <strong>Serie:</strong> {{ $producto->no_serie ?: '—' }}
-                        </div>
-                        <div class="product-tags">
-                            <span class="product-tag">{{ $producto->subtipo ?: 'Sin subtipo' }}</span>
-                            @if($producto->stock > 0)
-                                <span class="product-tag" style="background:rgba(34,197,94,.1); color:#22c55e;">Stock: {{ $producto->stock }}</span>
-                            @endif
-                        </div>
-                    </div>
-
-                    <div class="product-price-row">
-                        <div class="product-price">
-                            @if($producto->precio > 0)
-                                ${{ number_format($producto->precio, 2) }}
-                            @else
-                                <span style="font-size:0.9rem; color:var(--muted);">Sin precio</span>
-                            @endif
-                        </div>
-                        <div class="product-actions">
-                            @if($producto->precio == 0)
-                                <a href="{{ route('inventory.productos.edit', $producto) }}" class="btn-price">Agregar precio</a>
-                            @else
-                                <a href="{{ route('inventory.productos.edit', $producto) }}" class="btn-price">Editar</a>
-                            @endif
-                            <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}" onsubmit="return confirm('¿Eliminar este producto?');" style="display:inline;">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" style="color:#ef4444; border-color:#ef4444;">Eliminar</button>
-                            </form>
-                        </div>
-                    </div>
-                </article>
-            @empty
-                <div class="products-empty">No hay productos registrados.</div>
-            @endforelse
-        </div>
+        @include('structure.gestion_Inventario.productos._catalog')
     </div>
 @endsection
 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        var toolbar = document.querySelector('.product-toolbar');
-        if (!toolbar) return;
+        var form = document.getElementById('productFilterForm');
+        var searchInput = document.getElementById('productSearch');
+        var searchTimeout;
 
-        // Evita que los select envien el formulario al cambiar de opcion
-        toolbar.querySelectorAll('select').forEach(function (select) {
-            select.addEventListener('change', function (e) {
-                e.preventDefault();
-            });
-        });
-
-        // Solo permite enviar el formulario desde el boton "Filtrar"
-        toolbar.addEventListener('submit', function (e) {
-            if (!e.submitter || e.submitter.textContent.trim() !== 'Filtrar') {
-                e.preventDefault();
+        function updateCatalog(html) {
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(html, 'text/html');
+            var newCatalog = doc.getElementById('productCatalog');
+            var currentCatalog = document.getElementById('productCatalog');
+            if (newCatalog && currentCatalog) {
+                currentCatalog.outerHTML = newCatalog.outerHTML;
             }
+        }
+
+        function fetchProducts() {
+            var url = form.getAttribute('action') + '?' + new URLSearchParams(new FormData(form)).toString();
+            var currentCatalog = document.getElementById('productCatalog');
+            if (currentCatalog) currentCatalog.style.opacity = '0.6';
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
+            })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                updateCatalog(html);
+                if (window.history.replaceState) {
+                    window.history.replaceState({}, '', url);
+                }
+            })
+            .catch(function (err) {
+                console.error('Error al buscar productos:', err);
+            })
+            .finally(function () {
+                var currentCatalog = document.getElementById('productCatalog');
+                if (currentCatalog) currentCatalog.style.opacity = '1';
+            });
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(fetchProducts, 300);
+            });
+        }
+
+        form.querySelectorAll('select').forEach(function (select) {
+            select.addEventListener('change', fetchProducts);
         });
     });
 </script>

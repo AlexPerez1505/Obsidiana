@@ -40,6 +40,12 @@ class ProductoController extends Controller
 
         $productos = $query->get();
 
+        if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return view('structure.gestion_Inventario.productos._catalog', [
+                'productos' => $productos,
+            ]);
+        }
+
         return view('structure.gestion_Inventario.productos.index', [
             'productos' => $productos,
             'filters' => $request->only('search', 'marca', 'modelo', 'categoria'),
@@ -88,7 +94,11 @@ class ProductoController extends Controller
      */
     public function update(Request $request, Producto $producto): RedirectResponse
     {
-        $data = $this->validated($request);
+        $data = $request->validate([
+            'precio' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
+            'stock' => ['required', 'integer', 'min:0'],
+            'imagen' => ['nullable', 'image', 'max:5120'],
+        ]);
 
         if ($request->hasFile('imagen')) {
             // Delete old image if exists

@@ -42,6 +42,12 @@ class EquipoController extends Controller
 
         $equipos = $query->paginate(10)->withQueryString();
 
+        if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return view('structure.gestion_Inventario.equipos._table', [
+                'equipos' => $equipos,
+            ]);
+        }
+
         return view('structure.gestion_Inventario.equipos.menu_equipos', [
             'equipos' => $equipos,
             'estados' => $this->estados(),
