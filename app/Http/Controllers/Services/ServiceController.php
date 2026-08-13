@@ -11,6 +11,7 @@ use App\Models\ExternalTechnician;
 use App\Models\Service;
 use App\Models\ServiceEquipment;
 use App\Models\ServiceMaintenance;
+use App\Models\Refaccion;
 use App\Models\ServiceStep;
 use App\Models\ServiceTracking;
 use App\Models\Subtype;
@@ -250,6 +251,7 @@ class ServiceController extends Controller
         return view('structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario.Cotizacion', [
             'customer' => $customer,
             'technician' => $technician,
+            'refacciones' => Refaccion::query()->orderBy('name')->get(),
         ]);
     }
 

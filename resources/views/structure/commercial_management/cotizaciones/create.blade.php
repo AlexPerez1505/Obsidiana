@@ -354,6 +354,18 @@
             ];
         }
 
+        $refaccionesData = [];
+        foreach ($refacciones as $refaccion) {
+            $refaccionesData[$refaccion->id] = [
+                'tipo_equipo' => $refaccion->subtype,
+                'marca' => 'Refacción',
+                'modelo' => $refaccion->name,
+                'imagen' => $refaccion->photo ? asset('storage/'.$refaccion->photo) : null,
+                'precio' => (float) $refaccion->price,
+                'stock' => (int) $refaccion->stock,
+            ];
+        }
+
         $paquetesDesgloseData = [];
         $paquetesNombres = [];
         $paquetesInfo = [];
@@ -390,6 +402,8 @@
     <script>
         // Datos de productos individuales
         const productosData = @json($productosData);
+        // Datos de refacciones
+        const refaccionesData = @json($refaccionesData);
         // Desglose de productos incluidos en cada paquete
         const paquetesDesglose = @json($paquetesDesgloseData);
         const paquetesNombres = @json($paquetesNombres);
@@ -503,10 +517,11 @@
         const itemsList = document.getElementById('items-list');
         const itemsEmpty = document.getElementById('items-empty');
 
-        function agregarProductoItem(id, precioOriginal, datos, origenPaqueteId, origenPaqueteNombre, cantidadInicial) {
+        function agregarProductoItem(id, precioOriginal, datos, origenPaqueteId, origenPaqueteNombre, cantidadInicial, tipoItem = 'producto') {
             items.push({
                 seq: itemSeq++,
                 id: parseInt(id),
+                tipoItem: tipoItem,
                 tipo_equipo: datos.tipo_equipo,
                 marca: datos.marca,
                 modelo: datos.modelo,
@@ -520,7 +535,7 @@
             });
         }
 
-        // ---- Buscador combinado de productos y paquetes (misma UX que el buscador de clientes) ----
+        // ---- Buscador combinado de productos, refacciones y paquetes ----
         function renderResultadosItems(q) {
             const texto = q.trim().toLowerCase();
 
@@ -529,11 +544,16 @@
                 return texto === '' || t.includes(texto);
             }).map(([id, p]) => ({ tipo: 'producto', id, data: p }));
 
+            const refaccionesMatch = Object.entries(refaccionesData).filter(([id, r]) => {
+                const t = `${r.tipo_equipo} ${r.modelo}`.toLowerCase();
+                return texto === '' || t.includes(texto);
+            }).map(([id, r]) => ({ tipo: 'refaccion', id, data: r }));
+
             const paquetesMatch = Object.entries(paquetesInfo).filter(([id, p]) => {
                 return texto === '' || p.nombre.toLowerCase().includes(texto);
             }).map(([id, p]) => ({ tipo: 'paquete', id, data: p }));
 
-            const coincidencias = [...paquetesMatch, ...productosMatch].slice(0, 20);
+            const coincidencias = [...paquetesMatch, ...productosMatch, ...refaccionesMatch].slice(0, 20);
 
             resultadosItems.innerHTML = '';
             if (coincidencias.length === 0) {
@@ -541,11 +561,14 @@
             } else {
                 coincidencias.forEach(({ tipo, id, data }) => {
                     const esPaquete = tipo === 'paquete';
+                    const esRefaccion = tipo === 'refaccion';
                     const disponible = esPaquete ? data.disponible : data.stock >= 1;
                     const nombre = esPaquete ? data.nombre : `${data.tipo_equipo} ${data.marca} ${data.modelo}`;
                     const badge = esPaquete
                         ? '<span class="badge" style="background:var(--primary-soft); color:var(--primary); font-weight:700; font-size:10.5px; margin-right:6px;">PAQUETE</span>'
-                        : '<span class="badge" style="background:var(--surface-2); color:var(--muted); font-weight:700; font-size:10.5px; margin-right:6px;">PRODUCTO</span>';
+                        : (esRefaccion
+                            ? '<span class="badge" style="background:rgba(245,158,11,0.15); color:#F59E0B; font-weight:700; font-size:10.5px; margin-right:6px;">REFACCIÓN</span>'
+                            : '<span class="badge" style="background:var(--surface-2); color:var(--muted); font-weight:700; font-size:10.5px; margin-right:6px;">PRODUCTO</span>');
                     const detalle = esPaquete
                         ? (data.disponible ? 'Disponible' : 'Sin stock: ' + data.stockInfo)
                         : (disponible ? 'Stock: ' + data.stock : 'Sin stock');
@@ -564,6 +587,8 @@
                                     const datos = productosData[prod.producto_id] || { tipo_equipo: prod.tipo_equipo, marca: prod.marca, modelo: prod.modelo, imagen: prod.imagen };
                                     agregarProductoItem(prod.producto_id, prod.precio, datos, id, nombrePaquete, prod.cantidad);
                                 });
+                            } else if (esRefaccion) {
+                                agregarProductoItem(id, data.precio, data, null, null, 1, 'refaccion');
                             } else {
                                 agregarProductoItem(id, data.precio, data, null, null, 1);
                             }
@@ -904,7 +929,7 @@
             const form = this;
             items.forEach((item, index) => {
                 const fields = {
-                    tipo: 'producto',
+                    tipo: item.tipoItem || 'producto',
                     id: item.id,
                     cantidad: item.cantidad,
                     sobreprecio: item.sobreprecio,
