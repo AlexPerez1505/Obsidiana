@@ -112,6 +112,7 @@
 
         <div class="timeline">
             @foreach ($steps as $step)
+                @continue($step->slug === 'aprobacion-interna')
                 @php
                     $tracking = $trackingsByStep[$step->id] ?? null;
                     $isCompleted = $tracking && $tracking->status === 'completado';

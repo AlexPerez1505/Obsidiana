@@ -549,24 +549,43 @@ class ServiceController extends Controller
             'total' => $total,
         ]);
 
-        $approvalStep = ServiceStep::firstOrCreate(
-            ['service_type' => 'interno', 'slug' => 'aprobacion-interna'],
+        $llenadoStep = ServiceStep::firstOrCreate(
+            ['service_type' => 'interno', 'slug' => 'interno-llenado-equipo'],
             [
-                'name' => 'Aprobacion de Servicio Interno',
-                'purpose' => 'aprobacion',
+                'name' => 'Llenado de información del equipo',
+                'purpose' => 'equipo',
                 'order' => 1,
                 'requires_qr' => false,
-                'requires_approval' => true,
-                'description' => 'Pendiente de aprobacion del administrador',
+                'description' => null,
             ]
         );
+
+        $approvalStep = ServiceStep::firstOrCreate(
+            ['service_type' => 'interno', 'slug' => 'interno-aprobacion-admin'],
+            [
+                'name' => 'Aprobación por el Admin',
+                'purpose' => 'aprobacion',
+                'order' => 2,
+                'requires_qr' => false,
+                'requires_approval' => true,
+                'description' => null,
+            ]
+        );
+
+        ServiceTracking::create([
+            'service_id' => $service->id,
+            'service_step_id' => $llenadoStep->id,
+            'status' => 'completado',
+            'started_at' => now(),
+            'finished_at' => now(),
+        ]);
 
         ServiceTracking::create([
             'service_id' => $service->id,
             'service_step_id' => $approvalStep->id,
             'status' => 'pendiente',
             'started_at' => now(),
-            'notes' => 'Pendiente de aprobacion del administrador',
+            'notes' => 'Pendiente de aprobación del administrador',
         ]);
 
         $service->update(['current_step_id' => $approvalStep->id]);
@@ -787,7 +806,10 @@ class ServiceController extends Controller
                     'started_at' => now(),
                 ]);
 
-                $service->update(['current_step_id' => $nextStep->id]);
+                $service->update([
+                    'status' => 'en_progreso',
+                    'current_step_id' => $nextStep->id,
+                ]);
             } else {
                 $service->update([
                     'status' => 'entregado',
