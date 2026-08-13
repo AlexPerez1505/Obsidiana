@@ -125,7 +125,7 @@ class ProductoController extends Controller
      */
     public function destroy(Request $request, Producto $producto): RedirectResponse
     {
-        if ($request->input('pin') !== '123456') {
+        if (! \Illuminate\Support\Facades\Hash::check($request->input('pin'), auth()->user()->password)) {
             return back()->with('error', 'PIN incorrecto. El producto no se eliminó.');
         }
 
