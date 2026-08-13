@@ -332,7 +332,7 @@
                 <input id="movement-end" type="date">
             </div>
             <div class="movement-field">
-                <label for="movement-type">Tipo de movimiento</label>
+                <label for="movement-type">Estado</label>
                 <select id="movement-type">
                     <option value="all">Todos</option>
                     <option value="entrada">Entrada</option>
@@ -355,12 +355,12 @@
                     <thead>
                         <tr>
                             <th>Fecha</th>
-                            <th>Tipo</th>
+                            <th>Estado</th>
                             <th>Folio</th>
                             <th>Almacen</th>
-                            <th>Producto</th>
+                            <th>Equipo/Producto</th>
                             <th>Cantidad</th>
-                            <th>Referencias/Proveedor</th>
+                            <th>Nombre Equipo/Producto</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
@@ -371,9 +371,9 @@
                                 <td><span class="movement-pill {{ $toneMap[$movement->movement_type] ?? 'blue' }}">{{ ucfirst($movement->movement_type) }}</span></td>
                                 <td>{{ $movement->folio }}</td>
                                 <td>{{ $movement->warehouse }}</td>
-                                <td>{{ $movement->item_name }}</td>
+                                <td>{{ ucfirst($movement->item_type) }}</td>
                                 <td>{{ $movement->quantity }} {{ $movement->unit }}</td>
-                                <td>{{ $movement->reference ?: ($movement->supplier ?: '-') }}</td>
+                                <td>{{ $movement->item_name }}</td>
                                 <td>
                                     <div class="movement-actions-menu" style="position:relative; display:inline-block;">
                                         <button type="button" class="movement-action" aria-label="Acciones de {{ $movement->folio }}" onclick="this.nextElementSibling.classList.toggle('is-open')">
