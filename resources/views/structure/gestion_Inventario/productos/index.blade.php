@@ -140,16 +140,15 @@
                         </form>
 
                         <div class="product-card__actions">
-                            <button type="button" class="product-card__btn product-card__btn--ghost" data-edit-href="{{ $producto ? route('inventory.productos.edit', $producto) : route('inventory.productos.create', ['equipment_id' => $equipo->id]) }}">Editar</button>
                             @if($producto)
-                                <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}" data-delete-form>
+                                <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}" data-delete-form style="width:100%;">
                                     @csrf
                                     @method('DELETE')
                                     <input type="hidden" name="pin" value="">
-                                    <button type="submit" class="product-card__btn product-card__btn--danger">Eliminar</button>
+                                    <button type="submit" class="product-card__btn product-card__btn--danger" style="width:100%;">Eliminar</button>
                                 </form>
                             @else
-                                <button type="button" class="product-card__btn product-card__btn--danger" disabled style="flex:1; opacity:0.45; cursor:not-allowed;">Eliminar</button>
+                                <button type="button" class="product-card__btn product-card__btn--danger" disabled style="width:100%; opacity:0.45; cursor:not-allowed;">Eliminar</button>
                             @endif
                         </div>
                     </div>
