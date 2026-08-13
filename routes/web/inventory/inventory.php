@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Inventory\EquipoController;
 use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\ProductoController;
 use Illuminate\Support\Facades\Route;
@@ -95,26 +96,24 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         return view('structure.gestion_Inventario.entrada_salida.create');
     })->name('inventory.movimientos.create');
 
-    Route::get('/gestion-inventario/equipos', function () {
-        return view('structure.gestion_Inventario.equipos.menu_equipos');
-    })->name('inventory.equipos.index');
-
-    Route::get('/gestion-inventario/equipos/crear', function () {
-        return view('structure.gestion_Inventario.equipos.c_equipos');
-    })->name('inventory.equipos.create');
-
-    Route::get('/gestion-inventario/equipos/{equipo}/editar', function (string $equipo) use ($findEquipment) {
-        return view('structure.gestion_Inventario.equipos.c_equipos', [
-            'mode' => 'edit',
-            'equipment' => $findEquipment($equipo),
-        ]);
-    })->name('inventory.equipos.edit');
-
-    Route::get('/gestion-inventario/equipos/{equipo}/detalle', function (string $equipo) use ($findEquipment) {
-        return view('structure.gestion_Inventario.equipos.detalle_equipo', [
-            'equipment' => $findEquipment($equipo),
-        ]);
-    })->name('inventory.equipos.show');
+    Route::get('/gestion-inventario/equipos', [EquipoController::class, 'index'])
+        ->name('inventory.equipos.index');
+    Route::get('/gestion-inventario/equipos/crear', [EquipoController::class, 'create'])
+        ->name('inventory.equipos.create');
+    Route::get('/gestion-inventario/equipos/siguiente-serie-base', [EquipoController::class, 'nextBaseSerial'])
+        ->name('inventory.equipos.next-base-serial');
+    Route::post('/gestion-inventario/equipos', [EquipoController::class, 'store'])
+        ->name('inventory.equipos.store');
+    Route::get('/gestion-inventario/equipos/{equipo}/detalle', [EquipoController::class, 'show'])
+        ->name('inventory.equipos.show');
+    Route::get('/gestion-inventario/equipos/{equipo}/qr-imagen', [EquipoController::class, 'qrImage'])
+        ->name('inventory.equipos.qrImage');
+    Route::get('/gestion-inventario/equipos/{equipo}/editar', [EquipoController::class, 'edit'])
+        ->name('inventory.equipos.edit');
+    Route::put('/gestion-inventario/equipos/{equipo}', [EquipoController::class, 'update'])
+        ->name('inventory.equipos.update');
+    Route::delete('/gestion-inventario/equipos/{equipo}', [EquipoController::class, 'destroy'])
+        ->name('inventory.equipos.destroy');
 
     // Productos (stock real, contra base de datos)
     Route::get('/gestion-inventario/productos', [ProductoController::class, 'index'])
@@ -144,3 +143,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::delete('/gestion-inventario/paquetes/{paquete}', [PaqueteController::class, 'destroy'])
         ->name('inventory.paquetes.destroy');
 });
+
+// Vista pública de equipo (escaneo de QR sin autenticación)
+Route::get('/equipo/{equipo}', [EquipoController::class, 'publicShow'])
+    ->name('inventory.equipos.public');

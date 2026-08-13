@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -21,11 +22,18 @@ class Producto extends Model
         'descripcion',
         'proveedor',
         'no_serie',
+        'no_serie_base',
+        'firma_path',
+        'estado',
+        'fecha_adquisicion',
+        'user_id',
     ];
 
     protected $casts = [
         'precio' => 'decimal:2',
         'stock' => 'integer',
+        'fecha_adquisicion' => 'date',
+        'user_id' => 'integer',
     ];
 
     public function paquetes(): BelongsToMany
@@ -38,5 +46,10 @@ class Producto extends Model
     public function cotizaciones(): HasMany
     {
         return $this->hasMany(Cotizacion::class, 'producto_id');
+    }
+
+    public function registradoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

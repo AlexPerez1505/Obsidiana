@@ -327,6 +327,32 @@
             .rgrid-producto-row { grid-template-columns:1fr; }
         }
         .responsive-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+        /* ===== PIN de autorización (editar/eliminar) ===== */
+        .pin-modal { display:none; position:fixed; inset:0; background:rgba(248,250,252,.72); z-index:120; align-items:center; justify-content:center; backdrop-filter: blur(10px); }
+        .pin-modal.show { display:flex; }
+        .pin-modal__panel { position:relative; background:#ffffff; border:1px solid #e2e8f0; border-radius:20px; padding:28px 32px; width:min(400px, calc(100% - 40px)); box-shadow:0 24px 50px rgba(0,0,0,.12); }
+
+        .pin-modal__close { position:absolute; top:16px; right:18px; width:32px; height:32px; border:none; background:transparent; color:#94a3b8; font-size:1.6rem; line-height:1; cursor:pointer; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:color .2s, background .2s; }
+        .pin-modal__close:hover { color:#64748b; background:#f1f5f9; }
+
+        .pin-modal__header { display:flex; align-items:center; gap:14px; margin-bottom:20px; }
+        .pin-modal__icon { width:48px; height:48px; border-radius:14px; background:#eff6ff; color:#3b82f6; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+        .pin-modal__icon svg { width:24px; height:24px; }
+        .pin-modal__header h3 { margin:0; font-size:1.05rem; font-weight:800; color:#1e293b; }
+        .pin-modal__header p { margin:4px 0 0; color:#64748b; font-size:0.88rem; }
+
+        .pin-modal__hint { display:flex; align-items:center; gap:10px; margin:0 0 22px; padding:10px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:999px; color:#334155; font-size:0.82rem; font-weight:600; }
+        .pin-modal__hint svg { width:16px; height:16px; color:#3b82f6; flex:0 0 auto; }
+        .pin-modal__hint strong { color:#1e293b; }
+
+        .pin-modal__inputs { display:flex; justify-content:center; gap:10px; margin:18px 0 14px; }
+        .pin-modal__inputs input { width:54px; height:58px; text-align:center; font-size:1.5rem; font-weight:700; border:1.5px solid #e2e8f0; border-radius:12px; background:#ffffff; color:#1e293b; outline:none; transition:border-color .15s, box-shadow .15s; }
+        .pin-modal__inputs input:focus { border-color:#3b82f6; box-shadow:0 0 0 4px rgba(59,130,246,.12); }
+
+        .pin-modal__paste { text-align:center; color:#94a3b8; font-size:0.8rem; margin:0 0 12px; }
+        .pin-modal__paste strong { color:#64748b; }
+        .pin-modal__error { color:#ef4444; font-size:0.84rem; margin:4px 0 0; min-height:1.2em; text-align:center; }
     </style>
 </head>
 <body>
@@ -600,6 +626,40 @@
     </div>
 </div>
 
+{{-- Modal de autorización por PIN --}}
+<div class="pin-modal" id="pinModal" role="dialog" aria-modal="true" aria-labelledby="pinModalTitle">
+    <div class="pin-modal__panel">
+        <button type="button" class="pin-modal__close" onclick="closePinModal()" aria-label="Cerrar">&times;</button>
+
+        <div class="pin-modal__header">
+            <div class="pin-modal__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div>
+                <h3 id="pinModalTitle">Autorización de edición</h3>
+                <p>PIN de 6 dígitos para continuar</p>
+            </div>
+        </div>
+
+        <div class="pin-modal__hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <span id="pinModalHintText">Al completar los <strong>6 dígitos</strong>, se abrirá la edición.</span>
+        </div>
+
+        <div class="pin-modal__inputs" id="pinInputs">
+            <input type="text" inputmode="numeric" pattern="\d*" maxlength="1" class="pin-digit" autocomplete="off" aria-label="Dígito 1">
+            <input type="text" inputmode="numeric" pattern="\d*" maxlength="1" class="pin-digit" autocomplete="off" aria-label="Dígito 2">
+            <input type="text" inputmode="numeric" pattern="\d*" maxlength="1" class="pin-digit" autocomplete="off" aria-label="Dígito 3">
+            <input type="text" inputmode="numeric" pattern="\d*" maxlength="1" class="pin-digit" autocomplete="off" aria-label="Dígito 4">
+            <input type="text" inputmode="numeric" pattern="\d*" maxlength="1" class="pin-digit" autocomplete="off" aria-label="Dígito 5">
+            <input type="text" inputmode="numeric" pattern="\d*" maxlength="1" class="pin-digit" autocomplete="off" aria-label="Dígito 6">
+        </div>
+
+        <p class="pin-modal__paste">Puedes <strong>pegar</strong> el PIN completo.</p>
+        <p class="pin-modal__error" id="pinError" aria-live="polite"></p>
+    </div>
+</div>
+
 {{-- Toast global de confirmaciones --}}
 <div class="toast" id="appToast" role="status" aria-live="polite">
     <span class="toast-ico" id="appToastIco"></span>
@@ -727,6 +787,190 @@
                 toggle.closest('.nav-group').classList.toggle('open');
             });
         });
+
+        // ===== Protección por PIN para editar/eliminar (excepto marketing) =====
+        (function () {
+            var modal = document.getElementById('pinModal');
+            var error = document.getElementById('pinError');
+            var pendingTarget = null;
+            var pendingType = null;
+
+            function isMarketing(element) {
+                var href = (element.getAttribute('href') || '').toLowerCase();
+                var action = (element.getAttribute('action') || '').toLowerCase();
+                return href.indexOf('marketing') > -1 || action.indexOf('marketing') > -1 || window.location.pathname.toLowerCase().indexOf('marketing') > -1 || window.location.href.toLowerCase().indexOf('marketing') > -1;
+            }
+
+            function isEditOrDeleteAction(el) {
+                return isEditAction(el) || isDeleteAction(el);
+            }
+
+            function isEditAction(el) {
+                var href = (el.getAttribute('href') || '').toLowerCase();
+                var text = (el.textContent || '').trim().toLowerCase();
+                var title = (el.getAttribute('title') || '').toLowerCase();
+                return href.indexOf('/editar') > -1 ||
+                       text.indexOf('editar') > -1 ||
+                       title === 'editar';
+            }
+
+            function isDeleteAction(el) {
+                var href = (el.getAttribute('href') || '').toLowerCase();
+                var action = (el.getAttribute('action') || '').toLowerCase();
+                var text = (el.textContent || '').trim().toLowerCase();
+                var title = (el.getAttribute('title') || '').toLowerCase();
+                var onclick = (el.getAttribute('onclick') || '').toLowerCase();
+                var value = (el.value || '').toLowerCase();
+                return href.indexOf('/eliminar') > -1 ||
+                       action.indexOf('/eliminar') > -1 ||
+                       text.indexOf('eliminar') > -1 ||
+                       title === 'eliminar' ||
+                       onclick.indexOf('eliminar') > -1 ||
+                       onclick.indexOf('destroy') > -1 ||
+                       value.indexOf('eliminar') > -1;
+            }
+
+            function setPinModalTexts(isDelete) {
+                var title = document.getElementById('pinModalTitle');
+                var hint = document.getElementById('pinModalHintText');
+                if (title) title.textContent = isDelete ? 'Autorización de eliminación' : 'Autorización de edición';
+                if (hint) {
+                    hint.innerHTML = isDelete
+                        ? 'Al completar los <strong>6 dígitos</strong>, se realizará la eliminación.'
+                        : 'Al completar los <strong>6 dígitos</strong>, se abrirá la edición.';
+                }
+            }
+
+            function openPinModal(isDelete) {
+                if (!modal) return;
+                setPinModalTexts(isDelete);
+                modal.classList.add('show');
+                error.textContent = '';
+                var inputs = document.querySelectorAll('.pin-digit');
+                inputs.forEach(function (i) { i.value = ''; });
+                if (inputs[0]) inputs[0].focus();
+            }
+
+            window.closePinModal = function () {
+                if (!modal) return;
+                modal.classList.remove('show');
+                pendingTarget = null;
+                pendingType = null;
+            };
+
+            function executePendingAction() {
+                if (!pendingTarget) return;
+                if (pendingType === 'link') {
+                    window.location.href = pendingTarget.href;
+                } else if (pendingType === 'form') {
+                    pendingTarget.submit();
+                } else if (pendingType === 'button') {
+                    var form = pendingTarget.closest('form');
+                    if (form) form.submit();
+                }
+            }
+
+            window.submitPin = function () {
+                var inputs = document.querySelectorAll('.pin-digit');
+                var pin = Array.from(inputs).map(function (i) { return i.value; }).join('');
+                if (pin.length !== 6) {
+                    error.textContent = 'Ingresa los 6 dígitos.';
+                    return;
+                }
+                error.textContent = '';
+                fetch('{{ route('verify.approval.pin') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
+                    body: JSON.stringify({ pin: pin }),
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.valid) {
+                        executePendingAction();
+                        closePinModal();
+                    } else {
+                        error.textContent = 'PIN incorrecto.';
+                        inputs.forEach(function (i) { i.value = ''; });
+                        if (inputs[0]) inputs[0].focus();
+                    }
+                })
+                .catch(function () {
+                    error.textContent = 'Error al verificar el PIN.';
+                });
+            };
+
+            // Inputs del PIN
+            var pinInputs = document.querySelectorAll('.pin-digit');
+            pinInputs.forEach(function (input, index, inputs) {
+                input.addEventListener('input', function (e) {
+                    if (input.value.replace(/\D/g, '').length) {
+                        input.value = input.value.replace(/\D/g, '').slice(0, 1);
+                        if (index < inputs.length - 1) {
+                            inputs[index + 1].focus();
+                        } else {
+                            setTimeout(submitPin, 150);
+                        }
+                    } else {
+                        input.value = '';
+                    }
+                });
+                input.addEventListener('keydown', function (e) {
+                    if (e.key === 'Backspace' && input.value === '' && index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                });
+                input.addEventListener('paste', function (e) {
+                    e.preventDefault();
+                    var pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+                    pasted.split('').forEach(function (d, i) { if (inputs[i]) inputs[i].value = d; });
+                    var focusIndex = Math.min(pasted.length, inputs.length - 1);
+                    inputs[focusIndex].focus();
+                    if (pasted.length === 6) submitPin();
+                });
+            });
+
+            // Cerrar con Escape
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && modal.classList.contains('show')) closePinModal();
+            });
+
+            // Interceptar enlaces y botones
+            document.addEventListener('click', function (e) {
+                var target = e.target.closest('a, button, input[type="submit"]');
+                if (!target) return;
+                if (isMarketing(target)) return;
+                if (!isEditOrDeleteAction(target)) return;
+                if (target.closest('.pin-modal__panel')) return;
+
+                e.preventDefault();
+                pendingTarget = target;
+                if (target.tagName.toLowerCase() === 'a') {
+                    pendingType = 'link';
+                } else if (target.tagName.toLowerCase() === 'input' && target.type === 'submit') {
+                    pendingType = 'button';
+                } else {
+                    pendingType = 'button';
+                }
+                openPinModal(isDeleteAction(target));
+            }, true);
+
+            // Interceptar formularios de eliminar
+            document.querySelectorAll('form').forEach(function (form) {
+                if (isMarketing(form)) return;
+                var submitter = form.querySelector('button[type="submit"], input[type="submit"]');
+                if (submitter && isEditOrDeleteAction(submitter)) {
+                    form.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        pendingTarget = form;
+                        pendingType = 'form';
+                        openPinModal(isDeleteAction(submitter));
+                    });
+                }
+            });
+        })();
 </script>
 
 @stack('scripts')

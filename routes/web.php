@@ -19,3 +19,9 @@ require __DIR__.'/web/configuracion/tipo_equipo.php';
 require __DIR__.'/web/configuracion/refaciones.php';
 require __DIR__.'/web/inventory/inventory.php';
 require __DIR__.'/web/services/historial.php';
+
+Route::post('/verificar-pin', function (\Illuminate\Http\Request $request) {
+    return response()->json([
+        'valid' => $request->user()?->checkApprovalPin($request->input('pin', '')) ?? false,
+    ]);
+})->middleware(['auth'])->name('verify.approval.pin');

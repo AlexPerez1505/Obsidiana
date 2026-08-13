@@ -11,7 +11,7 @@ use Illuminate\View\View;
 class ProductoController extends Controller
 {
     /**
-     * Lista los productos del inventario.
+     * Lista los productos del inventario con filtros.
      */
     public function index(Request $request): View
     {
@@ -26,11 +26,26 @@ class ProductoController extends Controller
             });
         }
 
+        if ($marca = $request->get('marca')) {
+            $query->where('marca', $marca);
+        }
+
+        if ($modelo = $request->get('modelo')) {
+            $query->where('modelo', $modelo);
+        }
+
+        if ($categoria = $request->get('categoria')) {
+            $query->where('tipo_equipo', $categoria);
+        }
+
         $productos = $query->get();
 
         return view('structure.gestion_Inventario.productos.index', [
             'productos' => $productos,
-            'filters' => $request->only('search'),
+            'filters' => $request->only('search', 'marca', 'modelo', 'categoria'),
+            'marcas' => Producto::select('marca')->whereNotNull('marca')->where('marca', '<>', '')->distinct()->orderBy('marca')->pluck('marca'),
+            'modelos' => Producto::select('modelo')->whereNotNull('modelo')->where('modelo', '<>', '')->distinct()->orderBy('modelo')->pluck('modelo'),
+            'categorias' => Producto::select('tipo_equipo')->whereNotNull('tipo_equipo')->where('tipo_equipo', '<>', '')->distinct()->orderBy('tipo_equipo')->pluck('tipo_equipo'),
         ]);
     }
 
@@ -105,7 +120,7 @@ class ProductoController extends Controller
             'subtipo' => ['nullable', 'string', 'max:255'],
             'marca' => ['nullable', 'string', 'max:255'],
             'modelo' => ['nullable', 'string', 'max:255'],
-            'precio' => ['required', 'numeric', 'min:0'],
+            'precio' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
             'stock' => ['required', 'integer', 'min:0'],
             'descripcion' => ['nullable', 'string', 'max:1000'],
             'proveedor' => ['nullable', 'string', 'max:255'],
