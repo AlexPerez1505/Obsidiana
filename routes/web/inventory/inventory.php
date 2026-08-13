@@ -132,8 +132,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             'supplier' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'metadata' => ['nullable', 'array'],
-            'evidencias' => ['nullable', 'array'],
-            'evidencias.*' => ['image', 'max:5120'],
+            'imagenes' => ['nullable', 'array', 'max:4'],
+            'imagenes.*' => ['image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
+            'video' => ['nullable', 'file', 'mimes:mp4,mov,avi', 'max:51200'],
         ]);
 
         $producto = \App\Models\Producto::findOrFail($validated['producto_id']);
@@ -145,11 +146,17 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         $folio = $prefix . '-' . now()->format('YmdHisu');
 
         $metadata = $validated['metadata'] ?? [];
-        if ($request->hasFile('evidencias')) {
-            $metadata['evidencias'] = array_map(
+        $metadata['evidencias'] = ['imagenes' => [], 'video' => null];
+
+        if ($request->hasFile('imagenes')) {
+            $metadata['evidencias']['imagenes'] = array_map(
                 fn ($file) => $file->store('movimientos', 'public'),
-                $request->file('evidencias')
+                $request->file('imagenes')
             );
+        }
+
+        if ($request->hasFile('video')) {
+            $metadata['evidencias']['video'] = $request->file('video')->store('movimientos', 'public');
         }
 
         \App\Models\InventoryMovement::create([

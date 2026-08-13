@@ -423,16 +423,26 @@
                                         @endif
                                         <div>
                                             <strong style="color: #111827;">Evidencias</strong>
-                                            @if(!empty($movement['metadata']['evidencias']))
-                                                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;">
-                                                    @foreach($movement['metadata']['evidencias'] as $evidencia)
-                                                        <a href="{{ asset('storage/' . $evidencia) }}" target="_blank" style="display:inline-block;">
-                                                            <img src="{{ asset('storage/' . $evidencia) }}" alt="Evidencia" style="width:80px; height:60px; object-fit:cover; border-radius:4px; border:1px solid #cbd5e1;">
+                                            @php
+                                                $evidencias = $movement['metadata']['evidencias'] ?? [];
+                                                $imagenes = $evidencias['imagenes'] ?? [];
+                                                $video = $evidencias['video'] ?? null;
+                                            @endphp
+                                            @if(!empty($imagenes) || !empty($video))
+                                                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; align-items:flex-start;">
+                                                    @foreach($imagenes as $imagen)
+                                                        <a href="{{ asset('storage/' . $imagen) }}" target="_blank" style="display:inline-block;">
+                                                            <img src="{{ asset('storage/' . $imagen) }}" alt="Evidencia" style="width:80px; height:60px; object-fit:cover; border-radius:4px; border:1px solid #cbd5e1;">
                                                         </a>
                                                     @endforeach
+                                                    @if($video)
+                                                        <a href="{{ asset('storage/' . $video) }}" target="_blank" style="display:inline-block;">
+                                                            <video src="{{ asset('storage/' . $video) }}" style="width:80px; height:60px; object-fit:cover; border-radius:4px; border:1px solid #cbd5e1;" muted playsinline preload="metadata"></video>
+                                                        </a>
+                                                    @endif
                                                 </div>
                                             @else
-                                                <p style="margin: 4px 0;">Sin imagenes</p>
+                                                <p style="margin: 4px 0;">Sin evidencias</p>
                                             @endif
                                         </div>
                                     </div>

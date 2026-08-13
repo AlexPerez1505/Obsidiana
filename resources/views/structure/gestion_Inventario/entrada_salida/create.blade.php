@@ -99,6 +99,99 @@
     :root[data-theme="dark"] .form-field label {
         color: var(--muted);
     }
+
+    .dropzone {
+        position: relative;
+        padding: 24px;
+        border: 2px dashed #158be8;
+        border-radius: 10px;
+        background: #f5fbff;
+        text-align: center;
+        color: #64748b;
+        cursor: pointer;
+        transition: background .2s, border-color .2s;
+    }
+
+    .dropzone.is-dragover {
+        background: #e6f4ff;
+        border-color: #0f6fbd;
+    }
+
+    .dropzone input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .dropzone svg {
+        width: 40px;
+        height: 40px;
+        color: #158be8;
+        margin-bottom: 8px;
+    }
+
+    .dropzone p {
+        margin: 4px 0;
+        font-size: 13px;
+    }
+
+    .dropzone .dropzone-title {
+        font-weight: 800;
+        color: #111827;
+    }
+
+    .dropzone .dropzone-hint {
+        font-size: 11px;
+        color: #718096;
+    }
+
+    .dropzone button {
+        margin-top: 10px;
+        padding: 8px 14px;
+        border: 0;
+        border-radius: 5px;
+        background: #158be8;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        position: relative;
+        z-index: 1;
+    }
+
+    .dropzone button:hover {
+        background: #0f6fbd;
+    }
+
+    .preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .preview img,
+    .preview video {
+        width: 90px;
+        height: 70px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+    }
+
+    :root[data-theme="dark"] .dropzone {
+        background: rgba(21, 139, 232, .10);
+        border-color: #158be8;
+    }
+
+    :root[data-theme="dark"] .dropzone.is-dragover {
+        background: rgba(21, 139, 232, .20);
+    }
+
+    :root[data-theme="dark"] .dropzone-title {
+        color: var(--text);
+    }
 </style>
 @endpush
 
@@ -314,11 +407,37 @@
         </div>
 
         <div class="form-section">
-            <h3>Evidencias fotograficas</h3>
+            <h3>Evidencias</h3>
             <div class="form-grid">
                 <div class="form-field" style="grid-column: 1 / -1;">
-                    <label for="evidencias">Subir imagenes (puedes seleccionar varias)</label>
-                    <input id="evidencias" type="file" name="evidencias[]" accept="image/*" multiple style="padding:6px 0;">
+                    <label for="imagenes">Imagenes (maximo 4)</label>
+                    <div class="dropzone" id="dropzone-imagenes" onclick="document.getElementById('imagenes').click()">
+                        <input id="imagenes" type="file" name="imagenes[]" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p class="dropzone-title">Arrastra imagenes aqui</p>
+                        <p class="dropzone-hint">JPG, PNG, GIF o WebP · Max. 5 MB · Hasta 4 archivos</p>
+                        <button type="button" onclick="event.stopPropagation(); document.getElementById('imagenes').click();">Seleccionar imagenes</button>
+                    </div>
+                    <div id="preview-imagenes" class="preview"></div>
+                </div>
+                <div class="form-field" style="grid-column: 1 / -1;">
+                    <label for="video">Video (1 archivo)</label>
+                    <div class="dropzone" id="dropzone-video" onclick="document.getElementById('video').click()">
+                        <input id="video" type="file" name="video" accept="video/mp4,video/quicktime,video/avi">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p class="dropzone-title">Arrastra un video aqui</p>
+                        <p class="dropzone-hint">MP4, MOV o AVI · Max. 50 MB · 1 archivo</p>
+                        <button type="button" onclick="event.stopPropagation(); document.getElementById('video').click();">Seleccionar video</button>
+                    </div>
+                    <div id="preview-video" class="preview"></div>
                 </div>
             </div>
         </div>
@@ -341,6 +460,56 @@
             }
         }
 
+        function setupDropzone(dropzoneId, inputId, previewId, type, maxFiles) {
+            const dropzone = document.getElementById(dropzoneId);
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
+                dropzone.addEventListener(eventName, (e) => e.preventDefault());
+            });
+
+            ['dragenter', 'dragover'].forEach((eventName) => {
+                dropzone.addEventListener(eventName, () => dropzone.classList.add('is-dragover'));
+            });
+
+            ['dragleave', 'drop'].forEach((eventName) => {
+                dropzone.addEventListener(eventName, () => dropzone.classList.remove('is-dragover'));
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                const files = Array.from(e.dataTransfer.files).slice(0, maxFiles);
+                const dt = new DataTransfer();
+                files.forEach((file) => dt.items.add(file));
+                input.files = dt.files;
+                input.dispatchEvent(new Event('change'));
+            });
+
+            input.addEventListener('change', () => {
+                preview.innerHTML = '';
+                const files = Array.from(input.files).slice(0, maxFiles);
+
+                files.forEach((file) => {
+                    const url = URL.createObjectURL(file);
+
+                    if (type === 'image') {
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.alt = file.name;
+                        preview.appendChild(img);
+                    } else if (type === 'video') {
+                        const video = document.createElement('video');
+                        video.src = url;
+                        video.controls = true;
+                        video.muted = true;
+                        preview.appendChild(video);
+                    }
+                });
+            });
+        }
+
         updateSections();
+        setupDropzone('dropzone-imagenes', 'imagenes', 'preview-imagenes', 'image', 4);
+        setupDropzone('dropzone-video', 'video', 'preview-video', 'video', 1);
     </script>
 @endsection
