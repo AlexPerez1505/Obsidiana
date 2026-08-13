@@ -2,17 +2,19 @@
 
 use App\Http\Controllers\Services\QrController;
 use App\Http\Controllers\Services\ServiceController;
+use App\Http\Controllers\Services\ServiceMaintenanceController;
+use App\Http\Controllers\Services\ServiceOrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/qr/{token}', [QrController::class, 'show'])->name('qr.show');
 Route::post('/qr/{token}/verify-code', [QrController::class, 'verifyCode'])->name('qr.verify-code');
 Route::post('/qr/{token}/complete', [QrController::class, 'complete'])->name('qr.complete');
 
-Route::get('/mantenimiento/{service}', [ServiceController::class, 'maintenanceForm'])
+Route::get('/mantenimiento/{service}', [ServiceMaintenanceController::class, 'maintenanceForm'])
     ->name('gestion.servicios.maintenance.form');
-Route::post('/mantenimiento/{service}', [ServiceController::class, 'storeMaintenance'])
+Route::post('/mantenimiento/{service}', [ServiceMaintenanceController::class, 'storeMaintenance'])
     ->name('gestion.servicios.maintenance.store');
-Route::post('/mantenimiento/{service}/enviar', [ServiceController::class, 'confirmEnvio'])
+Route::post('/mantenimiento/{service}/enviar', [ServiceMaintenanceController::class, 'confirmEnvio'])
     ->name('gestion.servicios.maintenance.enviar');
 
 Route::middleware(['auth', 'verified', 'approved', 'admin'])
@@ -31,11 +33,11 @@ Route::middleware(['auth', 'verified', 'approved', 'admin'])
 Route::middleware(['auth', 'verified', 'approved'])
     ->prefix('gestion-servicios/historial-servicios')
     ->group(function () {
-        Route::get('/mantenimiento', [ServiceController::class, 'maintenanceOrders'])
+        Route::get('/mantenimiento', [ServiceMaintenanceController::class, 'maintenanceOrders'])
             ->name('gestion.servicios.mantenimiento');
 
-        Route::get('/mantenimiento/{service}/os', [ServiceController::class, 'osForm'])
+        Route::get('/mantenimiento/{service}/os', [ServiceOrderController::class, 'osForm'])
             ->name('gestion.servicios.os.form');
-        Route::post('/mantenimiento/{service}/os', [ServiceController::class, 'storeOs'])
+        Route::post('/mantenimiento/{service}/os', [ServiceOrderController::class, 'storeOs'])
             ->name('gestion.servicios.os.store');
     });
