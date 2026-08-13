@@ -18,14 +18,14 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                     <input type="text" id="cliente-search" placeholder="Buscar cliente por nombre o teléfono..." autocomplete="off"
                            style="width:100%; padding:11px 12px 11px 38px; border:1px solid var(--field-border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                    <div id="cliente-resultados" style="position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--field-border); border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:20; display:none; max-height:220px; overflow-y:auto;"></div>
+                    <div id="cliente-resultados" style="position:absolute; top:100%; left:0; right:0; margin-top:-1px; background:var(--surface); border:1px solid var(--field-border); border-top:none; border-radius:0 0 9px 9px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:20; display:none; max-height:220px; overflow-y:auto;"></div>
                 </div>
                 <button type="button" id="btn-nuevo-cliente" class="btn btn--ghost" style="margin-top:10px;">
                     + Agregar cliente nuevo
                 </button>
             </div>
 
-            <div id="cliente-seleccionado" style="{{ $clienteSeleccionado ? '' : 'display:none;' }} display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--field-border); border-radius:9px; cursor:pointer;" title="Clic para buscar otro cliente">
+            <div id="cliente-seleccionado" style="{{ $clienteSeleccionado ? 'display:flex;' : 'display:none;' }} align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--field-border); border-radius:9px; cursor:pointer;" title="Clic para buscar otro cliente">
                 <span id="cliente-seleccionado-nombre">
                     @if($clienteSeleccionado)
                         {{ $clienteSeleccionado->nombre }} {{ $clienteSeleccionado->apellido }} — {{ $clienteSeleccionado->telefono }}
@@ -52,7 +52,7 @@
                 <div style="position:relative;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                     <input type="text" id="buscador-items" class="qinput" placeholder="Escribe el nombre, marca o modelo..." autocomplete="off" style="padding-left:38px;">
-                    <div id="resultados-items" style="position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--field-border); border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:20; display:none; max-height:320px; overflow-y:auto;"></div>
+                    <div id="resultados-items" style="position:absolute; top:100%; left:0; right:0; margin-top:-1px; background:var(--surface); border:1px solid var(--field-border); border-top:none; border-radius:0 0 9px 9px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:20; display:none; max-height:260px; overflow-y:auto;"></div>
                 </div>
             </div>
 

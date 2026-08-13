@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Commercial\CustomerController;
+use App\Http\Controllers\Commercial\PromocionController;
 use App\Http\Controllers\CotizacionController;
 use App\Http\Controllers\PlanPagoPlantillaController;
 use Illuminate\Support\Facades\Route;
@@ -87,7 +88,22 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-comercial/remisiones', [CotizacionController::class, 'remisiones'])
         ->name('commercial.remisiones.index');
 
-    Route::get('/gestion-comercial/promociones', function () {
-        return view('structure.commercial_management.placeholder', ['titulo' => 'Promociones']);
-    })->name('commercial.promociones.index');
+    // Promociones (WhatsApp)
+    Route::get('/gestion-comercial/promociones', [PromocionController::class, 'index'])
+        ->name('commercial.promociones.index');
+
+    Route::get('/gestion-comercial/promociones/crear', [PromocionController::class, 'create'])
+        ->name('commercial.promociones.create');
+
+    Route::post('/gestion-comercial/promociones', [PromocionController::class, 'store'])
+        ->name('commercial.promociones.store');
+
+    Route::get('/gestion-comercial/promociones/{promocion}', [PromocionController::class, 'show'])
+        ->name('commercial.promociones.show');
+
+    Route::post('/gestion-comercial/promociones/{promocion}/enviar', [PromocionController::class, 'send'])
+        ->name('commercial.promociones.send');
+
+    Route::delete('/gestion-comercial/promociones/{promocion}', [PromocionController::class, 'destroy'])
+        ->name('commercial.promociones.destroy');
 });
