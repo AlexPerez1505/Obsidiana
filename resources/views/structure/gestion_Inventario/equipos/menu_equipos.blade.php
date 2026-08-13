@@ -215,35 +215,12 @@
     </div>
 
     <x-ui.card class="equipment-menu">
-        <form method="GET">
-            <div class="equipment-search">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" class="equipment-search__icon">
-                    <circle cx="11" cy="11" r="7"></circle>
-                    <path d="m20 20-3.5-3.5"></path>
-                </svg>
-                <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar equipo..." autocomplete="off">
-            </div>
-
-            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:18px;">
-                <select class="equipment-input" name="tipo" onchange="this.form.submit()">
-                    <option value="">Todos los tipos</option>
-                    @foreach ($tipos as $tipo)
-                        <option value="{{ $tipo }}" @selected(($filters['tipo'] ?? '') === $tipo)>{{ $tipo }}</option>
-                    @endforeach
-                </select>
-                <select class="equipment-input" name="marca" onchange="this.form.submit()">
-                    <option value="">Todas las marcas</option>
-                    @foreach ($marcas as $marca)
-                        <option value="{{ $marca }}" @selected(($filters['marca'] ?? '') === $marca)>{{ $marca }}</option>
-                    @endforeach
-                </select>
-                <select class="equipment-input" name="estado" onchange="this.form.submit()">
-                    <option value="">Todos los estados</option>
-                    @foreach ($estados as $estado)
-                        <option value="{{ $estado }}" @selected(($filters['estado'] ?? '') === $estado)>{{ $estado }}</option>
-                    @endforeach
-                </select>
-            </div>
+        <form method="GET" class="equipment-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" class="equipment-search__icon">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="m20 20-3.5-3.5"></path>
+            </svg>
+            <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar equipo..." autocomplete="off">
         </form>
 
         <div style="overflow-x:auto;">
