@@ -1,6 +1,6 @@
 @extends('structure.gestion_servicios.layout')
 
-@section('title', 'Nueva refacción')
+@section('title', isset($refaccion) ? 'Editar refacción' : 'Nueva refacción')
 
 @section('service_content')
     <style>
@@ -18,8 +18,8 @@
     <div class="catalog-card" style="margin-bottom:22px;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;">
             <div>
-                <h2 style="margin:0; color:#fff; font-size:24px; font-weight:700;">Nueva refacción</h2>
-                <p style="margin:4px 0 0; color:rgba(255,255,255,.55); font-size:14px;">Registra una refacción o repuesto en el catálogo.</p>
+                <h2 style="margin:0; color:#fff; font-size:24px; font-weight:700;">{{ isset($refaccion) ? 'Editar refacción' : 'Nueva refacción' }}</h2>
+                <p style="margin:4px 0 0; color:rgba(255,255,255,.55); font-size:14px;">{{ isset($refaccion) ? 'Modifica los datos de la refacción.' : 'Registra una refacción o repuesto en el catálogo.' }}</p>
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
                 <a href="{{ route('refacciones.index') }}" class="btn" style="background:rgba(8,18,40,0.55); color:#fff; border:1px solid rgba(0,168,255,0.45); padding:10px 18px; border-radius:12px; font-size:14px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
@@ -45,41 +45,52 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('refacciones.store') }}" id="refaccion-form" autocomplete="off" enctype="multipart/form-data">
+        <form method="POST" action="{{ isset($refaccion) ? route('refacciones.update', $refaccion) : route('refacciones.store') }}" id="refaccion-form" autocomplete="off" enctype="multipart/form-data">
             @csrf
+            @if(isset($refaccion))
+                @method('PUT')
+            @endif
 
             <div class="form-group">
                 <label class="form-label" for="subtype">Subtipo *</label>
-                <input type="text" id="subtype" name="subtype" class="form-input" value="{{ old('subtype') }}" placeholder="Ej. Monitor de signos vitales" required>
+                <input type="text" id="subtype" name="subtype" class="form-input" value="{{ old('subtype', $refaccion->subtype ?? '') }}" placeholder="Ej. Monitor de signos vitales" required>
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="name">Nombre *</label>
-                <input type="text" id="name" name="name" class="form-input" value="{{ old('name') }}" placeholder="Ej. Fusible principal" required>
+                <input type="text" id="name" name="name" class="form-input" value="{{ old('name', $refaccion->name ?? '') }}" placeholder="Ej. Fusible principal" required>
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="description">Descripción</label>
-                <textarea id="description" name="description" class="form-input" rows="3" placeholder="Detalles de la refacción">{{ old('description') }}</textarea>
+                <textarea id="description" name="description" class="form-input" rows="3" placeholder="Detalles de la refacción">{{ old('description', $refaccion->description ?? '') }}</textarea>
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="stock">Stock</label>
-                <input type="number" id="stock" name="stock" class="form-input" value="{{ old('stock', 0) }}" placeholder="0" min="0">
+                <input type="number" id="stock" name="stock" class="form-input" value="{{ old('stock', $refaccion->stock ?? 0) }}" placeholder="0" min="0">
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="price">Precio</label>
-                <input type="number" id="price" name="price" class="form-input" value="{{ old('price', 0) }}" placeholder="0.00" min="0" step="0.01">
+                <input type="number" id="price" name="price" class="form-input" value="{{ old('price', $refaccion->price ?? 0) }}" placeholder="0.00" min="0" step="0.01">
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="compatible_with">Compatible con</label>
-                <input type="text" id="compatible_with" name="compatible_with" class="form-input" value="{{ old('compatible_with') }}" placeholder="Ej. Modelo X, Serie Y">
+                <input type="text" id="compatible_with" name="compatible_with" class="form-input" value="{{ old('compatible_with', $refaccion->compatible_with ?? '') }}" placeholder="Ej. Modelo X, Serie Y">
             </div>
 
+            @if(isset($refaccion) && $refaccion->photo)
+                <div class="form-group">
+                    <label class="form-label">Foto actual</label>
+                    <img src="{{ asset('storage/' . $refaccion->photo) }}" alt="{{ $refaccion->name }}" style="width:120px; height:120px; object-fit:cover; border-radius:10px; border:1px solid rgba(0,168,255,0.55);">
+                    <p style="font-size:13px; color:rgba(255,255,255,0.5); margin-top:6px;">Sube una nueva foto para reemplazar la actual.</p>
+                </div>
+            @endif
+
             <div class="form-group">
-                <label class="form-label" for="photo">Foto</label>
+                <label class="form-label" for="photo">{{ isset($refaccion) ? 'Nueva foto' : 'Foto' }}</label>
                 <input type="file" id="photo" name="photo" class="form-input" accept="image/*">
             </div>
         </form>
