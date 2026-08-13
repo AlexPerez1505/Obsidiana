@@ -15,8 +15,22 @@ Route::middleware(['auth', 'verified', 'approved'])
             ->name('gestion.servicios.nuevo');
 
         // Formularios de registro según tipo de mantenimiento
-        Route::view('/nuevo-servicio/interno', 'structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario_int')
+        Route::get('/nuevo-servicio/interno', [ServiceController::class, 'createInternal'])
             ->name('gestion.servicios.nuevo.interno');
+        Route::get('/nuevo-servicio/interno/equipo', [ServiceController::class, 'createInternalEquipment'])
+            ->name('gestion.servicios.nuevo.interno.equipo');
+        Route::post('/nuevo-servicio/interno/equipo', [ServiceController::class, 'storeInternalEquipment'])
+            ->name('gestion.servicios.nuevo.interno.equipo.store');
+        Route::get('/nuevo-servicio/interno/tecnico', [ServiceController::class, 'createInternalTechnician'])
+            ->name('gestion.servicios.nuevo.interno.tecnico');
+        Route::post('/nuevo-servicio/interno/tecnico', [ServiceController::class, 'storeInternalTechnician'])
+            ->name('gestion.servicios.nuevo.interno.tecnico.store');
+        Route::post('/nuevo-servicio/interno/cotizacion', [ServiceController::class, 'createInternalCotizacion'])
+            ->name('gestion.servicios.nuevo.interno.cotizacion');
+        Route::post('/nuevo-servicio/interno/guardar', [ServiceController::class, 'storeInternalService'])
+            ->name('gestion.servicios.nuevo.interno.guardar');
+        Route::get('/nuevo-servicio/interno/resumen/{service}', [ServiceController::class, 'showInternalSummary'])
+            ->name('gestion.servicios.nuevo.interno.resumen');
 
         Route::get('/nuevo-servicio/externo', [ServiceController::class, 'createExternal'])
             ->name('gestion.servicios.nuevo.externo');
