@@ -254,7 +254,7 @@
                         <input class="equipment-input" id="serial_number" name="serial_number" value="{{ old('serial_number', $equipmentData['serial_number']) }}" type="text" autocomplete="off">
                     </div>
                     <div class="equipment-field" style="grid-column:1 / -1;">
-                        <label>Serie base (generada automaticamente)</label>
+                        <label>Base generada</label>
                         <div id="base_serial_preview" class="equipment-input" style="display:flex; align-items:center; min-height:46px; background:rgba(8,18,40,0.55); color:#00A8FF; font-weight:700;">—</div>
                     </div>
                     <div class="equipment-field" style="grid-column:1 / -1;">
