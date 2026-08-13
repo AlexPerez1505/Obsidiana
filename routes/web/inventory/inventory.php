@@ -89,12 +89,79 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     };
 
     Route::get('/gestion-inventario/entrada-salida', function () {
-        return view('structure.gestion_Inventario.entrada_salida.index');
+        $movements = \App\Models\InventoryMovement::with('creator')
+            ->latest()
+            ->get()
+            ->map(fn ($movement) => [
+                'date' => $movement->movement_date?->format('d/m/Y') ?? '-',
+                'type' => ucfirst($movement->movement_type),
+                'tone' => match ($movement->movement_type) {
+                    'entrada' => 'green',
+                    'salida' => 'red',
+                    'transferencia' => 'blue',
+                },
+                'folio' => $movement->folio,
+                'warehouse' => $movement->warehouse,
+                'product' => $movement->item_name,
+                'quantity' => $movement->quantity . ' ' . $movement->unit,
+                'reference' => $movement->reference,
+                'metadata' => $movement->metadata,
+                'movement_type' => $movement->movement_type,
+            ]);
+
+        return view('structure.gestion_Inventario.entrada_salida.index', [
+            'movements' => $movements,
+            'total' => $movements->count(),
+        ]);
     })->name('inventory.movimientos.index');
 
     Route::get('/gestion-inventario/entrada-salida/crear', function () {
-        return view('structure.gestion_Inventario.entrada_salida.create');
+        return view('structure.gestion_Inventario.entrada_salida.create', [
+            'equipos' => \App\Models\Producto::orderBy('tipo_equipo')->get(['id', 'tipo_equipo', 'marca', 'modelo', 'no_serie']),
+            'warehouses' => ['Almacen Central', 'Quirofano 1', 'Taller'],
+        ]);
     })->name('inventory.movimientos.create');
+
+    Route::post('/gestion-inventario/entrada-salida', function (\Illuminate\Http\Request $request) {
+        $validated = $request->validate([
+            'movement_type' => ['required', 'in:entrada,salida,transferencia'],
+            'producto_id' => ['required', 'exists:productos,id'],
+            'warehouse' => ['required', 'string', 'max:120'],
+            'movement_date' => ['required', 'date'],
+            'reference' => ['nullable', 'string', 'max:255'],
+            'supplier' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'metadata' => ['nullable', 'array'],
+        ]);
+
+        $producto = \App\Models\Producto::findOrFail($validated['producto_id']);
+        $prefix = match ($validated['movement_type']) {
+            'entrada' => 'EN',
+            'salida' => 'SA',
+            'transferencia' => 'TR',
+        };
+        $folio = $prefix . '-' . now()->format('YmdHisu');
+
+        \App\Models\InventoryMovement::create([
+            'folio' => $folio,
+            'movement_type' => $validated['movement_type'],
+            'item_type' => 'equipo',
+            'item_id' => $producto->id,
+            'item_code' => $producto->no_serie,
+            'item_name' => trim(($producto->tipo_equipo ?? '') . ' - ' . ($producto->marca ?? '') . ' ' . ($producto->modelo ?? '')),
+            'warehouse' => $validated['warehouse'],
+            'quantity' => 1,
+            'unit' => 'Pza',
+            'reference' => $validated['reference'],
+            'supplier' => $validated['supplier'],
+            'movement_date' => $validated['movement_date'],
+            'notes' => $validated['notes'],
+            'metadata' => $validated['metadata'] ?? [],
+            'created_by' => auth()->id(),
+        ]);
+
+        return redirect()->route('inventory.movimientos.index')->with('status', 'Movimiento registrado correctamente.');
+    })->name('inventory.movimientos.store');
 
     Route::get('/gestion-inventario/equipos', [EquipoController::class, 'index'])
         ->name('inventory.equipos.index');

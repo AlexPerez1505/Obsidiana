@@ -4,16 +4,6 @@
 @section('page-title', 'Entrada / Salida')
 @section('page-sub', 'Gestion de Inventario > Entrada / Salida')
 
-@php
-    $movements = [
-        ['date' => '27/07/2026', 'type' => 'Entrada', 'tone' => 'green', 'folio' => 'EN-000125', 'warehouse' => 'Almacen Central', 'product' => 'Endoscopia flexible', 'quantity' => '1Pza', 'reference' => 'Olimpus Mexico S.A de C.V'],
-        ['date' => '27/07/2026', 'type' => 'Transferencia', 'tone' => 'blue', 'folio' => 'EN-000125', 'warehouse' => 'Almacen Central', 'product' => 'Endoscopia flexible', 'quantity' => '1Pza', 'reference' => 'Olimpus Mexico S.A de C.V'],
-        ['date' => '27/07/2026', 'type' => 'Salida', 'tone' => 'red', 'folio' => 'EN-000125', 'warehouse' => 'Almacen Central', 'product' => 'Endoscopia flexible', 'quantity' => '1Pza', 'reference' => 'Olimpus Mexico S.A de C.V'],
-        ['date' => '27/07/2026', 'type' => 'Entrada', 'tone' => 'green', 'folio' => 'EN-000125', 'warehouse' => 'Almacen Central', 'product' => 'Endoscopia flexible', 'quantity' => '1Pza', 'reference' => 'Olimpus Mexico S.A de C.V'],
-        ['date' => '27/07/2026', 'type' => 'Transferencia', 'tone' => 'blue', 'folio' => 'EN-000125', 'warehouse' => 'Almacen Central', 'product' => 'Endoscopia flexible', 'quantity' => '1Pza', 'reference' => 'Olimpus Mexico S.A de C.V'],
-    ];
-@endphp
-
 @push('head')
 <style>
     .movement-page {
@@ -365,7 +355,7 @@
                     </thead>
                     <tbody id="movementBody">
                         @foreach ($movements as $movement)
-                            <tr data-type="{{ strtolower($movement['type']) }}" data-warehouse="{{ strtolower($movement['warehouse']) }}" data-date="{{ $movement['date'] }}">
+                            <tr class="movement-main" data-type="{{ $movement['movement_type'] }}" data-warehouse="{{ strtolower($movement['warehouse']) }}" data-date="{{ $movement['date'] }}">
                                 <td>{{ $movement['date'] }}</td>
                                 <td><span class="movement-pill {{ $movement['tone'] }}">{{ $movement['type'] }}</span></td>
                                 <td>{{ $movement['folio'] }}</td>
@@ -374,13 +364,64 @@
                                 <td>{{ $movement['quantity'] }}</td>
                                 <td>{{ $movement['reference'] }}</td>
                                 <td>
-                                    <button class="movement-action" type="button" aria-label="Acciones de {{ $movement['folio'] }}">
-                                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                            <circle cx="12" cy="5" r="1.8"></circle>
-                                            <circle cx="12" cy="12" r="1.8"></circle>
-                                            <circle cx="12" cy="19" r="1.8"></circle>
+                                    <button class="movement-action" type="button" aria-label="Ver detalles de {{ $movement['folio'] }}" onclick="toggleDetails('details-{{ $loop->index }}')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
                                         </svg>
                                     </button>
+                                </td>
+                            </tr>
+                            <tr id="details-{{ $loop->index }}" class="movement-details" style="display:none;" data-type="{{ $movement['movement_type'] }}" data-warehouse="{{ strtolower($movement['warehouse']) }}" data-date="{{ $movement['date'] }}">
+                                <td colspan="8" style="padding: 14px 18px; background: #f8fafc;">
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; font-size: 12px; color: #374151;">
+                                        @if($movement['movement_type'] === 'entrada')
+                                            <div>
+                                                <strong style="color: #111827;">Caja al recibir</strong>
+                                                <p style="margin: 4px 0;">Tipo: {{ $movement['metadata']['entrada']['caja']['tipo'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Estado: {{ $movement['metadata']['entrada']['caja']['estado'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Dimensiones: {{ $movement['metadata']['entrada']['caja']['dimensiones'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Peso: {{ $movement['metadata']['entrada']['caja']['peso'] ?? '-' }}</p>
+                                            </div>
+                                            <div>
+                                                <strong style="color: #111827;">Envoltura</strong>
+                                                <p style="margin: 4px 0;">Material: {{ $movement['metadata']['entrada']['envoltura']['material'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Estado: {{ $movement['metadata']['entrada']['envoltura']['estado'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Observaciones: {{ $movement['metadata']['entrada']['envoltura']['observaciones'] ?? '-' }}</p>
+                                            </div>
+                                            <div>
+                                                <strong style="color: #111827;">Contenido de la caja</strong>
+                                                <p style="margin: 4px 0;">Accesorios: {{ $movement['metadata']['entrada']['contenido']['accesorios'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Acomodo: {{ $movement['metadata']['entrada']['contenido']['acomodo'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Observaciones: {{ $movement['metadata']['entrada']['contenido']['observaciones'] ?? '-' }}</p>
+                                            </div>
+                                        @elseif($movement['movement_type'] === 'salida')
+                                            <div>
+                                                <strong style="color: #111827;">Información del envío</strong>
+                                                <p style="margin: 4px 0;">Paquetería: {{ $movement['metadata']['salida']['envio']['paqueteria'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Guía: {{ $movement['metadata']['salida']['envio']['guia'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Fecha de envío: {{ $movement['metadata']['salida']['envio']['fecha_envio'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Responsable: {{ $movement['metadata']['salida']['envio']['responsable'] ?? '-' }}</p>
+                                            </div>
+                                            <div>
+                                                <strong style="color: #111827;">Embalaje de salida</strong>
+                                                <p style="margin: 4px 0;">Tipo: {{ $movement['metadata']['salida']['embalaje']['tipo'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Material: {{ $movement['metadata']['salida']['embalaje']['material'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Estado: {{ $movement['metadata']['salida']['embalaje']['estado'] ?? '-' }}</p>
+                                            </div>
+                                            <div>
+                                                <strong style="color: #111827;">Cómo se manda</strong>
+                                                <p style="margin: 4px 0;">Dirección: {{ $movement['metadata']['salida']['envio']['direccion'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Instrucciones: {{ $movement['metadata']['salida']['envio']['instrucciones'] ?? '-' }}</p>
+                                                <p style="margin: 4px 0;">Prioridad: {{ $movement['metadata']['salida']['envio']['prioridad'] ?? '-' }}</p>
+                                            </div>
+                                        @else
+                                            <div>
+                                                <strong style="color: #111827;">Detalles</strong>
+                                                <p style="margin: 4px 0;">{{ $movement['metadata']['notas'] ?? 'Sin detalles adicionales' }}</p>
+                                            </div>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -388,7 +429,7 @@
                 </table>
             </div>
             <div class="movement-foot">
-                <span id="movementCount">Mostrando 1 a {{ count($movements) }} de 25 resultados</span>
+                <span id="movementCount">Mostrando 1 a {{ $total }} de {{ $total }} resultados</span>
                 <button type="button">Ver mas &gt;</button>
             </div>
         </div>
@@ -396,10 +437,12 @@
 
     <script>
         let activeMovementType = 'all';
-        const movementRows = Array.from(document.querySelectorAll('#movementBody tr'));
+        const mainRows = Array.from(document.querySelectorAll('#movementBody tr.movement-main'));
+        const detailRows = Array.from(document.querySelectorAll('#movementBody tr.movement-details'));
         const movementTypeSelect = document.getElementById('movement-type');
         const movementWarehouse = document.getElementById('movement-warehouse');
         const movementCount = document.getElementById('movementCount');
+        const total = {{ $total }};
 
         document.querySelectorAll('.movement-tab').forEach((button) => {
             button.addEventListener('click', () => {
@@ -426,7 +469,7 @@
             const warehouse = movementWarehouse.value;
             let visible = 0;
 
-            movementRows.forEach((row) => {
+            mainRows.forEach((row) => {
                 const matchesType = type === 'all' || row.dataset.type === type;
                 const matchesWarehouse = warehouse === 'all' || row.dataset.warehouse === warehouse;
                 const show = matchesType && matchesWarehouse;
@@ -435,9 +478,23 @@
                 if (show) visible += 1;
             });
 
+            detailRows.forEach((row) => {
+                row.style.display = 'none';
+                row.classList.remove('is-open');
+            });
+
             movementCount.textContent = visible === 0
                 ? 'Sin resultados'
-                : 'Mostrando 1 a ' + visible + ' de 25 resultados';
+                : 'Mostrando 1 a ' + visible + ' de ' + total + ' resultados';
+        }
+
+        function toggleDetails(id) {
+            const detail = document.getElementById(id);
+            if (!detail) return;
+
+            const isOpen = detail.classList.contains('is-open');
+            detail.classList.toggle('is-open', !isOpen);
+            detail.style.display = isOpen ? 'none' : '';
         }
     </script>
 @endsection
