@@ -239,15 +239,11 @@
                     </div>
                     <div class="equipment-field">
                         <label for="subcategory">Subtipo *</label>
-                        <select class="equipment-input equipment-select" id="subcategory" name="subcategory" data-selected="{{ old('subcategory', $equipmentData['subcategory']) }}" disabled required>
-                            <option value="">Seleccionar tipo primero</option>
-                        </select>
+                        <input class="equipment-input" id="subcategory" name="subcategory" value="{{ old('subcategory', $equipmentData['subcategory']) }}" type="text" placeholder="Ingresa o agrega un subtipo" autocomplete="off" required>
                     </div>
                     <div class="equipment-field">
                         <label for="model">Modelo *</label>
-                        <select class="equipment-input equipment-select" id="model" name="model" data-selected="{{ old('model', $equipmentData['model']) }}" disabled required>
-                            <option value="">Seleccionar marca primero</option>
-                        </select>
+                        <input class="equipment-input" id="model" name="model" value="{{ old('model', $equipmentData['model']) }}" type="text" placeholder="Ingresa o agrega un modelo" autocomplete="off" required>
                     </div>
                     <div class="equipment-field" style="grid-column:1 / -1;">
                         <label for="serial_number">Numero de serie</label>
@@ -359,82 +355,36 @@
             if (e.key === 'Enter') closeCatalogModal(true);
         });
 
-        function bindCascade(config) {
-            const parent = document.getElementById(config.parentId);
-            const child = document.getElementById(config.childId);
-            const catalog = config.catalog;
+        const categorySelect = document.getElementById('category');
+        const brandSelect = document.getElementById('brand');
 
-            if (!parent || !child) return;
+        fillSelect(categorySelect, Object.keys(categoryCatalog), 'Seleccionar', '+ Agregar nuevo tipo...');
+        fillSelect(brandSelect, Object.keys(brandCatalog), 'Seleccionar', '+ Agregar nueva marca...');
 
-            function renderParent() {
-                fillSelect(parent, Object.keys(catalog), 'Seleccionar', config.addParentLabel);
+        categorySelect.addEventListener('change', function () {
+            if (categorySelect.value === NEW_OPTION) {
+                openCatalogModal('Nombre del nuevo tipo de equipo:', 'Ingresa el nombre y presiona Aceptar.', function (name) {
+                    name = (name || '').trim();
+                    if (name && !categoryCatalog[name]) categoryCatalog[name] = [];
+                    categorySelect.dataset.selected = name && categoryCatalog[name] ? name : '';
+                    fillSelect(categorySelect, Object.keys(categoryCatalog), 'Seleccionar', '+ Agregar nuevo tipo...');
+                });
+            } else {
+                categorySelect.dataset.selected = categorySelect.value;
             }
-
-            function renderChild() {
-                const hasParent = parent.value !== '' && parent.value !== NEW_OPTION;
-                const options = hasParent ? (catalog[parent.value] || []) : [];
-                fillSelect(child, options, hasParent ? 'Seleccionar' : config.emptyPlaceholder, hasParent ? config.addChildLabel : null);
-                child.disabled = !hasParent;
-            }
-
-            parent.addEventListener('change', function () {
-                if (parent.value === NEW_OPTION) {
-                    openCatalogModal(config.promptParent, 'Ingresa el nombre y presiona Aceptar.', function (name) {
-                        name = (name || '').trim();
-                        if (name && !catalog[name]) catalog[name] = [];
-                        parent.dataset.selected = name && catalog[name] ? name : '';
-                        child.dataset.selected = '';
-                        renderParent();
-                        renderChild();
-                    });
-                } else {
-                    parent.dataset.selected = parent.value;
-                    child.dataset.selected = '';
-                    renderChild();
-                }
-            });
-
-            child.addEventListener('change', function () {
-                if (child.value === NEW_OPTION) {
-                    openCatalogModal(config.promptChild, 'Ingresa el nombre y presiona Aceptar.', function (name) {
-                        name = (name || '').trim();
-                        const options = catalog[parent.value] || [];
-                        if (name && !options.includes(name)) {
-                            options.push(name);
-                            catalog[parent.value] = options;
-                        }
-                        child.dataset.selected = name && options.includes(name) ? name : '';
-                        renderChild();
-                    });
-                } else {
-                    child.dataset.selected = child.value;
-                }
-            });
-
-            renderParent();
-            renderChild();
-        }
-
-        bindCascade({
-            parentId: 'category',
-            childId: 'subcategory',
-            catalog: categoryCatalog,
-            emptyPlaceholder: 'Seleccionar tipo primero',
-            addParentLabel: '+ Agregar nuevo tipo...',
-            addChildLabel: '+ Agregar nuevo subtipo...',
-            promptParent: 'Nombre del nuevo tipo de equipo:',
-            promptChild: 'Nombre del nuevo subtipo:'
         });
 
-        bindCascade({
-            parentId: 'brand',
-            childId: 'model',
-            catalog: brandCatalog,
-            emptyPlaceholder: 'Seleccionar marca primero',
-            addParentLabel: '+ Agregar nueva marca...',
-            addChildLabel: '+ Agregar nuevo modelo...',
-            promptParent: 'Nombre de la nueva marca:',
-            promptChild: 'Nombre del nuevo modelo:'
+        brandSelect.addEventListener('change', function () {
+            if (brandSelect.value === NEW_OPTION) {
+                openCatalogModal('Nombre de la nueva marca:', 'Ingresa el nombre y presiona Aceptar.', function (name) {
+                    name = (name || '').trim();
+                    if (name && !brandCatalog[name]) brandCatalog[name] = [];
+                    brandSelect.dataset.selected = name && brandCatalog[name] ? name : '';
+                    fillSelect(brandSelect, Object.keys(brandCatalog), 'Seleccionar', '+ Agregar nueva marca...');
+                });
+            } else {
+                brandSelect.dataset.selected = brandSelect.value;
+            }
         });
 
         const baseSerialPreview = document.getElementById('base_serial_preview');
