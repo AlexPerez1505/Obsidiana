@@ -80,7 +80,7 @@
         @if(session('error'))
             <div class="product-alert product-alert--error">{{ session('error') }}</div>
         @endif
-        <form method="GET" class="product-search">
+        <form method="GET" class="product-search" style="position:relative;">
             <div class="product-search__box">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="7"></circle>
@@ -88,19 +88,39 @@
                 </svg>
                 <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por tipo, marca, modelo o serie..." autocomplete="off">
             </div>
-            <select name="tipo">
-                <option value="">Todos los tipos</option>
-                @foreach($tipos as $tipo)
-                    <option value="{{ $tipo }}" {{ ($filters['tipo'] ?? '') == $tipo ? 'selected' : '' }}>{{ $tipo }}</option>
-                @endforeach
-            </select>
-            <select name="marca">
-                <option value="">Todas las marcas</option>
-                @foreach($marcas as $marca)
-                    <option value="{{ $marca }}" {{ ($filters['marca'] ?? '') == $marca ? 'selected' : '' }}>{{ $marca }}</option>
-                @endforeach
-            </select>
-            <button type="submit" class="product-search__btn">Filtrar</button>
+            <button type="button" class="product-search__btn" id="openFilterModal">Filtrar</button>
+
+            <div id="productFilterModal" class="pin-modal" style="z-index:1100;">
+                <div class="pin-modal__overlay">
+                    <div class="pin-modal__card">
+                        <h3 class="pin-modal__title">Filtros</h3>
+                        <div style="display:grid; gap:12px; margin-bottom:18px;">
+                            <div>
+                                <label class="product-card__label">Tipo de equipo</label>
+                                <select name="tipo" class="product-card__input">
+                                    <option value="">Todos los tipos</option>
+                                    @foreach($tipos as $tipo)
+                                        <option value="{{ $tipo }}" {{ ($filters['tipo'] ?? '') == $tipo ? 'selected' : '' }}>{{ $tipo }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="product-card__label">Marca</label>
+                                <select name="marca" class="product-card__input">
+                                    <option value="">Todas las marcas</option>
+                                    @foreach($marcas as $marca)
+                                        <option value="{{ $marca }}" {{ ($filters['marca'] ?? '') == $marca ? 'selected' : '' }}>{{ $marca }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="pin-modal__actions" style="display:flex; gap:12px; margin-top:0;">
+                            <button type="button" class="product-card__btn product-card__btn--ghost" id="closeFilterModal" style="flex:1;">Cancelar</button>
+                            <button type="submit" class="product-card__btn" style="flex:1;">Aplicar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </form>
 
         @if($total === 0)
@@ -251,6 +271,20 @@
 
         editPinModal.querySelector('.pin-modal__overlay').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) closeEditPinModal();
+        });
+
+        const filterModal = document.getElementById('productFilterModal');
+
+        document.getElementById('openFilterModal').addEventListener('click', () => {
+            filterModal.style.display = 'block';
+        });
+
+        document.getElementById('closeFilterModal').addEventListener('click', () => {
+            filterModal.style.display = 'none';
+        });
+
+        filterModal.querySelector('.pin-modal__overlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) filterModal.style.display = 'none';
         });
     </script>
 @endsection
