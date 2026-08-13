@@ -19,6 +19,9 @@ Route::middleware(['auth', 'verified', 'approved', 'admin'])
         Route::get('/aprobaciones', [ServiceController::class, 'pendingApprovals'])
             ->name('gestion.servicios.aprobaciones');
 
+        Route::get('/validaciones-os', [ServiceController::class, 'osValidations'])
+            ->name('gestion.servicios.validaciones.os');
+
         Route::post('/seguimiento/{tracking}/aprobar', [ServiceController::class, 'approveService'])
             ->name('gestion.servicios.tracking.aprobar');
     });

@@ -131,6 +131,21 @@ class QrController extends Controller
             ->orderBy('order')
             ->first();
 
+        while ($nextStep && $nextStep->slug === 'notificacion-envio-servicio') {
+            ServiceTracking::create([
+                'service_id' => $service->id,
+                'service_step_id' => $nextStep->id,
+                'status' => 'completado',
+                'started_at' => now(),
+                'finished_at' => now(),
+            ]);
+
+            $nextStep = ServiceStep::where('service_type', $service->service_type)
+                ->where('order', '>', $nextStep->order)
+                ->orderBy('order')
+                ->first();
+        }
+
         if ($nextStep) {
             ServiceTracking::create([
                 'service_id' => $service->id,

@@ -60,6 +60,10 @@ Route::middleware(['auth', 'verified', 'approved'])
         // Completar paso actual desde modal de mantenimiento
         Route::post('/{service}/complete-step', [ServiceController::class, 'completeCurrentStep'])
             ->name('gestion.servicios.completeStep');
+
+        // Visualizar ruta de trabajo del servicio
+        Route::get('/{service}/ruta-trabajo', [ServiceController::class, 'rutaTrabajo'])
+            ->name('gestion.servicios.ruta');
     });
 
 // Cartas de garantía
