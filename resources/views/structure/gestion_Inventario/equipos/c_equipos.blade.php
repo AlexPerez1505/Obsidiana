@@ -254,6 +254,10 @@
                         <input class="equipment-input" id="serial_number" name="serial_number" value="{{ old('serial_number', $equipmentData['serial_number']) }}" type="text" autocomplete="off">
                     </div>
                     <div class="equipment-field" style="grid-column:1 / -1;">
+                        <label>Serie base (generada automaticamente)</label>
+                        <div id="base_serial_preview" class="equipment-input" style="display:flex; align-items:center; min-height:46px; background:rgba(8,18,40,0.55); color:#00A8FF; font-weight:700;">—</div>
+                    </div>
+                    <div class="equipment-field" style="grid-column:1 / -1;">
                         <label for="description">Descripcion</label>
                         <input class="equipment-input" id="description" name="description" value="{{ old('description', $equipmentData['description']) }}" type="text" autocomplete="off">
                     </div>
@@ -437,10 +441,10 @@
             promptChild: 'Nombre del nuevo modelo:'
         });
 
-        const baseSerialInput = document.getElementById('base_serial');
+        const baseSerialPreview = document.getElementById('base_serial_preview');
 
         function updateBaseSerial() {
-            if (!baseSerialInput) return;
+            if (!baseSerialPreview) return;
             const type = document.getElementById('category')?.value || '';
             const brand = document.getElementById('brand')?.value || '';
             const model = document.getElementById('model')?.value || '';
@@ -450,7 +454,8 @@
                 return value.replace(/[^A-Za-z0-9]/g, '').substring(0, 4).toUpperCase();
             };
 
-            baseSerialInput.value = [clean(type), clean(brand), clean(model), clean(serial)].filter(Boolean).join('-');
+            const baseSerial = [clean(type), clean(brand), clean(model), clean(serial)].filter(Boolean).join('-');
+            baseSerialPreview.textContent = baseSerial || '—';
         }
 
         ['category', 'brand', 'model', 'serial_number'].forEach(function (id) {
