@@ -8,121 +8,140 @@
 <style>
     .movement-page {
         display: grid;
-        gap: 18px;
+        gap: 22px;
     }
 
-    .movement-head {
+    .page-header {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
-        gap: 16px;
-    }
-
-    .movement-head p {
-        margin: 0;
-        color: #718096;
-        font-size: 14px;
-        font-weight: 600;
-    }
-
-    .movement-create {
-        min-height: 38px;
-        margin-top: 22px;
-        padding: 0 14px;
-        border-radius: 4px;
-        background: #158be8;
+        gap: 18px;
+        flex-wrap: wrap;
+        padding: 18px 22px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #158be8 0%, #0f6fbd 100%);
         color: #fff;
+        box-shadow: 0 8px 24px rgba(21, 139, 232, .22);
+    }
+
+    .page-header h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 900;
+    }
+
+    .page-header p {
+        margin: 4px 0 0;
+        font-size: 13px;
+        opacity: .92;
+    }
+
+    .page-header a {
+        padding: 10px 16px;
+        border-radius: 6px;
+        background: #fff;
+        color: #158be8;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 900;
         display: inline-flex;
         align-items: center;
-        justify-content: center;
         gap: 6px;
-        text-decoration: none;
-        font-size: 12px;
-        font-weight: 900;
-        box-shadow: 0 7px 16px rgba(21, 139, 232, .22);
-        white-space: nowrap;
+        transition: background .2s;
     }
 
-    .movement-create:hover {
-        background: #0879d0;
+    .page-header a:hover {
+        background: #e6f4ff;
     }
 
-    .movement-create svg,
-    .movement-action svg {
+    .page-header a svg {
         width: 16px;
         height: 16px;
-        flex: 0 0 auto;
     }
 
     .movement-tabs {
         display: flex;
         align-items: center;
-        gap: 46px;
-        min-height: 30px;
+        gap: 8px;
+        padding: 6px;
+        border-radius: 8px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, .04);
     }
 
     .movement-tab {
         border: 0;
+        border-radius: 6px;
         background: transparent;
         color: #64748b;
         font: inherit;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 800;
         cursor: pointer;
-        padding: 0;
+        padding: 8px 16px;
+        transition: background .2s, color .2s;
     }
 
     .movement-tab.is-active {
-        color: #1689ff;
+        background: #158be8;
+        color: #fff;
     }
 
-    .movement-filters {
+    .filters-card {
         display: grid;
-        grid-template-columns: repeat(4, minmax(130px, 1fr));
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
         gap: 16px;
         align-items: end;
-        padding: 14px 18px;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, .62);
-        border: 1px solid rgba(226, 232, 240, .78);
+        padding: 18px 20px;
+        border-radius: 12px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, .04);
     }
 
-    .movement-field label {
-        display: block;
-        margin: 0 0 7px;
-        color: #718096;
-        font-size: 13px;
-        font-weight: 700;
+    .filter-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
     }
 
-    .movement-field input,
-    .movement-field select {
+    .filter-field label {
+        color: #475569;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .filter-field input,
+    .filter-field select {
         width: 100%;
-        height: 36px;
-        padding: 0 10px;
+        height: 38px;
+        padding: 0 12px;
         border: 1px solid #cbd5e1;
-        border-radius: 4px;
+        border-radius: 6px;
         background: #f8fafc;
         color: #1f2937;
         font: inherit;
         font-size: 13px;
         outline: none;
+        transition: border-color .2s, box-shadow .2s;
     }
 
-    .movement-field input:focus,
-    .movement-field select:focus {
+    .filter-field input:focus,
+    .filter-field select:focus {
         border-color: #158be8;
-        box-shadow: 0 0 0 3px rgba(21, 139, 232, .14);
+        box-shadow: 0 0 0 3px rgba(21, 139, 232, .12);
     }
 
-    .movement-table-panel {
+    .table-panel {
         overflow: hidden;
-        border: 1px solid #a8c5ff;
-        border-radius: 5px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
         background: #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, .04);
     }
 
-    .movement-table-wrap {
+    .table-wrap {
         overflow-x: auto;
     }
 
@@ -135,28 +154,32 @@
     }
 
     .movement-table th {
-        padding: 17px 16px;
-        background: #d8e2ff;
-        color: #111827;
+        padding: 16px 18px;
+        background: #f1f5f9;
+        color: #1f2937;
         font-size: 12px;
         font-weight: 900;
         text-align: left;
-        border-bottom: 1px solid #a8c5ff;
+        border-bottom: 1px solid #e2e8f0;
     }
 
     .movement-table td {
-        height: 70px;
-        padding: 11px 16px;
-        border-bottom: 1px solid #a8c5ff;
+        height: 66px;
+        padding: 12px 18px;
+        border-bottom: 1px solid #f1f5f9;
         background: #fff;
         vertical-align: middle;
         font-weight: 600;
     }
 
+    .movement-table tr:last-child td {
+        border-bottom: 0;
+    }
+
     .movement-pill {
-        min-width: 72px;
-        min-height: 24px;
-        padding: 0 10px;
+        min-width: 74px;
+        min-height: 26px;
+        padding: 0 12px;
         border-radius: 999px;
         display: inline-flex;
         align-items: center;
@@ -186,102 +209,179 @@
     }
 
     .movement-action {
-        width: 32px;
-        height: 32px;
+        width: 34px;
+        height: 34px;
         border: 0;
         border-radius: 50%;
-        background: transparent;
-        color: #111827;
+        background: #f1f5f9;
+        color: #158be8;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        transition: background .2s;
     }
 
     .movement-action:hover {
-        background: #eef4ff;
+        background: #e6f4ff;
     }
 
-    .movement-foot {
-        min-height: 40px;
-        padding: 0 16px;
-        background: #d7e9ff;
+    .movement-action svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .table-foot {
+        min-height: 46px;
+        padding: 0 18px;
+        background: #f8fafc;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 14px;
-        color: #1689ff;
+        color: #64748b;
         font-size: 12px;
         font-weight: 700;
+        border-top: 1px solid #e2e8f0;
     }
 
-    .movement-foot button {
+    .table-foot button {
         border: 0;
         background: transparent;
-        color: #1689ff;
+        color: #158be8;
         font: inherit;
         font-weight: 800;
         cursor: pointer;
     }
 
-    :root[data-theme="dark"] .movement-filters,
-    :root[data-theme="dark"] .movement-table-panel {
+    .movement-details {
+        background: #f8fafc;
+    }
+
+    .movement-details td {
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+    }
+
+    .details-card {
+        padding: 14px;
+        border-radius: 8px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+    }
+
+    .details-card strong {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #111827;
+        font-size: 12px;
+        font-weight: 900;
+        margin-bottom: 8px;
+    }
+
+    .details-card p {
+        margin: 4px 0;
+        font-size: 12px;
+        color: #4b5563;
+    }
+
+    .evidence-gallery {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 6px;
+    }
+
+    .evidence-gallery a {
+        display: inline-block;
+    }
+
+    .evidence-gallery img,
+    .evidence-gallery video {
+        width: 80px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        transition: transform .2s;
+    }
+
+    .evidence-gallery a:hover img,
+    .evidence-gallery a:hover video {
+        transform: scale(1.05);
+    }
+
+    :root[data-theme="dark"] .page-header {
+        background: linear-gradient(135deg, #0f6fbd 0%, #0c5a99 100%);
+    }
+
+    :root[data-theme="dark"] .movement-tabs {
         background: var(--surface);
         border-color: var(--border);
     }
 
-    :root[data-theme="dark"] .movement-field input,
-    :root[data-theme="dark"] .movement-field select,
+    :root[data-theme="dark"] .movement-tab {
+        color: var(--muted);
+    }
+
+    :root[data-theme="dark"] .movement-tab.is-active {
+        background: #158be8;
+        color: #fff;
+    }
+
+    :root[data-theme="dark"] .filters-card,
+    :root[data-theme="dark"] .table-panel,
+    :root[data-theme="dark"] .details-card {
+        background: var(--surface);
+        border-color: var(--border);
+    }
+
+    :root[data-theme="dark"] .filter-field input,
+    :root[data-theme="dark"] .filter-field select,
     :root[data-theme="dark"] .movement-table td {
         background: var(--surface-2);
         color: var(--text);
         border-color: var(--border);
     }
 
+    :root[data-theme="dark"] .movement-table th,
+    :root[data-theme="dark"] .table-foot,
+    :root[data-theme="dark"] .movement-details {
+        background: rgba(10, 132, 255, .08);
+    }
+
     :root[data-theme="dark"] .movement-table th {
-        background: rgba(10, 132, 255, .18);
         color: var(--text);
-        border-color: var(--border);
     }
 
-    :root[data-theme="dark"] .movement-foot {
-        background: rgba(10, 132, 255, .14);
-    }
-
-    :root[data-theme="dark"] .movement-head p,
-    :root[data-theme="dark"] .movement-field label,
-    :root[data-theme="dark"] .movement-tab {
+    :root[data-theme="dark"] .filter-field label {
         color: var(--muted);
     }
 
-    :root[data-theme="dark"] .movement-tab.is-active {
-        color: var(--primary);
-    }
-
     @media (max-width: 860px) {
-        .movement-filters {
+        .filters-card {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
 
     @media (max-width: 640px) {
-        .movement-head {
-            align-items: stretch;
+        .page-header {
             flex-direction: column;
-        }
-
-        .movement-create {
-            width: 100%;
-            margin-top: 0;
+            align-items: stretch;
         }
 
         .movement-tabs {
-            gap: 20px;
+            gap: 6px;
             overflow-x: auto;
-            padding-bottom: 4px;
         }
 
-        .movement-filters {
+        .filters-card {
             grid-template-columns: 1fr;
         }
     }
@@ -290,12 +390,12 @@
 
 @section('content')
     <section class="movement-page">
-        <div class="movement-head">
+        <div class="page-header">
             <div>
-                <p>Consulta los movimientos de entrada y salida.</p>
+                <h2>Entrada / Salida</h2>
+                <p>Consulta y filtra los movimientos de equipos por paqueteria</p>
             </div>
-
-            <a href="{{ route('inventory.movimientos.create') }}" class="movement-create">
+            <a href="{{ route('inventory.movimientos.create') }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12 5v14"></path>
                     <path d="M5 12h14"></path>
@@ -311,16 +411,16 @@
             <button class="movement-tab" type="button" data-movement-type="transferencia">Transferencias</button>
         </div>
 
-        <form class="movement-filters" onsubmit="event.preventDefault(); filterMovements();">
-            <div class="movement-field">
+        <form class="filters-card" onsubmit="event.preventDefault(); filterMovements();">
+            <div class="filter-field">
                 <label for="movement-start">Fecha inicial</label>
                 <input id="movement-start" type="date">
             </div>
-            <div class="movement-field">
+            <div class="filter-field">
                 <label for="movement-end">Fecha final</label>
                 <input id="movement-end" type="date">
             </div>
-            <div class="movement-field">
+            <div class="filter-field">
                 <label for="movement-type">Tipo de movimiento</label>
                 <select id="movement-type">
                     <option value="all">Todos</option>
@@ -329,7 +429,7 @@
                     <option value="transferencia">Transferencia</option>
                 </select>
             </div>
-            <div class="movement-field">
+            <div class="filter-field">
                 <label for="movement-warehouse">Almacen</label>
                 <select id="movement-warehouse">
                     <option value="all">Todos</option>
@@ -338,8 +438,8 @@
             </div>
         </form>
 
-        <div class="movement-table-panel">
-            <div class="movement-table-wrap">
+        <div class="table-panel">
+            <div class="table-wrap">
                 <table class="movement-table">
                     <thead>
                         <tr>
@@ -373,76 +473,100 @@
                                 </td>
                             </tr>
                             <tr id="details-{{ $loop->index }}" class="movement-details" style="display:none;" data-type="{{ $movement['movement_type'] }}" data-warehouse="{{ strtolower($movement['warehouse']) }}" data-date="{{ $movement['date'] }}">
-                                <td colspan="8" style="padding: 14px 18px; background: #f8fafc;">
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; font-size: 12px; color: #374151;">
+                                <td colspan="8" style="padding: 16px 18px;">
+                                    <div class="details-grid">
                                         @if($movement['movement_type'] === 'entrada')
-                                            <div>
-                                                <strong style="color: #111827;">Caja al recibir</strong>
-                                                <p style="margin: 4px 0;">Tipo: {{ $movement['metadata']['entrada']['caja']['tipo'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Estado: {{ $movement['metadata']['entrada']['caja']['estado'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Dimensiones: {{ $movement['metadata']['entrada']['caja']['dimensiones'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Peso: {{ $movement['metadata']['entrada']['caja']['peso'] ?? '-' }}</p>
+                                            <div class="details-card">
+                                                <strong>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                                                    Caja al recibir
+                                                </strong>
+                                                <p>Tipo: {{ $movement['metadata']['entrada']['caja']['tipo'] ?? '-' }}</p>
+                                                <p>Estado: {{ $movement['metadata']['entrada']['caja']['estado'] ?? '-' }}</p>
+                                                <p>Dimensiones: {{ $movement['metadata']['entrada']['caja']['dimensiones'] ?? '-' }}</p>
+                                                <p>Peso: {{ $movement['metadata']['entrada']['caja']['peso'] ?? '-' }}</p>
                                             </div>
-                                            <div>
-                                                <strong style="color: #111827;">Envoltura</strong>
-                                                <p style="margin: 4px 0;">Material: {{ $movement['metadata']['entrada']['envoltura']['material'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Estado: {{ $movement['metadata']['entrada']['envoltura']['estado'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Observaciones: {{ $movement['metadata']['entrada']['envoltura']['observaciones'] ?? '-' }}</p>
+                                            <div class="details-card">
+                                                <strong>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                                    Envoltura
+                                                </strong>
+                                                <p>Material: {{ $movement['metadata']['entrada']['envoltura']['material'] ?? '-' }}</p>
+                                                <p>Estado: {{ $movement['metadata']['entrada']['envoltura']['estado'] ?? '-' }}</p>
+                                                <p>Observaciones: {{ $movement['metadata']['entrada']['envoltura']['observaciones'] ?? '-' }}</p>
                                             </div>
-                                            <div>
-                                                <strong style="color: #111827;">Contenido de la caja</strong>
-                                                <p style="margin: 4px 0;">Accesorios: {{ $movement['metadata']['entrada']['contenido']['accesorios'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Acomodo: {{ $movement['metadata']['entrada']['contenido']['acomodo'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Observaciones: {{ $movement['metadata']['entrada']['contenido']['observaciones'] ?? '-' }}</p>
+                                            <div class="details-card">
+                                                <strong>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                                                    Contenido de la caja
+                                                </strong>
+                                                <p>Accesorios: {{ $movement['metadata']['entrada']['contenido']['accesorios'] ?? '-' }}</p>
+                                                <p>Acomodo: {{ $movement['metadata']['entrada']['contenido']['acomodo'] ?? '-' }}</p>
+                                                <p>Observaciones: {{ $movement['metadata']['entrada']['contenido']['observaciones'] ?? '-' }}</p>
                                             </div>
                                         @elseif($movement['movement_type'] === 'salida')
-                                            <div>
-                                                <strong style="color: #111827;">Información del envío</strong>
-                                                <p style="margin: 4px 0;">Paquetería: {{ $movement['metadata']['salida']['envio']['paqueteria'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Guía: {{ $movement['metadata']['salida']['envio']['guia'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Fecha de envío: {{ $movement['metadata']['salida']['envio']['fecha_envio'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Responsable: {{ $movement['metadata']['salida']['envio']['responsable'] ?? '-' }}</p>
+                                            <div class="details-card">
+                                                <strong>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 23 3 23 16 16 11"></polygon></svg>
+                                                    Informacion del envio
+                                                </strong>
+                                                <p>Paqueteria: {{ $movement['metadata']['salida']['envio']['paqueteria'] ?? '-' }}</p>
+                                                <p>Guia: {{ $movement['metadata']['salida']['envio']['guia'] ?? '-' }}</p>
+                                                <p>Fecha de envio: {{ $movement['metadata']['salida']['envio']['fecha_envio'] ?? '-' }}</p>
+                                                <p>Responsable: {{ $movement['metadata']['salida']['envio']['responsable'] ?? '-' }}</p>
                                             </div>
-                                            <div>
-                                                <strong style="color: #111827;">Embalaje de salida</strong>
-                                                <p style="margin: 4px 0;">Tipo: {{ $movement['metadata']['salida']['embalaje']['tipo'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Material: {{ $movement['metadata']['salida']['embalaje']['material'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Estado: {{ $movement['metadata']['salida']['embalaje']['estado'] ?? '-' }}</p>
+                                            <div class="details-card">
+                                                <strong>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"></path></svg>
+                                                    Embalaje de salida
+                                                </strong>
+                                                <p>Tipo: {{ $movement['metadata']['salida']['embalaje']['tipo'] ?? '-' }}</p>
+                                                <p>Material: {{ $movement['metadata']['salida']['embalaje']['material'] ?? '-' }}</p>
+                                                <p>Estado: {{ $movement['metadata']['salida']['embalaje']['estado'] ?? '-' }}</p>
                                             </div>
-                                            <div>
-                                                <strong style="color: #111827;">Cómo se manda</strong>
-                                                <p style="margin: 4px 0;">Dirección: {{ $movement['metadata']['salida']['envio']['direccion'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Instrucciones: {{ $movement['metadata']['salida']['envio']['instrucciones'] ?? '-' }}</p>
-                                                <p style="margin: 4px 0;">Prioridad: {{ $movement['metadata']['salida']['envio']['prioridad'] ?? '-' }}</p>
+                                            <div class="details-card">
+                                                <strong>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                                                    Como se manda
+                                                </strong>
+                                                <p>Direccion: {{ $movement['metadata']['salida']['envio']['direccion'] ?? '-' }}</p>
+                                                <p>Instrucciones: {{ $movement['metadata']['salida']['envio']['instrucciones'] ?? '-' }}</p>
+                                                <p>Prioridad: {{ $movement['metadata']['salida']['envio']['prioridad'] ?? '-' }}</p>
                                             </div>
                                         @else
-                                            <div>
-                                                <strong style="color: #111827;">Detalles</strong>
-                                                <p style="margin: 4px 0;">{{ $movement['metadata']['notas'] ?? 'Sin detalles adicionales' }}</p>
+                                            <div class="details-card">
+                                                <strong>Detalles</strong>
+                                                <p>{{ $movement['metadata']['notas'] ?? 'Sin detalles adicionales' }}</p>
                                             </div>
                                         @endif
-                                        <div>
-                                            <strong style="color: #111827;">Evidencias</strong>
+                                        <div class="details-card">
+                                            <strong>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                                    <circle cx="12" cy="13" r="4"></circle>
+                                                </svg>
+                                                Evidencias
+                                            </strong>
                                             @php
                                                 $evidencias = $movement['metadata']['evidencias'] ?? [];
                                                 $imagenes = $evidencias['imagenes'] ?? [];
                                                 $video = $evidencias['video'] ?? null;
                                             @endphp
                                             @if(!empty($imagenes) || !empty($video))
-                                                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; align-items:flex-start;">
+                                                <div class="evidence-gallery">
                                                     @foreach($imagenes as $imagen)
-                                                        <a href="{{ asset('storage/' . $imagen) }}" target="_blank" style="display:inline-block;">
-                                                            <img src="{{ asset('storage/' . $imagen) }}" alt="Evidencia" style="width:80px; height:60px; object-fit:cover; border-radius:4px; border:1px solid #cbd5e1;">
+                                                        <a href="{{ asset('storage/' . $imagen) }}" target="_blank">
+                                                            <img src="{{ asset('storage/' . $imagen) }}" alt="Evidencia">
                                                         </a>
                                                     @endforeach
                                                     @if($video)
-                                                        <a href="{{ asset('storage/' . $video) }}" target="_blank" style="display:inline-block;">
-                                                            <video src="{{ asset('storage/' . $video) }}" style="width:80px; height:60px; object-fit:cover; border-radius:4px; border:1px solid #cbd5e1;" muted playsinline preload="metadata"></video>
+                                                        <a href="{{ asset('storage/' . $video) }}" target="_blank">
+                                                            <video src="{{ asset('storage/' . $video) }}" muted playsinline preload="metadata"></video>
                                                         </a>
                                                     @endif
                                                 </div>
                                             @else
-                                                <p style="margin: 4px 0;">Sin evidencias</p>
+                                                <p>Sin evidencias</p>
                                             @endif
                                         </div>
                                     </div>
@@ -452,7 +576,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="movement-foot">
+            <div class="table-foot">
                 <span id="movementCount">Mostrando 1 a {{ $total }} de {{ $total }} resultados</span>
                 <button type="button">Ver mas &gt;</button>
             </div>
