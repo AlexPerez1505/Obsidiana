@@ -102,6 +102,27 @@
         .ns-table-row input::placeholder { color: rgba(255,255,255,0.4); }
         :root[data-theme="light"] .ns-table-row input::placeholder { color: var(--muted); }
         .ns-table-row input[type="number"] { text-align: right; }
+        .refaccion-cell {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .ref-preview-img {
+            width: 44px; height: 44px; object-fit: cover; border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.12); background: rgba(8,18,40,0.55);
+            flex-shrink: 0;
+        }
+        :root[data-theme="light"] .ref-preview-img { border-color: rgba(15,23,42,0.14); }
+        .refaccion-cell-info { flex: 1; min-width: 0; }
+        .refaccion-select {
+            width: 100%; padding: 10px 12px; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.12); background: rgba(8,18,40,0.55); color: #fff; font-size: 14px;
+            margin-bottom: 6px; cursor: pointer;
+        }
+        :root[data-theme="light"] .refaccion-select { background: #fff; color: var(--text); border-color: rgba(15,23,42,0.14); }
+        .ref-concepto { margin-bottom: 4px; }
+        .ref-subtipo {
+            font-size: 12px; color: rgba(255,255,255,0.55); min-height: 16px;
+        }
+        :root[data-theme="light"] .ref-subtipo { color: var(--muted); }
         .ns-row-total {
             text-align: right; font-size: 14px; font-weight: 700; color: #fff;
         }
@@ -233,7 +254,21 @@
 
                 <div id="refaccionesRows">
                     <div class="ns-table-row" data-index="0">
-                        <input type="text" name="refacciones[0][concepto]" placeholder="Ej. Empaque de sellado" required>
+                        <div class="refaccion-cell">
+                            <img class="ref-preview-img" src="" alt="" style="display:none;">
+                            <div class="refaccion-cell-info">
+                                <select class="refaccion-select" onchange="seleccionarRefaccion(this)">
+                                    <option value="">Selecciona refacción</option>
+                                    @foreach($refacciones as $ref)
+                                        <option value="{{ $ref->id }}" data-nombre="{{ $ref->name }}" data-precio="{{ $ref->price }}" data-subtipo="{{ $ref->subtype }}" data-foto="{{ $ref->photo ? asset('storage/'.$ref->photo) : '' }}">
+                                            {{ $ref->name }} — {{ $ref->subtype }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <input type="text" name="refacciones[0][concepto]" class="ref-concepto" placeholder="Ej. Empaque de sellado" required>
+                                <div class="ref-subtipo"></div>
+                            </div>
+                        </div>
                         <input type="number" name="refacciones[0][cantidad]" min="0" step="1" value="1" onchange="calcular()" oninput="calcular()">
                         <input type="number" name="refacciones[0][precio]" min="0" step="0.01" placeholder="0.00" onchange="calcular()" oninput="calcular()">
                         <div class="ns-row-total">0.00</div>
@@ -306,19 +341,60 @@
             const idx = rowIndex++;
 
             clone.setAttribute('data-index', idx);
-            clone.querySelectorAll('input').forEach(input => {
+            clone.querySelectorAll('input, select').forEach(input => {
                 const name = input.getAttribute('name');
                 if (name) {
                     input.setAttribute('name', name.replace(/refacciones\[\d+\]/, `refacciones[${idx}]`));
-                    input.value = name.includes('cantidad') ? 1 : '';
+                }
+                if (input.tagName === 'SELECT') {
+                    input.selectedIndex = 0;
+                } else {
+                    input.value = name && name.includes('cantidad') ? 1 : '';
                 }
             });
+            const previewImg = clone.querySelector('.ref-preview-img');
+            if (previewImg) {
+                previewImg.src = '';
+                previewImg.style.display = 'none';
+            }
+            const subtipo = clone.querySelector('.ref-subtipo');
+            if (subtipo) subtipo.textContent = '';
+
             clone.querySelector('.ns-remove-btn').setAttribute('onclick', `removeRow(${idx})`);
             clone.querySelector('.ns-remove-btn').disabled = false;
             clone.querySelector('.ns-row-total').textContent = '0.00';
 
             container.appendChild(clone);
             updateDisabled();
+            calcular();
+        }
+
+        function seleccionarRefaccion(select) {
+            const row = select.closest('.ns-table-row');
+            const option = select.options[select.selectedIndex];
+            const nombre = option.dataset.nombre || '';
+            const precio = option.dataset.precio || '';
+            const subtipo = option.dataset.subtipo || '';
+            const foto = option.dataset.foto || '';
+
+            const concepto = row.querySelector('.ref-concepto');
+            const precioInput = row.querySelector('input[name*="[precio]"]');
+            const subtipoDiv = row.querySelector('.ref-subtipo');
+            const previewImg = row.querySelector('.ref-preview-img');
+
+            if (concepto) concepto.value = nombre;
+            if (precioInput) precioInput.value = precio;
+            if (subtipoDiv) subtipoDiv.textContent = subtipo;
+            if (previewImg) {
+                if (foto) {
+                    previewImg.src = foto;
+                    previewImg.style.display = 'block';
+                } else {
+                    previewImg.src = '';
+                    previewImg.style.display = 'none';
+                }
+            }
+
             calcular();
         }
 

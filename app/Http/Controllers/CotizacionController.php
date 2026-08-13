@@ -9,6 +9,7 @@ use App\Models\PlanPago;
 use App\Models\PlanPagoPlantilla;
 use App\Models\Paquete;
 use App\Models\Producto;
+use App\Models\Refaccion;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -72,6 +73,7 @@ class CotizacionController extends Controller
         return view('structure.commercial_management.cotizaciones.create', [
             'clientes' => Customer::query()->orderBy('nombre')->get(),
             'productos' => Producto::query()->orderBy('tipo_equipo')->get(),
+            'refacciones' => Refaccion::query()->orderBy('name')->get(),
             'paquetes' => Paquete::with('productos')->orderBy('nombre')->get(),
             'planesPago' => PlanPagoPlantilla::orderBy('nombre')->get(),
             'clienteSeleccionado' => $clienteSeleccionado,
@@ -166,6 +168,7 @@ class CotizacionController extends Controller
         return view('structure.commercial_management.cotizaciones.edit', [
             'cotizacion' => $cotizacion,
             'productos' => Producto::query()->orderBy('tipo_equipo')->get(),
+            'refacciones' => Refaccion::query()->orderBy('name')->get(),
             'paquetes' => Paquete::with('productos')->orderBy('nombre')->get(),
             'planesPago' => PlanPagoPlantilla::orderBy('nombre')->get(),
             'tienePagosRegistrados' => $this->tienePagosRegistrados($cotizacion),
@@ -236,7 +239,7 @@ class CotizacionController extends Controller
         return $request->validate([
             'cliente_id' => ['required', 'exists:clientes,id'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.tipo' => ['required', 'in:producto,paquete'],
+            'items.*.tipo' => ['required', 'in:producto,paquete,refaccion'],
             'items.*.id' => ['required', 'integer'],
             'items.*.cantidad' => ['required', 'integer', 'min:1'],
             'items.*.sobreprecio' => ['nullable', 'numeric', 'min:0'],
@@ -296,7 +299,7 @@ class CotizacionController extends Controller
                     'es_regalo' => $esRegalo,
                     'subtotal_linea' => $precioFinal * $cantidad,
                 ];
-            } else {
+            } elseif ($item['tipo'] === 'paquete') {
                 $paquete = Paquete::with('productos')->find($item['id']);
                 if (!$paquete) {
                     return back()->withInput()->withErrors(['items' => 'Uno de los paquetes seleccionados no existe.']);
@@ -320,6 +323,31 @@ class CotizacionController extends Controller
                     'producto_id' => null,
                     'paquete_id' => $paquete->id,
                     'nombre' => $paquete->nombre,
+                    'cantidad' => $cantidad,
+                    'precio_original' => $precioOriginal,
+                    'sobreprecio' => $sobreprecio,
+                    'precio_final' => $precioFinal,
+                    'es_regalo' => $esRegalo,
+                    'subtotal_linea' => $precioFinal * $cantidad,
+                ];
+            } else {
+                $refaccion = Refaccion::find($item['id']);
+                if (!$refaccion) {
+                    return back()->withInput()->withErrors(['items' => 'Una de las refacciones seleccionadas no existe.']);
+                }
+                if ($cantidad > $refaccion->stock) {
+                    return back()->withInput()->withErrors([
+                        'items' => "La refacción {$refaccion->name} solo tiene {$refaccion->stock} unidades disponibles."
+                    ]);
+                }
+
+                $precioOriginal = $refaccion->price ?? 0;
+                $precioFinal = $esRegalo ? 0 : ($precioOriginal + $sobreprecio);
+
+                $lineas[] = [
+                    'producto_id' => null,
+                    'paquete_id' => null,
+                    'nombre' => $refaccion->name,
                     'cantidad' => $cantidad,
                     'precio_original' => $precioOriginal,
                     'sobreprecio' => $sobreprecio,
