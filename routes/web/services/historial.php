@@ -59,6 +59,18 @@ Route::middleware(['auth', 'verified', 'approved'])
         Route::delete('/{service}', [ServiceController::class, 'destroy'])
             ->name('gestion.servicios.destroy');
 
+        // Editar servicio externo
+        Route::get('/{service}/editar-externo', [ServiceController::class, 'edit'])
+            ->name('gestion.servicios.edit.externo');
+        Route::put('/{service}/editar-externo', [ServiceController::class, 'update'])
+            ->name('gestion.servicios.update.externo');
+
+        // Editar servicio interno
+        Route::get('/{service}/editar-interno', [ServiceController::class, 'editInternal'])
+            ->name('gestion.servicios.edit.interno');
+        Route::put('/{service}/editar-interno', [ServiceController::class, 'updateInternal'])
+            ->name('gestion.servicios.update.interno');
+
         // Completar paso actual desde modal de mantenimiento
         Route::post('/{service}/complete-step', [ServiceController::class, 'completeCurrentStep'])
             ->name('gestion.servicios.completeStep');

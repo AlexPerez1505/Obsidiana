@@ -172,6 +172,38 @@
                 0 10px 35px rgba(0, 0, 0, 0.35),
                 inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
+
+        .actions-menu { position: relative; display: inline-block; }
+        .actions-menu-trigger {
+            width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(34,197,94,0.35);
+            background: rgba(34,197,94,0.08); color: #22C55E; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .actions-menu-trigger svg { width: 18px; height: 18px; }
+        .actions-menu-dropdown {
+            position: absolute; right: 0; top: calc(100% + 4px); z-index: 50;
+            min-width: 220px; border-radius: 12px; overflow: hidden;
+            background: #0b1a35; border: 1px solid rgba(34,197,94,0.35);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5); padding: 4px;
+            display: none; flex-direction: column; gap: 2px;
+        }
+        :root[data-theme="light"] .actions-menu-dropdown {
+            background: #fff; border-color: rgba(15,23,42,0.14);
+            box-shadow: 0 8px 24px rgba(15,23,42,0.18);
+        }
+        .actions-menu.open .actions-menu-dropdown { display: flex; }
+        .actions-menu-item {
+            display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 11px;
+            border: none; border-radius: 8px; background: transparent; color: #fff;
+            font-size: 13px; cursor: pointer; text-align: left; transition: background .12s ease;
+            text-decoration: none; box-sizing: border-box;
+        }
+        :root[data-theme="light"] .actions-menu-item { color: #0f172a; }
+        .actions-menu-item:hover { background: rgba(34,197,94,0.14); }
+        :root[data-theme="light"] .actions-menu-item:hover { background: rgba(15,23,42,0.06); }
+        .actions-menu-item svg { width: 16px; height: 16px; flex: 0 0 auto; }
+        .actions-menu-item.danger { color: #ff4a4a; }
+        .actions-menu-item.danger:hover { background: rgba(255,74,74,0.14); }
     </style>
 
     <div class="catalog-card service-section">
@@ -236,12 +268,43 @@
                             <td>N/A</td>
                             <td>{{ $service->created_at?->format('d/m/Y H:i') }}</td>
                             <td>
-                                <a href="{{ $service->service_type === 'interno' ? route('gestion.servicios.nuevo.interno.resumen', $service) : route('gestion.servicios.nuevo.externo.resumen', $service) }}" class="service-action-btn" title="Ver resumen">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                </a>
-                                <a href="{{ route('gestion.servicios.ruta', $service) }}" class="service-action-btn" title="Ver ruta de trabajo">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                                </a>
+                                @php
+                                    $menuId = 'actions-menu-' . $service->id;
+                                @endphp
+                                <div class="actions-menu" id="{{ $menuId }}">
+                                    <button type="button" class="actions-menu-trigger" onclick="toggleMenu('{{ $menuId }}')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="18" r="1.5" fill="currentColor"/></svg>
+                                    </button>
+                                    <div class="actions-menu-dropdown">
+                                        <a href="{{ $service->service_type === 'interno' ? route('gestion.servicios.nuevo.interno.resumen', $service) : route('gestion.servicios.nuevo.externo.resumen', $service) }}" class="actions-menu-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            Ver resumen
+                                        </a>
+                                        <a href="{{ route('gestion.servicios.ruta', $service) }}" class="actions-menu-item">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                                            Ver ruta de trabajo
+                                        </a>
+                                        @if ($service->service_type === 'externo')
+                                            <a href="{{ route('gestion.servicios.edit.externo', $service) }}" class="actions-menu-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                Editar
+                                            </a>
+                                        @else
+                                            <a href="{{ route('gestion.servicios.edit.interno', $service) }}" class="actions-menu-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                Editar
+                                            </a>
+                                        @endif
+                                        <form action="{{ route('gestion.servicios.destroy', $service) }}" method="POST" onsubmit="return confirm('¿Eliminar esta orden de servicio?');" style="display:contents;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="actions-menu-item danger">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                                Eliminar
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -270,6 +333,19 @@
                     });
                 });
             });
+        });
+
+        function toggleMenu(menuId) {
+            const menu = document.getElementById(menuId);
+            const wasOpen = menu.classList.contains('open');
+            document.querySelectorAll('.actions-menu').forEach(m => m.classList.remove('open'));
+            if (! wasOpen) menu.classList.add('open');
+        }
+
+        document.addEventListener('click', function (event) {
+            if (! event.target.closest('.actions-menu')) {
+                document.querySelectorAll('.actions-menu').forEach(m => m.classList.remove('open'));
+            }
         });
     </script>
 @endsection

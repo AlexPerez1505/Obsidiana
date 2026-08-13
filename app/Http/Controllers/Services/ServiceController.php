@@ -767,6 +767,169 @@ class ServiceController extends Controller
             ->with('success', 'Servicio aprobado correctamente.');
     }
 
+    public function edit(Service $service)
+    {
+        if ($service->service_type !== 'externo') {
+            abort(404);
+        }
+
+        $service->load(['externalTechnician', 'serviceEquipment']);
+
+        return view('structure.gestion_servicios.Historial_se.registro_NS.externo.Editar.edit_ext', [
+            'service' => $service,
+            'technicians' => ExternalTechnician::whereNull('deleted_at')->orderBy('nombre')->get(),
+        ]);
+    }
+
+    public function update(Request $request, Service $service)
+    {
+        if ($service->service_type !== 'externo') {
+            abort(404);
+        }
+
+        $service->load('serviceEquipment');
+
+        $validated = $request->validate([
+            'external_technician_id' => 'required|exists:tecnico_externo,id',
+            'tipo_equipo' => 'nullable|string|max:255',
+            'subtipo' => 'nullable|string|max:255',
+            'marca' => 'nullable|string|max:255',
+            'modelo' => 'nullable|string|max:255',
+            'serie' => 'nullable|string|max:255',
+            'descripcion_equipo' => 'nullable|string',
+            'observaciones' => 'nullable|string',
+        ]);
+
+        $service->update([
+            'external_technician_id' => $validated['external_technician_id'],
+        ]);
+
+        if ($service->serviceEquipment) {
+            $service->serviceEquipment->update([
+                'type_text' => $validated['tipo_equipo'],
+                'subtype_text' => $validated['subtipo'],
+                'brand_text' => $validated['marca'],
+                'model_text' => $validated['modelo'],
+                'serial_number' => $validated['serie'],
+                'description' => $validated['descripcion_equipo'],
+                'observations' => $validated['observaciones'],
+            ]);
+        }
+
+        return redirect()->route('gestion.servicios.historial')
+            ->with('success', 'Servicio externo actualizado correctamente.');
+    }
+
+    public function editInternal(Service $service)
+    {
+        if ($service->service_type !== 'interno') {
+            abort(404);
+        }
+
+        $service->load(['internalTechnician', 'serviceEquipment', 'maintenance']);
+
+        $technicians = User::where('status', 'approved')
+            ->where('is_admin', false)
+            ->whereHas('roles', fn ($q) => $q->where('name', 'tecnico'))
+            ->orderBy('name')
+            ->get();
+
+        if ($technicians->isEmpty()) {
+            $technicians = User::where('status', 'approved')
+                ->where('is_admin', false)
+                ->orderBy('name')
+                ->get();
+        }
+
+        return view('structure.gestion_servicios.Historial_se.registro_NS.Interno.Editar.edit_int', [
+            'service' => $service,
+            'technicians' => $technicians,
+            'refacciones' => Refaccion::query()->orderBy('name')->get(),
+        ]);
+    }
+
+    public function updateInternal(Request $request, Service $service)
+    {
+        if ($service->service_type !== 'interno') {
+            abort(404);
+        }
+
+        $service->load(['serviceEquipment', 'maintenance']);
+
+        $validated = $request->validate([
+            'technician_id' => 'required|exists:users,id',
+            'tipo_equipo' => 'nullable|string|max:255',
+            'subtipo' => 'nullable|string|max:255',
+            'marca' => 'nullable|string|max:255',
+            'modelo' => 'nullable|string|max:255',
+            'serie' => 'nullable|string|max:255',
+            'descripcion_equipo' => 'nullable|string',
+            'observaciones' => 'nullable|string',
+            'refacciones' => 'nullable|array',
+            'refacciones.*.refaccion_id' => 'nullable|integer',
+            'refacciones.*.concepto' => 'required_with:refacciones|string|max:255',
+            'refacciones.*.cantidad' => 'required_with:refacciones|numeric|min:0',
+            'refacciones.*.precio' => 'required_with:refacciones|numeric|min:0',
+            'costo_envio' => 'nullable|numeric|min:0',
+            'descuento' => 'nullable|numeric|min:0',
+            'aplica_iva' => 'nullable|boolean',
+        ]);
+
+        $service->update([
+            'internal_technician_id' => $validated['technician_id'],
+        ]);
+
+        if ($service->serviceEquipment) {
+            $service->serviceEquipment->update([
+                'type_text' => $validated['tipo_equipo'],
+                'subtype_text' => $validated['subtipo'],
+                'brand_text' => $validated['marca'],
+                'model_text' => $validated['modelo'],
+                'serial_number' => $validated['serie'],
+                'description' => $validated['descripcion_equipo'],
+                'observations' => $validated['observaciones'],
+            ]);
+        }
+
+        $refacciones = collect($validated['refacciones'] ?? [])
+            ->filter(fn ($r) => ! empty($r['concepto']))
+            ->map(fn ($r) => [
+                'refaccion_id' => $r['refaccion_id'] ?? null,
+                'concepto' => $r['concepto'],
+                'cantidad' => (float) ($r['cantidad'] ?? 0),
+                'precio' => (float) ($r['precio'] ?? 0),
+                'total' => (float) ($r['cantidad'] ?? 0) * (float) ($r['precio'] ?? 0),
+            ])
+            ->values()
+            ->all();
+
+        $subtotal = collect($refacciones)->sum('total');
+        $envio = (float) ($validated['costo_envio'] ?? 0);
+        $descuento = (float) ($validated['descuento'] ?? 0);
+        $aplicaIva = (bool) ($validated['aplica_iva'] ?? false);
+        $base = max(0, $subtotal + $envio - $descuento);
+        $iva = $aplicaIva ? $base * 0.16 : 0;
+        $total = $base + $iva;
+
+        ServiceMaintenance::updateOrCreate(
+            ['service_id' => $service->id],
+            [
+                'tipo_mantenimiento' => 'interno',
+                'internal_technician_id' => $validated['technician_id'],
+                'refacciones' => $refacciones,
+                'envio' => $envio,
+                'anticipo' => 0,
+                'requiere_iva' => $aplicaIva,
+                'subtotal' => $subtotal,
+                'descuento' => $descuento,
+                'total' => $total,
+            ]
+        );
+
+        return redirect()->route('gestion.servicios.historial')
+            ->with('success', 'Servicio interno actualizado correctamente.');
+    }
+
     public function destroy(Service $service)
     {
         $service->load('serviceEquipment');
