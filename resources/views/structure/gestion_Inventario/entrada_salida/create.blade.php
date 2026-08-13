@@ -40,21 +40,29 @@
                     <input id="folio" type="text" value="Se generará al guardar el movimiento" readonly style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface-2); color:var(--muted);" />
                 </x-ui.form-group>
 
+                <x-ui.form-group for="item_type" label="Tipo de ítem *">
+                    <select id="item_type" name="item_type" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
+                        <option value="" disabled @selected(!old('item_type'))>Selecciona el tipo</option>
+                        <option value="producto" @selected(old('item_type') === 'producto')>Producto</option>
+                        <option value="equipo" @selected(old('item_type') === 'equipo')>Equipo</option>
+                    </select>
+                </x-ui.form-group>
+
                 <div style="min-width:0;">
-                    <label for="item_id" style="display:block; margin:0 0 7px; color:var(--text); font-size:13px; font-weight:700;">Producto *</label>
+                    <label for="item_id" style="display:block; margin:0 0 7px; color:var(--text); font-size:13px; font-weight:700;">Ítem *</label>
                     <div style="display:flex; align-items:center; gap:12px; min-width:0;">
-                        <select id="item_id" name="item_id" required style="flex:1; min-width:0; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                            <option value="" disabled selected>Selecciona un producto ({{ $productos->count() }} disponibles)</option>
-                            @foreach ($productos as $producto)
-                                <option value="{{ $producto->id }}" data-name="{{ $producto->tipo_equipo }}" data-code="{{ $producto->no_serie ?? $producto->id }}" @selected(old('item_id') == $producto->id)>{{ $producto->tipo_equipo }} — {{ $producto->marca }} {{ $producto->modelo }}</option>
-                            @endforeach
+                        <select id="item_id" name="item_id" required style="flex:1; min-width:0; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);" disabled>
+                            <option value="" disabled selected>Selecciona primero un tipo</option>
                         </select>
-                        <a href="{{ route('inventory.productos.create') }}" class="btn" target="_blank" style="white-space:nowrap; flex-shrink:0;">+ Nuevo producto</a>
+                        <a id="newItemLink" href="{{ route('inventory.productos.create') }}" class="btn" target="_blank" style="white-space:nowrap; flex-shrink:0;">+ Nuevo</a>
                     </div>
                     @error('item_id')
                         <p class="err" style="color:var(--danger); font-size:13px; margin:6px 0 0;">{{ $message }}</p>
                     @enderror
                 </div>
+
+                <input type="hidden" id="productosData" value="{{ json_encode($productos->map(fn($p) => ['id' => $p->id, 'text' => $p->tipo_equipo . ' — ' . $p->marca . ' ' . $p->modelo, 'code' => $p->no_serie ?? $p->id, 'name' => $p->tipo_equipo])) }}">
+                <input type="hidden" id="equiposData" value="{{ json_encode($equipos->map(fn($e) => ['id' => $e->id, 'text' => $e->name . ' — ' . ($e->equipmentType?->name ?? '') . ' ' . ($e->brand?->name ?? '') . ' ' . ($e->equipmentModel?->name ?? ''), 'code' => $e->serial_number ?? $e->code, 'name' => $e->name])) }}">
 
                 <x-ui.form-group for="quantity" label="Cantidad *">
                     <input id="quantity" name="quantity" type="number" min="1" value="{{ old('quantity', 1) }}" placeholder="Ej. 1" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
@@ -113,4 +121,49 @@
 
         <p class="muted" style="margin:0; font-size:13px;">* Campos obligatorios</p>
     </form>
+
+    <script>
+        const itemType = document.getElementById('item_type');
+        const itemSelect = document.getElementById('item_id');
+        const newItemLink = document.getElementById('newItemLink');
+        const productosData = JSON.parse(document.getElementById('productosData').value);
+        const equiposData = JSON.parse(document.getElementById('equiposData').value);
+
+        const links = {
+            producto: '{{ route('inventory.productos.create') }}',
+            equipo: '{{ route('inventory.equipos.create') }}',
+        };
+
+        function fillItems(items) {
+            const oldValue = '{{ old('item_id') }}';
+            itemSelect.innerHTML = '<option value="" disabled selected>Selecciona un ítem</option>';
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.text;
+                option.dataset.name = item.name;
+                option.dataset.code = item.code;
+                if (oldValue == item.id) option.selected = true;
+                itemSelect.appendChild(option);
+            });
+            itemSelect.disabled = false;
+        }
+
+        itemType.addEventListener('change', function () {
+            const type = itemType.value;
+            if (!type) {
+                itemSelect.disabled = true;
+                itemSelect.innerHTML = '<option value="" disabled selected>Selecciona primero un tipo</option>';
+                newItemLink.href = links.producto;
+                return;
+            }
+            fillItems(type === 'equipo' ? equiposData : productosData);
+            newItemLink.href = links[type];
+        });
+
+        if (itemType.value) {
+            fillItems(itemType.value === 'equipo' ? equiposData : productosData);
+            newItemLink.href = links[itemType.value];
+        }
+    </script>
 @endsection

@@ -3,6 +3,7 @@
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\ProductoController;
+use App\Models\Equipment;
 use App\Models\InventoryMovement;
 use App\Models\Producto;
 use Illuminate\Http\Request;
@@ -25,12 +26,14 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
     Route::get('/gestion-inventario/entrada-salida/crear', function (Request $request) {
         $productos = Producto::orderBy('tipo_equipo')->get();
+        $equipos = Equipment::with(['equipmentType', 'brand', 'equipmentModel'])->orderBy('name')->get();
         $defaultType = in_array($request->query('type'), ['entrada', 'salida', 'transferencia'], true)
             ? $request->query('type')
             : '';
 
         return view('structure.gestion_Inventario.entrada_salida.create', [
             'productos' => $productos,
+            'equipos' => $equipos,
             'defaultType' => $defaultType,
         ]);
     })->name('inventory.movimientos.create');
@@ -40,7 +43,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             'movement_type' => ['required', 'in:entrada,salida,transferencia'],
             'movement_date' => ['required', 'date'],
             'warehouse' => ['required', 'string', 'max:100'],
-            'item_id' => ['required', 'exists:productos,id'],
+            'item_type' => ['required', 'in:producto,equipo'],
+            'item_id' => ['required', 'integer', 'min:1'],
             'quantity' => ['required', 'integer', 'min:1'],
             'unit' => ['required', 'string', 'max:20'],
             'unit_cost' => ['nullable', 'numeric', 'min:0'],
@@ -50,8 +54,12 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             'notes' => ['nullable', 'string'],
         ]);
 
-        $producto = Producto::findOrFail($data['item_id']);
-        $stockBefore = $producto->stock;
+        $isEquipment = $data['item_type'] === 'equipo';
+        $item = $isEquipment
+            ? Equipment::findOrFail($data['item_id'])
+            : Producto::findOrFail($data['item_id']);
+
+        $stockBefore = $isEquipment ? ($item->stock_current ?? 0) : $item->stock;
         $quantity = (int) $data['quantity'];
 
         $stockAfter = match ($data['movement_type']) {
@@ -64,13 +72,19 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         $next = ((int) InventoryMovement::withTrashed()->max('id')) + 1;
         $folio = 'MOV-' . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
 
+        $itemCode = $isEquipment
+            ? ($item->serial_number ?: $item->code)
+            : ($item->no_serie ?: (string) $item->id);
+
+        $itemName = $isEquipment ? $item->name : $item->tipo_equipo;
+
         InventoryMovement::create([
             'folio' => $folio,
             'movement_type' => $data['movement_type'],
-            'item_type' => InventoryMovement::ITEM_PRODUCT,
-            'item_id' => $producto->id,
-            'item_code' => $producto->no_serie ?: (string) $producto->id,
-            'item_name' => $producto->tipo_equipo,
+            'item_type' => $isEquipment ? InventoryMovement::ITEM_EQUIPMENT : InventoryMovement::ITEM_PRODUCT,
+            'item_id' => $item->id,
+            'item_code' => $itemCode,
+            'item_name' => $itemName,
             'warehouse' => $data['warehouse'],
             'quantity' => $quantity,
             'unit' => $data['unit'],
@@ -88,7 +102,11 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ]);
 
         if (in_array($data['movement_type'], ['entrada', 'salida'], true)) {
-            $producto->update(['stock' => $stockAfter]);
+            if ($isEquipment) {
+                $item->update(['stock_current' => $stockAfter]);
+            } else {
+                $item->update(['stock' => $stockAfter]);
+            }
         }
 
         return redirect()->route('inventory.movimientos.index')->with('status', 'Movimiento guardado correctamente.');
