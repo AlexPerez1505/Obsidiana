@@ -266,10 +266,10 @@
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                                             Ver
                                         </a>
-                                        <a href="{{ route('inventory.equipos.edit', $equipo) }}" role="menuitem">
+                                        <button type="button" class="edit-equipment-btn" data-url="{{ route('inventory.equipos.verify-edit', $equipo) }}" data-folio="{{ $equipo->folio }}" role="menuitem" style="display:flex; align-items:center; gap:8px; width:100%; padding:9px 14px; color:var(--text); background:none; border:none; cursor:pointer; font-size:13px; font-weight:600; text-align:left;">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
                                             Editar
-                                        </a>
+                                        </button>
                                         <a href="{{ route('inventory.equipos.download', $equipo) }}" role="menuitem">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                             Descargar
@@ -304,11 +304,16 @@
         </div>
     </x-ui.card>
 
+    <form id="equipmentEditPinForm" method="POST" action="" style="display:none;">
+        @csrf
+        <input type="hidden" name="password" id="equipmentEditPinHidden">
+    </form>
+
     <div id="equipmentPinModal" class="equipment-pin-modal">
         <div class="equipment-pin-modal__overlay">
             <div class="equipment-pin-modal__card">
-                <h3 class="equipment-pin-modal__title">Confirmar eliminacion</h3>
-                <p class="equipment-pin-modal__text">Ingrese el PIN de acceso para eliminar:</p>
+                <h3 id="equipmentPinTitle" class="equipment-pin-modal__title">Confirmar eliminacion</h3>
+                <p id="equipmentPinText" class="equipment-pin-modal__text">Ingrese el PIN de acceso para eliminar:</p>
                 <input type="password" id="equipmentPinInput" class="equipment-pin-modal__input" placeholder="PIN" autocomplete="off">
                 <div class="equipment-pin-modal__actions">
                     <button type="button" id="equipmentPinCancel" class="equipment-pin-modal__btn equipment-pin-modal__btn--ghost">Cancelar</button>
@@ -373,13 +378,34 @@
         });
 
         const equipmentPinModal = document.getElementById('equipmentPinModal');
+        const equipmentPinTitle = document.getElementById('equipmentPinTitle');
+        const equipmentPinText = document.getElementById('equipmentPinText');
         const equipmentPinInput = document.getElementById('equipmentPinInput');
+        const equipmentEditPinForm = document.getElementById('equipmentEditPinForm');
+        const equipmentEditPinHidden = document.getElementById('equipmentEditPinHidden');
         let currentEquipmentDeleteForm = null;
+        let currentEquipmentEditUrl = null;
 
         document.querySelectorAll('[data-delete-form]').forEach(form => {
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
                 currentEquipmentDeleteForm = form;
+                currentEquipmentEditUrl = null;
+                equipmentPinTitle.textContent = 'Confirmar eliminacion';
+                equipmentPinText.textContent = 'Ingrese el PIN de acceso para eliminar:';
+                equipmentPinInput.value = '';
+                equipmentPinModal.style.display = 'block';
+                equipmentPinInput.focus();
+            });
+        });
+
+        document.querySelectorAll('.edit-equipment-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                currentEquipmentDeleteForm = null;
+                currentEquipmentEditUrl = button.dataset.url;
+                equipmentPinTitle.textContent = 'Confirmar edicion';
+                equipmentPinText.textContent = 'Ingrese el PIN de acceso para editar:';
                 equipmentPinInput.value = '';
                 equipmentPinModal.style.display = 'block';
                 equipmentPinInput.focus();
@@ -387,16 +413,26 @@
         });
 
         document.getElementById('equipmentPinAccept').addEventListener('click', () => {
-            if (!currentEquipmentDeleteForm) return;
             const pin = equipmentPinInput.value.trim();
             if (!pin) return;
-            currentEquipmentDeleteForm.querySelector('input[name="pin"]').value = pin;
-            currentEquipmentDeleteForm.submit();
+
+            if (currentEquipmentDeleteForm) {
+                currentEquipmentDeleteForm.querySelector('input[name="pin"]').value = pin;
+                currentEquipmentDeleteForm.submit();
+                return;
+            }
+
+            if (currentEquipmentEditUrl) {
+                equipmentEditPinForm.action = currentEquipmentEditUrl;
+                equipmentEditPinHidden.value = pin;
+                equipmentEditPinForm.submit();
+            }
         });
 
         function closeEquipmentPinModal() {
             equipmentPinModal.style.display = 'none';
             currentEquipmentDeleteForm = null;
+            currentEquipmentEditUrl = null;
         }
 
         document.getElementById('equipmentPinCancel').addEventListener('click', closeEquipmentPinModal);

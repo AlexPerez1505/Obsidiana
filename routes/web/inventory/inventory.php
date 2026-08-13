@@ -171,6 +171,17 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('inventory.equipos.create');
     Route::post('/gestion-inventario/equipos', [EquipmentController::class, 'store'])
         ->name('inventory.equipos.store');
+    Route::post('/gestion-inventario/equipos/{equipo}/verificar-edicion', function (Request $request, \App\Models\Equipment $equipo) {
+        $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        if (! \Illuminate\Support\Facades\Hash::check($request->input('password'), auth()->user()->password)) {
+            return back()->with('error', 'El PIN no es correcto.')->withInput();
+        }
+
+        return redirect()->route('inventory.equipos.edit', $equipo);
+    })->name('inventory.equipos.verify-edit');
     Route::get('/gestion-inventario/equipos/{equipo}/editar', [EquipmentController::class, 'edit'])
         ->name('inventory.equipos.edit');
     Route::put('/gestion-inventario/equipos/{equipo}', [EquipmentController::class, 'update'])
