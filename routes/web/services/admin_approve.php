@@ -12,6 +12,8 @@ Route::get('/mantenimiento/{service}', [ServiceController::class, 'maintenanceFo
     ->name('gestion.servicios.maintenance.form');
 Route::post('/mantenimiento/{service}', [ServiceController::class, 'storeMaintenance'])
     ->name('gestion.servicios.maintenance.store');
+Route::post('/mantenimiento/{service}/enviar', [ServiceController::class, 'confirmEnvio'])
+    ->name('gestion.servicios.maintenance.enviar');
 
 Route::middleware(['auth', 'verified', 'approved', 'admin'])
     ->prefix('gestion-servicios/historial-servicios')

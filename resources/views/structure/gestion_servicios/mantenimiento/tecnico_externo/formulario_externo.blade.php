@@ -5,16 +5,27 @@
 
 @section('content')
     @php
-        $readonly = auth()->check();
         $techName = trim(($service->externalTechnician->nombre ?? '') . ' ' . ($service->externalTechnician->apellidos ?? ''));
         $equipment = $service->serviceEquipment;
         $osNumber = preg_replace('/^NS-/', 'OS-', $service->service_number ?? '');
         $maintenance = $service->maintenance;
         $currentStepSlug = $service->currentStep?->slug;
+        $proximoMantenimiento = old('proximo_mantenimiento', $maintenance?->proximo_mantenimiento?->format('Y-m-d'));
+        if ($proximoMantenimiento && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $proximoMantenimiento)) {
+            $proximoMantenimiento = $maintenance?->proximo_mantenimiento?->format('Y-m-d');
+        }
     @endphp
 
     @if ($errors->any())
         <div class="alert alert--err">{{ $errors->first() }}</div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert alert--err">{{ session('error') }}</div>
+    @endif
+
+    @if (session('success'))
+        <div class="alert alert--success" style="background:rgba(34,197,94,0.14);color:#22C55E;border:1px solid rgba(34,197,94,0.45);padding:12px 16px;border-radius:10px;margin-bottom:16px;">{{ session('success') }}</div>
     @endif
 
     <style>
@@ -87,10 +98,48 @@
         .success-card svg { color: #22C55E; margin-bottom: 16px; }
         .success-card h2 { color: #22C55E; margin: 0 0 10px; font-size: 22px; }
         .success-card p { color: rgba(255,255,255,0.8); margin: 0; font-size: 15px; }
+        .modal-overlay { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; padding: 24px; }
+        .modal-box { background: #0b1a35; border: 1px solid rgba(34,197,94,0.55); border-radius: 18px; width: 100%; max-width: 460px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid rgba(34,197,94,0.25); }
+        .modal-header h3 { margin: 0; font-size: 18px; color: #fff; }
+        .modal-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .modal-body { padding: 22px; }
+        .modal-footer { padding: 18px 22px; border-top: 1px solid rgba(34,197,94,0.25); text-align: right; }
+        .modal-btn { padding: 10px 18px; border-radius: 10px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+        .modal-btn--primary { background: #22C55E; color: #fff; }
+        .modal-btn--ghost { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; margin-right: 10px; }
+        .modal-step { color: rgba(255,255,255,0.6); font-size: 14px; margin: 0; }
         @media (max-width: 640px) { .os-grid, .two-cols, .evidence-grid { grid-template-columns: 1fr; } }
     </style>
 
-    @if (!$readonly && $currentStepSlug !== 'llenado-mantenimiento')
+    @if ($finalizado ?? false)
+        <div class="success-card">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <h2>Servicio finalizado</h2>
+            <p>El servicio fue entregado al cliente. El proceso de mantenimiento ha concluido.</p>
+        </div>
+    @elseif (!$readonly && $currentStepSlug === 'notificacion-envio-servicio')
+        <div class="success-card">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <h2>Mantenimiento finalizado</h2>
+            <p style="margin-bottom: 24px;">Confirma el envío del equipo para continuar con el regreso a instalaciones.</p>
+            @if ($currentTracking && $currentTracking->status === 'pendiente')
+                <form action="{{ route('gestion.servicios.maintenance.enviar', ['service' => $service]) }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="token" value="{{ request('token') ?: request()->cookie('service_access_' . $service->id) }}">
+                    <button type="submit" class="btn btn--blue" style="width: 100%;">Confirmar envío de servicio</button>
+                </form>
+            @else
+                <button type="button" class="btn btn--blue" style="width: 100%; opacity: 0.6; cursor: not-allowed;" disabled>Envío confirmado</button>
+            @endif
+        </div>
+    @elseif (!$readonly && $currentStepSlug === 'regreso-instalaciones')
+        <div class="success-card">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <h2>Envío confirmado</h2>
+            <p>El equipo está en camino de regreso a instalaciones. Escanea el QR de regreso al llegar.</p>
+        </div>
+    @elseif (!$readonly && $currentStepSlug !== 'llenado-mantenimiento')
         <div class="success-card">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             <h2>Salida de técnico externo registrada</h2>
@@ -117,8 +166,9 @@
             </div>
         </div>
 
-        <form action="{{ route('gestion.servicios.maintenance.store', ['service' => $service]) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('gestion.servicios.maintenance.store', ['service' => $service]) }}" method="POST" enctype="multipart/form-data" novalidate>
             @csrf
+            <input type="hidden" name="token" value="{{ request('token') ?: request()->cookie('service_access_' . $service->id) }}">
             <input type="hidden" name="tipo_mantenimiento" value="externo">
 
             <div class="section-card">
@@ -214,16 +264,34 @@
 
             <div class="section-card">
                 <h2 class="section-title">6. Próximo mantenimiento</h2>
-                <input type="date" name="proximo_mantenimiento" value="{{ old('proximo_mantenimiento', $maintenance?->proximo_mantenimiento?->format('Y-m-d')) }}" style="max-width: 220px;" {{ $readonly ? 'disabled' : '' }}>
+                <input type="date" name="proximo_mantenimiento" value="{{ $proximoMantenimiento }}" style="max-width: 220px;" {{ $readonly ? 'disabled' : '' }}>
             </div>
 
-            @if (!$readonly)
+            @if (!$readonly && $currentStepSlug === 'llenado-mantenimiento')
                 <div class="btn-wrap">
-                    <button type="submit" class="btn btn--blue">Marcar como salida de técnico externo</button>
+                    <button type="button" class="btn btn--blue" onclick="openFinishModal()">Terminar formulario</button>
                 </div>
             @endif
         </form>
     @endif
+
+    <div id="finishModal" class="modal-overlay" style="display:none;" onclick="closeFinishModalFromOverlay(event)">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>Marcar mantenimiento finalizado</h3>
+                <button type="button" class="modal-close" onclick="closeFinishModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-step">¿Estás seguro de que deseas marcar el mantenimiento como finalizado? Esta acción guardará el formulario y continuará con el envío del servicio.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn modal-btn--ghost" onclick="closeFinishModal()">Cancelar</button>
+                <button type="button" class="modal-btn modal-btn--primary" onclick="submitMaintenanceForm()">Sí, finalizar</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         function addChecklistItem() {
@@ -264,6 +332,25 @@
                 };
                 reader.readAsDataURL(input.files[0]);
             }
+        }
+
+        function openFinishModal() {
+            document.getElementById('finishModal').style.display = 'flex';
+        }
+
+        function closeFinishModal() {
+            document.getElementById('finishModal').style.display = 'none';
+        }
+
+        function closeFinishModalFromOverlay(event) {
+            if (event.target === document.getElementById('finishModal')) {
+                closeFinishModal();
+            }
+        }
+
+        function submitMaintenanceForm() {
+            document.getElementById('finishModal').querySelector('.modal-btn--primary').disabled = true;
+            document.querySelector('form[action*="mantenimiento"]').submit();
         }
     </script>
 @endsection

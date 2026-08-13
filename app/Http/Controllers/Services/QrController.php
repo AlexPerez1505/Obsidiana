@@ -102,8 +102,11 @@ class QrController extends Controller
             ]);
         }
 
-        return redirect()->route('gestion.servicios.maintenance.form', ['service' => $tracking->service])
-            ->with('success', 'Código correcto. Bienvenido, completa el mantenimiento.');
+        return redirect()->route('gestion.servicios.maintenance.form', [
+            'service' => $tracking->service,
+            'token' => $nextTracking->qr_token,
+        ])->with('success', 'Código correcto. Bienvenido, completa el mantenimiento.')
+            ->withCookie(cookie('service_access_' . $tracking->service_id, $nextTracking->qr_token, 1440));
     }
 
     public function complete(Request $request, $token)
