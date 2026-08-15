@@ -22,7 +22,7 @@
                 <p style="margin:4px 0 0; color:rgba(255,255,255,.55); font-size:14px;">Registra una refacción o repuesto en el catálogo.</p>
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
-                <a href="{{ route('refacciones.index') }}" class="btn" style="background:rgba(8,18,40,0.55); color:#fff; border:1px solid rgba(0,168,255,0.45); padding:10px 18px; border-radius:12px; font-size:14px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+                <a href="{{ route('configuracion.refaciones.index') }}" class="btn" style="background:rgba(8,18,40,0.55); color:#fff; border:1px solid rgba(0,168,255,0.45); padding:10px 18px; border-radius:12px; font-size:14px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
                     Regresar
                 </a>

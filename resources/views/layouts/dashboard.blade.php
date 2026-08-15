@@ -432,7 +432,7 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Mantenimiento</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('refacciones.*') ? 'active' : '' }}" href="{{ route('refacciones.index') }}" data-tip="Refacciones">
+                    <a class="nav-item nav-sub {{ request()->routeIs('configuracion.refaciones.*') ? 'active' : '' }}" href="{{ route('configuracion.refaciones.index') }}" data-tip="Refacciones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Refacciones</span>
                     </a>
