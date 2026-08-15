@@ -640,11 +640,15 @@ class ServiceController extends Controller
         ]);
     }
 
-    public function pendingApprovals()
+    public function pendingApprovals(Request $request)
     {
+        $perPage = (int) $request->input('per_page', 10);
+        $search = $request->input('search');
+
         $trackings = ServiceTracking::with([
                 'service.customer',
                 'service.externalTechnician',
+                'service.internalTechnician',
                 'service.serviceEquipment',
                 'service.serviceTrackings.serviceStep',
                 'serviceStep',
@@ -653,9 +657,25 @@ class ServiceController extends Controller
                 $query->where('requires_approval', true);
             })
             ->whereIn('status', ['pendiente', 'completado'])
+            ->when($search, function ($query) use ($search) {
+                $term = '%' . $search . '%';
+                $query->whereHas('service', function ($q) use ($term) {
+                    $q->where('service_number', 'LIKE', $term)
+                        ->orWhereHas('customer', function ($sub) use ($term) {
+                            $sub->whereRaw("CONCAT(nombre, ' ', COALESCE(apellido, '')) LIKE ?", [$term]);
+                        })
+                        ->orWhereHas('externalTechnician', function ($sub) use ($term) {
+                            $sub->whereRaw("CONCAT(nombre, ' ', COALESCE(apellidos, '')) LIKE ?", [$term]);
+                        })
+                        ->orWhereHas('internalTechnician', function ($sub) use ($term) {
+                            $sub->where('name', 'LIKE', $term);
+                        });
+                });
+            })
             ->orderByRaw("FIELD(status, 'pendiente', 'completado')")
             ->latest('service_trackings.created_at')
-            ->get();
+            ->paginate($perPage > 0 ? $perPage : 10)
+            ->withQueryString();
 
         return view('structure.gestion_servicios.aprovaciones_admin.menu_aprobaciones', [
             'trackings' => $trackings,
