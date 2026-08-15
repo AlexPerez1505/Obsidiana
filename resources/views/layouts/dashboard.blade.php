@@ -424,7 +424,7 @@
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-                    <a class="nav-item nav-sub" href="#" data-tip="Cartas de Garantía">
+                    <a class="nav-item nav-sub {{ request()->routeIs('cartas.garantia.*') ? 'active' : '' }}" href="{{ route('cartas.garantia.index') }}" data-tip="Cartas de Garantía">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cartas de Garantía</span>
                     </a>
@@ -432,13 +432,13 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Historial de Servicios</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Mantenimiento">
+                    <a class="nav-item nav-sub" href="{{ route('gestion.servicios.mantenimiento') }}" data-tip="Mantenimiento">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Mantenimiento</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Servicios">
+                    <a class="nav-item nav-sub {{ request()->routeIs('refacciones.*') ? 'active' : '' }}" href="{{ route('refacciones.index') }}" data-tip="Refacciones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Servicios</span>
+                        <span class="nav-label">Refacciones</span>
                     </a>
                 </div>
             </div>
@@ -581,7 +581,7 @@
                             <span class="di-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg></span>
                             <span><b>Panel de usuarios</b><small>Administra las cuentas</small></span>
                         </a>
-                        <a class="dd-item" href="{{ route('service-tracking.approvals') }}">
+                        <a class="dd-item" href="#">
                             <span class="di-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 5.55-3.84 10.74-9 12-5.16-1.26-9-6.45-9-12 0-3.86 1.98-7.44 5-10 3.02 2.56 5 6.14 5 10z"/></svg></span>
                             <span><b>Servicio y aprobaciones</b><small>Revisa y aprueba pasos de servicios</small></span>
                         </a>
