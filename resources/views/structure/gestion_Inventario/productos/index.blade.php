@@ -5,7 +5,7 @@
 @section('page-sub', 'Inventario de equipos y stock disponible')
 
 @php
-    $total = $equipos->count();
+    $total = $productos->count();
 @endphp
 
 @push('head')
@@ -88,68 +88,53 @@
                 </svg>
                 <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por tipo, marca, modelo o serie..." autocomplete="off">
             </div>
-            <select name="tipo">
-                <option value="">Todos los tipos</option>
-                @foreach($tipos as $tipo)
-                    <option value="{{ $tipo }}" {{ ($filters['tipo'] ?? '') == $tipo ? 'selected' : '' }}>{{ $tipo }}</option>
-                @endforeach
-            </select>
-            <select name="marca">
-                <option value="">Todas las marcas</option>
-                @foreach($marcas as $marca)
-                    <option value="{{ $marca }}" {{ ($filters['marca'] ?? '') == $marca ? 'selected' : '' }}>{{ $marca }}</option>
-                @endforeach
-            </select>
-            <button type="submit" class="product-search__btn">Filtrar</button>
+            <button type="submit" class="product-search__btn">Buscar</button>
         </form>
 
         @if($total === 0)
             <p class="product-empty">No hay equipos registrados.</p>
         @else
             <div class="product-grid">
-                @foreach($equipos as $equipo)
-                    @php $producto = $productos->get($equipo->id); @endphp
+                @foreach($productos as $producto)
                     <div class="product-card">
                         <div style="display:flex; align-items:center; gap:14px;">
                             <div class="product-card__thumb">
-                                @if($producto?->imagen_path)
-                                    <img src="{{ asset('storage/' . $producto->imagen_path) }}" alt="{{ $equipo->name }}" style="max-width:100%; max-height:100%; object-fit:contain;">
+                                @if($producto->imagen_path)
+                                    <img src="{{ asset('storage/' . $producto->imagen_path) }}" alt="{{ $producto->tipo_equipo }}" style="max-width:100%; max-height:100%; object-fit:contain;">
                                 @else
-                                    @include('structure.gestion_Inventario.equipos.partials.equipment-thumb', ['type' => $equipo->thumb])
+                                    @include('structure.gestion_Inventario.equipos.partials.equipment-thumb', ['type' => $producto->tipo_equipo])
                                 @endif
                             </div>
                             <div>
-                                <p class="product-card__name">{{ $equipo->name }}</p>
-                                <p class="product-card__meta">{{ $equipo->brand?->name }} {{ $equipo->equipmentModel?->name }}</p>
-                                <p class="product-card__meta" style="margin-top:2px;">Serie: {{ $equipo->serial_number ?: '—' }}</p>
+                                <p class="product-card__name">{{ $producto->tipo_equipo }}</p>
+                                <p class="product-card__meta">{{ $producto->marca }} {{ $producto->modelo }}</p>
+                                <p class="product-card__meta" style="margin-top:2px;">Serie: {{ $producto->no_serie ?: '—' }}</p>
                             </div>
                         </div>
 
                         <form method="POST" action="{{ route('inventory.productos.sync') }}" style="display:grid; gap:10px;">
                             @csrf
-                            <input type="hidden" name="equipment_id" value="{{ $equipo->id }}">
+                            <input type="hidden" name="equipment_id" value="{{ $producto->id }}">
                             <div>
                                 <label class="product-card__label">Precio</label>
-                                <input type="number" step="0.01" min="0" name="precio" class="product-card__input" value="{{ $producto?->precio ?? '' }}" placeholder="0.00" required>
+                                <input type="number" step="0.01" min="0" name="precio" class="product-card__input" value="{{ $producto->precio ?? '' }}" placeholder="0.00" required>
                             </div>
                             <div>
                                 <label class="product-card__label">Stock</label>
-                                <input type="number" min="0" name="stock" class="product-card__input" value="{{ $producto?->stock ?? '' }}" placeholder="0" required>
+                                <input type="number" min="0" name="stock" class="product-card__input" value="{{ $producto->stock ?? '' }}" placeholder="0" required>
                             </div>
                             <button type="submit" class="product-card__btn">Guardar</button>
                         </form>
 
-                        @if($producto)
-                            <div class="product-card__actions">
-                                <button type="button" class="product-card__btn product-card__btn--ghost" data-edit-href="{{ route('inventory.productos.edit', $producto) }}">Editar</button>
-                                <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}" data-delete-form>
-                                    @csrf
-                                    @method('DELETE')
-                                    <input type="hidden" name="pin" value="">
-                                    <button type="submit" class="product-card__btn product-card__btn--danger">Eliminar</button>
-                                </form>
-                            </div>
-                        @endif
+                        <div class="product-card__actions">
+                            <a href="{{ route('inventory.productos.edit', $producto) }}" class="product-card__btn product-card__btn--ghost" style="text-decoration:none; text-align:center;">Editar</a>
+                            <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}" data-delete-form>
+                                @csrf
+                                @method('DELETE')
+                                <input type="hidden" name="pin" value="">
+                                <button type="submit" class="product-card__btn product-card__btn--danger">Eliminar</button>
+                            </form>
+                        </div>
                     </div>
                 @endforeach
             </div>
