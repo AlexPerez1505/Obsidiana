@@ -3,6 +3,7 @@
 @section('title', 'Resumen de Orden')
 
 @section('service_content')
+    @include('structure.gestion_servicios.Historial_se.registro_ns.externo_estilos_base')
     <style>
         .ns-page { max-width: 1100px; margin: 0 auto; }
 
@@ -229,10 +230,7 @@
                     })();
                 </script>
 
-                <div class="ns-bottom-actions">
-                    <a href="{{ route('gestion.servicios.historial') }}" class="ns-btn ns-btn--ghost">Ver orden</a>
-                    <a href="{{ route('gestion.servicios.historial') }}" class="ns-btn ns-btn--ghost">Aprobaciones</a>
-                </div>
+
             </div>
 
             <div class="ns-card">

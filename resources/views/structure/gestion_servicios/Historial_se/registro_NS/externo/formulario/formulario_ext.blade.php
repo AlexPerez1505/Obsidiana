@@ -3,18 +3,8 @@
 @section('title', 'Nuevo servicio externo')
 
 @section('service_content')
+    @include('structure.gestion_servicios.Historial_se.registro_ns.externo_estilos_base')
     <style>
-        .ns-page { max-width: 900px; margin: 0 auto; }
-
-        .ns-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin-bottom: 26px;
-        }
-        .ns-header-title { display: flex; align-items: center; gap: 14px; }
         .ns-icon {
             width: 48px; height: 48px; border-radius: 12px;
             background: rgba(0,122,255,0.12); color: #007AFF;
@@ -27,47 +17,6 @@
         .ns-header-title p { margin: 4px 0 0; color: rgba(255,255,255,0.55); font-size: 13px; }
         :root[data-theme="light"] .ns-header-title p { color: var(--muted); }
         .ns-header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .ns-btn {
-            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-            padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 700;
-            text-decoration: none; cursor: pointer; transition: all .16s ease;
-        }
-        .ns-btn svg { width: 16px; height: 16px; }
-        .ns-btn--ghost { border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #007AFF; }
-        :root[data-theme="light"] .ns-btn--ghost { border-color: rgba(15,23,42,0.14); color: #007AFF; }
-        .ns-btn--ghost:hover { border-color: #007AFF; background: rgba(0,122,255,0.08); }
-        .ns-btn--primary { border: none; background: #007AFF; color: #fff; box-shadow: 0 0 14px rgba(0,122,255,0.35); }
-        .ns-btn--primary:hover { background: #005FCC; box-shadow: 0 0 20px rgba(0,122,255,0.5); }
-        .ns-btn--primary:disabled { opacity: 0.55; cursor: not-allowed; }
-
-        .ns-stepper {
-            display: flex; align-items: center; gap: 12px;
-            margin-bottom: 28px; padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-        :root[data-theme="light"] .ns-stepper { border-color: rgba(15,23,42,0.08); }
-        .ns-step {
-            display: flex; align-items: center; gap: 10px;
-            font-size: 14px; font-weight: 700;
-            color: rgba(255,255,255,0.45);
-        }
-        :root[data-theme="light"] .ns-step { color: var(--muted); }
-        .ns-step-number {
-            width: 28px; height: 28px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 12px; font-weight: 800;
-            background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.55);
-        }
-        :root[data-theme="light"] .ns-step-number { background: rgba(15,23,42,0.08); color: var(--muted); }
-        .ns-step.active { color: #fff; }
-        :root[data-theme="light"] .ns-step.active { color: var(--text); }
-        .ns-step.active .ns-step-number { background: #007AFF; color: #fff; }
-        .ns-step-line {
-            flex: 1; height: 1px; min-width: 30px;
-            background: rgba(255,255,255,0.08);
-        }
-        :root[data-theme="light"] .ns-step-line { background: rgba(15,23,42,0.08); }
-
         .ns-tabs {
             display: flex; gap: 22px;
             margin-bottom: 24px;
