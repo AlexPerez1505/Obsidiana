@@ -249,6 +249,10 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                     Regresar
                 </a>
+                <button type="button" class="ns-btn ns-btn--ghost" onclick="openModalTecnico()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Crear técnico interno
+                </button>
                 <button type="submit" form="technicianForm" class="ns-btn ns-btn--primary">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                     Siguiente: Cotizacion
@@ -376,6 +380,43 @@
         </form>
     </div>
 
+    <div class="ns-modal-overlay" id="modalTecnico">
+        <div class="ns-modal">
+            <div class="ns-modal-header">
+                <h3>Crear técnico interno</h3>
+                <button type="button" class="ns-modal-close" onclick="closeModalTecnico()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <form method="POST" action="{{ route('gestion.servicios.nuevo.interno.tecnico.crear') }}">
+                @csrf
+                <input type="hidden" name="customer_id" value="{{ $customer->id }}">
+                <div class="ns-modal-grid">
+                    <div class="ns-modal-field">
+                        <label for="techName">Nombre</label>
+                        <input type="text" id="techName" name="name" required placeholder="Ej. Carlos Ramírez">
+                    </div>
+                    <div class="ns-modal-field">
+                        <label for="techEmail">Correo</label>
+                        <input type="email" id="techEmail" name="email" required placeholder="carlos@grupomedibuy.com">
+                    </div>
+                    <div class="ns-modal-field">
+                        <label for="techPhone">Teléfono</label>
+                        <input type="text" id="techPhone" name="phone" placeholder="5512345678">
+                    </div>
+                    <div class="ns-modal-field" style="grid-column: 1 / -1;">
+                        <label for="techEspecialidad">Especialidad</label>
+                        <input type="text" id="techEspecialidad" name="especialidad" placeholder="Ej. Electrónica, soldadura...">
+                    </div>
+                </div>
+                <div class="ns-modal-footer">
+                    <button type="button" class="ns-btn ns-btn--ghost" onclick="closeModalTecnico()">Cancelar</button>
+                    <button type="submit" class="ns-btn ns-btn--primary">Guardar técnico</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const overloadThreshold = 8;
         let selectedTechnicianId = null;
@@ -416,5 +457,17 @@
         // Select first technician by default
         const firstCard = document.querySelector('.ns-technician-card');
         if (firstCard) selectTechnician(firstCard.dataset.id);
+
+        function openModalTecnico() {
+            document.getElementById('modalTecnico').classList.add('active');
+        }
+
+        function closeModalTecnico() {
+            document.getElementById('modalTecnico').classList.remove('active');
+        }
+
+        document.getElementById('modalTecnico').addEventListener('click', function(e) {
+            if (e.target === this) closeModalTecnico();
+        });
     </script>
 @endsection

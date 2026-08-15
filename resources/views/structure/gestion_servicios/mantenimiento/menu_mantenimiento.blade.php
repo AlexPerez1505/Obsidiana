@@ -93,6 +93,53 @@
         .modal-btn--ghost { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; margin-right: 10px; }
         :root[data-theme="light"] .modal-btn--ghost { border-color: rgba(15,23,42,0.2); color: var(--text); }
         .modal-status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; background: rgba(34,197,94,0.14); color: #22C55E; border: 1px solid rgba(34,197,94,0.4); }
+
+        .service-tabs {
+            background: rgba(5, 11, 24, 0.55);
+            border: 1px solid rgba(22, 119, 255, 0.47);
+            border-radius: 14px;
+            padding: 5px;
+            gap: 6px;
+            margin-top: 12px;
+            margin-bottom: 12px;
+            box-shadow:
+                inset 0 1px 3px rgba(0, 0, 0, 0.35),
+                0 6px 16px rgba(0, 0, 0, 0.25);
+            display: flex;
+        }
+        .service-tab {
+            flex: 1;
+            justify-content: center;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 16px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .16s ease;
+            box-shadow: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        :root[data-theme="light"] .service-tab { color: var(--muted); }
+        .service-tab:hover {
+            background: rgba(22, 119, 255, 0.43);
+            color: #fff;
+        }
+        .service-tab.active {
+            color: #fff;
+            background: linear-gradient(135deg, rgba(22, 119, 255, 0.57), rgba(99, 91, 255, 0.51));
+            border: 1px solid rgba(30, 125, 255, 0.9);
+            box-shadow:
+                0 0 20px rgba(30, 125, 255, 0.47),
+                0 10px 35px rgba(0, 0, 0, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+        :root[data-theme="light"] .service-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .service-tab svg { width: 18px; height: 18px; }
     </style>
 
     @if (session('success'))
@@ -117,6 +164,21 @@
             </a>
         </div>
 
+        <div class="service-tabs">
+            <button type="button" class="service-tab active" data-type="all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM3 9h18M9 21V9"/></svg>
+                Todos
+            </button>
+            <button type="button" class="service-tab" data-type="interno">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Servicio Interno
+            </button>
+            <button type="button" class="service-tab" data-type="externo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Servicio Externo
+            </button>
+        </div>
+
         <div class="service-table-wrap">
             <table class="service-table">
                 <thead>
@@ -133,28 +195,34 @@
                     @forelse ($services as $service)
                         @php
                             $customerName = trim(($service->customer->nombre ?? '') . ' ' . ($service->customer->apellido ?? ''));
-                            $techName = trim(($service->externalTechnician->nombre ?? '') . ' ' . ($service->externalTechnician->apellidos ?? ''));
+                            $isInternal = $service->service_type === 'interno';
+                            $techName = $isInternal
+                                ? trim(($service->internalTechnician->name ?? '') . ' ' . ($service->internalTechnician->last_name ?? ''))
+                                : trim(($service->externalTechnician->nombre ?? '') . ' ' . ($service->externalTechnician->apellidos ?? ''));
                             $equipment = $service->serviceEquipment;
                             $osNumber = preg_replace('/^NS-/', 'OS-', $service->service_number ?? '');
                             $menuId = 'menu-' . $service->id;
 
                             $currentTracking = $service->serviceTrackings->firstWhere('service_step_id', $service->current_step_id);
                             $currentSlug = $service->currentStep->slug ?? null;
+                            $viewFormLabel = 'Ver formulario de técnico ' . ($isInternal ? 'interno' : 'externo');
                             $stepActionLabel = match ($currentSlug) {
                                 'entrada-equipo' => 'Registrar entrada de equipo',
                                 'salida-tecnico-externo' => 'Salida hacia técnico externo',
                                 'notificacion-llegada-tecnico' => 'Validar llegada del técnico',
-                                'llenado-mantenimiento' => 'Llenar mantenimiento',
+                                'llenado-mantenimiento', 'interno-mantenimiento' => $isInternal
+                                    ? 'Iniciar mantenimiento'
+                                    : 'Llenar mantenimiento',
                                 default => 'Completar: ' . ($service->currentStep->name ?? 'paso actual'),
                             };
 
                             if ($service->status === 'entregado') {
                                 $stepActionLabel = 'Servicio finalizado';
-                            } elseif ($currentSlug === 'llenado-mantenimiento' && $service->maintenance) {
-                                $stepActionLabel = 'Ver formulario de técnico externo';
+                            } elseif (in_array($currentSlug, ['llenado-mantenimiento', 'interno-mantenimiento']) && $service->maintenance) {
+                                $stepActionLabel = $viewFormLabel;
                             }
                         @endphp
-                        <tr>
+                        <tr data-type="{{ $service->service_type }}">
                             <td>{{ $osNumber ?: ('OS-' . $service->id) }}</td>
                             <td>{{ $customerName ?: 'N/A' }}</td>
                             <td>{{ $techName ?: 'N/A' }}</td>
@@ -194,7 +262,7 @@
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                                                     {{ $stepActionLabel }}
                                                 </span>
-                                            @elseif ($currentSlug === 'llenado-mantenimiento' && $service->maintenance)
+                                            @elseif (in_array($currentSlug, ['llenado-mantenimiento', 'interno-mantenimiento']) && ($service->maintenance || $isInternal))
                                                 <a href="{{ route('gestion.servicios.maintenance.form', $service) }}" target="_blank" class="actions-menu-item">
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                                                     {{ $stepActionLabel }}
@@ -214,10 +282,10 @@
                                                 </button>
                                             @endif
 
-                                            @if (($service->maintenance || ($service->currentStep && $service->currentStep->order > 7)) && $currentSlug !== 'llenado-mantenimiento')
+                                            @if (($service->maintenance || ($service->currentStep && $service->currentStep->order > 7)) && ! in_array($currentSlug, ['llenado-mantenimiento', 'interno-mantenimiento']))
                                                 <a href="{{ route('gestion.servicios.maintenance.form', $service) }}" target="_blank" class="actions-menu-item">
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-                                                    Ver formulario de técnico externo
+                                                    {{ $viewFormLabel }}
                                                 </a>
                                             @endif
 
@@ -228,7 +296,7 @@
                                                 </a>
                                             @endif
 
-                                            <a href="{{ route('gestion.servicios.ruta', $service) }}" class="actions-menu-item">
+                                            <a href="{{ $service->service_type === 'interno' ? route('gestion.servicios.ruta.interno', $service) : route('gestion.servicios.ruta', $service) }}" class="actions-menu-item">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                                                 Ver ruta de trabajo
                                             </a>
@@ -435,5 +503,22 @@
                 closeQrModal();
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabs = document.querySelectorAll('.service-tab');
+            const rows = document.querySelectorAll('.service-table tbody tr[data-type]');
+
+            tabs.forEach(function (tab) {
+                tab.addEventListener('click', function () {
+                    tabs.forEach(function (t) { t.classList.remove('active'); });
+                    tab.classList.add('active');
+
+                    const type = tab.dataset.type;
+                    rows.forEach(function (row) {
+                        row.style.display = (type === 'all' || row.dataset.type === type) ? '' : 'none';
+                    });
+                });
+            });
+        });
     </script>
 @endsection

@@ -25,6 +25,8 @@ Route::middleware(['auth', 'verified', 'approved'])
             ->name('gestion.servicios.nuevo.interno.tecnico');
         Route::post('/nuevo-servicio/interno/tecnico', [ServiceController::class, 'storeInternalTechnician'])
             ->name('gestion.servicios.nuevo.interno.tecnico.store');
+        Route::post('/nuevo-servicio/interno/tecnico/crear', [ServiceController::class, 'storeInternalTechnicianAccount'])
+            ->name('gestion.servicios.nuevo.interno.tecnico.crear');
         Route::post('/nuevo-servicio/interno/cotizacion', [ServiceController::class, 'createInternalCotizacion'])
             ->name('gestion.servicios.nuevo.interno.cotizacion');
         Route::post('/nuevo-servicio/interno/guardar', [ServiceController::class, 'storeInternalService'])
@@ -57,6 +59,18 @@ Route::middleware(['auth', 'verified', 'approved'])
         Route::delete('/{service}', [ServiceController::class, 'destroy'])
             ->name('gestion.servicios.destroy');
 
+        // Editar servicio externo
+        Route::get('/{service}/editar-externo', [ServiceController::class, 'edit'])
+            ->name('gestion.servicios.edit.externo');
+        Route::put('/{service}/editar-externo', [ServiceController::class, 'update'])
+            ->name('gestion.servicios.update.externo');
+
+        // Editar servicio interno
+        Route::get('/{service}/editar-interno', [ServiceController::class, 'editInternal'])
+            ->name('gestion.servicios.edit.interno');
+        Route::put('/{service}/editar-interno', [ServiceController::class, 'updateInternal'])
+            ->name('gestion.servicios.update.interno');
+
         // Completar paso actual desde modal de mantenimiento
         Route::post('/{service}/complete-step', [ServiceController::class, 'completeCurrentStep'])
             ->name('gestion.servicios.completeStep');
@@ -64,6 +78,10 @@ Route::middleware(['auth', 'verified', 'approved'])
         // Visualizar ruta de trabajo del servicio
         Route::get('/{service}/ruta-trabajo', [ServiceController::class, 'rutaTrabajo'])
             ->name('gestion.servicios.ruta');
+
+        // Visualizar ruta de trabajo del servicio interno
+        Route::get('/{service}/ruta-trabajo-interno', [ServiceController::class, 'rutaTrabajoInterno'])
+            ->name('gestion.servicios.ruta.interno');
     });
 
 // Cartas de garantía
@@ -133,6 +151,30 @@ Route::middleware(['auth', 'verified', 'approved'])
 
             return redirect()->route('refacciones.index')->with('success', 'Refacción guardada correctamente.');
         })->name('refacciones.store');
+
+        Route::get('/{refaccion}/editar', function (\App\Models\Refaccion $refaccion) {
+            return view('structure.gestion_servicios.Refacciones.Formulario', compact('refaccion'));
+        })->name('refacciones.edit');
+
+        Route::put('/{refaccion}', function (\Illuminate\Http\Request $request, \App\Models\Refaccion $refaccion) {
+            $data = $request->validate([
+                'subtype' => ['required', 'string', 'max:255'],
+                'name' => ['required', 'string', 'max:255'],
+                'description' => ['nullable', 'string'],
+                'stock' => ['nullable', 'integer', 'min:0'],
+                'compatible_with' => ['nullable', 'string'],
+                'price' => ['nullable', 'numeric', 'min:0'],
+                'photo' => ['nullable', 'image', 'max:2048'],
+            ]);
+
+            if ($request->hasFile('photo')) {
+                $data['photo'] = $request->file('photo')->store('refacciones', 'public');
+            }
+
+            $refaccion->update($data);
+
+            return redirect()->route('refacciones.index')->with('success', 'Refacción actualizada correctamente.');
+        })->name('refacciones.update');
 
         Route::delete('/{refaccion}', function (\App\Models\Refaccion $refaccion) {
             $refaccion->delete();

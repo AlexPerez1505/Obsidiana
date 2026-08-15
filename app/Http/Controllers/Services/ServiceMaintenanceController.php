@@ -16,7 +16,7 @@ class ServiceMaintenanceController extends Controller
 
     public function maintenanceOrders()
     {
-        $services = Service::with(['customer', 'externalTechnician', 'serviceEquipment', 'currentStep', 'serviceTrackings', 'maintenance'])
+        $services = Service::with(['customer', 'internalTechnician', 'externalTechnician', 'serviceEquipment', 'currentStep', 'serviceTrackings', 'maintenance'])
             ->whereIn('status', ['en_progreso', 'entregado'])
             ->latest()
             ->get();
@@ -28,7 +28,7 @@ class ServiceMaintenanceController extends Controller
 
     public function maintenanceForm(Service $service)
     {
-        $service->load(['customer', 'externalTechnician', 'serviceEquipment', 'currentStep', 'serviceTrackings', 'maintenance']);
+        $service->load(['customer', 'internalTechnician', 'externalTechnician', 'serviceEquipment', 'currentStep', 'serviceTrackings', 'maintenance']);
 
         $currentTracking = $service->serviceTrackings
             ->where('service_step_id', $service->current_step_id)
@@ -59,7 +59,11 @@ class ServiceMaintenanceController extends Controller
             abort(403, 'Acceso no permitido.');
         }
 
-        return view('structure.gestion_servicios.mantenimiento.tecnico_externo.formulario_externo', [
+        $view = $service->service_type === 'interno'
+            ? 'structure.gestion_servicios.mantenimiento.tecnico_Interno.formulario'
+            : 'structure.gestion_servicios.mantenimiento.tecnico_externo.formulario_externo';
+
+        return view($view, [
             'service' => $service,
             'currentTracking' => $currentTracking,
             'readonly' => $isAdmin,
@@ -104,11 +108,13 @@ class ServiceMaintenanceController extends Controller
             }
         }
 
+        $technicianData = $data['tipo_mantenimiento'] === 'interno'
+            ? ['internal_technician_id' => $service->internal_technician_id]
+            : ['tecnico_externo_id' => $service->external_technician_id];
+
         ServiceMaintenance::updateOrCreate(
             ['service_id' => $service->id],
-            array_merge($data, $evidences, [
-                'tecnico_externo_id' => $service->external_technician_id,
-            ])
+            array_merge($data, $evidences, $technicianData)
         );
 
         if ($currentTracking && $currentTracking->status === 'pendiente') {
