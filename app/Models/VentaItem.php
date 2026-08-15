@@ -5,24 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class CotizacionItem extends Model
+class VentaItem extends Model
 {
-    protected $table = 'cotizacion_items';
+    protected $table = 'venta_items';
 
     protected $fillable = [
-        'cotizacion_id',
-        'equipo_id',
-        'paquete_id',
-        'tipo_item',
-        'nombre',
-        'modelo',
-        'marca',
-        'imagen',
-        'cantidad',
-        'precio_unitario',
-        'sobreprecio',
-        'es_regalo',
-        'orden',
+        'venta_id', 'equipo_id', 'paquete_id', 'tipo_item',
+        'nombre', 'modelo', 'marca', 'imagen',
+        'cantidad', 'precio_unitario', 'sobreprecio', 'es_regalo', 'orden',
     ];
 
     protected function casts(): array
@@ -36,14 +26,11 @@ class CotizacionItem extends Model
         ];
     }
 
-    public function cotizacion(): BelongsTo
+    public function venta(): BelongsTo
     {
-        return $this->belongsTo(Cotizacion::class);
+        return $this->belongsTo(Venta::class);
     }
 
-    /**
-     * Importe del renglón (0 si es regalo).
-     */
     public function importe(): float
     {
         if ($this->es_regalo) {

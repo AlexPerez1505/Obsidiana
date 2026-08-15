@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Paquete extends Model
 {
@@ -12,17 +11,36 @@ class Paquete extends Model
 
     protected $fillable = [
         'nombre',
+        'descripcion',
+        'precio',
+        'imagen',
+        'activo',
     ];
 
-    public function productos(): BelongsToMany
+    protected function casts(): array
     {
-        return $this->belongsToMany(Producto::class, 'paquete_producto')
+        return [
+            'precio' => 'decimal:2',
+            'activo' => 'boolean',
+        ];
+    }
+
+    public function equipos(): BelongsToMany
+    {
+        return $this->belongsToMany(Equipo::class, 'paquete_equipo')
             ->withPivot('cantidad')
             ->withTimestamps();
     }
 
-    public function cotizaciones(): HasMany
+    /**
+     * Precio efectivo: el fijado, o la suma de sus equipos por cantidad.
+     */
+    public function precioCalculado(): float
     {
-        return $this->hasMany(Cotizacion::class, 'paquete_id');
+        if ((float) $this->precio > 0) {
+            return (float) $this->precio;
+        }
+
+        return (float) $this->equipos->sum(fn ($e) => (float) $e->precio * (int) $e->pivot->cantidad);
     }
 }

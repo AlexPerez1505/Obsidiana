@@ -7,30 +7,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Cotizacion extends Model
+class Venta extends Model
 {
-    protected $table = 'cotizaciones';
+    protected $table = 'ventas';
 
     protected $fillable = [
-        'folio',
-        'customer_id',
-        'seller_id',
-        'lugar_propuesta',
-        'nota_cliente',
-        'modalidad',
-        'aplica_iva',
-        'subtotal',
-        'descuento_tipo',
-        'descuento_valor',
-        'descuento_monto',
-        'envio',
-        'iva_monto',
-        'valor_a_cuenta',
-        'total',
-        'total_contrato',
-        'plan_nombre',
-        'num_meses',
-        'estado',
+        'folio', 'customer_id', 'seller_id', 'cotizacion_id',
+        'lugar_propuesta', 'nota_cliente', 'modalidad', 'aplica_iva',
+        'subtotal', 'descuento_tipo', 'descuento_valor', 'descuento_monto',
+        'envio', 'iva_monto', 'valor_a_cuenta', 'total', 'total_contrato',
+        'plan_nombre', 'num_meses', 'estado',
     ];
 
     protected function casts(): array
@@ -59,39 +45,45 @@ class Cotizacion extends Model
         return $this->belongsTo(User::class, 'seller_id');
     }
 
+    public function cotizacion(): BelongsTo
+    {
+        return $this->belongsTo(Cotizacion::class);
+    }
+
     public function items(): HasMany
     {
-        return $this->hasMany(CotizacionItem::class)->orderBy('orden');
+        return $this->hasMany(VentaItem::class)->orderBy('orden');
     }
 
     public function pagos(): HasMany
     {
-        return $this->hasMany(CotizacionPago::class)->orderBy('orden');
+        return $this->hasMany(VentaPago::class)->orderBy('orden');
     }
 
     public function fichas(): BelongsToMany
     {
-        return $this->belongsToMany(FichaTecnica::class, 'cotizacion_ficha');
+        return $this->belongsToMany(FichaTecnica::class, 'venta_ficha');
     }
 
-    /**
-     * Genera el siguiente folio COT-AAAA-####.
-     */
+    public function factura(): BelongsTo
+    {
+        return $this->belongsTo(Factura::class);
+    }
+
     public static function siguienteFolio(): string
     {
         $anio = now()->year;
-        $ultimo = static::where('folio', 'like', "COT-{$anio}-%")->count();
+        $ultimo = static::where('folio', 'like', "VEN-{$anio}-%")->count();
 
-        return sprintf('COT-%d-%04d', $anio, $ultimo + 1);
+        return sprintf('VEN-%d-%04d', $anio, $ultimo + 1);
     }
 
     public function estadoLabel(): string
     {
         return match ($this->estado) {
-            'enviada' => 'Enviada',
-            'aceptada' => 'Aceptada',
-            'rechazada' => 'Rechazada',
-            'convertida' => 'Convertida a venta',
+            'confirmada' => 'Confirmada',
+            'facturada' => 'Facturada',
+            'cancelada' => 'Cancelada',
             default => 'Borrador',
         };
     }

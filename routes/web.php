@@ -9,13 +9,13 @@ Route::get('/', function () {
         : redirect()->route('login');
 })->name('home');
 
-require __DIR__.'/web/auth/auth.php';
-require __DIR__.'/web/dashboard/dashboard.php';
-require __DIR__.'/web/commercial/commercial.php';
-require __DIR__.'/web/marketing/marketing.php';
-require __DIR__.'/web/admin/admin.php';
-require __DIR__.'/web/configuracion/catalogo.php';
-require __DIR__.'/web/configuracion/tipo_equipo.php';
-require __DIR__.'/web/configuracion/refaciones.php';
-require __DIR__.'/web/inventory/inventory.php';
-require __DIR__.'/web/services/historial.php';
+require __DIR__.'/web/auth.php';
+require __DIR__.'/web/dashboard.php';
+require __DIR__.'/web/commercial.php';
+require __DIR__.'/web/cotizaciones.php';
+require __DIR__.'/web/ventas.php';
+require __DIR__.'/web/facturas.php';
+require __DIR__.'/web/admin.php';
+require __DIR__.'/web/catalogo.php';
+require __DIR__.'/web/marketing.php';
+require __DIR__.'/web/inventory.php';

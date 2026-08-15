@@ -1,217 +1,101 @@
-@extends('layouts.dashboard')
-@section('title', 'Cotización #'.$cotizacion->id)
-@section('page-title', 'Cotización #'.$cotizacion->id)
-@section('page-sub', ($cotizacion->cliente?->nombre).' '.($cotizacion->cliente?->apellido))
+@extends('structure.commercial_management.erp')
 
-@section('content')
-    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
-        <a class="link" href="{{ route('commercial.cotizaciones.index') }}">← Volver a cotizaciones</a>
-        <div style="display:flex; align-items:center; gap:10px;">
-            <span class="badge {{ $cotizacion->estado === 'remision' ? 'badge--ok' : 'badge--warn' }}" style="font-size:13px; padding:6px 12px;">
-                {{ $cotizacion->estado === 'remision' ? 'Remisión (venta definitiva)' : 'Cotización (solo presupuesto)' }}
+@section('title', 'Cotización '.$cotizacion->folio)
+
+@section('erp_content')
+    @php
+        $badge = match($cotizacion->estado) {
+            'aceptada', 'convertida' => 'ok', 'enviada' => 'info', 'rechazada' => 'danger', default => 'neutral',
+        };
+    @endphp
+
+    <div class="erp-head">
+        <div class="erp-head-l">
+            <span class="erp-ic">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             </span>
-            <a href="{{ route('commercial.cotizaciones.edit', $cotizacion) }}" class="btn btn--ghost" style="text-decoration:none;">Editar</a>
-            @if($cotizacion->estado !== 'remision')
-                <form method="POST" action="{{ route('commercial.cotizaciones.remision', $cotizacion) }}" onsubmit="return confirm('¿Convertir esta cotización en remisión? Se volverá una venta definitiva.');">
-                    @csrf
-                    <button type="submit" class="btn">Realizar remisión</button>
-                </form>
+            <div>
+                <h1 class="erp-h1">{{ $cotizacion->folio }} <span class="erp-badge {{ $badge }}"><span class="dot"></span>{{ $cotizacion->estadoLabel() }}</span></h1>
+                <p class="erp-sub">{{ $cotizacion->customer?->nombre }} {{ $cotizacion->customer?->apellido }} · {{ $cotizacion->created_at?->format('d/m/Y') }}</p>
+            </div>
+        </div>
+        <div class="erp-actions">
+            <a href="{{ route('commercial.cotizaciones.index') }}" class="erp-btn ghost sm">Regresar</a>
+            <a href="{{ route('commercial.cotizaciones.edit', $cotizacion) }}" class="erp-btn ghost sm">Editar</a>
+            <a href="{{ route('commercial.cotizaciones.pdf', $cotizacion) }}" target="_blank" class="erp-btn ghost sm">PDF</a>
+            <a href="{{ route('commercial.ventas.create', ['cotizacion' => $cotizacion->id]) }}" class="erp-btn sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                Convertir a venta
+            </a>
+        </div>
+    </div>
+
+    <div class="erp-two">
+        <div style="display:flex; flex-direction:column; gap:20px;">
+            <div class="erp-card">
+                <div class="erp-table-wrap">
+                    <table class="erp-table">
+                        <thead><tr><th>Equipo</th><th>Modelo</th><th>Marca</th><th>Cant.</th><th>P. Unit.</th><th>Sobrep.</th><th>Importe</th></tr></thead>
+                        <tbody>
+                            @foreach ($cotizacion->items as $it)
+                                <tr>
+                                    <td class="erp-strong">{{ $it->nombre }}</td>
+                                    <td>{{ $it->modelo ?? '—' }}</td>
+                                    <td>{{ $it->marca ?? '—' }}</td>
+                                    <td>{{ $it->cantidad }}</td>
+                                    <td>@if($it->es_regalo)<span class="erp-badge ok">Regalo</span>@else ${{ number_format($it->precio_unitario, 2) }} @endif</td>
+                                    <td>${{ number_format($it->sobreprecio, 2) }}</td>
+                                    <td class="erp-strong">@if($it->es_regalo)—@else ${{ number_format($it->importe(), 2) }} @endif</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            @if ($cotizacion->modalidad === 'financiamiento' && $cotizacion->pagos->count())
+                <div class="erp-card pad">
+                    <h3 style="margin:0 0 12px; font-size:15px;">Plan de pagos · {{ $cotizacion->num_meses }} meses</h3>
+                    <div class="erp-table-wrap">
+                        <table class="erp-table">
+                            <thead><tr><th>Pago</th><th>Fecha</th><th>%</th><th>Monto</th></tr></thead>
+                            <tbody>
+                                @foreach ($cotizacion->pagos as $p)
+                                    <tr><td class="erp-strong">{{ $p->nombre }}</td><td style="color:var(--muted);">{{ optional($p->fecha)->format('d/m/Y') }}</td><td>{{ $p->porcentaje }}%</td><td class="erp-strong">${{ number_format($p->monto, 2) }}</td></tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+
+            @if ($cotizacion->nota_cliente || $cotizacion->fichas->count())
+                <div class="erp-card pad">
+                    @if ($cotizacion->nota_cliente)
+                        <h3 style="margin:0 0 6px; font-size:14px;">Nota al cliente</h3>
+                        <p class="erp-sub" style="margin:0 0 14px;">{{ $cotizacion->nota_cliente }}</p>
+                    @endif
+                    @if ($cotizacion->fichas->count())
+                        <h3 style="margin:0 0 6px; font-size:14px;">Fichas técnicas anexas</h3>
+                        <ul style="margin:0; padding-left:18px; color:var(--muted); font-size:14px; line-height:1.8;">
+                            @foreach ($cotizacion->fichas as $f)<li>{{ $f->titulo }}</li>@endforeach
+                        </ul>
+                    @endif
+                </div>
+            @endif
+        </div>
+
+        <div class="erp-card pad">
+            <h3 style="margin:0 0 14px; font-size:15px;">Resumen</h3>
+            @php $rows = [['Subtotal', $cotizacion->subtotal], ['Descuento', -$cotizacion->descuento_monto], ['Envío', $cotizacion->envio], ['IVA', $cotizacion->iva_monto]]; @endphp
+            @foreach ($rows as [$lbl, $val])
+                <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border); font-size:14px;"><span class="erp-sub" style="margin:0;">{{ $lbl }}</span><span>${{ number_format($val, 2) }}</span></div>
+            @endforeach
+            <div style="display:flex; justify-content:space-between; padding:14px 0 4px; font-size:19px; font-weight:800;"><span>Total</span><span>${{ number_format($cotizacion->total, 2) }}</span></div>
+            @if ($cotizacion->valor_a_cuenta > 0)
+                <div style="display:flex; justify-content:space-between; padding:8px 0; font-size:14px; color:var(--muted);"><span>Valor a cuenta</span><span>-${{ number_format($cotizacion->valor_a_cuenta, 2) }}</span></div>
+                <div style="display:flex; justify-content:space-between; padding:8px 0 0; font-size:16px; font-weight:800; color:var(--green);"><span>Total del contrato</span><span>${{ number_format($cotizacion->total_contrato, 2) }}</span></div>
             @endif
         </div>
     </div>
-
-    @if($cotizacion->estado !== 'remision')
-        <div class="card" style="background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px 18px; margin-bottom:18px; font-size:13.5px; color:var(--muted);">
-            Esta es solo una <strong>cotización</strong>: refleja cuánto costaría este producto/paquete. Los pagos aún no se dan de seguimiento formal. Presiona <strong>"Realizar remisión"</strong> para convertirla en una venta definitiva y comenzar a registrar los pagos.
-        </div>
-    @endif
-
-    <div class="rgrid-sidebar">
-        <div>
-            <x-ui.card style="margin-bottom:18px;">
-                <x-ui.section-title style="margin:0 0 16px;">Productos / Paquetes</x-ui.section-title>
-                <div style="overflow-x:auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nombre</th>
-                                <th>Cant.</th>
-                                <th>Precio original</th>
-                                <th>Sobreprecio</th>
-                                <th>Regalo</th>
-                                <th>Precio final</th>
-                                <th>Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($cotizacion->items as $item)
-                                <tr>
-                                    <td>
-                                        {{ $item->nombre }}
-                                        @if($item->producto_id && $item->paquete_id)
-                                            <span class="muted" style="font-size:11.5px;">(paquete: {{ $item->paquete?->nombre }})</span>
-                                        @elseif($item->producto_id)
-                                            <span class="muted" style="font-size:11.5px;">(producto)</span>
-                                        @else
-                                            <span class="muted" style="font-size:11.5px;">(paquete)</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $item->cantidad }}</td>
-                                    <td>${{ number_format($item->precio_original, 2) }}</td>
-                                    <td>${{ number_format($item->sobreprecio, 2) }}</td>
-                                    <td>{{ $item->es_regalo ? '✅' : '—' }}</td>
-                                    <td>${{ number_format($item->precio_final, 2) }}</td>
-                                    <td style="font-weight:700;">${{ $item->es_regalo ? 'Obsequio' : '$'.number_format($item->subtotal_linea, 2) }}</td>
-                                </tr>
-                                @if(!$item->producto_id && $item->paquete_id && $item->paquete && $item->paquete->productos->isNotEmpty())
-                                    <tr>
-                                        <td colspan="7" style="background:var(--surface-2); padding:8px 16px;">
-                                            <div class="muted" style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px;">Incluye</div>
-                                            <div style="font-size:13px;">
-                                                @foreach($item->paquete->productos as $prod)
-                                                    <div style="display:flex; justify-content:space-between; padding:4px 0;">
-                                                        <span>{{ trim($prod->tipo_equipo.' '.$prod->marca.' '.$prod->modelo) }} <span class="muted">x{{ $prod->pivot->cantidad * $item->cantidad }}</span></span>
-                                                        <span class="muted">${{ number_format($prod->precio, 2) }} c/u</span>
-                                                    </div>
-                                                @endforeach
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endif
-                            @empty
-                                <tr><td colspan="7" style="text-align:center; padding:20px; color:var(--muted);">Sin productos.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </x-ui.card>
-
-            <x-ui.card style="margin-bottom:18px;">
-                <x-ui.section-title style="margin:0 0 16px;">Resumen</x-ui.section-title>
-                <div class="rgrid-3">
-                    <div><div class="muted" style="font-size:13px;">Subtotal</div><div style="font-weight:700;">${{ number_format($cotizacion->subtotal, 2) }}</div></div>
-                    <div><div class="muted" style="font-size:13px;">Descuentos</div><div style="font-weight:700;">${{ number_format($cotizacion->descuentos, 2) }}</div></div>
-                    <div><div class="muted" style="font-size:13px;">IVA {{ $cotizacion->aplica_iva ? '(16%)' : '(no aplica)' }}</div><div style="font-weight:700;">${{ number_format($cotizacion->iva, 2) }}</div></div>
-                    <div><div class="muted" style="font-size:13px;">Costo de envío</div><div style="font-weight:700;">${{ number_format($cotizacion->costo_envio, 2) }}</div></div>
-                    <div><div class="muted" style="font-size:13px;">Anticipo</div><div style="font-weight:700; color:var(--green);">${{ number_format($cotizacion->anticipo, 2) }}</div></div>
-                    <div><div class="muted" style="font-size:13px;">Total</div><div style="font-weight:800; font-size:18px;">${{ number_format($cotizacion->total, 2) }}</div></div>
-                    <div><div class="muted" style="font-size:13px;">Lugar</div><div style="font-weight:700;">{{ $cotizacion->lugar ?: '—' }}</div></div>
-                </div>
-            </x-ui.card>
-
-            <x-ui.card>
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
-                    <x-ui.section-title style="margin:0;">Plan de Pagos</x-ui.section-title>
-                </div>
-
-                <div style="overflow-x:auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>No. Pago</th>
-                                <th>Fecha límite</th>
-                                <th>Monto</th>
-                                <th>Método</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($cotizacion->planPagos->sortBy('no_pago') as $plan)
-                                @php $pagado = $plan->pagos->where('pagado', true)->isNotEmpty(); @endphp
-                                <tr>
-                                    <td>
-                                        {{ $plan->no_pago === 0 ? 'Anticipo' : $plan->no_pago }}
-                                        @if($plan->no_pago === 0)
-                                            <span class="badge" style="background:var(--green-soft); color:var(--green); font-weight:700; font-size:10.5px; margin-left:4px;">ANTICIPO</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $plan->plazo_pagar->format('d/m/Y') }}</td>
-                                    <td style="font-weight:700;">${{ number_format($plan->monto ?? ($cotizacion->total / max($cotizacion->planPagos->count(), 1)), 2) }}</td>
-                                    <td>{{ $plan->metodo_pago }}</td>
-                                    <td>
-                                        <span class="badge {{ $pagado ? 'badge--ok' : 'badge--warn' }}">
-                                            {{ $pagado ? 'Pagado' : 'Pendiente' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if(!$pagado)
-                                            @if($cotizacion->estado === 'remision')
-                                                <button type="button" class="btn btn--ghost" style="padding:6px 10px; font-size:12.5px;"
-                                                        onclick="abrirModalPago({{ $plan->id }}, {{ $plan->monto ?? ($cotizacion->total / max($cotizacion->planPagos->count(), 1)) }})">
-                                                    Registrar pago
-                                                </button>
-                                            @else
-                                                <span class="muted" style="font-size:12px;" title="Convierte la cotización en remisión para registrar pagos">Pendiente de remisión</span>
-                                            @endif
-                                        @else
-                                            <span class="muted" style="font-size:12.5px;">
-                                                ${{ number_format($plan->pagos->where('pagado', true)->first()?->monto_pagado ?? 0, 2) }}
-                                            </span>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="6" style="text-align:center; padding:24px; color:var(--muted);">Sin planes de pago.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </x-ui.card>
-        </div>
-
-        <div>
-            <x-ui.card>
-                <x-ui.section-title style="margin:0 0 12px;">Cliente</x-ui.section-title>
-                <p style="margin:0; font-weight:700;">{{ $cotizacion->cliente?->nombre }} {{ $cotizacion->cliente?->apellido }}</p>
-                <p class="muted" style="margin:4px 0 0; font-size:13.5px;">{{ $cotizacion->cliente?->telefono ?: 'Sin teléfono' }}</p>
-                <p class="muted" style="margin:2px 0 0; font-size:13.5px;">{{ $cotizacion->cliente?->gmail ?: 'Sin correo' }}</p>
-                <a href="{{ route('commercial.clientes.show', $cotizacion->cliente) }}" class="link" style="display:inline-block; margin-top:10px; font-size:13.5px;">Ver perfil completo →</a>
-            </x-ui.card>
-        </div>
-    </div>
-
-    {{-- Modal: registrar pago --}}
-    <div id="modal-pago" class="modal-overlay" style="display:none;">
-        <div class="modal-card">
-            <h3 style="margin:0 0 14px; font-size:18px;">Registrar pago</h3>
-            <form method="POST" id="form-pago" action="">
-                @csrf
-                <x-ui.form-group label="Monto pagado *" name="monto_pagado" id="monto_pagado" type="number" step="0.01" min="0" :required="true" />
-                <x-ui.form-group for="pago_atrasado" label="¿Pago atrasado?">
-                    <input type="hidden" name="pago_atrasado" value="0">
-                    <label class="ui-switch">
-                        <input type="checkbox" id="pago_atrasado" name="pago_atrasado" value="1">
-                        <span class="slider"></span>
-                    </label>
-                </x-ui.form-group>
-                <x-ui.form-group label="Nota" name="nota" placeholder="Opcional" />
-                <div class="modal-actions">
-                    <button type="button" class="btn btn--ghost" onclick="document.getElementById('modal-pago').style.display='none'">Cancelar</button>
-                    <x-ui.button type="submit" style="width:auto;">Guardar pago</x-ui.button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <style>
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; width: 100%; max-width: 420px; box-shadow: 0 12px 32px rgba(0,0,0,0.2); }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
-        .ui-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
-        .ui-switch input { opacity: 0; width: 0; height: 0; }
-        .ui-switch .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; border-radius: 26px; transition: .4s; }
-        .ui-switch .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 2px; bottom: 2px; background-color: white; border-radius: 50%; transition: .4s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-        .ui-switch input:checked + .slider { background-color: var(--green, #22c55e); }
-        .ui-switch input:checked + .slider:before { transform: translateX(24px); }
-    </style>
-
-    <script>
-        function abrirModalPago(planPagoId, montoSugerido) {
-            const form = document.getElementById('form-pago');
-            form.action = '{{ url('gestion-comercial/cotizaciones/plan-pagos') }}/' + planPagoId + '/pagos';
-            document.getElementById('monto_pagado').value = montoSugerido.toFixed(2);
-            document.getElementById('modal-pago').style.display = 'flex';
-        }
-    </script>
 @endsection
