@@ -32,6 +32,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::put('/marketing/tareas/{task}/devolver', [TaskController::class, 'devolver'])
         ->name('marketing.tareas.devolver');
 
+    Route::put('/marketing/tareas/{task}/enviar-revision', [TaskController::class, 'enviarRevision'])
+        ->name('marketing.tareas.enviar_revision');
+
     Route::get('/marketing/aprobacion-flyers', [TaskController::class, 'aprobacionFlyers'])
         ->name('marketing.aprobacion_flyers.index');
 
@@ -45,6 +48,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/marketing/biblioteca-catalogo', [TaskController::class, 'bibliotecaCatalogo'])
         ->name('marketing.biblioteca_catalogo.index');
 
+    Route::get('/marketing/biblioteca-catalogo/flyer/{task}/descargar', [TaskController::class, 'descargarFlyer'])
+        ->name('marketing.biblioteca_catalogo.descargar_flyer');
+
     Route::get('/marketing/guia-de-marca', [GuiaDeMarcaController::class, 'index'])
         ->name('marketing.guia_de_marca.index');
 
@@ -54,7 +60,6 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/marketing/guia-de-marca', [GuiaDeMarcaController::class, 'update'])
         ->name('marketing.guia_de_marca.update');
 
-    Route::get('/gestion-marketing/inicio', function () {
-        return view('structure.gestion_marketing.inicio.menu_marketing');
-    })->name('marketing.inicio');
+    Route::get('/gestion-marketing/inicio', [TaskController::class, 'inicio'])
+        ->name('marketing.inicio');
 });

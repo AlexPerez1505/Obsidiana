@@ -58,7 +58,8 @@
         gap: 22px;
     }
     .task-field { display: flex; flex-direction: column; gap: 7px; }
-    .task-field label {
+    .task-field label:not(.platform-pill):not(.video-toggle),
+    .task-field .field-label {
         font-size: 11px;
         font-weight: 800;
         letter-spacing: 0.06em;
@@ -170,13 +171,97 @@
         color: var(--primary);
         text-transform: uppercase;
     }
+
+    .platform-choices {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .platform-pill {
+        position: relative;
+        cursor: pointer;
+    }
+    .platform-pill input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .platform-pill span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 22px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: normal;
+        text-transform: none;
+        transition: all .15s;
+    }
+    .platform-pill input:checked + span {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+    }
+    .platform-pill input:focus + span { box-shadow: 0 0 0 2px var(--primary-soft); }
+
+    .video-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: normal;
+        text-transform: none;
+        color: var(--text);
+    }
+    .video-toggle input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .video-knob {
+        width: 44px;
+        height: 24px;
+        border-radius: 12px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        position: relative;
+        transition: background .15s, border-color .15s;
+    }
+    .video-knob::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--text);
+        transition: transform .15s;
+    }
+    .video-toggle input:checked + .video-knob {
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+    .video-toggle input:checked + .video-knob::after {
+        transform: translateX(20px);
+        background: #fff;
+    }
+    .video-text { color: var(--muted); }
+    .video-toggle input:checked ~ .video-text { color: var(--text); }
 </style>
 
 <div class="task-create-wrap">
     <form method="POST" action="{{ route('marketing.tareas.store') }}" class="task-create-card" id="taskForm">
         @csrf
         <input type="hidden" name="progress" value="0">
-        <input type="hidden" name="tags" value="">
 
         <div class="task-create-head">
             <div>
@@ -190,53 +275,38 @@
 
         <div class="task-create-body">
             <div class="task-field">
-                <label for="title">Título</label>
-                <input type="text" id="title" name="title" placeholder="¿Qué hay que hacer?" required value="{{ old('title') }}">
+                <label for="title">Pieza / Título</label>
+                <input type="text" id="title" name="title" placeholder="Título de la pieza..." required value="{{ old('title') }}">
             </div>
 
             <div class="task-field">
-                <label for="description">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                    Copy
-                </label>
-                <textarea id="description" name="description" placeholder="Escribe aquí el copy / texto de la publicación...">{{ old('description') }}</textarea>
-            </div>
-
-            <div class="task-field">
-                <label for="delivery_link">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    Trabajo entregado (Canva / Drive / YouTube / imagen o video)
-                </label>
-                <input type="url" id="delivery_link" name="delivery_link" placeholder="Pega el link de Canva, Drive o YouTube del trabajo (que esté como: cualquiera con el enlace)" value="{{ old('delivery_link') }}">
-            </div>
-
-            <div class="task-field">
-                <label>Vista previa de la entrega</label>
-                <div class="task-preview">
-                    Aún no hay entrega. Pega el enlace arriba y aquí lo verá todo el equipo.
-                </div>
+                <label for="category">Categoría</label>
+                <select id="category" name="category">
+                    <option value="">—</option>
+                    @php
+                        $categories = [
+                            'antes_despues' => 'Antes / Después',
+                            'carruseles' => 'Carruseles',
+                            'congreso' => 'Congreso',
+                            'cumpleanos' => 'Cumpleaños',
+                            'dias_conmemorativos' => 'Días conmemorativos',
+                            'educacion' => 'Educación',
+                            'equipos' => 'Equipos',
+                            'promociones' => 'Promociones',
+                        ];
+                    @endphp
+                    @foreach ($categories as $value => $label)
+                        <option value="{{ $label }}" {{ old('category') == $label ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
             </div>
 
             <div class="task-row">
                 <div class="task-field">
-                    <label for="review_date">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        Fecha de revisión
-                    </label>
-                    <input type="date" id="review_date" name="review_date" value="{{ old('review_date') }}">
-                </div>
-
-                <div class="task-field">
-                    <label for="due_date">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 13.5 13 16l4-4"/><path d="M18 8a3 3 0 1 0-6 0 3 3 0 0 0 6 0"/><path d="M17.92 16.62c.57-.7.96-1.55 1.08-2.52l.28-2.15a2.67 2.67 0 0 0-2.64-3.04h-1.28a2.67 2.67 0 0 0-2.64 3.04l.28 2.15c.12.97.51 1.82 1.08 2.52"/><path d="M11 20a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2z"/></svg>
-                        Fecha de publicación
-                        <span class="rev-badge">rev -3d</span>
-                    </label>
+                    <label for="due_date">Fecha</label>
                     <input type="date" id="due_date" name="due_date" value="{{ old('due_date') }}">
                 </div>
-            </div>
 
-            <div class="task-row">
                 <div class="task-field">
                     <label for="user_id">Responsable</label>
                     <select id="user_id" name="user_id" required>
@@ -246,43 +316,84 @@
                         @endforeach
                     </select>
                 </div>
+            </div>
 
+            <div class="task-field">
+                <label for="priority">Prioridad</label>
+                <select id="priority" name="priority" required>
+                    @foreach ($priorities as $value => $label)
+                        <option value="{{ $value }}" {{ old('priority', 'media') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="task-row">
                 <div class="task-field">
-                    <label for="status">Estado</label>
-                    <select id="status" name="status" required>
-                        @foreach ($statuses as $value => $label)
-                            <option value="{{ $value }}" {{ old('status', 'pendiente') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                    <label for="reviewer_id">Revisor</label>
+                    <select id="reviewer_id" name="reviewer_id">
+                        <option value="">—</option>
+                        @foreach ($users as $u)
+                            <option value="{{ $u->id }}" {{ old('reviewer_id', auth()->id()) == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
                         @endforeach
                     </select>
+                </div>
+
+                <div class="task-field">
+                    <label for="linked_piece">Producto / Equipo</label>
+                    <input type="text" id="linked_piece" name="linked_piece" placeholder="Ej. Endoscopia" value="{{ old('linked_piece') }}">
                 </div>
             </div>
 
             <div class="task-row">
                 <div class="task-field">
-                    <label for="priority">Prioridad</label>
-                    <select id="priority" name="priority" required>
-                        @foreach ($priorities as $value => $label)
-                            <option value="{{ $value }}" {{ old('priority', 'media') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                    <span class="field-label">Plataforma destino</span>
+                    <div class="platform-choices">
+                        @php
+                            $platforms = [
+                                'Facebook' => 'Facebook',
+                                'Instagram' => 'Instagram',
+                                'LinkedIn' => 'LinkedIn',
+                                'TikTok' => 'TikTok',
+                                'Todas' => 'Todas',
+                                'WhatsApp' => 'WhatsApp',
+                                'YouTube' => 'YouTube',
+                            ];
+                            $oldPlatforms = old('platform', []);
+                        @endphp
+                        @foreach ($platforms as $value => $label)
+                            <label class="platform-pill">
+                                <input type="checkbox" name="platform[]" value="{{ $value }}" {{ in_array($value, (array) $oldPlatforms) ? 'checked' : '' }}>
+                                <span>{{ $label }}</span>
+                            </label>
                         @endforeach
-                    </select>
+                    </div>
                 </div>
 
                 <div class="task-field">
-                    <label for="linked_piece">Pieza vinculada</label>
-                    <select id="linked_piece" name="linked_piece">
-                        <option value="">— ninguna —</option>
-                        <option value="nueva" {{ old('linked_piece') == 'nueva' ? 'selected' : '' }}>Nueva pieza</option>
-                    </select>
+                    <span class="field-label">Video</span>
+                    <label class="video-toggle" for="has_video">
+                        <input type="checkbox" id="has_video" name="has_video" value="1" {{ old('has_video') ? 'checked' : '' }}>
+                        <span class="video-knob"></span>
+                        <span class="video-text">¿Incluye video?</span>
+                    </label>
                 </div>
             </div>
 
-            <div class="task-hint">
-                <strong>Nota:</strong> La fecha de revisión se pone automáticamente 3 días antes de la publicación. Ambas fechas aparecen también en el calendario.
+            <div class="task-field">
+                <label for="delivery_link">Enlace (Canva / Drive)</label>
+                <input type="url" id="delivery_link" name="delivery_link" placeholder="Pega el link de Canva o Drive del flyer" value="{{ old('delivery_link') }}">
             </div>
 
-            <div class="task-review-status">
-                Revisión: <span>Pendiente</span>
+            <div class="task-field">
+                <label for="task_description">Descripción</label>
+                <textarea id="task_description" name="task_description" placeholder="Descripción de la pieza / instrucciones...">{{ old('task_description') }}</textarea>
             </div>
+
+            <div class="task-field">
+                <label for="description">Copy / Texto del post</label>
+                <textarea id="description" name="description" placeholder="Texto de la publicación...">{{ old('description') }}</textarea>
+            </div>
+
         </div>
 
         <div class="task-footer">
@@ -293,25 +404,4 @@
         </div>
     </form>
 </div>
-
-<script>
-    (function() {
-        var dueInput = document.getElementById('due_date');
-        var reviewInput = document.getElementById('review_date');
-
-        function offsetDate(dateStr, days) {
-            if (!dateStr) return '';
-            var d = new Date(dateStr);
-            if (isNaN(d.getTime())) return '';
-            d.setDate(d.getDate() - days);
-            return d.toISOString().split('T')[0];
-        }
-
-        dueInput.addEventListener('change', function() {
-            if (!reviewInput.value) {
-                reviewInput.value = offsetDate(dueInput.value, 3);
-            }
-        });
-    })();
-</script>
 @endsection

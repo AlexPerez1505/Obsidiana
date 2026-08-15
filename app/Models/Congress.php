@@ -2,12 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Congress extends Model
 {
+    /** @use HasFactory<\Database\Factories\CongressFactory> */
+    use HasFactory;
+
     protected $table = 'congresos_eventos';
 
     protected $fillable = [
@@ -47,6 +52,18 @@ class Congress extends Model
 
     public function customers(): HasMany
     {
-        return $this->hasMany(Customer::class, 'congreso_id');
+        return $this->hasMany(Customer::class, 'congress_id');
+    }
+
+    public function notifiedUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'evento_congreso_usuario',
+            'congress_event_id',
+            'user_id'
+        )
+        ->withPivot(['notified', 'notified_at'])
+        ->withTimestamps();
     }
 }

@@ -65,52 +65,42 @@
     {{-- Estadísticas (sin gráficas) --}}
     @php
         $total = $customers->count();
-        $withPromo = $customers->where('recibe_promocion', true)->count();
-        $activeAdvisors = $customers->pluck('asesor_id')->unique()->filter()->count();
-        $registeredEmails = $customers->whereNotNull('gmail')->count();
+        $newCustomers = $customers
+            ->filter(fn ($customer) => $customer->created_at?->greaterThanOrEqualTo(now()->startOfMonth()))
+            ->count();
+        $inactiveCustomers = $customers->where('activo', false)->count();
     @endphp
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:18px;">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-bottom:18px;">
         <div class="stat-card cyan">
             <div class="stat-icon">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </div>
             <div style="position:relative; z-index:1;">
-                <div class="stat-label">Clientes totales</div>
+                <div class="stat-label">Total clientes</div>
                 <div class="stat-value">{{ $total }}</div>
-                <div class="stat-sublabel">Activos en el sistema</div>
-            </div>
-        </div>
-
-        <div class="stat-card magenta">
-            <div class="stat-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-            </div>
-            <div style="position:relative; z-index:1;">
-                <div class="stat-label">Con promoción</div>
-                <div class="stat-value">{{ $withPromo }}</div>
-                <div class="stat-sublabel">{{ round(($total > 0 ? $withPromo / $total : 0) * 100) }}% del total</div>
+                <div class="stat-sublabel">Registrados en el sistema</div>
             </div>
         </div>
 
         <div class="stat-card green">
             <div class="stat-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
             </div>
             <div style="position:relative; z-index:1;">
-                <div class="stat-label">Asesores activos</div>
-                <div class="stat-value">{{ $activeAdvisors }}</div>
-                <div class="stat-sublabel">Asignados actualmente</div>
+                <div class="stat-label">Clientes nuevos</div>
+                <div class="stat-value">{{ $newCustomers }}</div>
+                <div class="stat-sublabel">Registrados este mes</div>
             </div>
         </div>
 
         <div class="stat-card amber">
             <div class="stat-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
             <div style="position:relative; z-index:1;">
-                <div class="stat-label">Correos registrados</div>
-                <div class="stat-value">{{ $registeredEmails }}</div>
-                <div class="stat-sublabel">{{ $total > 0 ? round(($registeredEmails / $total) * 100) : 0 }}% del total</div>
+                <div class="stat-label">Clientes inactivos</div>
+                <div class="stat-value">{{ $inactiveCustomers }}</div>
+                <div class="stat-sublabel">{{ $total > 0 ? round(($inactiveCustomers / $total) * 100) : 0 }}% del total</div>
             </div>
         </div>
     </div>
@@ -135,7 +125,7 @@
                     <th>
                         PROMOCIÓN
                     </th>
-                    <th>ACCIONES</th>
+                    <th style="display:none;">ACCIONES</th>
                 </tr>
             </thead>
             <tbody>
@@ -180,7 +170,7 @@
                                 {{ $customer->recibe_promocion ? 'Sí' : 'No' }}
                             </span>
                         </td>
-                        <td>
+                        <td style="display:none;">
                             <div class="action-menu-wrapper" style="position:relative; display:inline-block;">
                                 <button type="button" class="action-btn action-menu-toggle" title="Más opciones" data-menu="customer-menu-{{ $customer->id }}">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
@@ -221,7 +211,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="empty-message" style="padding:32px; text-align:center;">
+                        <td colspan="5" class="empty-message" style="padding:32px; text-align:center;">
                             No hay clientes registrados.
                         </td>
                     </tr>
