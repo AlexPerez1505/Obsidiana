@@ -997,6 +997,34 @@
             box-shadow:
                 0 0 18px rgba(22, 217, 120, 0.47);
         }
+
+        /* Scrollbar personalizado fluido */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,122,255,0.55) rgba(255,255,255,0.06);
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.06);
+            border-radius: 100px;
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, rgba(0,154,255,0.75), rgba(0,122,255,0.55));
+            border-radius: 100px;
+            box-shadow: 0 0 8px rgba(0,122,255,0.35);
+            transition: background 0.2s ease, box-shadow 0.2s ease;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, rgba(0,170,255,0.9), rgba(0,134,255,0.75));
+            box-shadow: 0 0 12px rgba(0,154,255,0.55);
+        }
+        ::-webkit-scrollbar-corner {
+            background: transparent;
+        }
     </style>
 
     @yield('service_content')

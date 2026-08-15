@@ -3,85 +3,16 @@
 @section('title', 'Resumen de la orden')
 
 @section('service_content')
+    @include('structure.gestion_servicios.Historial_se.registro_ns.Interno.interno_estilos_base')
     <style>
         .ns-page { max-width: 100%; padding: 0 24px; }
-
-        .ns-header {
-            display: flex; align-items: center; justify-content: space-between; gap: 16px;
-            flex-wrap: wrap; margin-bottom: 22px;
-        }
-        .ns-header-title { display: flex; align-items: center; gap: 14px; }
-        .ns-icon {
-            width: 40px; height: 40px; border-radius: 10px;
-            background: rgba(0,122,255,0.12); color: #007AFF;
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-        }
+        .ns-icon { width: 40px; height: 40px; }
         .ns-icon svg { width: 20px; height: 20px; }
-
-        .resumen-title svg { width: 18px; height: 18px; }
-        .resumen-actions .resumen-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
-        .resumen-grid { grid-template-columns: repeat(3, 1fr); align-items: stretch; }
-        .resumen-grid > .resumen-card { height: 100%; }
-        @media (max-width: 900px) { .resumen-grid { grid-template-columns: 1fr; } }
-        .ns-header-title h2 { margin: 0; font-size: 22px; color: #fff; }
-        :root[data-theme="light"] .ns-header-title h2 { color: var(--text); }
-        .ns-header-title p { margin: 4px 0 0; color: rgba(255,255,255,0.55); font-size: 13px; }
-        :root[data-theme="light"] .ns-header-title p { color: var(--muted); }
-
-        .ns-stepper {
-            display: flex; align-items: center; justify-content: space-between; gap: 8px;
-            margin-bottom: 24px; padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-        :root[data-theme="light"] .ns-stepper { border-color: rgba(15,23,42,0.08); }
-        .ns-step { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.45); flex: 0 0 auto; }
-        :root[data-theme="light"] .ns-step { color: var(--muted); }
-        .ns-step-number {
-            width: 28px; height: 28px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 12px; font-weight: 800;
-            background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.55);
-            flex-shrink: 0;
-        }
-        :root[data-theme="light"] .ns-step-number { background: rgba(15,23,42,0.08); color: var(--muted); }
-        .ns-step.completed { color: #22C55E; }
-        :root[data-theme="light"] .ns-step.completed { color: #16A34A; }
-        .ns-step.completed .ns-step-number { background: #22C55E; color: #fff; }
-        .ns-step-line {
-            flex: 1; height: 2px; min-width: 12px; max-width: 60px;
-            background: rgba(255,255,255,0.1); border-radius: 1px;
-        }
-        :root[data-theme="light"] .ns-step-line { background: rgba(15,23,42,0.1); }
-
-        .ns-quote-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
-        .ns-quote-table th {
-            text-align: right; font-size: 11px; font-weight: 700;
-            color: rgba(255,255,255,0.55); padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-        .ns-quote-table th:first-child { text-align: left; }
-        :root[data-theme="light"] .ns-quote-table th { color: var(--muted); }
-        .ns-quote-table td {
-            padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
-            font-size: 14px; color: #fff;
-        }
-        :root[data-theme="light"] .ns-quote-table td { color: var(--text); }
-        .ns-quote-table td:first-child { text-align: left; }
-        .ns-quote-table td:nth-child(2),
-        .ns-quote-table td:nth-child(3),
-        .ns-quote-table td:nth-child(4) { text-align: right; }
-        .ns-quote-table tr:last-child td { border-bottom: none; }
-        .ns-quote-table .ns-empty td {
-            text-align: center; color: rgba(255,255,255,0.5); padding: 20px 0;
-        }
-        :root[data-theme="light"] .ns-quote-table .ns-empty td { color: var(--muted); }
-
-        .ns-notify {
-            display: flex; align-items: center; gap: 10px; margin-top: 22px;
-            font-size: 14px; color: rgba(255,255,255,0.75); cursor: pointer;
-        }
-        :root[data-theme="light"] .ns-notify { color: var(--text); }
-        .ns-notify input { width: 18px; height: 18px; accent-color: #007AFF; cursor: pointer; }
+        .ns-stepper { justify-content: space-between; gap: 8px; }
+        .ns-step { flex: 0 0 auto; }
+        .ns-step-number { flex-shrink: 0; }
+        .ns-step-line { height: 2px; min-width: 12px; max-width: 60px; }
+        .ns-notify { margin-top: 22px; }
     </style>
 
     @php
@@ -261,10 +192,6 @@
         </div>
 
         <div class="resumen-actions">
-            <button type="button" class="resumen-btn resumen-btn--ghost" onclick="window.print()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                Imprimir
-            </button>
             <a href="{{ route('gestion.servicios.historial') }}" class="resumen-btn resumen-btn--primary">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 Finalizar

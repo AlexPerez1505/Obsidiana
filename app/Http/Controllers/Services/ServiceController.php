@@ -24,12 +24,36 @@ class ServiceController extends Controller
 {
     use HasServiceHelpers;
 
-    public function index()
+    public function index(Request $request)
     {
+        $perPage = (int) $request->input('per_page', 10);
+        $type = $request->input('type', 'all');
+        $search = $request->input('search');
+
         $services = Service::with(['customer', 'externalTechnician', 'serviceEquipment', 'currentStep'])
             ->where('status', 'registrado')
+            ->when($type !== 'all', function ($query) use ($type) {
+                $query->where('service_type', $type);
+            })
+            ->when($search, function ($query) use ($search) {
+                $term = '%' . $search . '%';
+                $query->where(function ($q) use ($term) {
+                    $q->where('service_number', 'LIKE', $term)
+                        ->orWhereHas('customer', function ($sub) use ($term) {
+                            $sub->whereRaw("CONCAT(nombre, ' ', COALESCE(apellido, '')) LIKE ?", [$term])
+                                ->orWhere('telefono', 'LIKE', $term);
+                        })
+                        ->orWhereHas('externalTechnician', function ($sub) use ($term) {
+                            $sub->whereRaw("CONCAT(nombre, ' ', COALESCE(apellidos, '')) LIKE ?", [$term]);
+                        })
+                        ->orWhereHas('internalTechnician', function ($sub) use ($term) {
+                            $sub->where('name', 'LIKE', $term);
+                        });
+                });
+            })
             ->latest()
-            ->get();
+            ->paginate($perPage > 0 ? $perPage : 10)
+            ->withQueryString();
 
         return view('structure.gestion_servicios.Historial_se.menuhistorial', compact('services'));
     }
