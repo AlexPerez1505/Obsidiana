@@ -640,8 +640,6 @@ class ServiceController extends Controller
 
     public function osValidations()
     {
-        $step = ServiceStep::where('slug', 'validacion-os')->first();
-
         $trackings = ServiceTracking::with([
                 'service.customer',
                 'service.externalTechnician',
@@ -649,8 +647,8 @@ class ServiceController extends Controller
                 'service.maintenance',
                 'serviceStep',
             ])
-            ->when($step, function ($query) use ($step) {
-                $query->where('service_step_id', $step->id);
+            ->whereHas('serviceStep', function ($query) {
+                $query->where('slug', 'like', '%validacion-os');
             })
             ->whereIn('status', ['pendiente', 'completado'])
             ->orderByRaw("FIELD(status, 'pendiente', 'completado')")
@@ -1012,6 +1010,13 @@ class ServiceController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Paso no disponible o ya completado.',
+            ], 422);
+        }
+
+        if (str_contains($tracking->serviceStep->slug, 'generacion-os')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este paso se completa al generar la OS.',
             ], 422);
         }
 

@@ -27,7 +27,7 @@ Route::middleware(['auth', 'verified', 'approved'])
             ->name('gestion.servicios.nuevo.interno.tecnico.store');
         Route::post('/nuevo-servicio/interno/tecnico/crear', [ServiceController::class, 'storeInternalTechnicianAccount'])
             ->name('gestion.servicios.nuevo.interno.tecnico.crear');
-        Route::post('/nuevo-servicio/interno/cotizacion', [ServiceController::class, 'createInternalCotizacion'])
+        Route::match(['get', 'post'], '/nuevo-servicio/interno/cotizacion', [ServiceController::class, 'createInternalCotizacion'])
             ->name('gestion.servicios.nuevo.interno.cotizacion');
         Route::post('/nuevo-servicio/interno/guardar', [ServiceController::class, 'storeInternalService'])
             ->name('gestion.servicios.nuevo.interno.guardar');

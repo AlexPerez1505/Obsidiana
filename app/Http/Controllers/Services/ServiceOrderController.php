@@ -39,7 +39,7 @@ class ServiceOrderController extends Controller
             'anticipo' => 'nullable|numeric|min:0',
             'requiere_iva' => 'nullable|boolean',
             'descripcion_general' => 'nullable|string',
-            'action' => 'nullable|string|in:save,generate-pdf',
+            'action' => 'nullable|string|in:save,generate-pdf,generate-remision-pdf',
         ]);
 
         $data['requiere_iva'] = $request->boolean('requiere_iva');
@@ -57,7 +57,7 @@ class ServiceOrderController extends Controller
             ->sortByDesc('created_at')
             ->first();
 
-        if ($currentTracking && $currentTracking->status === 'pendiente' && $service->currentStep?->slug === 'generacion-os') {
+        if ($currentTracking && $currentTracking->status === 'pendiente' && str_contains($service->currentStep?->slug ?? '', 'generacion-os')) {
             $currentTracking->update([
                 'status' => 'completado',
                 'finished_at' => now(),
@@ -81,7 +81,21 @@ class ServiceOrderController extends Controller
         }
 
         if ($request->input('action') === 'generate-pdf') {
+            if (str_contains($service->currentStep?->slug ?? '', 'generacion-os')) {
+                return redirect()->route('gestion.servicios.os.form', ['service' => $service])
+                    ->with('error', 'La OS debe ser validada antes de generar el PDF.');
+            }
+
             return $this->generateOsPdf($service, $maintenance);
+        }
+
+        if ($request->input('action') === 'generate-remision-pdf') {
+            if (str_contains($service->currentStep?->slug ?? '', 'generacion-os')) {
+                return redirect()->route('gestion.servicios.os.form', ['service' => $service])
+                    ->with('error', 'La remisión debe ser validada antes de generar el PDF.');
+            }
+
+            return $this->generateRemisionPdf($service, $maintenance);
         }
 
         return redirect()->route('gestion.servicios.os.form', ['service' => $service])
@@ -95,9 +109,23 @@ class ServiceOrderController extends Controller
         $pdf = Pdf::loadView('structure.gestion_servicios.mantenimiento.OS.os_pdf', [
             'service' => $service,
             'maintenance' => $maintenance,
-        ]);
+        ])->setPaper('A4', 'portrait');
 
         $filename = 'OS-' . ($service->service_number ?? $service->id) . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    private function generateRemisionPdf(Service $service, ServiceMaintenance $maintenance)
+    {
+        $service->load(['customer', 'externalTechnician', 'internalTechnician', 'serviceEquipment', 'currentStep']);
+
+        $pdf = Pdf::loadView('structure.gestion_servicios.mantenimiento.OS.remision_pdf', [
+            'service' => $service,
+            'maintenance' => $maintenance,
+        ])->setPaper('A4', 'portrait');
+
+        $filename = 'REM-' . ($service->service_number ?? $service->id) . '.pdf';
 
         return $pdf->download($filename);
     }

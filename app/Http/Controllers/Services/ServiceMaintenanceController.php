@@ -26,7 +26,7 @@ class ServiceMaintenanceController extends Controller
         ]);
     }
 
-    public function maintenanceForm(Service $service)
+    public function maintenanceForm(Request $request, Service $service)
     {
         $service->load(['customer', 'internalTechnician', 'externalTechnician', 'serviceEquipment', 'currentStep', 'serviceTrackings', 'maintenance']);
 
@@ -63,10 +63,12 @@ class ServiceMaintenanceController extends Controller
             ? 'structure.gestion_servicios.mantenimiento.tecnico_Interno.formulario'
             : 'structure.gestion_servicios.mantenimiento.tecnico_externo.formulario_externo';
 
+        $readonly = $isAdmin && $service->service_type !== 'interno';
+
         return view($view, [
             'service' => $service,
             'currentTracking' => $currentTracking,
-            'readonly' => $isAdmin,
+            'readonly' => $readonly,
         ]);
     }
 
@@ -162,6 +164,11 @@ class ServiceMaintenanceController extends Controller
                 $nextTracking->save();
 
                 $service->update(['current_step_id' => $nextStep->id]);
+
+                if (str_contains($nextStep->slug, 'generacion-os')) {
+                    return redirect()->route('gestion.servicios.os.form', ['service' => $service])
+                        ->with('success', 'Mantenimiento guardado. Ahora genera la OS.');
+                }
 
                 return redirect()->route('gestion.servicios.maintenance.form', [
                     'service' => $service,

@@ -213,12 +213,13 @@
                                 'llenado-mantenimiento', 'interno-mantenimiento' => $isInternal
                                     ? 'Iniciar mantenimiento'
                                     : 'Llenar mantenimiento',
+                                'generacion-os', 'interno-generacion-os' => 'Generar OS',
                                 default => 'Completar: ' . ($service->currentStep->name ?? 'paso actual'),
                             };
 
                             if ($service->status === 'entregado') {
                                 $stepActionLabel = 'Servicio finalizado';
-                            } elseif (in_array($currentSlug, ['llenado-mantenimiento', 'interno-mantenimiento']) && $service->maintenance) {
+                            } elseif ($currentSlug === 'llenado-mantenimiento' && $service->maintenance) {
                                 $stepActionLabel = $viewFormLabel;
                             }
                         @endphp
@@ -262,9 +263,19 @@
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                                                     {{ $stepActionLabel }}
                                                 </span>
-                                            @elseif (in_array($currentSlug, ['llenado-mantenimiento', 'interno-mantenimiento']) && ($service->maintenance || $isInternal))
+                                            @elseif ($currentSlug === 'interno-mantenimiento' && $isInternal)
                                                 <a href="{{ route('gestion.servicios.maintenance.form', $service) }}" target="_blank" class="actions-menu-item">
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                                    {{ $stepActionLabel }}
+                                                </a>
+                                            @elseif ($currentSlug === 'llenado-mantenimiento' && $service->maintenance)
+                                                <a href="{{ route('gestion.servicios.maintenance.form', $service) }}" target="_blank" class="actions-menu-item">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                                    {{ $stepActionLabel }}
+                                                </a>
+                                            @elseif (in_array($currentSlug, ['generacion-os', 'interno-generacion-os']))
+                                                <a href="{{ route('gestion.servicios.os.form', $service) }}" target="_blank" class="actions-menu-item">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                                                     {{ $stepActionLabel }}
                                                 </a>
                                             @else
@@ -282,17 +293,17 @@
                                                 </button>
                                             @endif
 
-                                            @if (($service->maintenance || ($service->currentStep && $service->currentStep->order > 7)) && ! in_array($currentSlug, ['llenado-mantenimiento', 'interno-mantenimiento']))
+                                            @if ($service->maintenance && ! in_array($currentSlug, ['llenado-mantenimiento']))
                                                 <a href="{{ route('gestion.servicios.maintenance.form', $service) }}" target="_blank" class="actions-menu-item">
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                                                     {{ $viewFormLabel }}
                                                 </a>
                                             @endif
 
-                                            @if ($currentSlug === 'generacion-os' || ($service->maintenance?->partidas_remision))
+                                            @if ($service->maintenance?->partidas_remision && ! in_array($currentSlug, ['generacion-os', 'interno-generacion-os']))
                                                 <a href="{{ route('gestion.servicios.os.form', $service) }}" target="_blank" class="actions-menu-item">
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                                                    {{ $currentSlug === 'generacion-os' ? 'Generar OS' : 'Ver OS' }}
+                                                    Ver OS
                                                 </a>
                                             @endif
 

@@ -277,7 +277,7 @@
                         <select name="subtipo">
                             <option value="">Ej. Monitor de signos vitales</option>
                             @foreach ($subtypes as $subtype)
-                                <option value="{{ $subtype->name }}">{{ $subtype->name }}</option>
+                                <option value="{{ $subtype->name }}" data-cascade-parent="{{ $subtype->equipmentType->name ?? '' }}">{{ $subtype->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -295,7 +295,7 @@
                         <select name="modelo">
                             <option value="">Ej. C-90</option>
                             @foreach ($models as $model)
-                                <option value="{{ $model->name }}">{{ $model->name }}</option>
+                                <option value="{{ $model->name }}" data-cascade-parent="{{ $model->brand->name ?? '' }}">{{ $model->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -532,5 +532,37 @@
             const pixelBuffer = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
             return ! pixelBuffer.some(color => color !== 0);
         }
+
+        function cascadeSelect(childName, parentName) {
+            const parent = document.querySelector('select[name="' + parentName + '"]');
+            const child = document.querySelector('select[name="' + childName + '"]');
+            if (!parent || !child) return;
+
+            const normalize = function (value) {
+                return (value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            };
+
+            const filter = function () {
+                const parentValue = normalize(parent.value);
+                Array.from(child.options).forEach(function (option) {
+                    const optionParent = normalize(option.dataset.cascadeParent);
+                    const show = !option.value || !parentValue || optionParent === parentValue;
+                    option.style.display = show ? '' : 'none';
+                    if (!show && option.selected) {
+                        option.selected = false;
+                    }
+                });
+            };
+
+            parent.addEventListener('change', function () {
+                child.value = '';
+                filter();
+            });
+
+            filter();
+        }
+
+        cascadeSelect('subtipo', 'tipo_equipo');
+        cascadeSelect('modelo', 'marca');
     </script>
 @endsection

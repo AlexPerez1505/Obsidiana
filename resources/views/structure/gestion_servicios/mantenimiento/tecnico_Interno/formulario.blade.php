@@ -139,7 +139,7 @@
             <h2>Envío confirmado</h2>
             <p>El equipo está en camino de regreso a instalaciones. Escanea el QR de regreso al llegar.</p>
         </div>
-    @elseif (!$readonly && $currentStepSlug !== 'llenado-mantenimiento')
+    @elseif (!$readonly && ! in_array($currentStepSlug, ['llenado-mantenimiento', 'interno-mantenimiento']))
         <div class="success-card">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             <h2>Salida de técnico interno registrada</h2>
@@ -149,21 +149,6 @@
         <div class="os-banner">
             <h1>Orden de Servicio {{ $osNumber ?: 'OS-' . $service->id }}</h1>
             <span class="os-badge">Mantenimiento interno</span>
-        </div>
-
-        <div class="os-grid">
-            <div class="os-card">
-                <p class="os-card-label">Equipo</p>
-                <p class="os-card-value">{{ $equipment->type_text ?? 'N/A' }} {{ $equipment->brand_text ?? '' }} {{ $equipment->model_text ?? '' }}</p>
-            </div>
-            <div class="os-card">
-                <p class="os-card-label">Técnico interno</p>
-                <p class="os-card-value">{{ $techName ?: 'N/A' }}</p>
-            </div>
-            <div class="os-card">
-                <p class="os-card-label">Fecha de creación</p>
-                <p class="os-card-value">{{ $service->created_at?->format('d/m/Y H:i') }}</p>
-            </div>
         </div>
 
         <form action="{{ route('gestion.servicios.maintenance.store', ['service' => $service]) }}" method="POST" enctype="multipart/form-data" novalidate>
@@ -243,18 +228,18 @@
                     @for ($i = 1; $i <= 3; $i++)
                         @php $ev = $maintenance?->{'evidencia_' . $i}; @endphp
                         <label class="evidence-box" id="evBox{{ $i }}">
+                            <span>Evidencia {{ $i }}</span>
                             @if ($ev)
-                                <span>Evidencia {{ $i }}</span>
-                                <img src="{{ asset('storage/' . $ev) }}" class="evidence-preview" style="display:block;">
+                                <img src="{{ asset('storage/' . $ev) }}" class="evidence-preview" id="evPreview{{ $i }}" style="display:block;">
                             @else
-                                @if ($readonly)
-                                    <span>Evidencia {{ $i }}</span>
+                                <img src="" class="evidence-preview" id="evPreview{{ $i }}" style="display:none;">
+                            @endif
+                            @if (!$readonly)
+                                <small>JPG, PNG (máx. 5MB)</small>
+                                <input type="file" name="evidencia_{{ $i }}" accept="image/png,image/jpeg,image/jpg" onchange="previewImage(this, {{ $i }})">
+                            @else
+                                @if (!$ev)
                                     <div class="evidence-empty">Sin evidencia</div>
-                                @else
-                                    <span>Subir evidencia {{ $i }}</span>
-                                    <small>JPG, PNG (máx. 5MB)</small>
-                                    <input type="file" name="evidencia_{{ $i }}" accept="image/png,image/jpeg,image/jpg" onchange="previewImage(this, {{ $i }})">
-                                    <img src="" class="evidence-preview" id="evPreview{{ $i }}">
                                 @endif
                             @endif
                         </label>
@@ -267,7 +252,7 @@
                 <input type="date" name="proximo_mantenimiento" value="{{ $proximoMantenimiento }}" style="max-width: 220px;" {{ $readonly ? 'disabled' : '' }}>
             </div>
 
-            @if (!$readonly && $currentStepSlug === 'llenado-mantenimiento')
+            @if (!$readonly)
                 <div class="btn-wrap">
                     <button type="button" class="btn btn--blue" onclick="openFinishModal()">Terminar formulario</button>
                 </div>
@@ -284,7 +269,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p class="modal-step">¿Estás seguro de que deseas marcar el mantenimiento como finalizado? Esta acción guardará el formulario y continuará con el envío del servicio.</p>
+                <p class="modal-step">¿Estás seguro de que deseas marcar el mantenimiento como finalizado? Esta acción guardará el formulario y continuará con la generación de la Orden de Servicio.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="modal-btn modal-btn--ghost" onclick="closeFinishModal()">Cancelar</button>
@@ -296,7 +281,7 @@
     <script>
         function addChecklistItem() {
             const container = document.getElementById('checklistContainer');
-            const index = container.children.length;
+            const index = Date.now();
             const div = document.createElement('div');
             div.className = 'item-row';
             div.innerHTML = `
@@ -309,7 +294,7 @@
 
         function addRefaccion() {
             const container = document.getElementById('refaccionesContainer');
-            const index = container.children.length;
+            const index = Date.now();
             const div = document.createElement('div');
             div.className = 'item-row';
             div.innerHTML = `
