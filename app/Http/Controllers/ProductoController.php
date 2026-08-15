@@ -63,7 +63,9 @@ class ProductoController extends Controller
     public function create(): View
     {
         return view('structure.gestion_Inventario.productos.create', [
+            'productoOptions' => $this->productoOptions(),
             'equipmentOptions' => $this->equipmentOptions(),
+            'productCatalog' => $this->productCatalog(),
         ]);
     }
 
@@ -223,7 +225,7 @@ class ProductoController extends Controller
             'equipment_id' => ['nullable', 'integer', 'exists:equipment,id'],
             'tipo_equipo' => ['required_without:equipment_id', 'nullable', 'string', 'max:255'],
             'subtipo' => ['nullable', 'string', 'max:255'],
-            'marca' => ['nullable', 'string', 'max:255'],
+            'marca' => ['required', 'string', 'max:255'],
             'modelo' => ['nullable', 'string', 'max:255'],
             'precio' => ['required', 'numeric', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
@@ -232,5 +234,71 @@ class ProductoController extends Controller
             'no_serie' => ['nullable', 'string', 'max:255'],
             'imagen' => ['nullable', 'image', 'max:5120'], // max 5MB
         ]);
+    }
+
+    private function productoOptions(): array
+    {
+        $options = collect(['tipo_equipo', 'subtipo', 'marca', 'modelo', 'proveedor'])
+            ->mapWithKeys(function (string $column): array {
+                return [
+                    $column => Producto::query()
+                        ->whereNotNull($column)
+                        ->where($column, '!=', '')
+                        ->distinct()
+                        ->orderBy($column)
+                        ->pluck($column)
+                        ->values()
+                        ->all(),
+                ];
+            })
+            ->all();
+
+        $subtypesByType = Producto::query()
+            ->whereNotNull('tipo_equipo')
+            ->where('tipo_equipo', '!=', '')
+            ->whereNotNull('subtipo')
+            ->where('subtipo', '!=', '')
+            ->orderBy('tipo_equipo')
+            ->orderBy('subtipo')
+            ->get(['tipo_equipo', 'subtipo'])
+            ->groupBy('tipo_equipo')
+            ->map(fn ($rows) => $rows->pluck('subtipo')->unique()->values()->all())
+            ->all();
+
+        $brandsByTypeAndSubtype = Producto::query()
+            ->whereNotNull('tipo_equipo')
+            ->where('tipo_equipo', '!=', '')
+            ->whereNotNull('subtipo')
+            ->where('subtipo', '!=', '')
+            ->whereNotNull('marca')
+            ->where('marca', '!=', '')
+            ->orderBy('tipo_equipo')
+            ->orderBy('subtipo')
+            ->orderBy('marca')
+            ->get(['tipo_equipo', 'subtipo', 'marca'])
+            ->groupBy('tipo_equipo')
+            ->map(fn ($typeRows) => $typeRows
+                ->groupBy('subtipo')
+                ->map(fn ($subtypeRows) => $subtypeRows->pluck('marca')->unique()->values()->all())
+                ->all())
+            ->all();
+
+        return array_merge($options, [
+            'subtypes_by_type' => $subtypesByType,
+            'brands_by_type_and_subtype' => $brandsByTypeAndSubtype,
+        ]);
+    }
+
+    private function productCatalog(): array
+    {
+        $catalogPath = resource_path('data/product_catalog.json');
+
+        if (! is_file($catalogPath)) {
+            return [];
+        }
+
+        $catalog = json_decode((string) file_get_contents($catalogPath), true);
+
+        return is_array($catalog) ? $catalog : [];
     }
 }

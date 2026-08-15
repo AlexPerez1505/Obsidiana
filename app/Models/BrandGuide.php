@@ -10,6 +10,8 @@ class BrandGuide extends Model
     /** @use HasFactory<\Database\Factories\BrandGuideFactory> */
     use HasFactory;
 
+    protected $table = 'guias_de_marca';
+
     protected $fillable = [
         'colors',
         'fonts',

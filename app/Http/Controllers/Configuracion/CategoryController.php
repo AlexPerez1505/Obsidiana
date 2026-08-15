@@ -37,10 +37,10 @@ class CategoryController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
+            'name' => ['required', 'string', 'max:255', 'unique:categorias,nombre'],
         ]);
 
-        Category::create($data);
+        Category::create(['nombre' => $data['name']]);
 
         return redirect()->route('configuracion.catalogos.index')
             ->with('status_category', 'Categoría guardada correctamente.');
@@ -62,10 +62,10 @@ class CategoryController extends Controller
     public function update(Request $request, Category $category): RedirectResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:categories,name,' . $category->id],
+            'name' => ['required', 'string', 'max:255', 'unique:categorias,nombre,' . $category->id],
         ]);
 
-        $category->update($data);
+        $category->update(['nombre' => $data['name']]);
 
         return redirect()->route('configuracion.catalogos.index')
             ->with('status_category', 'Categoría actualizada correctamente.');

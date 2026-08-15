@@ -138,15 +138,15 @@
 
     @php
         $customerName = trim(($service->customer->nombre ?? '') . ' ' . ($service->customer->apellido ?? ''));
-        $tech = $service->internalTechnician;
-        $techName = trim(($tech->name ?? '') . ' ' . ($tech->last_name ?? ''));
-        $maintenance = $service->maintenance;
-        $refacciones = $maintenance?->refacciones ?? [];
-        $subtotal = (float) ($maintenance?->subtotal ?? 0);
-        $envio = (float) ($maintenance?->envio ?? 0);
-        $descuento = (float) ($maintenance?->descuento ?? 0);
-        $iva = (float) ($maintenance?->requiere_iva ? (($subtotal + $envio - $descuento) > 0 ? ($subtotal + $envio - $descuento) * 0.16 : 0) : 0);
-        $total = (float) ($maintenance?->total ?? 0);
+        $techName = trim(($service->externalTechnician->nombre ?? '') . ' ' . ($service->externalTechnician->apellidos ?? ''));
+        $refacciones = old('refacciones', []);
+        $subtotal = collect($refacciones)->sum(fn($r) => ((float)($r['cantidad'] ?? 0) * (float)($r['precio'] ?? 0)));
+        $envio = (float) old('costo_envio', 0);
+        $descuento = (float) old('descuento', 0);
+        $aplicaIva = (bool) old('aplica_iva', false);
+        $base = max(0, $subtotal + $envio - $descuento);
+        $iva = $aplicaIva ? $base * 0.16 : 0;
+        $total = $base + $iva;
     @endphp
 
     <div class="ns-page">
@@ -231,8 +231,8 @@
                 </div>
                 <div class="ns-specs">
                     <div class="ns-spec-row"><span>NOMBRE</span><span>{{ $techName ?: 'N/A' }}</span></div>
-                    <div class="ns-spec-row"><span>CARGO</span><span>{{ $tech->cargo ?? $tech->position ?? 'N/A' }}</span></div>
-                    <div class="ns-spec-row"><span>TELEFONO</span><span>{{ $tech->phone ?? $tech->telefono ?? 'N/A' }}</span></div>
+                    <div class="ns-spec-row"><span>ESPECIALIDAD</span><span>{{ $service->externalTechnician->especialidad ?? 'N/A' }}</span></div>
+                    <div class="ns-spec-row"><span>TELEFONO</span><span>{{ $service->externalTechnician->telefono ?? 'N/A' }}</span></div>
                 </div>
             </div>
 
@@ -253,11 +253,14 @@
                     </thead>
                     <tbody>
                         @forelse ($refacciones as $r)
+                            @php
+                                $lineTotal = ((float)($r['cantidad'] ?? 0) * (float)($r['precio'] ?? 0));
+                            @endphp
                             <tr>
                                 <td>{{ $r['concepto'] ?? 'N/A' }}</td>
                                 <td>{{ $r['cantidad'] ?? 0 }}</td>
                                 <td>${{ number_format((float)($r['precio'] ?? 0), 2) }}</td>
-                                <td>${{ number_format((float)($r['total'] ?? 0), 2) }}</td>
+                                <td>${{ number_format($lineTotal, 2) }}</td>
                             </tr>
                         @empty
                             <tr class="ns-empty"><td colspan="4">No se agregaron refacciones.</td></tr>

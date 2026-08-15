@@ -36,8 +36,8 @@ Route::middleware(['auth', 'verified', 'approved'])
         Route::get('/mantenimiento', [ServiceMaintenanceController::class, 'maintenanceOrders'])
             ->name('gestion.servicios.mantenimiento');
 
-        Route::get('/mantenimiento/{service}/os', [ServiceOrderController::class, 'osForm'])
+        Route::get('/mantenimiento/{service}/os', [ServiceController::class, 'osForm'])
             ->name('gestion.servicios.os.form');
-        Route::post('/mantenimiento/{service}/os', [ServiceOrderController::class, 'storeOs'])
+        Route::post('/mantenimiento/{service}/os', [ServiceController::class, 'storeOs'])
             ->name('gestion.servicios.os.store');
     });

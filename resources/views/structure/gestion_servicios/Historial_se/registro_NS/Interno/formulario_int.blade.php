@@ -190,11 +190,6 @@
                 <div class="ns-step-number">3</div>
                 <span>Tecnico</span>
             </div>
-            <div class="ns-step-line"></div>
-            <div class="ns-step">
-                <div class="ns-step-number">4</div>
-                <span>Cotizacion</span>
-            </div>
         </div>
 
         <div class="catalog-card service-section">

@@ -17,6 +17,7 @@ use App\Models\ServiceStep;
 use App\Models\ServiceTracking;
 use App\Models\Subtype;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -221,18 +222,8 @@ class ServiceController extends Controller
 
         $technicians = User::where('status', 'approved')
             ->where('is_admin', false)
-            ->whereHas('roles', fn ($q) => $q->where('name', 'tecnico'))
             ->orderBy('name')
             ->get();
-
-        $roleFallback = false;
-        if ($technicians->isEmpty()) {
-            $technicians = User::where('status', 'approved')
-                ->where('is_admin', false)
-                ->orderBy('name')
-                ->get();
-            $roleFallback = true;
-        }
 
         $servicesByTech = Service::whereIn('internal_technician_id', $technicians->pluck('id'))
             ->whereIn('status', ['registrado', 'en_progreso'])
@@ -244,7 +235,6 @@ class ServiceController extends Controller
             'customer' => $customer,
             'technicians' => $technicians,
             'servicesByTech' => $servicesByTech,
-            'roleFallback' => $roleFallback,
         ]);
     }
 
@@ -262,7 +252,6 @@ class ServiceController extends Controller
         return view('structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario.Cotizacion', [
             'customer' => $customer,
             'technician' => $technician,
-            'refacciones' => Refaccion::query()->orderBy('name')->get(),
         ]);
     }
 
@@ -449,35 +438,7 @@ class ServiceController extends Controller
 
         $validated = $request->validate([
             'technician_id' => 'required|exists:users,id',
-            'refacciones' => 'nullable|array',
-            'refacciones.*.refaccion_id' => 'nullable|integer',
-            'refacciones.*.concepto' => 'required_with:refacciones|string|max:255',
-            'refacciones.*.cantidad' => 'required_with:refacciones|numeric|min:0',
-            'refacciones.*.precio' => 'required_with:refacciones|numeric|min:0',
-            'costo_envio' => 'nullable|numeric|min:0',
-            'descuento' => 'nullable|numeric|min:0',
-            'aplica_iva' => 'nullable|boolean',
         ]);
-
-        $refacciones = collect($validated['refacciones'] ?? [])
-            ->filter(fn ($r) => ! empty($r['concepto']))
-            ->map(fn ($r) => [
-                'refaccion_id' => $r['refaccion_id'] ?? null,
-                'concepto' => $r['concepto'],
-                'cantidad' => (float) ($r['cantidad'] ?? 0),
-                'precio' => (float) ($r['precio'] ?? 0),
-                'total' => (float) ($r['cantidad'] ?? 0) * (float) ($r['precio'] ?? 0),
-            ])
-            ->values()
-            ->all();
-
-        $subtotal = collect($refacciones)->sum('total');
-        $envio = (float) ($validated['costo_envio'] ?? 0);
-        $descuento = (float) ($validated['descuento'] ?? 0);
-        $aplicaIva = (bool) ($validated['aplica_iva'] ?? false);
-        $base = max(0, $subtotal + $envio - $descuento);
-        $iva = $aplicaIva ? $base * 0.16 : 0;
-        $total = $base + $iva;
 
         $service = Service::create([
             'service_number' => null,
@@ -509,19 +470,6 @@ class ServiceController extends Controller
             'video_path' => $equipment['video_path'] ?? null,
         ]);
 
-        ServiceMaintenance::create([
-            'service_id' => $service->id,
-            'tipo_mantenimiento' => 'interno',
-            'internal_technician_id' => $validated['technician_id'],
-            'refacciones' => $refacciones,
-            'envio' => $envio,
-            'anticipo' => 0,
-            'requiere_iva' => $aplicaIva,
-            'subtotal' => $subtotal,
-            'descuento' => $descuento,
-            'total' => $total,
-        ]);
-
         $approvalStep = ServiceStep::firstOrCreate(
             ['service_type' => 'interno', 'slug' => 'aprobacion-interna'],
             [
@@ -546,7 +494,7 @@ class ServiceController extends Controller
 
         session()->forget('service_new');
 
-        return redirect()->route('gestion.servicios.nuevo.interno.resumen', $service);
+        return redirect()->route('gestion.servicios.nuevo.interno.resumen', $service)->withInput();
     }
 
     public function showSummary(Service $service)
@@ -563,7 +511,7 @@ class ServiceController extends Controller
 
     public function showInternalSummary(Service $service)
     {
-        $service->load(['customer', 'internalTechnician', 'serviceEquipment', 'maintenance']);
+        $service->load(['customer', 'externalTechnician', 'serviceEquipment']);
 
         return view('structure.gestion_servicios.Historial_se.registro_NS.Interno.formulario.resumen', [
             'service' => $service,
@@ -845,4 +793,190 @@ class ServiceController extends Controller
         ]);
     }
 
+    public function maintenanceForm(Service $service)
+    {
+        $service->load(['customer', 'externalTechnician', 'serviceEquipment', 'currentStep', 'serviceTrackings', 'maintenance']);
+
+        $currentTracking = $service->serviceTrackings
+            ->firstWhere('service_step_id', $service->current_step_id);
+
+        return view('structure.gestion_servicios.mantenimiento.tecnico_externo.formulario_externo', [
+            'service' => $service,
+            'currentTracking' => $currentTracking,
+        ]);
+    }
+
+    public function storeMaintenance(Request $request, Service $service)
+    {
+        $service->load(['currentStep', 'serviceTrackings']);
+        $currentTracking = $service->serviceTrackings
+            ->firstWhere('service_step_id', $service->current_step_id);
+
+        $data = $request->validate([
+            'tipo_mantenimiento' => 'required|in:interno,externo',
+            'tipo_reparacion' => 'nullable|in:preventivo,correctivo,mixto',
+            'descripcion' => 'nullable|string',
+            'fallas_encontradas' => 'nullable|string',
+            'checklist' => 'nullable|array',
+            'refacciones' => 'nullable|array',
+            'proximo_mantenimiento' => 'nullable|date',
+            'carta_garantia' => 'nullable|string',
+            'evidencia_1' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+            'evidencia_2' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+            'evidencia_3' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+        ]);
+
+        $evidences = [];
+        foreach (['evidencia_1', 'evidencia_2', 'evidencia_3'] as $field) {
+            if ($request->hasFile($field)) {
+                $evidences[$field] = $request->file($field)->store('evidencias', 'public');
+            }
+        }
+
+        ServiceMaintenance::updateOrCreate(
+            ['service_id' => $service->id],
+            array_merge($data, $evidences, [
+                'tecnico_externo_id' => $service->external_technician_id,
+            ])
+        );
+
+        if ($currentTracking && $currentTracking->status === 'pendiente') {
+            $currentTracking->update([
+                'status' => 'completado',
+                'finished_at' => now(),
+            ]);
+
+            $nextStep = ServiceStep::where('service_type', $service->service_type)
+                ->where('order', '>', $service->currentStep->order)
+                ->orderBy('order')
+                ->first();
+
+            if ($nextStep) {
+                ServiceTracking::create([
+                    'service_id' => $service->id,
+                    'service_step_id' => $nextStep->id,
+                    'status' => 'pendiente',
+                    'qr_token' => $nextStep->requires_qr ? $this->generateQrToken() : null,
+                    'qr_expires_at' => $nextStep->requires_qr ? now()->addDay() : null,
+                    'started_at' => now(),
+                ]);
+
+                $service->update(['current_step_id' => $nextStep->id]);
+            } else {
+                $service->update([
+                    'status' => 'entregado',
+                    'finished_at' => now(),
+                ]);
+            }
+        }
+
+        return redirect()->route('gestion.servicios.maintenance.form', ['service' => $service])
+            ->with('success', 'Mantenimiento guardado.');
+    }
+
+    public function osForm(Service $service)
+    {
+        $service->load(['customer', 'externalTechnician', 'internalTechnician', 'serviceEquipment', 'currentStep', 'serviceTrackings', 'maintenance']);
+
+        $maintenance = $service->maintenance ?? ServiceMaintenance::firstOrNew(['service_id' => $service->id]);
+
+        return view('structure.gestion_servicios.mantenimiento.OS.formulario_OS', [
+            'service' => $service,
+            'maintenance' => $maintenance,
+        ]);
+    }
+
+    public function storeOs(Request $request, Service $service)
+    {
+        $service->load(['currentStep', 'serviceTrackings']);
+
+        $data = $request->validate([
+            'partidas_remision' => 'nullable|array',
+            'partidas_remision.*.item' => 'nullable|string',
+            'partidas_remision.*.descripcion' => 'nullable|string',
+            'partidas_remision.*.unidad' => 'nullable|string',
+            'partidas_remision.*.cantidad' => 'nullable|numeric|min:0',
+            'partidas_remision.*.precio_unitario' => 'nullable|numeric|min:0',
+            'envio' => 'nullable|numeric|min:0',
+            'anticipo' => 'nullable|numeric|min:0',
+            'requiere_iva' => 'nullable|boolean',
+            'descripcion_general' => 'nullable|string',
+            'action' => 'nullable|string|in:save,generate-pdf',
+        ]);
+
+        $data['requiere_iva'] = $request->boolean('requiere_iva');
+
+        $maintenance = ServiceMaintenance::updateOrCreate(
+            ['service_id' => $service->id],
+            array_merge($data, [
+                'tipo_mantenimiento' => $service->service_type ?? 'externo',
+                'tecnico_externo_id' => $service->external_technician_id,
+            ])
+        );
+
+        $currentTracking = $service->serviceTrackings
+            ->firstWhere('service_step_id', $service->current_step_id);
+
+        if ($currentTracking && $currentTracking->status === 'pendiente' && $service->currentStep?->slug === 'generacion-os') {
+            $currentTracking->update([
+                'status' => 'completado',
+                'finished_at' => now(),
+            ]);
+
+            $nextStep = ServiceStep::where('service_type', $service->service_type)
+                ->where('order', '>', $service->currentStep->order)
+                ->orderBy('order')
+                ->first();
+
+            if ($nextStep) {
+                ServiceTracking::create([
+                    'service_id' => $service->id,
+                    'service_step_id' => $nextStep->id,
+                    'status' => 'pendiente',
+                    'started_at' => now(),
+                ]);
+
+                $service->update(['current_step_id' => $nextStep->id]);
+            }
+        }
+
+        if ($request->input('action') === 'generate-pdf') {
+            return $this->generateOsPdf($service, $maintenance);
+        }
+
+        return redirect()->route('gestion.servicios.os.form', ['service' => $service])
+            ->with('success', 'Orden de servicio guardada correctamente.');
+    }
+
+    private function generateOsPdf(Service $service, ServiceMaintenance $maintenance)
+    {
+        $service->load(['customer', 'externalTechnician', 'internalTechnician', 'serviceEquipment', 'currentStep']);
+
+        $pdf = Pdf::loadView('structure.gestion_servicios.mantenimiento.OS.os_pdf', [
+            'service' => $service,
+            'maintenance' => $maintenance,
+        ]);
+
+        $filename = 'OS-' . ($service->service_number ?? $service->id) . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    private function storeEvidence($file): ?string
+    {
+        if (! $file) {
+            return null;
+        }
+
+        return Storage::disk('public')->putFile('evidencias', $file);
+    }
+
+    private function generateQrToken(): string
+    {
+        do {
+            $token = Str::random(32);
+        } while (Service::where('qr_token', $token)->exists() || ServiceTracking::where('qr_token', $token)->exists());
+
+        return $token;
+    }
 }
