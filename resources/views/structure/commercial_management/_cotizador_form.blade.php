@@ -14,26 +14,12 @@
 --}}
 @php $textoGuardar = $textoGuardar ?? 'Guardar'; @endphp
 
-<div class="erp-head">
-    <div class="erp-head-l">
-        <a href="{{ $backRoute }}" class="erp-back" title="Regresar" aria-label="Regresar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-        </a>
-        <span class="erp-ic">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        </span>
-        <div>
-            <h1 class="erp-h1">{{ $titulo }}</h1>
-            <p class="erp-sub">{{ $subtitulo }}</p>
-        </div>
-    </div>
-    <div class="erp-actions">
-        <button type="submit" form="cotForm" class="erp-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            {{ $textoGuardar }}
-        </button>
-    </div>
-</div>
+{{-- Cabecera estandar del sistema. El guardado vive al pie del formulario. --}}
+<x-ui.page-header :title="$titulo" :subtitle="$subtitulo" :back="$backRoute">
+    <x-slot:icon>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    </x-slot:icon>
+</x-ui.page-header>
 
 @if ($errors->any())
     <div class="erp-card pad" style="margin-bottom:20px; border-color:var(--danger); background:var(--danger-soft);">
@@ -66,8 +52,23 @@
             <div class="cot-panel">
                 <div class="cot-panel-head">Detalles de la propuesta</div>
                 <div class="cot-panel-body">
-                    <label class="cot-lbl">Lugar de la propuesta</label>
-                    <input type="text" id="lugar_propuesta" class="cot-input" placeholder="Opcional...">
+                    <label class="cot-lbl">Congreso</label>
+                    <select id="congreso_id" class="cot-input">
+                        <option value="">Sin congreso</option>
+                        @foreach ($congresos as $congresoOpcion)
+                            <option value="{{ $congresoOpcion->id }}">{{ $congresoOpcion->nombre }}</option>
+                        @endforeach
+                    </select>
+                    <p class="cot-hint">Déjalo en «Sin congreso» si no se levantó en uno; entonces no aparece en el PDF.</p>
+
+                    <label class="cot-lbl" style="margin-top:14px;">Garantía del equipo</label>
+                    <select id="garantia_meses" class="cot-input">
+                        @foreach (\App\Models\Venta::GARANTIAS as $meses)
+                            <option value="{{ $meses }}">{{ $meses }} meses</option>
+                        @endforeach
+                    </select>
+                    <p class="cot-hint">Se imprime en la carta garantía que se entrega con el equipo.</p>
+
                     <label class="cot-lbl" style="margin-top:14px;">Nota al cliente</label>
                     <textarea id="nota_cliente" class="cot-input" rows="3" placeholder="Opcional..." style="resize:vertical;"></textarea>
                 </div>
@@ -168,6 +169,12 @@
             </div>
         </div>
     </div>
+
+    {{-- Pie de acciones: acompana el scroll y queda siempre a la mano. --}}
+    <div class="page-foot">
+        <a href="{{ $backRoute }}" class="btn btn--ghost">Cancelar</a>
+        <button type="submit" form="cotForm" class="btn">{{ $textoGuardar }}</button>
+    </div>
 </form>
 
 <style>
@@ -175,14 +182,15 @@
     .cot-grid > div { min-width:0; }
     @media (max-width:1100px){ .cot-grid { grid-template-columns:1fr; } }
     .cot-panel { border:1px solid var(--border); border-radius:14px; background:var(--surface); }
-    .cot-panel-head { padding:15px 18px 2px; font-weight:700; color:var(--text); font-size:14px; letter-spacing:-.01em; }
+    .cot-panel-head { padding:18px 20px 2px; font-weight:600; color:var(--text); font-size:14px; letter-spacing:-.01em; }
     .cot-blue { color:var(--text); }
-    .cot-panel-body { padding:13px 18px 16px; }
-    .cot-input { width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:10px; font-size:14px;
+    .cot-panel-body { padding:13px 20px 20px; }
+    .cot-input { width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px;
                  background:var(--surface); color:var(--text); outline:none; font-family:inherit; }
     .cot-input:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,122,255,.15); }
     .cot-num { text-align:right; max-width:160px; }
     .cot-lbl { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:5px; }
+    .cot-hint { margin:7px 0 0; font-size:11.5px; color:var(--muted); line-height:1.45; }
     .cot-ac { position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--border);
               border-radius:12px; box-shadow:0 12px 32px rgba(17,24,39,.14); z-index:50; max-height:280px; overflow-y:auto; display:none; }
     .cot-ac.open { display:block; }
@@ -589,7 +597,8 @@
         const add = (name, val) => { const i = document.createElement('input'); i.type = 'hidden'; i.name = name; i.value = val ?? ''; box.appendChild(i); };
 
         add('customer_id', state.customer.id);
-        add('lugar_propuesta', $('lugar_propuesta').value);
+        add('congreso_id', $('congreso_id').value);
+        add('garantia_meses', $('garantia_meses').value);
         add('nota_cliente', $('nota_cliente').value);
         add('modalidad', $('modalidad').value);
         add('aplica_iva', $('aplica_iva').checked ? 1 : 0);
@@ -626,7 +635,8 @@
     });
 
     // Init
-    $('lugar_propuesta').value = INITIAL.lugar_propuesta || '';
+    $('congreso_id').value = INITIAL.congreso_id || '';
+    $('garantia_meses').value = INITIAL.garantia_meses || 6;
     $('nota_cliente').value = INITIAL.nota_cliente || '';
     $('modalidad').value = INITIAL.modalidad || 'contado';
     $('aplica_iva').checked = !!INITIAL.aplica_iva;

@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('folio')->unique();
             $table->foreignId('venta_id')->nullable()->constrained('ventas')->nullOnDelete();
-            $table->foreignId('customer_id')->constrained('customers')->cascadeOnDelete();
+            $table->foreignId('customer_id')->constrained('clientes')->cascadeOnDelete();
 
             // Datos fiscales (listos para timbrar en el futuro)
             $table->string('rfc')->nullable();

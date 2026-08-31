@@ -651,6 +651,121 @@
         :root[data-theme="light"] .search-box .search-icon { color: var(--primary); }
         :root[data-theme="light"] .type-icon { background: rgba(0,122,255,0.1); color: var(--primary); }
         :root[data-theme="light"] .empty-cell { color: var(--muted); }
+
+        /* =====================================================================
+           Piel del sistema
+
+           El modulo nacio con estetica "dark glass" azul neon: superficies
+           semitransparentes, blur y bordes luminosos. En claro eso se traducia
+           en un gris sucio, y ademas rompia los menus: un elemento con
+           backdrop-filter se vuelve bloque contenedor de sus hijos position:fixed,
+           asi que el desplegable de tres puntos quedaba recortado dentro de la
+           tarjeta por su overflow:hidden.
+
+           Este bloque va al final a proposito, para ganarle por orden a las
+           reglas de arriba sin tener que desarmarlas una por una.
+           ===================================================================== */
+        .catalog-card,
+        :root[data-theme="light"] .catalog-card,
+        :root[data-theme="dark"] .catalog-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: none;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            overflow: visible;
+        }
+
+        .catalog-header { padding: 0 0 14px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+        .catalog-header h2,
+        :root[data-theme="light"] .catalog-header h2 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; color: var(--text); }
+        .catalog-count,
+        :root[data-theme="light"] .catalog-count {
+            padding: 1px 8px; border-radius: 6px; background: var(--surface-2);
+            border: 1px solid var(--border); color: var(--muted); font-size: 12px; font-weight: 500;
+        }
+
+        .catalog-search-btn,
+        :root[data-theme="light"] .catalog-search-btn {
+            width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+            background: var(--surface); color: var(--muted); box-shadow: none;
+        }
+        .catalog-search-btn:hover,
+        :root[data-theme="light"] .catalog-search-btn:hover {
+            background: var(--surface-2); color: var(--text); border-color: var(--border); box-shadow: none;
+        }
+        .catalog-search-btn svg { width: 16px; height: 16px; }
+
+        .category-list, :root[data-theme="light"] .category-list { border-top-color: var(--border); }
+        .category-item,
+        :root[data-theme="light"] .category-item { border-bottom: 1px solid var(--border); border-radius: 0; }
+        .category-item:hover,
+        :root[data-theme="light"] .category-item:hover { background: var(--surface-2); border-bottom-color: var(--border); }
+        .category-name, :root[data-theme="light"] .category-name { color: var(--text); font-weight: 500; }
+        .category-meta, :root[data-theme="light"] .category-meta { color: var(--muted); }
+
+        .catalog-create,
+        :root[data-theme="light"] .catalog-create {
+            margin-top: 14px; border: 1px solid var(--border); border-radius: 9px;
+            background: var(--surface); color: var(--primary); box-shadow: none; font-weight: 600;
+        }
+        .catalog-create:hover,
+        :root[data-theme="light"] .catalog-create:hover {
+            background: var(--surface-2); border-color: var(--border); box-shadow: none;
+        }
+
+        .catalog-empty, :root[data-theme="light"] .catalog-empty { color: var(--muted); }
+
+        /* Menu de tres puntos */
+        .congress-menu-trigger,
+        :root[data-theme="light"] .congress-menu-trigger {
+            width: 32px; height: 32px; border-radius: 8px;
+            border: 1px solid transparent; background: none; color: var(--muted);
+        }
+        .congress-menu-trigger:hover,
+        :root[data-theme="light"] .congress-menu-trigger:hover {
+            background: var(--surface-2); color: var(--text); border-color: var(--border);
+        }
+        .congress-menu-trigger[aria-expanded="true"],
+        :root[data-theme="light"] .congress-menu-trigger[aria-expanded="true"] {
+            background: var(--surface-2); color: var(--primary); border-color: var(--border);
+        }
+
+        .congress-menu-dropdown,
+        :root[data-theme="light"] .congress-menu-dropdown {
+            min-width: 168px; padding: 6px; border-radius: 11px;
+            background: var(--surface); border: 1px solid var(--border);
+            box-shadow: 0 16px 40px rgba(17, 24, 39, .16);
+        }
+        :root[data-theme="dark"] .congress-menu-dropdown { box-shadow: 0 16px 40px rgba(0, 0, 0, .5); }
+        .congress-menu-item,
+        :root[data-theme="light"] .congress-menu-item {
+            padding: 9px 10px; border-radius: 8px; color: var(--text); font-size: 13.5px;
+        }
+        .congress-menu-item svg { color: var(--muted); }
+        .congress-menu-item:hover,
+        :root[data-theme="light"] .congress-menu-item:hover { background: var(--surface-2); color: var(--text); }
+        .congress-menu-item:hover svg { color: var(--primary); }
+        .congress-menu-item.danger,
+        :root[data-theme="light"] .congress-menu-item.danger { color: var(--danger); }
+        .congress-menu-item.danger svg { color: var(--danger); }
+        .congress-menu-item.danger:hover,
+        :root[data-theme="light"] .congress-menu-item.danger:hover { background: var(--danger-soft); color: var(--danger); }
+
+        /* Las listas que se desplazan lo siguen haciendo con la rueda o el
+           dedo, pero sin pintar la barra: en una tarjeta se ve como suciedad,
+           y la de abajo tapaba el ultimo renglon de la tabla. */
+        .congress-table-wrap,
+        .category-list,
+        .eq-list {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .congress-table-wrap::-webkit-scrollbar,
+        .category-list::-webkit-scrollbar,
+        .eq-list::-webkit-scrollbar { width: 0; height: 0; }
     </style>
 
     @yield('configuracion_content')

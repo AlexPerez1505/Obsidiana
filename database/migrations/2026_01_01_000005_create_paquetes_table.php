@@ -1,26 +1,29 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+
+/*
+|--------------------------------------------------------------------------
+| MIGRACION NEUTRALIZADA
+|--------------------------------------------------------------------------
+| Creaba la tabla `paquetes` de la generacion vieja del sistema (con
+| producto_id). La version vigente la crea 2026_08_02_000002_create_paquetes_table.php
+| con las columnas que espera el modelo Paquete (precio, imagen, activo)
+| mas la pivote paquete_equipo.
+|
+| Se deja vacia en lugar de borrarse para no romper el historial de
+| migraciones ya aplicado en otros entornos.
+*/
 
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('paquetes', function (Blueprint $table) {
-            $table->id();
-            $table->string('nombre');
-
-            $table->unsignedBigInteger('producto_id');
-            $table->foreign('producto_id')->references('id')->on('productos')->onDelete('cascade');
-
-            $table->timestamps();
-        });
+        // Intencionalmente vacia. Ver 2026_08_02_000002_create_paquetes_table.php
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('paquetes');
+        // Intencionalmente vacia.
     }
 };

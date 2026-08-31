@@ -1,98 +1,46 @@
 @extends('structure.Configuracion.layout')
 
 @section('title', 'Eliminar Categoría')
+@section('page-title', 'Eliminar Categoría')
 
 @section('configuracion_content')
-    <div class="modal-overlay">
-        <div class="modal-card catalog-card">
-            <div class="modal-header">
-                <h2 class="page-title">Eliminar Categoría</h2>
-            </div>
-            <p class="page-sub">¿Estás seguro de que deseas eliminar la categoría <strong style="color:#00A8FF;">{{ $category->name }}</strong>? Esta acción no se puede deshacer.</p>
+    <form method="POST" action="{{ route('configuracion.categorias.destroy', $category) }}" class="cat-form">
+        @csrf
+        @method('DELETE')
 
-            @if (session('status'))
-                <div class="alert alert--ok" style="margin:16px 0 0;">{{ session('status') }}</div>
-            @endif
+        <x-ui.card>
+            <x-ui.section-title style="margin:0 0 4px;">Confirmar eliminación</x-ui.section-title>
+            <p class="muted" style="margin:0; font-size:13.5px;">
+                Vas a eliminar la siguiente categoría del catálogo.
+            </p>
 
-            <form method="POST" action="{{ route('configuracion.categorias.destroy', $category) }}" style="margin-top:18px;">
-                @csrf
-                @method('DELETE')
-
-                <div class="form-actions">
-                    <a href="{{ route('configuracion.catalogos.index') }}" class="modal-back" aria-label="Regresar">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M15 18l-6-6 6-6"/>
-                        </svg>
-                        <span>Cancelar</span>
-                    </a>
-                    <button type="submit" class="btn" style="background:#ef4444; color:#fff;">Eliminar</button>
+            <div class="danger-box">
+                <div class="cat-del">
+                    <span class="cat-del-ico">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                    </span>
+                    <div>
+                        <div class="cat-del-name">{{ $category->nombre }}</div>
+                        <div class="cat-del-note">Esta acción no se puede deshacer.</div>
+                    </div>
                 </div>
-            </form>
+            </div>
+        </x-ui.card>
+
+        <div class="page-foot">
+            <a href="{{ route('configuracion.catalogos.index') }}" class="btn btn--ghost">Cancelar</a>
+            <button type="submit" class="btn btn--danger">Eliminar categoría</button>
         </div>
-    </div>
+    </form>
 
     <style>
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            padding: 22px;
-        }
-        .modal-card {
-            width: 100%;
-            max-width: 520px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .modal-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 10px;
-        }
-        .modal-header .page-title { margin: 0; flex: 1; }
-        .modal-back {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 12px;
-            border: 1px solid rgba(0, 168, 255, 0.55);
-            border-radius: 10px;
-            background: rgba(8, 18, 40, 0.45);
-            color: #00A8FF;
-            font-size: 13px;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            transition: background .16s ease, border-color .16s ease;
-        }
-        .modal-back:hover {
-            background: rgba(0, 168, 255, 0.14);
-            border-color: #00A8FF;
-        }
-        .modal-back svg { width: 16px; height: 16px; }
-        .form-actions { display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-top:18px; }
-        :root[data-theme="light"] .modal-overlay { background: rgba(15, 23, 42, 0.35); }
-        :root[data-theme="light"] .modal-back {
-            background: rgba(15, 23, 42, 0.04);
-            border-color: rgba(15, 23, 42, 0.14);
-            color: var(--primary);
-        }
-        :root[data-theme="light"] .modal-back:hover {
-            background: var(--primary-soft);
-            border-color: var(--primary);
-        }
-        @media (max-width: 640px) {
-            .modal-overlay { padding: 12px; }
-            .modal-card { width: 100%; max-width: none; }
-            .form-actions { flex-direction: column; align-items: stretch; gap: 8px; }
-            .form-actions > * { width: 100%; justify-content: center; }
-        }
+        .cat-form { max-width:560px; }
+        .cat-del { display:flex; align-items:center; gap:14px; }
+        .cat-del-ico { flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+                       width:40px; height:40px; border-radius:11px;
+                       background:var(--surface); color:var(--danger); }
+        .cat-del-ico svg { width:18px; height:18px; }
+        .cat-del-name { font-size:15px; font-weight:600; overflow-wrap:anywhere; }
+        .cat-del-note { margin-top:2px; color:var(--muted); font-size:13px; }
     </style>
 @endsection

@@ -39,6 +39,7 @@ class Congress extends Model
         'fecha_finalizacion' => 'date',
         'hora_montaje' => 'datetime:H:i',
         'hora_desmontaje' => 'datetime:H:i',
+        'path_archivo' => 'array',
         'descarga_acceso' => 'boolean',
         'acceso_subir' => 'boolean',
         'latitude' => 'decimal:7',

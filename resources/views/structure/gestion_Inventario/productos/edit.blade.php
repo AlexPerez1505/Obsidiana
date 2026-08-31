@@ -10,13 +10,20 @@
         <x-ui.card style="margin-bottom:18px;">
             <x-ui.section-title style="margin:0 0 16px;">Datos del Producto</x-ui.section-title>
             <div class="rgrid-2">
-                <x-ui.form-group label="Tipo de Equipo *" name="tipo_equipo" :value="$producto->tipo_equipo" :required="true" />
-                <x-ui.form-group label="Subtipo" name="subtipo" :value="$producto->subtipo" />
-                <x-ui.form-group label="Marca" name="marca" :value="$producto->marca" />
-                <x-ui.form-group label="Modelo" name="modelo" :value="$producto->modelo" />
+                @include('structure.gestion_Inventario.productos._selects_catalogo')
+
                 <x-ui.form-group label="Precio *" name="precio" type="number" step="0.01" min="0" :value="$producto->precio" :required="true" />
                 <x-ui.form-group label="Stock *" name="stock" type="number" min="0" :value="$producto->stock" :required="true" />
-                <x-ui.form-group label="Proveedor" name="proveedor" :value="$producto->proveedor" />
+
+                <x-ui.form-group label="Proveedor" for="proveedor">
+                    <input id="proveedor" type="text" name="proveedor" list="proveedor_options"
+                           value="{{ old('proveedor', $producto->proveedor) }}" placeholder="Nombre del proveedor" autocomplete="off">
+                    <datalist id="proveedor_options">
+                        @foreach (collect(($productoOptions ?? [])['proveedor'] ?? [])->filter()->unique() as $option)
+                            <option value="{{ $option }}"></option>
+                        @endforeach
+                    </datalist>
+                </x-ui.form-group>
                 <x-ui.form-group label="No. Serie" name="no_serie" :value="$producto->no_serie" />
             </div>
             <x-ui.form-group label="Descripción" for="descripcion">

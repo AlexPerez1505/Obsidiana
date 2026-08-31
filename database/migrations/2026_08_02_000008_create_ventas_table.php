@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('ventas', function (Blueprint $table) {
             $table->id();
             $table->string('folio')->unique();
-            $table->foreignId('customer_id')->constrained('customers')->cascadeOnDelete();
+            $table->foreignId('customer_id')->constrained('clientes')->cascadeOnDelete();
             $table->foreignId('seller_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('cotizacion_id')->nullable()->constrained('cotizaciones')->nullOnDelete();
 

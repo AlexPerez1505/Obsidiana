@@ -47,7 +47,7 @@ class FacturaController extends Controller
     {
         $data = $request->validate([
             'venta_id' => ['nullable', 'exists:ventas,id'],
-            'customer_id' => ['required', 'exists:customers,id'],
+            'customer_id' => ['required', 'exists:clientes,id'],
             'rfc' => ['nullable', 'string', 'max:20'],
             'razon_social' => ['nullable', 'string', 'max:255'],
             'uso_cfdi' => ['nullable', 'string', 'max:100'],

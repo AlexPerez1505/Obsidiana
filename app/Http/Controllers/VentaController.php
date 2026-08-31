@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Congress;
 use App\Models\Cotizacion;
 use App\Models\Customer;
 use App\Models\Venta;
+use App\Models\VentaBitacora;
 use App\Services\CalculadoraCotizacion;
+use App\Services\CalendarioPagos;
+use App\Support\AnexosVenta;
 use App\Support\DocumentoInitial;
+use App\Support\FusionadorPdf;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class VentaController extends Controller
@@ -45,9 +51,21 @@ class VentaController extends Controller
 
         $initial = DocumentoInitial::build($origen, $clientePre);
 
+        /*
+        | Al convertir una cotización, el calendario suele venir desfasado:
+        | se cotizó hace semanas y la venta se cierra hoy. Se arrastran las
+        | fechas para que el primer pago caiga hoy, conservando los días
+        | entre una parcialidad y la siguiente.
+        */
+        if ($origen && ! empty($initial['pagos'])) {
+            $initial['pagos'] = app(CalendarioPagos::class)
+                ->reanclarDesdeCotizacion($initial['pagos']);
+        }
+
         return view('structure.commercial_management.ventas.form', [
             'venta' => null,
             'initial' => $initial,
+            'congresos' => Congress::orderBy('nombre')->get(),
             'origenId' => $origen?->id,
         ]);
     }
@@ -98,6 +116,7 @@ class VentaController extends Controller
         return view('structure.commercial_management.ventas.form', [
             'venta' => $venta,
             'initial' => DocumentoInitial::build($venta, $venta->customer),
+            'congresos' => Congress::orderBy('nombre')->get(),
             'origenId' => null,
         ]);
     }
@@ -106,16 +125,48 @@ class VentaController extends Controller
     {
         $data = $this->validar($request);
 
-        DB::transaction(function () use ($venta, $data) {
+        /*
+        | Si la venta ya tiene cobros, el calendario NO se rehace: borrarlo y
+        | recrearlo dejaría los cobros sin parcialidad y contradiría los
+        | recibos que el cliente ya tiene. En ese caso se respetan las
+        | parcialidades y la diferencia de montos se reparte después entre
+        | las que todavía no se han cobrado.
+        */
+        $tieneCobros = $venta->cobros()->exists();
+
+        DB::transaction(function () use ($venta, $data, $tieneCobros) {
             $this->llenarDesde($venta, $data);
             $venta->save();
 
             $venta->items()->delete();
-            $venta->pagos()->delete();
             $this->guardarItems($venta, $data['items']);
-            $this->guardarPagos($venta, $data);
+
+            if (! $tieneCobros) {
+                $venta->pagos()->delete();
+                $this->guardarPagos($venta, $data);
+            }
+
             $venta->fichas()->sync($data['fichas'] ?? []);
         });
+
+        if ($tieneCobros) {
+            $venta->refresh()->load('pagos.cobros');
+
+            VentaBitacora::registrar(
+                $venta,
+                'items_editados',
+                'Se editó el equipo de la venta; el calendario se conservó por tener cobros'
+            );
+
+            $r = app(CalendarioPagos::class)->rebalancear($venta);
+
+            $aviso = ! empty($r['sin_donde'])
+                ? ' El plan quedó descuadrado y todas las parcialidades tienen cobros: agrega una parcialidad en Cobranza.'
+                : ($r['ajustadas'] > 0 ? ' La diferencia se repartió entre las parcialidades sin cobrar.' : '');
+
+            return redirect()->route('commercial.ventas.show', $venta)
+                ->with('status', "Venta {$venta->folio} actualizada.{$aviso}");
+        }
 
         return redirect()->route('commercial.ventas.show', $venta)
             ->with('status', "Venta {$venta->folio} actualizada.");
@@ -138,7 +189,55 @@ class VentaController extends Controller
             'venta' => $venta,
         ])->setPaper('letter');
 
-        return $pdf->stream("{$venta->folio}.pdf");
+        // Todo en un solo archivo: la venta, el contrato y la carta garantía,
+        // y hasta el final las fichas técnicas del equipo.
+        $unido = FusionadorPdf::unir($pdf->output(), $venta->fichas, AnexosVenta::para($venta));
+
+        return response($unido['contenido'], 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "inline; filename=\"{$venta->folio}.pdf\"",
+        ]);
+    }
+
+    /**
+     * Contrato de compraventa a plazos.
+     *
+     * Solo tiene sentido cuando se paga en parcialidades: en una venta de
+     * contado no hay nada que garantizar en el tiempo.
+     */
+    public function contrato(Venta $venta)
+    {
+        abort_unless($venta->requiereContrato(), 404, 'El contrato solo aplica a ventas a plazos.');
+
+        $venta->load(['customer', 'seller', 'items', 'pagos']);
+
+        return $this->entregarPdf(
+            'structure.commercial_management.ventas.contrato',
+            ['venta' => $venta],
+            "Contrato-{$venta->folio}"
+        );
+    }
+
+    /** Carta garantía del equipo. Aplica a toda venta. */
+    public function garantia(Venta $venta)
+    {
+        $venta->load(['customer', 'seller', 'items']);
+
+        return $this->entregarPdf(
+            'structure.commercial_management.ventas.garantia',
+            ['venta' => $venta],
+            "Garantia-{$venta->folio}"
+        );
+    }
+
+    private function entregarPdf(string $vista, array $datos, string $nombre)
+    {
+        $pdf = Pdf::loadView($vista, $datos)->setPaper('letter');
+
+        return response($pdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "inline; filename=\"{$nombre}.pdf\"",
+        ]);
     }
 
     /* ===================== Helpers (espejo de CotizacionController) ===================== */
@@ -146,8 +245,8 @@ class VentaController extends Controller
     private function validar(Request $request): array
     {
         return $request->validate([
-            'customer_id' => ['required', 'exists:customers,id'],
-            'lugar_propuesta' => ['nullable', 'string', 'max:255'],
+            'customer_id' => ['required', 'exists:clientes,id'],
+            'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
             'nota_cliente' => ['nullable', 'string'],
             'modalidad' => ['required', 'in:contado,financiamiento'],
             'aplica_iva' => ['nullable', 'boolean'],
@@ -157,6 +256,7 @@ class VentaController extends Controller
             'valor_a_cuenta' => ['nullable', 'numeric', 'min:0'],
             'plan_nombre' => ['nullable', 'string', 'max:255'],
             'num_meses' => ['nullable', 'integer', 'min:0', 'max:60'],
+            'garantia_meses' => ['nullable', 'integer', Rule::in(Venta::GARANTIAS)],
             'items' => ['required', 'array', 'min:1'],
             'items.*.tipo_item' => ['required', 'in:equipo,paquete'],
             'items.*.equipo_id' => ['nullable', 'integer'],
@@ -198,7 +298,7 @@ class VentaController extends Controller
         $d = $this->calc->desglose($items, $descTipo, $descValor, $envio, $aplicaIva, $valorACuenta);
 
         $venta->customer_id = $data['customer_id'];
-        $venta->lugar_propuesta = $data['lugar_propuesta'] ?? null;
+        $venta->congreso_id = $data['congreso_id'] ?? null;
         $venta->nota_cliente = $data['nota_cliente'] ?? null;
         $venta->modalidad = $data['modalidad'];
         $venta->aplica_iva = $aplicaIva;
@@ -213,6 +313,7 @@ class VentaController extends Controller
         $venta->total_contrato = $d['total_contrato'];
         $venta->plan_nombre = $data['modalidad'] === 'financiamiento' ? ($data['plan_nombre'] ?? 'Plan Personalizado') : null;
         $venta->num_meses = $data['modalidad'] === 'financiamiento' ? (int) ($data['num_meses'] ?? 0) : 0;
+        $venta->garantia_meses = (int) ($data['garantia_meses'] ?? 6);
     }
 
     private function guardarItems(Venta $venta, array $items): void

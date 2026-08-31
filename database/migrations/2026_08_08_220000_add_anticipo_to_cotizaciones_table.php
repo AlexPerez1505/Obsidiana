@@ -1,22 +1,25 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+
+/*
+|--------------------------------------------------------------------------
+| MIGRACION NEUTRALIZADA
+|--------------------------------------------------------------------------
+| Agregaba `anticipo` con after('costo_envio'), columna que solo existia en la
+| version vieja de `cotizaciones`. En la tabla vigente el equivalente es
+| `valor_a_cuenta` (2026_08_02_000004).
+*/
 
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('cotizaciones', function (Blueprint $table) {
-            $table->decimal('anticipo', 12, 2)->default(0)->after('costo_envio');
-        });
+        // Intencionalmente vacia.
     }
 
     public function down(): void
     {
-        Schema::table('cotizaciones', function (Blueprint $table) {
-            $table->dropColumn('anticipo');
-        });
+        // Intencionalmente vacia.
     }
 };

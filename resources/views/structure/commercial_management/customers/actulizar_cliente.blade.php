@@ -1,5 +1,6 @@
 @extends('layouts.dashboard')
 @section('title', 'Actualizar Cliente')
+@section('page-title', 'Actualizar Cliente')
 
 @section('content')
     <form method="POST" action="{{ route('commercial.clientes.update', $customer) }}" class="rgrid-sidebar">
@@ -7,26 +8,6 @@
         @method('PUT')
 
         <div>
-            {{-- Header --}}
-            <div class="card" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32" style="color:var(--text);">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="8.5" cy="7" r="4"/>
-                        <line x1="20" y1="8" x2="20" y2="14"/>
-                        <line x1="23" y1="11" x2="17" y2="11"/>
-                    </svg>
-                    <h2 class="page-title" style="margin:0;">Actualizar Cliente</h2>
-                </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <a href="{{ route('commercial.clientes.index') }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-                        Regresar
-                    </a>
-                    <x-ui.button>Actualizar Cliente</x-ui.button>
-                </div>
-            </div>
-
             {{-- Datos personales --}}
             <x-ui.card style="margin-bottom:18px;">
                 <x-ui.section-title style="margin:0 0 16px;">Datos Personales</x-ui.section-title>
@@ -34,7 +15,7 @@
                     <x-ui.form-group label="Nombre *" name="nombre" placeholder="Ingrese el nombre" :value="$customer->nombre" :required="true" />
                     <x-ui.form-group label="Apellido *" name="apellido" placeholder="Ingrese el apellido" :value="$customer->apellido" :required="true" />
                     <x-ui.form-group label="Teléfono *" name="telefono" type="tel" placeholder="Ingrese el teléfono" :value="$customer->telefono" inputmode="tel" maxlength="20" :required="true" />
-                    <x-ui.form-group label="RFC *" name="rfc" placeholder="Ingrese el RFC" :value="$customer->rfc" maxlength="13" :required="true" />
+                    <x-ui.form-group label="RFC" name="rfc" placeholder="Ingrese el RFC (opcional)" :value="$customer->rfc" maxlength="13" />
                     <x-ui.form-group label="Correo (Gmail)" name="gmail" type="email" placeholder="Ingrese el correo" :value="$customer->gmail" />
                 </div>
             </x-ui.card>
@@ -44,19 +25,19 @@
                 <x-ui.section-title style="margin:0 0 16px;">Información Comercial</x-ui.section-title>
                 <div class="rgrid-2">
                     <x-ui.form-group for="asesor" label="Asesor de Ventas">
-                        <input id="asesor" type="text" value="{{ $customer->asesor?->name ?? auth()->user()?->name }}" readonly style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);" />
+                        <input id="asesor" type="text" value="{{ $customer->asesor?->name ?? auth()->user()?->name }}" readonly />
                     </x-ui.form-group>
-                    <x-ui.form-group for="categoria_id" label="Categoría *">
-                        <select id="categoria_id" name="categoria_id" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                            <option value="" disabled @selected(! old('categoria_id', $customer->categoria_id))>Selecciona una categoría</option>
+                    <x-ui.form-group for="categoria_id" label="Categoría">
+                        <select id="categoria_id" name="categoria_id">
+                            <option value="" @selected(! old('categoria_id', $customer->categoria_id))>Sin categoría</option>
                             @foreach ($categories as $category)
                                 <option value="{{ $category->id }}" @selected(old('categoria_id', $customer->categoria_id) == $category->id)>{{ $category->nombre }}</option>
                             @endforeach
                         </select>
                     </x-ui.form-group>
-                    <x-ui.form-group for="congreso_id" label="Congreso Conocido *">
-                        <select id="congreso_id" name="congreso_id" required style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                            <option value="" disabled @selected(! old('congreso_id', $customer->congreso_id))>Selecciona un congreso</option>
+                    <x-ui.form-group for="congreso_id" label="Congreso Conocido">
+                        <select id="congreso_id" name="congreso_id">
+                            <option value="" @selected(! old('congreso_id', $customer->congreso_id))>Sin congreso</option>
                             @foreach ($congresses as $congress)
                                 <option value="{{ $congress->id }}" @selected(old('congreso_id', $customer->congreso_id) == $congress->id)>{{ $congress->nombre }}</option>
                             @endforeach
@@ -86,7 +67,7 @@
                     <x-ui.form-group label="Dirección *" name="direccion" placeholder="Dirección del cliente" :value="$customer->direccion" :required="true" />
                 </div>
                 <x-ui.form-group label="Comentarios" for="comentarios">
-                    <textarea id="comentarios" name="comentarios" rows="4" placeholder="Comentarios" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('comentarios', $customer->comentarios) }}</textarea>
+                    <textarea id="comentarios" name="comentarios" rows="4" placeholder="Comentarios">{{ old('comentarios', $customer->comentarios) }}</textarea>
                 </x-ui.form-group>
             </x-ui.card>
         </div>
@@ -114,6 +95,12 @@
                     <p style="margin:0;">{{ $customer->asesor?->name ?? 'Sin asesor' }}</p>
                 </div>
             </x-ui.card>
+        </div>
+
+        {{-- Pie de acciones --}}
+        <div class="page-foot">
+            <a href="{{ route('commercial.clientes.index') }}" class="btn btn--ghost">Cancelar</a>
+            <x-ui.button>Actualizar Cliente</x-ui.button>
         </div>
     </form>
 

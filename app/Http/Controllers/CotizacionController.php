@@ -2,17 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Congress;
 use App\Models\Cotizacion;
 use App\Models\Customer;
 use App\Models\Equipo;
 use App\Models\FichaTecnica;
 use App\Models\Paquete;
+use App\Models\Venta;
 use App\Services\CalculadoraCotizacion;
+use App\Support\FusionadorPdf;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CotizacionController extends Controller
@@ -34,6 +38,7 @@ class CotizacionController extends Controller
     {
         return view('structure.commercial_management.cotizaciones.form', [
             'cotizacion' => null,
+            'congresos' => Congress::orderBy('nombre')->get(),
             'clientePre' => $request->filled('cliente')
                 ? Customer::find($request->integer('cliente'))
                 : null,
@@ -77,6 +82,7 @@ class CotizacionController extends Controller
 
         return view('structure.commercial_management.cotizaciones.form', [
             'cotizacion' => $cotizacion,
+            'congresos' => Congress::orderBy('nombre')->get(),
             'clientePre' => $cotizacion->customer,
         ]);
     }
@@ -117,7 +123,13 @@ class CotizacionController extends Controller
             'cotizacion' => $cotizacion,
         ])->setPaper('letter');
 
-        return $pdf->stream("{$cotizacion->folio}.pdf");
+        // Las fichas técnicas se pegan al final, en el mismo archivo.
+        $unido = FusionadorPdf::unir($pdf->output(), $cotizacion->fichas);
+
+        return response($unido['contenido'], 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "inline; filename=\"{$cotizacion->folio}.pdf\"",
+        ]);
     }
 
     /* ===================== Endpoints JSON ===================== */
@@ -214,8 +226,8 @@ class CotizacionController extends Controller
     private function validar(Request $request): array
     {
         return $request->validate([
-            'customer_id' => ['required', 'exists:customers,id'],
-            'lugar_propuesta' => ['nullable', 'string', 'max:255'],
+            'customer_id' => ['required', 'exists:clientes,id'],
+            'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
             'nota_cliente' => ['nullable', 'string'],
             'modalidad' => ['required', 'in:contado,financiamiento'],
             'aplica_iva' => ['nullable', 'boolean'],
@@ -225,6 +237,7 @@ class CotizacionController extends Controller
             'valor_a_cuenta' => ['nullable', 'numeric', 'min:0'],
             'plan_nombre' => ['nullable', 'string', 'max:255'],
             'num_meses' => ['nullable', 'integer', 'min:0', 'max:60'],
+            'garantia_meses' => ['nullable', 'integer', Rule::in(Venta::GARANTIAS)],
 
             'items' => ['required', 'array', 'min:1'],
             'items.*.tipo_item' => ['required', 'in:equipo,paquete'],
@@ -272,7 +285,8 @@ class CotizacionController extends Controller
         $d = $this->calc->desglose($items, $descTipo, $descValor, $envio, $aplicaIva, $valorACuenta);
 
         $cot->customer_id = $data['customer_id'];
-        $cot->lugar_propuesta = $data['lugar_propuesta'] ?? null;
+        // El nombre del congreso lo escribe el modelo en lugar_propuesta.
+        $cot->congreso_id = $data['congreso_id'] ?? null;
         $cot->nota_cliente = $data['nota_cliente'] ?? null;
         $cot->modalidad = $data['modalidad'];
         $cot->aplica_iva = $aplicaIva;
@@ -287,6 +301,7 @@ class CotizacionController extends Controller
         $cot->total_contrato = $d['total_contrato'];
         $cot->plan_nombre = $data['modalidad'] === 'financiamiento' ? ($data['plan_nombre'] ?? 'Plan Personalizado') : null;
         $cot->num_meses = $data['modalidad'] === 'financiamiento' ? (int) ($data['num_meses'] ?? 0) : 0;
+        $cot->garantia_meses = (int) ($data['garantia_meses'] ?? 6);
     }
 
     private function guardarItems(Cotizacion $cot, array $items): void

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Inventory\FichaTecnicaController;
 use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\ProductoController;
 use Illuminate\Support\Facades\Route;
@@ -95,13 +96,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         return view('structure.gestion_Inventario.entrada_salida.create');
     })->name('inventory.movimientos.create');
 
-    Route::get('/gestion-inventario/equipos', function () {
-        return view('structure.gestion_Inventario.equipos.menu_equipos');
-    })->name('inventory.equipos.index');
-
-    Route::get('/gestion-inventario/equipos/crear', function () {
-        return view('structure.gestion_Inventario.equipos.c_equipos');
-    })->name('inventory.equipos.create');
+    // NOTA: el listado y el alta de equipos viven en routes/web/inventory.php
+    // (EquipoController). Aqui solo quedan el detalle y la edicion.
 
     Route::get('/gestion-inventario/equipos/{equipo}/editar', function (string $equipo) use ($findEquipment) {
         return view('structure.gestion_Inventario.equipos.c_equipos', [
@@ -129,6 +125,22 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('inventory.productos.update');
     Route::delete('/gestion-inventario/productos/{producto}', [ProductoController::class, 'destroy'])
         ->name('inventory.productos.destroy');
+
+    // Fichas técnicas (nombre + PDF)
+    Route::get('/gestion-inventario/fichas-tecnicas', [FichaTecnicaController::class, 'index'])
+        ->name('inventory.fichas.index');
+    Route::get('/gestion-inventario/fichas-tecnicas/crear', [FichaTecnicaController::class, 'create'])
+        ->name('inventory.fichas.create');
+    Route::post('/gestion-inventario/fichas-tecnicas', [FichaTecnicaController::class, 'store'])
+        ->name('inventory.fichas.store');
+    Route::get('/gestion-inventario/fichas-tecnicas/{ficha}/editar', [FichaTecnicaController::class, 'edit'])
+        ->name('inventory.fichas.edit');
+    Route::put('/gestion-inventario/fichas-tecnicas/{ficha}', [FichaTecnicaController::class, 'update'])
+        ->name('inventory.fichas.update');
+    Route::delete('/gestion-inventario/fichas-tecnicas/{ficha}', [FichaTecnicaController::class, 'destroy'])
+        ->name('inventory.fichas.destroy');
+    Route::get('/gestion-inventario/fichas-tecnicas/{ficha}/descargar', [FichaTecnicaController::class, 'download'])
+        ->name('inventory.fichas.download');
 
     // Paquetes (armados desde productos)
     Route::get('/gestion-inventario/paquetes', [PaqueteController::class, 'index'])

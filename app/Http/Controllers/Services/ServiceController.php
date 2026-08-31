@@ -84,7 +84,7 @@ class ServiceController extends Controller
     private function persistService(Request $request, int $registeredBy): Service
     {
         $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => 'required|exists:clientes,id',
             'mantenimiento_externo' => 'nullable|in:0,1',
             'mantenimiento_interno' => 'nullable|in:0,1',
             'internal_technician_id' => 'nullable|exists:users,id',

@@ -1,6 +1,7 @@
 @extends('structure.commercial_management.erp')
 
 @section('title', 'Cotizaciones')
+@section('page-title', 'Cotizaciones')
 
 @section('erp_content')
     @php
@@ -10,16 +11,8 @@
         $montoTotal = $cotizaciones->sum('total');
     @endphp
 
-    <div class="erp-head">
-        <div class="erp-head-l">
-            <span class="erp-ic">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            </span>
-            <div>
-                <h1 class="erp-h1">Cotizaciones <span class="erp-count">{{ $total }}</span></h1>
-                <p class="erp-sub">Genera y administra cotizaciones de equipo médico</p>
-            </div>
-        </div>
+    <div class="content-actions">
+        <x-ui.view-switch key="cotizaciones" />
         <a href="{{ route('commercial.cotizaciones.create') }}" class="erp-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nueva cotización
@@ -33,7 +26,7 @@
         <div class="erp-stat"><span class="ic slate"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><div><div class="n" style="font-size:19px;">${{ number_format($montoTotal, 2) }}</div><div class="l">Monto total</div></div></div>
     </div>
 
-    <div class="erp-card">
+    <div class="erp-card" data-view-list>
         <div class="erp-table-wrap">
             <table class="erp-table">
                 <thead>
@@ -81,10 +74,76 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="erp-empty">No hay cotizaciones todavía. <a href="{{ route('commercial.cotizaciones.create') }}" style="color:var(--primary); font-weight:600;">Crear la primera</a>.</td></tr>
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty-state">
+                                    <span class="ico">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                    </span>
+                                    <h3>Aún no hay cotizaciones</h3>
+                                    <p>Crea la primera y aparecerá en esta lista.</p>
+                                    <a href="{{ route('commercial.cotizaciones.create') }}" class="erp-btn">Nueva cotización</a>
+                                </div>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+    </div>
+
+    {{-- ===================== Vista tarjetas ===================== --}}
+    <div class="data-cards" data-view-cards style="display:none;">
+        @forelse ($cotizaciones as $cot)
+            @php
+                $badge = match($cot->estado) {
+                    'aceptada', 'convertida' => 'ok',
+                    'enviada' => 'info',
+                    'rechazada' => 'danger',
+                    default => 'neutral',
+                };
+            @endphp
+            <article class="data-card">
+                <div class="data-card-top">
+                    <div style="min-width:0;">
+                        <div class="t">{{ $cot->folio }}</div>
+                        <div class="s">{{ $cot->customer?->nombre }} {{ $cot->customer?->apellido }}</div>
+                    </div>
+                    <span class="right erp-badge {{ $badge }}"><span class="dot"></span>{{ $cot->estadoLabel() }}</span>
+                </div>
+
+                <dl>
+                    <div>
+                        <dt>Total</dt>
+                        <dd>${{ number_format($cot->total, 2) }}</dd>
+                    </div>
+                    <div>
+                        <dt>Modalidad</dt>
+                        <dd style="text-transform:capitalize;">{{ $cot->modalidad }}@if($cot->modalidad === 'financiamiento') · {{ $cot->num_meses }}m @endif</dd>
+                    </div>
+                    <div>
+                        <dt>Fecha</dt>
+                        <dd>{{ $cot->created_at?->format('d/m/Y') }}</dd>
+                    </div>
+                </dl>
+
+                <div class="data-card-foot">
+                    <a href="{{ route('commercial.cotizaciones.show', $cot) }}" class="tbl-link">Ver</a>
+                    <a href="{{ route('commercial.cotizaciones.edit', $cot) }}" class="tbl-link">Editar</a>
+                    <a href="{{ route('commercial.cotizaciones.pdf', $cot) }}" class="tbl-link" target="_blank">PDF</a>
+                </div>
+            </article>
+        @empty
+            <div class="erp-card">
+                <div class="empty-state">
+                    <span class="ico">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </span>
+                    <h3>Aún no hay cotizaciones</h3>
+                    <p>Crea la primera y aparecerá aquí.</p>
+                    <a href="{{ route('commercial.cotizaciones.create') }}" class="erp-btn">Nueva cotización</a>
+                </div>
+            </div>
+        @endforelse
     </div>
 @endsection

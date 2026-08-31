@@ -9,8 +9,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $this->addColumnIfMissing($table, 'cargo', fn () => $table->string('cargo')->nullable()->after('position'));
-            $this->addColumnIfMissing($table, 'checador_id', fn () => $table->string('checador_id')->nullable()->unique()->after('payroll_number'));
+            // Sin after(): las columnas 'position' y 'payroll_number' no existen
+            // en la tabla users, y MySQL falla si el AFTER apunta a una columna
+            // inexistente. El orden fisico de las columnas no afecta al modelo.
+            $this->addColumnIfMissing($table, 'cargo', fn () => $table->string('cargo')->nullable());
+            $this->addColumnIfMissing($table, 'checador_id', fn () => $table->string('checador_id')->nullable()->unique());
             $this->addColumnIfMissing($table, 'approval_pin_hash', fn () => $table->string('approval_pin_hash')->nullable()->after('password'));
             $this->addColumnIfMissing($table, 'curp', fn () => $table->string('curp', 18)->nullable()->unique()->after('cargo'));
             $this->addColumnIfMissing($table, 'ine', fn () => $table->string('ine')->nullable()->after('curp'));

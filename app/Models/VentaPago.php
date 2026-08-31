@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class VentaPago extends Model
 {
@@ -27,5 +28,58 @@ class VentaPago extends Model
     public function venta(): BelongsTo
     {
         return $this->belongsTo(Venta::class);
+    }
+
+    /** Cobros aplicados a esta parcialidad. */
+    public function cobros(): HasMany
+    {
+        return $this->hasMany(Cobro::class);
+    }
+
+    public function cobrado(): float
+    {
+        return (float) $this->cobros->sum('monto');
+    }
+
+    public function saldo(): float
+    {
+        return max(0, round((float) $this->monto - $this->cobrado(), 2));
+    }
+
+    public function estado(): string
+    {
+        $cobrado = $this->cobrado();
+
+        return match (true) {
+            $cobrado <= 0 => $this->vencido() ? 'vencido' : 'pendiente',
+            $this->saldo() <= 0.009 => 'pagado',
+            default => 'parcial',
+        };
+    }
+
+    public function estadoLabel(): string
+    {
+        return match ($this->estado()) {
+            'pagado' => 'Pagado',
+            'parcial' => 'Parcial',
+            'vencido' => 'Vencido',
+            default => 'Pendiente',
+        };
+    }
+
+    /** Se pasó la fecha y sigue sin cobrarse. */
+    public function vencido(): bool
+    {
+        return $this->fecha && $this->fecha->isPast() && $this->saldo() > 0.009;
+    }
+
+    /**
+     * Una parcialidad con dinero encima no se puede borrar ni dejar por
+     * debajo de lo ya cobrado: el recibo que tiene el cliente dejaría de
+     * cuadrar con el sistema.
+     */
+    public function tieneCobros(): bool
+    {
+        return $this->cobros()->exists();
     }
 }

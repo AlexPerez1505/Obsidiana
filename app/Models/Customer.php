@@ -45,9 +45,10 @@ class Customer extends Model
         return $this->belongsTo(Congress::class, 'congreso_id');
     }
 
+    // Ojo: en cotizaciones la llave es customer_id, no cliente_id como en el resto.
     public function cotizaciones(): HasMany
     {
-        return $this->hasMany(Cotizacion::class, 'cliente_id');
+        return $this->hasMany(Cotizacion::class, 'customer_id');
     }
 
     public function planPagos(): HasMany

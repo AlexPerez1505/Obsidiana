@@ -1,6 +1,7 @@
 @extends('structure.Configuracion.layout')
 
 @section('title', 'Nueva refacción')
+@section('page-title', 'Nueva refacción')
 
 @section('configuracion_content')
     <style>
@@ -15,25 +16,6 @@
         .form-input::placeholder { color: rgba(255,255,255,0.4); }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
     </style>
-
-    <div class="catalog-card" style="margin-bottom:22px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;">
-            <div>
-                <h2 class="page-title" style="margin:0; font-size:24px; font-weight:700;">Nueva refacción</h2>
-                <p class="page-subtitle" style="margin:4px 0 0; font-size:14px;">Registra una refacción o repuesto en el catálogo.</p>
-            </div>
-            <div style="display:flex; align-items:center; gap:12px;">
-                <a href="{{ route('configuracion.refaciones.index') }}" style="background:rgba(8,18,40,0.55); color:#fff; border:1px solid rgba(0,168,255,0.45); padding:10px 18px; border-radius:12px; font-size:14px; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-                    Regresar
-                </a>
-                <button type="submit" form="refacion-form" class="btn" style="background:#00A8FF; color:#fff; border:1px solid rgba(255,255,255,0.15); padding:10px 18px; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                    Guardar refacción
-                </button>
-            </div>
-        </div>
-    </div>
 
     <div class="catalog-card">
         @if (session('status'))
@@ -71,6 +53,12 @@
             <div class="form-group">
                 <label class="form-label" for="compatible_with">Compatible con</label>
                 <input type="text" id="compatible_with" name="compatible_with" class="form-input" value="{{ old('compatible_with') }}" placeholder="Ej. Modelo X, Serie Y">
+            </div>
+
+            {{-- Pie de acciones del formulario --}}
+            <div class="page-foot">
+                <a href="{{ route('configuracion.refaciones.index') }}" class="btn btn--ghost">Cancelar</a>
+                <button type="submit" class="btn">Guardar</button>
             </div>
         </form>
     </div>

@@ -20,7 +20,7 @@ class CustomerController extends Controller
      */
     public function index(Request $request): View
     {
-        $customers = Customer::with(['asesor', 'category'])->latest()->get();
+        $customers = Customer::with(['asesor', 'category', 'congress'])->latest()->get();
 
         return view('structure.commercial_management.customers.menu_customers', [
             'customers' => $customers,
@@ -33,7 +33,7 @@ class CustomerController extends Controller
     public function show(Customer $cliente): View
     {
         return view('structure.commercial_management.customers.ver_cliente', [
-            'customer' => $cliente->load(['asesor', 'category', 'congress']),
+            'customer' => $cliente->load(['asesor', 'category', 'congress', 'cotizaciones']),
         ]);
     }
 
@@ -59,12 +59,12 @@ class CustomerController extends Controller
             'nombre' => ['required', 'string', 'max:255'],
             'apellido' => ['required', 'string', 'max:255'],
             'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')],
-            'rfc' => ['required', 'string', 'max:13', Rule::unique('clientes', 'rfc')],
+            'rfc' => ['nullable', 'string', 'max:13', Rule::unique('clientes', 'rfc')],
             'gmail' => ['nullable', 'email', 'max:255'],
             'direccion' => ['required', 'string', 'max:255'],
             'comentarios' => ['nullable', 'string'],
-            'categoria_id' => ['required', 'exists:categorias,id'],
-            'congreso_id' => ['required', 'exists:congresos_eventos,id'],
+            'categoria_id' => ['nullable', 'exists:categorias,id'],
+            'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
             'recibe_promocion' => ['nullable', 'boolean'],
         ], [
             'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
@@ -112,12 +112,12 @@ class CustomerController extends Controller
             'nombre' => ['required', 'string', 'max:255'],
             'apellido' => ['required', 'string', 'max:255'],
             'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')->ignore($cliente->id)],
-            'rfc' => ['required', 'string', 'max:13', Rule::unique('clientes', 'rfc')->ignore($cliente->id)],
+            'rfc' => ['nullable', 'string', 'max:13', Rule::unique('clientes', 'rfc')->ignore($cliente->id)],
             'gmail' => ['nullable', 'email', 'max:255'],
             'direccion' => ['required', 'string', 'max:255'],
             'comentarios' => ['nullable', 'string'],
-            'categoria_id' => ['required', 'exists:categorias,id'],
-            'congreso_id' => ['required', 'exists:congresos_eventos,id'],
+            'categoria_id' => ['nullable', 'exists:categorias,id'],
+            'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
             'recibe_promocion' => ['nullable', 'boolean'],
             'activo' => ['nullable', 'boolean'],
         ], [
@@ -133,11 +133,21 @@ class CustomerController extends Controller
         return redirect()->route('commercial.clientes.index')->with('status', 'Cliente actualizado correctamente.');
     }
 
+    /**
+     * Normaliza la entrada antes de validar.
+     *
+     * RFC, categoria y congreso son opcionales: cuando llegan vacios se guardan
+     * como NULL para no chocar con el indice unico del RFC ni con las llaves foraneas.
+     */
     private function normalizeCustomerInput(Request $request): void
     {
+        $rfc = strtoupper(trim((string) $request->input('rfc')));
+
         $request->merge([
             'telefono' => trim((string) $request->input('telefono')),
-            'rfc' => strtoupper(trim((string) $request->input('rfc'))),
+            'rfc' => $rfc !== '' ? $rfc : null,
+            'categoria_id' => $request->filled('categoria_id') ? $request->input('categoria_id') : null,
+            'congreso_id' => $request->filled('congreso_id') ? $request->input('congreso_id') : null,
         ]);
     }
 

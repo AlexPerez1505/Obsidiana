@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Cotizacion extends Model
 {
@@ -14,6 +15,7 @@ class Cotizacion extends Model
     protected $fillable = [
         'folio',
         'customer_id',
+        'congreso_id',
         'seller_id',
         'lugar_propuesta',
         'nota_cliente',
@@ -29,6 +31,7 @@ class Cotizacion extends Model
         'total',
         'total_contrato',
         'plan_nombre',
+        'garantia_meses',
         'num_meses',
         'estado',
     ];
@@ -94,5 +97,30 @@ class Cotizacion extends Model
             'convertida' => 'Convertida a venta',
             default => 'Borrador',
         };
+    }
+    /** Congreso donde se levanto. Nulo cuando no vino de un congreso. */
+    public function congreso(): BelongsTo
+    {
+        return $this->belongsTo(Congress::class, 'congreso_id');
+    }
+
+    /**
+     * El nombre del congreso se guarda tambien como texto: el PDF de un
+     * documento ya emitido debe conservar como se llamaba ese dia.
+     */
+    protected static function booted(): void
+    {
+        // Token del enlace publico: se genera una sola vez, al crear.
+        static::creating(function ($doc) {
+            $doc->public_token = $doc->public_token ?: (string) Str::uuid();
+        });
+
+        static::saving(function ($doc) {
+            if ($doc->isDirty('congreso_id')) {
+                $doc->lugar_propuesta = $doc->congreso_id
+                    ? Congress::find($doc->congreso_id)?->nombre
+                    : null;
+            }
+        });
     }
 }

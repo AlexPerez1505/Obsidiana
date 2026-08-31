@@ -7,31 +7,39 @@
 @section('content')
 <style>
     /* ===== ERP · sistema de diseño limpio (SaaS, minimalista, empresarial) ===== */
-    .erp { --erp-radius:16px; }
+    /* Alineado con el sistema base del dashboard (mismo patron que
+       /gestion-inventario/equipos): mismo radio, tipografia y espaciados. */
+    .erp { --erp-radius:10px; }
 
-    /* Encabezado de página */
-    .erp-head { background:var(--surface); border:1px solid var(--border); border-radius:var(--erp-radius);
-                padding:20px 22px; box-shadow:var(--shadow); display:flex; justify-content:space-between;
-                align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
-    .erp-head-l { display:flex; align-items:center; gap:14px; min-width:0; }
-    .erp-ic { width:46px; height:46px; border-radius:13px; display:flex; align-items:center; justify-content:center;
-              background:var(--primary-soft); color:var(--primary); flex:0 0 auto; }
-    .erp-h1 { font-size:19px; font-weight:700; margin:0; letter-spacing:-.01em; display:flex; align-items:center; gap:10px; }
-    .erp-sub { color:var(--muted); font-size:13.5px; margin:3px 0 0; }
-    .erp-count { font-size:12px; font-weight:700; color:var(--primary); background:var(--primary-soft); padding:2px 10px; border-radius:999px; }
-    .erp-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    /* Encabezado de página · minimalista, igual que x-ui.page-header:
+       sin tarjeta, sin recuadro de icono y sin subtitulo. */
+    .erp-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+    .erp-head-l { display:flex; align-items:center; gap:10px; min-width:0; }
+    /* Todo lo que siga al bloque del titulo se va a la derecha. */
+    .erp-head > .erp-head-l ~ * { margin-left:auto; }
+    .erp-ic { display:none; }
+    .erp-h1 { font-size:18px; font-weight:600; margin:0; letter-spacing:-.01em; line-height:1.2;
+              display:flex; align-items:center; gap:10px; }
+    .erp-sub { display:none; }
+    .erp-count { font-size:12px; font-weight:500; color:var(--muted); background:var(--surface-2);
+                 border:1px solid var(--border); padding:1px 7px; border-radius:5px; }
+    .erp-actions { margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 
     /* Botones */
     .erp { --erp-ease:cubic-bezier(.23,1,.32,1); }
-    .erp-btn { display:inline-flex; align-items:center; gap:7px; padding:9px 15px; border-radius:10px; font-size:13.5px;
-               font-weight:600; border:1px solid transparent; cursor:pointer; text-decoration:none; background:var(--primary);
-               color:#fff; font-family:inherit;
-               transition:background .16s ease, border-color .16s ease, color .16s ease, transform .12s var(--erp-ease); }
-    .erp-btn:hover { background:var(--primary-strong); }
-    .erp-btn:active { transform:scale(.97); }
-    .erp-btn.ghost { background:transparent; color:var(--text); border-color:var(--border); }
+    /* Botones sobrios, de herramienta de trabajo: compactos y con
+       radio corto. Nada de pildoras grandes. */
+    .erp-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:7px; font-size:13.5px;
+               font-weight:500; border:1px solid var(--primary); cursor:pointer; text-decoration:none; background:var(--primary);
+               color:#fff; font-family:inherit; text-align:center; line-height:1.5;
+               transition:background .16s ease, border-color .16s ease, color .16s ease; }
+    .erp-btn:hover { background:var(--primary-strong); border-color:var(--primary-strong); }
+    .erp-btn.ghost { background:var(--surface); color:var(--text); border-color:var(--border); }
     .erp-btn.ghost:hover { background:var(--surface-2); }
-    .erp-btn.sm { padding:8px 12px; font-size:13px; }
+    .erp-btn.danger { background:var(--danger); border-color:var(--danger); }
+    .erp-btn.danger:hover { filter:brightness(.92); }
+    .erp-btn.sm { padding:6px 11px; font-size:13px; }
+    .erp-btn svg { width:15px; height:15px; }
     .erp-btn svg { width:16px; height:16px; }
 
     /* Volver atrás: borderless, solo ícono */
@@ -44,31 +52,31 @@
 
     /* Estadísticas */
     .erp-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:16px; margin-bottom:20px; }
-    .erp-stat { background:var(--surface); border:1px solid var(--border); border-radius:var(--erp-radius); padding:18px 20px;
-                box-shadow:var(--shadow); display:flex; align-items:center; gap:15px; }
-    .erp-stat .ic { width:46px; height:46px; border-radius:13px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+    .erp-stat { background:var(--surface); border:1px solid var(--border); border-radius:var(--erp-radius); padding:22px;
+                display:flex; align-items:center; gap:16px; }
+    .erp-stat .ic { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
     .erp-stat .ic.blue  { background:var(--primary-soft); color:var(--primary); }
     .erp-stat .ic.green { background:var(--green-soft); color:var(--green); }
     .erp-stat .ic.amber { background:var(--accent-soft); color:var(--accent); }
     .erp-stat .ic.slate { background:var(--surface-2); color:var(--muted); }
-    .erp-stat .n { font-size:23px; font-weight:800; line-height:1; }
-    .erp-stat .l { color:var(--muted); font-size:11.5px; margin-top:5px; text-transform:uppercase; letter-spacing:.04em; }
+    .erp-stat .n { font-size:30px; font-weight:800; line-height:1; }
+    .erp-stat .l { color:var(--muted); font-size:13px; margin-top:4px; text-transform:uppercase; letter-spacing:.04em; }
 
     /* Tarjetas y tablas */
-    .erp-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--erp-radius); box-shadow:var(--shadow); }
-    .erp-card.pad { padding:20px 22px; }
+    .erp-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--erp-radius); }
+    .erp-card.pad { padding:22px; }
     .erp-table-wrap { overflow-x:auto; border-radius:var(--erp-radius); }
-    .erp-table { width:100%; border-collapse:collapse; font-size:14px; }
-    .erp-table th { text-align:left; padding:14px 16px; color:var(--muted); font-weight:600; font-size:11px;
-                    text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--border); white-space:nowrap; }
-    .erp-table td { padding:13px 16px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    .erp-table { width:100%; border-collapse:collapse; font-size:13.5px; }
+    .erp-table th { text-align:left; padding:11px 16px; color:var(--muted); font-weight:400; font-size:13px;
+                    border-bottom:1px solid var(--border); white-space:nowrap; }
+    .erp-table td { padding:11px 16px; border-bottom:1px solid var(--border); vertical-align:middle; }
     .erp-table tbody tr:last-child td { border-bottom:none; }
     .erp-table tbody tr:hover td { background:var(--surface-2); }
     .erp-strong { font-weight:700; }
     .erp-empty { text-align:center; padding:40px 16px; color:var(--muted); }
 
     /* Badges tipo píldora */
-    .erp-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 11px; border-radius:999px; font-size:12px; font-weight:600; }
+    .erp-badge { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
     .erp-badge .dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
     .erp-badge.ok { background:var(--green-soft); color:var(--green); }
     .erp-badge.warn { background:var(--accent-soft); color:var(--accent); }

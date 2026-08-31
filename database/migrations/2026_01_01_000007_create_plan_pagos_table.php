@@ -16,8 +16,10 @@ return new class extends Migration
             $table->unsignedBigInteger('cliente_id');
             $table->foreign('cliente_id')->references('id')->on('clientes')->onDelete('cascade');
 
+            // La llave foranea hacia `cotizaciones` se agrega en
+            // 2026_08_02_000030_add_cotizacion_foreign_to_plan_pagos_table.php,
+            // porque esa tabla se crea despues (2026_08_02_000004).
             $table->unsignedBigInteger('cotizacion_id');
-            $table->foreign('cotizacion_id')->references('id')->on('cotizaciones')->onDelete('cascade');
 
             $table->date('plazo_pagar');
             $table->string('metodo_pago')->nullable();

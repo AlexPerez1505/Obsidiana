@@ -315,20 +315,20 @@
                     <x-ui.form-group label="Nombre *" name="nombre" :required="true" />
                     <x-ui.form-group label="Apellido *" name="apellido" :required="true" />
                     <x-ui.form-group label="Teléfono *" name="telefono" type="tel" inputmode="tel" maxlength="20" :required="true" />
-                    <x-ui.form-group label="RFC *" name="rfc" maxlength="13" :required="true" />
+                    <x-ui.form-group label="RFC" name="rfc" maxlength="13" />
                     <x-ui.form-group label="Correo (Gmail)" name="gmail" type="email" />
                     <x-ui.form-group label="Dirección *" name="direccion" :required="true" />
-                    <x-ui.form-group for="categoria_id" label="Categoría *">
-                        <select id="categoria_id" name="categoria_id" required class="qinput">
-                            <option value="" disabled selected>Selecciona una categoría</option>
+                    <x-ui.form-group for="categoria_id" label="Categoría">
+                        <select id="categoria_id" name="categoria_id" class="qinput">
+                            <option value="" selected>Sin categoría</option>
                             @foreach ($categories as $category)
                                 <option value="{{ $category->id }}">{{ $category->nombre }}</option>
                             @endforeach
                         </select>
                     </x-ui.form-group>
-                    <x-ui.form-group for="congreso_id" label="Congreso Conocido *">
-                        <select id="congreso_id" name="congreso_id" required class="qinput">
-                            <option value="" disabled selected>Selecciona un congreso</option>
+                    <x-ui.form-group for="congreso_id" label="Congreso Conocido">
+                        <select id="congreso_id" name="congreso_id" class="qinput">
+                            <option value="" selected>Sin congreso</option>
                             @foreach ($congresses as $congress)
                                 <option value="{{ $congress->id }}">{{ $congress->nombre }}</option>
                             @endforeach
