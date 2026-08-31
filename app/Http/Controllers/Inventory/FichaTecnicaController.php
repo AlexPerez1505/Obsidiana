@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
-use App\Models\Equipo;
 use App\Models\FichaTecnica;
+use App\Models\Paquete;
+use App\Models\Producto;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -25,7 +27,7 @@ class FichaTecnicaController extends Controller
         // El filtrado va del lado del navegador, igual que en Clientes: la
         // búsqueda, los filtros y el cambio de vista trabajan sobre la misma
         // lista sin recargar.
-        $fichas = FichaTecnica::with('equipo')->orderBy('titulo')->get();
+        $fichas = FichaTecnica::with(['producto', 'paquete'])->orderBy('titulo')->get();
 
         return view('structure.gestion_Inventario.fichas.index', [
             'fichas' => $fichas,
@@ -38,7 +40,8 @@ class FichaTecnicaController extends Controller
     {
         return view('structure.gestion_Inventario.fichas.form', [
             'ficha' => new FichaTecnica(['activo' => true]),
-            'equipos' => $this->equipos(),
+            'productos' => $this->productos(),
+            'paquetes' => $this->paquetes(),
         ]);
     }
 
@@ -58,14 +61,15 @@ class FichaTecnicaController extends Controller
     {
         return view('structure.gestion_Inventario.fichas.form', [
             'ficha' => $ficha,
-            'equipos' => $this->equipos(),
+            'productos' => $this->productos($ficha),
+            'paquetes' => $this->paquetes(),
         ]);
     }
 
     public function update(Request $request, FichaTecnica $ficha): RedirectResponse
     {
         // Al editar, el PDF es opcional: si no mandan uno nuevo se conserva.
-        $data = $this->validado($request, obligaArchivo: false);
+        $data = $this->validado($request, obligaArchivo: false, ficha: $ficha);
 
         if ($request->hasFile('archivo')) {
             $this->borrarArchivo($ficha);
@@ -98,13 +102,13 @@ class FichaTecnicaController extends Controller
         return Storage::disk('public')->download($ficha->archivo, $nombre);
     }
 
-    private function validado(Request $request, bool $obligaArchivo): array
+    private function validado(Request $request, bool $obligaArchivo, ?FichaTecnica $ficha = null): array
     {
         $reglaArchivo = $obligaArchivo ? ['required'] : ['nullable'];
 
         $data = $request->validate([
             'titulo' => ['required', 'string', 'max:255'],
-            'equipo_id' => ['nullable', 'exists:equipos,id'],
+            'item' => ['nullable', 'string'],
             'contenido' => ['nullable', 'string', 'max:5000'],
             'activo' => ['nullable', 'boolean'],
             // Sin tope de peso propio: el unico limite es el del servidor
@@ -117,11 +121,42 @@ class FichaTecnicaController extends Controller
         ]);
 
         $data['activo'] = $request->boolean('activo');
+        [$data['producto_id'], $data['paquete_id']] = $this->descomponerItem($data['item'] ?? null);
+        unset($data['item']);
+
+        // Cada producto solo puede tener una ficha técnica relacionada.
+        if ($data['producto_id']) {
+            $yaTieneFicha = FichaTecnica::where('producto_id', $data['producto_id'])
+                ->when($ficha, fn ($q) => $q->whereKeyNot($ficha->id))
+                ->exists();
+
+            if ($yaTieneFicha) {
+                throw ValidationException::withMessages([
+                    'item' => 'Ese producto ya tiene otra ficha técnica asignada.',
+                ]);
+            }
+        }
 
         // El archivo se resuelve aparte, segun sea alta o edicion.
         unset($data['archivo']);
 
         return $data;
+    }
+
+    /** El select manda "producto:5" o "paquete:3"; aquí se separa en sus dos columnas. */
+    private function descomponerItem(?string $item): array
+    {
+        if (! $item || ! str_contains($item, ':')) {
+            return [null, null];
+        }
+
+        [$tipo, $id] = explode(':', $item, 2);
+
+        return match ($tipo) {
+            'producto' => [(int) $id, null],
+            'paquete' => [null, (int) $id],
+            default => [null, null],
+        };
     }
 
     private function borrarArchivo(FichaTecnica $ficha): void
@@ -131,9 +166,29 @@ class FichaTecnicaController extends Controller
         }
     }
 
-    /** @return \Illuminate\Support\Collection<int, Equipo> */
-    private function equipos()
+    /**
+     * Solo se ofrecen productos sin ficha todavía (más el que ya tiene
+     * asignado esta ficha, si se está editando), ya que cada producto
+     * solo puede tener una ficha técnica relacionada.
+     *
+     * @return \Illuminate\Support\Collection<int, Producto>
+     */
+    private function productos(?FichaTecnica $ficha = null)
     {
-        return Equipo::orderBy('marca')->orderBy('modelo')->get();
+        return Producto::orderBy('marca')->orderBy('modelo')
+            ->where(function ($query) use ($ficha) {
+                $query->whereDoesntHave('fichaTecnica');
+
+                if ($ficha?->producto_id) {
+                    $query->orWhereKey($ficha->producto_id);
+                }
+            })
+            ->get();
+    }
+
+    /** @return \Illuminate\Support\Collection<int, Paquete> */
+    private function paquetes()
+    {
+        return Paquete::orderBy('nombre')->get();
     }
 }

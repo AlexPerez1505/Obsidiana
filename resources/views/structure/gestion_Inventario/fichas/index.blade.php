@@ -7,7 +7,7 @@
 @section('content')
     @php
         // Solo se ofrece en los filtros lo que realmente existe en los datos.
-        $equipos = $fichas->map(fn ($f) => $f->equipo ? trim($f->equipo->marca . ' ' . $f->equipo->modelo) : null)
+        $equipos = $fichas->map(fn ($f) => $f->nombreRelacionado())
             ->filter()->unique()->sort()->values();
 
         $sinPdf = $fichas->whereNull('archivo')->count();
@@ -127,7 +127,7 @@
     @php
         // Los mismos atributos alimentan la tabla y las tarjetas.
         $datos = function ($ficha) {
-            $equipo = $ficha->equipo ? trim($ficha->equipo->marca . ' ' . $ficha->equipo->modelo) : '';
+            $equipo = $ficha->nombreRelacionado() ?? '';
 
             return [
                 'data-buscar' => mb_strtolower($ficha->titulo . ' ' . $equipo . ' ' . ($ficha->contenido ?? '')),
@@ -155,7 +155,7 @@
             <thead>
                 <tr>
                     <th>Ficha técnica</th>
-                    <th>Equipo</th>
+                    <th>Producto/Paquete</th>
                     <th>Archivo</th>
                     <th>Alta</th>
                     <th>Estado</th>
@@ -176,7 +176,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td>{{ $ficha->equipo ? trim($ficha->equipo->marca . ' ' . $ficha->equipo->modelo) : '—' }}</td>
+                        <td>{{ $ficha->nombreRelacionado() ?? '—' }}</td>
                         <td>
                             <span class="badge {{ $ficha->archivo ? 'badge--info' : '' }}">
                                 {{ $ficha->archivo ? 'PDF' : 'Sin archivo' }}
@@ -220,7 +220,7 @@
                     </span>
                     <div style="min-width:0; flex:1;">
                         <div class="t">{{ $ficha->titulo }}</div>
-                        <div class="s">{{ $ficha->equipo ? trim($ficha->equipo->marca . ' ' . $ficha->equipo->modelo) : 'Sin equipo' }}</div>
+                        <div class="s">{{ $ficha->nombreRelacionado() ?? 'Sin relacionar' }}</div>
                     </div>
                     @if ($ficha->activo)
                         <span class="badge badge--ok">Activa</span>

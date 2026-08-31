@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Producto extends Model
 {
@@ -105,5 +106,11 @@ class Producto extends Model
     public function cotizaciones(): HasMany
     {
         return $this->hasMany(Cotizacion::class, 'producto_id');
+    }
+
+    /** Cada producto solo puede tener una ficha técnica relacionada. */
+    public function fichaTecnica(): HasOne
+    {
+        return $this->hasOne(FichaTecnica::class);
     }
 }

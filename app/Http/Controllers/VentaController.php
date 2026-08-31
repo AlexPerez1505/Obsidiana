@@ -43,7 +43,7 @@ class VentaController extends Controller
         $clientePre = null;
 
         if ($request->filled('cotizacion')) {
-            $origen = Cotizacion::with(['customer', 'items', 'pagos', 'fichas'])->find($request->integer('cotizacion'));
+            $origen = Cotizacion::with(['customer', 'items.producto', 'pagos', 'fichas'])->find($request->integer('cotizacion'));
             $clientePre = $origen?->customer;
         } elseif ($request->filled('cliente')) {
             $clientePre = Customer::find($request->integer('cliente'));
@@ -59,7 +59,7 @@ class VentaController extends Controller
         */
         if ($origen && ! empty($initial['pagos'])) {
             $initial['pagos'] = app(CalendarioPagos::class)
-                ->reanclarDesdeCotizacion($initial['pagos']);
+                ->reanclarDesdeCotizacion(collect($initial['pagos'])->all());
         }
 
         return view('structure.commercial_management.ventas.form', [
@@ -67,7 +67,33 @@ class VentaController extends Controller
             'initial' => $initial,
             'congresos' => Congress::orderBy('nombre')->get(),
             'origenId' => $origen?->id,
+            'avisosStock' => $origen ? $this->avisosStock($origen->items) : [],
         ]);
+    }
+
+    /**
+     * Al convertir una cotización en venta es cuando de verdad importa el
+     * stock: mientras se cotiza puede no haber inventario todavía. Por eso
+     * la advertencia solo aparece aquí, no al cotizar.
+     */
+    private function avisosStock(iterable $items): array
+    {
+        $avisos = [];
+
+        foreach ($items as $item) {
+            if ($item->tipo_item !== 'producto' || ! $item->producto) {
+                continue;
+            }
+
+            $disponible = (int) $item->producto->stock;
+
+            if ((int) $item->cantidad > $disponible) {
+                $nombre = trim($item->producto->marca.' '.$item->producto->modelo) ?: $item->nombre;
+                $avisos[] = "{$nombre}: se necesitan {$item->cantidad}, pero solo hay {$disponible} en stock.";
+            }
+        }
+
+        return $avisos;
     }
 
     public function store(Request $request): RedirectResponse
@@ -175,7 +201,17 @@ class VentaController extends Controller
     public function destroy(Venta $venta): RedirectResponse
     {
         $folio = $venta->folio;
-        $venta->delete();
+        $cotizacionId = $venta->cotizacion_id;
+
+        // Si la venta viene de una cotización, se borra junto con ella: ya no
+        // tiene sentido dejar la cotización suelta cuando su venta se cancela.
+        DB::transaction(function () use ($venta, $cotizacionId) {
+            $venta->delete();
+
+            if ($cotizacionId) {
+                Cotizacion::whereKey($cotizacionId)->delete();
+            }
+        });
 
         return redirect()->route('commercial.ventas.index')
             ->with('status', "Venta {$folio} eliminada.");
@@ -258,9 +294,10 @@ class VentaController extends Controller
             'num_meses' => ['nullable', 'integer', 'min:0', 'max:60'],
             'garantia_meses' => ['nullable', 'integer', Rule::in(Venta::GARANTIAS)],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.tipo_item' => ['required', 'in:equipo,paquete'],
+            'items.*.tipo_item' => ['required', 'in:equipo,paquete,producto'],
             'items.*.equipo_id' => ['nullable', 'integer'],
             'items.*.paquete_id' => ['nullable', 'integer'],
+            'items.*.producto_id' => ['nullable', 'integer'],
             'items.*.nombre' => ['required', 'string', 'max:255'],
             'items.*.modelo' => ['nullable', 'string', 'max:255'],
             'items.*.marca' => ['nullable', 'string', 'max:255'],
@@ -322,6 +359,7 @@ class VentaController extends Controller
             $venta->items()->create([
                 'equipo_id' => $i['tipo_item'] === 'equipo' ? ($i['equipo_id'] ?? null) : null,
                 'paquete_id' => $i['tipo_item'] === 'paquete' ? ($i['paquete_id'] ?? null) : null,
+                'producto_id' => $i['tipo_item'] === 'producto' ? ($i['producto_id'] ?? null) : null,
                 'tipo_item' => $i['tipo_item'],
                 'nombre' => $i['nombre'],
                 'modelo' => $i['modelo'] ?? null,

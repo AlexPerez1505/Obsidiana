@@ -7,10 +7,15 @@
         'code' => '',
         'name' => '',
         'category' => '',
+        'subcategory' => '',
         'serial_number' => '',
+        'base_serial' => '',
         'brand' => '',
         'model' => '',
         'description' => '',
+        'acquisition_date' => '',
+        'registered_by' => '',
+        'observations' => '',
         'stock_current' => '',
         'stock_max' => '',
         'stock_min' => '',
@@ -33,12 +38,12 @@
         'email' => '',
         'invoice_number' => '',
         'invoice_date' => '',
+        'image_path' => null,
         'thumb' => 'tower',
     ], $equipment ?? []);
+    $catalogs = $catalogs ?? ['types' => [], 'brands' => []];
     $pageTitle = $isEdit ? 'Editar Equipo' : 'Nuevo Equipo';
     $pageSub = $isEdit ? 'Gestion de Inventario > Equipos > Editar Equipo' : 'Gestion de Inventario > Equipos > Nuevo Equipo';
-    $introText = $isEdit ? 'Actualiza la informacion del equipo del inventario.' : 'Registra un nuevo equipo del inventario.';
-    $toastMessage = $isEdit ? 'Cambios del equipo preparados para guardar.' : 'Equipo preparado para guardar.';
 @endphp
 
 @section('title', $pageTitle)
@@ -47,498 +52,414 @@
 
 @push('head')
 <style>
-    .equipment-form {
+    .equipment-form { max-width: 1600px; margin: 0 auto; }
+    .equipment-form .rgrid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    @media (max-width: 520px) { .equipment-form .rgrid-2 { grid-template-columns: 1fr; } }
+    #equipment-form {
         display: grid;
-        gap: 18px;
-    }
-
-    .equipment-form__bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        flex-wrap: wrap;
-    }
-
-    .equipment-form__intro {
-        color: var(--muted);
-        margin: 0;
-        font-size: 0.94rem;
-        font-weight: 600;
-    }
-
-    .equipment-form__actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .equipment-form__grid {
-        display: grid;
-        grid-template-columns: minmax(170px, 0.65fr) minmax(410px, 1.85fr) minmax(240px, 0.85fr);
-        gap: 18px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
         align-items: stretch;
     }
-
-    .equipment-form__row {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 18px;
-    }
-
-    .equipment-panel {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 18px;
-        box-shadow: var(--shadow);
-        padding: 20px;
-        min-width: 0;
-    }
-
-    .equipment-panel__header {
+    @media (max-width: 1200px) { #equipment-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 820px) { #equipment-form { grid-template-columns: 1fr; } }
+    .equipment-card {
+        padding: 18px;
+        border-radius: 14px;
+        background: linear-gradient(145deg, rgba(8,18,40,0.88), rgba(4,12,30,0.88));
+        border: 1px solid rgba(0,168,255,0.55);
+        box-shadow: 0 8px 28px rgba(0,0,0,0.35), 0 0 14px rgba(0,168,255,0.2), inset 0 1px 0 rgba(255,255,255,0.04);
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 16px;
+        flex-direction: column;
     }
-
-    .equipment-panel__title {
-        color: var(--text);
-        font-size: 1rem;
-        font-weight: 800;
-        margin: 0;
-    }
-
-    .equipment-pill {
-        border: 1px solid rgba(34, 197, 94, 0.65);
-        color: #22c55e;
-        background: rgba(34, 197, 94, 0.08);
-        border-radius: 999px;
-        font-size: 0.72rem;
-        font-weight: 800;
-        line-height: 1;
-        padding: 5px 10px;
-        white-space: nowrap;
-    }
-
-    .equipment-fields {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px 18px;
-    }
-
-    .equipment-fields--three {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .equipment-fields--single {
-        grid-template-columns: 1fr;
-    }
-
-    .equipment-field {
-        display: grid;
-        gap: 6px;
-        min-width: 0;
-    }
-
-    .equipment-field--wide {
-        grid-column: 1 / -1;
-    }
-
-    .equipment-field label {
-        color: var(--muted);
-        font-size: 0.78rem;
-        font-weight: 700;
-        margin: 0;
-    }
-
-    .equipment-field .equipment-input,
-    .equipment-field .equipment-select,
-    .equipment-field .equipment-textarea {
+    .equipment-card__title { font-size: 16px; font-weight: 700; margin: 0 0 14px; color: #00A8FF; }
+    .equipment-field { display: grid; gap: 6px; }
+    .equipment-field label { font-size: 14px; font-weight: 600; color: #fff; }
+    .equipment-input {
         width: 100%;
-        border: 1px solid var(--border);
-        background: var(--surface-2);
-        color: var(--text);
-        border-radius: 8px;
-        min-height: 38px;
-        padding: 8px 12px;
+        padding: 11px 14px;
+        border: 1px solid rgba(0,168,255,0.55);
+        border-radius: 10px;
+        background: rgba(4,10,24,0.72);
+        color: #fff;
         font: inherit;
+        font-size: 15px;
         outline: none;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        transition: border-color .18s ease, box-shadow .18s ease;
     }
-
-    .equipment-field .equipment-textarea {
-        min-height: 78px;
-        resize: vertical;
+    .equipment-input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.45); }
+    .equipment-input::placeholder { color: rgba(255,255,255,0.4); }
+    .equipment-input:disabled { opacity: 0.55; cursor: not-allowed; }
+    .equipment-select { appearance: none; cursor: pointer; }
+    .equipment-unit { display: grid; grid-template-columns: 1fr auto; align-items: center; }
+    .equipment-unit .equipment-input { border-right: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+    .equipment-unit__suffix {
+        padding: 11px 14px;
+        border: 1px solid rgba(0,168,255,0.55);
+        border-left: 0;
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+        background: rgba(8,18,40,0.7);
+        color: #00A8FF;
+        font-size: 13px;
+        font-weight: 700;
     }
-
-    .equipment-field .equipment-input:focus,
-    .equipment-field .equipment-select:focus,
-    .equipment-field .equipment-textarea:focus {
-        border-color: rgba(37, 99, 235, 0.9);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
-    }
-
-    .equipment-image-card {
-        display: grid;
-        grid-template-rows: auto 1fr auto;
-        gap: 14px;
-    }
-
-    .equipment-image-card__preview {
-        border: 1px dashed rgba(37, 99, 235, 0.55);
-        background: rgba(37, 99, 235, 0.04);
-        border-radius: 8px;
-        min-height: 154px;
+    .equipment-dropzone {
+        flex: 1;
+        min-height: 180px;
+        border: 1px dashed rgba(0,168,255,0.55);
+        border-radius: 12px;
+        background: rgba(4,10,24,0.6);
         display: grid;
         place-items: center;
-        overflow: hidden;
-    }
-
-    .equipment-image-card__preview svg {
-        width: min(132px, 82%);
-        height: auto;
-    }
-
-    .equipment-image-card__preview img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        display: block;
-        padding: 12px;
-    }
-
-    .equipment-image-card__button {
-        color: #1e90ff;
-        cursor: pointer;
-        display: inline-flex;
-        justify-content: center;
+        padding: 16px;
         text-align: center;
-        font-weight: 800;
-        font-size: 0.86rem;
-        margin: 0;
+        cursor: pointer;
     }
-
-    .equipment-image-card__input {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        opacity: 0;
-        pointer-events: none;
+    .equipment-dropzone img { max-width: 100%; max-height: 140px; object-fit: contain; }
+    .equipment-dropzone svg { max-width: 110px; max-height: 110px; }
+    .equipment-dropzone__text { color: rgba(255,255,255,0.55); font-size: 13px; font-weight: 700; margin-top: 10px; }
+    .equipment-dropzone__link { color: #00A8FF; cursor: pointer; text-decoration: none; }
+    .equipment-dropzone input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .equipment-actions { display: flex; justify-content: flex-end; gap: 12px; margin: 2px 0 8px; }
+    .equipment-note { width: 100%; min-height: 80px; resize: vertical; }
+    .equipment-btn {
+        background: linear-gradient(135deg, #00A8FF, #7C3AED);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.15);
+        padding: 10px 18px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 0 12px rgba(59,130,246,0.35), 0 0 30px rgba(124,58,237,0.2);
+        transition: all 0.2s ease;
+        cursor: pointer;
     }
-
-    .equipment-form .sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border: 0;
+    .equipment-btn:hover { filter: brightness(1.1); }
+    .equipment-ghost {
+        padding: 10px 18px;
+        border: 1px solid rgba(0,168,255,0.55);
+        border-radius: 12px;
+        background: rgba(8,18,40,0.45);
+        color: #00A8FF;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background .16s ease, border-color .16s ease;
     }
-
-    @media (max-width: 1220px) {
-        .equipment-form__grid,
-        .equipment-form__row {
-            grid-template-columns: 1fr;
-        }
-
-        .equipment-image-card {
-            max-width: 340px;
-        }
-    }
-
-    @media (max-width: 760px) {
-        .equipment-form__bar,
-        .equipment-form__actions {
-            align-items: stretch;
-            justify-content: stretch;
-        }
-
-        .equipment-form__actions,
-        .equipment-form__actions .btn {
-            width: 100%;
-        }
-
-        .equipment-fields,
-        .equipment-fields--three {
-            grid-template-columns: 1fr;
-        }
-
-        .equipment-panel {
-            padding: 16px;
-        }
-    }
+    .equipment-ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
+    :root[data-theme="light"] .equipment-card { background: #ffffff; border: 1px solid rgba(0,168,255,0.55); box-shadow: 0 8px 28px rgba(0,168,255,0.12), 0 0 14px rgba(0,168,255,0.18), inset 0 1px 0 rgba(255,255,255,0.6); }
+    :root[data-theme="light"] .equipment-card__title { color: #00A8FF; }
+    :root[data-theme="light"] .equipment-input { background: #ffffff; color: #1e1b4b; border-color: rgba(0,168,255,0.55); }
+    :root[data-theme="light"] .equipment-input::placeholder { color: rgba(0,168,255,0.45); }
+    :root[data-theme="light"] .equipment-input:focus { border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.35); }
+    :root[data-theme="light"] .equipment-field label { color: #3730a3; }
+    :root[data-theme="light"] .equipment-unit__suffix { background: #e8f2ff; color: #00A8FF; border-color: rgba(0,168,255,0.55); }
+    :root[data-theme="light"] .equipment-dropzone { background: rgba(0,168,255,0.06); border: 1px dashed rgba(0,168,255,0.55); }
+    :root[data-theme="light"] .equipment-dropzone__text { color: #3730a3; }
+    :root[data-theme="light"] .equipment-dropzone__link { color: #00A8FF; }
+    :root[data-theme="light"] .equipment-ghost { background: rgba(0,168,255,0.08); color: #00A8FF; border-color: rgba(0,168,255,0.55); }
+    :root[data-theme="light"] .equipment-ghost:hover { background: rgba(0,168,255,0.14); border-color: #00A8FF; }
+    .catalog-modal { position: fixed; inset: 0; z-index: 1000; display: none; }
+    .catalog-modal__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: grid; place-items: center; padding: 20px; }
+    .catalog-modal__card { width: 100%; max-width: 360px; padding: 24px; border-radius: 14px; background: var(--surface); border: 1px solid rgba(0,168,255,0.55); box-shadow: 0 0 20px rgba(0,168,255,0.35); }
+    .catalog-modal__title { margin: 0 0 12px; color: var(--text); font-size: 1.1rem; font-weight: 800; }
+    .catalog-modal__text { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+    .catalog-modal__input { width: 100%; padding: 11px 14px; border: 1px solid rgba(0,168,255,0.55); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 15px; box-sizing: border-box; }
+    .catalog-modal__input:focus { outline: none; border-color: #00A8FF; box-shadow: 0 0 0 3px rgba(0,168,255,0.18), 0 0 18px rgba(0,168,255,0.45); }
+    .catalog-modal__actions { display: flex; gap: 12px; margin-top: 18px; }
+    .catalog-btn { display: inline-flex; align-items: center; justify-content: center; flex: 1; padding: 11px 22px; border-radius: 12px; background: linear-gradient(135deg, #00A8FF, #7C3AED); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 0 12px rgba(59,130,246,0.35), 0 0 30px rgba(124,58,237,0.2); transition: all 0.2s ease; text-decoration: none; border: 1px solid rgba(0,168,255,0.55); }
+    .catalog-btn:hover { filter: brightness(1.1); }
+    .catalog-btn--ghost { background: rgba(0,168,255,0.12); color: #00A8FF; border: 1px solid rgba(0,168,255,0.55); box-shadow: 0 0 10px rgba(0,168,255,0.15); }
+    .catalog-btn--ghost:hover { background: rgba(0,168,255,0.22); border-color: #00A8FF; }
 </style>
 @endpush
 
 @section('content')
-    <form class="equipment-form" id="equipmentCreateForm" method="POST" action="#" enctype="multipart/form-data">
-        @csrf
+    <div class="equipment-form">
+        <div class="equipment-actions">
+            <a href="{{ route('inventory.equipos.index') }}" class="equipment-ghost" style="text-decoration:none;">Volver</a>
+            <button type="submit" class="equipment-btn" form="equipment-form">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Guardar equipo
+            </button>
+        </div>
 
-        <div class="equipment-form__bar">
-            <p class="equipment-form__intro">{{ $introText }}</p>
+        <form id="equipment-form" method="POST" action="{{ $isEdit ? route('inventory.equipos.update', ['equipo' => $equipmentData['code']]) : route('inventory.equipos.store') }}" enctype="multipart/form-data">
+            @csrf
+            @if ($isEdit)
+                @method('PUT')
+            @endif
 
-            <div class="equipment-form__actions">
-                <a href="{{ route('inventory.equipos.index') }}" class="btn btn--ghost" style="text-decoration:none;">
-                    Volver
-                </a>
-                <button type="submit" class="btn">
-                    Guardar equipo
-                </button>
+            @if ($errors->any())
+                <x-ui.card style="grid-column: 1 / -1; border-color:#ef4444; color:#ef4444; padding:14px;">
+                    <strong>Revisa los siguientes campos:</strong>
+                    <ul style="margin:6px 0 0; padding-left:18px;">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </x-ui.card>
+            @endif
+
+            <div class="equipment-card">
+                <h3 class="equipment-card__title">Imagen del equipo</h3>
+                <label class="equipment-dropzone" id="equipmentImagePreview" for="equipment_image">
+                    @if (!empty($equipmentData['image_path']))
+                        <img src="{{ asset('storage/' . $equipmentData['image_path']) }}" alt="Imagen del equipo">
+                    @else
+                        @include('structure.gestion_Inventario.equipos.partials.equipment-thumb', ['type' => $equipmentData['thumb']])
+                        <p class="equipment-dropzone__text">Arrastra una imagen aqui <br>o <span class="equipment-dropzone__link">seleccionar archivo</span></p>
+                    @endif
+                    <input type="file" id="equipment_image" name="equipment_image" accept="image/*">
+                </label>
+            </div>
+
+            <div class="equipment-card">
+                <h3 class="equipment-card__title">Datos del equipo</h3>
+                <div class="rgrid-2">
+                    <div class="equipment-field">
+                        <label for="category">Tipo de equipo *</label>
+                        <select class="equipment-input equipment-select" id="category" name="category" data-selected="{{ old('category', $equipmentData['category']) }}" required>
+                            <option value="">Seleccionar</option>
+                        </select>
+                    </div>
+                    <div class="equipment-field">
+                        <label for="brand">Marca *</label>
+                        <select class="equipment-input equipment-select" id="brand" name="brand" data-selected="{{ old('brand', $equipmentData['brand']) }}" required>
+                            <option value="">Seleccionar</option>
+                        </select>
+                    </div>
+                    <div class="equipment-field">
+                        <label for="subcategory">Subtipo *</label>
+                        <select class="equipment-input equipment-select" id="subcategory" name="subcategory" data-selected="{{ old('subcategory', $equipmentData['subcategory']) }}" required>
+                            <option value="">Seleccionar</option>
+                        </select>
+                    </div>
+                    <div class="equipment-field">
+                        <label for="model">Modelo *</label>
+                        <select class="equipment-input equipment-select" id="model" name="model" data-selected="{{ old('model', $equipmentData['model']) }}" required>
+                            <option value="">Seleccionar</option>
+                        </select>
+                    </div>
+                    <div class="equipment-field" style="grid-column:1 / -1;">
+                        <label for="serial_number">Numero de serie</label>
+                        <input class="equipment-input" id="serial_number" name="serial_number" value="{{ old('serial_number', $equipmentData['serial_number']) }}" type="text" autocomplete="off">
+                    </div>
+                    <div class="equipment-field" style="grid-column:1 / -1;">
+                        <label>Serie base</label>
+                        <div id="base_serial_preview" class="equipment-input" style="display:flex; align-items:center; min-height:46px; background:rgba(8,18,40,0.55); color:#00A8FF; font-weight:700;">—</div>
+                    </div>
+                    <div class="equipment-field" style="grid-column:1 / -1;">
+                        <label for="description">Descripcion</label>
+                        <input class="equipment-input" id="description" name="description" value="{{ old('description', $equipmentData['description']) }}" type="text" autocomplete="off">
+                    </div>
+                </div>
+            </div>
+
+            <div class="equipment-card">
+                <h3 class="equipment-card__title">Registro</h3>
+                <div class="rgrid-2">
+                    <div class="equipment-field">
+                        <label for="acquisition_date">Fecha de adquisicion</label>
+                        <input class="equipment-input" id="acquisition_date" name="acquisition_date" value="{{ old('acquisition_date', $equipmentData['acquisition_date']) }}" type="date">
+                    </div>
+                    <div class="equipment-field" style="grid-column:1 / -1;">
+                        <label for="observations">Observaciones</label>
+                        <textarea class="equipment-input equipment-note" id="observations" name="observations">{{ old('observations', $equipmentData['observations']) }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div id="catalogModal" class="catalog-modal">
+        <div class="catalog-modal__overlay">
+            <div class="catalog-modal__card">
+                <h3 id="catalogModalTitle" class="catalog-modal__title">Agregar</h3>
+                <p id="catalogModalText" class="catalog-modal__text">Ingresa el nombre:</p>
+                <input type="text" id="catalogModalInput" class="catalog-modal__input" placeholder="Nombre" autocomplete="off">
+                <div class="catalog-modal__actions">
+                    <button type="button" id="catalogModalCancel" class="catalog-btn catalog-btn--ghost">Cancelar</button>
+                    <button type="button" id="catalogModalAccept" class="catalog-btn">Aceptar</button>
+                </div>
             </div>
         </div>
-
-        <div class="equipment-form__grid">
-            <section class="equipment-panel equipment-image-card" aria-labelledby="equipment-image-title">
-                <h3 class="equipment-panel__title" id="equipment-image-title">Imagen del equipo</h3>
-
-                <div class="equipment-image-card__preview" id="equipmentImagePreview">
-                    @include('structure.gestion_Inventario.equipos.partials.equipment-thumb', ['type' => $equipmentData['thumb']])
-                </div>
-
-                <label class="equipment-image-card__button" for="equipment_image">Seleccionar imagen</label>
-                <input class="equipment-image-card__input" type="file" id="equipment_image" name="equipment_image" accept="image/*">
-            </section>
-
-            <section class="equipment-panel" aria-labelledby="equipment-general-title">
-                <div class="equipment-panel__header">
-                    <h3 class="equipment-panel__title" id="equipment-general-title">Informacion general</h3>
-                    <span class="equipment-pill">Activo</span>
-                </div>
-
-                <div class="equipment-fields">
-                    <div class="equipment-field">
-                        <label for="code">Codigo del equipo</label>
-                        <input class="equipment-input" type="text" id="code" name="code" value="{{ old('code', $equipmentData['code']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="name">Nombre del equipo</label>
-                        <input class="equipment-input" type="text" id="name" name="name" value="{{ old('name', $equipmentData['name']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="category">Categoria</label>
-                        <select class="equipment-select" id="category" name="category">
-                            <option value="">Seleccionar</option>
-                            <option value="Endoscopia" @selected(old('category', $equipmentData['category']) === 'Endoscopia')>Endoscopia</option>
-                            <option value="Imagenologia" @selected(old('category', $equipmentData['category']) === 'Imagenologia')>Imagenologia</option>
-                            <option value="Monitoreo" @selected(old('category', $equipmentData['category']) === 'Monitoreo')>Monitoreo</option>
-                            <option value="Quirofano" @selected(old('category', $equipmentData['category']) === 'Quirofano')>Quirofano</option>
-                        </select>
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="serial_number">Numero de serie</label>
-                        <input class="equipment-input" type="text" id="serial_number" name="serial_number" value="{{ old('serial_number', $equipmentData['serial_number']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="brand">Marca</label>
-                        <input class="equipment-input" type="text" id="brand" name="brand" value="{{ old('brand', $equipmentData['brand']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="model">Modelo</label>
-                        <input class="equipment-input" type="text" id="model" name="model" value="{{ old('model', $equipmentData['model']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field equipment-field--wide">
-                        <label for="description">Descripcion</label>
-                        <input class="equipment-input" type="text" id="description" name="description" value="{{ old('description', $equipmentData['description']) }}" autocomplete="off">
-                    </div>
-                </div>
-            </section>
-
-            <section class="equipment-panel" aria-labelledby="equipment-stock-title">
-                <div class="equipment-panel__header">
-                    <h3 class="equipment-panel__title" id="equipment-stock-title">Stock y control</h3>
-                    <span class="equipment-pill">Activo</span>
-                </div>
-
-                <div class="equipment-fields equipment-fields--single">
-                    <div class="equipment-field">
-                        <label for="stock_current">Stock actual</label>
-                        <input class="equipment-input" type="number" id="stock_current" name="stock_current" value="{{ old('stock_current', $equipmentData['stock_current']) }}" min="0" step="1">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="stock_max">Stock maximo</label>
-                        <input class="equipment-input" type="number" id="stock_max" name="stock_max" value="{{ old('stock_max', $equipmentData['stock_max']) }}" min="0" step="1">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="stock_min">Stock minimo</label>
-                        <input class="equipment-input" type="number" id="stock_min" name="stock_min" value="{{ old('stock_min', $equipmentData['stock_min']) }}" min="0" step="1">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="warehouse">Almacen predeterminado</label>
-                        <select class="equipment-select" id="warehouse" name="warehouse">
-                            <option value="">Seleccionar</option>
-                            <option value="Almacen Central" @selected(old('warehouse', $equipmentData['warehouse']) === 'Almacen Central')>Almacen Central</option>
-                            <option value="Quirofano 1" @selected(old('warehouse', $equipmentData['warehouse']) === 'Quirofano 1')>Quirofano 1</option>
-                            <option value="Quirofano 2" @selected(old('warehouse', $equipmentData['warehouse']) === 'Quirofano 2')>Quirofano 2</option>
-                            <option value="Servicio tecnico" @selected(old('warehouse', $equipmentData['warehouse']) === 'Servicio tecnico')>Servicio tecnico</option>
-                        </select>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="equipment-form__row">
-            <section class="equipment-panel" aria-labelledby="equipment-extra-title">
-                <h3 class="equipment-panel__title" id="equipment-extra-title">Informacion adicional</h3>
-
-                <div class="equipment-fields" style="margin-top:16px;">
-                    <div class="equipment-field">
-                        <label for="assigned_to">Responsable asignado</label>
-                        <input class="equipment-input" type="text" id="assigned_to" name="assigned_to" value="{{ old('assigned_to', $equipmentData['assigned_to']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="department">Departamento</label>
-                        <input class="equipment-input" type="text" id="department" name="department" value="{{ old('department', $equipmentData['department']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="service_date">Fecha de puesta en servicio</label>
-                        <input class="equipment-input" type="date" id="service_date" name="service_date" value="{{ old('service_date', $equipmentData['service_date']) }}">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="next_maintenance">Proximo mantenimiento</label>
-                        <input class="equipment-input" type="date" id="next_maintenance" name="next_maintenance" value="{{ old('next_maintenance', $equipmentData['next_maintenance']) }}">
-                    </div>
-
-                    <div class="equipment-field equipment-field--wide">
-                        <label for="notes">Notas</label>
-                        <textarea class="equipment-textarea" id="notes" name="notes">{{ old('notes', $equipmentData['notes']) }}</textarea>
-                    </div>
-                </div>
-            </section>
-
-            <section class="equipment-panel" aria-labelledby="equipment-tech-title">
-                <h3 class="equipment-panel__title" id="equipment-tech-title">Informacion tecnica</h3>
-
-                <div class="equipment-fields" style="margin-top:16px;">
-                    <div class="equipment-field">
-                        <label for="voltage">Voltaje</label>
-                        <input class="equipment-input" type="text" id="voltage" name="voltage" value="{{ old('voltage', $equipmentData['voltage']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="frequency">Frecuencia</label>
-                        <input class="equipment-input" type="text" id="frequency" name="frequency" value="{{ old('frequency', $equipmentData['frequency']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="power">Potencia</label>
-                        <input class="equipment-input" type="text" id="power" name="power" value="{{ old('power', $equipmentData['power']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="weight">Peso (kg)</label>
-                        <input class="equipment-input" type="number" id="weight" name="weight" value="{{ old('weight', $equipmentData['weight']) }}" min="0" step="0.01">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="dimensions">Dimensiones (cm)</label>
-                        <input class="equipment-input" type="text" id="dimensions" name="dimensions" value="{{ old('dimensions', $equipmentData['dimensions']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="color">Color</label>
-                        <input class="equipment-input" type="text" id="color" name="color" value="{{ old('color', $equipmentData['color']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field equipment-field--wide">
-                        <label for="technical_specs">Especificaciones tecnicas</label>
-                        <textarea class="equipment-textarea" id="technical_specs" name="technical_specs">{{ old('technical_specs', $equipmentData['technical_specs']) }}</textarea>
-                    </div>
-                </div>
-            </section>
-
-            <section class="equipment-panel" aria-labelledby="equipment-provider-title">
-                <h3 class="equipment-panel__title" id="equipment-provider-title">Proveedor</h3>
-
-                <div class="equipment-fields" style="margin-top:16px;">
-                    <div class="equipment-field">
-                        <label for="supplier">Proveedor</label>
-                        <input class="equipment-input" type="text" id="supplier" name="supplier" value="{{ old('supplier', $equipmentData['supplier']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="contact">Contacto</label>
-                        <input class="equipment-input" type="text" id="contact" name="contact" value="{{ old('contact', $equipmentData['contact']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="phone">Telefono</label>
-                        <input class="equipment-input" type="tel" id="phone" name="phone" value="{{ old('phone', $equipmentData['phone']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="email">Correo electronico</label>
-                        <input class="equipment-input" type="email" id="email" name="email" value="{{ old('email', $equipmentData['email']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="invoice_number">Numero de factura</label>
-                        <input class="equipment-input" type="text" id="invoice_number" name="invoice_number" value="{{ old('invoice_number', $equipmentData['invoice_number']) }}" autocomplete="off">
-                    </div>
-
-                    <div class="equipment-field">
-                        <label for="invoice_date">Fecha de factura</label>
-                        <input class="equipment-input" type="date" id="invoice_date" name="invoice_date" value="{{ old('invoice_date', $equipmentData['invoice_date']) }}">
-                    </div>
-                </div>
-            </section>
-        </div>
-    </form>
+    </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const form = document.getElementById('equipmentCreateForm');
-            const imageInput = document.getElementById('equipment_image');
-            const imagePreview = document.getElementById('equipmentImagePreview');
+        const equipmentImagePreview = document.getElementById('equipmentImagePreview');
+        const equipmentImageInput = document.getElementById('equipment_image');
 
-            if (form) {
-                form.addEventListener('submit', function (event) {
-                    event.preventDefault();
+        const categoryCatalog = @json($catalogs['types']);
+        const brandCatalog = @json($catalogs['brands']);
+        const NEW_OPTION = '__new__';
 
-                    if (window.showToast) {
-                        window.showToast(@json($toastMessage));
-                    }
-                });
+        function fillSelect(select, options, placeholder, addLabel) {
+            const selected = select.dataset.selected || '';
+            select.innerHTML = '';
+
+            const first = document.createElement('option');
+            first.value = '';
+            first.textContent = placeholder;
+            select.appendChild(first);
+
+            options.forEach(function (value) {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                option.selected = value === selected;
+                select.appendChild(option);
+            });
+
+            if (addLabel) {
+                const addOption = document.createElement('option');
+                addOption.value = NEW_OPTION;
+                addOption.textContent = addLabel;
+                select.appendChild(addOption);
+            }
+        }
+
+        function bindCatalogSelect(config) {
+            const select = document.getElementById(config.selectId);
+            const catalog = config.catalog;
+            if (!select) return;
+
+            function render(options) {
+                fillSelect(select, options, 'Seleccionar', config.addLabel);
             }
 
-            if (imageInput && imagePreview) {
-                imageInput.addEventListener('change', function () {
-                    const file = imageInput.files && imageInput.files[0];
+            select.addEventListener('change', function () {
+                if (select.value === NEW_OPTION) {
+                    openCatalogModal(config.prompt, 'Ingresa el nombre y presiona Aceptar.', function (name) {
+                        name = (name || '').trim();
+                        if (name && !catalog.includes(name)) {
+                            catalog.push(name);
+                        }
+                        select.dataset.selected = name && catalog.includes(name) ? name : '';
+                        render(catalog);
+                    });
+                } else {
+                    select.dataset.selected = select.value;
+                }
+            });
 
-                    if (!file) {
-                        return;
-                    }
+            render(catalog);
+        }
 
-                    const reader = new FileReader();
-                    reader.onload = function () {
-                        imagePreview.innerHTML = '';
+        let catalogModalResolve = null;
+        const catalogModal = document.getElementById('catalogModal');
+        const catalogModalTitle = document.getElementById('catalogModalTitle');
+        const catalogModalText = document.getElementById('catalogModalText');
+        const catalogModalInput = document.getElementById('catalogModalInput');
 
-                        const image = document.createElement('img');
-                        image.src = reader.result;
-                        image.alt = 'Vista previa del equipo';
-                        imagePreview.appendChild(image);
-                    };
-                    reader.readAsDataURL(file);
-                });
+        function openCatalogModal(title, text, callback) {
+            catalogModalTitle.textContent = title;
+            catalogModalText.textContent = text;
+            catalogModalInput.value = '';
+            catalogModalResolve = callback;
+            catalogModal.style.display = 'block';
+            catalogModalInput.focus();
+        }
+
+        function closeCatalogModal(accepted) {
+            catalogModal.style.display = 'none';
+            if (catalogModalResolve) {
+                catalogModalResolve(accepted ? catalogModalInput.value : null);
+                catalogModalResolve = null;
             }
+        }
+
+        document.getElementById('catalogModalAccept').addEventListener('click', function () { closeCatalogModal(true); });
+        document.getElementById('catalogModalCancel').addEventListener('click', function () { closeCatalogModal(false); });
+        catalogModal.querySelector('.catalog-modal__overlay').addEventListener('click', function (e) {
+            if (e.target === e.currentTarget) closeCatalogModal(false);
         });
+        catalogModalInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') closeCatalogModal(true);
+        });
+
+        const allSubtypes = Object.values(categoryCatalog).flat();
+        const allModels = Object.values(brandCatalog).flat();
+
+        bindCatalogSelect({
+            selectId: 'category',
+            catalog: Object.keys(categoryCatalog),
+            addLabel: '+ Agregar nuevo tipo...',
+            prompt: 'Nombre del nuevo tipo de equipo:'
+        });
+
+        bindCatalogSelect({
+            selectId: 'brand',
+            catalog: Object.keys(brandCatalog),
+            addLabel: '+ Agregar nueva marca...',
+            prompt: 'Nombre de la nueva marca:'
+        });
+
+        bindCatalogSelect({
+            selectId: 'subcategory',
+            catalog: allSubtypes,
+            addLabel: '+ Agregar nuevo subtipo...',
+            prompt: 'Nombre del nuevo subtipo:'x
+        });
+
+        bindCatalogSelect({
+            selectId: 'model',
+            catalog: allModels,
+            addLabel: '+ Agregar nuevo modelo...',
+            prompt: 'Nombre del nuevo modelo:'
+        });
+
+        const baseSerialPreview = document.getElementById('base_serial_preview');
+
+        function updateBaseSerial() {
+            if (!baseSerialPreview) return;
+            const type = document.getElementById('category')?.value || '';
+            const brand = document.getElementById('brand')?.value || '';
+            const model = document.getElementById('model')?.value || '';
+            const serial = document.getElementById('serial_number')?.value || '';
+
+            const clean = function (value) {
+                return value.replace(/[^A-Za-z0-9]/g, '').substring(0, 4).toUpperCase();
+            };
+
+            const baseSerial = [clean(type), clean(brand), clean(model), clean(serial)].filter(Boolean).join('-');
+            baseSerialPreview.textContent = baseSerial || '—';
+        }
+
+        ['category', 'brand', 'model', 'serial_number'].forEach(function (id) {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', updateBaseSerial);
+        });
+
+        document.getElementById('catalogModalAccept')?.addEventListener('click', function () {
+            setTimeout(updateBaseSerial, 50);
+        });
+
+        if (equipmentImageInput && equipmentImagePreview) {
+            equipmentImageInput.addEventListener('change', function () {
+                const file = equipmentImageInput.files && equipmentImageInput.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function () {
+                    equipmentImagePreview.innerHTML = '';
+                    const image = document.createElement('img');
+                    image.src = reader.result;
+                    image.alt = 'Vista previa del equipo';
+                    equipmentImagePreview.appendChild(image);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        updateBaseSerial();
     </script>
 @endsection

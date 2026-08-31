@@ -117,6 +117,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('inventory.productos.index');
     Route::get('/gestion-inventario/productos/crear', [ProductoController::class, 'create'])
         ->name('inventory.productos.create');
+    Route::get('/gestion-inventario/productos/buscar-por-modelo', [ProductoController::class, 'buscarPorModelo'])
+        ->name('inventory.productos.buscarPorModelo');
     Route::post('/gestion-inventario/productos', [ProductoController::class, 'store'])
         ->name('inventory.productos.store');
     Route::get('/gestion-inventario/productos/{producto}/editar', [ProductoController::class, 'edit'])

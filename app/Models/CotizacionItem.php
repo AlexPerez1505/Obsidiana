@@ -13,6 +13,7 @@ class CotizacionItem extends Model
         'cotizacion_id',
         'equipo_id',
         'paquete_id',
+        'producto_id',
         'tipo_item',
         'nombre',
         'modelo',
@@ -39,6 +40,11 @@ class CotizacionItem extends Model
     public function cotizacion(): BelongsTo
     {
         return $this->belongsTo(Cotizacion::class);
+    }
+
+    public function producto(): BelongsTo
+    {
+        return $this->belongsTo(Producto::class);
     }
 
     /**

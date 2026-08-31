@@ -10,7 +10,7 @@ class VentaItem extends Model
     protected $table = 'venta_items';
 
     protected $fillable = [
-        'venta_id', 'equipo_id', 'paquete_id', 'tipo_item',
+        'venta_id', 'equipo_id', 'paquete_id', 'producto_id', 'tipo_item',
         'nombre', 'modelo', 'marca', 'imagen',
         'cantidad', 'precio_unitario', 'sobreprecio', 'es_regalo', 'orden',
     ];
@@ -29,6 +29,11 @@ class VentaItem extends Model
     public function venta(): BelongsTo
     {
         return $this->belongsTo(Venta::class);
+    }
+
+    public function producto(): BelongsTo
+    {
+        return $this->belongsTo(Producto::class);
     }
 
     public function importe(): float

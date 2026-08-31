@@ -3,8 +3,15 @@
 @section('page-title', 'Editar Producto')
 @section('page-sub', $producto->tipo_equipo)
 
+@push('head')
+    <style>
+        .rgrid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 18px; }
+        @media (max-width: 520px) { .rgrid-2 { grid-template-columns: 1fr; } }
+    </style>
+@endpush
+
 @section('content')
-    <form method="POST" action="{{ route('inventory.productos.update', $producto) }}" enctype="multipart/form-data" style="max-width:720px;">
+    <form method="POST" action="{{ route('inventory.productos.update', $producto) }}" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         <x-ui.card style="margin-bottom:18px;">

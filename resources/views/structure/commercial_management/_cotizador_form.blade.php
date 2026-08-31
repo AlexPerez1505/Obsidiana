@@ -12,7 +12,10 @@
       $subtitulo   subtítulo del header
       $textoGuardar (opcional) texto del botón guardar
 --}}
-@php $textoGuardar = $textoGuardar ?? 'Guardar'; @endphp
+@php
+    $textoGuardar = $textoGuardar ?? 'Guardar';
+    $avisosStock = $avisosStock ?? [];
+@endphp
 
 {{-- Cabecera estandar del sistema. El guardado vive al pie del formulario. --}}
 <x-ui.page-header :title="$titulo" :subtitle="$subtitulo" :back="$backRoute">
@@ -26,6 +29,15 @@
         <b style="color:var(--danger);">Revisa los siguientes puntos:</b>
         <ul style="margin:8px 0 0; padding-left:18px; color:var(--danger); font-size:13px;">
             @foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+        </ul>
+    </div>
+@endif
+
+@if (! empty($avisosStock))
+    <div class="erp-card pad" style="margin-bottom:20px; border-color:#d97706; background:rgba(217,119,6,.1);">
+        <b style="color:#d97706;">Ojo con el stock: no hay suficiente inventario para esta venta</b>
+        <ul style="margin:8px 0 0; padding-left:18px; color:#d97706; font-size:13px;">
+            @foreach ($avisosStock as $aviso)<li>{{ $aviso }}</li>@endforeach
         </ul>
     </div>
 @endif
@@ -96,7 +108,7 @@
                 <div class="cot-panel-body" style="padding-bottom:6px;">
                     <div style="position:relative;">
                         <svg style="position:absolute; left:13px; top:50%; transform:translateY(-50%); width:17px; height:17px; color:var(--muted); pointer-events:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input type="text" id="prodSearch" class="cot-input" placeholder="Buscar equipo o paquete para agregar..." autocomplete="off" style="padding-left:40px;">
+                        <input type="text" id="prodSearch" class="cot-input" placeholder="Buscar producto o paquete para agregar..." autocomplete="off" style="padding-left:40px;">
                         <div id="prodResults" class="cot-ac"></div>
                     </div>
                 </div>
@@ -315,7 +327,7 @@
     const state = {
         customer: INITIAL.customer,
         items: (INITIAL.items || []).map(i => ({
-            tipo_item: i.tipo_item, equipo_id: i.equipo_id, paquete_id: i.paquete_id,
+            tipo_item: i.tipo_item, equipo_id: i.equipo_id, paquete_id: i.paquete_id, producto_id: i.producto_id,
             nombre: i.nombre, modelo: i.modelo, marca: i.marca, imagen: i.imagen,
             cantidad: +i.cantidad || 1, precio_unitario: +i.precio_unitario || 0,
             sobreprecio: +i.sobreprecio || 0, es_regalo: !!i.es_regalo,
@@ -410,10 +422,16 @@
         state.items.push({
             tipo_item: d.tipo_item, equipo_id: d.tipo_item === 'equipo' ? d.id : null,
             paquete_id: d.tipo_item === 'paquete' ? d.id : null,
+            producto_id: d.tipo_item === 'producto' ? d.id : null,
             nombre: d.nombre, modelo: d.modelo, marca: d.marca, imagen: d.imagen,
             cantidad: 1, precio_unitario: +d.precio || 0, sobreprecio: 0, es_regalo: false,
         });
         renderItems();
+        // El producto solo puede tener una ficha técnica: si la tiene, se adjunta sola.
+        if (d.ficha && !state.fichas.some(f => f.id === d.ficha.id)) {
+            state.fichas.push(d.ficha);
+            renderFichas();
+        }
     }
     bindAutocomplete($('prodSearch'), $('prodResults'), ROUTES.productos,
         d => { addItem(d); $('prodSearch').value = ''; },
@@ -612,6 +630,7 @@
             add(`items[${i}][tipo_item]`, it.tipo_item);
             add(`items[${i}][equipo_id]`, it.equipo_id ?? '');
             add(`items[${i}][paquete_id]`, it.paquete_id ?? '');
+            add(`items[${i}][producto_id]`, it.producto_id ?? '');
             add(`items[${i}][nombre]`, it.nombre);
             add(`items[${i}][modelo]`, it.modelo ?? '');
             add(`items[${i}][marca]`, it.marca ?? '');

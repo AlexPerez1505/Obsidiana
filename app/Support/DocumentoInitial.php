@@ -38,6 +38,7 @@ class DocumentoInitial
                 'tipo_item' => $i->tipo_item,
                 'equipo_id' => $i->equipo_id,
                 'paquete_id' => $i->paquete_id,
+                'producto_id' => $i->producto_id,
                 'nombre' => $i->nombre,
                 'modelo' => $i->modelo,
                 'marca' => $i->marca,

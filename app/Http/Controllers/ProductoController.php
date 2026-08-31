@@ -6,6 +6,7 @@ use App\Models\EquipmentModel;
 use App\Models\EquipmentType;
 use App\Models\Producto;
 use App\Models\Subtype;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -50,6 +51,10 @@ class ProductoController extends Controller
 
     /**
      * Guarda un nuevo producto.
+     *
+     * Si el modelo ya existe en el inventario, no se crea otra fila: se
+     * suma la cantidad al stock de la que ya hay y el número de serie se
+     * agrega a la lista de series de esa fila.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -59,9 +64,51 @@ class ProductoController extends Controller
             $data['imagen_path'] = $request->file('imagen')->store('productos', 'public');
         }
 
+        $existente = $data['equipment_model_id']
+            ? Producto::where('equipment_model_id', $data['equipment_model_id'])->first()
+            : null;
+
+        if ($existente) {
+            return $this->sumarAExistente($existente, $data);
+        }
+
         Producto::create($data);
 
         return redirect()->route('inventory.productos.index')->with('status', 'Producto guardado correctamente.');
+    }
+
+    /**
+     * Acumula una nueva pieza en el registro que ya existe de ese modelo,
+     * en vez de duplicar la fila.
+     */
+    private function sumarAExistente(Producto $existente, array $data): RedirectResponse
+    {
+        if (! empty($data['imagen_path']) && $existente->imagen_path) {
+            Storage::disk('public')->delete($existente->imagen_path);
+        }
+
+        $series = collect(explode(',', (string) $existente->no_serie))
+            ->map(fn ($s) => trim($s))
+            ->filter();
+
+        if (! empty($data['no_serie'])) {
+            $series->push(trim($data['no_serie']));
+        }
+
+        $existente->stock += (int) $data['stock'];
+        $existente->no_serie = $series->unique()->filter()->implode(', ');
+        $existente->precio = $data['precio'];
+        $existente->descripcion = $data['descripcion'] ?? $existente->descripcion;
+        $existente->proveedor = $data['proveedor'] ?? $existente->proveedor;
+
+        if (! empty($data['imagen_path'])) {
+            $existente->imagen_path = $data['imagen_path'];
+        }
+
+        $existente->save();
+
+        return redirect()->route('inventory.productos.index')
+            ->with('status', "Se sumaron {$data['stock']} unidades al stock existente de ".trim($existente->marca.' '.$existente->modelo).'.');
     }
 
     /**
@@ -104,6 +151,64 @@ class ProductoController extends Controller
         $producto->delete();
 
         return redirect()->route('inventory.productos.index')->with('status', 'Producto eliminado correctamente.');
+    }
+
+    /**
+     * Si ese modelo ya está registrado, se manda lo que ya se sabe de él
+     * (precio, descripción, proveedor...) para autocompletar el alta. El
+     * stock y el número de serie no se tocan: son propios de cada unidad.
+     */
+    public function buscarPorModelo(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'equipment_model_id' => ['required', 'exists:equipment_models,id'],
+        ]);
+
+        $producto = Producto::where('equipment_model_id', $data['equipment_model_id'])
+            ->latest()
+            ->first();
+
+        if (! $producto) {
+            return response()->json(['existe' => false]);
+        }
+
+        return response()->json([
+            'existe' => true,
+            'precio' => (float) $producto->precio,
+            'descripcion' => $producto->descripcion,
+            'proveedor' => $producto->proveedor,
+            'imagen' => $producto->imagen_path ? asset('storage/'.$producto->imagen_path) : null,
+            'stock_actual' => (int) Producto::where('equipment_model_id', $data['equipment_model_id'])->sum('stock'),
+            'no_serie_sugerido' => $this->siguienteNumeroSerie($data['equipment_model_id']),
+        ]);
+    }
+
+    /**
+     * El siguiente serial de un modelo es consecutivo al último que se
+     * registró: si la primera pieza es 9803289028, la que sigue es
+     * 9803289029, luego 9803289030... Solo funciona sobre seriales
+     * puramente numéricos; si el último tiene letras o formato raro, no se
+     * sugiere nada y se deja el campo en blanco para llenarlo a mano.
+     */
+    private function siguienteNumeroSerie(int $equipmentModelId): ?string
+    {
+        $ultimo = Producto::where('equipment_model_id', $equipmentModelId)
+            ->whereNotNull('no_serie')
+            ->where('no_serie', '!=', '')
+            ->get(['no_serie'])
+            ->filter(fn ($p) => ctype_digit($p->no_serie))
+            ->map(fn ($p) => $p->no_serie)
+            ->sortByDesc(fn ($serie) => (int) $serie)
+            ->first();
+
+        if ($ultimo === null) {
+            return null;
+        }
+
+        // Se conserva el mismo número de dígitos (con ceros a la izquierda).
+        $siguiente = (string) ((int) $ultimo + 1);
+
+        return str_pad($siguiente, strlen($ultimo), '0', STR_PAD_LEFT);
     }
 
     /**
