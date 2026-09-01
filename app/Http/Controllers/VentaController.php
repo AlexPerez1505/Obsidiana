@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Congress;
 use App\Models\Cotizacion;
 use App\Models\Customer;
+use App\Models\InventoryMovement;
+use App\Models\Producto;
+use App\Models\ProductoSerial;
 use App\Models\Venta;
 use App\Models\VentaBitacora;
+use App\Models\VentaItem;
 use App\Services\CalculadoraCotizacion;
 use App\Services\CalendarioPagos;
 use App\Support\AnexosVenta;
@@ -27,10 +31,14 @@ class VentaController extends Controller
 
     public function index(): View
     {
-        $ventas = Venta::with(['customer', 'seller'])->latest()->get();
+        $ventas = Venta::with(['customer', 'seller'])->latest()->paginate(20)->withQueryString();
 
         return view('structure.commercial_management.ventas.index', [
             'ventas' => $ventas,
+            'total' => Venta::count(),
+            'confirmadas' => Venta::where('estado', 'confirmada')->count(),
+            'facturadas' => Venta::where('estado', 'facturada')->count(),
+            'montoTotal' => (float) Venta::sum('total'),
         ]);
     }
 
@@ -164,6 +172,7 @@ class VentaController extends Controller
             $this->llenarDesde($venta, $data);
             $venta->save();
 
+            $this->liberarSerialesDe($venta);
             $venta->items()->delete();
             $this->guardarItems($venta, $data['items']);
 
@@ -206,6 +215,7 @@ class VentaController extends Controller
         // Si la venta viene de una cotización, se borra junto con ella: ya no
         // tiene sentido dejar la cotización suelta cuando su venta se cancela.
         DB::transaction(function () use ($venta, $cotizacionId) {
+            $this->liberarSerialesDe($venta);
             $venta->delete();
 
             if ($cotizacionId) {
@@ -356,7 +366,7 @@ class VentaController extends Controller
     private function guardarItems(Venta $venta, array $items): void
     {
         foreach (array_values($items) as $orden => $i) {
-            $venta->items()->create([
+            $item = $venta->items()->create([
                 'equipo_id' => $i['tipo_item'] === 'equipo' ? ($i['equipo_id'] ?? null) : null,
                 'paquete_id' => $i['tipo_item'] === 'paquete' ? ($i['paquete_id'] ?? null) : null,
                 'producto_id' => $i['tipo_item'] === 'producto' ? ($i['producto_id'] ?? null) : null,
@@ -371,7 +381,96 @@ class VentaController extends Controller
                 'es_regalo' => (bool) ($i['es_regalo'] ?? false),
                 'orden' => $orden,
             ]);
+
+            if ($i['tipo_item'] === 'producto' && ! empty($i['producto_id'])) {
+                $this->asignarSerialesVendidos($item);
+            }
         }
+    }
+
+    /**
+     * Cuando se edita o cancela una venta, las unidades que había vendido
+     * regresan al inventario disponible: el serial deja de estar "vendido"
+     * y su stock se vuelve a contar.
+     */
+    private function liberarSerialesDe(Venta $venta): void
+    {
+        $itemIds = $venta->items()->pluck('id');
+
+        if ($itemIds->isEmpty()) {
+            return;
+        }
+
+        $productoIds = ProductoSerial::whereIn('venta_item_id', $itemIds)->pluck('producto_id')->unique();
+
+        ProductoSerial::whereIn('venta_item_id', $itemIds)->update([
+            'vendido' => false,
+            'vendido_en' => null,
+            'venta_item_id' => null,
+        ]);
+
+        Producto::whereIn('id', $productoIds)->get()->each->recalcularStock();
+
+        // La salida que se había registrado para esos renglones ya no
+        // corresponde: se retira de la bitácora junto con el renglón.
+        InventoryMovement::where('movement_type', InventoryMovement::TYPE_EXIT)
+            ->whereIn('metadata->venta_item_id', $itemIds->all())
+            ->delete();
+    }
+
+    /**
+     * Al registrar la venta se toman, de las unidades disponibles de ese
+     * producto, las más antiguas (FIFO) hasta cubrir la cantidad vendida.
+     * Quedan marcadas como vendidas y ligadas a este renglón, y el stock del
+     * producto se recalcula a partir de las que sigan disponibles.
+     */
+    private function asignarSerialesVendidos(VentaItem $item): void
+    {
+        $producto = Producto::find($item->producto_id);
+
+        if (! $producto) {
+            return;
+        }
+
+        $stockAntes = $producto->stock;
+
+        $seriales = ProductoSerial::where('producto_id', $producto->id)
+            ->where('vendido', false)
+            ->orderBy('id')
+            ->take((int) $item->cantidad)
+            ->get();
+
+        foreach ($seriales as $serial) {
+            $serial->update([
+                'vendido' => true,
+                'vendido_en' => now(),
+                'venta_item_id' => $item->id,
+            ]);
+        }
+
+        $item->update([
+            'no_series' => $seriales->pluck('no_serie')->filter()->implode(', ') ?: null,
+        ]);
+
+        $producto->recalcularStock();
+
+        InventoryMovement::create([
+            'folio' => InventoryMovement::siguienteFolio(InventoryMovement::TYPE_EXIT),
+            'movement_type' => InventoryMovement::TYPE_EXIT,
+            'item_type' => InventoryMovement::ITEM_PRODUCT,
+            'item_id' => $producto->id,
+            'item_code' => (string) $producto->id,
+            'item_name' => trim($producto->marca.' '.$producto->modelo) ?: $producto->tipo_equipo,
+            'warehouse' => 'Almacen Central',
+            'quantity' => (int) $item->cantidad,
+            'unit' => 'Pza',
+            'stock_before' => $stockAntes,
+            'stock_after' => $producto->stock,
+            'reference' => $item->venta->folio ?? null,
+            'movement_date' => now(),
+            'metadata' => ['venta_item_id' => $item->id],
+            'created_by' => auth()->id(),
+        ]);
     }
 
     private function guardarPagos(Venta $venta, array $data): void

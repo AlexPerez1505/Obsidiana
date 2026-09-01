@@ -2,18 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\EquipmentModel;
-use App\Models\EquipmentType;
+use App\Http\Controllers\Concerns\ConstruyeCatalogoEquipo;
+use App\Http\Controllers\Concerns\ManejaSeriesDeProducto;
 use App\Models\Producto;
-use App\Models\Subtype;
+use App\Models\ProductoSerial;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProductoController extends Controller
 {
+    use ManejaSeriesDeProducto, ConstruyeCatalogoEquipo;
+
     /**
      * Lista los productos del inventario.
      */
@@ -30,7 +34,7 @@ class ProductoController extends Controller
             });
         }
 
-        $productos = $query->get();
+        $productos = $query->paginate(20)->withQueryString();
 
         return view('structure.gestion_Inventario.productos.index', [
             'productos' => $productos,
@@ -52,51 +56,89 @@ class ProductoController extends Controller
     /**
      * Guarda un nuevo producto.
      *
-     * Si el modelo ya existe en el inventario, no se crea otra fila: se
-     * suma la cantidad al stock de la que ya hay y el número de serie se
-     * agrega a la lista de series de esa fila.
+     * Cada unidad que se da de alta queda como su propia fila en
+     * producto_seriales, con su propio número de serie. Si el modelo ya
+     * existe en el inventario, no se crea otra fila de producto: las
+     * unidades nuevas se agregan a la que ya hay.
      */
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
+        $series = $this->parsearSeries($request->input('series_texto', ''));
+        $series = $this->autocompletarSecuencia($series, (int) $data['stock']);
+
+        if ($series->isNotEmpty() && $series->count() !== (int) $data['stock']) {
+            return back()->withInput()->withErrors([
+                'series_texto' => 'Capturaste '.$series->count()." número(s) de serie, pero el stock dice {$data['stock']}. Deben coincidir, o deja el campo vacío si no vas a registrar series.",
+            ]);
+        }
 
         if ($request->hasFile('imagen')) {
             $data['imagen_path'] = $request->file('imagen')->store('productos', 'public');
         }
 
-        $existente = $data['equipment_model_id']
-            ? Producto::where('equipment_model_id', $data['equipment_model_id'])->first()
-            : null;
+        $cantidad = (int) $data['stock'];
+        unset($data['stock'], $data['no_serie']);
 
-        if ($existente) {
-            return $this->sumarAExistente($existente, $data);
+        try {
+            try {
+                return $this->crearOAcumular($data, $cantidad, $series->all());
+            } catch (QueryException $e) {
+                if (! $this->esErrorDeDuplicado($e)) {
+                    throw $e;
+                }
+
+                // Dos altas del mismo modelo casi al mismo tiempo: la otra
+                // ganó la carrera. Se reintenta una vez contra la fila que
+                // ya quedó creada.
+                return $this->crearOAcumular($data, $cantidad, $series->all());
+            }
+        } catch (QueryException $e) {
+            if (! $this->esErrorDeDuplicado($e)) {
+                throw $e;
+            }
+
+            // Si sigue fallando, ya no es una carrera: el serial de verdad
+            // está repetido para ese producto.
+            return back()->withInput()->withErrors([
+                'series_texto' => 'Uno de esos números de serie ya existe para este producto. Revísalos y vuelve a intentar.',
+            ]);
         }
-
-        Producto::create($data);
-
-        return redirect()->route('inventory.productos.index')->with('status', 'Producto guardado correctamente.');
     }
 
     /**
-     * Acumula una nueva pieza en el registro que ya existe de ese modelo,
+     * Busca (con bloqueo) si el modelo ya tiene fila en productos; si es
+     * así, le suma las unidades nuevas, y si no, crea la fila. El lock
+     * evita que dos altas simultáneas del mismo modelo creen dos filas.
+     */
+    private function crearOAcumular(array $data, int $cantidad, array $series): RedirectResponse
+    {
+        return DB::transaction(function () use ($data, $cantidad, $series) {
+            $existente = $data['equipment_model_id']
+                ? Producto::where('equipment_model_id', $data['equipment_model_id'])->lockForUpdate()->first()
+                : null;
+
+            if ($existente) {
+                return $this->sumarAExistente($existente, $data, $cantidad, $series);
+            }
+
+            $producto = Producto::create($data + ['stock' => 0]);
+            $producto->agregarUnidades($cantidad, $series);
+
+            return redirect()->route('inventory.productos.index')->with('status', 'Producto guardado correctamente.');
+        });
+    }
+
+    /**
+     * Acumula unidades nuevas en el registro que ya existe de ese modelo,
      * en vez de duplicar la fila.
      */
-    private function sumarAExistente(Producto $existente, array $data): RedirectResponse
+    private function sumarAExistente(Producto $existente, array $data, int $cantidad, array $series): RedirectResponse
     {
         if (! empty($data['imagen_path']) && $existente->imagen_path) {
             Storage::disk('public')->delete($existente->imagen_path);
         }
 
-        $series = collect(explode(',', (string) $existente->no_serie))
-            ->map(fn ($s) => trim($s))
-            ->filter();
-
-        if (! empty($data['no_serie'])) {
-            $series->push(trim($data['no_serie']));
-        }
-
-        $existente->stock += (int) $data['stock'];
-        $existente->no_serie = $series->unique()->filter()->implode(', ');
         $existente->precio = $data['precio'];
         $existente->descripcion = $data['descripcion'] ?? $existente->descripcion;
         $existente->proveedor = $data['proveedor'] ?? $existente->proveedor;
@@ -106,9 +148,10 @@ class ProductoController extends Controller
         }
 
         $existente->save();
+        $existente->agregarUnidades($cantidad, $series);
 
         return redirect()->route('inventory.productos.index')
-            ->with('status', "Se sumaron {$data['stock']} unidades al stock existente de ".trim($existente->marca.' '.$existente->modelo).'.');
+            ->with('status', "Se agregaron {$cantidad} unidad(es) al stock existente de ".trim($existente->marca.' '.$existente->modelo).'.');
     }
 
     /**
@@ -118,17 +161,20 @@ class ProductoController extends Controller
     {
         return view('structure.gestion_Inventario.productos.edit', [
             'producto' => $producto,
+            'seriales' => $producto->seriales()->orderByDesc('id')->get(),
             'productoOptions' => $this->productoOptions(),
             'catalogo' => $this->catalogoEquipo(),
         ]);
     }
 
     /**
-     * Actualiza un producto existente.
+     * Actualiza los datos generales de un producto existente. El stock y
+     * los números de serie se manejan aparte, unidad por unidad.
      */
     public function update(Request $request, Producto $producto): RedirectResponse
     {
         $data = $this->validated($request);
+        unset($data['stock'], $data['no_serie']);
 
         if ($request->hasFile('imagen')) {
             // Delete old image if exists
@@ -151,6 +197,58 @@ class ProductoController extends Controller
         $producto->delete();
 
         return redirect()->route('inventory.productos.index')->with('status', 'Producto eliminado correctamente.');
+    }
+
+    /**
+     * Agrega unidades (con o sin serial) a un producto ya existente, desde
+     * la pantalla de edición.
+     */
+    public function agregarSeriales(Request $request, Producto $producto): RedirectResponse
+    {
+        $data = $request->validate([
+            'cantidad' => ['required', 'integer', 'min:1'],
+            'series_texto' => ['nullable', 'string'],
+        ]);
+
+        $series = $this->parsearSeries($data['series_texto'] ?? '');
+        $series = $this->autocompletarSecuencia($series, (int) $data['cantidad']);
+
+        if ($series->isNotEmpty() && $series->count() !== (int) $data['cantidad']) {
+            return back()->withErrors([
+                'series_texto' => 'Capturaste '.$series->count()." número(s) de serie, pero la cantidad dice {$data['cantidad']}. Deben coincidir, o deja el campo vacío.",
+            ]);
+        }
+
+        try {
+            $producto->agregarUnidades((int) $data['cantidad'], $series->all());
+        } catch (QueryException $e) {
+            if (! $this->esErrorDeDuplicado($e)) {
+                throw $e;
+            }
+
+            return back()->withErrors([
+                'series_texto' => 'Uno de esos números de serie ya existe para este producto. Revísalos y vuelve a intentar.',
+            ]);
+        }
+
+        return back()->with('status', "Se agregaron {$data['cantidad']} unidad(es) al inventario.");
+    }
+
+    /**
+     * Quita del inventario una unidad que nunca se llegó a vender (por
+     * ejemplo, si se dio de alta por error).
+     */
+    public function eliminarSerial(ProductoSerial $serial): RedirectResponse
+    {
+        if ($serial->vendido) {
+            return back()->withErrors(['serial' => 'Esa unidad ya se vendió, no se puede eliminar del inventario.']);
+        }
+
+        $producto = $serial->producto;
+        $serial->delete();
+        $producto->recalcularStock();
+
+        return back()->with('status', 'Unidad eliminada del inventario.');
     }
 
     /**
@@ -178,69 +276,42 @@ class ProductoController extends Controller
             'descripcion' => $producto->descripcion,
             'proveedor' => $producto->proveedor,
             'imagen' => $producto->imagen_path ? asset('storage/'.$producto->imagen_path) : null,
-            'stock_actual' => (int) Producto::where('equipment_model_id', $data['equipment_model_id'])->sum('stock'),
-            'no_serie_sugerido' => $this->siguienteNumeroSerie($data['equipment_model_id']),
+            'stock_actual' => (int) $producto->stock,
+            'no_serie_sugerido' => $this->siguienteNumeroSerie($producto->id),
         ]);
     }
 
     /**
      * El siguiente serial de un modelo es consecutivo al último que se
-     * registró: si la primera pieza es 9803289028, la que sigue es
-     * 9803289029, luego 9803289030... Solo funciona sobre seriales
-     * puramente numéricos; si el último tiene letras o formato raro, no se
+     * registró: si la última pieza es 23A12345, la que sigue es 23A12346,
+     * luego 23A12347... Funciona con cualquier prefijo (letras, año,
+     * guiones) siempre que el serial termine en dígitos; si no, no se
      * sugiere nada y se deja el campo en blanco para llenarlo a mano.
      */
-    private function siguienteNumeroSerie(int $equipmentModelId): ?string
+    private function siguienteNumeroSerie(int $productoId): ?string
     {
-        $ultimo = Producto::where('equipment_model_id', $equipmentModelId)
+        $ultimo = ProductoSerial::where('producto_id', $productoId)
             ->whereNotNull('no_serie')
             ->where('no_serie', '!=', '')
-            ->get(['no_serie'])
-            ->filter(fn ($p) => ctype_digit($p->no_serie))
-            ->map(fn ($p) => $p->no_serie)
-            ->sortByDesc(fn ($serie) => (int) $serie)
+            ->pluck('no_serie')
+            ->map(function ($serie) {
+                if (! preg_match('/^(.*?)(\d+)$/', $serie, $m)) {
+                    return null;
+                }
+
+                return ['prefijo' => $m[1], 'numero' => (int) $m[2], 'ancho' => strlen($m[2])];
+            })
+            ->filter()
+            ->sortByDesc(fn ($s) => $s['numero'])
             ->first();
 
         if ($ultimo === null) {
             return null;
         }
 
-        // Se conserva el mismo número de dígitos (con ceros a la izquierda).
-        $siguiente = (string) ((int) $ultimo + 1);
+        $siguiente = $ultimo['numero'] + 1;
 
-        return str_pad($siguiente, strlen($ultimo), '0', STR_PAD_LEFT);
-    }
-
-    /**
-     * Arbol completo del catalogo para los selects encadenados.
-     *
-     * Cabe en la pagina, asi que el formulario no necesita ir al servidor
-     * cada vez que se cambia un select.
-     */
-    private function catalogoEquipo(): array
-    {
-        $subtipos = Subtype::with('brands')->orderBy('name')->get();
-
-        return [
-            'tipos' => EquipmentType::orderBy('name')->get(['id', 'name'])->all(),
-
-            'subtipos' => $subtipos
-                ->groupBy('equipment_type_id')
-                ->map(fn ($lista) => $lista->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])->values())
-                ->all(),
-
-            'marcas' => $subtipos
-                ->mapWithKeys(fn ($s) => [
-                    $s->id => $s->brands->sortBy('name')->map(fn ($b) => ['id' => $b->id, 'name' => $b->name])->values(),
-                ])
-                ->all(),
-
-            // La llave es "subtipo-marca": el modelo depende de las dos cosas.
-            'modelos' => EquipmentModel::orderBy('name')->get(['id', 'name', 'brand_id', 'subtype_id'])
-                ->groupBy(fn ($m) => $m->subtype_id . '-' . $m->brand_id)
-                ->map(fn ($lista) => $lista->map(fn ($m) => ['id' => $m->id, 'name' => $m->name])->values())
-                ->all(),
-        ];
+        return $ultimo['prefijo'].str_pad((string) $siguiente, $ultimo['ancho'], '0', STR_PAD_LEFT);
     }
 
     private function validated(Request $request): array

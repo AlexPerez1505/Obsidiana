@@ -71,7 +71,13 @@
         <tbody>
             @foreach ($f->items as $it)
                 <tr>
-                    <td>{{ $it->nombre }}</td><td>{{ $it->modelo ?? '—' }}</td><td>{{ $it->marca ?? '—' }}</td>
+                    <td>
+                        {{ $it->nombre }}
+                        @if (! empty($it->no_series))
+                            <div style="font-size:9px; color:#6b7280;">No. Serie: {{ $it->no_series }}</div>
+                        @endif
+                    </td>
+                    <td>{{ $it->modelo ?? '—' }}</td><td>{{ $it->marca ?? '—' }}</td>
                     <td class="c">{{ $it->cantidad }}</td>
                     <td class="r">@if($it->es_regalo)REGALO @else ${{ number_format($it->precio_unitario, 2) }} @endif</td>
                     <td class="r">@if($it->es_regalo)— @else ${{ number_format($it->importe(), 2) }} @endif</td>

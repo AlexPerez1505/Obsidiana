@@ -124,6 +124,12 @@
                         <dt>Congreso conocido</dt>
                         <dd class="{{ $customer->congress ? '' : 'vc-empty' }}">{{ $customer->congress?->nombre ?? 'Sin congreso' }}</dd>
                     </div>
+                    @if (! $customer->congress && $customer->como_conocio)
+                        <div>
+                            <dt>¿Cómo lo conocimos?</dt>
+                            <dd>{{ $customer->como_conocio }}</dd>
+                        </div>
+                    @endif
                     <div>
                         <dt>Fecha de alta</dt>
                         <dd>{{ $customer->created_at?->format('d/m/Y') ?? '—' }}</dd>

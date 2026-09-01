@@ -39,8 +39,12 @@
                         @endforeach
                     </datalist>
                 </x-ui.form-group>
-                <x-ui.form-group label="No. Serie" name="no_serie" placeholder="Número de serie" />
             </div>
+            <x-ui.form-group label="Números de serie (uno por línea, opcional)" for="series_texto">
+                <textarea id="series_texto" name="series_texto" rows="3" placeholder="Un número de serie por unidad. Déjalo vacío si el stock no tiene serial individual."
+                          style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('series_texto') }}</textarea>
+                <small style="color:var(--muted);">Si capturas todas las series, deben ser exactamente tantas líneas como el stock de arriba: cada línea es una unidad. Si solo pones una y el stock es mayor a 1, el resto de la secuencia se genera solo (ej. 23A12345 → 23A12346, 23A12347...).</small>
+            </x-ui.form-group>
             <x-ui.form-group label="Descripción" for="descripcion">
                 <textarea id="descripcion" name="descripcion" rows="3" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('descripcion') }}</textarea>
             </x-ui.form-group>
@@ -74,7 +78,7 @@
                 const precioInput = document.getElementById('precio');
                 const descripcionInput = document.getElementById('descripcion');
                 const proveedorInput = document.getElementById('proveedor');
-                const noSerieInput = document.getElementById('no_serie');
+                const seriesTextoInput = document.getElementById('series_texto');
                 const buscarPorModeloUrl = @json(route('inventory.productos.buscarPorModelo'));
 
                 if (modeloSelect) {
@@ -96,13 +100,13 @@
                                 if (descripcionInput && !descripcionInput.value) descripcionInput.value = data.descripcion ?? '';
                                 if (proveedorInput && !proveedorInput.value) proveedorInput.value = data.proveedor ?? '';
 
-                                let mensaje = 'Este modelo ya está registrado (stock actual: ' + data.stock_actual + '). Al guardar, esta cantidad se sumará a esa misma fila (no se crea un producto nuevo). Se completaron precio, descripción y proveedor.';
+                                let mensaje = 'Este modelo ya está registrado (stock actual: ' + data.stock_actual + '). Al guardar, esta cantidad se agregará como unidades nuevas de esa misma fila (no se crea un producto nuevo). Se completaron precio, descripción y proveedor.';
 
-                                if (noSerieInput && !noSerieInput.value && data.no_serie_sugerido) {
-                                    noSerieInput.value = data.no_serie_sugerido;
-                                    mensaje += ' El número de serie se sugirió como ' + data.no_serie_sugerido + ' (consecutivo del último registrado); puedes cambiarlo si no corresponde.';
+                                if (seriesTextoInput && !seriesTextoInput.value && data.no_serie_sugerido) {
+                                    seriesTextoInput.value = data.no_serie_sugerido;
+                                    mensaje += ' El número de serie se sugirió como ' + data.no_serie_sugerido + ' (consecutivo del último registrado). Si el stock es mayor a 1, deja solo esa línea: el resto de la secuencia se genera solo. Puedes cambiarlo si no corresponde.';
                                 } else {
-                                    mensaje += ' Revisa el stock y el no. de serie antes de guardar.';
+                                    mensaje += ' Revisa el stock y los números de serie antes de guardar.';
                                 }
 
                                 aviso.textContent = mensaje;

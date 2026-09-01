@@ -109,8 +109,10 @@ class CalculadoraCotizacion
         $inicio = $inicio ?? Carbon::today();
         $totalContrato = round($totalContrato, 2);
 
-        // Número de pagos: inicial + numMeses.
-        $numPagos = max(1, $numMeses + 1);
+        // Número de pagos: inicial + numMeses, pero si el usuario agregó
+        // más parcialidades a mano ("Agregar pago") que las que da el plazo
+        // en meses, se respetan: no se truncan las que ya capturó.
+        $numPagos = max(1, $numMeses + 1, count($pagosPrevios));
 
         // Construye la lista base (nombre/fecha/bloqueado) desde previos o generada.
         $pagos = [];

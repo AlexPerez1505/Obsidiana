@@ -80,6 +80,7 @@ class FacturaController extends Controller
                         'modelo' => $it->modelo,
                         'marca' => $it->marca,
                         'cantidad' => $it->cantidad,
+                        'no_series' => $it->no_series,
                         'precio_unitario' => $it->precio_unitario,
                         'sobreprecio' => $it->sobreprecio,
                         'es_regalo' => $it->es_regalo,

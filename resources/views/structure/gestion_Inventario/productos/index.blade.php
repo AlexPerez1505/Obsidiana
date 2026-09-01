@@ -10,9 +10,9 @@
                    style="width:100%; padding:11px 14px; border:1px solid var(--border); border-radius:9px; font-size:14.5px; background:var(--surface); color:var(--text);">
         </form>
         <div style="flex:1;"></div>
-        <a href="{{ route('inventory.productos.create') }}" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
+        <a href="{{ route('inventory.movimientos.create') }}" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Agregar producto
+            Registrar entrada
         </a>
     </div>
 
@@ -88,5 +88,6 @@
                 </tbody>
             </table>
         </div>
+        @include('partials._paginacion', ['paginator' => $productos])
     </x-ui.card>
 @endsection

@@ -65,6 +65,7 @@ class CustomerController extends Controller
             'comentarios' => ['nullable', 'string'],
             'categoria_id' => ['nullable', 'exists:categorias,id'],
             'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
+            'como_conocio' => ['nullable', 'string', 'max:255'],
             'recibe_promocion' => ['nullable', 'boolean'],
         ], [
             'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
@@ -118,6 +119,7 @@ class CustomerController extends Controller
             'comentarios' => ['nullable', 'string'],
             'categoria_id' => ['nullable', 'exists:categorias,id'],
             'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
+            'como_conocio' => ['nullable', 'string', 'max:255'],
             'recibe_promocion' => ['nullable', 'boolean'],
             'activo' => ['nullable', 'boolean'],
         ], [
@@ -143,11 +145,16 @@ class CustomerController extends Controller
     {
         $rfc = strtoupper(trim((string) $request->input('rfc')));
 
+        $congresoId = $request->filled('congreso_id') ? $request->input('congreso_id') : null;
+
         $request->merge([
             'telefono' => trim((string) $request->input('telefono')),
             'rfc' => $rfc !== '' ? $rfc : null,
             'categoria_id' => $request->filled('categoria_id') ? $request->input('categoria_id') : null,
-            'congreso_id' => $request->filled('congreso_id') ? $request->input('congreso_id') : null,
+            'congreso_id' => $congresoId,
+            // El congreso ya responde "cómo lo conocimos"; el texto libre
+            // solo aplica cuando no se levantó en uno.
+            'como_conocio' => $congresoId ? null : (trim((string) $request->input('como_conocio')) ?: null),
         ]);
     }
 

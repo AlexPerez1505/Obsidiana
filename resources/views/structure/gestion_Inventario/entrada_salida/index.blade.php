@@ -303,7 +303,7 @@
     <section class="movement-page">
         <div class="movement-head">
             <div>
-                <p>Consulta los movimientos de entrada y salida.</p>
+                <p>Entradas: lo que llega, con su evidencia. Salidas: lo que se vendió, se registra solo desde Ventas.</p>
             </div>
 
             <a href="{{ route('inventory.movimientos.create') }}" class="movement-create">
@@ -311,7 +311,7 @@
                     <path d="M12 5v14"></path>
                     <path d="M5 12h14"></path>
                 </svg>
-                Nuevo Movimiento
+                Nueva Entrada
             </a>
         </div>
 
@@ -390,18 +390,14 @@
                                                     Ver detalle
                                                 </a>
                                             </li>
-                                            <li>
-                                                <button type="button" class="action-link edit-movement-btn" data-url="{{ route('inventory.movimientos.verify-edit', $movement) }}" data-folio="{{ $movement->folio }}" style="display:flex; align-items:center; gap:8px; width:100%; padding:9px 14px; color:var(--text); background:none; border:none; cursor:pointer; font-size:13px; font-weight:600; text-align:left;">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                                    Editar
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button type="button" class="action-link delete-movement-btn" data-url="{{ route('inventory.movimientos.destroy', $movement) }}" data-folio="{{ $movement->folio }}" style="display:flex; align-items:center; gap:8px; width:100%; padding:9px 14px; color:var(--danger); background:none; border:none; cursor:pointer; font-size:13px; font-weight:600; text-align:left;">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                                    Eliminar
-                                                </button>
-                                            </li>
+                                            @if ($movement->movement_type === 'entrada')
+                                                <li>
+                                                    <button type="button" class="action-link delete-movement-btn" data-url="{{ route('inventory.movimientos.destroy', $movement) }}" data-folio="{{ $movement->folio }}" style="display:flex; align-items:center; gap:8px; width:100%; padding:9px 14px; color:var(--danger); background:none; border:none; cursor:pointer; font-size:13px; font-weight:600; text-align:left;">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                                        Eliminar
+                                                    </button>
+                                                </li>
+                                            @endif
                                         </ul>
                                     </div>
                                 </td>
@@ -415,9 +411,9 @@
                 </table>
             </div>
             <div class="movement-foot">
-                <span id="movementCount">Mostrando 1 a {{ count($movements) }} de 25 resultados</span>
-                <button type="button">Ver mas &gt;</button>
+                <span id="movementCount">Mostrando {{ count($movements) }} movimiento{{ count($movements) === 1 ? '' : 's' }} de esta página</span>
             </div>
+            @include('partials._paginacion', ['paginator' => $movements])
         </div>
     </section>
 
@@ -441,30 +437,6 @@
                 <div style="display:flex; align-items:center; justify-content:flex-end; gap:12px;">
                     <button type="button" id="cancelDelete" class="btn btn--ghost">Cancelar</button>
                     <button type="submit" class="btn" style="background:var(--danger); border-color:var(--danger); color:#fff;">Eliminar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="editPinModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center; padding:16px;">
-        <div style="width:100%; max-width:420px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow:0 20px 40px rgba(0,0,0,0.2); text-align:center;">
-            <div style="width:56px; height:56px; background:var(--primary-soft); color:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </div>
-            <h3 style="margin:0 0 8px; font-size:18px;">Confirmar edición</h3>
-            <p class="muted" style="margin:0 0 20px; font-size:14px;">Ingresa tu PIN para editar el movimiento <strong id="editFolio"></strong>.</p>
-
-            <form id="editForm" method="POST" action="" style="text-align:left;">
-                @csrf
-
-                <div style="margin-bottom:18px;">
-                    <label for="editPinInput" style="display:block; margin:0 0 6px; font-size:13px; font-weight:700; color:var(--text);">PIN</label>
-                    <input id="editPinInput" name="password" type="password" inputmode="numeric" required placeholder="Ingresa tu PIN" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                </div>
-
-                <div style="display:flex; align-items:center; justify-content:flex-end; gap:12px;">
-                    <button type="button" id="cancelEditPin" class="btn btn--ghost">Cancelar</button>
-                    <button type="submit" class="btn" style="background:var(--primary); border-color:var(--primary); color:#fff;">Continuar</button>
                 </div>
             </form>
         </div>
@@ -548,31 +520,6 @@
         cancelDelete.addEventListener('click', closeDeleteModal);
         deleteModal.addEventListener('click', (e) => {
             if (e.target === deleteModal) closeDeleteModal();
-        });
-
-        const editPinModal = document.getElementById('editPinModal');
-        const editForm = document.getElementById('editForm');
-        const editFolio = document.getElementById('editFolio');
-        const editPinInput = document.getElementById('editPinInput');
-        const cancelEditPin = document.getElementById('cancelEditPin');
-
-        document.querySelectorAll('.edit-movement-btn').forEach((button) => {
-            button.addEventListener('click', (e) => {
-                e.stopPropagation();
-                editForm.action = button.dataset.url;
-                editFolio.textContent = button.dataset.folio;
-                editPinInput.value = '';
-                editPinModal.style.display = 'flex';
-            });
-        });
-
-        function closeEditPinModal() {
-            editPinModal.style.display = 'none';
-        }
-
-        cancelEditPin.addEventListener('click', closeEditPinModal);
-        editPinModal.addEventListener('click', (e) => {
-            if (e.target === editPinModal) closeEditPinModal();
         });
     </script>
 @endsection

@@ -11,7 +11,7 @@ class FacturaItem extends Model
 
     protected $fillable = [
         'factura_id', 'nombre', 'modelo', 'marca',
-        'cantidad', 'precio_unitario', 'sobreprecio', 'es_regalo', 'orden',
+        'cantidad', 'no_series', 'precio_unitario', 'sobreprecio', 'es_regalo', 'orden',
     ];
 
     protected function casts(): array

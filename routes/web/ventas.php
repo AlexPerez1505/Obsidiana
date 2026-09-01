@@ -51,6 +51,7 @@ Route::middleware(['auth', 'verified', 'approved'])
             // Ajustes al plan
             Route::post('/recorrer', [CobroController::class, 'recorrer'])->name('recorrer');
             Route::post('/rebalancear', [CobroController::class, 'rebalancear'])->name('rebalancear');
+            Route::post('/absorber-excedente', [CobroController::class, 'absorberExcedente'])->name('absorber-excedente');
             Route::post('/parcialidad', [CobroController::class, 'agregarParcialidad'])->name('parcialidad.agregar');
             Route::put('/parcialidad/{pago}', [CobroController::class, 'actualizarParcialidad'])->name('parcialidad.actualizar');
             Route::delete('/parcialidad/{pago}', [CobroController::class, 'eliminarParcialidad'])->name('parcialidad.eliminar');

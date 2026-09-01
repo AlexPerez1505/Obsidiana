@@ -62,7 +62,12 @@
                             </div>
                         </div>
 
-                        <div class="cb-fila-monto">${{ number_format((float) $p->monto, 2) }}</div>
+                        <div class="cb-fila-monto">
+                            ${{ number_format($p->saldo(), 2) }}
+                            @if ($p->cobrado() > 0)
+                                <div class="s" style="font-weight:400;">de ${{ number_format((float) $p->monto, 2) }}</div>
+                            @endif
+                        </div>
 
                         <span class="cb-chip es-{{ $p->estado() }}">{{ $p->estadoLabel() }}</span>
 
@@ -108,6 +113,17 @@
                         <form method="POST" action="{{ route('commercial.ventas.cobros.rebalancear', $venta) }}" style="display:inline;">
                             @csrf
                             <button type="submit" class="cb-enlace">Repartir la diferencia</button>
+                        </form>
+                    </div>
+                @endif
+
+                @if ($excedentePendiente > 0.01)
+                    <div class="cb-alerta">
+                        Hay ${{ number_format($excedentePendiente, 2) }} ya cobrados que ninguna parcialidad tiene ligados todavía
+                        (un abono suelto, o uno que superó lo que le tocaba a su parcialidad).
+                        <form method="POST" action="{{ route('commercial.ventas.cobros.absorber-excedente', $venta) }}" style="display:inline;">
+                            @csrf
+                            <button type="submit" class="cb-enlace">Aplicar a lo pendiente</button>
                         </form>
                     </div>
                 @endif

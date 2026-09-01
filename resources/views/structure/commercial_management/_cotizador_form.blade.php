@@ -335,6 +335,10 @@
         pagos: (INITIAL.pagos || []).map(p => ({ ...p, porcentaje:+p.porcentaje, monto:+p.monto, bloqueado:!!p.bloqueado })),
         fichas: INITIAL.fichas || [],
         meses: (+INITIAL.num_meses > 0 ? +INITIAL.num_meses : 2),
+        // Automático: las fechas se calculan solas cada "frecuenciaDias" días.
+        // Manual: cada pago tiene su propia fecha, editable libremente.
+        modoPagos: 'automatico',
+        frecuenciaDias: 30,
     };
 
     const money = n => '$' + (Math.round((+n || 0) * 100) / 100).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -372,7 +376,11 @@
         if (!state.customer) { box.style.display = 'none'; return; }
         box.style.display = 'block';
         box.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-            <div style="min-width:0;"><b>${state.customer.nombre}</b><div style="color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${state.customer.rfc || ''} ${state.customer.correo ? '· ' + state.customer.correo : ''}</div></div>
+            <div style="min-width:0;">
+                <b>${state.customer.nombre}</b>
+                <div style="color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${state.customer.rfc || ''} ${state.customer.correo ? '· ' + state.customer.correo : ''}</div>
+                ${state.customer.conocido ? `<div style="color:var(--muted); font-size:12px;">Conocido por: ${state.customer.conocido}</div>` : ''}
+            </div>
             <button type="button" id="clienteClear" class="cot-ico-btn" title="Quitar cliente" aria-label="Quitar cliente">${ICON_X}</button></div>`;
         $('clienteClear').addEventListener('click', () => { state.customer = null; $('clienteSearch').focus(); renderCliente(); });
     }
@@ -486,6 +494,11 @@
         const d = new Date(base.getFullYear(), base.getMonth() + m, base.getDate());
         return d.toISOString().slice(0, 10);
     }
+    function addDias(dateStr, dias) {
+        const base = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
+        const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + dias);
+        return d.toISOString().slice(0, 10);
+    }
     function nombrePago(i) {
         if (i === 0) return 'Pago inicial';
         const ord = ['', 'Primer', 'Segundo', 'Tercer', 'Cuarto', 'Quinto', 'Sexto', 'Séptimo', 'Octavo', 'Noveno', 'Décimo', 'Décimo primer', 'Décimo segundo'];
@@ -493,15 +506,22 @@
     }
     function rebuildPagos() {
         const meses = Math.max(1, parseInt(state.meses) || 1);
-        const count = meses + 1;
         const hoy = new Date().toISOString().slice(0, 10);
         const prev = state.pagos;
+
+        // En automático, cuántos pagos salen depende de la frecuencia: cada
+        // "frecuenciaDias" días, dentro del plazo en meses (30 días = 1 mes).
+        const frecuencia = Math.max(1, parseInt(state.frecuenciaDias) || 30);
+        const count = state.modoPagos === 'automatico'
+            ? Math.max(1, Math.round((meses * 30) / frecuencia)) + 1
+            : Math.max(1, prev.length || meses + 1);
+
         state.pagos = [];
         for (let i = 0; i < count; i++) {
             const p = prev[i];
             state.pagos.push({
                 nombre: p ? p.nombre : nombrePago(i),
-                fecha: p ? p.fecha : addMonths(hoy, i),
+                fecha: p ? p.fecha : addDias(hoy, i * frecuencia),
                 monto: p ? +p.monto : 0,
                 porcentaje: p ? +p.porcentaje : 0,
                 bloqueado: p ? !!p.bloqueado : false,
@@ -526,8 +546,9 @@
         state.pagos.forEach(p => { p.porcentaje = contrato > 0 ? Math.round(p.monto / contrato * 10000) / 100 : 0; });
     }
     function addPago() {
+        const frecuencia = Math.max(1, parseInt(state.frecuenciaDias) || 30);
         const last = state.pagos[state.pagos.length - 1];
-        const fecha = last ? addMonths(last.fecha, 1) : new Date().toISOString().slice(0, 10);
+        const fecha = last ? addDias(last.fecha, frecuencia) : new Date().toISOString().slice(0, 10);
         state.pagos.push({ nombre: nombrePago(state.pagos.length), fecha, monto: 0, porcentaje: 0, bloqueado: false });
         distribuir(); renderPagos();
     }
@@ -537,9 +558,22 @@
         const suma = Math.round(state.pagos.reduce((a, p) => a + (+p.monto || 0), 0) * 100) / 100;
         const cuadra = Math.abs(suma - contrato) < 0.5;
 
+        const esAutomatico = state.modoPagos === 'automatico';
+        const frecuenciasFijas = [15, 30];
+        const esFrecuenciaFija = frecuenciasFijas.includes(+state.frecuenciaDias);
+
         let html = `<div class="cot-plan">
-            <div class="cot-plan-head">
+            <div class="cot-plan-head" style="flex-wrap:wrap; gap:10px;">
                 <b>Plan de pagos</b>
+                <div class="cot-seg" role="tablist" style="height:32px;">
+                    <button type="button" class="cot-seg-btn ${esAutomatico ? 'on' : ''}" data-modo-pagos="automatico" style="padding:0 14px; font-size:12.5px;">Automático</button>
+                    <button type="button" class="cot-seg-btn ${!esAutomatico ? 'on' : ''}" data-modo-pagos="manual" style="padding:0 14px; font-size:12.5px;">Manual</button>
+                </div>
+            </div>`;
+
+        if (esAutomatico) {
+            html += `
+            <div class="cot-plan-head" style="border-top:0; padding-top:0;">
                 <div style="display:flex; align-items:center; gap:9px;">
                     <span class="cot-lbl" style="margin:0;">Diferir a</span>
                     <div class="cot-step">
@@ -549,7 +583,17 @@
                     </div>
                     <span class="cot-lbl" style="margin:0;">meses</span>
                 </div>
+                <div style="display:flex; align-items:center; gap:9px;">
+                    <span class="cot-lbl" style="margin:0;">Cobrar cada</span>
+                    <select id="frecuenciaSelect" class="cot-input" style="width:auto; padding:6px 10px;">
+                        <option value="15" ${+state.frecuenciaDias === 15 ? 'selected' : ''}>15 días</option>
+                        <option value="30" ${+state.frecuenciaDias === 30 ? 'selected' : ''}>30 días</option>
+                        <option value="personalizado" ${!esFrecuenciaFija ? 'selected' : ''}>Personalizado</option>
+                    </select>
+                    ${!esFrecuenciaFija ? `<input type="number" min="1" id="frecuenciaPersonalizada" class="cot-input" style="width:70px; padding:6px 8px;" value="${state.frecuenciaDias}"><span class="cot-lbl" style="margin:0;">días</span>` : ''}
+                </div>
             </div>`;
+        }
 
         state.pagos.forEach((p, idx) => {
             html += `
@@ -557,7 +601,9 @@
                     <span class="cot-prow-num">${idx + 1}</span>
                     <div class="cot-prow-info">
                         <div class="cot-prow-name">${p.nombre}</div>
-                        <div class="cot-prow-date">${fmtFecha(p.fecha)}</div>
+                        ${esAutomatico
+                            ? `<div class="cot-prow-date">${fmtFecha(p.fecha)}</div>`
+                            : `<input type="date" data-fecha="${idx}" value="${p.fecha}" class="cot-input" style="width:auto; padding:5px 8px; font-size:12.5px; margin-top:4px;">`}
                     </div>
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                         <button type="button" class="cot-lock ${p.bloqueado ? 'on' : ''}" data-lock="${idx}" title="Fijo: conserva su monto. Auto: se reparte solo.">${p.bloqueado ? ICON_LOCK : ICON_UNLOCK}${p.bloqueado ? 'Fijo' : 'Auto'}</button>
@@ -577,8 +623,28 @@
 
         wrap.innerHTML = html;
 
-        $('mesMinus').addEventListener('click', () => { state.meses = Math.max(1, state.meses - 1); rebuildPagos(); renderPagos(); });
-        $('mesPlus').addEventListener('click', () => { state.meses = Math.min(60, state.meses + 1); rebuildPagos(); renderPagos(); });
+        wrap.querySelectorAll('button[data-modo-pagos]').forEach(b => b.addEventListener('click', () => {
+            state.modoPagos = b.dataset.modoPagos;
+            if (state.modoPagos === 'automatico') rebuildPagos();
+            renderPagos();
+        }));
+        if (esAutomatico) {
+            $('mesMinus').addEventListener('click', () => { state.meses = Math.max(1, state.meses - 1); rebuildPagos(); renderPagos(); });
+            $('mesPlus').addEventListener('click', () => { state.meses = Math.min(60, state.meses + 1); rebuildPagos(); renderPagos(); });
+            $('frecuenciaSelect').addEventListener('change', e => {
+                state.frecuenciaDias = e.target.value === 'personalizado' ? 45 : parseInt(e.target.value);
+                rebuildPagos(); renderPagos();
+            });
+            const personalizada = document.getElementById('frecuenciaPersonalizada');
+            if (personalizada) personalizada.addEventListener('change', e => {
+                state.frecuenciaDias = Math.max(1, parseInt(e.target.value) || 30);
+                rebuildPagos(); renderPagos();
+            });
+        }
+        wrap.querySelectorAll('input[data-fecha]').forEach(c => c.addEventListener('change', e => {
+            const i = +e.target.dataset.fecha;
+            state.pagos[i].fecha = e.target.value;
+        }));
         $('addPagoBtn').addEventListener('click', addPago);
         wrap.querySelectorAll('button[data-lock]').forEach(b => b.addEventListener('click', () => {
             const i = +b.dataset.lock; state.pagos[i].bloqueado = !state.pagos[i].bloqueado; distribuir(); renderPagos();

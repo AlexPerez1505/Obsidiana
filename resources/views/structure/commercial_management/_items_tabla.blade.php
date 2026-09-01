@@ -35,6 +35,9 @@
                         @if ($it->modelo)
                             <div class="doc-det">Modelo {{ $it->modelo }}</div>
                         @endif
+                        @if (! empty($it->no_series))
+                            <div class="doc-det">No. Serie: {{ $it->no_series }}</div>
+                        @endif
                     </td>
                     <td>{{ $it->marca ?: '—' }}</td>
                     <td class="c">{{ $it->cantidad }}</td>

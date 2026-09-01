@@ -27,10 +27,14 @@ class CotizacionController extends Controller
 
     public function index(): View
     {
-        $cotizaciones = Cotizacion::with(['customer', 'seller'])->latest()->get();
+        $cotizaciones = Cotizacion::with(['customer', 'seller'])->latest()->paginate(20)->withQueryString();
 
         return view('structure.commercial_management.cotizaciones.index', [
             'cotizaciones' => $cotizaciones,
+            'total' => Cotizacion::count(),
+            'borradores' => Cotizacion::where('estado', 'borrador')->count(),
+            'aceptadas' => Cotizacion::whereIn('estado', ['aceptada', 'convertida'])->count(),
+            'montoTotal' => (float) Cotizacion::sum('total'),
         ]);
     }
 
@@ -139,11 +143,13 @@ class CotizacionController extends Controller
         $q = trim($request->get('q', ''));
 
         $clientes = Customer::query()
+            ->with('congress')
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($sub) use ($q) {
                     $sub->where('nombre', 'like', "%{$q}%")
                         ->orWhere('apellido', 'like', "%{$q}%")
-                        ->orWhere('correo', 'like', "%{$q}%")
+                        ->orWhere('gmail', 'like', "%{$q}%")
+                        ->orWhere('telefono', 'like', "%{$q}%")
                         ->orWhere('rfc', 'like', "%{$q}%");
                 });
             })
@@ -153,8 +159,9 @@ class CotizacionController extends Controller
             ->map(fn (Customer $c) => [
                 'id' => $c->id,
                 'nombre' => trim($c->nombre.' '.$c->apellido),
-                'correo' => $c->correo,
+                'correo' => $c->gmail,
                 'rfc' => $c->rfc,
+                'conocido' => $c->comoConocio(),
             ]);
 
         return response()->json($clientes);

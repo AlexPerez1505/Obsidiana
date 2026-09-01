@@ -43,6 +43,14 @@
                             @endforeach
                         </select>
                     </x-ui.form-group>
+                    <div style="grid-column:1 / -1;">
+                        <x-ui.form-group for="como_conocio" label="¿Cómo conoció al cliente?">
+                            <input id="como_conocio" type="text" name="como_conocio" value="{{ old('como_conocio') }}"
+                                   placeholder="Ej. recomendación, redes sociales, llamada... (solo si no fue en un congreso)"
+                                   {{ old('congreso_id') ? 'disabled' : '' }}>
+                            <small style="color:var(--muted);">Solo aplica si no eligio un congreso ; si elige uno arriba, este campo se desactiva.</small>
+                        </x-ui.form-group>
+                    </div>
                     <x-ui.form-group for="recibe_promocion" label="¿Recibe Promoción?">
                         <input type="hidden" name="recibe_promocion" value="0">
                         <label class="ui-switch">
@@ -104,4 +112,21 @@
         .ui-switch input:checked + .slider:before { transform: translateX(24px); }
     </style>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const congresoSelect = document.getElementById('congreso_id');
+            const comoConocio = document.getElementById('como_conocio');
+
+            if (!congresoSelect || !comoConocio) return;
+
+            const sincronizar = () => {
+                const tieneCongreso = !!congresoSelect.value;
+                comoConocio.disabled = tieneCongreso;
+                if (tieneCongreso) comoConocio.value = '';
+            };
+
+            congresoSelect.addEventListener('change', sincronizar);
+            sincronizar();
+        });
+    </script>
 @endsection

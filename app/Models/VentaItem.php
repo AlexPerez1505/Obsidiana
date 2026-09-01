@@ -12,7 +12,7 @@ class VentaItem extends Model
     protected $fillable = [
         'venta_id', 'equipo_id', 'paquete_id', 'producto_id', 'tipo_item',
         'nombre', 'modelo', 'marca', 'imagen',
-        'cantidad', 'precio_unitario', 'sobreprecio', 'es_regalo', 'orden',
+        'cantidad', 'no_series', 'precio_unitario', 'sobreprecio', 'es_regalo', 'orden',
     ];
 
     protected function casts(): array
@@ -34,6 +34,11 @@ class VentaItem extends Model
     public function producto(): BelongsTo
     {
         return $this->belongsTo(Producto::class);
+    }
+
+    public function seriales(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ProductoSerial::class);
     }
 
     public function importe(): float
