@@ -66,6 +66,18 @@ class ServiceController extends Controller
         return view('structure.gestion_servicios.historial_servicios.show', compact('service'));
     }
 
+    public function approve(Service $service)
+    {
+        if ($service->status !== 'registrado') {
+            return back()->with('error', 'La orden no puede aprobarse en su estado actual.');
+        }
+
+        $service->update(['status' => 'en_progreso']);
+
+        return redirect()->route('gestion.servicios.historial')
+            ->with('success', "Orden {$service->service_number} aprobada.");
+    }
+
     public function invite()
     {
         $invitation = ServiceInvitation::create([

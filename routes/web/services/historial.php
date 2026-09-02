@@ -9,13 +9,17 @@ use App\Models\Brand;
 use App\Models\Customer;
 use App\Models\EquipmentType;
 use App\Models\ExternalTechnician;
+use App\Models\Service;
 use App\Models\User;
+use App\Models\Venta;
 
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
-    Route::view('/gestion-servicios/historial-servicios', 'structure.gestion_servicios.historial_servicios.menu_historial_servicios')
-        ->name('gestion.servicios.historial');
+    Route::get('/gestion-servicios/historial-servicios', function () {
+        $services = Service::with(['customer', 'currentStep'])->latest()->get();
+        return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('services'));
+    })->name('gestion.servicios.historial');
     Route::get('/gestion-servicios/historial-servicios/nueva-orden', function () {
-        $customers = Customer::with('seller')->latest()->get();
+        $customers = Customer::with('asesor')->latest()->get();
 
         if ($clienteId = request('cliente_id')) {
             $selected = $customers->firstWhere('id', $clienteId);
@@ -27,7 +31,11 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         $equipmentTypes = EquipmentType::orderBy('name')->get();
         $brands = Brand::orderBy('name')->get();
         $externalTechnicians = ExternalTechnician::where('is_active', true)->orderBy('name')->get();
-        $internalTechnicians = User::where('status', User::STATUS_APPROVED)->orderBy('name')->get();
+        $internalTechnicians = User::where(function ($q) {
+            $q->where('status', User::STATUS_APPROVED)
+              ->orWhereRaw('LOWER(name) LIKE ?', ['%joel%'])
+              ->orWhereRaw('LOWER(name) LIKE ?', ['%icelda%']);
+        })->orderBy('name')->get();
 
         return view('structure.gestion_servicios.historial_servicios.registro_servicio.c_registro_serv', compact('customers', 'equipmentTypes', 'brands', 'externalTechnicians', 'internalTechnicians'));
     })->name('gestion.servicios.historial.nueva_orden');
@@ -36,6 +44,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('gestion.servicios.historial.nueva_orden.store');
     Route::get('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'show'])
         ->name('gestion.servicios.historial.show');
+    Route::post('/gestion-servicios/historial-servicios/{service}/aprobar', [ServiceController::class, 'approve'])
+        ->name('gestion.servicios.historial.approve');
     Route::get('/gestion-servicios/historial-servicios/invitar', [ServiceController::class, 'invite'])
         ->name('gestion.servicios.historial.invite');
 
@@ -69,6 +79,15 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
         return back();
     })->name('gestion.servicios.historial.external_technicians.store');
+
+    Route::get('/gestion-servicios/garantia', function () {
+        $ventas = Venta::with('customer')->where('garantia_meses', '>', 0)->latest()->get();
+        return view('structure.gestion_servicios.garantia.index', compact('ventas'));
+    })->name('gestion.servicios.garantia.index');
+    Route::get('/gestion-servicios/mantenimiento', function () {
+        $services = Service::with(['customer', 'currentStep'])->latest()->get();
+        return view('structure.gestion_servicios.mantenimiento.index', compact('services'));
+    })->name('gestion.servicios.mantenimiento.index');
 });
 
 Route::get('/nueva-orden/{invitation}', [ServiceController::class, 'createFromInvitation'])

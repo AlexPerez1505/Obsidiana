@@ -121,6 +121,10 @@
         <div class="step" data-step="2"><span class="dot">2</span> Equipo</div>
         <div class="line"></div>
         <div class="step" data-step="3"><span class="dot">3</span> Tecnico</div>
+        <div class="line"></div>
+        <div class="step" data-step="4"><span class="dot">4</span> Cotizacion</div>
+        <div class="line"></div>
+        <div class="step" data-step="5"><span class="dot">5</span> Resumen</div>
     </div>
 
     <form id="orden-form" method="POST" action="{{ isset($invitation) ? route('public.nueva_orden.store', $invitation) : route('gestion.servicios.historial.nueva_orden.store') }}" autocomplete="off">
@@ -135,7 +139,10 @@
         @include('structure.gestion_servicios.historial_servicios.registro_servicio.c2_resgistro_serv')
         @include('structure.gestion_servicios.historial_servicios.registro_servicio.c3_tecnico_Int', ['internalTechnicians' => $internalTechnicians])
         @include('structure.gestion_servicios.historial_servicios.registro_servicio.c3_tecnico_ext', ['externalTechnicians' => $externalTechnicians])
-        @include('structure.gestion_servicios.historial_servicios.acciones_mn_hit_ser.r_int_menu_historial')
+        <div class="step-panel" data-step="4">
+            @include('structure.gestion_servicios.historial_servicios.acciones_mn_hit_ser.u_menu_historial')
+        </div>
+        @include('structure.gestion_servicios.historial_servicios.acciones_mn_hit_ser.r_ext_menu_historial')
     </form>
 
     @include('structure.gestion_servicios.historial_servicios.registro_servicio.tec_externo.c_tec_externo')
@@ -261,7 +268,14 @@
             wizardSubtitle.textContent = 'Asigna un especialista al servicio programmado';
             wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
             btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Regresar';
-            btnPrimary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar registro';
+            btnPrimary.innerHTML = 'Siguiente: Cotizacion <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+            btnPrimary.type = 'button';
+        } else if (currentStep === 4) {
+            wizardTitle.textContent = 'Cotizacion';
+            wizardSubtitle.textContent = 'Agrega los conceptos de la cotizacion';
+            wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
+            btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Regresar';
+            btnPrimary.innerHTML = 'Siguiente: Resumen <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
             btnPrimary.type = 'button';
         } else {
             wizardTitle.textContent = 'Resumen de Orden';
@@ -275,7 +289,7 @@
     }
 
     btnPrimary.addEventListener('click', () => {
-        if (currentStep < 4) {
+        if (currentStep < 5) {
             currentStep++;
             updateStep();
         }
@@ -302,6 +316,12 @@
 
     form.addEventListener('input', saveFormState);
     form.addEventListener('change', saveFormState);
+
+    // Forzar inicio en seleccion de tipo de servicio si no es invitacion publica
+    @if(!isset($invitation))
+        localStorage.removeItem(FORM_STORAGE_KEY);
+    @endif
+
     restoreFormState();
 
 </script>

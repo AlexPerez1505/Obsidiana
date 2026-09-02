@@ -1,4 +1,4 @@
-<div class="step-panel" data-step="4">
+<div class="step-panel" data-step="5">
     <div class="resumen-grid">
         <!-- Acción Requerida -->
     <div class="resumen-card">
