@@ -1,100 +1,33 @@
 @extends('structure.Configuracion.layout')
 
 @section('title', 'Editar Categoría')
+@section('page-title', 'Editar Categoría')
 
 @section('configuracion_content')
-    <div class="modal-overlay">
-        <div class="modal-card catalog-card">
-            <div class="modal-header">
-                <h2 class="page-title">Editar Categoría</h2>
-            </div>
-            <p class="page-sub">Actualiza el nombre de la categoría seleccionada.</p>
+    <form method="POST" action="{{ route('configuracion.categorias.update', $category) }}" class="cat-form">
+        @csrf
+        @method('PUT')
 
-            @if (session('status'))
-                <div class="alert alert--ok" style="margin:16px 0 0;">{{ session('status') }}</div>
-            @endif
+        <x-ui.card>
+            <x-ui.section-title style="margin:0 0 4px;">Datos de la categoría</x-ui.section-title>
+            <p class="muted" style="margin:0 0 18px; font-size:13.5px;">
+                El cambio se refleja en todos los clientes y congresos que ya la tienen asignada.
+            </p>
 
-            <form method="POST" action="{{ route('configuracion.categorias.update', $category) }}" style="margin-top:18px;">
-                @csrf
-                @method('PUT')
+            <x-ui.form-group label="Nombre" name="name"
+                             placeholder="Ingrese el nombre de la categoría"
+                             :value="$category->nombre"
+                             :required="true" :autofocus="true" />
+        </x-ui.card>
 
-                <x-ui.form-group label="Nombre" name="name" placeholder="Ingrese el nombre de la categoría" :value="$category->name" :required="true" />
-
-                <div class="form-actions">
-                    <a href="{{ route('configuracion.catalogos.index') }}" class="modal-back" aria-label="Regresar">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M15 18l-6-6 6-6"/>
-                        </svg>
-                        <span>Regresar</span>
-                    </a>
-                    <button type="submit" class="btn">Guardar cambios</button>
-                </div>
-            </form>
+        <div class="page-foot">
+            <a href="{{ route('configuracion.catalogos.index') }}" class="btn btn--ghost">Regresar</a>
+            <button type="submit" class="btn">Guardar cambios</button>
         </div>
-    </div>
+    </form>
 
     <style>
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            padding: 22px;
-        }
-        .modal-card {
-            width: 100%;
-            max-width: 520px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .modal-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 10px;
-        }
-        .modal-header .page-title { margin: 0; flex: 1; }
-        .modal-back {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 12px;
-            border: 1px solid rgba(0, 168, 255, 0.55);
-            border-radius: 10px;
-            background: rgba(8, 18, 40, 0.45);
-            color: #00A8FF;
-            font-size: 13px;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            transition: background .16s ease, border-color .16s ease;
-        }
-        .modal-back:hover {
-            background: rgba(0, 168, 255, 0.14);
-            border-color: #00A8FF;
-        }
-        .modal-back svg { width: 16px; height: 16px; }
-        .form-actions { display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-top:18px; }
-        :root[data-theme="light"] .modal-overlay { background: rgba(15, 23, 42, 0.35); }
-        :root[data-theme="light"] .modal-back {
-            background: rgba(15, 23, 42, 0.04);
-            border-color: rgba(15, 23, 42, 0.14);
-            color: var(--primary);
-        }
-        :root[data-theme="light"] .modal-back:hover {
-            background: var(--primary-soft);
-            border-color: var(--primary);
-        }
-        @media (max-width: 640px) {
-            .modal-overlay { padding: 12px; }
-            .modal-card { width: 100%; max-width: none; }
-            .form-actions { flex-direction: column; align-items: stretch; gap: 8px; }
-            .form-actions > * { width: 100%; justify-content: center; }
-        }
+        /* Un solo campo: la columna estrecha se lee mejor que un formulario a todo lo ancho. */
+        .cat-form { max-width:560px; }
     </style>
 @endsection

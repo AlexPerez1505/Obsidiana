@@ -45,13 +45,6 @@
         </x-ui.stat-card>
     </div>
 
-    <x-ui.card style="margin-bottom:18px;">
-        <x-ui.section-title style="margin:0;">Estadísticas avanzadas</x-ui.section-title>
-        <p class="muted" style="margin:0 0 12px;">Este componente se está desarrollando y es visible para todos mientras lo construimos.</p>
-        <p style="margin:0; font-size:28px; font-weight:700; color:var(--green);">1,240</p>
-        <p class="muted" style="margin:0;">Visitas hoy</p>
-    </x-ui.card>
-
     {{-- Sesiones activas --}}
     <x-ui.card style="margin-bottom:18px;">
         <x-ui.section-title style="margin:0;">

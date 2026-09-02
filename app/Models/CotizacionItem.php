@@ -11,38 +11,51 @@ class CotizacionItem extends Model
 
     protected $fillable = [
         'cotizacion_id',
-        'producto_id',
+        'equipo_id',
         'paquete_id',
+        'producto_id',
+        'tipo_item',
         'nombre',
+        'modelo',
+        'marca',
+        'imagen',
         'cantidad',
-        'precio_original',
+        'precio_unitario',
         'sobreprecio',
-        'precio_final',
         'es_regalo',
-        'subtotal_linea',
+        'orden',
     ];
 
-    protected $casts = [
-        'cantidad' => 'integer',
-        'precio_original' => 'decimal:2',
-        'sobreprecio' => 'decimal:2',
-        'precio_final' => 'decimal:2',
-        'es_regalo' => 'boolean',
-        'subtotal_linea' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'cantidad' => 'integer',
+            'precio_unitario' => 'decimal:2',
+            'sobreprecio' => 'decimal:2',
+            'es_regalo' => 'boolean',
+            'orden' => 'integer',
+        ];
+    }
 
     public function cotizacion(): BelongsTo
     {
-        return $this->belongsTo(Cotizacion::class, 'cotizacion_id');
+        return $this->belongsTo(Cotizacion::class);
     }
 
     public function producto(): BelongsTo
     {
-        return $this->belongsTo(Producto::class, 'producto_id');
+        return $this->belongsTo(Producto::class);
     }
 
-    public function paquete(): BelongsTo
+    /**
+     * Importe del renglón (0 si es regalo).
+     */
+    public function importe(): float
     {
-        return $this->belongsTo(Paquete::class, 'paquete_id');
+        if ($this->es_regalo) {
+            return 0.0;
+        }
+
+        return ((float) $this->precio_unitario + (float) $this->sobreprecio) * (int) $this->cantidad;
     }
 }

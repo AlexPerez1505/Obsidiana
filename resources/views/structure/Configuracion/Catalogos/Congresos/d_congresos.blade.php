@@ -1,14 +1,13 @@
 @extends('structure.Configuracion.layout')
 
 @section('title', 'Eliminar Congreso')
+@section('page-title', 'Eliminar Congreso')
 
 @section('configuracion_content')
     <div class="modal-overlay">
         <div class="modal-card catalog-card">
-            <div class="modal-header">
-                <h2 class="page-title">Eliminar Congreso</h2>
-            </div>
-            <p class="page-sub">¿Estás seguro de que deseas eliminar el congreso <strong style="color:#00A8FF;">{{ $congress->name }}</strong>? Esta acción no se puede deshacer.</p>
+            {{-- Este parrafo no es un subtitulo decorativo: es la pregunta de confirmacion --}}
+            <p class="page-sub">¿Estás seguro de que deseas eliminar el congreso <strong style="color:#00A8FF;">{{ $congress->nombre }}</strong>? Esta acción no se puede deshacer.</p>
 
             @if (session('status'))
                 <div class="alert alert--ok" style="margin:16px 0 0;">{{ session('status') }}</div>

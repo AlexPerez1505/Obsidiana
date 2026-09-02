@@ -1,34 +1,26 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+
+/*
+|--------------------------------------------------------------------------
+| MIGRACION NEUTRALIZADA
+|--------------------------------------------------------------------------
+| Reemplazaba `estado` usando after('plan_pago_id'), columna que solo existia
+| en la version vieja de `cotizaciones`.
+| La tabla vigente (2026_08_02_000004) ya define estado como enum
+| ('borrador','enviada','aceptada','rechazada','convertida').
+*/
 
 return new class extends Migration
 {
-    /**
-     * Cambia 'estado' de boolean (vigente/cerrada) a string con dos valores posibles:
-     * 'cotizacion' (solo presupuesto) o 'remision' (venta definitiva con seguimiento de pagos).
-     */
     public function up(): void
     {
-        Schema::table('cotizaciones', function (Blueprint $table) {
-            $table->dropColumn('estado');
-        });
-
-        Schema::table('cotizaciones', function (Blueprint $table) {
-            $table->string('estado')->default('cotizacion')->after('plan_pago_id');
-        });
+        // Intencionalmente vacia.
     }
 
     public function down(): void
     {
-        Schema::table('cotizaciones', function (Blueprint $table) {
-            $table->dropColumn('estado');
-        });
-
-        Schema::table('cotizaciones', function (Blueprint $table) {
-            $table->boolean('estado')->default(true)->after('plan_pago_id');
-        });
+        // Intencionalmente vacia.
     }
 };

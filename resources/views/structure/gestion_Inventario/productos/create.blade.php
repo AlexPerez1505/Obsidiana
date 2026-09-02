@@ -3,69 +3,63 @@
 @section('page-title', 'Agregar Producto')
 @section('page-sub', 'Registra un nuevo equipo en el inventario')
 
+@push('head')
+    <style>
+        .rgrid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 18px; }
+        @media (max-width: 520px) { .rgrid-2 { grid-template-columns: 1fr; } }
+    </style>
+@endpush
+
 @section('content')
+    @php
+        // Tipo, subtipo, marca y modelo salen del catálogo (Configuración → Catálogos).
+        // Aquí solo queda el proveedor, que sigue siendo texto libre.
+        $proveedorOptions = collect(($productoOptions ?? [])['proveedor'] ?? [])
+            ->filter()->unique()->values()->all();
+    @endphp
+
     <form method="POST" action="{{ route('inventory.productos.store') }}" enctype="multipart/form-data">
         @csrf
 
         <x-ui.card style="margin-bottom:18px;">
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
-                <div class="qbox-ico blue" style="width:42px; height:42px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                </div>
-                <div>
-                    <div style="font-weight:700; font-size:16px;">Datos del Producto</div>
-                    <div class="muted" style="font-size:13px;">Información general del equipo a registrar en el inventario.</div>
-                </div>
-            </div>
+            <x-ui.section-title style="margin:0 0 16px;">Datos del Producto</x-ui.section-title>
+            <div class="rgrid-2">
+                @include('structure.gestion_Inventario.productos._selects_catalogo')
 
-            <div class="qgrid">
-                <div class="qbox">
-                    <label class="qlabel" for="tipo_equipo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/></svg> Tipo de Equipo *</label>
-                    <input id="tipo_equipo" name="tipo_equipo" type="text" value="{{ old('tipo_equipo') }}" placeholder="Ej. Endoscopio" required class="qinput">
-                </div>
-                <div class="qbox">
-                    <label class="qlabel" for="subtipo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg> Subtipo</label>
-                    <input id="subtipo" name="subtipo" type="text" value="{{ old('subtipo') }}" placeholder="Ej. Flexible" class="qinput">
-                </div>
-                <div class="qbox">
-                    <label class="qlabel" for="marca"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41 12 22l-9.41-9.41A2 2 0 0 1 2 11.17V4a2 2 0 0 1 2-2h7.17a2 2 0 0 1 1.42.59l9.41 9.41a2 2 0 0 1 0 2.41Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg> Marca</label>
-                    <input id="marca" name="marca" type="text" value="{{ old('marca') }}" placeholder="Ej. Olympus" class="qinput">
-                </div>
-                <div class="qbox">
-                    <label class="qlabel" for="modelo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg> Modelo</label>
-                    <input id="modelo" name="modelo" type="text" value="{{ old('modelo') }}" placeholder="Ej. GIF-H190" class="qinput">
-                </div>
-                <div class="qbox">
-                    <label class="qlabel" for="precio"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M15 9.5a3 3 0 0 0-3-1.5c-1.7 0-3 1-3 2.5S10.3 13 12 13s3 1 3 2.5-1.3 2.5-3 2.5a3 3 0 0 1-3-1.5"/></svg> Precio *</label>
-                    <div style="position:relative;">
-                        <span class="qprefix">$</span>
-                        <input id="precio" name="precio" type="number" step="0.01" min="0" value="{{ old('precio') }}" placeholder="0.00" required class="qinput" style="padding-left:26px;">
+                <div id="modeloExistenteAviso" class="cat-aviso" style="display:none; grid-column:1 / -1;"></div>
+
+                <x-ui.form-group label="Precio *" name="precio" type="number" step="0.01" min="0" placeholder="0.00" :required="true" />
+                <x-ui.form-group label="Stock *" name="stock" type="number" min="0" placeholder="0" :required="true" />
+
+                <x-ui.form-group label="Proveedor" for="proveedor">
+                    <input id="proveedor" type="text" name="proveedor" list="proveedor_options"
+                           value="{{ old('proveedor') }}" placeholder="Nombre del proveedor" autocomplete="off">
+                    <datalist id="proveedor_options">
+                        @foreach ($proveedorOptions as $option)
+                            <option value="{{ $option }}"></option>
+                        @endforeach
+                    </datalist>
+                </x-ui.form-group>
+            </div>
+            <x-ui.form-group label="Números de serie (uno por línea, opcional)" for="series_texto">
+                <textarea id="series_texto" name="series_texto" rows="3" placeholder="Un número de serie por unidad. Déjalo vacío si el stock no tiene serial individual."
+                          style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('series_texto') }}</textarea>
+                <small style="color:var(--muted);">Si capturas todas las series, deben ser exactamente tantas líneas como el stock de arriba: cada línea es una unidad. Si solo pones una y el stock es mayor a 1, el resto de la secuencia se genera solo (ej. 23A12345 → 23A12346, 23A12347...).</small>
+            </x-ui.form-group>
+            <x-ui.form-group label="Descripción" for="descripcion">
+                <textarea id="descripcion" name="descripcion" rows="3" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('descripcion') }}</textarea>
+            </x-ui.form-group>
+            <x-ui.form-group label="Imagen del Producto" for="imagen">
+                <input type="file" id="imagen" name="imagen" accept="image/*" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:9px; font-size:14px; background:var(--surface); color:var(--text);">
+                <div id="image-preview-wrap" style="display:none; margin-top:12px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--surface-2);">
+                    <img id="image-preview" src="" alt="Vista previa de la imagen del producto" style="display:block; width:100%; max-height:260px; object-fit:contain; border-radius:10px; background:var(--surface); border:1px solid var(--border);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; flex-wrap:wrap;">
+                        <small id="image-preview-name" style="color:var(--muted);"></small>
+                        <button type="button" id="image-preview-clear" class="btn btn--ghost" style="padding:7px 12px; font-size:13px;">Quitar imagen</button>
                     </div>
                 </div>
-                <div class="qbox">
-                    <label class="qlabel" for="stock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg> Stock *</label>
-                    <input id="stock" name="stock" type="number" min="0" value="{{ old('stock') }}" placeholder="0" required class="qinput">
-                </div>
-                <div class="qbox">
-                    <label class="qlabel" for="proveedor"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 3h22v5H1z"/><path d="M3 8v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg> Proveedor</label>
-                    <input id="proveedor" name="proveedor" type="text" value="{{ old('proveedor') }}" placeholder="Nombre del proveedor" class="qinput">
-                </div>
-                <div class="qbox">
-                    <label class="qlabel" for="no_serie"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="10" rx="1"/><path d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/></svg> No. Serie</label>
-                    <input id="no_serie" name="no_serie" type="text" value="{{ old('no_serie') }}" placeholder="Número de serie" class="qinput">
-                </div>
-            </div>
-
-            <div style="margin-top:16px;">
-                <label class="qlabel" for="descripcion"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg> Descripción</label>
-                <textarea id="descripcion" name="descripcion" rows="3" class="qinput" style="resize:vertical;">{{ old('descripcion') }}</textarea>
-            </div>
-
-            <div style="margin-top:16px;">
-                <label class="qlabel" for="imagen"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> Imagen del Producto</label>
-                <input type="file" id="imagen" name="imagen" accept="image/*" class="qinput" style="padding:8px;">
-                <small class="muted" style="display:block; margin-top:6px;">Formatos: JPG, PNG, GIF. Máximo 5MB.</small>
-            </div>
+                <small style="color:var(--muted);">Formatos: JPG, PNG, GIF. Máximo 5MB.</small>
+            </x-ui.form-group>
         </x-ui.card>
 
         <div style="display:flex; gap:10px;">
@@ -74,22 +68,99 @@
         </div>
     </form>
 
-    <style>
-        :root { --field-border: #c9ccd2; }
-        :root[data-theme="dark"] { --field-border: var(--border); }
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                // Si el modelo elegido ya está registrado, se rellenan solos
+                // precio, descripción y proveedor. Stock y no. serie NO se
+                // tocan: son propios de cada unidad que se va a dar de alta.
+                const modeloSelect = document.getElementById('equipment_model_id');
+                const aviso = document.getElementById('modeloExistenteAviso');
+                const precioInput = document.getElementById('precio');
+                const descripcionInput = document.getElementById('descripcion');
+                const proveedorInput = document.getElementById('proveedor');
+                const seriesTextoInput = document.getElementById('series_texto');
+                const buscarPorModeloUrl = @json(route('inventory.productos.buscarPorModelo'));
 
-        .qbox-ico { border-radius:11px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
-        .qbox-ico.blue { background:var(--primary-soft); color:var(--primary); }
+                if (modeloSelect) {
+                    modeloSelect.addEventListener('change', function () {
+                        aviso.style.display = 'none';
 
-        .qlabel { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--text); }
-        .qinput { width:100%; padding:11px 12px; border:1px solid var(--field-border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); }
-        .qinput:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,122,255,.15); }
-        .qprefix { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:14px; pointer-events:none; }
+                        if (!modeloSelect.value) return;
 
-        .qgrid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
-        .qbox { border:1px solid var(--field-border); border-radius:12px; padding:14px 16px; background:var(--surface); display:flex; flex-direction:column; }
+                        fetch(buscarPorModeloUrl + '?equipment_model_id=' + encodeURIComponent(modeloSelect.value), {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        })
+                            .then(r => r.json())
+                            .then(data => {
+                                if (!data.existe) return;
 
-        @media (max-width:900px) { .qgrid { grid-template-columns:repeat(2, 1fr); } }
-        @media (max-width:640px) { .qgrid { grid-template-columns:1fr; } }
-    </style>
+                                // El precio depende del modelo elegido: se carga siempre al
+                                // momento, aunque ya hubiera algo escrito ahí.
+                                if (precioInput) precioInput.value = data.precio ?? '';
+                                if (descripcionInput && !descripcionInput.value) descripcionInput.value = data.descripcion ?? '';
+                                if (proveedorInput && !proveedorInput.value) proveedorInput.value = data.proveedor ?? '';
+
+                                let mensaje = 'Este modelo ya está registrado (stock actual: ' + data.stock_actual + '). Al guardar, esta cantidad se agregará como unidades nuevas de esa misma fila (no se crea un producto nuevo). Se completaron precio, descripción y proveedor.';
+
+                                if (seriesTextoInput && !seriesTextoInput.value && data.no_serie_sugerido) {
+                                    seriesTextoInput.value = data.no_serie_sugerido;
+                                    mensaje += ' El número de serie se sugirió como ' + data.no_serie_sugerido + ' (consecutivo del último registrado). Si el stock es mayor a 1, deja solo esa línea: el resto de la secuencia se genera solo. Puedes cambiarlo si no corresponde.';
+                                } else {
+                                    mensaje += ' Revisa el stock y los números de serie antes de guardar.';
+                                }
+
+                                aviso.textContent = mensaje;
+                                aviso.style.display = 'block';
+                            })
+                            .catch(() => {});
+                    });
+                }
+
+                const imageInput = document.getElementById('imagen');
+                const imagePreviewWrap = document.getElementById('image-preview-wrap');
+                const imagePreview = document.getElementById('image-preview');
+                const imagePreviewName = document.getElementById('image-preview-name');
+                const imagePreviewClear = document.getElementById('image-preview-clear');
+                let imagePreviewUrl = null;
+
+                const clearImagePreview = function () {
+                    if (imagePreviewUrl) {
+                        URL.revokeObjectURL(imagePreviewUrl);
+                        imagePreviewUrl = null;
+                    }
+
+                    if (imageInput) {
+                        imageInput.value = '';
+                    }
+
+                    imagePreview.src = '';
+                    imagePreviewName.textContent = '';
+                    imagePreviewWrap.style.display = 'none';
+                };
+
+                if (imageInput && imagePreviewWrap && imagePreview && imagePreviewName && imagePreviewClear) {
+                    imageInput.addEventListener('change', function () {
+                        const file = imageInput.files && imageInput.files[0];
+
+                        if (!file) {
+                            clearImagePreview();
+                            return;
+                        }
+
+                        if (imagePreviewUrl) {
+                            URL.revokeObjectURL(imagePreviewUrl);
+                        }
+
+                        imagePreviewUrl = URL.createObjectURL(file);
+                        imagePreview.src = imagePreviewUrl;
+                        imagePreviewName.textContent = file.name;
+                        imagePreviewWrap.style.display = 'block';
+                    });
+
+                    imagePreviewClear.addEventListener('click', clearImagePreview);
+                }
+            });
+        </script>
+    @endpush
 @endsection

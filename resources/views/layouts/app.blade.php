@@ -13,7 +13,7 @@
     <style>
         /* Estas pantallas (login, registro, etc.) siempre en modo claro. */
         :root {
-            --indigo:#007aff; --indigo-d:#0062cc; --bg:#f6f7f9; --card:#fff;
+            --indigo:#007aff; --indigo-d:#0062cc; --bg:#ffffff; --card:#fff;
             --text:#333333; --muted:#888888; --border:#ebebeb; --red:#ff4a4a; --green:#15803d;
         }
         * { box-sizing:border-box; }

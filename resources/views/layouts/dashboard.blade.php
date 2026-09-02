@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8">
@@ -26,7 +26,7 @@
 
     <style>
         :root {
-            --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f7f8fa;
+            --bg:#ffffff; --surface:#ffffff; --surface-2:#f7f8fa;
             --text:#333333; --muted:#888888; --border:#ebebeb;
             --primary:#007aff; --primary-strong:#0062cc; --primary-soft:#e6f0ff;
             --accent:#f97316; --accent-soft:#fff3e8;
@@ -57,7 +57,8 @@
         .app.collapsed { grid-template-columns:var(--sidebar-w-collapsed) 1fr; }
 
         /* ===== Sidebar ===== */
-        .sidebar { background:var(--sidebar-bg); border-right:1px solid var(--border);
+        .sidebar { background:var(--sidebar-bg);
+                   box-shadow:1px 0 3px rgba(17,24,39,.05), 1px 0 1px rgba(17,24,39,.03);
                    display:flex; flex-direction:column; padding:20px 16px; position:sticky; top:0; height:100vh;
                    z-index:40; }
         .app.collapsed .sidebar { padding-left:12px; padding-right:12px; }
@@ -129,11 +130,18 @@
 
         /* ===== Área principal ===== */
         .main { display:flex; flex-direction:column; min-width:0; }
+        /* Sin borde: la separacion con el contenido la da una sombra muy
+           tenue, que ademas solo tiene sentido hacia abajo. */
         .topbar { position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:16px;
-                  padding:16px 26px; background:var(--topbar-bg); }
+                  padding:16px 26px; background:var(--topbar-bg);
+                  box-shadow:0 1px 3px rgba(17,24,39,.05), 0 1px 1px rgba(17,24,39,.03); }
         .page-title { font-size:25px; font-weight:700; margin:0; line-height:1.15; letter-spacing:-.01em; }
         .page-sub { color:var(--muted); font-size:14px; margin:2px 0 0; }
         .topbar-spacer { flex:1; }
+        /* Fila de acciones de la pantalla, dentro del contenido y a la derecha. */
+        .content-actions { display:flex; align-items:center; justify-content:flex-end;
+                           gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+        .content-actions .btn { display:inline-flex; align-items:center; gap:6px; }
         /* Hamburguesa: solo en móvil (en escritorio ya existe el botón "Contraer" del sidebar) */
         .hamburger { display:none; align-items:center; justify-content:center; width:42px; height:42px;
                      border:1px solid var(--border); background:var(--surface); color:var(--text);
@@ -193,31 +201,177 @@
 
         /* ===== Contenido ===== */
         .content { padding:26px; }
-        .card { background:var(--surface); border:1px solid var(--border); border-radius:18px;
-                padding:22px; box-shadow:var(--shadow); }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:10px;
+                padding:18px; }
         .grid { display:grid; gap:18px; }
         .stat-row { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
-        .stat { display:flex; align-items:center; gap:16px; }
-        .stat-ico { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+        .stat { display:flex; align-items:center; gap:14px; }
+        .stat-ico { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+        .stat-ico svg { width:20px; height:20px; }
         .stat-ico.blue { background:var(--primary-soft); color:var(--primary); }
         .stat-ico.orange { background:var(--accent-soft); color:var(--accent); }
         .stat-ico.green { background:var(--green-soft); color:var(--green); }
-        .stat-num { font-size:30px; font-weight:800; line-height:1; }
-        .stat-lbl { color:var(--muted); font-size:13px; margin-top:4px; text-transform:uppercase; letter-spacing:.04em; }
+        .stat-num { font-size:26px; font-weight:600; line-height:1.1; letter-spacing:-.02em; }
+        .stat-lbl { color:var(--muted); font-size:13px; margin-top:2px; }
+
+        /* Tarjeta con acento superior: da color sin invadir el fondo */
+        .card--accent { position:relative; overflow:hidden; }
+        .card--accent::before { content:""; position:absolute; top:0; left:0; right:0; height:2px; background:var(--primary); }
+        .card--accent.is-green::before { background:var(--green); }
+        .card--accent.is-amber::before { background:var(--accent); }
+        .card--accent.is-danger::before { background:var(--danger); }
+
+        /* Encabezado de una tarjeta con titulo y accion */
+        .card-head { display:flex; align-items:center; gap:10px; padding:14px 18px;
+                     border-bottom:1px solid var(--border); }
+        .card-head h3 { margin:0; font-size:14px; font-weight:600; letter-spacing:-.01em; }
+        .card-head .right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+
+        /* ===== Cambio de vista: lista o tarjetas ===== */
+        .view-switch { display:inline-flex; border:1px solid var(--border); border-radius:7px; overflow:hidden; }
+        .view-switch button { width:34px; height:34px; border:none; background:var(--surface); color:var(--muted);
+                              cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+                              transition:background .15s ease, color .15s ease; }
+        .view-switch button + button { border-left:1px solid var(--border); }
+        .view-switch button:hover { color:var(--text); }
+        .view-switch button.active { background:var(--surface-2); color:var(--primary); }
+        .view-switch svg { width:16px; height:16px; }
+
+        /* Rejilla de tarjetas equivalente a una tabla */
+        .data-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; }
+        .data-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px;
+                     transition:border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
+        .data-card:hover { border-color:var(--primary); transform:translateY(-2px);
+                           box-shadow:0 6px 16px rgba(17,24,39,.07); }
+        .data-card-top { display:flex; align-items:center; gap:11px; padding-bottom:14px;
+                         border-bottom:1px solid var(--border); }
+        .data-card-top .t { font-weight:600; line-height:1.3; }
+        .data-card-top .s { color:var(--muted); font-size:12.5px; margin-top:1px; }
+        .data-card-top .right { margin-left:auto; }
+        .data-card dl { margin:14px 0 0; display:grid; gap:9px; }
+        .data-card dl > div { display:flex; justify-content:space-between; gap:12px; align-items:baseline; }
+        .data-card dt { color:var(--muted); font-size:13px; }
+        .data-card dd { margin:0; font-size:13px; font-weight:500; text-align:right; overflow-wrap:anywhere; }
+        .data-card-foot { margin-top:16px; padding-top:13px; border-top:1px solid var(--border); text-align:right; }
+        [data-theme="dark"] .data-card:hover { box-shadow:0 6px 18px rgba(0,0,0,.4); }
+
+        .tbl-link { color:var(--primary); text-decoration:none; font-size:13px; font-weight:500; }
+        .tbl-link:hover { text-decoration:underline; }
+        .tbl-link + .tbl-link { margin-left:14px; }
+
+        @media (prefers-reduced-motion:reduce) {
+            .view-switch button, .data-card { transition:none; }
+        }
+
+        /* Estado vacio con caracter */
+        .empty-state { text-align:center; padding:44px 20px; }
+        .empty-state .ico { width:46px; height:46px; margin:0 auto 14px; border-radius:12px;
+                            display:flex; align-items:center; justify-content:center;
+                            background:var(--surface-2); color:var(--muted); }
+        .empty-state .ico svg { width:22px; height:22px; }
+        .empty-state h3 { margin:0 0 5px; font-size:15px; font-weight:600; }
+        .empty-state p { margin:0 0 18px; color:var(--muted); font-size:14px; }
 
         h2.section-title { font-size:17px; margin:0 0 4px; }
 
+        /* ===== Cabecera de pagina (componente x-ui.page-header) =====
+           Minimalista: sin tarjeta, sin icono, sin subtitulo. */
+        .page-header { margin-bottom:22px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .page-header-title { margin:0; font-size:18px; font-weight:600; letter-spacing:-.01em;
+                             line-height:1.2; color:var(--text); min-width:0; }
+        .page-header-count { font-size:12px; font-weight:500; color:var(--muted);
+                             background:var(--surface-2); border:1px solid var(--border);
+                             padding:1px 7px; border-radius:5px; }
+        .page-header-back { width:34px; height:34px; border-radius:9px; flex:0 0 auto; display:inline-flex;
+                            align-items:center; justify-content:center; color:var(--muted); text-decoration:none;
+                            transition:background .15s ease, color .15s ease, transform .1s ease; }
+        .page-header-back:hover { background:var(--surface-2); color:var(--text); }
+        .page-header-back:active { transform:scale(.92); }
+        .page-header-back svg { width:18px; height:18px; }
+        .page-header-actions { margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .page-header-actions .btn { display:inline-flex; align-items:center; gap:6px; }
+
+        /* Accion secundaria sin peso visual: mismo lenguaje que la flecha
+           de regresar, para que no compita con la accion principal. */
+        .btn-icono { width:34px; height:34px; border-radius:9px; flex:0 0 auto; display:inline-flex;
+                     align-items:center; justify-content:center; border:1px solid transparent;
+                     background:transparent; color:var(--muted); text-decoration:none; cursor:pointer;
+                     transition:background .15s ease, color .15s ease, transform .1s ease; }
+        .btn-icono:hover { background:var(--surface-2); color:var(--text); }
+        .btn-icono:active { transform:scale(.92); }
+        .btn-icono svg { width:17px; height:17px; }
+
+        /* Dato accionable (un saldo, un contador): se lee como informacion,
+           no como boton, pero lleva a su propia pantalla. */
+        .pill-dato { display:inline-flex; align-items:center; gap:8px; padding:7px 13px 7px 11px;
+                     border:1px solid var(--border); border-radius:8px; background:var(--surface);
+                     color:var(--text); font-size:13.5px; line-height:1.5; text-decoration:none;
+                     transition:background .16s ease, border-color .16s ease; }
+        .pill-dato:hover { background:var(--surface-2); border-color:var(--muted); }
+        .pill-dato .punto { width:7px; height:7px; border-radius:50%; background:var(--muted); flex:0 0 7px; }
+        .pill-dato .et { color:var(--muted); }
+        .pill-dato .val { font-weight:600; font-variant-numeric:tabular-nums; }
+        .pill-dato.es-pagado .punto { background:var(--green); }
+        .pill-dato.es-vencido .punto { background:var(--danger); }
+        .pill-dato.es-parcial .punto { background:var(--accent, #f59e0b); }
+
+        /* Pie de acciones pegado al fondo, para formularios largos */
+        .page-foot { position:sticky; bottom:0; z-index:20; display:flex; justify-content:flex-end;
+                     align-items:center; gap:10px; margin-top:22px; padding:14px 0;
+                     border-top:1px solid var(--border);
+                     background:color-mix(in srgb, var(--bg) 88%, transparent);
+                     backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+        .page-foot .btn { display:inline-flex; align-items:center; gap:6px; }
+        /* Si el formulario esta en rejilla, el pie ocupa todo el ancho. */
+        .rgrid-sidebar > .page-foot, .rgrid-2 > .page-foot { grid-column:1 / -1; }
+
+        @media (max-width:640px) {
+            .page-header { align-items:flex-start; }
+            .page-header-actions { width:100%; }
+            .page-header-actions .btn { flex:1; justify-content:center; }
+            /* El icono conserva su tamaño; solo se estiran los que llevan texto. */
+            .page-header-actions .btn-icono { flex:0 0 34px; }
+            .page-header-actions .pill-dato { flex:1; justify-content:center; }
+        }
+        @media (prefers-reduced-motion: reduce) { .page-header-back { transition:none; } }
+
         /* ===== Utilidades (compatibles con las vistas existentes) ===== */
         label { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }
-        input[type=text], input[type=email], input[type=password] {
-            width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px;
-            outline:none; background:var(--surface); color:var(--text); transition:border .15s; }
-        input:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,122,255,.15); }
-        .btn { display:inline-block; padding:11px 16px; border:none; border-radius:10px; background:var(--primary);
-               color:#fff; font-size:14.5px; font-weight:600; cursor:pointer; text-decoration:none; text-align:center; }
-        .btn:hover { background:var(--primary-strong); }
-        .btn--ghost { background:transparent; color:var(--primary); border:1px solid var(--border); }
+        /* Controles de formulario: mismo aspecto sin repetir estilos en cada vista. */
+        input[type=text], input[type=email], input[type=password], input[type=tel],
+        input[type=number], input[type=date], input[type=search], select, textarea {
+            width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:7px; font-size:14px;
+            font-family:inherit; outline:none; background:var(--surface); color:var(--text);
+            transition:border-color .15s ease; }
+        select { cursor:pointer; }
+        textarea { resize:vertical; }
+        input:hover, select:hover, textarea:hover { border-color:var(--muted); }
+        input:focus, select:focus, textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft); }
+        input::placeholder, textarea::placeholder { color:var(--muted); }
+        .btn { display:inline-block; padding:8px 14px; border:1px solid var(--primary); border-radius:7px; background:var(--primary);
+               color:#fff; font-size:13.5px; font-weight:500; line-height:1.5; cursor:pointer; text-decoration:none; text-align:center;
+               transition:background .16s ease, border-color .16s ease; }
+        .btn:hover { background:var(--primary-strong); border-color:var(--primary-strong); }
+        .btn--ghost { background:var(--surface); color:var(--text); border:1px solid var(--border); }
         .btn--ghost:hover { background:var(--surface-2); }
+
+        /* En oscuro el azul saturado vibra sobre el fondo casi negro:
+           se apaga un poco y el texto pasa a blanco puro para mantener contraste. */
+        [data-theme="dark"] .btn, [data-theme="dark"] .erp-btn {
+            background:#2563eb; border-color:#2563eb; color:#f8fafc; }
+        [data-theme="dark"] .btn:hover, [data-theme="dark"] .erp-btn:hover {
+            background:#1d4ed8; border-color:#1d4ed8; }
+        [data-theme="dark"] .btn--ghost, [data-theme="dark"] .erp-btn.ghost {
+            background:var(--surface-2); color:var(--text); border-color:var(--border); }
+        [data-theme="dark"] .btn--ghost:hover, [data-theme="dark"] .erp-btn.ghost:hover {
+            background:var(--surface); border-color:var(--muted); }
+        [data-theme="dark"] .btn--danger, [data-theme="dark"] .erp-btn.danger {
+            background:#dc2626; border-color:#dc2626; color:#fff; }
+
+        /* En oscuro una sombra negra no se ve: la separacion se logra
+           oscureciendo el borde de la sombra en vez de aclararlo. */
+        [data-theme="dark"] .topbar { box-shadow:0 1px 0 rgba(255,255,255,.06), 0 2px 8px rgba(0,0,0,.4); }
+        [data-theme="dark"] .sidebar { box-shadow:1px 0 0 rgba(255,255,255,.06), 2px 0 8px rgba(0,0,0,.4); }
         .btn--danger { background:var(--danger); }
         .btn--danger:hover { filter:brightness(.92); }
         .btn--block { display:block; width:100%; }
@@ -229,15 +383,43 @@
         .alert--ok { background:var(--green-soft); color:var(--green); border:1px solid var(--border); }
         .alert--err { background:var(--danger-soft); color:var(--danger); border:1px solid var(--border); }
         .section { border-top:1px solid var(--border); margin-top:26px; padding-top:20px; }
-        .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
-        .badge--ok { background:var(--green-soft); color:var(--green); }
-        .badge--warn { background:var(--accent-soft); color:var(--accent); }
-        .badge--info { background:var(--primary-soft); color:var(--primary); }
-        .badge--danger { background:var(--danger-soft); color:var(--danger); }
+        .badge { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:6px;
+                 font-size:12px; font-weight:500; background:var(--surface-2); color:var(--muted);
+                 border:1px solid var(--border); }
+        .badge::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; flex:0 0 6px; }
+        .badge--plain::before { display:none; }
+        .badge--ok { background:var(--green-soft); color:var(--green); border-color:transparent; }
+        .badge--warn { background:var(--accent-soft); color:var(--accent); border-color:transparent; }
+        .badge--info { background:var(--primary-soft); color:var(--primary); border-color:transparent; }
+        .badge--danger { background:var(--danger-soft); color:var(--danger); border-color:transparent; }
         .danger-box { border:1px solid var(--border); background:var(--danger-soft); border-radius:14px; padding:18px; margin-top:12px; }
-        table { width:100%; border-collapse:collapse; font-size:13.5px; }
-        th, td { text-align:left; padding:11px 8px; border-bottom:1px solid var(--border); }
-        th { color:var(--muted); font-weight:600; text-transform:uppercase; font-size:11px; letter-spacing:.04em; }
+        /* ===== Tablas ===== */
+        table { width:100%; border-collapse:collapse; font-size:14px; }
+        thead th { background:var(--surface-2); }
+        th, td { text-align:left; padding:13px 16px; border-bottom:1px solid var(--border); }
+        th { color:var(--muted); font-weight:500; font-size:12px; letter-spacing:.02em;
+             white-space:nowrap; border-bottom:1px solid var(--border); }
+        thead th:first-child { border-top-left-radius:9px; }
+        thead th:last-child { border-top-right-radius:9px; }
+        tbody tr { transition:background .15s ease; }
+        tbody tr:hover td { background:var(--surface-2); }
+        tbody tr:last-child td { border-bottom:none; }
+        td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+
+        /* Celda de identidad: avatar + nombre + dato secundario */
+        .cell-id { display:flex; align-items:center; gap:11px; min-width:0; }
+        .cell-id .t { font-weight:600; color:var(--text); line-height:1.3; }
+        .cell-id .s { color:var(--muted); font-size:12.5px; margin-top:1px; }
+
+        /* Avatar con tinte suave; el color lo pone la vista con .a1 .. .a5 */
+        .avatar { width:36px; height:36px; flex:0 0 36px; border-radius:9px; display:inline-flex;
+                  align-items:center; justify-content:center; font-size:12.5px; font-weight:600;
+                  background:var(--primary-soft); color:var(--primary); }
+        .avatar.a1 { background:var(--primary-soft); color:var(--primary); }
+        .avatar.a2 { background:var(--green-soft); color:var(--green); }
+        .avatar.a3 { background:var(--accent-soft); color:var(--accent); }
+        .avatar.a4 { background:var(--danger-soft); color:var(--danger); }
+        .avatar.a5 { background:var(--surface-2); color:var(--muted); }
 
         /* Botón ojo para contraseñas */
         .pw-wrap { position:relative; display:block; }
@@ -280,8 +462,38 @@
         .submenu .nav-bullet { width:6px; height:6px; color:var(--muted); flex:0 0 auto; }
         .submenu-label { font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:8px 12px 2px; }
         .nav-count { margin-left:auto; background:var(--primary); color:#fff; font-size:11px; font-weight:800; min-width:20px; height:20px; padding:0 6px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; }
-        .app.collapsed .nav-group .submenu { display:none !important; }
+        /* Bloques del menu: parten la lista en secciones para que no se lea
+           como una sola columna larga de ocho apartados. */
+        .nav-section { padding:15px 13px 5px; font-size:10.5px; font-weight:800; letter-spacing:.07em;
+                       text-transform:uppercase; color:var(--muted); white-space:nowrap; }
+        .nav-section:first-child { padding-top:4px; }
+        /* Contraido el texto no cabe: el bloque se marca con una linea fina. */
+        .app.collapsed .nav-section { padding:0; height:1px; margin:10px 12px; overflow:hidden;
+                                      color:transparent; background:var(--border); }
+
+        /* ===== Menu contraido: los grupos abren en un panel flotante =====
+           Antes el submenu se ocultaba a la fuerza, asi que al hacer clic en
+           un icono no pasaba absolutamente nada. */
         .app.collapsed .nav-chev { display:none; }
+        /* El panel ya lleva el nombre del apartado: el tooltip sobraria. */
+        .app.collapsed .nav-toggle::after, .app.collapsed .nav-toggle::before { display:none; }
+
+        .app.collapsed .nav-group .submenu {
+            display:flex; position:fixed; z-index:80; min-width:214px; padding:6px;
+            margin:0; border:1px solid var(--border); border-radius:12px; background:var(--surface);
+            box-shadow:0 14px 40px rgba(17,24,39,.16);
+            opacity:0; transform:translateX(-6px); pointer-events:none;
+            transition:opacity .14s ease, transform .16s cubic-bezier(.4,0,.2,1); }
+        .app.collapsed .nav-group[data-flotante] .submenu {
+            opacity:1; transform:translateX(0); pointer-events:auto; }
+        .app.collapsed .submenu::before {
+            content:attr(data-nombre); display:block; padding:7px 11px 8px; margin-bottom:5px;
+            font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+            color:var(--muted); border-bottom:1px solid var(--border); }
+        .app.collapsed .submenu .nav-item { justify-content:flex-start; gap:10px; padding:8px 11px; }
+        .app.collapsed .submenu .nav-label { opacity:1; width:auto; }
+        /* Dentro del panel cada opcion ya se lee: no hacen falta tooltips. */
+        .app.collapsed .submenu .nav-item::after, .app.collapsed .submenu .nav-item::before { display:none; }
 
         /* ===== Responsive ===== */
         @media (max-width:1024px) {
@@ -296,37 +508,56 @@
                 opacity:1; width:auto; height:auto; transform:none; margin:initial; }
             .app.collapsed .nav-item { justify-content:flex-start; gap:13px; }
             .app.collapsed .brand { justify-content:flex-start; padding:4px 6px 20px; }
+            /* El cajón móvil se ve completo: se deshace todo lo de contraído.
+               Sin esto, quien dejó el menú contraído en escritorio abría el
+               cajón en el teléfono y los submenús no respondían. */
+            .app.collapsed .nav-group .submenu {
+                display:none; position:static; min-width:0; padding:0 0 0 14px; margin-left:20px;
+                border:0; border-left:2px solid var(--border); border-radius:0; background:none;
+                box-shadow:none; opacity:1; transform:none; pointer-events:auto; }
+            .app.collapsed .nav-group.open .submenu { display:flex; }
+            .app.collapsed .submenu::before { display:none; }
+            .app.collapsed .nav-chev { display:block; }
+            .app.collapsed .nav-section { padding:15px 13px 5px; height:auto; margin:0;
+                                          color:var(--muted); background:none; }
             /* En móvil el sidebar se abre/cierra con la hamburguesa; ocultamos el botón flotante */
             .collapse-btn { display:none; }
         }
         @media (max-width:640px) {
             .content { padding:16px; }
-            .topbar { padding:12px 16px; }
-            .page-title { font-size:20px; }
             .user-name { display:none; }
+
+            /* ===== Cabecera en una sola línea =====
+               El título competía por el ancho con los cuatro controles y
+               terminaba partido en cinco renglones. Ahora ocupa lo que sobra
+               y lo que no cabe se corta con puntos suspensivos. */
+            .topbar { padding:10px 14px; gap:8px; }
+            .topbar-titulo { flex:1; min-width:0; }
+            .page-title { font-size:17px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+            .page-sub { display:none; }
+            .topbar-spacer { display:none; }
+            .icon-btn { width:36px; height:36px; }
+            .icon-btn svg { width:18px; height:18px; }
+            .hamburger { width:38px; height:38px; }
+            .user-btn { padding:0; }
+            .user-btn .chev { display:none; }
+
+            /* Acciones de pantalla: a lo ancho, no apretadas en una esquina. */
+            .content-actions { gap:8px; }
+            .content-actions .btn { flex:1; justify-content:center; }
+
+            /* Pie de formulario: el botón principal arriba y al alcance del pulgar. */
+            .page-foot { flex-direction:column-reverse; align-items:stretch;
+                         gap:8px; padding:12px 0 14px; }
+            .page-foot .btn { width:100%; justify-content:center; }
         }
 
-        /* ===== Utilidades responsive para formularios/paneles ===== */
-        .rgrid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-        .rgrid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
-        .rgrid-4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:16px; }
-        .rgrid-sidebar { display:grid; grid-template-columns:1fr 300px; gap:18px; align-items:start; }
-        .rgrid-item-add { display:grid; grid-template-columns:1fr 1fr 90px 110px auto auto; gap:12px; align-items:end; }
-        .rgrid-producto-row { display:grid; grid-template-columns:1fr 100px 40px; gap:10px; align-items:end; }
-        @media (max-width:900px) {
-            .rgrid-4 { grid-template-columns:1fr 1fr; }
-            .rgrid-sidebar { grid-template-columns:1fr; }
-        }
-        @media (max-width:768px) {
-            .rgrid-2, .rgrid-3 { grid-template-columns:1fr; }
-            .rgrid-item-add { grid-template-columns:1fr 1fr; }
-        }
+        /* Variantes de un mismo texto segun el ancho de la pantalla. */
+        .solo-angosto { display:none; }
         @media (max-width:640px) {
-            .rgrid-4 { grid-template-columns:1fr; }
-            .rgrid-item-add { grid-template-columns:1fr; }
-            .rgrid-producto-row { grid-template-columns:1fr; }
+            .solo-ancho { display:none; }
+            .solo-angosto { display:inline; }
         }
-        .responsive-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
     </style>
 </head>
 <body>
@@ -335,6 +566,7 @@
     $saludo = $h < 12 ? 'Buenos días' : ($h < 19 ? 'Buenas tardes' : 'Buenas noches');
     $u = auth()->user();
     $initials = collect(explode(' ', trim($u->name)))->filter()->take(2)->map(fn($p) => mb_substr($p, 0, 1))->implode('');
+    $primerNombre = collect(explode(' ', trim($u->name)))->filter()->first() ?: $u->name;
 @endphp
 <div class="app" id="app">
     <div class="overlay" id="overlay"></div>
@@ -363,6 +595,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
                 <span class="nav-label">Dashboard</span>
             </a>
+            <div class="nav-section">Operación</div>
             <div class="nav-group {{ request()->routeIs('commercial.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Comercial">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 5a3 3 0 0 1 0 6"/><path d="M20 20c0-2.5-1.3-4.2-3.5-5"/></svg>
@@ -378,15 +611,19 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cotizaciones</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.planesPago.*') ? 'active' : '' }}" href="{{ route('commercial.planesPago.index') }}" data-tip="Planes de Pago">
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.ventas.*') ? 'active' : '' }}" href="{{ route('commercial.ventas.index') }}" data-tip="Ventas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Planes de Pago</span>
+                        <span class="nav-label">Ventas</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.remisiones.*') ? 'active' : '' }}" href="{{ route('commercial.remisiones.index') }}" data-tip="Remisiones">
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.cobranza.*') ? 'active' : '' }}" href="{{ route('commercial.cobranza.index') }}" data-tip="Cobranza">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Remisiones</span>
+                        <span class="nav-label">Cobranza</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.promociones.*') ? 'active' : '' }}" href="{{ route('commercial.promociones.index') }}" data-tip="Promociones">
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.facturas.*') ? 'active' : '' }}" href="{{ route('commercial.facturas.index') }}" data-tip="Facturación">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Facturación</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Promociones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Promociones</span>
                     </a>
@@ -411,104 +648,61 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Productos</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.paquetes.*') ? 'active' : '' }}" href="{{ route('inventory.paquetes.index') }}" data-tip="Paquetes">
+                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.fichas.*') ? 'active' : '' }}" href="{{ route('inventory.fichas.index') }}" data-tip="Fichas técnicas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Paquetes</span>
+                        <span class="nav-label">Fichas técnicas</span>
+                    </a>
+                    <a class="nav-item nav-sub" href="#" data-tip="Stock">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Stock</span>
                     </a>
                 </div>
             </div>
-            <div class="nav-group {{ request()->is('gestion-servicios*') ? 'open' : '' }}">
-                <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Servicios">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                    <span class="nav-label">Gestión de Servicios</span>
-                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
-                </a>
-                <div class="submenu">
-                    <a class="nav-item nav-sub" href="#" data-tip="Cartas de Garantía">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Cartas de Garantía</span>
-                    </a>
-                    <a class="nav-item nav-sub" href="{{ route('gestion.servicios.historial') }}" data-tip="Historial de Servicios">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Historial de Servicios</span>
-                    </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Mantenimiento">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Mantenimiento</span>
-                    </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Servicios">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Servicios</span>
-                    </a>
-                </div>
-            </div>
-            <div class="nav-group {{ request()->routeIs('admin.*') ? 'open' : '' }}">
-                <a class="nav-item nav-toggle" href="#" data-tip="Gestión Administrativa">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                    <span class="nav-label">Gestión Administrativa</span>
-                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
-                </a>
-                <div class="submenu">
-                    <a class="nav-item nav-sub {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}" data-tip="Recursos humanos">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Recursos humanos</span>
-                    </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('admin.viatics.*') ? 'active' : '' }}" href="{{ route('admin.viatics.index') }}" data-tip="Viáticos">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Viáticos</span>
-                    </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('admin.vehicles.*') ? 'active' : '' }}" href="{{ route('admin.vehicles.index') }}" data-tip="Vehículos">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Vehículos</span>
-                    </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}" data-tip="Reporte">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Reporte</span>
-                    </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('admin.materials.*') ? 'active' : '' }}" href="{{ route('admin.materials.index') }}" data-tip="Solicitud de materiales">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Solicitud de materiales</span>
-                    </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('admin.agenda.*') ? 'active' : '' }}" href="{{ route('admin.agenda.index') }}" data-tip="Agenda">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Agenda</span>
-                    </a>
-                </div>
-            </div>
-            <div class="nav-group {{ request()->routeIs('marketing.*') ? 'open' : '' }}">
+            <a class="nav-item" href="#" data-tip="Gestión de Servicios">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                <span class="nav-label">Gestión de Servicios</span>
+            </a>
+            <div class="nav-section">Administración</div>
+            <a class="nav-item" href="#" data-tip="Gestión Administrativa">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                <span class="nav-label">Gestión Administrativa</span>
+            </a>
+            <div class="nav-group {{ request()->is('structure/marketing*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Marketing">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                     <span class="nav-label">Gestión de Marketing</span>
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.inicio') ? 'active' : '' }}" href="{{ route('marketing.inicio') }}" data-tip="Inicio">
+                    <a class="nav-item nav-sub" href="#" data-tip="Inicio">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Inicio</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.guia_de_marca.*') ? 'active' : '' }}" href="{{ route('marketing.guia_de_marca.index') }}" data-tip="Guía de marca">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.guia_de_marca.index') ? 'active' : '' }}" href="{{ route('marketing.guia_de_marca.index') }}" data-tip="Guía de marca">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Guía de marca</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.calendario.*') ? 'active' : '' }}" href="{{ route('marketing.calendario.index') }}" data-tip="Calendario">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.agenda.index') ? 'active' : '' }}" href="{{ route('marketing.agenda.index') }}" data-tip="Calendario">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Calendario</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Aprobación de flyers">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.aprobacion_flyers.index') ? 'active' : '' }}" href="{{ route('marketing.aprobacion_flyers.index') }}" data-tip="Aprobación de flyers">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Aprobación de flyers</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Biblioteca & catálogo">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.biblioteca_catalogo.index') ? 'active' : '' }}" href="{{ route('marketing.biblioteca_catalogo.index') }}" data-tip="Biblioteca & catálogo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Biblioteca & catálogo</span>
                     </a>
                     <div class="submenu-label">Datos</div>
-                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.tareas.*') ? 'active' : '' }}" href="{{ route('marketing.tareas.index') }}" data-tip="Tareas">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.tareas.index') ? 'active' : '' }}" href="{{ route('marketing.tareas.index') }}" data-tip="Tareas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Tareas</span>
+                        <span class="nav-count">6</span>
                     </a>
                 </div>
             </div>
+            <div class="nav-section">Sistema</div>
             <div class="nav-group">
                 <a class="nav-item nav-toggle" href="#" data-tip="Configuración">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -524,10 +718,6 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Permisos</span>
                     </a>
-                    <a class="nav-item nav-sub" href="{{ route('configuracion.tipos_equipo.index') }}" data-tip="Tipos de Equipo">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Tipos de Equipo</span>
-                    </a>
                 </div>
             </div>
         </nav>
@@ -540,9 +730,16 @@
             <button class="hamburger" id="hamburger" type="button" aria-label="Menú">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
-            <div>
-                <h1 class="page-title">@hasSection('page-title')@yield('page-title')@else<span id="greet-word">{{ $saludo }}</span>, {{ $u->name }}@endif</h1>
-                <p class="page-sub">@yield('page-sub', 'Resumen general de tu cuenta')</p>
+            <div class="topbar-titulo">
+                {{-- Dentro de una seccion se muestra su nombre; en el inicio, el saludo.
+                     En el telefono el saludo va con el primer nombre: el nombre
+                     completo partia la cabecera en cinco renglones. --}}
+                <h1 class="page-title">@hasSection('page-title')@yield('page-title')@else<span id="greet-word">{{ $saludo }}</span>, <span class="solo-ancho">{{ $u->name }}</span><span class="solo-angosto">{{ $primerNombre }}</span>@endif</h1>
+                @hasSection('page-title')
+                    @hasSection('page-sub')<p class="page-sub">@yield('page-sub')</p>@endif
+                @else
+                    <p class="page-sub">@yield('page-sub', 'Resumen general de tu cuenta')</p>
+                @endif
             </div>
             <div class="topbar-spacer"></div>
 
@@ -575,6 +772,12 @@
                     <a class="dd-item" href="{{ route('profile.edit') }}">
                         <span class="di-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></span>
                         <span><b>Editar perfil</b><small>Actualiza tu información personal</small></span>
+                    </a>
+                    {{-- El tablero dejo de ser la pantalla de cuenta, asi que
+                         la seguridad de la sesion se entra por aqui. --}}
+                    <a class="dd-item" href="{{ route('account') }}">
+                        <span class="di-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3z"/></svg></span>
+                        <span><b>Mi cuenta</b><small>Sesiones activas e historial de accesos</small></span>
                     </a>
                     @if ($u->isAdmin())
                         <a class="dd-item" href="{{ route('admin.users.index') }}">
@@ -721,12 +924,84 @@
     });
 
         // Submenús del sidebar
-        document.querySelectorAll('.nav-toggle').forEach(function (toggle) {
-            toggle.addEventListener('click', function (e) {
-                e.preventDefault();
-                toggle.closest('.nav-group').classList.toggle('open');
+        (function () {
+            var app = document.getElementById('app');
+            var grupos = Array.prototype.slice.call(document.querySelectorAll('.nav-group'));
+            var flotante = null;
+            var temporizador = null;
+
+            // El panel flotante toma su título del apartado al que pertenece.
+            grupos.forEach(function (g) {
+                var sub = g.querySelector('.submenu');
+                var toggle = g.querySelector('.nav-toggle');
+                if (sub && toggle) sub.dataset.nombre = toggle.dataset.tip || '';
             });
-        });
+
+            // En móvil el menú se ve completo aunque quedara marcado contraído.
+            function contraido() {
+                return app.classList.contains('collapsed') && window.innerWidth > 1024;
+            }
+
+            function ocultar() {
+                if (!flotante) return;
+                flotante.removeAttribute('data-flotante');
+                flotante = null;
+            }
+
+            function mostrar(g) {
+                clearTimeout(temporizador);
+                if (flotante === g) return;
+                ocultar();
+
+                var sub = g.querySelector('.submenu');
+                var r = g.getBoundingClientRect();
+
+                // El panel se ancla al ancho final de la barra, no a su medida
+                // en pantalla: durante la animación de contraer esa medida
+                // todavía está cambiando y el panel quedaría descuadrado.
+                var barra = parseInt(getComputedStyle(document.documentElement)
+                    .getPropertyValue('--sidebar-w-collapsed'), 10) || 78;
+
+                sub.style.left = (barra + 8) + 'px';
+                // Si el panel no cabe hacia abajo, sube lo necesario.
+                sub.style.top = Math.max(10, Math.min(r.top, window.innerHeight - sub.offsetHeight - 10)) + 'px';
+
+                g.setAttribute('data-flotante', '');
+                flotante = g;
+            }
+
+            grupos.forEach(function (g) {
+                var toggle = g.querySelector('.nav-toggle');
+                if (!toggle) return;
+
+                toggle.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    if (contraido()) {
+                        flotante === g ? ocultar() : mostrar(g);
+                        return;
+                    }
+
+                    var abierto = g.classList.contains('open');
+                    // Acordeón: un solo apartado abierto a la vez, para que el
+                    // menú no se convierta en una lista interminable.
+                    grupos.forEach(function (o) { o.classList.remove('open'); });
+                    if (!abierto) g.classList.add('open');
+                });
+
+                g.addEventListener('mouseenter', function () { if (contraido()) mostrar(g); });
+                g.addEventListener('mouseleave', function () {
+                    // Margen para que el mouse alcance el panel sin que se cierre.
+                    if (contraido()) temporizador = setTimeout(ocultar, 200);
+                });
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('.nav-group')) ocultar();
+            });
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape') ocultar(); });
+            window.addEventListener('resize', ocultar);
+        })();
 </script>
 
 @stack('scripts')

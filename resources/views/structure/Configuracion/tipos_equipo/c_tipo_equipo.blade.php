@@ -1,27 +1,9 @@
 @extends('structure.Configuracion.layout')
 
 @section('title', 'Nuevo equipo')
+@section('page-title', 'Nuevo equipo')
 
 @section('configuracion_content')
-    <div class="catalog-card" style="margin-bottom:22px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;">
-            <div>
-                <h2 class="page-title" style="margin:0; font-size:24px; font-weight:700;">Nuevo equipo</h2>
-                <p class="page-desc" style="margin:4px 0 0; font-size:14px;">Registra un nuevo equipo en el inventario del sistema.</p>
-            </div>
-            <div style="display:flex; align-items:center; gap:12px;">
-                <a href="{{ route('configuracion.tipos_equipo.index') }}" class="back-link">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-                    Regresar
-                </a>
-                <button type="submit" form="equipment-form" class="btn" style="display:inline-flex; align-items:center; gap:8px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                    Guardar equipo
-                </button>
-            </div>
-        </div>
-    </div>
-
     <div class="catalog-card">
         @if (session('status'))
             <div class="alert alert--ok" style="margin:0 0 18px;">{{ session('status') }}</div>
@@ -136,7 +118,11 @@
                 </div>
             </div>
 
-
+            {{-- Pie de acciones del formulario --}}
+            <div class="page-foot">
+                <a href="{{ route('configuracion.tipos_equipo.index') }}" class="btn btn--ghost">Cancelar</a>
+                <button type="submit" class="btn">Guardar</button>
+            </div>
         </form>
     </div>
 
@@ -207,23 +193,7 @@
             color: rgba(255,255,255,0.45);
             margin-top: 6px;
         }
-        .btn {
-            background: linear-gradient(135deg, #00A8FF, #7C3AED);
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.15);
-            padding: 10px 18px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 0 12px rgba(59,130,246,0.35), 0 0 30px rgba(124,58,237,0.2);
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-        .btn:hover { filter: brightness(1.1); }
+        /* Los estilos de .btn vienen del layout unificado */
         .modal-back {
             display: inline-flex;
             align-items: center;
@@ -340,11 +310,6 @@
         .section-desc { color: rgba(255,255,255,0.55); }
         :root[data-theme="light"] .section-desc { color: var(--muted); }
 
-        :root[data-theme="light"] .btn {
-            background: linear-gradient(135deg, #00A8FF, #7C3AED);
-            color: #fff;
-            border-color: rgba(255,255,255,0.15);
-        }
         :root[data-theme="light"] .modal-back {
             background: rgba(15,23,42,0.04);
             border: 1px solid rgba(15,23,42,0.18);

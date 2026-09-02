@@ -19,24 +19,22 @@
     $categories = [
         ['name' => 'Educación', 'color' => '#facc15'],
         ['name' => 'Equipos', 'color' => '#fb923c'],
-        ['name' => 'Aplicaciones', 'color' => '#f43f5e'],
+        ['name' => 'Carruseles', 'color' => '#f43f5e'],
         ['name' => 'Antes/después congreso', 'color' => '#ef4444'],
         ['name' => 'Congreso', 'color' => '#22c55e'],
-        ['name' => 'Conversión', 'color' => '#a855f7'],
-        ['name' => 'Fechas especiales', 'color' => '#3b82f6'],
-        ['name' => 'Promo', 'color' => '#06b6d4'],
-        ['name' => 'Publicación', 'color' => '#2563eb', 'hasIcon' => true],
-        ['name' => 'Revisión', 'color' => '#eab308', 'hasIcon' => true],
-    ];
-
-    $users = [
-        ['name' => 'Victor', 'color' => '#3b82f6', 'initial' => 'V'],
-        ['name' => 'Megan', 'color' => '#22c55e', 'initial' => 'M'],
-        ['name' => 'Jennifer', 'color' => '#a855f7', 'initial' => 'J'],
-        ['name' => 'video', 'color' => '#0ea5e9', 'isVideo' => true],
+        ['name' => 'Cumpleaños', 'color' => '#a855f7'],
+        ['name' => 'Días conmemorativos', 'color' => '#3b82f6'],
+        ['name' => 'Promociones', 'color' => '#06b6d4'],
     ];
 
     $responsables = App\Models\User::orderBy('name')->get(['id', 'name']);
+
+    $userColors = ['#3b82f6', '#22c55e', '#a855f7', '#f59e0b', '#0ea5e9', '#ef4444'];
+    $users = $responsables->map(fn ($u, $i) => [
+        'name' => $u->name,
+        'color' => $userColors[$i % count($userColors)],
+        'initial' => mb_substr($u->name, 0, 1),
+    ]);
     $estados = ['pendiente' => 'Por hacer', 'en_proceso' => 'En proceso', 'revision' => 'Revisión', 'completada' => 'Completada'];
     $prioridades = ['baja' => 'Baja', 'media' => 'Media', 'alta' => 'Alta'];
     $statusColors = ['pendiente' => '#f59e0b', 'en_proceso' => '#3b82f6', 'revision' => '#a855f7', 'completada' => '#22c55e'];
@@ -46,6 +44,34 @@
         ->whereYear('due_date', $year)
         ->orderBy('due_date')
         ->get();
+
+    $allTasks = App\Models\Task::with(['user','reviewer'])->orderBy('due_date','desc')->get();
+
+    $tasksForJs = $allTasks->map(fn ($t) => [
+        'id' => $t->id,
+        'title' => $t->title,
+        'category' => $t->category,
+        'status' => $t->status,
+        'priority' => $t->priority,
+        'due_date' => $t->due_date ? $t->due_date->format('Y-m-d') : null,
+        'review_date' => $t->review_date ? $t->review_date->format('Y-m-d') : null,
+        'user_id' => $t->user_id,
+        'user_name' => $t->user?->name,
+        'reviewer_id' => $t->reviewer_id,
+        'reviewer_name' => $t->reviewer?->name,
+        'delivery_link' => $t->delivery_link,
+        'description' => $t->description,
+        'task_description' => $t->task_description,
+        'linked_piece' => $t->linked_piece,
+        'platform' => $t->platform,
+        'has_video' => $t->has_video,
+        'project_image' => $t->project_image ? asset('storage/'.$t->project_image) : null,
+        'rejection_comment' => $t->rejection_comment,
+        'approval_checklist' => $t->approval_checklist,
+        'progress' => $t->progress,
+    ]);
+
+    $tasksByCategory = $tasksForJs->groupBy('category');
 
     $tasksByDate = $tasks->groupBy(fn ($t) => $t->due_date ? $t->due_date->toDateString() : null);
 @endphp
@@ -336,7 +362,7 @@
     <div class="modal" onclick="event.stopPropagation()">
         <div class="modal-head">
             <div>
-                <p class="modal-sub">Editar tarea</p>
+                <p class="modal-sub">Ver tarea</p>
                 <h2 class="modal-title" id="view-task-title">Prueba</h2>
             </div>
             <button type="button" class="modal-close" onclick="closeViewModal()" aria-label="Cerrar">
@@ -457,24 +483,22 @@
             </form>
         </div>
 
-        <div class="modal-foot">
-            <button type="submit" form="delete-task-form" class="btn-guardar" style="background:var(--danger); color:#fff;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                Eliminar
-            </button>
-            <button type="submit" form="approve-task-form" class="btn-guardar" style="background:var(--green); color:#fff;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
-                Aprobar revisión
-            </button>
-            <button type="submit" form="return-task-form" class="btn-guardar" style="background:var(--accent); color:#fff;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><path d="M3 12h18"/><path d="M9 18l-6-6 6-6"/></svg>
-                Devolver
-            </button>
-            <button type="submit" form="edit-task-form" class="btn-guardar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
-                Guardar
+
+    </div>
+</div>
+
+<div class="modal-overlay" id="category-overlay" onclick="closeCategoryModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-head">
+            <div>
+                <p class="modal-sub">Tareas por categoría</p>
+                <h2 class="modal-title" id="category-modal-title"></h2>
+            </div>
+            <button type="button" class="modal-close" onclick="closeCategoryModal()" aria-label="Cerrar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
+        <div class="modal-body" id="category-task-list" style="gap:12px;"></div>
     </div>
 </div>
 
@@ -522,6 +546,11 @@
     const editLinkedPiece = document.getElementById('edit-linked-piece');
     const editReviewStatus = document.getElementById('edit-review-status');
     const editRejectionComment = document.getElementById('edit-rejection-comment');
+    const statusColors = @json($statusColors);
+    const tasksByCategory = @json($tasksByCategory);
+    const categoryOverlay = document.getElementById('category-overlay');
+    const categoryList = document.getElementById('category-task-list');
+    const categoryTitle = document.getElementById('category-modal-title');
 
     function updateEditReviewDate() {
         if (!editDueDate.value) return;
@@ -546,6 +575,12 @@
             updateEditReviewDate();
         }
     });
+
+    function setViewModalReadOnly(readonly) {
+        if (viewOverlay) {
+            viewOverlay.querySelectorAll('input, textarea, select').forEach(input => input.disabled = readonly);
+        }
+    }
 
     function openViewModal(el, event) {
         if (event) event.stopPropagation();
@@ -572,6 +607,7 @@
         const status = JSON.parse(el.dataset.status);
         editReviewStatus.textContent = status === 'completada' ? 'Aprobada' : 'Pendiente';
 
+        setViewModalReadOnly(true);
         viewOverlay.classList.add('active');
     }
 
@@ -581,7 +617,72 @@
         }
     }
 
-    document.querySelectorAll('.filter-chip[data-filter]').forEach(chip => {
+    function escapeHtml(text) {
+        if (text == null) return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function openViewModalFromTask(task, event) {
+        if (event) event.stopPropagation();
+        categoryOverlay.classList.remove('active');
+        const wrapper = document.createElement('div');
+        wrapper.dataset.id = JSON.stringify(task.id);
+        wrapper.dataset.title = JSON.stringify(task.title ?? '');
+        wrapper.dataset.description = JSON.stringify(task.description ?? '');
+        wrapper.dataset.deliveryLink = JSON.stringify(task.delivery_link ?? '');
+        wrapper.dataset.status = JSON.stringify(task.status);
+        wrapper.dataset.priority = JSON.stringify(task.priority);
+        wrapper.dataset.dueDate = JSON.stringify(task.due_date ?? '');
+        wrapper.dataset.reviewDate = JSON.stringify(task.review_date ?? '');
+        wrapper.dataset.userId = JSON.stringify(task.user_id ?? null);
+        wrapper.dataset.linkedPiece = JSON.stringify(task.linked_piece ?? '');
+        wrapper.dataset.rejectionComment = JSON.stringify(task.rejection_comment ?? '');
+        openViewModal(wrapper, null);
+    }
+
+    function openCategoryModal(category) {
+        if (!category) return;
+        categoryTitle.textContent = category;
+        const list = tasksByCategory[category] || [];
+        categoryList.innerHTML = '';
+        if (!list.length) {
+            categoryList.innerHTML = '<div class="modal-hint" style="text-align:center;">No hay tareas en esta categoría.</div>';
+        } else {
+            list.forEach(task => {
+                const row = document.createElement('div');
+                row.className = 'calendario-task';
+                row.style.padding = '8px 10px';
+                row.innerHTML = '<span class="calendario-task-dot" style="background-color:' + (statusColors[task.status] || '#64748b') + ';"></span>' +
+                    '<span class="calendario-task-title">' + escapeHtml(task.title || '(sin título)') + '</span>' +
+                    '<span style="margin-left:auto;font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;">' + (task.due_date || '—') + '</span>';
+                row.addEventListener('click', function(e) {
+                    openViewModalFromTask(task, e);
+                });
+                categoryList.appendChild(row);
+            });
+        }
+        categoryOverlay.classList.add('active');
+    }
+
+    function closeCategoryModal(event) {
+        if (!event || event.target === categoryOverlay) {
+            categoryOverlay.classList.remove('active');
+        }
+    }
+
+    document.querySelectorAll('.filter-chip[data-filter="category"]').forEach(chip => {
+        chip.addEventListener('click', function(e) {
+            e.stopPropagation();
+            openCategoryModal(chip.dataset.value);
+        });
+    });
+
+    document.querySelectorAll('.filter-chip[data-filter="user"]').forEach(chip => {
         chip.addEventListener('click', () => {
             chip.classList.toggle('active');
         });

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Dashboard\AccountController;
+use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -10,7 +11,11 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
-    Route::get('/dashboard', [AccountController::class, 'show'])->name('dashboard');
+    // Tablero de inicio (antes /dashboard mostraba la pantalla de cuenta).
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::put('/dashboard/tarjetas', [DashboardController::class, 'update'])->name('dashboard.widgets.update');
+    Route::delete('/dashboard/tarjetas', [DashboardController::class, 'reset'])->name('dashboard.widgets.reset');
+
     Route::get('/cuenta', [AccountController::class, 'show'])->name('account');
     Route::delete('/cuenta', [AccountController::class, 'destroy'])->name('account.destroy');
     Route::post('/cuenta/cerrar-otras-sesiones', [AccountController::class, 'destroyOtherSessions'])

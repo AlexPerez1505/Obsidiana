@@ -14,10 +14,12 @@ class Customer extends Model
         'nombre',
         'apellido',
         'telefono',
+        'rfc',
         'gmail',
         'direccion',
         'comentarios',
         'congreso_id',
+        'como_conocio',
         'categoria_id',
         'recibe_promocion',
         'activo',
@@ -44,9 +46,20 @@ class Customer extends Model
         return $this->belongsTo(Congress::class, 'congreso_id');
     }
 
+    /**
+     * Cómo se conoció al cliente, para mostrar en un solo dato: el nombre
+     * del congreso si se levantó en uno, o lo que se haya escrito a mano
+     * si no. Si no hay ninguno de los dos, no se sabe y se deja vacío.
+     */
+    public function comoConocio(): ?string
+    {
+        return $this->congress?->nombre ?: $this->como_conocio ?: null;
+    }
+
+    // Ojo: en cotizaciones la llave es customer_id, no cliente_id como en el resto.
     public function cotizaciones(): HasMany
     {
-        return $this->hasMany(Cotizacion::class, 'cliente_id');
+        return $this->hasMany(Cotizacion::class, 'customer_id');
     }
 
     public function planPagos(): HasMany

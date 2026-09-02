@@ -170,7 +170,7 @@
                 </div>
                 <div>
                     <div style="font-weight:700; font-size:16px;">Plan de Pagos</div>
-                    <div class="muted" style="font-size:13px;">Selecciona un plan ya registrado y ajusta los montos si lo necesitas.</div>
+                    <div class="muted" style="font-size:13px;">Selecciona un plan predeterminado y ajusta los montos si lo necesitas.</div>
                 </div>
             </div>
 
@@ -183,15 +183,10 @@
                             <option value="">— Selecciona un plan de pago —</option>
                             @foreach($planesPago as $plan)
                                 <option value="{{ $plan->id }}" data-numero-pagos="{{ $plan->numero_pagos }}" data-dias-entre-pagos="{{ $plan->dias_entre_pagos }}" data-metodo-pago="{{ $plan->metodo_pago }}">
-                                    {{ $plan->nombre }} ({{ $plan->numero_pagos }} pagos cada {{ $plan->dias_entre_pagos }} días)
+                                    {{ $plan->nombre }} - {{ $plan->descripcion }}
                                 </option>
                             @endforeach
                         </select>
-                        @if($planesPago->isEmpty())
-                            <div class="muted" style="font-size:12px; margin-top:6px;">No hay planes de pago registrados. <a href="{{ route('commercial.planesPago.create') }}" target="_blank" class="link">Crear uno</a></div>
-                        @else
-                            <div class="muted" style="font-size:12px; margin-top:6px;"><a href="{{ route('commercial.planesPago.create') }}" target="_blank" class="link">+ Administrar planes de pago</a></div>
-                        @endif
                     </div>
                     <div class="qbox">
                         <label class="qlabel" for="metodo_pago"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Método de pago *</label>
@@ -277,9 +272,27 @@
                 @csrf
                 <div class="rgrid-2">
                     <x-ui.form-group label="Nombre *" name="nombre" :required="true" />
-                    <x-ui.form-group label="Apellido" name="apellido" />
-                    <x-ui.form-group label="Teléfono" name="telefono" />
+                    <x-ui.form-group label="Apellido *" name="apellido" :required="true" />
+                    <x-ui.form-group label="Teléfono *" name="telefono" type="tel" inputmode="tel" maxlength="20" :required="true" />
+                    <x-ui.form-group label="RFC" name="rfc" maxlength="13" />
                     <x-ui.form-group label="Correo (Gmail)" name="gmail" type="email" />
+                    <x-ui.form-group label="Dirección *" name="direccion" :required="true" />
+                    <x-ui.form-group for="categoria_id" label="Categoría">
+                        <select id="categoria_id" name="categoria_id" class="qinput">
+                            <option value="" selected>Sin categoría</option>
+                            @foreach ($categories as $category)
+                                <option value="{{ $category->id }}">{{ $category->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </x-ui.form-group>
+                    <x-ui.form-group for="congreso_id" label="Congreso Conocido">
+                        <select id="congreso_id" name="congreso_id" class="qinput">
+                            <option value="" selected>Sin congreso</option>
+                            @foreach ($congresses as $congress)
+                                <option value="{{ $congress->id }}">{{ $congress->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </x-ui.form-group>
                 </div>
                 <div class="modal-actions">
                     <button type="button" id="btn-cancelar-cliente" class="btn btn--ghost">Cancelar</button>
@@ -485,13 +498,19 @@
                 headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
                 body: formData,
             })
-            .then(r => r.json())
+            .then(async r => {
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) {
+                    throw new Error(data.message || 'No se pudo guardar el cliente.');
+                }
+                return data;
+            })
             .then(data => {
                 seleccionarCliente(data);
                 modalCliente.style.display = 'none';
                 formNuevoCliente.reset();
             })
-            .catch(() => alert('No se pudo guardar el cliente.'));
+            .catch(error => alert(error.message || 'No se pudo guardar el cliente.'));
         });
 
         // ---- Manejo de items (productos / paquetes) ----

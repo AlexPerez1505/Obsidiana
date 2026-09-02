@@ -1,22 +1,26 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+
+/*
+|--------------------------------------------------------------------------
+| MIGRACION NEUTRALIZADA
+|--------------------------------------------------------------------------
+| Agregaba la llave foranea `plan_pago_id` a `cotizaciones`. Esa columna solo
+| existia en la version vieja de la tabla, que ya no se crea.
+| La tabla vigente (2026_08_02_000004) no tiene plan_pago_id: el plan se
+| guarda en plan_nombre / num_meses y los pagos en cotizacion_pagos.
+*/
 
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('cotizaciones', function (Blueprint $table) {
-            $table->foreign('plan_pago_id')->references('id')->on('plan_pagos')->onDelete('set null');
-        });
+        // Intencionalmente vacia.
     }
 
     public function down(): void
     {
-        Schema::table('cotizaciones', function (Blueprint $table) {
-            $table->dropForeign(['plan_pago_id']);
-        });
+        // Intencionalmente vacia.
     }
 };

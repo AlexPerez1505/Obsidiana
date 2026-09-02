@@ -1,6 +1,7 @@
 @extends('layouts.dashboard')
 
 @section('title', 'Editar guía de marca')
+@section('page-title', 'Editar guía de marca')
 
 @push('head')
     <style>
@@ -40,9 +41,6 @@
 
 @section('content')
     <div class="guia-editor">
-        <h1 class="page-title">Editar guía de marca</h1>
-        <p class="page-sub">Agrega, edita o elimina colores y tipografías de la marca.</p>
-
         <form class="guia-form" action="{{ route('marketing.guia_de_marca.update') }}" method="POST">
             @csrf
             <div class="section">

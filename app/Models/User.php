@@ -35,6 +35,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'payroll_number',
         'checador_id',
         'avatar',
+
+        'dashboard_widgets',
         'curp',
         'ine',
         'acta_nacimiento',
@@ -78,6 +80,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'fecha_ingreso' => 'date',
             'vacaciones_disponibles' => 'integer',
+            'dashboard_widgets' => 'array',
         ];
     }
 
