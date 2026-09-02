@@ -14,10 +14,10 @@ class UserSeeder extends Seeder
 
         $user = new User();
         $user->forceFill([
-            'name' => 'Marina Sherlyn',
-            'email' => 'al222410862@gmail.com',
+            'name' => 'Dylan Santiago',
+            'email' => 'al222410852@gmail.com',
             'email_verified_at' => Carbon::now(),
-            'password' => 'password',
+            'password' => '123456789',
             'is_admin' => true,
             'status' => User::STATUS_APPROVED,
             'approved_at' => Carbon::now(),

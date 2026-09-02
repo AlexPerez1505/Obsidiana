@@ -34,7 +34,12 @@
                     <tbody>
                         @forelse ($factura->items as $it)
                             <tr>
-                                <td class="erp-strong">{{ $it->nombre }}</td>
+                                <td class="erp-strong">
+                                    {{ $it->nombre }}
+                                    @if (! empty($it->no_series))
+                                        <div class="erp-sub" style="margin:2px 0 0; font-weight:400;">No. Serie: {{ $it->no_series }}</div>
+                                    @endif
+                                </td>
                                 <td>{{ $it->modelo ?? '—' }}</td>
                                 <td>{{ $it->cantidad }}</td>
                                 <td>@if($it->es_regalo)<span class="erp-badge ok">Regalo</span>@else ${{ number_format($it->precio_unitario, 2) }} @endif</td>

@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Congress;
 use App\Models\Cotizacion;
 use App\Models\Customer;
-use App\Models\Equipo;
 use App\Models\FichaTecnica;
 use App\Models\Paquete;
+use App\Models\Producto;
 use App\Models\Venta;
 use App\Services\CalculadoraCotizacion;
 use App\Support\FusionadorPdf;
@@ -27,10 +27,14 @@ class CotizacionController extends Controller
 
     public function index(): View
     {
-        $cotizaciones = Cotizacion::with(['customer', 'seller'])->latest()->get();
+        $cotizaciones = Cotizacion::with(['customer', 'seller'])->latest()->paginate(20)->withQueryString();
 
         return view('structure.commercial_management.cotizaciones.index', [
             'cotizaciones' => $cotizaciones,
+            'total' => Cotizacion::count(),
+            'borradores' => Cotizacion::where('estado', 'borrador')->count(),
+            'aceptadas' => Cotizacion::whereIn('estado', ['aceptada', 'convertida'])->count(),
+            'montoTotal' => (float) Cotizacion::sum('total'),
         ]);
     }
 
@@ -139,11 +143,13 @@ class CotizacionController extends Controller
         $q = trim($request->get('q', ''));
 
         $clientes = Customer::query()
+            ->with('congress')
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($sub) use ($q) {
                     $sub->where('nombre', 'like', "%{$q}%")
                         ->orWhere('apellido', 'like', "%{$q}%")
-                        ->orWhere('correo', 'like', "%{$q}%")
+                        ->orWhere('gmail', 'like', "%{$q}%")
+                        ->orWhere('telefono', 'like', "%{$q}%")
                         ->orWhere('rfc', 'like', "%{$q}%");
                 });
             })
@@ -153,8 +159,9 @@ class CotizacionController extends Controller
             ->map(fn (Customer $c) => [
                 'id' => $c->id,
                 'nombre' => trim($c->nombre.' '.$c->apellido),
-                'correo' => $c->correo,
+                'correo' => $c->gmail,
                 'rfc' => $c->rfc,
+                'conocido' => $c->comoConocio(),
             ]);
 
         return response()->json($clientes);
@@ -164,29 +171,34 @@ class CotizacionController extends Controller
     {
         $q = trim($request->get('q', ''));
 
-        $equipos = Equipo::where('activo', true)
+        $productos = Producto::query()
+            ->with('fichaTecnica')
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($sub) use ($q) {
-                    $sub->where('tipo', 'like', "%{$q}%")
+                    $sub->where('tipo_equipo', 'like', "%{$q}%")
+                        ->orWhere('subtipo', 'like', "%{$q}%")
                         ->orWhere('modelo', 'like', "%{$q}%")
-                        ->orWhere('marca', 'like', "%{$q}%");
+                        ->orWhere('marca', 'like', "%{$q}%")
+                        ->orWhere('no_serie', 'like', "%{$q}%");
                 });
             })
-            ->orderBy('tipo')
+            ->orderBy('tipo_equipo')
             ->limit(20)
             ->get()
-            ->map(fn (Equipo $e) => [
-                'id' => $e->id,
-                'tipo_item' => 'equipo',
-                'nombre' => $e->tipo,
-                'modelo' => $e->modelo,
-                'marca' => $e->marca,
-                'precio' => (float) $e->precio,
-                'imagen' => $e->imagen ? asset('storage/'.$e->imagen) : null,
+            ->map(fn (Producto $p) => [
+                'id' => $p->id,
+                'tipo_item' => 'producto',
+                'nombre' => $p->tipo_equipo ?: $p->subtipo,
+                'modelo' => $p->modelo,
+                'marca' => $p->marca,
+                'precio' => (float) $p->precio,
+                'imagen' => $p->imagen_path ? asset('storage/'.$p->imagen_path) : null,
+                // Si el producto tiene su ficha técnica, se adjunta sola al agregarlo.
+                'ficha' => $p->fichaTecnica ? ['id' => $p->fichaTecnica->id, 'titulo' => $p->fichaTecnica->titulo] : null,
             ]);
 
         $paquetes = Paquete::where('activo', true)
-            ->with('equipos')
+            ->with('productos')
             ->when($q !== '', fn ($query) => $query->where('nombre', 'like', "%{$q}%"))
             ->orderBy('nombre')
             ->limit(10)
@@ -196,12 +208,12 @@ class CotizacionController extends Controller
                 'tipo_item' => 'paquete',
                 'nombre' => $p->nombre,
                 'modelo' => 'PAQUETE',
-                'marca' => $p->equipos->pluck('marca')->filter()->unique()->implode(', '),
+                'marca' => $p->productos->pluck('marca')->filter()->unique()->implode(', '),
                 'precio' => $p->precioCalculado(),
                 'imagen' => $p->imagen ? asset('storage/'.$p->imagen) : null,
             ]);
 
-        return response()->json($paquetes->concat($equipos)->values());
+        return response()->json($paquetes->concat($productos)->values());
     }
 
     public function buscarFichas(Request $request): JsonResponse
@@ -240,9 +252,10 @@ class CotizacionController extends Controller
             'garantia_meses' => ['nullable', 'integer', Rule::in(Venta::GARANTIAS)],
 
             'items' => ['required', 'array', 'min:1'],
-            'items.*.tipo_item' => ['required', 'in:equipo,paquete'],
+            'items.*.tipo_item' => ['required', 'in:equipo,paquete,producto'],
             'items.*.equipo_id' => ['nullable', 'integer'],
             'items.*.paquete_id' => ['nullable', 'integer'],
+            'items.*.producto_id' => ['nullable', 'integer'],
             'items.*.nombre' => ['required', 'string', 'max:255'],
             'items.*.modelo' => ['nullable', 'string', 'max:255'],
             'items.*.marca' => ['nullable', 'string', 'max:255'],
@@ -310,6 +323,7 @@ class CotizacionController extends Controller
             $cot->items()->create([
                 'equipo_id' => $i['tipo_item'] === 'equipo' ? ($i['equipo_id'] ?? null) : null,
                 'paquete_id' => $i['tipo_item'] === 'paquete' ? ($i['paquete_id'] ?? null) : null,
+                'producto_id' => $i['tipo_item'] === 'producto' ? ($i['producto_id'] ?? null) : null,
                 'tipo_item' => $i['tipo_item'],
                 'nombre' => $i['nombre'],
                 'modelo' => $i['modelo'] ?? null,

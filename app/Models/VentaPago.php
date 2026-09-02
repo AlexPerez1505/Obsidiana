@@ -67,10 +67,16 @@ class VentaPago extends Model
         };
     }
 
-    /** Se pasó la fecha y sigue sin cobrarse. */
+    /**
+     * Se pasó la fecha y sigue sin cobrarse. El día que vence todavía no
+     * cuenta como atrasado (isPast() la marcaría vencida desde la
+     * madrugada del mismo día); tiene que pasar al menos un día completo.
+     */
     public function vencido(): bool
     {
-        return $this->fecha && $this->fecha->isPast() && $this->saldo() > 0.009;
+        return $this->fecha
+            && $this->fecha->lt(now()->startOfDay())
+            && $this->saldo() > 0.009;
     }
 
     /**

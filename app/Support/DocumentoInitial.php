@@ -20,8 +20,9 @@ class DocumentoInitial
             'customer' => $cliente ? [
                 'id' => $cliente->id,
                 'nombre' => trim($cliente->nombre.' '.$cliente->apellido),
-                'correo' => $cliente->correo,
+                'correo' => $cliente->gmail,
                 'rfc' => $cliente->rfc,
+                'conocido' => $cliente->comoConocio(),
             ] : null,
             'congreso_id' => $doc->congreso_id ?? '',
             'garantia_meses' => $doc->garantia_meses ?? 6,
@@ -38,6 +39,7 @@ class DocumentoInitial
                 'tipo_item' => $i->tipo_item,
                 'equipo_id' => $i->equipo_id,
                 'paquete_id' => $i->paquete_id,
+                'producto_id' => $i->producto_id,
                 'nombre' => $i->nombre,
                 'modelo' => $i->modelo,
                 'marca' => $i->marca,

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Inventory\FichaTecnicaController;
+use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\ProductoController;
 use Illuminate\Support\Facades\Route;
@@ -88,13 +89,16 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ]);
     };
 
-    Route::get('/gestion-inventario/entrada-salida', function () {
-        return view('structure.gestion_Inventario.entrada_salida.index');
-    })->name('inventory.movimientos.index');
-
-    Route::get('/gestion-inventario/entrada-salida/crear', function () {
-        return view('structure.gestion_Inventario.entrada_salida.create');
-    })->name('inventory.movimientos.create');
+    Route::get('/gestion-inventario/entrada-salida', [InventoryMovementController::class, 'index'])
+        ->name('inventory.movimientos.index');
+    Route::get('/gestion-inventario/entrada-salida/crear', [InventoryMovementController::class, 'create'])
+        ->name('inventory.movimientos.create');
+    Route::post('/gestion-inventario/entrada-salida', [InventoryMovementController::class, 'store'])
+        ->name('inventory.movimientos.store');
+    Route::get('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'show'])
+        ->name('inventory.movimientos.show');
+    Route::delete('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'destroy'])
+        ->name('inventory.movimientos.destroy');
 
     // NOTA: el listado y el alta de equipos viven en routes/web/inventory.php
     // (EquipoController). Aqui solo quedan el detalle y la edicion.
@@ -117,6 +121,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('inventory.productos.index');
     Route::get('/gestion-inventario/productos/crear', [ProductoController::class, 'create'])
         ->name('inventory.productos.create');
+    Route::get('/gestion-inventario/productos/buscar-por-modelo', [ProductoController::class, 'buscarPorModelo'])
+        ->name('inventory.productos.buscarPorModelo');
     Route::post('/gestion-inventario/productos', [ProductoController::class, 'store'])
         ->name('inventory.productos.store');
     Route::get('/gestion-inventario/productos/{producto}/editar', [ProductoController::class, 'edit'])
@@ -125,6 +131,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('inventory.productos.update');
     Route::delete('/gestion-inventario/productos/{producto}', [ProductoController::class, 'destroy'])
         ->name('inventory.productos.destroy');
+    Route::post('/gestion-inventario/productos/{producto}/seriales', [ProductoController::class, 'agregarSeriales'])
+        ->name('inventory.productos.seriales.store');
+    Route::delete('/gestion-inventario/productos/seriales/{serial}', [ProductoController::class, 'eliminarSerial'])
+        ->name('inventory.productos.seriales.destroy');
 
     // Fichas técnicas (nombre + PDF)
     Route::get('/gestion-inventario/fichas-tecnicas', [FichaTecnicaController::class, 'index'])

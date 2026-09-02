@@ -36,6 +36,7 @@ class CobroController extends Controller
         return view('structure.commercial_management.cobros.index', [
             'venta' => $venta,
             'metodos' => Cobro::METODOS,
+            'excedentePendiente' => $this->calendario->excedentePendiente($venta),
         ]);
     }
 
@@ -62,7 +63,7 @@ class CobroController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($request, $venta, $data) {
+        $excedente = DB::transaction(function () use ($request, $venta, $data) {
             $cobro = Cobro::create([
                 'venta_id' => $venta->id,
                 'venta_pago_id' => $data['venta_pago_id'] ?? null,
@@ -88,10 +89,21 @@ class CobroController extends Controller
                 "Cobro {$cobro->folio} por \$" . number_format((float) $cobro->monto, 2) . ' (' . $cobro->metodoLabel() . ')',
                 ['cobro_id' => $cobro->id, 'monto' => (float) $cobro->monto]
             );
+
+            // Si este cobro fue un abono suelto o se pasó de lo que le tocaba
+            // a su parcialidad, ese excedente se reparte solo hacia lo que
+            // sigue pendiente: no hace falta un paso aparte para "cuadrar".
+            $venta->load(['pagos.cobros', 'cobros']);
+
+            return $this->calendario->absorberExcedente($venta);
         });
 
+        $aviso = $excedente['excedente'] > 0
+            ? ' Se aplicaron $' . number_format($excedente['excedente'], 2) . ' a lo que sigue pendiente.'
+            : '';
+
         return redirect()->route('commercial.ventas.cobros.index', $venta)
-            ->with('status', 'Cobro registrado correctamente.');
+            ->with('status', 'Cobro registrado correctamente.' . $aviso);
     }
 
     /**
@@ -191,6 +203,20 @@ class CobroController extends Controller
         return back()->with('status', $r['ajustadas'] > 0
             ? 'Se repartió la diferencia entre ' . $r['ajustadas'] . ' parcialidad(es).'
             : 'El plan ya cuadra con el total.');
+    }
+
+    /** Reasigna a las parcialidades pendientes el excedente de abonos sueltos o que se pasaron de lo que les tocaba. */
+    public function absorberExcedente(Venta $venta): RedirectResponse
+    {
+        $r = $this->calendario->absorberExcedente($venta);
+
+        if ($r['excedente'] < 0.01) {
+            return back()->with('status', 'No hay excedente por repartir.');
+        }
+
+        return back()->with('status',
+            'Se aplicaron $'.number_format($r['excedente'], 2).' a '.$r['ajustadas'].' parcialidad(es) pendiente(s).'
+        );
     }
 
     /** Agrega una parcialidad al final del plan. */

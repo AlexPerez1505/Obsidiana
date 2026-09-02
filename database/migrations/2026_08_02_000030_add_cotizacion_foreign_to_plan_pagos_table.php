@@ -21,6 +21,14 @@ return new class extends Migration
             return;
         }
 
+        $exists = Schema::getConnection()->select(
+            "SELECT 1 FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'plan_pagos' AND CONSTRAINT_NAME = 'plan_pagos_cotizacion_id_foreign'"
+        );
+
+        if (! empty($exists)) {
+            return;
+        }
+
         Schema::table('plan_pagos', function (Blueprint $table) {
             $table->foreign('cotizacion_id')
                 ->references('id')

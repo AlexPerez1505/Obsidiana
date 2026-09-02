@@ -24,16 +24,33 @@
                              placeholder="Ej. Gastroscopio Olympus GIF-H190"
                              :value="$ficha->titulo" :required="true" :autofocus="true" />
 
+            @php
+                $itemActual = old('item', $ficha->producto_id ? 'producto:'.$ficha->producto_id : ($ficha->paquete_id ? 'paquete:'.$ficha->paquete_id : ''));
+            @endphp
             <div style="margin-top:16px;">
-                <x-ui.form-group for="equipo_id" label="Equipo relacionado">
-                    <select id="equipo_id" name="equipo_id">
-                        <option value="">Sin equipo</option>
-                        @foreach ($equipos as $equipo)
-                            <option value="{{ $equipo->id }}"
-                                @selected((string) old('equipo_id', $ficha->equipo_id) === (string) $equipo->id)>
-                                {{ trim($equipo->marca . ' ' . $equipo->modelo) ?: 'Equipo #' . $equipo->id }}
-                            </option>
-                        @endforeach
+                <x-ui.form-group for="item" label="Producto o paquete relacionado">
+                    <select id="item" name="item">
+                        <option value="">Sin relacionar</option>
+                        @if ($productos->isNotEmpty())
+                            <optgroup label="Productos">
+                                @foreach ($productos as $producto)
+                                    <option value="producto:{{ $producto->id }}"
+                                        @selected($itemActual === 'producto:'.$producto->id)>
+                                        {{ trim($producto->marca . ' ' . $producto->modelo) ?: 'Producto #' . $producto->id }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                        @endif
+                        @if ($paquetes->isNotEmpty())
+                            <optgroup label="Paquetes">
+                                @foreach ($paquetes as $paquete)
+                                    <option value="paquete:{{ $paquete->id }}"
+                                        @selected($itemActual === 'paquete:'.$paquete->id)>
+                                        {{ $paquete->nombre }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                        @endif
                     </select>
                 </x-ui.form-group>
             </div>

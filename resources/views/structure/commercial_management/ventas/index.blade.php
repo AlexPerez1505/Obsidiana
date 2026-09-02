@@ -4,13 +4,6 @@
 @section('page-title', 'Ventas')
 
 @section('erp_content')
-    @php
-        $total = $ventas->count();
-        $confirmadas = $ventas->where('estado', 'confirmada')->count();
-        $facturadas = $ventas->where('estado', 'facturada')->count();
-        $montoTotal = $ventas->sum('total');
-    @endphp
-
     <div class="content-actions">
         <x-ui.view-switch key="ventas" />
         <a href="{{ route('commercial.ventas.create') }}" class="erp-btn">
@@ -88,6 +81,7 @@
                 </tbody>
             </table>
         </div>
+        @include('partials._paginacion', ['paginator' => $ventas])
     </div>
 
     {{-- ===================== Vista tarjetas ===================== --}}
@@ -142,4 +136,5 @@
             </div>
         @endforelse
     </div>
+    @include('partials._paginacion', ['paginator' => $ventas])
 @endsection

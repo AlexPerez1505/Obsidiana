@@ -4,13 +4,6 @@
 @section('page-title', 'Cotizaciones')
 
 @section('erp_content')
-    @php
-        $total = $cotizaciones->count();
-        $borradores = $cotizaciones->where('estado', 'borrador')->count();
-        $aceptadas = $cotizaciones->whereIn('estado', ['aceptada', 'convertida'])->count();
-        $montoTotal = $cotizaciones->sum('total');
-    @endphp
-
     <div class="content-actions">
         <x-ui.view-switch key="cotizaciones" />
         <a href="{{ route('commercial.cotizaciones.create') }}" class="erp-btn">
@@ -90,6 +83,7 @@
                 </tbody>
             </table>
         </div>
+        @include('partials._paginacion', ['paginator' => $cotizaciones])
     </div>
 
     {{-- ===================== Vista tarjetas ===================== --}}
@@ -146,4 +140,5 @@
             </div>
         @endforelse
     </div>
+    @include('partials._paginacion', ['paginator' => $cotizaciones])
 @endsection

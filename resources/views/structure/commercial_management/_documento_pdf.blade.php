@@ -241,6 +241,9 @@
                 <div class="det">
                     {{ collect([$it->marca, $it->modelo])->filter()->implode(' · ') ?: 'Sin especificar' }}
                 </div>
+                @if (! empty($it->no_series))
+                    <div class="det">No. Serie: {{ $it->no_series }}</div>
+                @endif
             </td>
             <td class="c">{{ $it->cantidad }}</td>
             <td class="r">

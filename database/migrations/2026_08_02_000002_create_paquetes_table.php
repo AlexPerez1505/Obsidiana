@@ -8,15 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('paquetes', function (Blueprint $table) {
-            $table->id();
-            $table->string('nombre');
-            $table->text('descripcion')->nullable();
-            $table->decimal('precio', 12, 2)->default(0); // precio del paquete (0 = suma de equipos)
-            $table->string('imagen')->nullable();
-            $table->boolean('activo')->default(true);
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('paquetes')) {
+            Schema::create('paquetes', function (Blueprint $table) {
+                $table->id();
+                $table->string('nombre');
+                $table->text('descripcion')->nullable();
+                $table->decimal('precio', 12, 2)->default(0); // precio del paquete (0 = suma de equipos)
+                $table->string('imagen')->nullable();
+                $table->boolean('activo')->default(true);
+                $table->timestamps();
+            });
+        }
 
         Schema::create('paquete_equipo', function (Blueprint $table) {
             $table->id();

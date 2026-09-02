@@ -32,8 +32,15 @@ class Paquete extends Model
             ->withTimestamps();
     }
 
+    public function productos(): BelongsToMany
+    {
+        return $this->belongsToMany(Producto::class, 'paquete_producto')
+            ->withPivot('cantidad')
+            ->withTimestamps();
+    }
+
     /**
-     * Precio efectivo: el fijado, o la suma de sus equipos por cantidad.
+     * Precio efectivo: el fijado, o la suma de sus productos/equipos por cantidad.
      */
     public function precioCalculado(): float
     {
@@ -41,6 +48,10 @@ class Paquete extends Model
             return (float) $this->precio;
         }
 
-        return (float) $this->equipos->sum(fn ($e) => (float) $e->precio * (int) $e->pivot->cantidad);
+        $totalProductos = (float) $this->productos->sum(fn ($p) => (float) $p->precio * (int) $p->pivot->cantidad);
+
+        return $totalProductos > 0
+            ? $totalProductos
+            : (float) $this->equipos->sum(fn ($e) => (float) $e->precio * (int) $e->pivot->cantidad);
     }
 }

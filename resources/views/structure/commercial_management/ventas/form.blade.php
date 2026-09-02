@@ -25,5 +25,6 @@
         'titulo' => $esEdicion ? 'Editar venta '.$venta->folio : ($origenId ? 'Nueva venta (desde cotización)' : 'Nueva venta'),
         'subtitulo' => 'Puedes modificar productos, montos y plan de pagos antes de guardar.',
         'textoGuardar' => 'Guardar venta',
+        'avisosStock' => $avisosStock ?? [],
     ])
 @endsection
