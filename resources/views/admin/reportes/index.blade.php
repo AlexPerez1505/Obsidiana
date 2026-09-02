@@ -1042,5 +1042,37 @@
                 window.showToast('Reporte preparado para exportacion.');
             }
         }
+
+        const reportTypeFields = {
+            asistencia: ['employee_name', 'area', 'type', 'status', 'start_date', 'end_date', 'check_in', 'check_out', 'late_minutes', 'attendance', 'pending', 'summary_status', 'detail'],
+            falta: ['employee_name', 'area', 'type', 'status', 'start_date', 'detail'],
+            vacaciones: ['employee_name', 'area', 'type', 'status', 'start_date', 'end_date', 'detail'],
+            permiso: ['employee_name', 'area', 'type', 'status', 'start_date', 'end_date', 'check_in', 'check_out', 'detail'],
+            incidencia: ['employee_name', 'area', 'type', 'status', 'start_date', 'detail'],
+        };
+
+        const reportTypeSelect = document.getElementById('new-report-type');
+
+        function updateReportFields() {
+            const type = reportTypeSelect.value;
+            const visibleNames = reportTypeFields[type] || [];
+            const allFields = document.querySelectorAll('.report-form-grid .reports-field');
+
+            allFields.forEach((field) => {
+                const input = field.querySelector('input, select, textarea');
+                if (!input) return;
+
+                const name = input.name;
+                const visible = visibleNames.includes(name);
+
+                field.style.display = visible ? '' : 'none';
+                input.disabled = !visible;
+            });
+        }
+
+        if (reportTypeSelect) {
+            reportTypeSelect.addEventListener('change', updateReportFields);
+            updateReportFields();
+        }
     </script>
 @endsection
