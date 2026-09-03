@@ -22,11 +22,20 @@ class PaqueteController extends Controller
 
     /**
      * Muestra el formulario de creación de paquete.
+     *
+     * Si viene con ?productos[]=1&productos[]=2 (desde la selección múltiple
+     * en Productos), esos renglones ya llegan precargados con cantidad 1
+     * en vez de partir de un formulario vacío.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
+        $preseleccionados = Producto::query()
+            ->whereIn('id', $request->input('productos', []))
+            ->get();
+
         return view('structure.gestion_Inventario.paquetes.create', [
             'productos' => Producto::query()->orderBy('tipo_equipo')->get(),
+            'preseleccionados' => $preseleccionados,
         ]);
     }
 
