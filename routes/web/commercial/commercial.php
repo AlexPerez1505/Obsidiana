@@ -38,26 +38,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::redirect('/gestion-comercial/planes-pago/{planPago}/editar', '/gestion-comercial/cotizaciones');
 
     // Cotizaciones
-    Route::get('/gestion-comercial/cotizaciones', [CotizacionController::class, 'index'])
-        ->name('commercial.cotizaciones.index');
-
+    // NOTA: el CRUD de cotizaciones vive en routes/web/cotizaciones.php.
+    // Aqui solo quedan los endpoints que ese modulo no cubre.
     Route::get('/gestion-comercial/cotizaciones/buscar-cliente', [CotizacionController::class, 'buscarCliente'])
         ->name('commercial.cotizaciones.buscarCliente');
-
-    Route::get('/gestion-comercial/cotizaciones/crear', [CotizacionController::class, 'create'])
-        ->name('commercial.cotizaciones.create');
-
-    Route::post('/gestion-comercial/cotizaciones', [CotizacionController::class, 'store'])
-        ->name('commercial.cotizaciones.store');
-
-    Route::get('/gestion-comercial/cotizaciones/{cotizacion}', [CotizacionController::class, 'show'])
-        ->name('commercial.cotizaciones.show');
-
-    Route::get('/gestion-comercial/cotizaciones/{cotizacion}/editar', [CotizacionController::class, 'edit'])
-        ->name('commercial.cotizaciones.edit');
-
-    Route::put('/gestion-comercial/cotizaciones/{cotizacion}', [CotizacionController::class, 'update'])
-        ->name('commercial.cotizaciones.update');
 
     Route::post('/gestion-comercial/cotizaciones/{cotizacion}/remision', [CotizacionController::class, 'convertirRemision'])
         ->name('commercial.cotizaciones.remision');
