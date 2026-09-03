@@ -23,7 +23,7 @@ class ProductoController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Producto::query()->latest();
+        $query = Producto::query()->with('serialesDisponibles')->latest();
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -145,6 +145,13 @@ class ProductoController extends Controller
 
         if (! empty($data['imagen_path'])) {
             $existente->imagen_path = $data['imagen_path'];
+        }
+
+        // Una vez marcado como serializado, se queda así: no se le quita
+        // la marca solo porque una entrada posterior no trajo el checkbox
+        // marcado.
+        if (! empty($data['es_serializado'])) {
+            $existente->es_serializado = true;
         }
 
         $existente->save();
@@ -277,41 +284,67 @@ class ProductoController extends Controller
             'proveedor' => $producto->proveedor,
             'imagen' => $producto->imagen_path ? asset('storage/'.$producto->imagen_path) : null,
             'stock_actual' => (int) $producto->stock,
-            'no_serie_sugerido' => $this->siguienteNumeroSerie($producto->id),
+            'es_serializado' => (bool) $producto->es_serializado,
+            'no_serie_sugerido' => $this->sugerirSiguienteSerial($producto->id),
         ]);
     }
 
     /**
-     * El siguiente serial de un modelo es consecutivo al último que se
-     * registró: si la última pieza es 23A12345, la que sigue es 23A12346,
-     * luego 23A12347... Funciona con cualquier prefijo (letras, año,
-     * guiones) siempre que el serial termine en dígitos; si no, no se
-     * sugiere nada y se deja el campo en blanco para llenarlo a mano.
+     * Corrige el número de serie y/o la foto de una unidad ya guardada.
+     * Pide PIN de aprobación (o contraseña, si el usuario no tiene PIN
+     * configurado), igual que las demás acciones destructivas/sensibles
+     * del sistema, porque altera un dato que ya quedó como evidencia.
      */
-    private function siguienteNumeroSerie(int $productoId): ?string
+    public function actualizarSerial(Request $request, ProductoSerial $serial): RedirectResponse
     {
-        $ultimo = ProductoSerial::where('producto_id', $productoId)
-            ->whereNotNull('no_serie')
-            ->where('no_serie', '!=', '')
-            ->pluck('no_serie')
-            ->map(function ($serie) {
-                if (! preg_match('/^(.*?)(\d+)$/', $serie, $m)) {
-                    return null;
-                }
+        $data = $request->validate([
+            'password' => ['required', 'string'],
+            'no_serie' => ['nullable', 'string', 'max:255'],
+            'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
 
-                return ['prefijo' => $m[1], 'numero' => (int) $m[2], 'ancho' => strlen($m[2])];
-            })
-            ->filter()
-            ->sortByDesc(fn ($s) => $s['numero'])
-            ->first();
+        $user = auth()->user();
 
-        if ($ultimo === null) {
-            return null;
+        $valido = $user->approval_pin_hash
+            ? $user->checkApprovalPin($data['password'])
+            : \Illuminate\Support\Facades\Hash::check($data['password'], $user->password);
+
+        if (! $valido) {
+            return back()->withErrors(['password' => 'PIN o contraseña incorrecta.']);
         }
 
-        $siguiente = $ultimo['numero'] + 1;
+        $nuevaSerie = trim((string) ($data['no_serie'] ?? '')) ?: null;
+        $disco = config('filesystems.fotos_disk', 'public');
 
-        return $ultimo['prefijo'].str_pad((string) $siguiente, $ultimo['ancho'], '0', STR_PAD_LEFT);
+        try {
+            DB::transaction(function () use ($request, $serial, $nuevaSerie, $disco) {
+                $cambios = ['editado_por' => auth()->id()];
+
+                if ($nuevaSerie !== $serial->no_serie) {
+                    $cambios['no_serie'] = $nuevaSerie;
+                }
+
+                if ($request->hasFile('foto')) {
+                    $fotoAnterior = $serial->foto_path;
+                    $cambios['foto_path'] = $request->file('foto')->store('productos/seriales', $disco);
+
+                    if ($fotoAnterior) {
+                        Storage::disk($disco)->delete($fotoAnterior);
+                    }
+                }
+
+                $serial->update($cambios);
+                $serial->producto->recalcularStock();
+            });
+        } catch (QueryException $e) {
+            if (! $this->esErrorDeDuplicado($e)) {
+                throw $e;
+            }
+
+            return back()->withErrors(['no_serie' => 'Ese número de serie ya existe para este producto.']);
+        }
+
+        return back()->with('status', 'Unidad actualizada correctamente.');
     }
 
     private function validated(Request $request): array
@@ -327,6 +360,7 @@ class ProductoController extends Controller
             'proveedor' => ['nullable', 'string', 'max:255'],
             'no_serie' => ['nullable', 'string', 'max:255'],
             'imagen' => ['nullable', 'image', 'max:5120'], // max 5MB
+            'es_serializado' => ['sometimes', 'boolean'],
         ]);
     }
 
