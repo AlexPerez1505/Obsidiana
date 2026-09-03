@@ -741,9 +741,11 @@
                                             style="background: {{ $color['bg'] }}; color: {{ $color['text'] }};"
                                             aria-label="{{ $event['source'] === 'congress' ? 'Ver congreso' : 'Editar evento' }} {{ $event['title'] }} del {{ $selectedDate }}"
                                         >
-                                            <b>{{ $event['time'] }}</b>
+                                            @if ($event['time'] !== '')
+                                                <b>{{ $event['time'] }}</b>
+                                            @endif
                                             <span>{{ $event['title'] }}</span>
-                                            @if ($isMultiDay)
+                                            @if ($isMultiDay && $event['source'] !== 'congress')
                                                 <small>{{ $rangeLabel }}</small>
                                             @endif
                                         </button>

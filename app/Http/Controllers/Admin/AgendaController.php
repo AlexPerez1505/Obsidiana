@@ -57,11 +57,18 @@ class AgendaController extends Controller
                     continue;
                 }
 
+                $isStart = $cursor->isSameDay($start);
+                $isEnd = $cursor->isSameDay($end);
+
+                $dayEvent = $event['source'] === 'congress'
+                    ? $this->congressParaEseDia($event, $isStart, $isEnd)
+                    : $event;
+
                 $dayNumber = (int) $cursor->format('j');
-                $events[$dayNumber][] = array_merge($event, [
+                $events[$dayNumber][] = array_merge($dayEvent, [
                     'date' => $cursor->format('Y-m-d'),
-                    'is_start' => $cursor->isSameDay($start),
-                    'is_end' => $cursor->isSameDay($end),
+                    'is_start' => $isStart,
+                    'is_end' => $isEnd,
                 ]);
             }
         }
@@ -180,9 +187,20 @@ class AgendaController extends Controller
         ];
     }
 
+    /**
+     * El congreso sí ocupa su cuadro en cada día que dura (como cualquier
+     * evento de varios días), pero el texto cambia según el día:
+     * - Primer día: "Montaje: {nombre}" con hora_montaje.
+     * - Último día: "Desmontaje: {nombre}" con hora_desmontaje.
+     * - Días intermedios: solo el nombre del congreso, sin hora.
+     *
+     * Aquí solo se guardan las dos horas; congressParaEseDia() decide cuál
+     * mostrar (o ninguna) cuando se expande día por día en el calendario.
+     */
     private function mapCongress(Congress $congress): array
     {
-        $time = $congress->hora_montaje;
+        $montaje = $congress->hora_montaje;
+        $desmontaje = $congress->hora_desmontaje;
 
         return [
             'id' => 'congress-'.$congress->id,
@@ -190,13 +208,57 @@ class AgendaController extends Controller
             'model_id' => $congress->id,
             'start_date' => $congress->fecha_inicio->format('Y-m-d'),
             'end_date' => $congress->fecha_finalizacion->format('Y-m-d'),
-            'time' => $time ? $time->format('h:i a') : 'Todo el dia',
-            'time_value' => $time ? $time->format('H:i') : '',
             'title' => $congress->nombre,
+            // Fuera del calendario (ej. "Próximos eventos") se muestra la
+            // hora de montaje como referencia de cuándo arranca; dentro del
+            // calendario, congressParaEseDia() la sobrescribe por día.
+            'time' => $montaje ? $montaje->format('h:i a') : 'Todo el dia',
+            'time_value' => $montaje ? $montaje->format('H:i') : '',
+            'time_montaje' => $montaje ? $montaje->format('h:i a') : 'Todo el dia',
+            'time_montaje_value' => $montaje ? $montaje->format('H:i') : '',
+            'time_desmontaje' => $desmontaje ? $desmontaje->format('h:i a') : 'Todo el dia',
+            'time_desmontaje_value' => $desmontaje ? $desmontaje->format('H:i') : '',
             'type' => 'congress',
             'notes' => $congress->direccion ?: ($congress->comments ?? ''),
             'participants' => $congress->category?->nombre ?? '',
         ];
+    }
+
+    /**
+     * Aplica el texto y la hora que corresponden a ese día específico del
+     * congreso, sin tocar el evento base (cada día se calcula aparte).
+     */
+    private function congressParaEseDia(array $event, bool $isStart, bool $isEnd): array
+    {
+        if ($isStart && $isEnd) {
+            $event['title'] = "Montaje y desmontaje: {$event['title']}";
+            $event['time'] = $event['time_montaje'];
+            $event['time_value'] = $event['time_montaje_value'];
+
+            return $event;
+        }
+
+        if ($isStart) {
+            $event['title'] = "Montaje: {$event['title']}";
+            $event['time'] = $event['time_montaje'];
+            $event['time_value'] = $event['time_montaje_value'];
+
+            return $event;
+        }
+
+        if ($isEnd) {
+            $event['title'] = "Desmontaje: {$event['title']}";
+            $event['time'] = $event['time_desmontaje'];
+            $event['time_value'] = $event['time_desmontaje_value'];
+
+            return $event;
+        }
+
+        // Día intermedio: solo el nombre, sin hora de montaje/desmontaje.
+        $event['time'] = '';
+        $event['time_value'] = '';
+
+        return $event;
     }
 
     private function colors(): array

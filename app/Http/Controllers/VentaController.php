@@ -6,6 +6,7 @@ use App\Models\Congress;
 use App\Models\Cotizacion;
 use App\Models\Customer;
 use App\Models\InventoryMovement;
+use App\Models\Paquete;
 use App\Models\Producto;
 use App\Models\ProductoSerial;
 use App\Models\Venta;
@@ -19,6 +20,7 @@ use App\Support\FusionadorPdf;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -83,25 +85,43 @@ class VentaController extends Controller
      * Al convertir una cotización en venta es cuando de verdad importa el
      * stock: mientras se cotiza puede no haber inventario todavía. Por eso
      * la advertencia solo aparece aquí, no al cotizar.
+     *
+     * Un paquete no tiene stock propio: el aviso se calcula sobre cada
+     * producto que lo compone, multiplicando por la cantidad del paquete
+     * en el pivote.
      */
     private function avisosStock(iterable $items): array
     {
         $avisos = [];
 
         foreach ($items as $item) {
-            if ($item->tipo_item !== 'producto' || ! $item->producto) {
+            if ($item->tipo_item === 'producto' && $item->producto) {
+                $this->avisoSiFalta($avisos, $item->producto, (int) $item->cantidad, $item->nombre);
+
                 continue;
             }
 
-            $disponible = (int) $item->producto->stock;
+            if ($item->tipo_item === 'paquete') {
+                $paquete = Paquete::with('productos')->find($item->paquete_id);
 
-            if ((int) $item->cantidad > $disponible) {
-                $nombre = trim($item->producto->marca.' '.$item->producto->modelo) ?: $item->nombre;
-                $avisos[] = "{$nombre}: se necesitan {$item->cantidad}, pero solo hay {$disponible} en stock.";
+                foreach ($paquete?->productos ?? [] as $producto) {
+                    $necesaria = (int) $item->cantidad * (int) $producto->pivot->cantidad;
+                    $nombreProducto = trim($producto->marca.' '.$producto->modelo) ?: $producto->tipo_equipo;
+                    $this->avisoSiFalta($avisos, $producto, $necesaria, "{$item->nombre} → {$nombreProducto}");
+                }
             }
         }
 
         return $avisos;
+    }
+
+    private function avisoSiFalta(array &$avisos, Producto $producto, int $necesaria, string $nombre): void
+    {
+        $disponible = (int) $producto->stock;
+
+        if ($necesaria > $disponible) {
+            $avisos[] = "{$nombre}: se necesitan {$necesaria}, pero solo hay {$disponible} en stock.";
+        }
     }
 
     public function store(Request $request): RedirectResponse
@@ -385,6 +405,10 @@ class VentaController extends Controller
             if ($i['tipo_item'] === 'producto' && ! empty($i['producto_id'])) {
                 $this->asignarSerialesVendidos($item);
             }
+
+            if ($i['tipo_item'] === 'paquete' && ! empty($i['paquete_id'])) {
+                $this->descontarStockDePaquete($item);
+            }
         }
     }
 
@@ -432,12 +456,60 @@ class VentaController extends Controller
             return;
         }
 
+        $seriales = $this->descontarStockProducto($producto, (int) $item->cantidad, $item);
+
+        $item->update([
+            'no_series' => $seriales->pluck('no_serie')->filter()->implode(', ') ?: null,
+        ]);
+    }
+
+    /**
+     * Un paquete no tiene stock propio: al venderlo, cada producto que lo
+     * compone se descuenta como si se hubiera vendido directamente
+     * (mismo FIFO, misma bitácora de salida), multiplicando la cantidad
+     * vendida del paquete por la cantidad de ese producto en el pivote.
+     *
+     * Las unidades quedan ligadas al mismo venta_item_id sin importar de
+     * qué producto vinieron, para que editar o cancelar la venta las
+     * libere todas juntas (liberarSerialesDe ya no filtra por producto).
+     */
+    private function descontarStockDePaquete(VentaItem $item): void
+    {
+        $paquete = Paquete::with('productos')->find($item->paquete_id);
+
+        if (! $paquete) {
+            return;
+        }
+
+        $todosLosSeriales = collect();
+
+        foreach ($paquete->productos as $producto) {
+            $necesaria = (int) $item->cantidad * (int) $producto->pivot->cantidad;
+
+            $todosLosSeriales = $todosLosSeriales->merge(
+                $this->descontarStockProducto($producto, $necesaria, $item)
+            );
+        }
+
+        $item->update([
+            'no_series' => $todosLosSeriales->pluck('no_serie')->filter()->implode(', ') ?: null,
+        ]);
+    }
+
+    /**
+     * Núcleo compartido: toma, FIFO, las unidades disponibles de un
+     * producto, las marca vendidas ligadas a $item, recalcula su stock y
+     * deja la salida en la bitácora. Lo usan tanto la venta de un producto
+     * suelto como cada producto dentro de un paquete vendido.
+     */
+    private function descontarStockProducto(Producto $producto, int $cantidad, VentaItem $item): Collection
+    {
         $stockAntes = $producto->stock;
 
         $seriales = ProductoSerial::where('producto_id', $producto->id)
             ->where('vendido', false)
             ->orderBy('id')
-            ->take((int) $item->cantidad)
+            ->take($cantidad)
             ->get();
 
         foreach ($seriales as $serial) {
@@ -447,10 +519,6 @@ class VentaController extends Controller
                 'venta_item_id' => $item->id,
             ]);
         }
-
-        $item->update([
-            'no_series' => $seriales->pluck('no_serie')->filter()->implode(', ') ?: null,
-        ]);
 
         $producto->recalcularStock();
 
@@ -462,7 +530,7 @@ class VentaController extends Controller
             'item_code' => (string) $producto->id,
             'item_name' => trim($producto->marca.' '.$producto->modelo) ?: $producto->tipo_equipo,
             'warehouse' => 'Almacen Central',
-            'quantity' => (int) $item->cantidad,
+            'quantity' => $cantidad,
             'unit' => 'Pza',
             'stock_before' => $stockAntes,
             'stock_after' => $producto->stock,
@@ -471,6 +539,8 @@ class VentaController extends Controller
             'metadata' => ['venta_item_id' => $item->id],
             'created_by' => auth()->id(),
         ]);
+
+        return $seriales;
     }
 
     private function guardarPagos(Venta $venta, array $data): void
