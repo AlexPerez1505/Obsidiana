@@ -377,23 +377,7 @@
                         </span>
                     </div>
                 </div>
-                <div class="vh-card-details">
-                    <div class="vh-detail-row">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                        <span class="vh-detail-label">Kilometraje:</span>
-                        <span class="vh-detail-value">{{ number_format($v->mileage ?? 0) }} km</span>
-                    </div>
-                    <div class="vh-detail-row">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v6c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V2M3 2h18M9 14l3 3L22 7"/></svg>
-                        <span class="vh-detail-label">Combustible:</span>
-                        <span class="vh-detail-value">{{ $v->fuel_type ?? 'N/A' }}</span>
-                    </div>
-                    <div class="vh-detail-row">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                        <span class="vh-detail-label">Próx. mantenimiento:</span>
-                        <span class="vh-detail-value">{{ $v->next_maintenance?->format('d/m/Y') ?? 'N/A' }}</span>
-                    </div>
-                </div>
+
             </div>
         @endforeach
     </div>
@@ -411,7 +395,7 @@
                 <p class="vh-modal-subtitle">Registra un nuevo vehículo en la flota con su información completa.</p>
             </div>
 
-            <form method="POST" action="{{ route('admin.vehicles.store') }}">
+            <form method="POST" action="{{ route('admin.vehicles.store') }}" enctype="multipart/form-data" id="vhForm">
                 @csrf
                 <div class="vh-modal-body">
 
@@ -464,129 +448,22 @@
                                     <input type="text" name="color" placeholder="Blanco, Negro, Rojo...">
                                 </div>
                             </div>
-                            <div class="vh-field">
-                                <label>Tipo de Motor</label>
-                                <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 7H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1M9 7V4M14 7V4M5 7V4"/></svg>
-                                    <input type="text" name="engine_type" placeholder="V6, 4 cilindros...">
-                                </div>
-                            </div>
-                            <div class="vh-field">
-                                <label>Combustible</label>
-                                <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h12M15 8h2a2 2 0 0 1 2 2v8a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.5L19 5"/></svg>
-                                    <select name="fuel_type">
-                                        <option value="">Seleccionar...</option>
-                                        <option value="Gasolina">Gasolina</option>
-                                        <option value="Diésel">Diésel</option>
-                                        <option value="Híbrido">Híbrido</option>
-                                        <option value="Eléctrico">Eléctrico</option>
-                                        <option value="Gas LP">Gas LP</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="vh-field">
-                                <label>Capacidad de Carga (kg)</label>
-                                <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-                                    <input type="number" name="load_capacity" placeholder="1500" step="0.01">
-                                </div>
-                            </div>
                         </div>
                     </div>
 
-                    {{-- Section 2: Control de Fechas y Rendimiento --}}
-                    <div class="vh-form-section">
-                        <h3 class="vh-section-title">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>
-                            Control de Fechas y Rendimiento
-                        </h3>
-                        <div class="vh-form-grid">
-                            <div class="vh-field">
-                                <label>Kilometraje</label>
-                                <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                                    <input type="number" name="mileage" placeholder="0" min="0">
-                                </div>
-                            </div>
-                            <div class="vh-field">
-                                <label>Rendimiento (Km/L)</label>
-                                <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
-                                    <input type="number" name="fuel_efficiency" placeholder="12.5" step="0.01">
-                                </div>
-                            </div>
-                            <div class="vh-field">
-                                <label>Costo Llenado ($)</label>
-                                <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                    <input type="number" name="tank_cost" placeholder="800.00" step="0.01">
-                                </div>
-                            </div>
-                            <div class="vh-field">
-                                <label>Fecha de Adquisición</label>
-                                <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                                    <input type="date" name="acquisition_date">
-                                </div>
-                            </div>
-                            <div class="vh-field">
-                                <label>Último Mantenimiento</label>
-                                <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                                    <input type="date" name="last_maintenance">
-                                </div>
-                            </div>
-                            <div class="vh-field">
-                                <label>Próximo Mantenimiento</label>
-                                <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                                    <input type="date" name="next_maintenance">
-                                </div>
-                            </div>
-                            <div class="vh-field">
-                                <label>Última Verificación</label>
-                                <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                                    <input type="date" name="last_verification">
-                                </div>
-                            </div>
-                            <div class="vh-field">
-                                <label>Próxima Verificación</label>
-                                <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                                    <input type="date" name="next_verification">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Section 3: Galería de Fotos --}}
+                    {{-- Section 2: Galería de Fotos --}}
                     <div class="vh-form-section">
                         <h3 class="vh-section-title">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                             Galería de Fotos del Vehículo
                         </h3>
-                        <div class="vh-drop-zone" onclick="alert('Funcionalidad de subida de fotos próximamente')">
+                        <div class="vh-drop-zone" onclick="document.getElementById('vh-photos-input').click()">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                             <p>Arrastra y suelta las fotos aquí</p>
                             <span>o haz clic para explorar (frente, lateral, trasera, interior)</span>
                         </div>
-                        <div class="vh-photo-previews">
-                            <div class="vh-photo-thumb" style="background:#f1f5f9; display:flex; align-items:center; justify-content:center;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="28" height="28" style="color:#cbd5e1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                                <span class="vh-photo-badge">Principal</span>
-                            </div>
-                            <div class="vh-photo-thumb" style="background:#f1f5f9; display:flex; align-items:center; justify-content:center;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="28" height="28" style="color:#cbd5e1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                            </div>
-                            <div class="vh-photo-thumb" style="background:#f1f5f9; display:flex; align-items:center; justify-content:center;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="28" height="28" style="color:#cbd5e1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                            </div>
-                            <div class="vh-photo-thumb" style="background:#f1f5f9; display:flex; align-items:center; justify-content:center;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="28" height="28" style="color:#cbd5e1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                            </div>
-                        </div>
+                        <input type="file" id="vh-photos-input" name="photos[]" accept="image/*" multiple hidden>
+                        <div class="vh-photo-previews" id="vh-photo-previews"></div>
                     </div>
 
                     {{-- Section 4: Documentación Obligatoria --}}
@@ -601,9 +478,10 @@
                             </div>
                             <div class="vh-doc-info">
                                 <p class="vh-doc-name">Tarjeta de Circulación</p>
-                                <p class="vh-doc-status">Sin archivo adjunto</p>
+                                <p class="vh-doc-status" data-doc-status>Sin archivo adjunto</p>
                             </div>
-                            <button type="button" class="vh-doc-btn" onclick="alert('Explorar archivos próximamente')">Explorar</button>
+                            <input type="file" id="vh-doc-circulation_card_doc" name="circulation_card_doc" accept=".jpg,.jpeg,.png,.pdf" hidden data-doc-input>
+                            <button type="button" class="vh-doc-btn" onclick="document.getElementById('vh-doc-circulation_card_doc').click()">Explorar</button>
                         </div>
                         <div class="vh-doc-row">
                             <div class="vh-doc-icon">
@@ -611,9 +489,10 @@
                             </div>
                             <div class="vh-doc-info">
                                 <p class="vh-doc-name">Verificación Vehicular</p>
-                                <p class="vh-doc-status">Sin archivo adjunto</p>
+                                <p class="vh-doc-status" data-doc-status>Sin archivo adjunto</p>
                             </div>
-                            <button type="button" class="vh-doc-btn" onclick="alert('Explorar archivos próximamente')">Explorar</button>
+                            <input type="file" id="vh-doc-verification_doc" name="verification_doc" accept=".jpg,.jpeg,.png,.pdf" hidden data-doc-input>
+                            <button type="button" class="vh-doc-btn" onclick="document.getElementById('vh-doc-verification_doc').click()">Explorar</button>
                         </div>
                         <div class="vh-doc-row">
                             <div class="vh-doc-icon">
@@ -621,9 +500,10 @@
                             </div>
                             <div class="vh-doc-info">
                                 <p class="vh-doc-name">Pago de Tenencia</p>
-                                <p class="vh-doc-status">Sin archivo adjunto</p>
+                                <p class="vh-doc-status" data-doc-status>Sin archivo adjunto</p>
                             </div>
-                            <button type="button" class="vh-doc-btn" onclick="alert('Explorar archivos próximamente')">Explorar</button>
+                            <input type="file" id="vh-doc-tenancy_doc" name="tenancy_doc" accept=".jpg,.jpeg,.png,.pdf" hidden data-doc-input>
+                            <button type="button" class="vh-doc-btn" onclick="document.getElementById('vh-doc-tenancy_doc').click()">Explorar</button>
                         </div>
                         <div class="vh-doc-row">
                             <div class="vh-doc-icon">
@@ -631,9 +511,17 @@
                             </div>
                             <div class="vh-doc-info">
                                 <p class="vh-doc-name">Póliza de Seguro</p>
-                                <p class="vh-doc-status">Sin archivo adjunto</p>
+                                <p class="vh-doc-status" data-doc-status>Sin archivo adjunto</p>
                             </div>
-                            <button type="button" class="vh-doc-btn" onclick="alert('Explorar archivos próximamente')">Explorar</button>
+                            <input type="file" id="vh-doc-insurance_doc" name="insurance_doc" accept=".jpg,.jpeg,.png,.pdf" hidden data-doc-input>
+                            <button type="button" class="vh-doc-btn" onclick="document.getElementById('vh-doc-insurance_doc').click()">Explorar</button>
+                        </div>
+                        <div class="vh-field" style="margin-top:6px;">
+                            <label>Número de Póliza</label>
+                            <div class="vh-input-wrap">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                <input type="text" name="insurance_policy_number" placeholder="Número de la póliza de seguro">
+                            </div>
                         </div>
                     </div>
 
@@ -651,6 +539,42 @@
             </form>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Vista previa de las fotos seleccionadas
+            var photosInput = document.getElementById('vh-photos-input');
+            var previewsBox = document.getElementById('vh-photo-previews');
+
+            if (photosInput && previewsBox) {
+                photosInput.addEventListener('change', function () {
+                    previewsBox.innerHTML = '';
+
+                    Array.from(photosInput.files).slice(0, 10).forEach(function (file, index) {
+                        var reader = new FileReader();
+                        reader.onload = function (event) {
+                            var thumb = document.createElement('div');
+                            thumb.className = 'vh-photo-thumb';
+                            thumb.innerHTML = '<img src="' + event.target.result + '" alt="Foto del vehículo">' +
+                                (index === 0 ? '<span class="vh-photo-badge">Principal</span>' : '');
+                            previewsBox.appendChild(thumb);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                });
+            }
+
+            // Mostrar el nombre del archivo elegido en cada documento
+            document.querySelectorAll('[data-doc-input]').forEach(function (input) {
+                input.addEventListener('change', function () {
+                    var status = input.closest('.vh-doc-row').querySelector('[data-doc-status]');
+                    if (status) {
+                        status.textContent = input.files.length ? input.files[0].name : 'Sin archivo adjunto';
+                    }
+                });
+            });
+        });
+    </script>
 
     @if(session('status'))
         <script>

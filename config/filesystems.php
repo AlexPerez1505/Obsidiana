@@ -17,6 +17,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Disco lógico para fotos de producto
+    |--------------------------------------------------------------------------
+    |
+    | Todas las fotos de catálogo, evidencia de entradas y unidades por
+    | serial se guardan en este disco. Hoy es "public" (local), pero al
+    | cambiar a S3/Hostinger basta con cambiar esta variable: el código no
+    | tiene 'public' regado como string literal en cada controller nuevo.
+    |
+    */
+
+    'fotos_disk' => env('FOTOS_DISK', 'public'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |

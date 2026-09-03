@@ -28,11 +28,13 @@ class Producto extends Model
         'descripcion',
         'proveedor',
         'no_serie',
+        'es_serializado',
     ];
 
     protected $casts = [
         'precio' => 'decimal:2',
         'stock' => 'integer',
+        'es_serializado' => 'boolean',
     ];
 
     /**
@@ -129,8 +131,13 @@ class Producto extends Model
 
     /**
      * Agrega unidades nuevas al inventario de este producto: una fila por
-     * cada serial capturado, y filas sin serial para completar la cantidad
-     * cuando no se capturó un serial por cada unidad.
+     * cada unidad capturada, y filas vacías para completar la cantidad
+     * cuando no se capturó una unidad por cada una.
+     *
+     * $unidades acepta dos formatos, y se pueden mezclar: un string suelto
+     * (solo el número de serie, como se ha hecho siempre) o un arreglo
+     * ['no_serie' => ..., 'foto_path' => ...] cuando además se capturó la
+     * foto individual de esa unidad (entradas de productos serializados).
      *
      * Si vienen de una entrada registrada en Entrada/Salida, se le pasa su
      * id para poder rastrear después con qué evidencia (fotos del lote)
@@ -141,26 +148,43 @@ class Producto extends Model
      * usuarios, o un doble clic), la segunda espera a que la primera
      * termine, en vez de calcular/insertar el mismo serial dos veces.
      */
-    public function agregarUnidades(int $cantidad, array $series = [], ?int $inventoryMovementId = null): void
+    public function agregarUnidades(int $cantidad, array $unidades = [], ?int $inventoryMovementId = null): void
     {
-        DB::transaction(function () use ($cantidad, $series, $inventoryMovementId) {
+        DB::transaction(function () use ($cantidad, $unidades, $inventoryMovementId) {
             static::whereKey($this->id)->lockForUpdate()->first();
 
-            $series = collect($series)->map(fn ($s) => trim((string) $s))->filter()->values();
+            $unidades = collect($unidades)
+                ->map(function ($unidad) {
+                    if (is_array($unidad)) {
+                        return [
+                            'no_serie' => trim((string) ($unidad['no_serie'] ?? '')) ?: null,
+                            'foto_path' => $unidad['foto_path'] ?? null,
+                        ];
+                    }
 
-            foreach ($series as $serie) {
+                    return ['no_serie' => trim((string) $unidad) ?: null, 'foto_path' => null];
+                })
+                ->filter(fn (array $u) => $u['no_serie'] !== null || $u['foto_path'] !== null)
+                ->values();
+
+            $capturadoPor = auth()->id();
+
+            foreach ($unidades as $unidad) {
                 $this->seriales()->create([
-                    'no_serie' => $serie,
+                    'no_serie' => $unidad['no_serie'],
+                    'foto_path' => $unidad['foto_path'],
                     'vendido' => false,
                     'inventory_movement_id' => $inventoryMovementId,
+                    'capturado_por' => $capturadoPor,
                 ]);
             }
 
-            for ($i = $series->count(); $i < $cantidad; $i++) {
+            for ($i = $unidades->count(); $i < $cantidad; $i++) {
                 $this->seriales()->create([
                     'no_serie' => null,
                     'vendido' => false,
                     'inventory_movement_id' => $inventoryMovementId,
+                    'capturado_por' => $capturadoPor,
                 ]);
             }
 

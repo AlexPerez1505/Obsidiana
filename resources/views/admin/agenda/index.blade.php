@@ -3,146 +3,6 @@
 @section('page-title', 'Agenda')
 @section('page-sub', 'Gestion Administrativa > Agenda')
 
-@php
-    $eventColors = [
-        'training' => ['bg' => '#9be8f3', 'text' => '#075f6f', 'line' => '#8ee6f0'],
-        'delivery' => ['bg' => '#96f5ad', 'text' => '#0f7a2d', 'line' => '#9cf3b1'],
-        'install' => ['bg' => '#c7a7ff', 'text' => '#3d178b', 'line' => '#c8a7ff'],
-        'meeting' => ['bg' => '#ffd9a3', 'text' => '#9a4f00', 'line' => '#ffd39a'],
-        'maintenance' => ['bg' => '#ff9ea5', 'text' => '#a3131e', 'line' => '#ffa0a6'],
-        'congress' => ['bg' => '#a9bcff', 'text' => '#053394', 'line' => '#a9bcff'],
-    ];
-
-    $eventList = [
-        [
-            'id' => 'evt-training',
-            'start_date' => '2026-07-01',
-            'end_date' => '2026-07-03',
-            'time' => '10:00 am',
-            'time_value' => '10:00',
-            'title' => 'Capacitacion',
-            'type' => 'training',
-            'notes' => 'Preparar materiales y confirmar asistentes.',
-            'participants' => 'Ricardo, Marina Sherlyn, Jose Alex',
-        ],
-        [
-            'id' => 'evt-delivery',
-            'start_date' => '2026-07-05',
-            'end_date' => '2026-07-05',
-            'time' => '08:00 am',
-            'time_value' => '08:00',
-            'title' => 'Entrega de equipo',
-            'type' => 'delivery',
-            'notes' => 'Confirmar recepcion y evidencia de entrega.',
-            'participants' => 'Ing. Joel Diaz, Almacen Central',
-        ],
-        [
-            'id' => 'evt-install',
-            'start_date' => '2026-07-09',
-            'end_date' => '2026-07-09',
-            'time' => '08:00 am',
-            'time_value' => '08:00',
-            'title' => 'Instalacion',
-            'type' => 'install',
-            'notes' => 'Validar acceso al area antes de iniciar.',
-            'participants' => 'Servicios, Cliente asignado',
-        ],
-        [
-            'id' => 'evt-meeting',
-            'start_date' => '2026-07-13',
-            'end_date' => '2026-07-13',
-            'time' => '10:00 am',
-            'time_value' => '10:00',
-            'title' => 'Reunion',
-            'type' => 'meeting',
-            'notes' => 'Revisar pendientes administrativos.',
-            'participants' => 'Direccion, Administracion',
-        ],
-        [
-            'id' => 'evt-congress',
-            'start_date' => '2026-07-25',
-            'end_date' => '2026-07-25',
-            'time' => '09:00 am',
-            'time_value' => '09:00',
-            'title' => 'Congreso',
-            'type' => 'congress',
-            'notes' => 'Confirmar agenda y participantes.',
-            'participants' => 'Marketing, Ventas, Direccion',
-        ],
-        [
-            'id' => 'evt-maintenance',
-            'start_date' => '2026-07-28',
-            'end_date' => '2026-07-28',
-            'time' => '11:00 am',
-            'time_value' => '11:00',
-            'title' => 'Mantenimiento',
-            'type' => 'maintenance',
-            'notes' => 'Programar revision preventiva del equipo.',
-            'participants' => 'Tecnico interno, Responsable de equipo',
-        ],
-    ];
-
-    $events = [];
-
-    foreach ($eventList as $event) {
-        $start = new DateTimeImmutable($event['start_date']);
-        $end = new DateTimeImmutable($event['end_date']);
-
-        for ($cursor = $start; $cursor <= $end; $cursor = $cursor->modify('+1 day')) {
-            if ($cursor->format('Y-m') !== '2026-07') {
-                continue;
-            }
-
-            $dayNumber = (int) $cursor->format('j');
-            $events[$dayNumber][] = array_merge($event, [
-                'date' => $cursor->format('Y-m-d'),
-                'is_start' => $cursor->format('Y-m-d') === $event['start_date'],
-                'is_end' => $cursor->format('Y-m-d') === $event['end_date'],
-            ]);
-        }
-    }
-
-    $calendar = [
-        ['num' => 28, 'muted' => true],
-        ['num' => 29, 'muted' => true],
-        ['num' => 30, 'muted' => true],
-        ['num' => 1],
-        ['num' => 2],
-        ['num' => 3],
-        ['num' => 4],
-        ['num' => 5],
-        ['num' => 6],
-        ['num' => 7],
-        ['num' => 8],
-        ['num' => 9],
-        ['num' => 10],
-        ['num' => 11],
-        ['num' => 12],
-        ['num' => 13],
-        ['num' => 14],
-        ['num' => 15],
-        ['num' => 16],
-        ['num' => 17],
-        ['num' => 18],
-        ['num' => 19],
-        ['num' => 20],
-        ['num' => 21],
-        ['num' => 22],
-        ['num' => 23],
-        ['num' => 24],
-        ['num' => 25],
-        ['num' => 26],
-        ['num' => 27],
-        ['num' => 28],
-        ['num' => 29],
-        ['num' => 30],
-        ['num' => 31],
-        ['num' => 1, 'muted' => true],
-    ];
-
-    $upcoming = $eventList;
-@endphp
-
 @push('head')
 <style>
     .agenda-page {
@@ -215,6 +75,25 @@
         background: #1d4ed8;
     }
 
+    .agenda-add.is-outline {
+        background: #fff;
+        color: #2563eb;
+        border: 1.5px solid #2563eb;
+        box-shadow: none;
+        text-decoration: none;
+    }
+
+    .agenda-add.is-outline:hover {
+        background: #eff4ff;
+    }
+
+    .agenda-hero-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
     .agenda-add svg,
     .agenda-filter svg,
     .agenda-icon-btn svg {
@@ -252,6 +131,14 @@
         font-family: inherit;
         font-weight: 700;
         cursor: pointer;
+    }
+
+    .agenda-today,
+    .agenda-icon-btn {
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .agenda-today {
@@ -521,6 +408,12 @@
         font-size: 13px;
     }
 
+    .upcoming-empty {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+    }
+
     .agenda-modal {
         position: fixed;
         inset: 0;
@@ -618,8 +511,14 @@
         box-shadow: 0 0 0 3px rgba(0, 122, 255, .12);
     }
 
+    .agenda-form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
     .agenda-save {
-        justify-self: end;
         min-height: 42px;
         padding: 0 18px;
         border: 0;
@@ -629,6 +528,23 @@
         font: inherit;
         font-weight: 800;
         cursor: pointer;
+    }
+
+    .agenda-delete {
+        min-height: 42px;
+        padding: 0 18px;
+        border: 1.5px solid #dc2626;
+        border-radius: 7px;
+        background: #fff;
+        color: #dc2626;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+        margin-right: auto;
+    }
+
+    .agenda-delete:hover {
+        background: #fef2f2;
     }
 
     :root[data-theme="dark"] .agenda-view button.is-active,
@@ -673,6 +589,11 @@
 
         .agenda-add {
             width: 100%;
+        }
+
+        .agenda-hero-actions {
+            width: 100%;
+            flex-direction: column;
         }
 
         .agenda-toolbar {
@@ -895,23 +816,29 @@
                 <h2>Agenda/Evento</h2>
             </div>
 
-            <button class="agenda-add" type="button" data-agenda-modal-open>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
-                Nuevo Evento
-            </button>
+            <div class="agenda-hero-actions">
+                <a class="agenda-add is-outline" href="{{ route('configuracion.congresos.create') }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                    Agregar Congreso
+                </a>
+                <button class="agenda-add" type="button" data-agenda-modal-open>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                    Nuevo Evento
+                </button>
+            </div>
         </div>
 
         <div class="agenda-shell">
             <div class="agenda-main">
                 <div class="agenda-toolbar">
-                    <button class="agenda-today" type="button">Hoy</button>
-                    <button class="agenda-icon-btn" type="button" aria-label="Mes anterior">
+                    <a class="agenda-today" href="{{ route('admin.agenda.index', ['month' => $currentMonth]) }}">Hoy</a>
+                    <a class="agenda-icon-btn" href="{{ route('admin.agenda.index', ['month' => $prevMonth]) }}" aria-label="Mes anterior">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
-                    </button>
-                    <button class="agenda-icon-btn" type="button" aria-label="Mes siguiente">
+                    </a>
+                    <a class="agenda-icon-btn" href="{{ route('admin.agenda.index', ['month' => $nextMonth]) }}" aria-label="Mes siguiente">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
-                    </button>
-                    <p class="agenda-month">Julio 2026</p>
+                    </a>
+                    <p class="agenda-month">{{ $monthLabel }}</p>
                     <div class="agenda-view" aria-label="Vista de calendario">
                         <button type="button" class="is-active">Mes</button>
                         <button type="button">Semana</button>
@@ -919,7 +846,7 @@
                     </div>
                 </div>
 
-                <div class="calendar-grid" aria-label="Calendario de julio 2026">
+                <div class="calendar-grid" aria-label="Calendario de {{ $monthLabel }}">
                     @foreach (['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'] as $day)
                         <div class="calendar-day-name">{{ $day }}</div>
                     @endforeach
@@ -927,8 +854,7 @@
                     @foreach ($calendar as $day)
                         @php
                             $dayEvents = empty($day['muted']) ? ($events[$day['num']] ?? []) : [];
-                            $dateMonth = empty($day['muted']) ? '07' : ($loop->index < 3 ? '06' : '08');
-                            $selectedDate = '2026-'.$dateMonth.'-'.str_pad($day['num'], 2, '0', STR_PAD_LEFT);
+                            $selectedDate = $day['date'];
                             $dayClasses = ['calendar-cell'];
 
                             if ($dayEvents) {
@@ -960,6 +886,8 @@
                                             type="button"
                                             data-agenda-event
                                             data-agenda-id="{{ $event['id'] }}"
+                                            data-agenda-source="{{ $event['source'] }}"
+                                            data-agenda-model-id="{{ $event['model_id'] }}"
                                             data-agenda-date="{{ $selectedDate }}"
                                             data-agenda-start-date="{{ $event['start_date'] }}"
                                             data-agenda-end-date="{{ $event['end_date'] }}"
@@ -969,7 +897,7 @@
                                             data-agenda-notes="{{ $event['notes'] }}"
                                             data-agenda-participants="{{ $event['participants'] }}"
                                             style="background: {{ $color['bg'] }}; color: {{ $color['text'] }};"
-                                            aria-label="Editar evento {{ $event['title'] }} del {{ $selectedDate }}"
+                                            aria-label="{{ $event['source'] === 'congress' ? 'Ver congreso' : 'Editar evento' }} {{ $event['title'] }} del {{ $selectedDate }}"
                                         >
                                             <b>{{ $event['time'] }}</b>
                                             <span>{{ $event['title'] }}</span>
@@ -996,16 +924,18 @@
                 <div class="upcoming-panel">
                     <h3>Proximos eventos</h3>
                     <div class="upcoming-list">
-                        @foreach ($upcoming as $event)
+                        @forelse ($upcoming as $event)
                             @php($color = $eventColors[$event['type']])
                             <div class="upcoming-item" style="color: {{ $color['text'] }};">
                                 <span class="upcoming-line" style="background: {{ $color['line'] }};"></span>
                                 <span>
-                                    <b>{{ $event['time'] }}</b>
+                                    <b>{{ \Carbon\Carbon::parse($event['start_date'])->translatedFormat('d M') }} · {{ $event['time'] }}</b>
                                     <span>{{ $event['title'] }}</span>
                                 </span>
                             </div>
-                        @endforeach
+                        @empty
+                            <p class="upcoming-empty">No hay eventos ni congresos próximos.</p>
+                        @endforelse
                     </div>
                 </div>
             </aside>
@@ -1020,7 +950,9 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <form class="agenda-form" onsubmit="saveAgendaEvent(event);">
+            <form class="agenda-form" id="agendaForm" method="POST" action="{{ route('admin.agenda.events.store') }}">
+                @csrf
+                <input type="hidden" name="_method" id="agenda-method" value="POST">
                 <div>
                     <label for="agenda-title">Titulo</label>
                     <input id="agenda-title" type="text" name="title" placeholder="Nombre del evento" required>
@@ -1028,11 +960,11 @@
                 <div class="agenda-form-row agenda-form-row--three">
                     <div>
                         <label for="agenda-date">Fecha inicial</label>
-                        <input id="agenda-date" type="date" name="start_date" value="2026-07-04" required>
+                        <input id="agenda-date" type="date" name="start_date" required>
                     </div>
                     <div>
                         <label for="agenda-end-date">Fecha final</label>
-                        <input id="agenda-end-date" type="date" name="end_date" value="2026-07-04" required>
+                        <input id="agenda-end-date" type="date" name="end_date" required>
                     </div>
                     <div>
                         <label for="agenda-time">Hora</label>
@@ -1042,12 +974,11 @@
                 <div>
                     <label for="agenda-type">Tipo</label>
                     <select id="agenda-type" name="type">
-                        <option>Capacitacion</option>
-                        <option>Entrega de equipo</option>
-                        <option>Instalacion</option>
-                        <option>Mantenimiento</option>
-                        <option>Reunion</option>
-                        <option>Congreso</option>
+                        <option value="training">Capacitacion</option>
+                        <option value="delivery">Entrega de equipo</option>
+                        <option value="install">Instalacion</option>
+                        <option value="maintenance">Mantenimiento</option>
+                        <option value="meeting">Reunion</option>
                     </select>
                 </div>
                 <div>
@@ -1058,13 +989,22 @@
                     <label for="agenda-notes">Notas</label>
                     <textarea id="agenda-notes" name="notes" placeholder="Notas del evento"></textarea>
                 </div>
-                <button class="agenda-save" id="agendaSaveButton" type="submit">Guardar evento</button>
+                <div class="agenda-form-actions">
+                    <button class="agenda-delete" id="agendaDeleteButton" type="button" hidden>Eliminar evento</button>
+                    <button class="agenda-save" id="agendaSaveButton" type="submit">Guardar evento</button>
+                </div>
+            </form>
+            <form id="agendaDeleteForm" method="POST" action="" hidden>
+                @csrf
+                @method('DELETE')
             </form>
         </div>
     </div>
 
     <script>
         const agendaModal = document.getElementById('agendaModal');
+        const agendaForm = document.getElementById('agendaForm');
+        const agendaMethodInput = document.getElementById('agenda-method');
         const agendaTitleInput = document.getElementById('agenda-title');
         const agendaDateInput = document.getElementById('agenda-date');
         const agendaEndDateInput = document.getElementById('agenda-end-date');
@@ -1074,6 +1014,7 @@
         const agendaNotesInput = document.getElementById('agenda-notes');
         const agendaDialogTitle = document.getElementById('agendaDialogTitle');
         const agendaSaveButton = document.getElementById('agendaSaveButton');
+<<<<<<< HEAD
         const agendaReservedEvents = @json($eventList);
         const agendaEventColors = @json($eventColors);
         const agendaTypeLabels = {
@@ -1098,32 +1039,42 @@
                 return startDate <= item.end_date && endDate >= item.start_date;
             });
         }
+=======
+        const agendaDeleteButton = document.getElementById('agendaDeleteButton');
+        const agendaDeleteForm = document.getElementById('agendaDeleteForm');
+        const agendaStoreUrl = @json(route('admin.agenda.events.store'));
+        const agendaUpdateUrlTemplate = @json(route('admin.agenda.events.update', ['agendaEvent' => '__ID__']));
+        const agendaDeleteUrlTemplate = @json(route('admin.agenda.events.destroy', ['agendaEvent' => '__ID__']));
+        const congressShowUrlTemplate = @json(route('configuracion.congresos.show', ['congress' => '__ID__']));
+        const todayIso = @json(now()->format('Y-m-d'));
+>>>>>>> bbfe076a8de37195fd7178e70469ad364dc7c562
 
         function openAgendaModal(selectedDate, eventData) {
-            const date = typeof selectedDate === 'string' ? selectedDate : '2026-07-04';
+            const date = typeof selectedDate === 'string' ? selectedDate : todayIso;
             const isEditing = !!eventData;
-            const normalizedEvent = isEditing ? {
-                id: eventData.id,
-                startDate: eventData.startDate || eventData.start_date,
-                endDate: eventData.endDate || eventData.end_date,
-                title: eventData.title,
-                time: eventData.time || eventData.time_value,
-                type: eventData.type,
-                notes: eventData.notes || '',
-                participants: eventData.participants || '',
-            } : null;
 
             agendaModal.dataset.mode = isEditing ? 'edit' : 'create';
-            agendaModal.dataset.eventId = isEditing ? normalizedEvent.id : '';
+            agendaModal.dataset.eventId = isEditing ? eventData.modelId : '';
             agendaDialogTitle.textContent = isEditing ? 'Editar Evento' : 'Nuevo Evento';
             agendaSaveButton.textContent = isEditing ? 'Guardar cambios' : 'Guardar evento';
-            agendaTitleInput.value = isEditing ? normalizedEvent.title : '';
-            agendaDateInput.value = isEditing ? normalizedEvent.startDate : date;
-            agendaEndDateInput.value = isEditing ? normalizedEvent.endDate : date;
-            agendaTimeInput.value = isEditing ? normalizedEvent.time : '09:00';
-            agendaTypeInput.value = isEditing ? (agendaTypeLabels[normalizedEvent.type] || normalizedEvent.type) : 'Capacitacion';
-            agendaParticipantsInput.value = isEditing ? normalizedEvent.participants : '';
-            agendaNotesInput.value = isEditing ? normalizedEvent.notes : '';
+            agendaTitleInput.value = isEditing ? eventData.title : '';
+            agendaDateInput.value = isEditing ? eventData.startDate : date;
+            agendaEndDateInput.value = isEditing ? eventData.endDate : date;
+            agendaTimeInput.value = isEditing ? eventData.time : '09:00';
+            agendaTypeInput.value = isEditing ? eventData.type : 'training';
+            agendaParticipantsInput.value = isEditing ? eventData.participants : '';
+            agendaNotesInput.value = isEditing ? eventData.notes : '';
+
+            if (isEditing) {
+                agendaForm.action = agendaUpdateUrlTemplate.replace('__ID__', eventData.modelId);
+                agendaMethodInput.value = 'PUT';
+                agendaDeleteButton.hidden = false;
+                agendaDeleteForm.action = agendaDeleteUrlTemplate.replace('__ID__', eventData.modelId);
+            } else {
+                agendaForm.action = agendaStoreUrl;
+                agendaMethodInput.value = 'POST';
+                agendaDeleteButton.hidden = true;
+            }
 
             agendaModal.classList.add('is-open');
             agendaModal.setAttribute('aria-hidden', 'false');
@@ -1135,43 +1086,33 @@
             agendaModal.setAttribute('aria-hidden', 'true');
         }
 
-        function saveAgendaEvent(event) {
-            event.preventDefault();
-
+        agendaForm.addEventListener('submit', (event) => {
             if (agendaEndDateInput.value < agendaDateInput.value) {
+                event.preventDefault();
+
                 if (window.showToast) {
                     window.showToast('La fecha final no puede ser menor que la fecha inicial.');
                 }
-
-                return;
             }
+        });
 
-            if (rangeOverlapsReservedEvent(agendaDateInput.value, agendaEndDateInput.value, agendaModal.dataset.eventId)) {
-                if (window.showToast) {
-                    window.showToast('Ya existe un evento registrado en ese rango de fechas.');
-                }
-
-                return;
+        agendaDeleteButton.addEventListener('click', () => {
+            if (window.confirm('¿Eliminar este evento de la agenda?')) {
+                agendaDeleteForm.submit();
             }
-
-            if (window.showToast) {
-                const message = agendaModal.dataset.mode === 'edit'
-                    ? 'Evento actualizado para el ' + agendaDateInput.value + '.'
-                    : 'Evento registrado para el ' + agendaDateInput.value + '.';
-                window.showToast(message);
-            }
-
-            closeAgendaModal();
-        }
+        });
 
         document.querySelectorAll('[data-agenda-modal-open]').forEach((button) => {
             button.addEventListener('click', () => openAgendaModal());
         });
 
         document.querySelectorAll('[data-agenda-day]').forEach((day) => {
-            day.addEventListener('click', () => {
-                const currentEvent = findAgendaEventByDate(day.dataset.agendaDate);
-                openAgendaModal(day.dataset.agendaDate, currentEvent);
+            day.addEventListener('click', (event) => {
+                if (event.target.closest('[data-agenda-event]')) {
+                    return;
+                }
+
+                openAgendaModal(day.dataset.agendaDate);
             });
             day.addEventListener('keydown', (event) => {
                 if (event.target.closest('[data-agenda-event]')) {
@@ -1180,8 +1121,7 @@
 
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
-                    const currentEvent = findAgendaEventByDate(day.dataset.agendaDate);
-                    openAgendaModal(day.dataset.agendaDate, currentEvent);
+                    openAgendaModal(day.dataset.agendaDate);
                 }
             });
         });
@@ -1189,8 +1129,14 @@
         document.querySelectorAll('[data-agenda-event]').forEach((item) => {
             item.addEventListener('click', (event) => {
                 event.stopPropagation();
+
+                if (item.dataset.agendaSource === 'congress') {
+                    window.location.href = congressShowUrlTemplate.replace('__ID__', item.dataset.agendaModelId);
+                    return;
+                }
+
                 openAgendaModal(item.dataset.agendaDate, {
-                    id: item.dataset.agendaId,
+                    modelId: item.dataset.agendaModelId,
                     startDate: item.dataset.agendaStartDate,
                     endDate: item.dataset.agendaEndDate,
                     title: item.dataset.agendaTitle,
@@ -1378,6 +1324,12 @@
             });
         });
 
+<<<<<<< HEAD
         showAgendaView('month');
+=======
+        @if ($errors->any())
+            openAgendaModal();
+        @endif
+>>>>>>> bbfe076a8de37195fd7178e70469ad364dc7c562
     </script>
 @endsection

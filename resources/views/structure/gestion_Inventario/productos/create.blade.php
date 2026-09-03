@@ -12,90 +12,10 @@
 
 @section('content')
     @php
-<<<<<<< HEAD
-        $equipmentTypes = [
-            'endoscopia',
-            'refacciones de endoscopia',
-            'laparoscopia',
-            'quirófano',
-            'hospitalización',
-            'material',
-            'otorrinolaringologia',
-            'radiología',
-            'urología',
-            'artroscopia',
-            'ceye',
-            'ginecología',
-            'Endoscopia Veterinaria',
-        ];
-
-        $defaultSubtypesByEquipmentType = array_fill_keys($equipmentTypes, []);
-        $defaultSubtypesByEquipmentType['endoscopia'] = [
-            'Adaptador',
-            'Balance de blancos',
-            'Bomba de Irrigación',
-            'Bomba de Secreción',
-            'Bombad de CO2',
-            'Broncoscopio',
-            'Cable',
-            'Cable Bipolar',
-            'Cable Monopolar',
-            'Capturador de video',
-            'Capuchon Distal',
-            'Carro',
-            'Caja de Almacenamiento',
-            'Cepillo de limpieza',
-            'Cepillos de limpieza',
-            'Colonoscopio',
-            'Conjunto de Irrigación',
-            'Contenedor de liquidos',
-            'Comvertidor de video',
-            'Duodenoscopio',
-            'Eliminador',
-            'Foco',
-            'Fuente de luz',
-            'Gastroscopio',
-            'Grabador',
-            'Interfas',
-            'Instrumento endosciopico',
-            'Interfaz Monopolar para Erbe',
-            'Kit de limpieza',
-            'Linea de Irrigación',
-            'Manguera Yugo',
-            'Monitor',
-            'Mouse',
-            'Multicontacto',
-            'PC SIIMED Analogo',
-            'PC SIIMED HD',
-            'Pedal',
-            'Pilas',
-            'Pigtail',
-            'Pinzas de Endoscopia',
-            'Probador de Fuga',
-            'Procesador',
-            'Protector Bucal para Endoscopio',
-            'Protector de Punta de Endoscopio',
-            'Protector de Argon de Endoscopio',
-            'Sonda Para Argon',
-            'Sistema Endoscopia',
-            'Tapon de Biopsia',
-            'Tapon-EPO',
-            'Tanque de Argon',
-            'Teclado',
-            'Tuallitas humedas',
-            'Transductor para USG-400',
-            'Remoto para Endoscopios',
-            'Solucion desinfectante',
-            'Solucion detergente',
-            'Valvulas desechables',
-            'Valvulas Reusables',
-        ];
-=======
         // Tipo, subtipo, marca y modelo salen del catálogo (Configuración → Catálogos).
         // Aquí solo queda el proveedor, que sigue siendo texto libre.
         $proveedorOptions = collect(($productoOptions ?? [])['proveedor'] ?? [])
             ->filter()->unique()->values()->all();
->>>>>>> b0bc525046ab11c3972c63fbb675c09cb03e2a0b
     @endphp
 
     <form method="POST" action="{{ route('inventory.productos.store') }}" enctype="multipart/form-data">
@@ -189,43 +109,6 @@
                     });
                 }
 
-<<<<<<< HEAD
-                const normalize = function (value) {
-                    return (value || '').trim().toLocaleLowerCase();
-                };
-
-                const optionsForType = function (value) {
-                    if (subtypeOptionsByType[value]) {
-                        return subtypeOptionsByType[value];
-                    }
-
-                    const normalizedValue = normalize(value);
-                    const matchingKey = Object.keys(subtypeOptionsByType).find(function (key) {
-                        return normalize(key) === normalizedValue;
-                    });
-
-                    return matchingKey ? subtypeOptionsByType[matchingKey] : [];
-                };
-
-                const renderSubtypeOptions = function () {
-                    const options = optionsForType(typeInput.value);
-
-                    subtypeList.innerHTML = '';
-                    options.forEach(function (option) {
-                        const item = document.createElement('option');
-                        item.value = option;
-                        subtypeList.appendChild(item);
-                    });
-
-                    subtypeInput.placeholder = options.length
-                        ? 'Selecciona o escribe un subtipo'
-                        : 'Escribe un subtipo';
-                };
-
-                typeInput.addEventListener('input', renderSubtypeOptions);
-                typeInput.addEventListener('change', renderSubtypeOptions);
-                renderSubtypeOptions();
-=======
                 const imageInput = document.getElementById('imagen');
                 const imagePreviewWrap = document.getElementById('image-preview-wrap');
                 const imagePreview = document.getElementById('image-preview');
@@ -269,7 +152,6 @@
 
                     imagePreviewClear.addEventListener('click', clearImagePreview);
                 }
->>>>>>> b0bc525046ab11c3972c63fbb675c09cb03e2a0b
             });
         </script>
     @endpush

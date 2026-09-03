@@ -3,6 +3,20 @@
 @section('page-title', 'Productos')
 @section('page-sub', 'Inventario de equipos y stock disponible')
 
+@push('head')
+    <style>
+        .unidades-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+        .unidades-modal { background:var(--surface); border-radius:12px; max-width:560px; width:100%; max-height:80vh; overflow-y:auto; padding:20px; }
+        .unidades-modal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+        .unidad-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+        .unidad-item:last-child { border-bottom:none; }
+        .unidad-item img { width:54px; height:54px; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:pointer; }
+        .unidad-item .unidad-sin-foto { width:54px; height:54px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; text-align:center; }
+        .producto-row { cursor:pointer; }
+        .producto-row:hover { background:var(--surface-2); }
+    </style>
+@endpush
+
 @section('content')
     <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap;">
         <form method="GET" style="flex:1; min-width:220px; max-width:380px;">
@@ -24,7 +38,6 @@
                         <th>Imagen</th>
                         <th>Equipo</th>
                         <th>Marca / Modelo</th>
-                        <th>No. Serie</th>
                         <th>Precio</th>
                         <th>Stock</th>
                         <th>Proveedor</th>
@@ -33,7 +46,8 @@
                 </thead>
                 <tbody>
                     @forelse($productos as $producto)
-                        <tr>
+                        <tr class="producto-row" title="Ver unidades disponibles"
+                            onclick="if (!event.target.closest('.actions-dropdown')) { document.getElementById('unidades-modal-{{ $producto->id }}').style.display='flex'; }">
                             <td>
                                 @if($producto->imagen_path)
                                     <img src="{{ asset('storage/' . $producto->imagen_path) }}" alt="{{ $producto->tipo_equipo }}" style="width:50px; height:50px; object-fit:cover; border-radius:6px; border:1px solid var(--border);">
@@ -48,7 +62,6 @@
                                 @endif
                             </td>
                             <td>{{ $producto->marca ?: '—' }} {{ $producto->modelo }}</td>
-                            <td>{{ $producto->no_serie ?: '—' }}</td>
                             <td>${{ number_format($producto->precio, 2) }}</td>
                             <td>
                                 <span class="badge {{ $producto->stock > 0 ? 'badge--ok' : 'badge--danger' }}">
@@ -80,7 +93,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" style="text-align:center; padding:32px; color:var(--muted);">
+                            <td colspan="7" style="text-align:center; padding:32px; color:var(--muted);">
                                 No hay productos registrados.
                             </td>
                         </tr>
@@ -90,4 +103,35 @@
         </div>
         @include('partials._paginacion', ['paginator' => $productos])
     </x-ui.card>
+
+    {{-- Modales de unidades disponibles, fuera de la tabla para que el HTML sea válido --}}
+    @foreach ($productos as $producto)
+        <div id="unidades-modal-{{ $producto->id }}" class="unidades-modal-overlay">
+            <div class="unidades-modal">
+                <div class="unidades-modal-head">
+                    <div>
+                        <strong>{{ trim($producto->marca.' '.$producto->modelo) ?: $producto->tipo_equipo }}</strong>
+                        <div class="muted" style="font-size:12.5px;">Unidades disponibles ({{ $producto->serialesDisponibles->count() }})</div>
+                    </div>
+                    <button type="button" class="btn btn--ghost" style="padding:5px 10px;" onclick="document.getElementById('unidades-modal-{{ $producto->id }}').style.display='none'">Cerrar</button>
+                </div>
+
+                @forelse ($producto->serialesDisponibles as $serial)
+                    <div class="unidad-item">
+                        @if ($serial->fotoUrl())
+                            <img src="{{ $serial->fotoUrl() }}" alt="Foto de la unidad" onclick="window.open('{{ $serial->fotoUrl() }}', '_blank')">
+                        @else
+                            <div class="unidad-sin-foto">Sin foto</div>
+                        @endif
+                        <div style="flex:1;">
+                            <div style="font-weight:600; font-size:13.5px;">{{ $serial->no_serie ?: '— (sin serial capturado)' }}</div>
+                            <span class="badge badge--ok" style="font-size:11px;">Disponible</span>
+                        </div>
+                    </div>
+                @empty
+                    <p class="muted" style="padding:16px 0; text-align:center;">No hay unidades disponibles.</p>
+                @endforelse
+            </div>
+        </div>
+    @endforeach
 @endsection

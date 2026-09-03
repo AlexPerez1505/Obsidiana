@@ -133,6 +133,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('inventory.productos.destroy');
     Route::post('/gestion-inventario/productos/{producto}/seriales', [ProductoController::class, 'agregarSeriales'])
         ->name('inventory.productos.seriales.store');
+    Route::put('/gestion-inventario/productos/seriales/{serial}', [ProductoController::class, 'actualizarSerial'])
+        ->name('inventory.productos.seriales.update');
     Route::delete('/gestion-inventario/productos/seriales/{serial}', [ProductoController::class, 'eliminarSerial'])
         ->name('inventory.productos.seriales.destroy');
 

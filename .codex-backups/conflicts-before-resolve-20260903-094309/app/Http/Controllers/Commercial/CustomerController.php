@@ -143,13 +143,6 @@ class CustomerController extends Controller
      */
     private function normalizeCustomerInput(Request $request): void
     {
-<<<<<<< HEAD
-        $rfc = trim((string) $request->input('rfc'));
-
-        $request->merge([
-            'telefono' => trim((string) $request->input('telefono')),
-            'rfc' => $rfc === '' ? null : strtoupper($rfc),
-=======
         $rfc = strtoupper(trim((string) $request->input('rfc')));
 
         $congresoId = $request->filled('congreso_id') ? $request->input('congreso_id') : null;
@@ -162,7 +155,6 @@ class CustomerController extends Controller
             // El congreso ya responde "cómo lo conocimos"; el texto libre
             // solo aplica cuando no se levantó en uno.
             'como_conocio' => $congresoId ? null : (trim((string) $request->input('como_conocio')) ?: null),
->>>>>>> origin/main
         ]);
     }
 
