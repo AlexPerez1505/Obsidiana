@@ -194,6 +194,23 @@
     .task-field textarea::placeholder { color: var(--muted); opacity: .7; }
     .task-field textarea { min-height: 90px; resize: vertical; }
 
+    .kanban-delivery-preview { min-height:80px; border:1px dashed var(--border); border-radius:10px; padding:14px; color:var(--muted); font-size:13px; display:flex; align-items:center; justify-content:center; text-align:center; }
+    .kanban-delivery-preview:has(iframe), .kanban-delivery-preview:has(.lp-card), .kanban-delivery-preview:has(.lp-img-full) { padding:0; border-style:solid; display:block; text-align:left; }
+    .lp-card { display:flex; border-radius:10px; overflow:hidden; background:var(--surface); text-decoration:none; color:inherit; }
+    .lp-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.12); }
+    .lp-card-img { width:120px; min-height:100px; max-height:160px; object-fit:cover; flex-shrink:0; background:var(--surface-2); }
+    .lp-card-body { padding:12px 14px; display:flex; flex-direction:column; gap:5px; min-width:0; flex:1; }
+    .lp-card-title { font-size:13px; font-weight:700; color:var(--text); line-height:1.35; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+    .lp-card-desc { font-size:12px; color:var(--muted); line-height:1.45; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; margin:0; }
+    .lp-card-host { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; font-weight:700; margin-top:auto; display:inline-flex; align-items:center; gap:5px; }
+    .lp-embed { width:100%; aspect-ratio:16/9; border:0; border-radius:10px; display:block; background:#000; }
+    .lp-embed.canva { aspect-ratio:auto; min-height:280px; }
+    .lp-img-full { width:100%; max-height:360px; object-fit:contain; border-radius:10px; display:block; background:var(--surface-2); }
+    .lp-loading { display:inline-flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; }
+    .lp-loading::before { content:''; width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:lp-spin .7s linear infinite; }
+    @keyframes lp-spin { to { transform:rotate(360deg); } }
+    .lp-error { color:var(--danger, #c0392b); font-size:13px; }
+
     .task-footer {
         display: flex;
         align-items: center;
@@ -523,6 +540,11 @@
             </div>
 
             <div class="task-field">
+                <span class="field-label">Vista previa del enlace</span>
+                <div class="kanban-delivery-preview" id="kanbanDeliveryPreview">Pega el enlace arriba para ver la vista previa.</div>
+            </div>
+
+            <div class="task-field">
                 <label for="editComments">Comentarios del revisor</label>
                 <textarea id="editComments" name="rejection_comment" placeholder="Notas del revisor..."></textarea>
             </div>
@@ -657,8 +679,121 @@
             projectImageField.style.display = isPendiente ? '' : 'none';
         }
 
+        loadKanbanDeliveryPreview(data.delivery_link || '');
+
         document.getElementById('taskModal').classList.add('is-open');
     }
+
+    /* ===== Vista previa hibrida del delivery_link (kanban) ===== */
+    var kanbanPreviewCache = {};
+    var kanbanPreviewAbort = null;
+    var kanbanPreviewLinkUrl = '{{ route("marketing.tareas.preview_link") }}';
+    var kanbanCsrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '';
+
+    function escapeHtmlKb(s) {
+        var d = document.createElement('div');
+        d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+    }
+    function hostFromUrlKb(url) {
+        try { return new URL(url).hostname.replace(/^www\./, ''); }
+        catch (e) { return url; }
+    }
+    function renderPreviewDataKb(data, container) {
+        if (!data || !data.type) {
+            container.textContent = 'Pega el enlace arriba para ver la vista previa.';
+            return;
+        }
+        var url = data.url || '';
+        switch (data.type) {
+            case 'youtube':
+            case 'vimeo':
+                container.innerHTML = '<iframe class="lp-embed" src="' + escapeHtmlKb(data.embed_url) + '" allow="autoplay; fullscreen; encrypted-media" allowfullscreen loading="lazy"></iframe>';
+                break;
+            case 'canva':
+                if (data.embed_html) {
+                    container.innerHTML = data.embed_html;
+                    var iframe = container.querySelector('iframe');
+                    if (iframe) { iframe.className = 'lp-embed canva'; iframe.loading = 'lazy'; }
+                } else {
+                    container.innerHTML = '<iframe class="lp-embed canva" src="' + escapeHtmlKb(data.embed_url) + '" allow="fullscreen" allowfullscreen loading="lazy"></iframe>';
+                }
+                break;
+            case 'drive':
+                container.innerHTML = '<iframe class="lp-embed" src="' + escapeHtmlKb(data.embed_url) + '" allow="autoplay" allowfullscreen loading="lazy"></iframe>';
+                break;
+            case 'image':
+                container.innerHTML = '<img class="lp-img-full" src="' + escapeHtmlKb(data.image || url) + '" alt="Vista previa" loading="lazy">';
+                break;
+            case 'og':
+            case 'link':
+                if (data.image) {
+                    container.innerHTML = '<a class="lp-card" href="' + escapeHtmlKb(url) + '" target="_blank" rel="noopener">' +
+                        '<img class="lp-card-img" src="' + escapeHtmlKb(data.image) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' +
+                        '<div class="lp-card-body">' +
+                        '<span class="lp-card-title">' + escapeHtmlKb(data.title || url) + '</span>' +
+                        (data.description ? '<p class="lp-card-desc">' + escapeHtmlKb(data.description) + '</p>' : '') +
+                        '<span class="lp-card-host">' + escapeHtmlKb(hostFromUrlKb(url)) + '</span>' +
+                        '</div></a>';
+                } else {
+                    container.innerHTML = '<a class="lp-card" href="' + escapeHtmlKb(url) + '" target="_blank" rel="noopener" style="padding:14px;">' +
+                        '<div class="lp-card-body">' +
+                        '<span class="lp-card-title">' + escapeHtmlKb(data.title || url) + '</span>' +
+                        '<span class="lp-card-host">' + escapeHtmlKb(hostFromUrlKb(url)) + '</span>' +
+                        '</div></a>';
+                }
+                break;
+            default:
+                container.textContent = 'Pega el enlace arriba para ver la vista previa.';
+        }
+    }
+
+    async function loadKanbanDeliveryPreview(url) {
+        var container = document.getElementById('kanbanDeliveryPreview');
+        if (!container) return;
+        if (!url) {
+            container.textContent = 'Pega el enlace arriba para ver la vista previa.';
+            return;
+        }
+        if (kanbanPreviewCache[url]) {
+            renderPreviewDataKb(kanbanPreviewCache[url], container);
+            return;
+        }
+        if (kanbanPreviewAbort) { try { kanbanPreviewAbort.abort(); } catch (e) {} }
+        kanbanPreviewAbort = (window.AbortController) ? new AbortController() : null;
+        container.innerHTML = '<span class="lp-loading">Cargando vista previa…</span>';
+        try {
+            var resp = await fetch(kanbanPreviewLinkUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': kanbanCsrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ url: url }),
+                signal: kanbanPreviewAbort ? kanbanPreviewAbort.signal : undefined,
+            });
+            var data = await resp.json();
+            kanbanPreviewCache[url] = data;
+            renderPreviewDataKb(data, container);
+        } catch (e) {
+            if (e.name === 'AbortError') return;
+            container.innerHTML = '<span class="lp-error">No se pudo cargar. <a href="' + escapeHtmlKb(url) + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">Abrir enlace</a></span>';
+        }
+    }
+
+    (function() {
+        var editLink = document.getElementById('editLink');
+        if (editLink) {
+            var debounce = null;
+            editLink.addEventListener('input', function () {
+                clearTimeout(debounce);
+                debounce = setTimeout(function () {
+                    loadKanbanDeliveryPreview(editLink.value.trim());
+                }, 400);
+            });
+        }
+    })();
 
     function enviarARevision() {
         if (!currentTaskId) return;

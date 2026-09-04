@@ -736,7 +736,7 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Guía de marca</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.agenda.index') ? 'active' : '' }}" href="{{ route('marketing.agenda.index') }}" data-tip="Calendario">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.calendario.index') ? 'active' : '' }}" href="{{ route('marketing.calendario.index') }}" data-tip="Calendario">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Calendario</span>
                     </a>

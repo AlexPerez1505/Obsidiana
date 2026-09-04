@@ -55,6 +55,20 @@
             @else
                 <p class="muted">Este movimiento no tiene evidencia fotográfica.</p>
             @endif
+
+            @if ($movimiento->videoUrl())
+                <div style="margin-top:16px;">
+                    <div class="muted" style="font-size:12.5px; margin-bottom:6px;">Video de verificación</div>
+                    <video src="{{ $movimiento->videoUrl() }}" controls style="max-width:320px; border-radius:10px; border:1px solid var(--border);"></video>
+                </div>
+            @endif
+
+            @if ($movimiento->signatureUrl())
+                <div style="margin-top:16px;">
+                    <div class="muted" style="font-size:12.5px; margin-bottom:6px;">Firma de {{ $movimiento->creator?->name ?: 'quien registró' }}</div>
+                    <img src="{{ $movimiento->signatureUrl() }}" alt="Firma digital" style="max-width:260px; border-radius:10px; border:1px solid var(--border); background:#fff;">
+                </div>
+            @endif
         </x-ui.card>
     @endif
 

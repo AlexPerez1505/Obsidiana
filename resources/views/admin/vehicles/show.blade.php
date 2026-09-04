@@ -214,7 +214,7 @@
         .vd-info-grid { grid-template-columns: 1fr; }
     }
 </style>
-@endendpush
+@endpush
 
 @section('content')
     {{-- Header row --}}
@@ -255,7 +255,7 @@
                     @if(count($photos))
                         <img src="{{ asset('storage/'.$photos[0]) }}" alt="Foto del vehículo" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
                     @else
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 17h14M3 17l1.5-5.5A2 2 0 0 1 6.4 10h11.2a2 2 0 0 1 1.9 1.5L21 17M5 17v2M19 17v2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
+                        <x-gravityui-car />
                     @endif
                     <a class="vd-photo-zoom" href="{{ count($photos) ? asset('storage/'.$photos[0]) : '#' }}" target="_blank" rel="noopener" style="{{ count($photos) ? '' : 'pointer-events:none;opacity:.4;' }}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>

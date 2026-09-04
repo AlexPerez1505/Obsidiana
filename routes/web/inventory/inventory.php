@@ -95,6 +95,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('inventory.movimientos.create');
     Route::post('/gestion-inventario/entrada-salida', [InventoryMovementController::class, 'store'])
         ->name('inventory.movimientos.store');
+    Route::post('/gestion-inventario/entrada-salida/video-chunk', [InventoryMovementController::class, 'subirVideoChunk'])
+        ->name('inventory.movimientos.videoChunk');
     Route::get('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'show'])
         ->name('inventory.movimientos.show');
     Route::delete('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'destroy'])

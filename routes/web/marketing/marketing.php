@@ -35,6 +35,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::put('/marketing/tareas/{task}/enviar-revision', [TaskController::class, 'enviarRevision'])
         ->name('marketing.tareas.enviar_revision');
 
+    Route::post('/marketing/tareas/preview-link', [TaskController::class, 'previewLink'])
+        ->name('marketing.tareas.preview_link');
+
     Route::get('/marketing/aprobacion-flyers', [TaskController::class, 'aprobacionFlyers'])
         ->name('marketing.aprobacion_flyers.index');
 

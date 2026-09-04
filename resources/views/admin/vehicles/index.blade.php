@@ -296,7 +296,7 @@
             color="blue"
         >
             <x-slot:icon>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="26" height="26"><path d="M5 17h14M3 17l1.5-5.5A2 2 0 0 1 6.4 10h11.2a2 2 0 0 1 1.9 1.5L21 17M5 17v2M19 17v2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
+                <x-gravityui-car width="26" height="26" />
             </x-slot:icon>
         </x-ui.stat-card>
 
@@ -349,7 +349,7 @@
     {{-- Vehicle grid --}}
     @if($vehicles->isEmpty())
         <div class="vh-empty">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 17h14M3 17l1.5-5.5A2 2 0 0 1 6.4 10h11.2a2 2 0 0 1 1.9 1.5L21 17M5 17v2M19 17v2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
+            <x-gravityui-car />
             <p style="margin:0;font-weight:600;">No se encontraron vehículos</p>
             <p style="margin:4px 0 0;font-size:13px;">Agrega un nuevo vehículo para comenzar.</p>
         </div>
@@ -366,7 +366,7 @@
             <div class="vh-card" onclick="window.location.href='{{ route('admin.vehicles.show', $v) }}'" style="cursor:pointer;">
                 <div class="vh-card-top">
                     <div class="vh-card-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14M3 17l1.5-5.5A2 2 0 0 1 6.4 10h11.2a2 2 0 0 1 1.9 1.5L21 17M5 17v2M19 17v2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
+                        <x-gravityui-car />
                     </div>
                     <div class="vh-card-info">
                         <h3 class="vh-card-plate">{{ $v->plate_number }}</h3>
