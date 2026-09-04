@@ -50,6 +50,13 @@
             </x-ui.form-group>
             <x-ui.form-group label="Imagen del Producto" for="imagen">
                 <input type="file" id="imagen" name="imagen" accept="image/*" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:9px; font-size:14px; background:var(--surface); color:var(--text);">
+                <div id="image-preview-wrap" style="display:none; margin-top:12px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--surface-2);">
+                    <img id="image-preview" src="" alt="Vista previa de la imagen del producto" style="display:block; width:100%; max-height:260px; object-fit:contain; border-radius:10px; background:var(--surface); border:1px solid var(--border);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; flex-wrap:wrap;">
+                        <small id="image-preview-name" style="color:var(--muted);"></small>
+                        <button type="button" id="image-preview-clear" class="btn btn--ghost" style="padding:7px 12px; font-size:13px;">Quitar imagen</button>
+                    </div>
+                </div>
                 <small style="color:var(--muted);">Formatos: JPG, PNG, GIF. Máximo 5MB.</small>
             </x-ui.form-group>
         </x-ui.card>
@@ -59,7 +66,7 @@
             <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost" style="text-decoration:none;">Cancelar</a>
         </div>
     </form>
-   
+
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', function () {
@@ -156,6 +163,3 @@
         </script>
     @endpush
 @endsection
-
-
-

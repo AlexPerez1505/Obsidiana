@@ -638,164 +638,6 @@
             grid-template-columns: 1fr;
         }
     }
-
-    /* Vistas semanal y diaria */
-    .calendar-week,
-    .calendar-day {
-        display: none;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        overflow: hidden;
-        min-height: 420px;
-    }
-
-    .week-grid {
-        display: grid;
-        grid-template-columns: repeat(7, minmax(0, 1fr));
-        min-height: 420px;
-    }
-
-    .week-day {
-        display: flex;
-        flex-direction: column;
-        border-right: 1px solid var(--border);
-        min-width: 0;
-    }
-
-    .week-day:last-child {
-        border-right: 0;
-    }
-
-    .week-day-header {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        padding: 12px 8px;
-        border-bottom: 1px solid var(--border);
-        background: var(--surface-2);
-    }
-
-    .week-day-name {
-        font-size: 12px;
-        font-weight: 800;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: .03em;
-    }
-
-    .week-day-number {
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        font-size: 14px;
-        font-weight: 800;
-        color: var(--text);
-    }
-
-    .week-day-number.is-today {
-        background: var(--primary);
-        color: #fff;
-    }
-
-    .week-day-events {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 10px 8px;
-        flex: 1 1 auto;
-        overflow-y: auto;
-    }
-
-    .week-empty {
-        color: var(--muted);
-        font-size: 12px;
-        font-weight: 600;
-        text-align: center;
-        padding: 12px 4px;
-    }
-
-    .calendar-day {
-        flex-direction: column;
-    }
-
-    .day-header {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 16px;
-        border-bottom: 1px solid var(--border);
-        background: var(--surface-2);
-    }
-
-    .day-name {
-        font-size: 14px;
-        font-weight: 800;
-        color: var(--muted);
-        text-transform: uppercase;
-    }
-
-    .day-number {
-        font-size: 34px;
-        font-weight: 800;
-        color: var(--text);
-        line-height: 1.1;
-    }
-
-    .day-slots {
-        display: flex;
-        flex-direction: column;
-        overflow-y: auto;
-    }
-
-    .day-slot {
-        display: grid;
-        grid-template-columns: 70px 1fr;
-        gap: 12px;
-        align-items: start;
-        padding: 12px 14px;
-        border-bottom: 1px solid var(--border);
-        min-height: 64px;
-    }
-
-    .day-slot:last-child {
-        border-bottom: 0;
-    }
-
-    .day-slot-time {
-        color: var(--muted);
-        font-size: 13px;
-        font-weight: 800;
-        text-align: right;
-        padding-top: 4px;
-    }
-
-    .day-slot-events {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    @media (max-width: 900px) {
-        .week-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .week-day {
-            border-right: 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .week-day:last-child {
-            border-bottom: 0;
-        }
-    }
 </style>
 @endpush
 
@@ -913,8 +755,6 @@
                         </div>
                     @endforeach
                 </div>
-                <div class="calendar-week" id="agendaWeekView" style="display:none;" aria-label="Vista semanal"></div>
-                <div class="calendar-day" id="agendaDayView" style="display:none;" aria-label="Vista diaria"></div>
             </div>
 
             <aside class="agenda-side" aria-label="Proximos eventos">
@@ -1016,32 +856,6 @@
         const agendaNotesInput = document.getElementById('agenda-notes');
         const agendaDialogTitle = document.getElementById('agendaDialogTitle');
         const agendaSaveButton = document.getElementById('agendaSaveButton');
-<<<<<<< HEAD
-        const agendaReservedEvents = @json($eventList);
-        const agendaEventColors = @json($eventColors);
-        const agendaTypeLabels = {
-            training: 'Capacitacion',
-            delivery: 'Entrega de equipo',
-            install: 'Instalacion',
-            maintenance: 'Mantenimiento',
-            meeting: 'Reunion',
-            congress: 'Congreso',
-        };
-
-        function findAgendaEventByDate(date) {
-            return agendaReservedEvents.find((item) => date >= item.start_date && date <= item.end_date);
-        }
-
-        function rangeOverlapsReservedEvent(startDate, endDate, ignoredEventId) {
-            return agendaReservedEvents.some((item) => {
-                if (ignoredEventId && item.id === ignoredEventId) {
-                    return false;
-                }
-
-                return startDate <= item.end_date && endDate >= item.start_date;
-            });
-        }
-=======
         const agendaDeleteButton = document.getElementById('agendaDeleteButton');
         const agendaDeleteForm = document.getElementById('agendaDeleteForm');
         const agendaStoreUrl = @json(route('admin.agenda.events.store'));
@@ -1049,7 +863,6 @@
         const agendaDeleteUrlTemplate = @json(route('admin.agenda.events.destroy', ['agendaEvent' => '__ID__']));
         const congressShowUrlTemplate = @json(route('configuracion.congresos.show', ['congress' => '__ID__']));
         const todayIso = @json(now()->format('Y-m-d'));
->>>>>>> bbfe076a8de37195fd7178e70469ad364dc7c562
 
         function openAgendaModal(selectedDate, eventData) {
             const date = typeof selectedDate === 'string' ? selectedDate : todayIso;
@@ -1166,172 +979,15 @@
             }
         });
 
-        const agendaWeekView = document.getElementById('agendaWeekView');
-        const agendaDayView = document.getElementById('agendaDayView');
-        const agendaMonthGrid = document.querySelector('.calendar-grid');
-        const agendaViewButtons = document.querySelectorAll('.agenda-view button');
-        const agendaMonthLabel = document.querySelector('.agenda-month');
-        const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
-        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-
-        let agendaCurrentView = 'month';
-        let agendaCurrentDate = new Date(2026, 6, 1);
-
-        function pad(n) { return String(n).padStart(2, '0'); }
-        function formatDateKey(date) { return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`; }
-        function cloneDate(date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }
-        function startOfWeek(date) {
-            const d = cloneDate(date);
-            d.setDate(d.getDate() - d.getDay());
-            return d;
-        }
-        function addDays(date, days) {
-            const d = cloneDate(date);
-            d.setDate(d.getDate() + days);
-            return d;
-        }
-        function monthName(date) { return monthNames[date.getMonth()]; }
-        function eventsForDate(dateKey) {
-            return agendaReservedEvents.filter((event) => dateKey >= event.start_date && dateKey <= event.end_date);
-        }
-
-        function buildEventCard(event, date, showTime = true) {
-            const color = agendaEventColors[event.type] || { bg: '#e5e7eb', text: '#374151' };
-            const isMultiDay = event.start_date !== event.end_date;
-            const rangeLabel = date === event.start_date ? 'Inicia' : (date === event.end_date ? 'Termina' : 'Continua');
-            return `
-                <button class="calendar-event" type="button"
-                    data-agenda-event
-                    data-agenda-id="${event.id}"
-                    data-agenda-date="${date}"
-                    data-agenda-start-date="${event.start_date}"
-                    data-agenda-end-date="${event.end_date}"
-                    data-agenda-title="${event.title}"
-                    data-agenda-time="${event.time_value}"
-                    data-agenda-type="${event.type}"
-                    data-agenda-notes="${event.notes}"
-                    data-agenda-participants="${event.participants}"
-                    style="background: ${color.bg}; color: ${color.text};"
-                    aria-label="Editar evento ${event.title} del ${date}">
-                    ${showTime ? `<b>${event.time}</b>` : ''}
-                    <span>${event.title}</span>
-                    ${isMultiDay ? `<small>${rangeLabel}</small>` : ''}
-                </button>
-            `;
-        }
-
-        function bindAgendaEventButtons(scope) {
-            scope.querySelectorAll('[data-agenda-event]').forEach((item) => {
-                item.addEventListener('click', (event) => {
-                    event.stopPropagation();
-                    openAgendaModal(item.dataset.agendaDate, {
-                        id: item.dataset.agendaId,
-                        startDate: item.dataset.agendaStartDate,
-                        endDate: item.dataset.agendaEndDate,
-                        title: item.dataset.agendaTitle,
-                        time: item.dataset.agendaTime,
-                        type: item.dataset.agendaType,
-                        notes: item.dataset.agendaNotes,
-                        participants: item.dataset.agendaParticipants,
-                    });
-                });
-            });
-        }
-
-        function renderWeekView() {
-            const start = startOfWeek(agendaCurrentDate);
-            let html = '<div class="week-grid">';
-            for (let i = 0; i < 7; i++) {
-                const day = addDays(start, i);
-                const key = formatDateKey(day);
-                const dayEvents = eventsForDate(key);
-                const isCurrent = day.getFullYear() === agendaCurrentDate.getFullYear() &&
-                                  day.getMonth() === agendaCurrentDate.getMonth() &&
-                                  day.getDate() === agendaCurrentDate.getDate();
-                html += `
-                    <div class="week-day">
-                        <div class="week-day-header">
-                            <span class="week-day-name">${dayNames[day.getDay()]}</span>
-                            <span class="week-day-number ${isCurrent ? 'is-today' : ''}">${day.getDate()}</span>
-                        </div>
-                        <div class="week-day-events">
-                            ${dayEvents.length ? dayEvents.map((event) => buildEventCard(event, key)).join('') : '<span class="week-empty">Sin eventos</span>'}
-                        </div>
-                    </div>
-                `;
-            }
-            html += '</div>';
-            agendaWeekView.innerHTML = html;
-            bindAgendaEventButtons(agendaWeekView);
-        }
-
-        function renderDayView() {
-            const key = formatDateKey(agendaCurrentDate);
-            const dayEvents = eventsForDate(key);
-            const header = `
-                <div class="day-header">
-                    <span class="day-name">${dayNames[agendaCurrentDate.getDay()]}</span>
-                    <span class="day-number">${agendaCurrentDate.getDate()}</span>
-                </div>
-            `;
-            const slots = [];
-            for (let h = 7; h <= 20; h++) {
-                const hour = pad(h) + ':00';
-                const eventsAtHour = dayEvents.filter((event) => {
-                    const t = event.time_value || '00:00';
-                    const eventHour = parseInt(t.split(':')[0], 10);
-                    return eventHour === h;
-                });
-                slots.push(`
-                    <div class="day-slot">
-                        <span class="day-slot-time">${hour}</span>
-                        <div class="day-slot-events">
-                            ${eventsAtHour.length ? eventsAtHour.map((event) => buildEventCard(event, key, false)).join('') : ''}
-                        </div>
-                    </div>
-                `);
-            }
-            agendaDayView.innerHTML = header + `<div class="day-slots">${slots.join('')}</div>`;
-            bindAgendaEventButtons(agendaDayView);
-        }
-
-        function showAgendaView(view) {
-            agendaCurrentView = view;
-            const views = ['month', 'week', 'day'];
-            agendaViewButtons.forEach((button, index) => {
-                button.classList.toggle('is-active', index === views.indexOf(view));
-            });
-            agendaMonthGrid.style.display = view === 'month' ? 'grid' : 'none';
-            agendaWeekView.style.display = view === 'week' ? 'block' : 'none';
-            agendaDayView.style.display = view === 'day' ? 'block' : 'none';
-
-            if (view === 'week') renderWeekView();
-            if (view === 'day') renderDayView();
-
-            if (view === 'month') {
-                agendaMonthLabel.textContent = 'Julio 2026';
-            } else if (view === 'week') {
-                const start = startOfWeek(agendaCurrentDate);
-                const end = addDays(start, 6);
-                agendaMonthLabel.textContent = `${start.getDate()} - ${end.getDate()} de ${monthName(start)} ${start.getFullYear()}`;
-            } else if (view === 'day') {
-                agendaMonthLabel.textContent = `${dayNames[agendaCurrentDate.getDay()]} ${agendaCurrentDate.getDate()} de ${monthName(agendaCurrentDate)} ${agendaCurrentDate.getFullYear()}`;
-            }
-        }
-
-        agendaViewButtons.forEach((button, index) => {
+        document.querySelectorAll('.agenda-view button').forEach((button) => {
             button.addEventListener('click', () => {
-                const views = ['month', 'week', 'day'];
-                showAgendaView(views[index]);
+                document.querySelectorAll('.agenda-view button').forEach((item) => item.classList.remove('is-active'));
+                button.classList.add('is-active');
             });
         });
 
-<<<<<<< HEAD
-        showAgendaView('month');
-=======
         @if ($errors->any())
             openAgendaModal();
         @endif
->>>>>>> bbfe076a8de37195fd7178e70469ad364dc7c562
     </script>
 @endsection

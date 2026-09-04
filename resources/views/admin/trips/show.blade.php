@@ -720,5 +720,5 @@
             },
         };
     }
-</script> 
+</script>
 @endsection
