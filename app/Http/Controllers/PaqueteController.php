@@ -36,6 +36,8 @@ class PaqueteController extends Controller
         return view('structure.gestion_Inventario.paquetes.create', [
             'productos' => Producto::query()->orderBy('tipo_equipo')->get(),
             'preseleccionados' => $preseleccionados,
+            // [producto_id => cantidad] de los que ya deben quedar marcados.
+            'seleccionados' => $preseleccionados->mapWithKeys(fn (Producto $p) => [$p->id => 1])->all(),
         ]);
     }
 
@@ -67,9 +69,13 @@ class PaqueteController extends Controller
      */
     public function edit(Paquete $paquete): View
     {
+        $paquete->load('productos');
+
         return view('structure.gestion_Inventario.paquetes.edit', [
-            'paquete' => $paquete->load('productos'),
+            'paquete' => $paquete,
             'productos' => Producto::query()->orderBy('tipo_equipo')->get(),
+            // [producto_id => cantidad] ya guardada en este paquete.
+            'seleccionados' => $paquete->productos->pluck('pivot.cantidad', 'id')->all(),
         ]);
     }
 
