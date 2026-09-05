@@ -15,8 +15,9 @@ use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
- * Cubre el flujo nuevo: productos que exigen serie + foto por unidad al
- * capturar una entrada, y la corrección posterior de esos datos con PIN.
+ * Cubre el flujo de entrada por unidad (serie + evidencia individual, sin
+ * importar si el producto está marcado como serializado o no), y la
+ * corrección posterior de esos datos con PIN.
  */
 class InventorySerializadoTest extends TestCase
 {
@@ -37,24 +38,6 @@ class InventorySerializadoTest extends TestCase
         return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
     }
 
-    /**
-     * Simula la subida de un video por chunks (en un solo pedazo, ya que
-     * es pequeño) y regresa la ruta ya ensamblada que el formulario real
-     * mandaría en "video_path".
-     */
-    private function subirVideoDePrueba(User $user): string
-    {
-        $respuesta = $this->actingAs($user)->post(route('inventory.movimientos.videoChunk'), [
-            'chunk' => UploadedFile::fake()->create('chunk.mp4', 500, 'video/mp4'),
-            'upload_id' => 'test-'.uniqid(),
-            'index' => 0,
-            'total' => 1,
-            'extension' => 'mp4',
-        ]);
-
-        return $respuesta->json('video_path');
-    }
-
     public function test_la_pagina_de_crear_entrada_carga(): void
     {
         $user = $this->usuarioAprobado();
@@ -62,7 +45,7 @@ class InventorySerializadoTest extends TestCase
         $this->actingAs($user)->get(route('inventory.movimientos.create'))->assertOk();
     }
 
-    public function test_entrada_serializada_guarda_foto_y_serie_por_unidad(): void
+    public function test_entrada_guarda_evidencia_y_serie_por_unidad(): void
     {
         Storage::fake('public');
         $user = $this->usuarioAprobado();
@@ -75,12 +58,10 @@ class InventorySerializadoTest extends TestCase
             'cantidad' => 2,
             'proveedor' => 'ProveedorTest',
             'movement_date' => now()->format('Y-m-d'),
-            'es_serializado' => '1',
             'firma' => $this->firmaValida(),
-            'video_path' => $this->subirVideoDePrueba($user),
             'unidades' => [
-                ['no_serie' => 'SNU001', 'foto' => UploadedFile::fake()->create('u1.jpg', 50, 'image/jpeg')],
-                ['no_serie' => 'SNU002', 'foto' => UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')],
+                ['no_serie' => 'SNU001', 'evidencias' => [UploadedFile::fake()->create('u1.jpg', 50, 'image/jpeg')]],
+                ['no_serie' => 'SNU002', 'evidencias' => [UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')]],
             ],
         ]);
 
@@ -88,7 +69,6 @@ class InventorySerializadoTest extends TestCase
 
         $producto = Producto::first();
         $this->assertNotNull($producto);
-        $this->assertTrue((bool) $producto->es_serializado);
         $this->assertSame(2, $producto->stock);
 
         $seriales = ProductoSerial::where('producto_id', $producto->id)->orderBy('no_serie')->get();
@@ -96,16 +76,13 @@ class InventorySerializadoTest extends TestCase
 
         foreach ($seriales as $serial) {
             $this->assertNotNull($serial->foto_path);
+            $this->assertNotEmpty($serial->evidence_paths);
             Storage::disk('public')->assertExists($serial->foto_path);
             $this->assertSame($user->id, $serial->capturado_por);
         }
-
-        // La evidencia general es opcional cuando el producto es serializado.
-        $movimiento = InventoryMovement::first();
-        $this->assertSame([], $movimiento->evidence_paths ?? []);
     }
 
-    public function test_serial_duplicado_no_pierde_la_unidad_ni_la_foto(): void
+    public function test_serial_duplicado_no_pierde_la_unidad_ni_su_evidencia(): void
     {
         Storage::fake('public');
         $user = $this->usuarioAprobado();
@@ -120,7 +97,6 @@ class InventorySerializadoTest extends TestCase
             'tipo_equipo' => $tipo->name,
             'precio' => 500,
             'stock' => 0,
-            'es_serializado' => true,
         ]);
         $producto->agregarUnidades(1, ['SN-YA-EXISTE']);
 
@@ -130,12 +106,10 @@ class InventorySerializadoTest extends TestCase
             'precio' => 500,
             'cantidad' => 2,
             'movement_date' => now()->format('Y-m-d'),
-            'es_serializado' => '1',
             'firma' => $this->firmaValida(),
-            'video_path' => $this->subirVideoDePrueba($user),
             'unidades' => [
-                ['no_serie' => 'SN-YA-EXISTE', 'foto' => UploadedFile::fake()->create('u1.jpg', 50, 'image/jpeg')],
-                ['no_serie' => 'SN-NUEVA', 'foto' => UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')],
+                ['no_serie' => 'SN-YA-EXISTE', 'evidencias' => [UploadedFile::fake()->create('u1.jpg', 50, 'image/jpeg')]],
+                ['no_serie' => 'SN-NUEVA', 'evidencias' => [UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')]],
             ],
         ]);
 
@@ -148,9 +122,36 @@ class InventorySerializadoTest extends TestCase
 
         $sinSerie = ProductoSerial::where('producto_id', $producto->id)->whereNull('no_serie')->get();
         $this->assertCount(1, $sinSerie);
-        $this->assertNotNull($sinSerie->first()->foto_path, 'La foto de la unidad rechazada no debe perderse.');
+        $this->assertNotNull($sinSerie->first()->foto_path, 'La evidencia de la unidad rechazada no debe perderse.');
 
         $this->assertSame(1, ProductoSerial::where('producto_id', $producto->id)->where('no_serie', 'SN-NUEVA')->count());
+    }
+
+    public function test_solo_la_primera_unidad_con_serie_genera_la_secuencia_completa(): void
+    {
+        Storage::fake('public');
+        $user = $this->usuarioAprobado();
+
+        $tipo = EquipmentType::create(['name' => 'Torre de endoscopia']);
+
+        $response = $this->actingAs($user)->post(route('inventory.movimientos.store'), [
+            'equipment_type_id' => $tipo->id,
+            'precio' => 500,
+            'cantidad' => 3,
+            'movement_date' => now()->format('Y-m-d'),
+            'firma' => $this->firmaValida(),
+            'unidades' => [
+                ['no_serie' => '23A00010', 'evidencias' => [UploadedFile::fake()->create('u1.jpg', 50, 'image/jpeg')]],
+                ['no_serie' => null, 'evidencias' => [UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')]],
+                ['no_serie' => null, 'evidencias' => [UploadedFile::fake()->create('u3.jpg', 50, 'image/jpeg')]],
+            ],
+        ]);
+
+        $response->assertRedirect(route('inventory.movimientos.index'));
+
+        $producto = Producto::first();
+        $series = ProductoSerial::where('producto_id', $producto->id)->pluck('no_serie')->sort()->values();
+        $this->assertSame(['23A00010', '23A00011', '23A00012'], $series->all());
     }
 
     public function test_actualizar_serial_pide_pin_o_password(): void
