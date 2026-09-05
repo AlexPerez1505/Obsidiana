@@ -5,7 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\ConstruyeCatalogoEquipo;
 use App\Http\Controllers\Concerns\ManejaSeriesDeProducto;
 use App\Models\InventoryMovement;
+use App\Models\PiezaProceso;
 use App\Models\Producto;
+use App\Models\ProductoSerial;
+use App\Services\RutaDeProcesos;
+use App\Support\ChecklistRecepcion;
+use App\Support\PrecioVisible;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -53,9 +58,24 @@ class InventoryMovementController extends Controller
 
         $movements = $query->paginate(20)->withQueryString();
 
+        /*
+        | Las métricas son de todo el inventario, no de la página que se
+        | está viendo: si se calcularan sobre el paginador dirían otra cosa
+        | según en qué página estés.
+        */
         return view('structure.gestion_Inventario.entrada_salida.index', [
             'movements' => $movements,
             'filters' => $request->only('tipo', 'desde', 'hasta'),
+            'resumen' => [
+                'movimientos' => InventoryMovement::count(),
+                'entradas_mes' => InventoryMovement::where('movement_type', InventoryMovement::TYPE_ENTRY)
+                    ->whereDate('movement_date', '>=', now()->startOfMonth())
+                    ->count(),
+                'piezas' => ProductoSerial::where('vendido', false)->count(),
+                'en_proceso' => ProductoSerial::where('vendido', false)
+                    ->whereIn('estado', ProductoSerial::NO_VENDIBLES)
+                    ->count(),
+            ],
         ]);
     }
 
@@ -63,6 +83,8 @@ class InventoryMovementController extends Controller
     {
         return view('structure.gestion_Inventario.entrada_salida.create', [
             'catalogo' => $this->catalogoEquipo(),
+            'checklist' => ChecklistRecepcion::grupos(),
+            'estadosGenerales' => ChecklistRecepcion::ESTADOS,
         ]);
     }
 
@@ -141,46 +163,88 @@ class InventoryMovementController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $serializado = $request->boolean('es_serializado');
+        /*
+        | Tres formas de identificar lo que llegó:
+        |   lote     - no se identifica pieza por pieza (llegaron 100 iguales)
+        |   series   - se pegan los números de serie del fabricante
+        |   unidades - se captura una por una, con su foto
+        |
+        | En los tres casos cada pieza queda como su propia fila con su
+        | etiqueta interna, que es lo que después lleva el QR.
+        */
+        $modo = in_array($request->input('modo_identificacion'), ['lote', 'series', 'unidades'], true)
+            ? $request->input('modo_identificacion')
+            : 'lote';
+
+        $serializado = $modo === 'unidades';
+        $usado = $request->input('condicion') === 'usado';
         $disco = config('filesystems.fotos_disk', 'public');
 
         $reglas = [
+            'condicion' => ['required', 'in:nuevo,usado'],
             'equipment_type_id' => ['required', 'exists:equipment_types,id'],
             'subtype_id' => ['nullable', 'exists:subtypes,id'],
             'brand_id' => ['nullable', 'exists:brands,id'],
             'equipment_model_id' => ['nullable', 'exists:equipment_models,id'],
-            'precio' => ['required', 'numeric', 'min:0'],
-            'cantidad' => ['required', 'integer', 'min:1'],
+            // El precio se valida pero no se exige: puede venir de la fila
+            // que ya existe, o quedar pendiente de que lo ponga un admin.
+            'precio' => ['nullable', 'numeric', 'min:0'],
+            'cantidad' => ['required', 'integer', 'min:1', 'max:5000'],
             'descripcion' => ['nullable', 'string', 'max:1000'],
-            'proveedor' => ['nullable', 'string', 'max:255'],
             'movement_date' => ['required', 'date'],
             'notas' => ['nullable', 'string', 'max:1000'],
             'imagen' => ['nullable', 'image', 'max:5120'],
-            'es_serializado' => ['sometimes', 'boolean'],
+            'modo_identificacion' => ['required', 'in:lote,series,unidades'],
             'firma' => ['required', 'string'],
             'video_path' => ['required', 'string'],
+
+            // La evidencia del lote se pide siempre: es lo que documenta
+            // cómo llegó el envío completo.
+            'evidencias' => ['required', 'array', 'min:1', 'max:3'],
+            'evidencias.*' => ['image', 'max:5120'],
         ];
 
         if ($serializado) {
             $reglas['unidades'] = ['required', 'array', 'min:1'];
             $reglas['unidades.*.no_serie'] = ['nullable', 'string', 'max:255'];
-            $reglas['unidades.*.foto'] = ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'];
-            $reglas['evidencias'] = ['nullable', 'array', 'max:3'];
-            $reglas['evidencias.*'] = ['image', 'max:5120'];
+            // La foto por pieza solo se exige en usado: de un equipo usado
+            // interesa el estado de cada uno, de 100 accesorios nuevos no.
+            $reglas['unidades.*.foto'] = [$usado ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'];
         } else {
             $reglas['series_texto'] = ['nullable', 'string'];
-            $reglas['evidencias'] = ['required', 'array', 'min:1', 'max:3'];
-            $reglas['evidencias.*'] = ['image', 'max:5120'];
+        }
+
+        if ($usado) {
+            $reglas['estado_general'] = ['required', Rule::in(array_keys(ChecklistRecepcion::ESTADOS))];
+            $reglas['checklist'] = ['required', 'array'];
+            // La ruta puede venir vacía: hay equipo usado que llega bien y
+            // entra directo a stock.
+            $reglas['procesos'] = ['nullable', 'array'];
+            $reglas['procesos.*'] = [Rule::in(array_keys(PiezaProceso::PROCESOS))];
         }
 
         $data = $request->validate($reglas, [
             'evidencias.required' => 'Sube al menos una foto que documente cómo llegó esta entrada.',
             'evidencias.max' => 'Puedes subir máximo 3 fotos de evidencia.',
-            'unidades.required' => 'Captura una unidad por cada pieza que llegó, con su foto.',
-            'unidades.*.foto.required' => 'Cada unidad serializada necesita su foto individual.',
+            'unidades.required' => 'Captura una unidad por cada pieza que llegó.',
+            'unidades.*.foto.required' => 'En equipo usado, cada pieza capturada necesita su foto.',
             'firma.required' => 'Se necesita la firma digital de quien registró esta entrada.',
             'video_path.required' => 'Sube un video que verifique el estado del producto.',
+            'estado_general.required' => 'Di en qué estado general llegó el equipo usado.',
+            'checklist.required' => 'Responde el checklist de recepción del equipo usado.',
         ]);
+
+        $data['checklist_recepcion'] = $usado ? ChecklistRecepcion::limpiar($request->input('checklist')) : null;
+
+        /*
+        | El precio puede no venir de tres maneras: el modelo ya lo tenía y
+        | no se volvió a preguntar, el usuario no puede verlo, o de plano no
+        | se llenó. En las tres la llave debe existir como null para que el
+        | resto del método no tenga que andar preguntando si está.
+        */
+        $data['precio'] = PrecioVisible::editable($request->user())
+            ? ($data['precio'] ?? null)
+            : null;
 
         // Validaciones de consistencia (cantidad vs. renglones, series vs.
         // cantidad) primero: si algo no cuadra, todavía no se ha subido
@@ -219,10 +283,14 @@ class InventoryMovementController extends Controller
             // si el serial choca con uno existente (eso se depura después,
             // dentro de la transacción, sin perder la foto ya subida).
             $unidades = collect($data['unidades'])
-                ->map(fn (array $u, int $i) => [
-                    'no_serie' => trim((string) ($u['no_serie'] ?? '')) ?: null,
-                    'foto_path' => $request->file("unidades.$i.foto")->store('productos/seriales', $disco),
-                ])
+                ->map(function (array $u, int $i) use ($request, $disco) {
+                    $foto = $request->file("unidades.$i.foto");
+
+                    return [
+                        'no_serie' => trim((string) ($u['no_serie'] ?? '')) ?: null,
+                        'foto_path' => $foto ? $foto->store('productos/seriales', $disco) : null,
+                    ];
+                })
                 ->all();
         } else {
             $unidades = $unidadesBase;
@@ -347,16 +415,36 @@ class InventoryMovementController extends Controller
                 'descripcion' => $data['descripcion'] ?? null,
             ];
 
-            $existente = ! empty($productoData['equipment_model_id'])
-                ? Producto::where('equipment_model_id', $productoData['equipment_model_id'])->lockForUpdate()->first()
-                : null;
+            /*
+            | ¿Es el mismo producto que ya está dado de alta?
+            |
+            | Se compara la combinación completa del catálogo, no solo el
+            | modelo. Antes solo miraba equipment_model_id, así que un foco
+            | (que no tiene modelo) creaba una fila nueva en cada entrada y
+            | el stock quedaba repartido entre filas duplicadas.
+            |
+            | Con los cuatro campos, dos entradas del mismo equipo caen en
+            | la misma fila y dos modelos distintos siguen separados.
+            */
+            $existente = Producto::query()
+                ->where('equipment_type_id', $productoData['equipment_type_id'])
+                ->where(fn ($q) => $this->igualA($q, 'subtype_id', $productoData['subtype_id']))
+                ->where(fn ($q) => $this->igualA($q, 'brand_id', $productoData['brand_id']))
+                ->where(fn ($q) => $this->igualA($q, 'equipment_model_id', $productoData['equipment_model_id']))
+                ->lockForUpdate()
+                ->first();
 
             $stockAntes = $existente->stock ?? 0;
 
             if ($existente) {
-                $existente->precio = $productoData['precio'];
+                // El precio del modelo solo se toca si vino uno nuevo: la
+                // segunda entrada del mismo equipo no vuelve a preguntarlo,
+                // y quien no puede verlo tampoco puede borrarlo sin querer.
+                if ($data['precio'] !== null) {
+                    $existente->precio = $data['precio'];
+                }
+
                 $existente->descripcion = $productoData['descripcion'] ?? $existente->descripcion;
-                $existente->proveedor = $data['proveedor'] ?? $existente->proveedor;
 
                 // Una vez marcado como serializado, se queda así.
                 if ($serializado) {
@@ -377,7 +465,6 @@ class InventoryMovementController extends Controller
             } else {
                 $producto = Producto::create($productoData + [
                     'stock' => 0,
-                    'proveedor' => $data['proveedor'] ?? null,
                     'imagen_path' => $imagen,
                     'es_serializado' => $serializado,
                 ]);
@@ -415,16 +502,41 @@ class InventoryMovementController extends Controller
                 'unit' => 'Pza',
                 'stock_before' => $stockAntes,
                 'stock_after' => $stockAntes + $cantidad,
-                'supplier' => $data['proveedor'] ?? null,
                 'movement_date' => $data['movement_date'],
                 'notes' => $data['notas'] ?? null,
+                'condicion' => $data['condicion'],
+                'checklist_recepcion' => $data['checklist_recepcion'],
+                'estado_general' => $data['estado_general'] ?? null,
                 'evidence_paths' => $evidencias,
                 'signature_path' => $firma,
                 'video_path' => $video,
                 'created_by' => auth()->id(),
             ]);
 
-            $producto->agregarUnidades($cantidad, $unidades, $movimiento->id);
+            /*
+            | El estado inicial lo manda la ruta, no la condición: hay
+            | equipo usado que llega bien y entra directo a stock, y hay
+            | equipo que solo necesita mantenimiento sin pasar por
+            | hojalatería. Si no lleva procesos, queda disponible.
+            */
+            $ruta = collect($data['procesos'] ?? [])->unique()
+                ->sortBy(fn ($p) => PiezaProceso::ordenDe($p))
+                ->values();
+
+            $estadoInicial = $ruta->first() ?? 'disponible';
+
+            $producto->agregarUnidades($cantidad, $unidades, $movimiento->id, $data['condicion'], $estadoInicial);
+
+            // La ruta se copia a cada pieza que entró, con el motivo que la
+            // justifica sacado del checklist.
+            if ($ruta->isNotEmpty()) {
+                $motivos = ChecklistRecepcion::procesosSugeridos($data['checklist_recepcion'] ?? []);
+                $servicio = app(RutaDeProcesos::class);
+
+                foreach ($producto->seriales()->where('inventory_movement_id', $movimiento->id)->get() as $pieza) {
+                    $servicio->definir($pieza, $ruta->all(), $motivos);
+                }
+            }
 
             $mensaje = "Entrada {$movimiento->folio} registrada correctamente.";
 
@@ -434,6 +546,19 @@ class InventoryMovementController extends Controller
         });
     }
 
+    /**
+     * Compara una columna del catálogo respetando los nulos.
+     *
+     * En SQL `columna = NULL` nunca es cierto, así que un producto sin
+     * subtipo jamás se habría reconocido a sí mismo.
+     */
+    private function igualA($query, string $columna, $valor)
+    {
+        return $valor === null || $valor === ''
+            ? $query->whereNull($columna)
+            : $query->where($columna, $valor);
+    }
+
     private function borrarEvidencias(array $paths, ?string $disco = null): void
     {
         $disco ??= config('filesystems.fotos_disk', 'public');
@@ -441,6 +566,22 @@ class InventoryMovementController extends Controller
         foreach ($paths as $path) {
             Storage::disk($disco)->delete($path);
         }
+    }
+
+    /**
+     * Hoja de etiquetas con el QR de cada pieza de esta entrada.
+     *
+     * Se imprime, se corta y se pega una en cada equipo. El QR lleva a la
+     * ficha pública de esa pieza, no a nada interno.
+     */
+    public function etiquetas(InventoryMovement $movimiento): View
+    {
+        $piezas = $movimiento->seriales()->with('producto')->orderBy('id')->get();
+
+        return view('structure.gestion_Inventario.entrada_salida.etiquetas', [
+            'movimiento' => $movimiento,
+            'piezas' => $piezas,
+        ]);
     }
 
     public function show(InventoryMovement $movimiento): View

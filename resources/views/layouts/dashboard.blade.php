@@ -339,12 +339,31 @@
         label { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }
         /* Controles de formulario: mismo aspecto sin repetir estilos en cada vista. */
         input[type=text], input[type=email], input[type=password], input[type=tel],
-        input[type=number], input[type=date], input[type=search], select, textarea {
+        input[type=number], input[type=date], input[type=search], input[type=file], select, textarea {
             width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:7px; font-size:14px;
             font-family:inherit; outline:none; background:var(--surface); color:var(--text);
             transition:border-color .15s ease; }
         select { cursor:pointer; }
         textarea { resize:vertical; }
+        /* El selector de archivo traia su propio estilo pegado en cada vista;
+           ahora se ve igual que los demas controles del sistema. */
+        input[type=file] { cursor:pointer; }
+        input[type=file]::file-selector-button {
+            margin:-3px 10px -3px -4px; padding:6px 11px; border:1px solid var(--border);
+            border-radius:6px; background:var(--surface-2); color:var(--text);
+            font-family:inherit; font-size:13px; cursor:pointer; }
+        input[type=file]::file-selector-button:hover { border-color:var(--muted); }
+
+        /* Campo del componente x-ui.form-group: etiqueta, control y error
+           en un mismo bloque, para que no se separen dentro de una rejilla. */
+        .form-group { min-width:0; }
+        /* Nota corta debajo de un control. */
+        .campo-nota { color:var(--muted); font-size:13px; line-height:1.5; }
+        small.campo-nota { display:block; margin-top:6px; }
+        /* Casilla con su texto, alineadas y ambas clicables. */
+        .ui-check { display:flex; align-items:center; gap:9px; margin:4px 0 16px;
+                    font-size:14px; font-weight:500; cursor:pointer; }
+        .ui-check input[type=checkbox] { width:17px; height:17px; margin:0; flex:0 0 17px; cursor:pointer; }
         input:hover, select:hover, textarea:hover { border-color:var(--muted); }
         input:focus, select:focus, textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft); }
         input::placeholder, textarea::placeholder { color:var(--muted); }
@@ -640,6 +659,14 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Entrada / Salida</span>
                     </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.procesos.*') ? 'active' : '' }}" href="{{ route('inventory.procesos.index') }}" data-tip="Procesos">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Procesos</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.escaneo.*') ? 'active' : '' }}" href="{{ route('inventory.escaneo.index') }}" data-tip="Escanear">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Escanear</span>
+                    </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.equipos.*') ? 'active' : '' }}" href="{{ route('inventory.equipos.index') }}" data-tip="Equipos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Equipos</span>
@@ -715,10 +742,12 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Reportes</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('admin.permissions.*') ? 'active' : '' }}" href="{{ route('admin.permissions.index') }}" data-tip="Permisos">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Permisos</span>
-                    </a>
+                    {{--
+                        La pantalla antigua de permisos (admin.permissions.*) editaba a mano
+                        las filas de la tabla. Ya no se enlaza: el catálogo vive en código
+                        (CatalogoPermisos) y renombrar una fila ahí rompía el Gate en silencio.
+                        Lo que se reparte ahora es en Configuración → Roles y permisos.
+                    --}}
                 </div>
             </div>
             <div class="nav-group {{ request()->is('structure/marketing*') ? 'open' : '' }}">
@@ -757,17 +786,19 @@
                 </div>
             </div>
             <div class="nav-section">Sistema</div>
-            <div class="nav-group">
+            <div class="nav-group {{ request()->routeIs('configuracion.roles.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Configuración">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     <span class="nav-label">Configuración</span>
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-                    <a class="nav-item nav-sub" href="#" data-tip="Permisos">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Permisos</span>
-                    </a>
+                    @can('roles.gestionar')
+                        <a class="nav-item nav-sub {{ request()->routeIs('configuracion.roles.*') ? 'active' : '' }}" href="{{ route('configuracion.roles.index') }}" data-tip="Roles y permisos">
+                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                            <span class="nav-label">Roles y permisos</span>
+                        </a>
+                    @endcan
                 </div>
             </div>
         </nav>

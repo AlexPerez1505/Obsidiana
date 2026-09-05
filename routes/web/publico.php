@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ConsultaPublicaController;
+use App\Http\Controllers\FichaEquipoPublicaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -29,3 +30,15 @@ Route::prefix('consulta')->name('publico.')->group(function () {
     Route::get('/venta/{token}/recibo/{cobro}', [ConsultaPublicaController::class, 'recibo'])
         ->name('venta.recibo');
 })->where(['token' => '[0-9a-fA-F-]{36}']);
+
+/*
+|--------------------------------------------------------------------------
+| Ficha de una pieza (el QR pegado al equipo)
+|--------------------------------------------------------------------------
+| La dirección es corta a propósito: es lo que va impreso en la etiqueta y
+| lo que teclea una pistola lectora. No lleva nada comercial, así que no
+| importa que se pueda escribir a mano.
+*/
+Route::get('/equipo/{codigo}', FichaEquipoPublicaController::class)
+    ->name('publico.equipo')
+    ->where('codigo', '[A-Za-z]{2,6}-[0-9]{4,10}');

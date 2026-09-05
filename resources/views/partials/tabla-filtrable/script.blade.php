@@ -30,6 +30,17 @@
         'plural' => $plural ?? 'registros',
         'estadoCampo' => $estadoCampo ?? 'activo',
         'etiquetas' => $etiquetas ?? [],
+
+        /*
+        | Qué acceso rápido queda encendido al limpiar los filtros.
+        |
+        | En Clientes es el primero, porque lo normal es ver solo los
+        | activos. En pantallas donde los accesos son alternativas entre sí
+        | (hojalatería / mantenimiento, entradas / salidas) dejar uno
+        | encendido esconde la mitad de las cosas justo cuando el usuario
+        | pidió ver todo. Ahí se manda null y limpiar deja limpio.
+        */
+        'toggleInicial' => array_key_exists('toggleInicial', get_defined_vars()) ? $toggleInicial : 0,
     ];
 @endphp
 
@@ -250,7 +261,8 @@
         if (desde) desde.value = '';
         if (hasta) hasta.value = '';
         toggles.forEach(function (t, i) {
-            var on = i === 0; // por omisión se muestran solo los activos
+            // Cuál queda encendido lo decide cada pantalla; con null, ninguno.
+            var on = CFG.toggleInicial !== null && i === CFG.toggleInicial;
             t.classList.toggle('is-on', on);
             t.setAttribute('aria-pressed', on ? 'true' : 'false');
         });
@@ -265,79 +277,7 @@
 })();
 </script>
 
-{{-- ===================== Menú de tres puntos por fila ===================== --}}
-@once
-    <script>
-    (function () {
-        var abierto = null;
 
-        function cerrar() {
-            if (!abierto) return;
-            abierto.pop.hidden = true;
-            abierto.boton.setAttribute('aria-expanded', 'false');
-            abierto = null;
-        }
-
-        // El popup va con position:fixed, así que se coloca a mano.
-        function colocar(boton, pop) {
-            var r = boton.getBoundingClientRect();
-            var alto = pop.offsetHeight;
-            var ancho = pop.offsetWidth;
-
-            var top = r.bottom + 6;
-            if (top + alto > window.innerHeight - 8) {
-                top = Math.max(8, r.top - alto - 6); // no cabe abajo: se abre hacia arriba
-            }
-
-            var left = r.right - ancho;
-            if (left < 8) left = 8;
-            if (left + ancho > window.innerWidth - 8) left = window.innerWidth - ancho - 8;
-
-            pop.style.top = top + 'px';
-            pop.style.left = left + 'px';
-        }
-
-        document.querySelectorAll('[data-row-menu]').forEach(function (menu) {
-            var boton = menu.querySelector('[data-row-menu-toggle]');
-            var pop = menu.querySelector('[data-row-menu-pop]');
-
-            boton.addEventListener('click', function (e) {
-                e.stopPropagation();
-                var estabaAbierto = abierto && abierto.pop === pop;
-                cerrar();
-                if (estabaAbierto) return;
-
-                pop.hidden = false;
-                colocar(boton, pop);
-                boton.setAttribute('aria-expanded', 'true');
-                abierto = { boton: boton, pop: pop };
-            });
-
-            pop.addEventListener('click', function (e) { e.stopPropagation(); });
-        });
-
-        document.addEventListener('click', cerrar);
-
-        // Esos botones frenan la propagación del clic, así que se avisan aparte.
-        document.querySelectorAll('[data-flt-toggle], [data-view-switch] button').forEach(function (b) {
-            b.addEventListener('click', cerrar);
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key !== 'Escape' || !abierto) return;
-            var boton = abierto.boton;
-            cerrar();
-            boton.focus();
-        });
-
-        // Al filtrar o buscar puede desaparecer la fila del menú abierto.
-        document.addEventListener('input', cerrar, true);
-        document.addEventListener('change', cerrar, true);
-
-        window.addEventListener('scroll', function () {
-            if (abierto) colocar(abierto.boton, abierto.pop);
-        }, true);
-        window.addEventListener('resize', cerrar);
-    })();
-    </script>
-@endonce
+{{-- El menú de tres puntos vive en su propio partial: lo usan también
+     listados que no llevan filtros, como Productos. --}}
+@include('partials.row-menu')

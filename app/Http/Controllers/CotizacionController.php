@@ -143,7 +143,10 @@ class CotizacionController extends Controller
         $q = trim($request->get('q', ''));
 
         $clientes = Customer::query()
-            ->with('congress')
+            // Se traen de una vez: sin esto, calcular el saldo de cada
+            // cliente dispararía una consulta por venta.
+            ->with(['congress', 'category', 'asesor', 'ventas.cobros', 'ventas.pagos'])
+            ->withCount('cotizaciones')
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($sub) use ($q) {
                     $sub->where('nombre', 'like', "%{$q}%")
@@ -156,13 +159,31 @@ class CotizacionController extends Controller
             ->orderBy('nombre')
             ->limit(15)
             ->get()
-            ->map(fn (Customer $c) => [
-                'id' => $c->id,
-                'nombre' => trim($c->nombre.' '.$c->apellido),
-                'correo' => $c->gmail,
-                'rfc' => $c->rfc,
-                'conocido' => $c->comoConocio(),
-            ]);
+            ->map(function (Customer $c) {
+                $ventas = $c->ventas->where('estado', '!=', 'cancelada');
+                $saldo = $c->saldoPendiente();
+
+                return [
+                    'id' => $c->id,
+                    'nombre' => trim($c->nombre.' '.$c->apellido),
+                    'correo' => $c->gmail,
+                    'telefono' => $c->telefono,
+                    'rfc' => $c->rfc,
+                    'direccion' => $c->direccion,
+                    'categoria' => $c->category?->nombre,
+                    'asesor' => $c->asesor?->name,
+                    'conocido' => $c->comoConocio(),
+                    'activo' => (bool) $c->activo,
+                    'comentarios' => $c->comentarios,
+
+                    // Historial: para saber con quién se está tratando antes
+                    // de armarle otra venta.
+                    'compras' => $ventas->count(),
+                    'cotizaciones' => (int) $c->cotizaciones_count,
+                    'saldo' => round($saldo, 2),
+                    'ultima_compra' => $ventas->max('created_at')?->format('d/m/Y'),
+                ];
+            });
 
         return response()->json($clientes);
     }
@@ -172,7 +193,7 @@ class CotizacionController extends Controller
         $q = trim($request->get('q', ''));
 
         $productos = Producto::query()
-            ->with('fichaTecnica')
+            ->with(['fichaTecnica', 'serialesDisponibles' => fn ($s) => $s->orderBy('id')->limit(60)])
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($sub) use ($q) {
                     $sub->where('tipo_equipo', 'like', "%{$q}%")
@@ -193,6 +214,20 @@ class CotizacionController extends Controller
                 'marca' => $p->marca,
                 'precio' => (float) $p->precio,
                 'imagen' => $p->imagen_path ? asset('storage/'.$p->imagen_path) : null,
+
+                /*
+                | Cuánto hay y cuáles son. El stock ya excluye lo vendido y
+                | lo que sigue en hojalatería o mantenimiento, así que aquí
+                | solo aparecen piezas que de verdad se pueden entregar.
+                */
+                'stock' => (int) $p->stock,
+                'piezas' => $p->serialesDisponibles->map(fn ($s) => [
+                    'id' => $s->id,
+                    'codigo' => $s->codigo,
+                    'no_serie' => $s->no_serie,
+                    'condicion' => $s->condicion,
+                ])->values(),
+
                 // Si el producto tiene su ficha técnica, se adjunta sola al agregarlo.
                 'ficha' => $p->fichaTecnica ? ['id' => $p->fichaTecnica->id, 'titulo' => $p->fichaTecnica->titulo] : null,
             ]);

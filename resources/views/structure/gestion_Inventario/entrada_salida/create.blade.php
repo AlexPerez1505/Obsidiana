@@ -1,541 +1,417 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Nueva Entrada')
-@section('page-title', 'Nueva Entrada')
-@section('page-sub', 'Gestion de Inventario > Entrada / Salida > Nueva entrada')
+@section('title', 'Nueva entrada')
+@section('page-title', 'Nueva entrada')
+@section('page-sub', 'Registra el equipo que llegó, con la evidencia de cómo llegó')
 
-@push('head')
-    <style>
-        .rgrid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 18px; }
-        @media (max-width: 520px) { .rgrid-2 { grid-template-columns: 1fr; } }
-        .evidencia-preview { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
-        .evidencia-preview img { width:84px; height:84px; object-fit:cover; border-radius:8px; border:1px solid var(--border); }
-        .unidad-row { display:grid; grid-template-columns: 32px 1fr 140px; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
-        .unidad-row:last-child { border-bottom:none; }
-        .unidad-row .unidad-num { color:var(--muted); font-size:13px; font-weight:600; }
-        .unidad-row input[type="text"] { width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:8px; font-size:14px; background:var(--surface); color:var(--text); }
-        .unidad-row input[type="file"] { width:100%; font-size:12.5px; }
-        .unidad-foto-preview { width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid var(--border); display:none; margin-top:4px; }
-        .signature-box { width:100%; height:160px; border:1px solid var(--border); border-radius:9px; background:#fff; touch-action:none; }
-        .video-preview { margin-top:10px; max-width:280px; border-radius:8px; border:1px solid var(--border); display:none; }
-    </style>
-@endpush
+@include('structure.gestion_Inventario.entrada_salida._estilos')
 
 @section('content')
-    <div class="dashboard-card" style="margin-bottom:18px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap;">
-            <div>
-                <p class="header-subtitle" style="margin:0;">Registra una entrada de inventario con evidencia de cómo llegó</p>
-            </div>
-            <a href="{{ route('inventory.movimientos.index') }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-                Regresar
-            </a>
-        </div>
-    </div>
-
-    <form method="POST" action="{{ route('inventory.movimientos.store') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('inventory.movimientos.store') }}"
+          enctype="multipart/form-data" id="form-entrada" novalidate>
         @csrf
-        <x-ui.card style="margin-bottom:18px;">
-            <x-ui.section-title style="margin:0 0 16px;">¿Qué llegó?</x-ui.section-title>
-            <div id="modeloExistenteAviso" class="cat-aviso" style="display:none; margin-bottom:14px;"></div>
-            <div class="rgrid-2">
-                @include('structure.gestion_Inventario.productos._selects_catalogo')
 
-                <x-ui.form-group label="Precio *" name="precio" type="number" step="0.01" min="0" placeholder="0.00" :required="true" />
-                <x-ui.form-group label="Cantidad que llegó *" name="cantidad" type="number" min="1" placeholder="1" :required="true" />
-                <x-ui.form-group label="Proveedor" name="proveedor" placeholder="Nombre del proveedor" />
-                <x-ui.form-group label="Fecha de llegada *" for="movement_date">
-                    <input id="movement_date" type="date" name="movement_date" value="{{ old('movement_date', now()->format('Y-m-d')) }}" required
-                           style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                </x-ui.form-group>
-            </div>
+        {{-- Los pasos también sirven para saltar: se puede regresar a
+             cualquiera ya visto sin perder lo capturado. --}}
+        <nav class="pasos" id="pasos" aria-label="Pasos del registro"></nav>
 
-            <div style="display:flex; align-items:center; gap:8px; margin:6px 0 14px;">
-                <input type="checkbox" id="es_serializado" name="es_serializado" value="1" style="width:17px; height:17px;" {{ old('es_serializado') ? 'checked' : '' }}>
-                <label for="es_serializado" style="margin:0; font-size:14px; cursor:pointer;">Este producto maneja serie y foto individual por unidad</label>
-            </div>
-
-            <div id="series-texto-wrap">
-                <x-ui.form-group label="Números de serie (uno por línea, opcional)" for="series_texto">
-                    <textarea id="series_texto" name="series_texto" rows="3" placeholder="Déjalo vacío si estas unidades no tienen serial individual"
-                              style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('series_texto') }}</textarea>
-                    <small style="color:var(--muted);">Si capturas todas las series, deben ser exactamente tantas líneas como la cantidad de arriba. Si solo pones una y la cantidad es mayor a 1, el resto de la secuencia se genera solo (ej. 23A12345 → 23A12346, 23A12347...).</small>
-                </x-ui.form-group>
-            </div>
-
-            <div id="unidades-wrap" style="display:none;">
-                <x-ui.section-title style="margin:0 0 8px; font-size:14px;">Unidades (una por una, con su foto)</x-ui.section-title>
-                <p style="margin:0 0 10px; color:var(--muted); font-size:13.5px;">
-                    El número de serie es opcional por renglón, pero la foto de cada unidad es obligatoria.
-                    Cambia la cantidad de arriba para agregar o quitar renglones.
+        {{-- ============================================================
+             1. Qué llegó
+        ============================================================ --}}
+        <section class="paso" data-paso="equipo" data-titulo="Equipo" data-activo>
+            <x-ui.card style="margin-bottom:18px;">
+                <x-ui.section-title style="margin:0 0 6px;">¿El equipo es nuevo o usado?</x-ui.section-title>
+                <p class="campo-nota" style="margin:0 0 14px;">
+                    De esto depende lo que se te pida después: el usado lleva checklist de recepción.
                 </p>
-                <div id="unidades-rows"></div>
-                @error('unidades')
-                    <div style="color:var(--danger); font-size:13px; margin-top:6px;">{{ $message }}</div>
-                @enderror
-            </div>
 
-            <x-ui.form-group label="Descripción" for="descripcion">
-                <textarea id="descripcion" name="descripcion" rows="3" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('descripcion') }}</textarea>
-            </x-ui.form-group>
+                <div class="opciones">
+                    <label class="opcion">
+                        <input type="radio" name="condicion" value="nuevo" data-condicion
+                               {{ old('condicion', 'nuevo') === 'nuevo' ? 'checked' : '' }}>
+                        <span class="ico">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
+                        </span>
+                        <span>
+                            <span class="t">Nuevo</span>
+                            <span class="d">De fábrica, sin uso. Entra directo a stock.</span>
+                        </span>
+                    </label>
 
-            <x-ui.form-group label="Notas de la entrada" for="notas">
-                <textarea id="notas" name="notas" rows="2" placeholder="Ej. llegó en buen estado, caja abierta para inspección, etc."
-                          style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('notas') }}</textarea>
-            </x-ui.form-group>
-        </x-ui.card>
-
-        <x-ui.card style="margin-bottom:18px;">
-            <x-ui.section-title style="margin:0 0 12px;">Foto del producto (catálogo)</x-ui.section-title>
-            <p style="margin:0 0 12px; color:var(--muted); font-size:13.5px;">
-                Es la foto representativa que se ve en el listado de Productos, no la evidencia de esta entrada.
-                Si el modelo ya tiene una, no es necesario subir otra.
-            </p>
-            <div id="imagen-actual-wrap" style="display:none; margin-bottom:12px;">
-                <img id="imagen-actual" src="" alt="Foto actual del producto" style="width:100px; height:100px; object-fit:cover; border-radius:8px; border:1px solid var(--border);">
-                <div style="color:var(--muted); font-size:12.5px; margin-top:4px;">Foto actual. Sube una nueva abajo solo si quieres cambiarla.</div>
-            </div>
-            <input type="file" id="imagen" name="imagen" accept="image/*"
-                   style="width:100%; padding:8px; border:1px solid var(--border); border-radius:9px; font-size:14px; background:var(--surface); color:var(--text);">
-            <small style="color:var(--muted);">Formatos: JPG, PNG, GIF. Máximo 5MB.</small>
-        </x-ui.card>
-
-        <x-ui.card style="margin-bottom:18px;">
-            <x-ui.section-title id="evidencias-title" style="margin:0 0 12px;">Evidencia de la entrada *</x-ui.section-title>
-            <p id="evidencias-help" style="margin:0 0 12px; color:var(--muted); font-size:13.5px;">
-                Sube hasta 3 fotos que documenten cómo llegó este lote (caja, factura del proveedor, estado del equipo...).
-                Es evidencia del envío completo, no se pide una foto por cada unidad.
-            </p>
-            <input type="file" id="evidencias" name="evidencias[]" accept="image/*" multiple required
-                   style="width:100%; padding:8px; border:1px solid var(--border); border-radius:9px; font-size:14px; background:var(--surface); color:var(--text);">
-            <small style="color:var(--muted);">Formatos: JPG, PNG, GIF. Máximo 5MB por foto, máximo 3 fotos.</small>
-            <div id="evidencias-error" style="color:var(--danger); font-size:13px; margin-top:6px; display:none;">Solo puedes subir hasta 3 fotos de evidencia.</div>
-            <div id="evidencia-preview-wrap" class="evidencia-preview"></div>
-            @error('evidencias')
-                <div style="color:var(--danger); font-size:13px; margin-top:6px;">{{ $message }}</div>
-            @enderror
-
-            <div style="margin-top:18px;">
-                <label for="evidencia_video" style="font-weight:600; font-size:14.5px; display:block; margin-bottom:8px;">Video de verificación *</label>
-                <p style="margin:0 0 10px; color:var(--muted); font-size:13.5px;">
-                    Sube 1 video corto que verifique el estado real del producto. Se sube en pedazos para no tronar con archivos pesados.
-                </p>
-                <input type="file" id="evidencia_video" accept="video/*"
-                       style="width:100%; padding:8px; border:1px solid var(--border); border-radius:9px; font-size:14px; background:var(--surface); color:var(--text);">
-                <small style="color:var(--muted);">Formatos: MP4, MOV, WEBM. Máximo 150MB.</small>
-                <input type="hidden" name="video_path" id="video-path-input">
-
-                <div id="video-progreso-wrap" style="display:none; margin-top:10px;">
-                    <div style="height:8px; border-radius:6px; background:var(--border); overflow:hidden;">
-                        <div id="video-progreso-barra" style="height:100%; width:0%; background:var(--primary); transition:width .15s;"></div>
-                    </div>
-                    <div id="video-progreso-texto" style="font-size:12.5px; color:var(--muted); margin-top:4px;">Subiendo video...</div>
+                    <label class="opcion">
+                        <input type="radio" name="condicion" value="usado" data-condicion
+                               {{ old('condicion') === 'usado' ? 'checked' : '' }}>
+                        <span class="ico">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                        </span>
+                        <span>
+                            <span class="t">Usado</span>
+                            <span class="d">Entra en revisión hasta pasar por su proceso.</span>
+                        </span>
+                    </label>
                 </div>
-                <div id="video-error" style="color:var(--danger); font-size:13px; margin-top:6px; display:none;"></div>
+            </x-ui.card>
 
-                <video id="video-preview" class="video-preview" controls></video>
-                @error('video_path')
-                    <div style="color:var(--danger); font-size:13px; margin-top:6px;">{{ $message }}</div>
-                @enderror
-            </div>
-        </x-ui.card>
+            <x-ui.card>
+                <x-ui.section-title style="margin:0 0 16px;">¿Qué llegó?</x-ui.section-title>
 
-        <x-ui.card style="margin-bottom:18px;">
-            <x-ui.section-title style="margin:0 0 12px;">Firma digital de quien registró la entrada *</x-ui.section-title>
-            <p style="margin:0 0 12px; color:var(--muted); font-size:13.5px;">
-                Firma en el recuadro con el mouse o el dedo para confirmar quién capturó esta entrada.
-            </p>
-            <canvas class="signature-box" id="signature-pad"></canvas>
-            <div style="margin-top:8px;">
-                <a href="#" id="limpiar-firma" style="font-size:13px; color:var(--primary);">Limpiar firma</a>
-            </div>
-            <input type="hidden" name="firma" id="firma-input">
-            @error('firma')
-                <div style="color:var(--danger); font-size:13px; margin-top:6px;">{{ $message }}</div>
-            @enderror
-        </x-ui.card>
+                <div id="modeloExistenteAviso" class="cat-aviso" style="display:none; margin-bottom:14px;"></div>
 
-        <div style="display:flex; gap:10px;">
-            <x-ui.button>Registrar entrada</x-ui.button>
-            <a href="{{ route('inventory.movimientos.index') }}" class="btn btn--ghost" style="text-decoration:none;">Cancelar</a>
+                <div class="rgrid-campos">
+                    @include('structure.gestion_Inventario.productos._selects_catalogo')
+
+                    {{-- El precio es dato de administración: quien no lo
+                         puede ver tampoco lo captura, y el equipo se registra
+                         igual. Un admin se lo pone después. --}}
+                    @if (\App\Support\PrecioVisible::editable())
+                        <x-ui.form-group label="Precio de venta" for="precio" data-campo-precio>
+                            <input id="precio" type="number" name="precio" step="0.01" min="0"
+                                   placeholder="0.00" value="{{ old('precio') }}">
+                            <small class="campo-nota" data-precio-nota>
+                                En cuánto se vende este equipo. No es lo que costó.
+                            </small>
+                        </x-ui.form-group>
+
+                        {{-- Cuando el modelo ya tiene precio, no se vuelve a
+                             preguntar: se muestra el que hay y solo se
+                             desbloquea si de verdad se quiere cambiar. --}}
+                        <div class="form-group precio-fijo" data-precio-fijo style="display:none;">
+                            <label>Precio de venta</label>
+                            <div class="precio-caja">
+                                <span class="v" data-precio-valor></span>
+                                <button type="button" class="btn btn--ghost" data-precio-cambiar>Cambiar</button>
+                            </div>
+                            <small class="campo-nota">Ya registrado para este modelo. Se conserva tal cual.</small>
+                        </div>
+                    @endif
+
+                    <x-ui.form-group label="Cantidad que llegó *" name="cantidad" type="number" min="1" value="1" :required="true" />
+
+                    <x-ui.form-group label="Fecha de llegada *" for="movement_date">
+                        <input id="movement_date" type="date" name="movement_date"
+                               value="{{ old('movement_date', now()->format('Y-m-d')) }}" required>
+                    </x-ui.form-group>
+                </div>
+
+                <x-ui.form-group label="Descripción" for="descripcion">
+                    <textarea id="descripcion" name="descripcion" rows="2">{{ old('descripcion') }}</textarea>
+                </x-ui.form-group>
+
+                <x-ui.form-group label="Notas de la entrada" for="notas">
+                    <textarea id="notas" name="notas" rows="2"
+                              placeholder="Ej. llegó en buen estado, caja abierta para inspección...">{{ old('notas') }}</textarea>
+                </x-ui.form-group>
+            </x-ui.card>
+        </section>
+
+        {{-- ============================================================
+             2. Identificación de cada pieza
+        ============================================================ --}}
+        <section class="paso" data-paso="identificacion" data-titulo="Identificación">
+            <x-ui.card style="margin-bottom:18px;">
+                <x-ui.section-title style="margin:0 0 6px;">¿Cómo identificamos cada pieza?</x-ui.section-title>
+                <p class="campo-nota" style="margin:0 0 14px;">
+                    Pase lo que pase, cada pieza recibe su propia etiqueta interna con código QR.
+                    Esto es solo para decidir si además capturas datos de cada una.
+                </p>
+
+                <div class="opciones">
+                    <label class="opcion">
+                        <input type="radio" name="modo_identificacion" value="lote" data-modo
+                               {{ old('modo_identificacion', 'lote') === 'lote' ? 'checked' : '' }}>
+                        <span class="ico">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                        </span>
+                        <span>
+                            <span class="t">Solo la cantidad</span>
+                            <span class="d">Llegaron piezas iguales. Para accesorios y consumibles.</span>
+                        </span>
+                    </label>
+
+                    <label class="opcion">
+                        <input type="radio" name="modo_identificacion" value="series" data-modo
+                               {{ old('modo_identificacion') === 'series' ? 'checked' : '' }}>
+                        <span class="ico">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+                        </span>
+                        <span>
+                            <span class="t">Con número de serie</span>
+                            <span class="d">Pegas las series del fabricante, una por línea.</span>
+                        </span>
+                    </label>
+
+                    <label class="opcion">
+                        <input type="radio" name="modo_identificacion" value="unidades" data-modo
+                               {{ old('modo_identificacion') === 'unidades' ? 'checked' : '' }}>
+                        <span class="ico">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        </span>
+                        <span>
+                            <span class="t">Una por una, con foto</span>
+                            <span class="d">Para equipo mayor. Serie y foto de cada pieza.</span>
+                        </span>
+                    </label>
+                </div>
+            </x-ui.card>
+
+            {{-- Modo lote: no pide nada, solo confirma qué va a pasar --}}
+            <x-ui.card data-panel="lote">
+                <x-ui.section-title style="margin:0 0 8px;">Etiquetas que se van a generar</x-ui.section-title>
+                <p class="campo-nota" style="margin:0;">
+                    Se van a crear <b data-eco-cantidad>1</b> etiqueta(s) con su código QR, una por pieza.
+                    Después las imprimes desde la ficha de la entrada y las pegas en cada producto.
+                </p>
+            </x-ui.card>
+
+            {{-- Modo series --}}
+            <x-ui.card data-panel="series" style="display:none;">
+                <x-ui.form-group label="Números de serie (uno por línea)" for="series_texto">
+                    <textarea id="series_texto" name="series_texto" rows="5"
+                              placeholder="23A12345&#10;23A12346&#10;23A12347">{{ old('series_texto') }}</textarea>
+                    <small class="campo-nota">
+                        Deben ser tantas líneas como la cantidad de arriba. Si pones solo la primera,
+                        el resto de la secuencia se completa solo (23A12345 &rarr; 23A12346, 23A12347...).
+                    </small>
+                </x-ui.form-group>
+
+                {{-- Mucho equipo llega sin serial de fábrica. Aquí se le
+                     arma uno propio con el catálogo que ya se eligió. --}}
+                <div class="generar-series">
+                    <div class="txt">
+                        <b>¿No traen número de serie?</b>
+                        <span data-generar-nota>Se les puede armar uno con el tipo, subtipo, marca y modelo.</span>
+                    </div>
+                    <button type="button" class="btn btn--ghost" data-generar-series>Generar series</button>
+                </div>
+            </x-ui.card>
+
+            {{-- Modo una por una --}}
+            <x-ui.card data-panel="unidades" style="display:none;">
+                <x-ui.section-title style="margin:0 0 6px;">Una por una</x-ui.section-title>
+                <p class="campo-nota" style="margin:0 0 12px;" data-nota-unidades></p>
+                <div id="unidades-rows"></div>
+                @error('unidades')<p class="err">{{ $message }}</p>@enderror
+            </x-ui.card>
+        </section>
+
+        {{-- ============================================================
+             3. Checklist de recepción (solo usado)
+        ============================================================ --}}
+        <section class="paso" data-paso="checklist" data-titulo="Checklist" data-solo-usado>
+            <x-ui.card style="margin-bottom:18px;">
+                <x-ui.section-title style="margin:0 0 6px;">¿En qué estado general llegó?</x-ui.section-title>
+                <p class="campo-nota" style="margin:0 0 14px;">Es el resumen que se ve de un vistazo en la ficha.</p>
+
+                <div class="opciones">
+                    @foreach ($estadosGenerales as $valor => $texto)
+                        @php ([$titulo, $detalle] = array_pad(explode(' · ', $texto, 2), 2, ''))
+                        <label class="opcion">
+                            <input type="radio" name="estado_general" value="{{ $valor }}"
+                                   {{ old('estado_general') === $valor ? 'checked' : '' }}>
+                            <span>
+                                <span class="t">{{ $titulo }}</span>
+                                <span class="d">{{ $detalle }}</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+                @error('estado_general')<p class="err">{{ $message }}</p>@enderror
+            </x-ui.card>
+
+            <x-ui.card>
+                <x-ui.section-title style="margin:0 0 6px;">Checklist de recepción</x-ui.section-title>
+                <p class="campo-nota" style="margin:0 0 6px;">
+                    Marca cada punto. Lo que salga en <b>No</b> abre un espacio para anotar el detalle,
+                    y es lo que después justifica mandarlo a hojalatería o mantenimiento.
+                </p>
+                <p class="campo-nota" style="margin:0 0 4px;">
+                    <b data-chk-cuenta>0</b> de {{ collect($checklist)->sum(fn ($g) => count($g['puntos'])) }} respondidos
+                    · <b data-chk-mal>0</b> con problema
+                </p>
+
+                @foreach ($checklist as $llaveGrupo => $grupo)
+                    <div class="chk-grupo">
+                        <h4>{{ $grupo['titulo'] }}</h4>
+
+                        @foreach ($grupo['puntos'] as $llave => $punto)
+                            {{-- data-manda dice a qué proceso va la pieza si
+                                 este punto sale en "No": de ahí se propone
+                                 sola la ruta de abajo. --}}
+                            <div class="chk-punto" data-chk-punto @if ($punto['manda']) data-manda="{{ $punto['manda'] }}" @endif>
+                                <span class="txt">{{ $punto['texto'] }}</span>
+
+                                <span class="tri">
+                                    @foreach (['si' => 'Sí', 'no' => 'No', 'na' => 'N/A'] as $r => $etiqueta)
+                                        <label>
+                                            <input type="radio" name="checklist[{{ $llave }}][r]" value="{{ $r }}"
+                                                   {{ old("checklist.$llave.r") === $r ? 'checked' : '' }}>
+                                            <span>{{ $etiqueta }}</span>
+                                        </label>
+                                    @endforeach
+                                </span>
+
+                                <input type="text" class="nota" name="checklist[{{ $llave }}][nota]"
+                                       maxlength="300" placeholder="¿Qué tiene? (ej. rayón en la tapa derecha)"
+                                       value="{{ old("checklist.$llave.nota") }}">
+                            </div>
+                        @endforeach
+                    </div>
+                @endforeach
+
+                @error('checklist')<p class="err">{{ $message }}</p>@enderror
+            </x-ui.card>
+
+            {{-- ===================== Ruta de procesos =====================
+                 No todas las piezas pasan por lo mismo. Lo que salió mal en
+                 el checklist propone la ruta, y aquí se ajusta. --}}
+            <x-ui.card style="margin-top:18px;">
+                <x-ui.section-title style="margin:0 0 6px;">¿Por qué procesos tiene que pasar?</x-ui.section-title>
+                <p class="campo-nota" style="margin:0 0 4px;">
+                    Se marcan solos según lo que salió mal arriba, pero mándalo tú si sabes que hace falta.
+                    Un carro puede necesitar solo hojalatería, y una torre solo mantenimiento.
+                </p>
+                <p class="campo-nota" style="margin:0 0 14px;">
+                    <b data-ruta-resumen>Sin procesos: entra directo a stock.</b>
+                </p>
+
+                <div class="opciones">
+                    @foreach (\App\Models\PiezaProceso::PROCESOS as $clave => $nombre)
+                        <label class="opcion">
+                            <input type="checkbox" name="procesos[]" value="{{ $clave }}" data-proceso="{{ $clave }}"
+                                   @checked(in_array($clave, (array) old('procesos', []), true))>
+                            <span class="ico">
+                                @if ($clave === 'hojalateria')
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                                @elseif ($clave === 'mantenimiento')
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                @else
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18l-1.5 13a2 2 0 0 1-2 1.8H6.5a2 2 0 0 1-2-1.8z"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                @endif
+                            </span>
+                            <span>
+                                <span class="t">{{ $nombre }}</span>
+                                <span class="d" data-proceso-motivo="{{ $clave }}">No hace falta</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+            </x-ui.card>
+        </section>
+
+        {{-- ============================================================
+             4. Evidencia
+        ============================================================ --}}
+        <section class="paso" data-paso="evidencia" data-titulo="Evidencia">
+            <x-ui.card style="margin-bottom:18px;">
+                <x-ui.section-title id="evidencias-title" style="margin:0 0 6px;">Fotos de cómo llegó *</x-ui.section-title>
+                <p id="evidencias-help" class="campo-nota" style="margin:0 0 14px;">
+                    Hasta 3 fotos del envío completo: la caja, la factura, el estado del equipo.
+                    Arrástralas aquí, o toma la foto directo si estás en el teléfono.
+                </p>
+
+                <label class="soltar" data-soltar="fotos">
+                    <span class="ico">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </span>
+                    <span class="t">Arrastra las fotos o toca para elegir</span>
+                    <span class="d" data-cuenta-fotos>Ninguna todavía · máximo 3 · JPG, PNG o GIF de hasta 5 MB</span>
+                    <input type="file" id="evidencias" name="evidencias[]" accept="image/*" multiple required>
+                </label>
+
+                <div class="miniaturas" data-miniaturas="fotos"></div>
+                <p id="evidencias-error" class="err" style="display:none;">Solo puedes subir hasta 3 fotos.</p>
+                @error('evidencias')<p class="err">{{ $message }}</p>@enderror
+            </x-ui.card>
+
+            <x-ui.card style="margin-bottom:18px;">
+                <x-ui.section-title style="margin:0 0 6px;">Video de verificación *</x-ui.section-title>
+                <p class="campo-nota" style="margin:0 0 14px;">
+                    Un video corto mostrando el equipo encendido y funcionando. Se sube en pedazos,
+                    así que un archivo pesado no truena la carga.
+                </p>
+
+                <label class="soltar" data-soltar="video">
+                    <span class="ico">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                    </span>
+                    <span class="t">Arrastra el video o toca para elegir</span>
+                    <span class="d" data-cuenta-video>Ninguno todavía · MP4, MOV o WEBM de hasta 150 MB</span>
+                    <input type="file" id="evidencia_video" accept="video/*">
+                </label>
+
+                <input type="hidden" name="video_path" id="video-path-input" value="{{ old('video_path') }}">
+
+                <div id="video-progreso-wrap" style="display:none; margin-top:12px;">
+                    <div class="barra-progreso"><span id="video-progreso-barra"></span></div>
+                    <p id="video-progreso-texto" class="campo-nota" style="margin:6px 0 0;">Subiendo video...</p>
+                </div>
+
+                <p id="video-error" class="err" style="display:none;"></p>
+                <div class="miniaturas" data-miniaturas="video"></div>
+                @error('video_path')<p class="err">{{ $message }}</p>@enderror
+            </x-ui.card>
+
+            <x-ui.card>
+                <x-ui.section-title style="margin:0 0 6px;">Foto del producto (catálogo)</x-ui.section-title>
+                <p class="campo-nota" style="margin:0 0 14px;">
+                    La foto representativa que se ve en el listado de Productos y en las cotizaciones.
+                    Si el modelo ya tiene una, puedes saltarte esto.
+                </p>
+
+                <div id="imagen-actual-wrap" style="display:none; margin-bottom:14px;">
+                    <img id="imagen-actual" src="" alt="Foto actual del producto"
+                         style="width:100px; height:100px; object-fit:cover; border-radius:9px; border:1px solid var(--border);">
+                    <p class="campo-nota" style="margin:6px 0 0;">Ya tiene foto. Sube otra solo si quieres cambiarla.</p>
+                </div>
+
+                <x-ui.form-group label="Imagen del producto" for="imagen">
+                    <input type="file" id="imagen" name="imagen" accept="image/*">
+                    <small class="campo-nota">JPG, PNG o GIF. Máximo 5 MB.</small>
+                </x-ui.form-group>
+            </x-ui.card>
+        </section>
+
+        {{-- ============================================================
+             5. Firma y cierre
+        ============================================================ --}}
+        <section class="paso" data-paso="firma" data-titulo="Firma">
+            <x-ui.card style="margin-bottom:18px;">
+                <x-ui.section-title style="margin:0 0 12px;">Resumen</x-ui.section-title>
+                <div class="resumen">
+                    <div><span class="e">Condición</span><span class="v" data-res-condicion>Nuevo</span></div>
+                    <div><span class="e">Piezas</span><span class="v" data-res-cantidad>1</span></div>
+                    <div><span class="e">Entran como</span><span class="v" data-res-estado>Disponible</span></div>
+                    <div><span class="e">Evidencia</span><span class="v" data-res-evidencia>0 fotos</span></div>
+                </div>
+            </x-ui.card>
+
+            <x-ui.card>
+                <x-ui.section-title style="margin:0 0 6px;">Firma de quien registró la entrada *</x-ui.section-title>
+                <p class="campo-nota" style="margin:0 0 14px;">
+                    Firma con el mouse o el dedo para confirmar quién capturó esta entrada.
+                </p>
+
+                <canvas class="signature-box" id="signature-pad"></canvas>
+                <p style="margin:10px 0 0;">
+                    <a href="#" id="limpiar-firma" class="link" style="font-size:13px;">Limpiar firma</a>
+                </p>
+
+                <input type="hidden" name="firma" id="firma-input">
+                @error('firma')<p class="err">{{ $message }}</p>@enderror
+            </x-ui.card>
+        </section>
+
+        {{-- Navegación entre pasos --}}
+        <div class="paso-nav">
+            <span class="cuenta" data-nav-cuenta></span>
+            <a href="{{ route('inventory.movimientos.index') }}" class="btn btn--ghost">Cancelar</a>
+            <button type="button" class="btn btn--ghost" data-ir="atras">Atrás</button>
+            <button type="button" class="btn" data-ir="adelante">Continuar</button>
+            <button type="submit" class="btn" data-enviar style="display:none;">Registrar entrada</button>
         </div>
     </form>
 
-    @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const evidenciasInput = document.getElementById('evidencias');
-                const previewWrap = document.getElementById('evidencia-preview-wrap');
-                const evidenciasError = document.getElementById('evidencias-error');
-
-                if (evidenciasInput && previewWrap) {
-                    evidenciasInput.addEventListener('change', function () {
-                        previewWrap.innerHTML = '';
-
-                        const excedeMaximo = evidenciasInput.files && evidenciasInput.files.length > 3;
-                        if (evidenciasError) evidenciasError.style.display = excedeMaximo ? 'block' : 'none';
-
-                        if (excedeMaximo) {
-                            evidenciasInput.value = '';
-                            return;
-                        }
-
-                        Array.from(evidenciasInput.files || []).forEach(function (file) {
-                            const url = URL.createObjectURL(file);
-                            const img = document.createElement('img');
-                            img.src = url;
-                            previewWrap.appendChild(img);
-                        });
-                    });
-                }
-
-                // --- Video de verificación: se sube en pedazos (chunks) de
-                // 4MB para no mandar el archivo completo de golpe. Cuando
-                // termina, el servidor regresa la ruta ya ensamblada y esa
-                // es la única cosa que se manda en el submit del formulario. ---
-                const videoInput = document.getElementById('evidencia_video');
-                const videoPreview = document.getElementById('video-preview');
-                const videoPathInput = document.getElementById('video-path-input');
-                const videoProgresoWrap = document.getElementById('video-progreso-wrap');
-                const videoProgresoBarra = document.getElementById('video-progreso-barra');
-                const videoProgresoTexto = document.getElementById('video-progreso-texto');
-                const videoError = document.getElementById('video-error');
-                const submitBtn = document.querySelector('form button[type="submit"], form .btn[type="submit"]');
-                const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB por pedazo
-                const EXTENSIONES_VALIDAS = ['mp4', 'mov', 'm4v', 'webm'];
-                let videoSubiendo = false;
-
-                function toggleSubmit(deshabilitado) {
-                    document.querySelectorAll('form button[type="submit"]').forEach(function (btn) {
-                        btn.disabled = deshabilitado;
-                    });
-                }
-
-                async function subirVideoPorChunks(file) {
-                    videoError.style.display = 'none';
-                    videoPathInput.value = '';
-
-                    const extension = (file.name.split('.').pop() || '').toLowerCase();
-                    if (!EXTENSIONES_VALIDAS.includes(extension)) {
-                        videoError.textContent = 'Formato de video no permitido. Usa MP4, MOV o WEBM.';
-                        videoError.style.display = 'block';
-                        videoInput.value = '';
-                        return;
-                    }
-
-                    const uploadId = (crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '-' + Math.random().toString(36).slice(2))).replace(/[^a-zA-Z0-9-]/g, '');
-                    const total = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
-
-                    videoSubiendo = true;
-                    toggleSubmit(true);
-                    videoProgresoWrap.style.display = 'block';
-
-                    try {
-                        for (let index = 0; index < total; index++) {
-                            const inicio = index * CHUNK_SIZE;
-                            const pedazo = file.slice(inicio, inicio + CHUNK_SIZE);
-
-                            const formData = new FormData();
-                            formData.append('chunk', pedazo, 'chunk');
-                            formData.append('upload_id', uploadId);
-                            formData.append('index', index);
-                            formData.append('total', total);
-                            formData.append('extension', extension);
-
-                            const respuesta = await fetch(@json(route('inventory.movimientos.videoChunk')), {
-                                method: 'POST',
-                                headers: {
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}',
-                                    'Accept': 'application/json',
-                                },
-                                body: formData,
-                            });
-
-                            const json = await respuesta.json();
-
-                            if (!respuesta.ok) {
-                                throw new Error(json.message || 'No se pudo subir el video.');
-                            }
-
-                            const porcentaje = Math.round(((index + 1) / total) * 100);
-                            videoProgresoBarra.style.width = porcentaje + '%';
-                            videoProgresoTexto.textContent = 'Subiendo video... ' + porcentaje + '%';
-
-                            if (json.status === 'listo') {
-                                videoPathInput.value = json.video_path;
-                                videoProgresoTexto.textContent = 'Video subido correctamente.';
-                            }
-                        }
-                    } catch (err) {
-                        videoError.textContent = err.message || 'No se pudo subir el video. Vuelve a intentarlo.';
-                        videoError.style.display = 'block';
-                        videoPathInput.value = '';
-                        videoProgresoWrap.style.display = 'none';
-                    } finally {
-                        videoSubiendo = false;
-                        toggleSubmit(false);
-                    }
-                }
-
-                if (videoInput && videoPreview) {
-                    videoInput.addEventListener('change', function () {
-                        if (!videoInput.files || !videoInput.files[0]) {
-                            videoPreview.style.display = 'none';
-                            return;
-                        }
-
-                        videoPreview.src = URL.createObjectURL(videoInput.files[0]);
-                        videoPreview.style.display = 'block';
-                        subirVideoPorChunks(videoInput.files[0]);
-                    });
-
-                    const videoForm = videoInput.closest('form');
-                    if (videoForm) {
-                        videoForm.addEventListener('submit', function (e) {
-                            if (videoSubiendo) {
-                                e.preventDefault();
-                                alert('Espera a que termine de subirse el video.');
-                                return;
-                            }
-
-                            if (!videoPathInput.value) {
-                                e.preventDefault();
-                                alert('Sube el video de verificación antes de registrar la entrada.');
-                                videoInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }
-                        });
-                    }
-                }
-
-                // --- Firma digital de quien registró la entrada ---
-                const signatureCanvas = document.getElementById('signature-pad');
-                const firmaInput = document.getElementById('firma-input');
-                const limpiarFirma = document.getElementById('limpiar-firma');
-
-                if (signatureCanvas && firmaInput) {
-                    const ctx = signatureCanvas.getContext('2d');
-
-                    function resizeSignatureCanvas() {
-                        const rect = signatureCanvas.getBoundingClientRect();
-                        signatureCanvas.width = rect.width;
-                        signatureCanvas.height = rect.height;
-                        ctx.lineWidth = 2;
-                        ctx.lineCap = 'round';
-                        ctx.strokeStyle = '#1a1a1a';
-                    }
-                    resizeSignatureCanvas();
-                    window.addEventListener('resize', resizeSignatureCanvas);
-
-                    function updateFirmaInput() {
-                        firmaInput.value = signatureCanvas.toDataURL('image/png');
-                    }
-
-                    let firmando = false;
-                    signatureCanvas.addEventListener('mousedown', function (e) {
-                        firmando = true;
-                        ctx.beginPath();
-                        ctx.moveTo(e.offsetX, e.offsetY);
-                    });
-                    signatureCanvas.addEventListener('mousemove', function (e) {
-                        if (!firmando) return;
-                        ctx.lineTo(e.offsetX, e.offsetY);
-                        ctx.stroke();
-                    });
-                    signatureCanvas.addEventListener('mouseup', function () { firmando = false; updateFirmaInput(); });
-                    signatureCanvas.addEventListener('mouseout', function () { firmando = false; updateFirmaInput(); });
-
-                    signatureCanvas.addEventListener('touchstart', function (e) {
-                        e.preventDefault();
-                        firmando = true;
-                        const t = e.touches[0];
-                        const r = signatureCanvas.getBoundingClientRect();
-                        ctx.beginPath();
-                        ctx.moveTo(t.clientX - r.left, t.clientY - r.top);
-                    });
-                    signatureCanvas.addEventListener('touchmove', function (e) {
-                        e.preventDefault();
-                        if (!firmando) return;
-                        const t = e.touches[0];
-                        const r = signatureCanvas.getBoundingClientRect();
-                        ctx.lineTo(t.clientX - r.left, t.clientY - r.top);
-                        ctx.stroke();
-                    });
-                    signatureCanvas.addEventListener('touchend', function () { firmando = false; updateFirmaInput(); });
-
-                    if (limpiarFirma) {
-                        limpiarFirma.addEventListener('click', function (e) {
-                            e.preventDefault();
-                            ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
-                            firmaInput.value = '';
-                        });
-                    }
-
-                    const form = signatureCanvas.closest('form');
-                    if (form) {
-                        form.addEventListener('submit', function (e) {
-                            if (!firmaInput.value) {
-                                e.preventDefault();
-                                alert('Firma en el recuadro antes de registrar la entrada.');
-                                signatureCanvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }
-                        });
-                    }
-                }
-
-                // --- Renglones por unidad (serie + foto), cuando el
-                // producto es_serializado ---
-                const serializadoCheckbox = document.getElementById('es_serializado');
-                const cantidadInput = document.getElementById('cantidad');
-                const seriesTextoWrap = document.getElementById('series-texto-wrap');
-                const unidadesWrap = document.getElementById('unidades-wrap');
-                const unidadesRows = document.getElementById('unidades-rows');
-                const evidenciasInputEl = document.getElementById('evidencias');
-                const evidenciasTitle = document.getElementById('evidencias-title');
-                const evidenciasHelp = document.getElementById('evidencias-help');
-                let sugeridoBase = null;
-
-                function incrementarSerial(base, delta) {
-                    const m = /^(.*?)(\d+)$/.exec(base || '');
-                    if (!m) return '';
-                    const numero = parseInt(m[2], 10) + delta;
-                    return m[1] + String(numero).padStart(m[2].length, '0');
-                }
-
-                function pintarUnidades() {
-                    if (!unidadesRows) return;
-
-                    const cantidad = Math.max(0, parseInt((cantidadInput && cantidadInput.value) || '0', 10) || 0);
-                    const actuales = unidadesRows.querySelectorAll('.unidad-row').length;
-
-                    if (cantidad === actuales) return;
-
-                    unidadesRows.innerHTML = '';
-
-                    for (let i = 0; i < cantidad; i++) {
-                        const row = document.createElement('div');
-                        row.className = 'unidad-row';
-
-                        const sugerido = sugeridoBase ? incrementarSerial(sugeridoBase, i) : '';
-
-                        row.innerHTML = `
-                            <span class="unidad-num">#${i + 1}</span>
-                            <input type="text" name="unidades[${i}][no_serie]" placeholder="No. de serie (opcional)" value="${sugerido}">
-                            <div>
-                                <input type="file" name="unidades[${i}][foto]" accept="image/*" required data-preview="foto-preview-${i}">
-                                <img id="foto-preview-${i}" class="unidad-foto-preview" alt="Vista previa">
-                            </div>
-                        `;
-
-                        unidadesRows.appendChild(row);
-                    }
-
-                    unidadesRows.querySelectorAll('input[type="file"]').forEach(function (input) {
-                        input.addEventListener('change', function () {
-                            const preview = document.getElementById(input.dataset.preview);
-                            if (!preview || !input.files || !input.files[0]) return;
-                            preview.src = URL.createObjectURL(input.files[0]);
-                            preview.style.display = 'block';
-                        });
-                    });
-                }
-
-                function actualizarModoSerializado() {
-                    const activo = serializadoCheckbox && serializadoCheckbox.checked;
-
-                    if (seriesTextoWrap) seriesTextoWrap.style.display = activo ? 'none' : 'block';
-                    if (unidadesWrap) unidadesWrap.style.display = activo ? 'block' : 'none';
-
-                    if (evidenciasInputEl) evidenciasInputEl.required = !activo;
-                    if (evidenciasTitle) evidenciasTitle.textContent = activo ? 'Evidencia general (opcional)' : 'Evidencia de la entrada *';
-                    if (evidenciasHelp) {
-                        evidenciasHelp.textContent = activo
-                            ? 'Ya queda una foto por cada unidad; esto es solo evidencia adicional del envío completo si quieres agregarla (ej. factura del proveedor).'
-                            : 'Sube una o varias fotos que documenten cómo llegó este lote (caja, factura del proveedor, estado del equipo...). Es evidencia del envío completo, no se pide una foto por cada unidad.';
-                    }
-
-                    if (activo) pintarUnidades();
-                }
-
-                if (serializadoCheckbox) {
-                    serializadoCheckbox.addEventListener('change', actualizarModoSerializado);
-                }
-
-                if (cantidadInput) {
-                    cantidadInput.addEventListener('input', function () {
-                        if (serializadoCheckbox && serializadoCheckbox.checked) pintarUnidades();
-                    });
-                }
-
-                actualizarModoSerializado();
-
-                // Si el modelo elegido ya está registrado, se rellenan solos
-                // precio, descripción, proveedor y se muestra la foto que ya
-                // tiene. Cantidad y series no se tocan: son propios de esta
-                // entrada.
-                const modeloSelect = document.getElementById('equipment_model_id');
-                const aviso = document.getElementById('modeloExistenteAviso');
-                const precioInput = document.getElementById('precio');
-                const descripcionInput = document.getElementById('descripcion');
-                const proveedorInput = document.getElementById('proveedor');
-                const seriesTextoInput = document.getElementById('series_texto');
-                const imagenActualWrap = document.getElementById('imagen-actual-wrap');
-                const imagenActual = document.getElementById('imagen-actual');
-                const buscarPorModeloUrl = @json(route('inventory.productos.buscarPorModelo'));
-
-                if (modeloSelect) {
-                    modeloSelect.addEventListener('change', function () {
-                        aviso.style.display = 'none';
-                        imagenActualWrap.style.display = 'none';
-
-                        if (!modeloSelect.value) return;
-
-                        fetch(buscarPorModeloUrl + '?equipment_model_id=' + encodeURIComponent(modeloSelect.value), {
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                        })
-                            .then(r => r.json())
-                            .then(data => {
-                                if (!data.existe) return;
-
-                                if (precioInput) precioInput.value = data.precio ?? '';
-                                if (descripcionInput && !descripcionInput.value) descripcionInput.value = data.descripcion ?? '';
-                                if (proveedorInput && !proveedorInput.value) proveedorInput.value = data.proveedor ?? '';
-
-                                let mensaje = 'Este modelo ya está registrado (stock actual: ' + data.stock_actual + '). Lo que llegue se agregará a esa misma fila. Se completaron precio, descripción y proveedor.';
-
-                                sugeridoBase = data.no_serie_sugerido || null;
-
-                                if (seriesTextoInput && !seriesTextoInput.value && data.no_serie_sugerido) {
-                                    seriesTextoInput.value = data.no_serie_sugerido;
-                                    mensaje += ' El número de serie se sugirió como ' + data.no_serie_sugerido + ' (consecutivo del último registrado).';
-                                }
-
-                                // No se deshabilita el checkbox (un input
-                                // disabled no se envía en el formulario):
-                                // solo se marca y se le avisa al usuario que
-                                // este modelo ya quedó definido como
-                                // serializado desde su primera entrada.
-                                if (data.es_serializado && serializadoCheckbox) {
-                                    serializadoCheckbox.checked = true;
-                                    actualizarModoSerializado();
-                                    mensaje += ' Este modelo ya se maneja con serie y foto por unidad.';
-                                }
-
-                                if (data.imagen) {
-                                    imagenActual.src = data.imagen;
-                                    imagenActualWrap.style.display = 'block';
-                                    mensaje += ' Ya tiene foto de catálogo; solo sube una nueva si quieres cambiarla.';
-                                } else {
-                                    mensaje += ' Todavía no tiene foto de catálogo, considera subir una.';
-                                }
-
-                                aviso.textContent = mensaje;
-                                aviso.style.display = 'block';
-                            })
-                            .catch(() => {});
-                    });
-                }
-            });
-        </script>
-    @endpush
+    {{-- Captura primero: define pintarUnidades() y el resumen que usan los pasos. --}}
+    @include('structure.gestion_Inventario.entrada_salida._script_captura')
+    @include('structure.gestion_Inventario.entrada_salida._script_pasos')
 @endsection

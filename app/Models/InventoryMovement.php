@@ -34,9 +34,11 @@ class InventoryMovement extends Model
         'stock_before',
         'stock_after',
         'reference',
-        'supplier',
         'movement_date',
         'notes',
+        'condicion',
+        'checklist_recepcion',
+        'estado_general',
         'metadata',
         'evidence_paths',
         'signature_path',
@@ -54,6 +56,7 @@ class InventoryMovement extends Model
             'movement_date' => 'date',
             'metadata' => 'array',
             'evidence_paths' => 'array',
+            'checklist_recepcion' => 'array',
         ];
     }
 

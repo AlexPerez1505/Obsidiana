@@ -36,6 +36,7 @@ require __DIR__.'/web/inventory/inventory.php';
 
 // Configuracion
 require __DIR__.'/web/configuracion/catalogo.php';
+require __DIR__.'/web/configuracion/roles.php';
 require __DIR__.'/web/configuracion/refaciones.php';
 require __DIR__.'/web/configuracion/tipo_equipo.php';
 

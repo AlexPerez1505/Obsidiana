@@ -55,7 +55,20 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+
+            /*
+            | Ruta relativa a propósito, no env('APP_URL').'/storage'.
+            |
+            | El sistema se abre desde varias direcciones: 127.0.0.1:8000 en
+            | la computadora que lo corre y 192.168.1.115:8000 desde el resto
+            | de la red. Con la URL absoluta, Storage::url() armaba siempre
+            | "http://localhost/storage/...", que solo funciona en una de las
+            | dos, y las fotos de evidencia salían rotas en todas las demás.
+            |
+            | Relativa, el navegador la resuelve contra el host desde el que
+            | está entrando, y funciona en los dos casos.
+            */
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

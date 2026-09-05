@@ -62,6 +62,26 @@ class Customer extends Model
         return $this->hasMany(Cotizacion::class, 'customer_id');
     }
 
+    public function ventas(): HasMany
+    {
+        return $this->hasMany(Venta::class, 'customer_id');
+    }
+
+    /**
+     * Lo que este cliente todavía debe de sus ventas.
+     *
+     * Se apoya en el saldo de cada venta en vez de recalcular la cuenta
+     * aquí: esa lógica ya considera el valor a cuenta y los cobros
+     * registrados, y duplicarla en dos lugares es como terminan
+     * discrepando.
+     */
+    public function saldoPendiente(): float
+    {
+        return (float) $this->ventas
+            ->where('estado', '!=', 'cancelada')
+            ->sum(fn (Venta $v) => $v->saldo());
+    }
+
     public function planPagos(): HasMany
     {
         return $this->hasMany(PlanPago::class, 'cliente_id');

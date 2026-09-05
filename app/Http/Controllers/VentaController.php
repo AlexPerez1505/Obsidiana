@@ -336,6 +336,9 @@ class VentaController extends Controller
             'items.*.precio_unitario' => ['required', 'numeric', 'min:0'],
             'items.*.sobreprecio' => ['nullable', 'numeric', 'min:0'],
             'items.*.es_regalo' => ['nullable', 'boolean'],
+            // Las piezas concretas que el asesor eligió entregar.
+            'items.*.seriales' => ['nullable', 'array'],
+            'items.*.seriales.*' => ['integer', 'exists:producto_seriales,id'],
             'pagos' => ['nullable', 'array'],
             'pagos.*.nombre' => ['required_with:pagos', 'string', 'max:255'],
             'pagos.*.fecha' => ['nullable', 'date'],
@@ -403,7 +406,7 @@ class VentaController extends Controller
             ]);
 
             if ($i['tipo_item'] === 'producto' && ! empty($i['producto_id'])) {
-                $this->asignarSerialesVendidos($item);
+                $this->asignarSerialesVendidos($item, $i['seriales'] ?? []);
             }
 
             if ($i['tipo_item'] === 'paquete' && ! empty($i['paquete_id'])) {
@@ -427,10 +430,14 @@ class VentaController extends Controller
 
         $productoIds = ProductoSerial::whereIn('venta_item_id', $itemIds)->pluck('producto_id')->unique();
 
+        // Al liberarlas vuelven a estar disponibles: si tenían pendiente
+        // algún proceso no se habrían podido vender, así que no hay ruta
+        // a la que regresarlas.
         ProductoSerial::whereIn('venta_item_id', $itemIds)->update([
             'vendido' => false,
             'vendido_en' => null,
             'venta_item_id' => null,
+            'estado' => 'disponible',
         ]);
 
         Producto::whereIn('id', $productoIds)->get()->each->recalcularStock();
@@ -448,7 +455,7 @@ class VentaController extends Controller
      * Quedan marcadas como vendidas y ligadas a este renglón, y el stock del
      * producto se recalcula a partir de las que sigan disponibles.
      */
-    private function asignarSerialesVendidos(VentaItem $item): void
+    private function asignarSerialesVendidos(VentaItem $item, array $elegidas = []): void
     {
         $producto = Producto::find($item->producto_id);
 
@@ -456,7 +463,7 @@ class VentaController extends Controller
             return;
         }
 
-        $seriales = $this->descontarStockProducto($producto, (int) $item->cantidad, $item);
+        $seriales = $this->descontarStockProducto($producto, (int) $item->cantidad, $item, $elegidas);
 
         $item->update([
             'no_series' => $seriales->pluck('no_serie')->filter()->implode(', ') ?: null,
@@ -502,21 +509,57 @@ class VentaController extends Controller
      * deja la salida en la bitácora. Lo usan tanto la venta de un producto
      * suelto como cada producto dentro de un paquete vendido.
      */
-    private function descontarStockProducto(Producto $producto, int $cantidad, VentaItem $item): Collection
+    private function descontarStockProducto(Producto $producto, int $cantidad, VentaItem $item, array $elegidas = []): Collection
     {
         $stockAntes = $producto->stock;
 
-        $seriales = ProductoSerial::where('producto_id', $producto->id)
+        /*
+        | Solo se venden piezas que terminaron su ruta de procesos: una que
+        | sigue en hojalatería o mantenimiento existe, pero no se puede
+        | entregar todavía.
+        */
+        $disponibles = ProductoSerial::where('producto_id', $producto->id)
             ->where('vendido', false)
-            ->orderBy('id')
-            ->take($cantidad)
-            ->get();
+            ->whereNotIn('estado', ProductoSerial::NO_VENDIBLES);
+
+        /*
+        | Si el asesor eligió piezas concretas, esas son las que salen. Se
+        | vuelven a filtrar contra las disponibles porque entre que armó la
+        | venta y la guardó, alguna pudo venderse o irse a mantenimiento.
+        |
+        | Si eligió menos de las que vende, el resto se completa con las más
+        | antiguas; si no eligió ninguna, es el comportamiento de siempre.
+        */
+        $seriales = collect();
+
+        if ($elegidas) {
+            $seriales = (clone $disponibles)
+                ->whereIn('id', $elegidas)
+                ->orderBy('id')
+                ->take($cantidad)
+                ->get();
+        }
+
+        $faltan = $cantidad - $seriales->count();
+
+        if ($faltan > 0) {
+            $seriales = $seriales->merge(
+                (clone $disponibles)
+                    ->whereNotIn('id', $seriales->pluck('id')->all() ?: [0])
+                    ->orderBy('id')
+                    ->take($faltan)
+                    ->get()
+            );
+        }
 
         foreach ($seriales as $serial) {
             $serial->update([
                 'vendido' => true,
                 'vendido_en' => now(),
                 'venta_item_id' => $item->id,
+                // El estado también lo dice, para que la ficha del QR y las
+                // colas de proceso no la sigan mostrando como disponible.
+                'estado' => 'vendido',
             ]);
         }
 

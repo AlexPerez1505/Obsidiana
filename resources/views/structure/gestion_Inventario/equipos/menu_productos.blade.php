@@ -19,7 +19,10 @@
                     <th>Equipo</th>
                     <th>Modelo</th>
                     <th>Marca</th>
-                    <th>Precio</th>
+                    {{-- La columna no se dibuja para quien no ve precios. --}}
+                    @if (\App\Support\PrecioVisible::para())
+                        <th>Precio de venta</th>
+                    @endif
                     <th>Estado</th>
                 </tr>
             </thead>
@@ -38,7 +41,9 @@
                         <td style="font-weight:600;">{{ $equipo->tipo }}</td>
                         <td>{{ $equipo->modelo ?? '—' }}</td>
                         <td>{{ $equipo->marca ?? '—' }}</td>
-                        <td>${{ number_format($equipo->precio, 2) }}</td>
+                        @if (\App\Support\PrecioVisible::para())
+                            <td>{{ $equipo->precio === null ? 'Sin precio definido' : '$'.number_format($equipo->precio, 2) }}</td>
+                        @endif
                         <td>
                             <span class="badge {{ $equipo->activo ? 'badge--ok' : 'badge--danger' }}">
                                 {{ $equipo->activo ? 'Activo' : 'Inactivo' }}
