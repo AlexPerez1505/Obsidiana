@@ -102,6 +102,7 @@
 @push('scripts')
 <script>
     const intTechnicians = @json($techniciansData);
+    window.intTechnicians = intTechnicians;
     let selectedIntTech = 0;
     function selectIntTech(index) {
         selectedIntTech = index;

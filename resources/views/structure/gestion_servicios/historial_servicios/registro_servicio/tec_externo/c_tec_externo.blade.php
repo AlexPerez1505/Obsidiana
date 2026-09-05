@@ -191,8 +191,8 @@
                 });
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    const message = errorData.message
-                        || (errorData.errors ? Object.values(errorData.errors).flat().join('\n') : null)
+                    const message = (errorData.errors ? Object.values(errorData.errors).flat().join('\n') : null)
+                        || errorData.message
                         || `Error ${response.status}`;
                     throw new Error(message);
                 }

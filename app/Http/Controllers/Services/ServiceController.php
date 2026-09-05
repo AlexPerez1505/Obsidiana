@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Services;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Customer;
+use App\Models\Equipo;
 use App\Models\EquipmentType;
 use App\Models\ExternalTechnician;
 use App\Models\Service;
 use App\Models\ServiceEquipment;
 use App\Models\ServiceInvitation;
+use App\Models\ServiceSparePart;
 use App\Models\ServiceStep;
 use App\Models\ServiceTracking;
 use App\Models\User;
@@ -31,7 +33,9 @@ class ServiceController extends Controller
         $externalTechnicians = ExternalTechnician::where('is_active', true)->orderBy('name')->get();
         $internalTechnicians = User::where('status', User::STATUS_APPROVED)->orderBy('name')->get();
 
-        return view('structure.gestion_servicios.historial_servicios.registro_servicio.c_registro_serv', compact('customers', 'equipmentTypes', 'brands', 'externalTechnicians', 'internalTechnicians', 'invitation'));
+        $equipos = Equipo::all();
+
+        return view('structure.gestion_servicios.historial_servicios.registro_servicio.c_registro_serv', compact('customers', 'equipmentTypes', 'brands', 'equipos', 'externalTechnicians', 'internalTechnicians', 'invitation'));
     }
 
     public function publicStore(Request $request, ServiceInvitation $invitation)
@@ -47,7 +51,7 @@ class ServiceController extends Controller
             'used_at' => now(),
         ]);
 
-        return redirect()->route('gestion.servicios.historial.show', $service)
+        return redirect()->route('gestion.servicios.historial')
             ->with('success', "Servicio {$service->service_number} creado.");
     }
 
@@ -55,15 +59,13 @@ class ServiceController extends Controller
     {
         $service = $this->persistService($request, auth()->id());
 
-        return redirect()->route('gestion.servicios.historial.show', $service)
+        return redirect()->route('gestion.servicios.historial')
             ->with('success', "Servicio {$service->service_number} creado.");
     }
 
     public function show(Service $service)
     {
-        $service->load(['customer', 'serviceEquipment', 'serviceTrackings.serviceStep', 'currentStep', 'internalTechnician', 'externalTechnician']);
-
-        return view('structure.gestion_servicios.historial_servicios.show', compact('service'));
+        return redirect()->route('gestion.servicios.historial');
     }
 
     public function approve(Service $service)
@@ -76,6 +78,17 @@ class ServiceController extends Controller
 
         return redirect()->route('gestion.servicios.historial')
             ->with('success', "Orden {$service->service_number} aprobada.");
+    }
+
+    public function deny(Service $service)
+    {
+        if ($service->status !== 'registrado') {
+            return back()->with('error', 'La orden no puede denegarse en su estado actual.');
+        }
+
+        $service->update(['status' => 'cancelado']);
+
+        return back()->with('success', "Orden {$service->service_number} denegada.");
     }
 
     public function invite()
@@ -102,7 +115,7 @@ class ServiceController extends Controller
             'internal_technician_id' => 'nullable|exists:users,id',
             'external_technician_id' => 'nullable|exists:external_technicians,id',
             'firma' => 'nullable|string',
-            'tipo_equipo' => 'nullable|string|max:255',
+            'tipo_equipo' => 'required|string|max:255',
             'subtipo' => 'nullable|string|max:255',
             'marca' => 'nullable|string|max:255',
             'modelo' => 'nullable|string|max:255',
@@ -113,6 +126,10 @@ class ServiceController extends Controller
             'evidencia_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
             'evidencia_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
             'evidencia_video' => 'nullable|mimetypes:video/mp4,video/quicktime,video/x-m4v|max:10240',
+            'refacciones' => 'nullable|array',
+            'refacciones.*.nombre' => 'required_with:refacciones|string|max:255',
+            'refacciones.*.cantidad' => 'required_with:refacciones|integer|min:1',
+            'refacciones.*.precio_unitario' => 'required_with:refacciones|numeric|min:0',
         ]);
 
         if ($request->input('mantenimiento_externo')) {
@@ -161,6 +178,18 @@ class ServiceController extends Controller
         ]);
 
         $serviceEquipment->update(['product_code' => 'PRD-' . $serviceEquipment->id]);
+
+        if (!empty($validated['refacciones']) && is_array($validated['refacciones'])) {
+            foreach ($validated['refacciones'] as $refaccion) {
+                ServiceSparePart::create([
+                    'service_id' => $service->id,
+                    'nombre' => $refaccion['nombre'],
+                    'cantidad' => (int) $refaccion['cantidad'],
+                    'precio_unitario' => $refaccion['precio_unitario'],
+                    'subtotal' => (int) $refaccion['cantidad'] * $refaccion['precio_unitario'],
+                ]);
+            }
+        }
 
         ServiceTracking::create([
             'service_id' => $service->id,

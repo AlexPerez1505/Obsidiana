@@ -9,17 +9,25 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('cotizacion_items', function (Blueprint $table) {
-            $table->foreignId('producto_id')->nullable()->after('paquete_id')->constrained('productos')->nullOnDelete();
-        });
+        if (! Schema::hasColumn('cotizacion_items', 'producto_id')) {
+            Schema::table('cotizacion_items', function (Blueprint $table) {
+                $table->foreignId('producto_id')->nullable()->after('paquete_id')->constrained('productos')->nullOnDelete();
+            });
+        }
 
-        Schema::table('venta_items', function (Blueprint $table) {
-            $table->foreignId('producto_id')->nullable()->after('paquete_id')->constrained('productos')->nullOnDelete();
-        });
+        if (! Schema::hasColumn('venta_items', 'producto_id')) {
+            Schema::table('venta_items', function (Blueprint $table) {
+                $table->foreignId('producto_id')->nullable()->after('paquete_id')->constrained('productos')->nullOnDelete();
+            });
+        }
 
         // MySQL no permite ALTER de enum sin redefinirlo por completo.
-        DB::statement("ALTER TABLE cotizacion_items MODIFY tipo_item ENUM('equipo', 'paquete', 'producto') NOT NULL DEFAULT 'equipo'");
-        DB::statement("ALTER TABLE venta_items MODIFY tipo_item ENUM('equipo', 'paquete', 'producto') NOT NULL DEFAULT 'equipo'");
+        if (Schema::hasColumn('cotizacion_items', 'tipo_item')) {
+            DB::statement("ALTER TABLE cotizacion_items MODIFY tipo_item ENUM('equipo', 'paquete', 'producto') NOT NULL DEFAULT 'equipo'");
+        }
+        if (Schema::hasColumn('venta_items', 'tipo_item')) {
+            DB::statement("ALTER TABLE venta_items MODIFY tipo_item ENUM('equipo', 'paquete', 'producto') NOT NULL DEFAULT 'equipo'");
+        }
     }
 
     public function down(): void

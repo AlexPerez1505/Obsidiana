@@ -26,54 +26,14 @@
     </div>
 
     <div class="erp-card" style="margin-top:24px;">
-        <h3 id="aprobaciones-toggle" style="font-size:18px; font-weight:700; margin:0; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;">
-            <span style="display:flex; align-items:center; gap:10px;">
+        <a href="{{ route('gestion.servicios.historial.aprobaciones.index') }}" class="erp-btn" style="width:100%; justify-content:space-between; padding:16px 18px; min-height:52px;">
+            <span style="display:flex; align-items:center; gap:12px;">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                 Aprobaciones
             </span>
-            <svg id="aprobaciones-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform .2s ease;"><polyline points="6 9 12 15 18 9"/></svg>
-        </h3>
-        <div id="aprobaciones-panel" style="display:none; margin-top:18px;">
-            <div class="erp-table-wrap">
-                <table class="erp-table">
-                    <thead>
-                        <tr><th>OS</th><th>Cliente</th><th>Tipo</th><th>Paso actual</th><th>Fecha</th><th style="text-align:right;">Acciones</th></tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($services->where('status', 'registrado') as $service)
-                            <tr>
-                                <td class="erp-strong">{{ $service->service_number }}</td>
-                                <td>{{ $service->customer?->nombre }} {{ $service->customer?->apellido }}</td>
-                                <td style="text-transform:capitalize;">{{ $service->service_type }}</td>
-                                <td>{{ $service->currentStep?->name ?? '—' }}</td>
-                                <td style="color:var(--muted);">{{ $service->created_at?->format('d/m/Y') }}</td>
-                                <td style="text-align:right;">
-                                    <a href="{{ route('gestion.servicios.historial.show', $service) }}" class="tbl-link">Ver</a>
-                                    <form action="{{ route('gestion.servicios.historial.approve', $service) }}" method="POST" style="display:inline; margin-left:10px;">
-                                        @csrf
-                                        <button type="submit" class="tbl-link" style="border:none; background:none; color:var(--green); cursor:pointer;">Aprobar</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" style="text-align:center; color:var(--muted); padding:22px;">No hay órdenes pendientes de aprobación.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
+            <span class="erp-count">{{ $registrados }} {{ $registrados === 1 ? 'pendiente' : 'pendientes' }}</span>
+        </a>
     </div>
-
-    <script>
-        document.getElementById('aprobaciones-toggle').addEventListener('click', () => {
-            const panel = document.getElementById('aprobaciones-panel');
-            const chevron = document.getElementById('aprobaciones-chevron');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-            chevron.style.transform = panel.style.display === 'none' ? 'rotate(0deg)' : 'rotate(180deg)';
-        });
-    </script>
 
     <div class="erp-card" data-view-list>
         <div class="erp-table-wrap">
@@ -99,7 +59,6 @@
                             <td>{{ $service->currentStep?->name ?? '—' }}</td>
                             <td style="color:var(--muted);">{{ $service->created_at?->format('d/m/Y') }}</td>
                             <td style="text-align:right;">
-                                <a href="{{ route('gestion.servicios.historial.show', $service) }}" class="tbl-link">Ver</a>
                             </td>
                         </tr>
                     @empty
@@ -156,7 +115,6 @@
                 </dl>
 
                 <div class="data-card-foot">
-                    <a href="{{ route('gestion.servicios.historial.show', $service) }}" class="tbl-link">Ver</a>
                 </div>
             </article>
         @empty

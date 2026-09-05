@@ -29,7 +29,8 @@
     </div>
 
     <div class="resumen-grid">
-        <!-- Acción / QR -->
+        @if($service->service_type !== 'externo')
+        <!-- Código del producto -->
         <div class="resumen-card">
             <h3 class="resumen-title">Código del producto</h3>
             <div class="resumen-detail">
@@ -40,13 +41,6 @@
                 <span class="resumen-label">Paso actual</span>
                 <span class="resumen-value" style="font-weight:700;">{{ $service->currentStep?->name ?? 'Completado' }}</span>
             </div>
-            @if($service->qr_token)
-            <div style="margin-top:14px;">
-                <p class="muted" style="font-size:13px; margin:0 0 8px;">QR activo:</p>
-                <div class="qr-code">{{ $service->qr_token }}</div>
-                <a href="{{ route('qr.show', $service->qr_token) }}" target="_blank" class="btn" style="margin-top:12px; display:inline-flex;">Abrir enlace QR</a>
-            </div>
-            @endif
         </div>
 
         <!-- Ficha Técnica -->
@@ -83,6 +77,7 @@
                 <span class="resumen-value" style="color:var(--accent); font-weight:700;">{{ ucfirst($service->status) }}</span>
             </div>
         </div>
+        @endif
 
         <!-- Ruta de Trabajo -->
         <div class="resumen-card" style="grid-column:1/-1;">
@@ -110,9 +105,6 @@
                         <div class="resumen-step-name">{{ $track->serviceStep?->name ?? 'Paso' }}</div>
                         <div class="resumen-step-status" style="color:{{ $statusColor }};">{{ $statusText }}</div>
                     </div>
-                    @if($track->qr_token)
-                        <a href="{{ route('qr.show', $track->qr_token) }}" target="_blank" class="btn btn--ghost" style="padding:6px 12px; font-size:12px;">QR</a>
-                    @endif
                 </div>
             @endforeach
         </div>

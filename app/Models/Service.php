@@ -60,4 +60,9 @@ class Service extends Model
     {
         return $this->belongsTo(ExternalTechnician::class, 'external_technician_id');
     }
+
+    public function spareParts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ServiceSparePart::class);
+    }
 }

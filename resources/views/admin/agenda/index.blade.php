@@ -4,143 +4,166 @@
 @section('page-sub', 'Gestion Administrativa > Agenda')
 
 @php
-    $eventColors = [
-        'training' => ['bg' => '#9be8f3', 'text' => '#075f6f', 'line' => '#8ee6f0'],
-        'delivery' => ['bg' => '#96f5ad', 'text' => '#0f7a2d', 'line' => '#9cf3b1'],
-        'install' => ['bg' => '#c7a7ff', 'text' => '#3d178b', 'line' => '#c8a7ff'],
-        'meeting' => ['bg' => '#ffd9a3', 'text' => '#9a4f00', 'line' => '#ffd39a'],
-        'maintenance' => ['bg' => '#ff9ea5', 'text' => '#a3131e', 'line' => '#ffa0a6'],
-        'congress' => ['bg' => '#a9bcff', 'text' => '#053394', 'line' => '#a9bcff'],
+    use App\Models\AgendaEvent;
+    use Illuminate\Support\Carbon;
+
+    $today = now()->toDateString();
+    $view = request()->query('view', 'mes');
+
+    if (request()->query('date')) {
+        $refDate = Carbon::parse(request()->query('date'));
+    } elseif (request()->query('month') || request()->query('year')) {
+        $refDate = Carbon::createFromDate(
+            (int) request()->query('year', now()->year),
+            (int) request()->query('month', now()->month),
+            1
+        );
+    } else {
+        $refDate = now();
+    }
+
+    if ($view === 'dia') {
+        $current = $refDate->copy()->startOfDay();
+        $rangeStart = $current->copy();
+        $rangeEnd = $current->copy()->endOfDay();
+        $prev = $current->copy()->subDay();
+        $next = $current->copy()->addDay();
+        $periodLabel = ucfirst($current->locale('es')->translatedFormat('l j \d\e F'));
+    } elseif ($view === 'semana') {
+        $rangeStart = $refDate->copy()->startOfWeek(Carbon::MONDAY);
+        $rangeEnd = $refDate->copy()->endOfWeek(Carbon::SUNDAY);
+        $current = $rangeStart->copy();
+        $prev = $rangeStart->copy()->subWeek();
+        $next = $rangeStart->copy()->addWeek();
+        $periodLabel = 'Semana del '.$rangeStart->format('j').' al '.$rangeEnd->format('j').' de '.ucfirst($rangeEnd->locale('es')->translatedFormat('F'));
+    } else {
+        $view = 'mes';
+        $current = $refDate->copy()->startOfMonth();
+        $rangeStart = $current->copy()->startOfMonth();
+        $rangeEnd = $current->copy()->endOfMonth();
+        $prev = $current->copy()->subMonth();
+        $next = $current->copy()->addMonth();
+        $periodLabel = ucfirst($current->locale('es')->translatedFormat('F')).' '.$current->year;
+    }
+
+    $statusMeta = [
+        'completado' => ['label' => 'Completado', 'color' => '#22c55e'],
+        'en_espera' => ['label' => 'En espera', 'color' => '#f59e0b'],
+        'cancelado' => ['label' => 'Cancelado', 'color' => '#ef4444'],
+        'programado' => ['label' => 'Próximamente', 'color' => '#3b82f6'],
     ];
 
-    $eventList = [
-        [
-            'id' => 'evt-training',
-            'start_date' => '2026-07-01',
-            'end_date' => '2026-07-03',
-            'time' => '10:00 am',
-            'time_value' => '10:00',
-            'title' => 'Capacitacion',
-            'type' => 'training',
-            'notes' => 'Preparar materiales y confirmar asistentes.',
-            'participants' => 'Ricardo, Marina Sherlyn, Jose Alex',
-        ],
-        [
-            'id' => 'evt-delivery',
-            'start_date' => '2026-07-05',
-            'end_date' => '2026-07-05',
-            'time' => '08:00 am',
-            'time_value' => '08:00',
-            'title' => 'Entrega de equipo',
-            'type' => 'delivery',
-            'notes' => 'Confirmar recepcion y evidencia de entrega.',
-            'participants' => 'Ing. Joel Diaz, Almacen Central',
-        ],
-        [
-            'id' => 'evt-install',
-            'start_date' => '2026-07-09',
-            'end_date' => '2026-07-09',
-            'time' => '08:00 am',
-            'time_value' => '08:00',
-            'title' => 'Instalacion',
-            'type' => 'install',
-            'notes' => 'Validar acceso al area antes de iniciar.',
-            'participants' => 'Servicios, Cliente asignado',
-        ],
-        [
-            'id' => 'evt-meeting',
-            'start_date' => '2026-07-13',
-            'end_date' => '2026-07-13',
-            'time' => '10:00 am',
-            'time_value' => '10:00',
-            'title' => 'Reunion',
-            'type' => 'meeting',
-            'notes' => 'Revisar pendientes administrativos.',
-            'participants' => 'Direccion, Administracion',
-        ],
-        [
-            'id' => 'evt-congress',
-            'start_date' => '2026-07-25',
-            'end_date' => '2026-07-25',
-            'time' => '09:00 am',
-            'time_value' => '09:00',
-            'title' => 'Congreso',
-            'type' => 'congress',
-            'notes' => 'Confirmar agenda y participantes.',
-            'participants' => 'Marketing, Ventas, Direccion',
-        ],
-        [
-            'id' => 'evt-maintenance',
-            'start_date' => '2026-07-28',
-            'end_date' => '2026-07-28',
-            'time' => '11:00 am',
-            'time_value' => '11:00',
-            'title' => 'Mantenimiento',
-            'type' => 'maintenance',
-            'notes' => 'Programar revision preventiva del equipo.',
-            'participants' => 'Tecnico interno, Responsable de equipo',
-        ],
+    $typeLabels = [
+        'training' => 'Capacitación',
+        'delivery' => 'Entrega de equipo',
+        'install' => 'Instalación',
+        'maintenance' => 'Mantenimiento',
+        'meeting' => 'Reunión',
+        'congress' => 'Congreso',
     ];
+
+    $currentUserId = (int) auth()->id();
+    $visibilityScope = function ($query) use ($currentUserId) {
+        $query->where('visibility', 'publico')
+            ->orWhere('created_by', $currentUserId)
+            ->orWhere(function ($q) use ($currentUserId) {
+                $q->where('visibility', 'participantes')
+                    ->whereJsonContains('participants', $currentUserId);
+            });
+    };
+
+    $dbEvents = AgendaEvent::with('creator')
+        ->whereDate('start_date', '<=', $rangeEnd->toDateString())
+        ->whereDate('end_date', '>=', $rangeStart->toDateString())
+        ->where($visibilityScope)
+        ->orderBy('start_date')
+        ->orderBy('start_time')
+        ->get();
+
+    $usersById = App\Models\User::query()->pluck('name', 'id');
 
     $events = [];
+    $eventList = [];
 
-    foreach ($eventList as $event) {
-        $start = new DateTimeImmutable($event['start_date']);
-        $end = new DateTimeImmutable($event['end_date']);
+    foreach ($dbEvents as $event) {
+        $start = $event->start_date->copy()->max($rangeStart);
+        $end = $event->end_date->copy()->min($rangeEnd);
 
-        for ($cursor = $start; $cursor <= $end; $cursor = $cursor->modify('+1 day')) {
-            if ($cursor->format('Y-m') !== '2026-07') {
-                continue;
-            }
+        $participantIds = is_array($event->participants) ? $event->participants : [];
+        $participantNames = collect($participantIds)
+            ->map(fn ($id) => $usersById[(int) $id] ?? null)
+            ->filter()
+            ->implode(', ');
 
-            $dayNumber = (int) $cursor->format('j');
-            $events[$dayNumber][] = array_merge($event, [
-                'date' => $cursor->format('Y-m-d'),
-                'is_start' => $cursor->format('Y-m-d') === $event['start_date'],
-                'is_end' => $cursor->format('Y-m-d') === $event['end_date'],
+        $timeStart = $event->start_time ? Carbon::parse($event->start_time)->format('h:i a') : '';
+        $timeEnd = '';
+        if ($event->start_time) {
+            $timeEnd = Carbon::parse($event->start_time)
+                ->addMinutes((int) ($event->duration_minutes ?? 60))
+                ->format('h:i a');
+        }
+
+        $canDelete = (int) $event->created_by === $currentUserId || (auth()->user()?->isAdmin() ?? false);
+
+        $eventData = [
+            'id' => $event->id,
+            'start_date' => $event->start_date->toDateString(),
+            'end_date' => $event->end_date->toDateString(),
+            'time_value' => $event->start_time ? Carbon::parse($event->start_time)->format('H:i') : '09:00',
+            'time' => $timeStart,
+            'time_end' => $timeEnd,
+            'title' => $event->title,
+            'type' => $event->event_type,
+            'type_label' => $typeLabels[$event->event_type] ?? $event->event_type,
+            'status' => $event->status,
+            'status_label' => $statusMeta[$event->status]['label'] ?? $event->status,
+            'status_color' => $statusMeta[$event->status]['color'] ?? '#3b82f6',
+            'reason' => (string) ($event->reason ?? ''),
+            'notes' => (string) $event->notes,
+            'participants' => $participantNames,
+            'creator' => $event->creator?->name ?? 'Sin asignar',
+            'can_delete' => $canDelete,
+            'delete_url' => route('admin.agenda.destroy', $event->id),
+        ];
+
+        $eventList[] = $eventData;
+
+        for ($cursor = $start->copy(); $cursor->lte($end); $cursor->addDay()) {
+            $events[$cursor->toDateString()][] = array_merge($eventData, [
+                'is_start' => $cursor->toDateString() === $event->start_date->toDateString(),
+                'is_end' => $cursor->toDateString() === $event->end_date->toDateString(),
             ]);
         }
     }
 
-    $calendar = [
-        ['num' => 28, 'muted' => true],
-        ['num' => 29, 'muted' => true],
-        ['num' => 30, 'muted' => true],
-        ['num' => 1],
-        ['num' => 2],
-        ['num' => 3],
-        ['num' => 4],
-        ['num' => 5],
-        ['num' => 6],
-        ['num' => 7],
-        ['num' => 8],
-        ['num' => 9],
-        ['num' => 10],
-        ['num' => 11],
-        ['num' => 12],
-        ['num' => 13],
-        ['num' => 14],
-        ['num' => 15],
-        ['num' => 16],
-        ['num' => 17],
-        ['num' => 18],
-        ['num' => 19],
-        ['num' => 20],
-        ['num' => 21],
-        ['num' => 22],
-        ['num' => 23],
-        ['num' => 24],
-        ['num' => 25],
-        ['num' => 26],
-        ['num' => 27],
-        ['num' => 28],
-        ['num' => 29],
-        ['num' => 30],
-        ['num' => 31],
-        ['num' => 1, 'muted' => true],
-    ];
+    if ($view === 'semana') {
+        $gridStart = $rangeStart->copy();
+        $gridEnd = $rangeEnd->copy();
+    } else {
+        $gridStart = $current->copy()->startOfMonth()->startOfWeek(Carbon::MONDAY);
+        $gridEnd = $current->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
+    }
 
-    $upcoming = $eventList;
+    $calendar = [];
+    for ($cursor = $gridStart->copy(); $cursor->lte($gridEnd); $cursor->addDay()) {
+        $calendar[] = [
+            'date' => $cursor->toDateString(),
+            'num' => $cursor->day,
+            'muted' => $view === 'mes' && $cursor->month !== $current->month,
+            'is_today' => $cursor->toDateString() === $today,
+        ];
+    }
+
+    $weekDayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+    $upcoming = AgendaEvent::query()
+        ->whereDate('end_date', '>=', $today)
+        ->where($visibilityScope)
+        ->orderBy('start_date')
+        ->orderBy('start_time')
+        ->limit(6)
+        ->get();
+
 @endphp
 
 @push('head')
@@ -149,190 +172,205 @@
         display: flex;
         flex-direction: column;
         gap: 18px;
+        color: #e5edf8;
     }
 
-    .agenda-crumb {
+    .agenda-head {
         display: flex;
-        align-items: center;
-        gap: 5px;
-        color: var(--muted);
-        font-size: 13px;
-        font-weight: 700;
-    }
-
-    .agenda-crumb a {
-        color: var(--primary);
-        text-decoration: none;
-    }
-
-    .agenda-hero {
-        display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         gap: 18px;
     }
 
-    .agenda-title {
-        display: inline-flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 0;
+    .agenda-head h2 {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 800;
+        color: #f1f5f9;
     }
 
-    .agenda-title-ico {
-        width: 34px;
-        height: 34px;
-        color: var(--primary);
+    .agenda-head p {
+        margin: 4px 0 0;
+        font-size: 14px;
+        color: #8ba3c7;
+    }
+
+    .agenda-actions {
+        display: flex;
+        gap: 12px;
         flex: 0 0 auto;
     }
 
-    .agenda-title h2 {
-        margin: 0;
-        color: var(--text);
-        font-size: 24px;
-        line-height: 1.1;
-    }
-
-    .agenda-add {
+    .agenda-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
-        min-height: 44px;
-        padding: 0 22px;
-        border: 0;
-        border-radius: 6px;
-        background: #2563eb;
-        color: #fff;
+        gap: 9px;
+        min-height: 42px;
+        padding: 0 18px;
+        border-radius: 9px;
         font-family: inherit;
-        font-size: 15px;
-        font-weight: 800;
-        cursor: pointer;
-        box-shadow: 0 10px 22px rgba(37, 99, 235, .22);
-    }
-
-    .agenda-add:hover {
-        background: #1d4ed8;
-    }
-
-    .agenda-add svg,
-    .agenda-filter svg,
-    .agenda-icon-btn svg {
-        width: 20px;
-        height: 20px;
-        flex: 0 0 auto;
-    }
-
-    .agenda-shell {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 220px;
-        gap: 22px;
-        align-items: start;
-    }
-
-    .agenda-main {
-        min-width: 0;
-    }
-
-    .agenda-toolbar {
-        display: grid;
-        grid-template-columns: auto auto auto minmax(130px, 1fr) auto;
-        gap: 14px;
-        align-items: center;
-        margin-bottom: 12px;
-    }
-
-    .agenda-today,
-    .agenda-icon-btn,
-    .agenda-view button,
-    .agenda-filter {
-        border: 1px solid var(--border);
-        background: var(--surface);
-        color: var(--text);
-        font-family: inherit;
+        font-size: 14px;
         font-weight: 700;
         cursor: pointer;
     }
 
-    .agenda-today {
-        min-width: 72px;
-        height: 42px;
-        border-radius: 5px;
+    .agenda-btn svg {
+        width: 18px;
+        height: 18px;
     }
 
-    .agenda-icon-btn {
-        width: 42px;
-        height: 42px;
-        border-radius: 5px;
-        display: inline-flex;
+    .agenda-btn--ghost {
+        border: 1px solid #274366;
+        background: rgba(15, 27, 46, .85);
+        color: #c9d8ee;
+    }
+
+    .agenda-btn--ghost:hover {
+        border-color: #3b82f6;
+        color: #fff;
+    }
+
+    .agenda-btn--primary {
+        border: 0;
+        background: #3b82f6;
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(59, 130, 246, .3);
+    }
+
+    .agenda-btn--primary:hover {
+        background: #2563eb;
+    }
+
+    .agenda-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 250px;
+        gap: 20px;
+        align-items: start;
+    }
+
+    .agenda-card {
+        background: rgba(8, 17, 33, .9);
+        border: 1px solid rgba(56, 189, 248, .35);
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 0 0 1px rgba(56, 189, 248, .08), 0 18px 45px rgba(2, 8, 23, .5);
+    }
+
+    .agenda-toolbar {
+        display: flex;
         align-items: center;
-        justify-content: center;
-    }
-
-    .agenda-icon-btn:hover,
-    .agenda-today:hover,
-    .agenda-filter:hover {
-        border-color: rgba(37, 99, 235, .45);
-        color: var(--primary);
-    }
-
-    .agenda-month {
-        justify-self: center;
-        margin: 0;
-        font-size: 15px;
-        font-weight: 800;
-        color: var(--text);
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
     }
 
     .agenda-view {
-        justify-self: end;
-        display: inline-grid;
-        grid-template-columns: repeat(3, 68px);
-        overflow: hidden;
-        border: 1px solid var(--border);
-        border-radius: 5px;
-        background: var(--surface);
+        display: inline-flex;
+        gap: 8px;
     }
 
-    .agenda-view button {
-        height: 42px;
-        border: 0;
-        border-left: 1px solid var(--border);
-        border-radius: 0;
-        background: transparent;
+    .agenda-view a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
     }
 
-    .agenda-view button:first-child {
-        border-left: 0;
+    .agenda-view button,
+    .agenda-view a {
+        min-width: 74px;
+        height: 38px;
+        padding: 0 16px;
+        border: 1px solid #274366;
+        border-radius: 9px;
+        background: rgba(15, 27, 46, .85);
+        color: #c9d8ee;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
     }
 
-    .agenda-view button.is-active {
-        background: #dbeafe;
-        color: #2563eb;
-        box-shadow: inset 0 0 0 1px #3b82f6;
+    .agenda-view button.is-active,
+    .agenda-view a.is-active {
+        background: #3b82f6;
+        border-color: #3b82f6;
+        color: #fff;
+        box-shadow: 0 6px 16px rgba(59, 130, 246, .35);
+    }
+
+    .agenda-nav {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .agenda-nav-btn {
+        width: 34px;
+        height: 34px;
+        border: 1px solid #274366;
+        border-radius: 9px;
+        background: rgba(15, 27, 46, .85);
+        color: #c9d8ee;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .agenda-nav-btn:hover {
+        border-color: #3b82f6;
+        color: #fff;
+    }
+
+    .agenda-nav-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .agenda-month-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        height: 38px;
+        padding: 0 18px;
+        border: 1px solid #274366;
+        border-radius: 9px;
+        background: rgba(15, 27, 46, .85);
+        color: #f1f5f9;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .agenda-month-pill svg {
+        width: 17px;
+        height: 17px;
+        color: #8ba3c7;
+    }
+
+    .agenda-month-pill b {
+        color: #3b82f6;
     }
 
     .calendar-grid {
         display: grid;
-        grid-template-columns: repeat(7, minmax(84px, 1fr));
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 8px;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        border: 1px solid #1b3350;
+        border-radius: 10px;
         overflow: hidden;
     }
 
     .calendar-day-name {
-        min-height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 10px;
-        border-right: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-        color: var(--text);
-        font-size: 13px;
-        font-weight: 800;
-        background: var(--surface);
+        padding: 12px 8px;
+        background: rgba(13, 30, 54, .95);
+        border-right: 1px solid #1b3350;
+        color: #9db4d4;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
     }
 
     .calendar-day-name:nth-child(7) {
@@ -341,184 +379,467 @@
 
     .calendar-cell {
         position: relative;
-        min-height: 84px;
-        padding: 10px 8px 8px;
-        border-top: 0;
-        border-left: 0;
-        border-right: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-        background: var(--surface);
+        min-height: 88px;
+        padding: 8px;
+        border-right: 1px solid #152a45;
+        border-top: 1px solid #152a45;
+        background: rgba(7, 15, 29, .9);
         color: inherit;
         font: inherit;
         text-align: left;
         cursor: pointer;
-        transition: background .16s ease, box-shadow .16s ease;
+        transition: background .15s ease;
     }
 
     .calendar-cell:hover {
-        background: var(--surface-2);
-        box-shadow: inset 0 0 0 2px rgba(37, 99, 235, .2);
-    }
-
-    .calendar-cell.is-busy {
-        background: rgba(37, 99, 235, .08);
-        box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .22);
-    }
-
-    .calendar-cell.is-range-start {
-        box-shadow: inset 4px 0 0 rgba(37, 99, 235, .65), inset 0 0 0 1px rgba(37, 99, 235, .22);
-    }
-
-    .calendar-cell.is-range-end {
-        box-shadow: inset -4px 0 0 rgba(37, 99, 235, .45), inset 0 0 0 1px rgba(37, 99, 235, .22);
-    }
-
-    .calendar-cell:focus-visible {
-        outline: 3px solid rgba(37, 99, 235, .35);
-        outline-offset: -3px;
+        background: rgba(30, 55, 92, .55);
     }
 
     .calendar-cell:nth-child(7n) {
         border-right: 0;
     }
 
-    .calendar-cell:nth-last-child(-n+7) {
-        border-bottom: 0;
-    }
-
     .calendar-number {
-        display: block;
-        min-height: 18px;
-        color: var(--text);
-        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 26px;
+        height: 26px;
+        padding: 0 6px;
+        border-radius: 999px;
+        color: #cbd5e1;
+        font-size: 13px;
         font-weight: 700;
     }
 
     .calendar-number.is-muted {
-        color: #9ca3af;
+        color: #4d6486;
     }
 
-    .calendar-cell.is-busy .calendar-number {
-        color: #2563eb;
-        font-weight: 900;
+    .calendar-number.is-today {
+        background: #3b82f6;
+        color: #fff;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, .22);
     }
 
     .calendar-events {
         display: flex;
         flex-direction: column;
-        gap: 5px;
-        margin-top: 8px;
+        gap: 4px;
+        margin-top: 6px;
     }
 
     .calendar-event {
         width: 100%;
-        padding: 5px 7px 6px;
+        padding: 4px 7px;
         border: 0;
-        border-radius: 5px;
-        font-size: 10px;
-        line-height: 1.05;
-        font-weight: 700;
+        border-radius: 6px;
         font-family: inherit;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1.15;
         text-align: left;
+        cursor: pointer;
+        color: #eaf2ff;
         overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .day-view {
+        border: 1px solid #1b3350;
+        border-radius: 10px;
+        overflow: hidden;
+        background: rgba(7, 15, 29, .9);
+    }
+
+    .day-view-head {
+        padding: 12px 16px;
+        background: rgba(13, 30, 54, .95);
+        border-bottom: 1px solid #1b3350;
+        color: #9db4d4;
+        font-size: 13px;
+        font-weight: 800;
+        text-transform: capitalize;
+    }
+
+    .day-row {
+        display: grid;
+        grid-template-columns: 72px 1fr;
+        border-bottom: 1px solid #152a45;
+        min-height: 48px;
+        cursor: pointer;
+        transition: background .15s ease;
+    }
+
+    .day-row:last-child {
+        border-bottom: 0;
+    }
+
+    .day-row:hover {
+        background: rgba(30, 55, 92, .55);
+    }
+
+    .day-hour {
+        padding: 12px 10px;
+        border-right: 1px solid #152a45;
+        color: #61789a;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: right;
+    }
+
+    .day-slot {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 6px 10px;
+    }
+
+    .day-slot .calendar-event {
+        white-space: normal;
+        font-size: 11px;
+        padding: 6px 9px;
+    }
+
+    .day-empty {
+        margin: 0;
+        padding: 14px;
+        text-align: center;
+        font-size: 12px;
+        color: #61789a;
+        border-top: 1px solid #152a45;
+    }
+
+    :root[data-theme="light"] .day-view {
+        background: #ffffff;
+        border-color: #e2e8f0;
+    }
+
+    :root[data-theme="light"] .day-view-head {
+        background: #f1f5f9;
+        border-bottom-color: #e2e8f0;
+        color: #64748b;
+    }
+
+    :root[data-theme="light"] .day-row {
+        border-bottom-color: #e2e8f0;
+    }
+
+    :root[data-theme="light"] .day-row:hover {
+        background: #eff6ff;
+    }
+
+    :root[data-theme="light"] .day-hour {
+        border-right-color: #e2e8f0;
+        color: #94a3b8;
+    }
+
+    :root[data-theme="light"] .day-empty {
+        border-top-color: #e2e8f0;
+        color: #94a3b8;
+    }
+
+    /* ===== Vista Semana (rejilla de horas) ===== */
+    .week-view {
+        border: 1px solid #1b3350;
+        border-radius: 10px;
+        overflow: hidden;
+        background: rgba(7, 15, 29, .9);
+    }
+
+    .week-grid {
+        display: grid;
+        grid-template-columns: 64px repeat(7, minmax(0, 1fr));
+        max-height: 560px;
+        overflow-y: auto;
+    }
+
+    .week-corner,
+    .week-day-head {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        padding: 12px 8px;
+        background: rgba(13, 30, 54, .97);
+        border-bottom: 1px solid #1b3350;
+        border-right: 1px solid #1b3350;
+        color: #9db4d4;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .week-corner {
+        z-index: 4;
+        text-align: left;
+        padding-left: 12px;
+    }
+
+    .week-day-head.is-today {
+        background: #1d4ed8;
+        color: #fff;
+    }
+
+    .week-hour {
+        padding: 10px;
+        border-right: 1px solid #152a45;
+        border-bottom: 1px solid #152a45;
+        background: rgba(7, 15, 29, .9);
+        color: #61789a;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: right;
+    }
+
+    .week-cell {
+        min-height: 52px;
+        padding: 4px 6px;
+        border-right: 1px solid #152a45;
+        border-bottom: 1px solid #152a45;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        cursor: pointer;
+        transition: background .15s ease;
+    }
+
+    .week-cell:hover {
+        background: rgba(30, 55, 92, .55);
+    }
+
+    .week-cell.is-today {
+        background: rgba(37, 99, 235, .16);
+    }
+
+    .week-cell.is-today:hover {
+        background: rgba(37, 99, 235, .28);
+    }
+
+    .week-cell .calendar-event {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+
+    /* ===== Vista Día (horas + panel Citas) ===== */
+    .day-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 240px;
+        gap: 16px;
+        align-items: start;
+    }
+
+    .day-view--scroll {
+        max-height: 560px;
+        overflow-y: auto;
+    }
+
+    .day-citas {
+        min-height: 200px;
+    }
+
+    .day-citas-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .day-cita-item {
+        display: grid;
+        grid-template-columns: 4px 1fr;
+        gap: 10px;
+        align-items: center;
+        width: 100%;
+        padding: 4px 0;
+        border: 0;
+        background: transparent;
+        font-family: inherit;
+        font-size: 13px;
+        color: #dbe7f8;
+        text-align: left;
         cursor: pointer;
     }
 
-    .calendar-event:hover {
-        filter: saturate(1.08) brightness(.98);
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, .22);
+    .day-cita-item .cita-line {
+        align-self: stretch;
+        border-radius: 999px;
     }
 
-    .calendar-event:focus-visible {
-        outline: 2px solid rgba(37, 99, 235, .5);
-        outline-offset: 2px;
-    }
-
-    .calendar-event b,
-    .upcoming-item b {
+    .day-cita-item b {
         display: block;
-        font-size: 10px;
-        line-height: 1.1;
+        font-size: 12px;
+        color: #9db4d4;
+        margin-bottom: 2px;
     }
 
-    .calendar-event span,
-    .upcoming-item span {
-        display: block;
-        line-height: 1.1;
+    .day-citas-empty {
+        margin: 18px 0;
+        text-align: center;
+        font-size: 12px;
+        color: #61789a;
     }
 
-    .calendar-event small {
-        display: block;
-        margin-top: 3px;
-        font-size: 9px;
-        line-height: 1.1;
-        opacity: .82;
+    :root[data-theme="light"] .week-view {
+        background: #ffffff;
+        border-color: #e2e8f0;
+    }
+
+    :root[data-theme="light"] .week-corner,
+    :root[data-theme="light"] .week-day-head {
+        background: #f8fafc;
+        border-bottom-color: #e2e8f0;
+        border-right-color: #e2e8f0;
+        color: #64748b;
+    }
+
+    :root[data-theme="light"] .week-day-head.is-today {
+        background: #2563eb;
+        color: #fff;
+    }
+
+    :root[data-theme="light"] .week-hour {
+        background: #ffffff;
+        border-right-color: #e2e8f0;
+        border-bottom-color: #e2e8f0;
+        color: #94a3b8;
+    }
+
+    :root[data-theme="light"] .week-cell {
+        border-right-color: #e2e8f0;
+        border-bottom-color: #e2e8f0;
+    }
+
+    :root[data-theme="light"] .week-cell:hover {
+        background: #eff6ff;
+    }
+
+    :root[data-theme="light"] .week-cell.is-today {
+        background: #dbeafe;
+    }
+
+    :root[data-theme="light"] .day-cita-item {
+        color: #334155;
+    }
+
+    :root[data-theme="light"] .day-cita-item b {
+        color: #64748b;
+    }
+
+    :root[data-theme="light"] .day-citas-empty {
+        color: #94a3b8;
+    }
+
+    @media (max-width: 900px) {
+        .day-layout {
+            grid-template-columns: 1fr;
+        }
     }
 
     .agenda-side {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 16px;
     }
 
-    .agenda-filter {
-        align-self: flex-start;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 9px;
-        height: 42px;
-        min-width: 104px;
-        padding: 0 14px;
-        border-radius: 5px;
-        color: #2563eb;
-        background: #dbeafe;
-        box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .55);
+    .side-card {
+        background: rgba(8, 17, 33, .9);
+        border: 1px solid rgba(56, 189, 248, .3);
+        border-radius: 14px;
+        padding: 16px;
     }
 
-    .upcoming-panel {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 18px 12px;
-    }
-
-    .upcoming-panel h3 {
+    .side-card h3 {
         margin: 0 0 14px;
-        color: var(--text);
-        text-align: center;
-        font-size: 15px;
+        font-size: 14px;
+        font-weight: 800;
+        color: #f1f5f9;
+    }
+
+    .filter-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: #c9d8ee;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .filter-item input {
+        width: 16px;
+        height: 16px;
+        accent-color: #3b82f6;
+        cursor: pointer;
+    }
+
+    .filter-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        flex: 0 0 auto;
     }
 
     .upcoming-list {
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
     }
 
     .upcoming-item {
         display: grid;
-        grid-template-columns: 5px 1fr;
-        gap: 12px;
-        align-items: start;
-        color: var(--text);
-        font-size: 14px;
-        line-height: 1.12;
-        font-weight: 800;
+        grid-template-columns: 4px 1fr auto;
+        gap: 10px;
+        align-items: center;
+        font-size: 13px;
+        color: #dbe7f8;
+    }
+
+    .upcoming-delete {
+        width: 30px;
+        height: 30px;
+        border: 1px solid #274366;
+        border-radius: 8px;
+        background: rgba(239, 68, 68, .12);
+        color: #f87171;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .upcoming-delete:hover {
+        background: rgba(239, 68, 68, .25);
+        border-color: #ef4444;
+    }
+
+    .upcoming-delete svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    .upcoming-delete-form {
+        margin: 0;
+        display: inline-flex;
     }
 
     .upcoming-line {
-        width: 5px;
-        height: 42px;
         border-radius: 999px;
     }
 
     .upcoming-item b {
-        font-size: 13px;
+        display: block;
+        font-size: 12px;
+        color: #9db4d4;
+        margin-bottom: 2px;
     }
 
-    .upcoming-item span {
-        font-size: 13px;
+    .upcoming-empty {
+        margin: 6px 0 4px;
+        text-align: center;
+        font-size: 12px;
+        color: #61789a;
     }
 
     .agenda-modal {
@@ -529,7 +850,7 @@
         align-items: center;
         justify-content: center;
         padding: 18px;
-        background: rgba(2, 6, 23, .52);
+        background: rgba(2, 6, 23, .6);
     }
 
     .agenda-modal.is-open {
@@ -538,11 +859,387 @@
 
     .agenda-dialog {
         width: min(480px, 100%);
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        box-shadow: 0 22px 60px rgba(2, 6, 23, .28);
+        background: #0c1a2e;
+        border: 1px solid rgba(56, 189, 248, .35);
+        border-radius: 14px;
+        box-shadow: 0 22px 60px rgba(2, 6, 23, .55);
         overflow: hidden;
+    }
+
+    .agenda-dialog--wizard {
+        width: min(900px, 100%);
+        max-height: 92vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .wizard-body {
+        padding: 18px 20px;
+        overflow-y: auto;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+        gap: 16px;
+        align-items: start;
+    }
+
+    .wizard-card {
+        display: grid;
+        gap: 13px;
+        background: rgba(13, 30, 54, .55);
+        border: 1px solid rgba(56, 189, 248, .28);
+        border-radius: 14px;
+        padding: 16px;
+    }
+
+    .wizard-card h4 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        color: #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .wizard-card-num {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        background: #3b82f6;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        flex: 0 0 auto;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, .18);
+    }
+
+    .wizard-col {
+        display: grid;
+        gap: 16px;
+    }
+
+    @media (max-width: 860px) {
+        .wizard-body {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .wizard-two-col {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+        gap: 18px;
+        align-items: start;
+    }
+
+    .mini-cal {
+        background: rgba(148, 163, 184, .14);
+        border: 1px solid #274366;
+        border-radius: 12px;
+        padding: 12px;
+    }
+
+    .mini-cal-nav {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .mini-cal-nav-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(15, 27, 46, .7);
+        border: 1px solid #274366;
+        border-radius: 9px;
+        padding: 4px 8px;
+        color: #f1f5f9;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .mini-cal-nav-group button {
+        border: 0;
+        background: transparent;
+        color: #8ba3c7;
+        cursor: pointer;
+        padding: 2px 6px;
+        font-size: 14px;
+    }
+
+    .mini-cal-nav-group button:hover {
+        color: #fff;
+    }
+
+    .mini-cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 3px;
+    }
+
+    .mini-cal-dow {
+        text-align: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: #9db4d4;
+        padding: 6px 0;
+    }
+
+    .mini-cal-day {
+        aspect-ratio: 1;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: #dbe7f8;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .mini-cal-day:hover {
+        background: rgba(59, 130, 246, .25);
+    }
+
+    .mini-cal-day.is-muted {
+        color: #55688a;
+    }
+
+    .mini-cal-day.is-today {
+        color: #38bdf8;
+        font-weight: 800;
+    }
+
+    .mini-cal-day.is-selected {
+        background: #3b82f6;
+        color: #fff;
+        font-weight: 800;
+        box-shadow: 0 6px 16px rgba(59, 130, 246, .4);
+    }
+
+    .mini-cal-day:disabled {
+        color: #3b4d6b;
+        cursor: default;
+    }
+
+    .time-col {
+        display: grid;
+        gap: 12px;
+    }
+
+    .time-col > p {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 700;
+        color: #c9d8ee;
+    }
+
+    .avail-bar {
+        display: grid;
+        grid-template-columns: repeat(28, 1fr);
+        gap: 2px;
+        height: 26px;
+    }
+
+    .avail-seg {
+        border-radius: 3px;
+        background: #22c55e;
+    }
+
+    .avail-seg.is-busy {
+        background: #ef4444;
+    }
+
+    .avail-seg.is-blocked {
+        background: #64748b;
+    }
+
+    .avail-seg.is-past {
+        background: #1e3a5f;
+    }
+
+    .time-inputs {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+    }
+
+    .time-inputs label,
+    .duration-label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #9db4d4;
+    }
+
+    .time-box {
+        width: 64px;
+        padding: 10px 8px;
+        border: 1px solid #274366;
+        border-radius: 9px;
+        background: #0a1526;
+        color: #f1f5f9;
+        font-family: inherit;
+        font-size: 18px;
+        font-weight: 800;
+        text-align: center;
+        outline: none;
+        color-scheme: dark;
+    }
+
+    .time-sep {
+        font-size: 22px;
+        font-weight: 800;
+        color: #9db4d4;
+        padding-bottom: 8px;
+    }
+
+    .duration-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+    }
+
+    .duration-btn {
+        width: 44px;
+        height: 44px;
+        border: 1px solid #274366;
+        border-radius: 9px;
+        background: #0a1526;
+        color: #f1f5f9;
+        font-size: 20px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .duration-btn:hover {
+        border-color: #3b82f6;
+    }
+
+    .duration-value {
+        width: 70px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #274366;
+        border-radius: 9px;
+        background: #0a1526;
+        font-size: 18px;
+        font-weight: 800;
+        color: #f1f5f9;
+    }
+
+    .duration-unit {
+        padding-bottom: 12px;
+        font-size: 12px;
+        color: #9db4d4;
+    }
+
+    .time-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .time-summary p {
+        margin: 0;
+        font-size: 13px;
+        color: #9db4d4;
+    }
+
+    .time-summary b {
+        color: #f1f5f9;
+    }
+
+    .avail-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 14px;
+        border-radius: 9px;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .avail-badge.is-free {
+        background: rgba(34, 197, 94, .15);
+        border: 1px solid rgba(34, 197, 94, .55);
+        color: #4ade80;
+    }
+
+    .avail-badge.is-busy {
+        background: rgba(239, 68, 68, .15);
+        border: 1px solid rgba(239, 68, 68, .55);
+        color: #f87171;
+    }
+
+    .avail-legend {
+        display: flex;
+        gap: 16px;
+        font-size: 12px;
+        color: #9db4d4;
+    }
+
+    .avail-legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+    }
+
+    .summary-list {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+    }
+
+    .summary-row {
+        display: grid;
+        grid-template-columns: 170px 1fr;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid #1b3350;
+        border-radius: 9px;
+        background: rgba(15, 27, 46, .6);
+        font-size: 13px;
+    }
+
+    .summary-row dt {
+        color: #9db4d4;
+        font-weight: 700;
+    }
+
+    .summary-row dd {
+        margin: 0;
+        color: #f1f5f9;
+        font-weight: 600;
+    }
+
+    .wizard-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 20px 18px;
+        border-top: 1px solid #1b3350;
+    }
+
+    .wizard-footer .agenda-btn {
+        min-width: 120px;
+    }
+
+    .wizard-footer [hidden] {
+        display: none;
     }
 
     .agenda-dialog-head {
@@ -551,12 +1248,13 @@
         justify-content: space-between;
         gap: 12px;
         padding: 18px 20px;
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid #1b3350;
     }
 
     .agenda-dialog-head h3 {
         margin: 0;
-        font-size: 18px;
+        font-size: 17px;
+        color: #f1f5f9;
     }
 
     .agenda-close {
@@ -564,8 +1262,8 @@
         height: 34px;
         border: 0;
         border-radius: 50%;
-        background: var(--surface-2);
-        color: var(--text);
+        background: rgba(30, 55, 92, .6);
+        color: #dbe7f8;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
@@ -583,6 +1281,14 @@
         padding: 18px 20px 20px;
     }
 
+    .agenda-form label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #9db4d4;
+    }
+
     .agenda-form-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -598,12 +1304,13 @@
     .agenda-form textarea {
         width: 100%;
         padding: 11px 12px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: var(--surface);
-        color: var(--text);
+        border: 1px solid #274366;
+        border-radius: 9px;
+        background: #0a1526;
+        color: #e5edf8;
         font: inherit;
         outline: none;
+        color-scheme: dark;
     }
 
     .agenda-form textarea {
@@ -614,106 +1321,280 @@
     .agenda-form input:focus,
     .agenda-form select:focus,
     .agenda-form textarea:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, .12);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, .18);
     }
 
     .agenda-save {
         justify-self: end;
         min-height: 42px;
-        padding: 0 18px;
+        padding: 0 20px;
         border: 0;
-        border-radius: 7px;
-        background: #2563eb;
+        border-radius: 9px;
+        background: #3b82f6;
         color: #fff;
         font: inherit;
         font-weight: 800;
         cursor: pointer;
     }
 
-    :root[data-theme="dark"] .agenda-view button.is-active,
-    :root[data-theme="dark"] .agenda-filter {
-        background: rgba(37, 99, 235, .18);
+    .agenda-save:hover {
+        background: #2563eb;
     }
 
-    :root[data-theme="dark"] .calendar-event {
-        filter: saturate(.95) brightness(.95);
+    .event-popover {
+        position: fixed;
+        z-index: 90;
+        width: 250px;
+        background: #0c1a2e;
+        border: 1px solid rgba(56, 189, 248, .45);
+        border-radius: 14px;
+        box-shadow: 0 18px 50px rgba(2, 6, 23, .6);
+        padding: 16px;
+        display: none;
+        gap: 10px;
     }
 
-    :root[data-theme="dark"] .calendar-cell:hover {
-        background: rgba(10, 132, 255, .12);
+    .event-popover.is-open {
+        display: grid;
     }
 
-    :root[data-theme="dark"] .calendar-cell.is-busy {
-        background: rgba(10, 132, 255, .13);
+    .event-popover-head {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+    }
+
+    .event-popover-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 999px;
+        background: #3b82f6;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        font-weight: 800;
+        text-transform: uppercase;
+        flex: 0 0 auto;
+    }
+
+    .event-popover-head b {
+        font-size: 14px;
+        color: #f1f5f9;
+    }
+
+    .event-popover-head small {
+        display: block;
+        font-size: 11px;
+        color: #8ba3c7;
+    }
+
+    .event-popover-rows {
+        display: grid;
+        gap: 4px;
+        font-size: 12px;
+        color: #c9d8ee;
+    }
+
+    .event-popover-rows p {
+        margin: 0;
+    }
+
+    .event-popover-rows b {
+        color: #9db4d4;
+        font-weight: 700;
+    }
+
+    .event-popover-status {
+        justify-self: start;
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+        border: 1px solid currentColor;
+    }
+
+    .event-popover-actions {
+        display: grid;
+        gap: 8px;
+    }
+
+    .event-popover-actions .agenda-btn {
+        min-height: 38px;
+        font-size: 13px;
+    }
+
+    .event-popover-actions .agenda-btn--danger {
+        border: 1px solid rgba(239, 68, 68, .55);
+        background: rgba(239, 68, 68, .12);
+        color: #f87171;
+    }
+
+    .event-popover-actions .agenda-btn--danger:hover {
+        background: rgba(239, 68, 68, .25);
+    }
+
+    :root[data-theme="light"] .agenda-page {
+        color: #334155;
+    }
+
+    :root[data-theme="light"] .agenda-head h2 {
+        color: #0f172a;
+    }
+
+    :root[data-theme="light"] .agenda-head p {
+        color: #64748b;
+    }
+
+    :root[data-theme="light"] .agenda-btn--ghost,
+    :root[data-theme="light"] .agenda-view button,
+    :root[data-theme="light"] .agenda-view a,
+    :root[data-theme="light"] .agenda-nav-btn,
+    :root[data-theme="light"] .agenda-month-pill {
+        background: #ffffff;
+        border-color: #dbe4f0;
+        color: #475569;
+    }
+
+    :root[data-theme="light"] .agenda-btn--ghost:hover,
+    :root[data-theme="light"] .agenda-view button:hover,
+    :root[data-theme="light"] .agenda-view a:hover,
+    :root[data-theme="light"] .agenda-nav-btn:hover {
+        border-color: #3b82f6;
+        color: #1d4ed8;
+    }
+
+    :root[data-theme="light"] .agenda-month-pill {
+        color: #0f172a;
+    }
+
+    :root[data-theme="light"] .agenda-card,
+    :root[data-theme="light"] .side-card {
+        background: #ffffff;
+        border-color: #dbe4f0;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, .06);
+    }
+
+    :root[data-theme="light"] .calendar-grid {
+        border-color: #e2e8f0;
+    }
+
+    :root[data-theme="light"] .calendar-day-name {
+        background: #f1f5f9;
+        border-right-color: #e2e8f0;
+        color: #64748b;
+    }
+
+    :root[data-theme="light"] .calendar-cell {
+        background: #ffffff;
+        border-right-color: #e2e8f0;
+        border-top-color: #e2e8f0;
+    }
+
+    :root[data-theme="light"] .calendar-cell:hover {
+        background: #eff6ff;
+    }
+
+    :root[data-theme="light"] .calendar-number {
+        color: #334155;
+    }
+
+    :root[data-theme="light"] .calendar-number.is-muted {
+        color: #cbd5e1;
+    }
+
+    :root[data-theme="light"] .side-card h3 {
+        color: #0f172a;
+    }
+
+    :root[data-theme="light"] .filter-item {
+        color: #475569;
+    }
+
+    :root[data-theme="light"] .upcoming-item {
+        color: #334155;
+    }
+
+    :root[data-theme="light"] .upcoming-item b {
+        color: #64748b;
+    }
+
+    :root[data-theme="light"] .upcoming-empty {
+        color: #94a3b8;
+    }
+
+    :root[data-theme="light"] .upcoming-delete {
+        border-color: #fecaca;
+        background: #fef2f2;
+        color: #dc2626;
+    }
+
+    :root[data-theme="light"] .upcoming-delete:hover {
+        background: #fee2e2;
+        border-color: #ef4444;
+    }
+
+    :root[data-theme="light"] .event-popover {
+        background: #ffffff;
+        border-color: #cbd5e1;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, .18);
+    }
+
+    :root[data-theme="light"] .event-popover-head b {
+        color: #0f172a;
+    }
+
+    :root[data-theme="light"] .event-popover-head small {
+        color: #64748b;
+    }
+
+    :root[data-theme="light"] .event-popover-rows {
+        color: #475569;
+    }
+
+    :root[data-theme="light"] .event-popover-rows b {
+        color: #64748b;
+    }
+
+    :root[data-theme="light"] .event-popover-actions .agenda-btn--danger {
+        border-color: #fecaca;
+        background: #fef2f2;
+        color: #dc2626;
+    }
+
+    :root[data-theme="light"] .event-popover-actions .agenda-btn--danger:hover {
+        background: #fee2e2;
     }
 
     @media (max-width: 1100px) {
         .agenda-shell {
             grid-template-columns: 1fr;
         }
-
-        .agenda-side {
-            display: grid;
-            grid-template-columns: auto minmax(220px, 1fr);
-            align-items: start;
-        }
     }
 
     @media (max-width: 760px) {
-        .agenda-hero,
-        .agenda-toolbar {
-            grid-template-columns: 1fr;
-        }
-
-        .agenda-hero {
-            align-items: flex-start;
+        .agenda-head {
             flex-direction: column;
         }
 
-        .agenda-add {
+        .agenda-actions,
+        .agenda-actions .agenda-btn {
             width: 100%;
-        }
-
-        .agenda-toolbar {
-            display: grid;
-            grid-template-columns: repeat(3, 42px);
-        }
-
-        .agenda-today {
-            grid-column: 1 / -1;
-            width: 100%;
-        }
-
-        .agenda-month,
-        .agenda-view {
-            grid-column: 1 / -1;
-            justify-self: stretch;
-        }
-
-        .agenda-view {
-            grid-template-columns: repeat(3, 1fr);
         }
 
         .calendar-grid {
-            grid-template-columns: repeat(7, minmax(72px, 1fr));
             overflow-x: auto;
         }
 
         .calendar-day-name,
         .calendar-cell {
-            min-width: 72px;
+            min-width: 76px;
         }
 
-        .agenda-side {
-            grid-template-columns: 1fr;
-        }
-
-        .agenda-filter {
-            width: 100%;
-        }
-
-        .agenda-form-row {
+        .agenda-form-row,
+        .agenda-form-row--three {
             grid-template-columns: 1fr;
         }
     }
@@ -722,102 +1603,80 @@
 
 @section('content')
     <section class="agenda-page">
-        <nav class="agenda-crumb" aria-label="Ruta">
-            <a href="{{ route('dashboard') }}">Gestion Administrativa</a>
-            <span>&gt;</span>
-            <strong>Agenda</strong>
-        </nav>
-
-        <div class="agenda-hero">
-            <div class="agenda-title">
-                <svg class="agenda-title-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="4" y="3" width="16" height="18" rx="2"></rect>
-                    <path d="M8 3v18M4 8h16M4 13h16M4 18h16"></path>
-                </svg>
-                <h2>Agenda/Evento</h2>
+        <div class="agenda-head">
+            <div>
+                <h2>Agenda</h2>
+                <p>Gestiona tus citas y procedimientos</p>
             </div>
 
-            <button class="agenda-add" type="button" data-agenda-modal-open>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
-                Nuevo Evento
-            </button>
+            <div class="agenda-actions">
+                <a class="agenda-btn agenda-btn--primary" href="{{ route('admin.agenda.create') }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                    Agendar cita
+                </a>
+            </div>
         </div>
 
         <div class="agenda-shell">
-            <div class="agenda-main">
+            <div class="agenda-card">
                 <div class="agenda-toolbar">
-                    <button class="agenda-today" type="button">Hoy</button>
-                    <button class="agenda-icon-btn" type="button" aria-label="Mes anterior">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
-                    </button>
-                    <button class="agenda-icon-btn" type="button" aria-label="Mes siguiente">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
-                    </button>
-                    <p class="agenda-month">Julio 2026</p>
                     <div class="agenda-view" aria-label="Vista de calendario">
-                        <button type="button" class="is-active">Mes</button>
-                        <button type="button">Semana</button>
-                        <button type="button">Dia</button>
+                        <a class="{{ $view === 'dia' ? 'is-active' : '' }}" href="{{ route('admin.agenda.index', ['view' => 'dia', 'date' => $current->toDateString()]) }}">Día</a>
+                        <a class="{{ $view === 'semana' ? 'is-active' : '' }}" href="{{ route('admin.agenda.index', ['view' => 'semana', 'date' => $current->toDateString()]) }}">Semana</a>
+                        <a class="{{ $view === 'mes' ? 'is-active' : '' }}" href="{{ route('admin.agenda.index', ['view' => 'mes', 'date' => $current->toDateString()]) }}">Mes</a>
+                    </div>
+
+                    <div class="agenda-nav">
+                        <a class="agenda-nav-btn" href="{{ route('admin.agenda.index', ['view' => $view, 'date' => $prev->toDateString()]) }}" aria-label="Periodo anterior">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+                        </a>
+                        <span class="agenda-month-pill">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 11h18"></path></svg>
+                            {{ $periodLabel }}
+                        </span>
+                        <a class="agenda-nav-btn" href="{{ route('admin.agenda.index', ['view' => $view, 'date' => $next->toDateString()]) }}" aria-label="Periodo siguiente">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
+                        </a>
+                        <button class="agenda-nav-btn" type="button" aria-label="Pantalla completa" data-agenda-fullscreen>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                        </button>
                     </div>
                 </div>
 
-                <div class="calendar-grid" aria-label="Calendario de julio 2026">
-                    @foreach (['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'] as $day)
+                @if ($view === 'mes')
+                <div class="calendar-grid" aria-label="Calendario de {{ $periodLabel }}">
+                    @foreach ($weekDayNames as $day)
                         <div class="calendar-day-name">{{ $day }}</div>
                     @endforeach
 
                     @foreach ($calendar as $day)
                         @php
-                            $dayEvents = empty($day['muted']) ? ($events[$day['num']] ?? []) : [];
-                            $dateMonth = empty($day['muted']) ? '07' : ($loop->index < 3 ? '06' : '08');
-                            $selectedDate = '2026-'.$dateMonth.'-'.str_pad($day['num'], 2, '0', STR_PAD_LEFT);
-                            $dayClasses = ['calendar-cell'];
-
-                            if ($dayEvents) {
-                                $dayClasses[] = 'is-busy';
-
-                                if (collect($dayEvents)->contains('is_start', true)) {
-                                    $dayClasses[] = 'is-range-start';
-                                }
-
-                                if (collect($dayEvents)->contains('is_end', true)) {
-                                    $dayClasses[] = 'is-range-end';
-                                }
-                            }
+                            $dayEvents = $events[$day['date']] ?? [];
                         @endphp
 
-                        <div class="{{ implode(' ', $dayClasses) }}" role="button" tabindex="0" data-agenda-day data-agenda-date="{{ $selectedDate }}" aria-label="{{ $dayEvents ? 'Editar evento del '.$selectedDate : 'Registrar evento el '.$selectedDate }}">
-                            <span class="calendar-number {{ ! empty($day['muted']) ? 'is-muted' : '' }}">{{ str_pad($day['num'], 2, '0', STR_PAD_LEFT) }}</span>
+                        <div class="calendar-cell" role="button" tabindex="0" data-agenda-day data-agenda-date="{{ $day['date'] }}" aria-label="{{ $dayEvents ? 'Editar cita del '.$day['date'] : 'Agendar cita el '.$day['date'] }}">
+                            <span class="calendar-number {{ $day['muted'] ? 'is-muted' : '' }} {{ $day['is_today'] ? 'is-today' : '' }}">{{ $day['num'] }}</span>
 
                             @if ($dayEvents)
                                 <div class="calendar-events">
                                     @foreach ($dayEvents as $event)
                                         @php
-                                            $color = $eventColors[$event['type']];
-                                            $isMultiDay = $event['start_date'] !== $event['end_date'];
-                                            $rangeLabel = $event['is_start'] ? 'Inicia' : ($event['is_end'] ? 'Termina' : 'Continua');
+                                            $color = $statusMeta[$event['status']]['color'] ?? '#3b82f6';
+                                            $isMultiDay = ! $event['is_start'] || ! $event['is_end'];
+                                            $rangeLabel = $event['is_start'] ? 'Inicia' : ($event['is_end'] ? 'Termina' : 'Continúa');
                                         @endphp
                                         <button
                                             class="calendar-event"
                                             type="button"
                                             data-agenda-event
+                                            data-agenda-status="{{ $event['status'] }}"
                                             data-agenda-id="{{ $event['id'] }}"
-                                            data-agenda-date="{{ $selectedDate }}"
-                                            data-agenda-start-date="{{ $event['start_date'] }}"
-                                            data-agenda-end-date="{{ $event['end_date'] }}"
-                                            data-agenda-title="{{ $event['title'] }}"
-                                            data-agenda-time="{{ $event['time_value'] }}"
-                                            data-agenda-type="{{ $event['type'] }}"
-                                            data-agenda-notes="{{ $event['notes'] }}"
-                                            data-agenda-participants="{{ $event['participants'] }}"
-                                            style="background: {{ $color['bg'] }}; color: {{ $color['text'] }};"
-                                            aria-label="Editar evento {{ $event['title'] }} del {{ $selectedDate }}"
+                                            data-agenda-date="{{ $day['date'] }}"
+                                            data-agenda-json='@json($event)'
+                                            style="background: {{ $color }}33; color: {{ $color }}; box-shadow: inset 0 0 0 1px {{ $color }}66;"
+                                            aria-label="Ver cita {{ $event['title'] }} del {{ $day['date'] }}"
                                         >
-                                            <b>{{ $event['time'] }}</b>
-                                            <span>{{ $event['title'] }}</span>
-                                            @if ($isMultiDay)
-                                                <small>{{ $rangeLabel }}</small>
-                                            @endif
+                                            {{ $event['time'] ? $event['time'].' · ' : '' }}{{ $event['title'] }}{{ $isMultiDay ? ' ('.$rangeLabel.')' : '' }}
                                         </button>
                                     @endforeach
                                 </div>
@@ -825,192 +1684,190 @@
                         </div>
                     @endforeach
                 </div>
-            </div>
-
-            <aside class="agenda-side" aria-label="Proximos eventos">
-                <button class="agenda-filter" type="button">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 3H2l8 9.5V20l4-2v-5.5L22 3z"></path></svg>
-                    Filtrar
-                </button>
-
-                <div class="upcoming-panel">
-                    <h3>Proximos eventos</h3>
-                    <div class="upcoming-list">
-                        @foreach ($upcoming as $event)
-                            @php($color = $eventColors[$event['type']])
-                            <div class="upcoming-item" style="color: {{ $color['text'] }};">
-                                <span class="upcoming-line" style="background: {{ $color['line'] }};"></span>
-                                <span>
-                                    <b>{{ $event['time'] }}</b>
-                                    <span>{{ $event['title'] }}</span>
-                                </span>
+                @elseif ($view === 'semana')
+                <div class="week-view" aria-label="Semana de {{ $periodLabel }}">
+                    <div class="week-grid">
+                        <div class="week-corner">Hora</div>
+                        @foreach ($calendar as $i => $day)
+                            <div class="week-day-head {{ $day['is_today'] ? 'is-today' : '' }}">
+                                {{ $weekDayNames[$i] ?? '' }} {{ $day['num'] }}
                             </div>
                         @endforeach
+
+                        @for ($h = 7; $h <= 20; $h++)
+                            <div class="week-hour">{{ $h }}:00</div>
+                            @foreach ($calendar as $day)
+                                @php
+                                    $hourEvents = collect($events[$day['date']] ?? [])->filter(function ($e) use ($h) {
+                                        return (int) substr($e['time_value'] ?? '09:00', 0, 2) === $h;
+                                    });
+                                @endphp
+                                <div class="week-cell {{ $day['is_today'] ? 'is-today' : '' }}" data-agenda-day data-agenda-date="{{ $day['date'] }}" role="button" tabindex="0" aria-label="Agendar cita el {{ $day['date'] }} a las {{ $h }}:00">
+                                    @foreach ($hourEvents as $event)
+                                        @php
+                                            $color = $statusMeta[$event['status']]['color'] ?? '#3b82f6';
+                                        @endphp
+                                        <button
+                                            class="calendar-event"
+                                            type="button"
+                                            data-agenda-event
+                                            data-agenda-status="{{ $event['status'] }}"
+                                            data-agenda-id="{{ $event['id'] }}"
+                                            data-agenda-date="{{ $day['date'] }}"
+                                            data-agenda-json='@json($event)'
+                                            style="background: {{ $color }}33; color: {{ $color }}; box-shadow: inset 0 0 0 1px {{ $color }}66;"
+                                            aria-label="Ver cita {{ $event['title'] }} del {{ $day['date'] }}"
+                                        >
+                                            {{ $event['time'] ? $event['time'].' · ' : '' }}{{ $event['title'] }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            @endforeach
+                        @endfor
+                    </div>
+                </div>
+                @else
+                    @php
+                        $dayEventsAll = $events[$current->toDateString()] ?? [];
+                    @endphp
+                    <div class="day-layout">
+                        <div class="day-view day-view--scroll" aria-label="Horas del {{ $periodLabel }}">
+                            @for ($h = 7; $h <= 21; $h++)
+                                @php
+                                    $hourEvents = collect($dayEventsAll)->filter(function ($e) use ($h) {
+                                        return (int) substr($e['time_value'] ?? '09:00', 0, 2) === $h;
+                                    });
+                                @endphp
+                                <div class="day-row" data-agenda-day data-agenda-date="{{ $current->toDateString() }}" role="button" tabindex="0" aria-label="Agendar cita a las {{ Carbon::createFromTime($h)->format('g:i A') }}">
+                                    <span class="day-hour">{{ Carbon::createFromTime($h)->format('g:i A') }}</span>
+                                    <div class="day-slot">
+                                        @foreach ($hourEvents as $event)
+                                            @php
+                                                $color = $statusMeta[$event['status']]['color'] ?? '#3b82f6';
+                                            @endphp
+                                            <button
+                                                class="calendar-event"
+                                                type="button"
+                                                data-agenda-event
+                                                data-agenda-status="{{ $event['status'] }}"
+                                                data-agenda-id="{{ $event['id'] }}"
+                                                data-agenda-date="{{ $current->toDateString() }}"
+                                                data-agenda-json='@json($event)'
+                                                style="background: {{ $color }}33; color: {{ $color }}; box-shadow: inset 0 0 0 1px {{ $color }}66;"
+                                            >
+                                                {{ $event['time'] ? $event['time'].' · ' : '' }}{{ $event['title'] }}
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endfor
+                        </div>
+
+                        <aside class="side-card day-citas" aria-label="Citas del día">
+                            <h3>Citas</h3>
+                            <div class="day-citas-list">
+                                @forelse ($dayEventsAll as $event)
+                                    @php
+                                        $color = $statusMeta[$event['status']]['color'] ?? '#3b82f6';
+                                    @endphp
+                                    <button
+                                        class="day-cita-item"
+                                        type="button"
+                                        data-agenda-event
+                                        data-agenda-status="{{ $event['status'] }}"
+                                        data-agenda-id="{{ $event['id'] }}"
+                                        data-agenda-date="{{ $current->toDateString() }}"
+                                        data-agenda-json='@json($event)'
+                                    >
+                                        <span class="cita-line" style="background: {{ $color }};"></span>
+                                        <span>
+                                            <b>{{ $event['time'] ?: 'Todo el día' }}</b>
+                                            {{ $event['title'] }}
+                                        </span>
+                                    </button>
+                                @empty
+                                    <p class="day-citas-empty">Sin citas para este día</p>
+                                @endforelse
+                            </div>
+                        </aside>
+                    </div>
+                @endif
+            </div>
+
+            <aside class="agenda-side" aria-label="Filtros y próximas citas">
+                <div class="side-card">
+                    <h3>Filtros rápidos</h3>
+                    @foreach ($statusMeta as $status => $meta)
+                        <label class="filter-item">
+                            <input type="checkbox" checked data-agenda-filter="{{ $status }}">
+                            <span class="filter-dot" style="background: {{ $meta['color'] }};"></span>
+                            {{ $meta['label'] }}
+                        </label>
+                    @endforeach
+                </div>
+
+                <div class="side-card">
+                    <h3>Próximas citas</h3>
+                    <div class="upcoming-list">
+                        @forelse ($upcoming as $event)
+                            @php($color = $statusMeta[$event->status]['color'] ?? '#3b82f6')
+                            <div class="upcoming-item">
+                                <span class="upcoming-line" style="background: {{ $color }};"></span>
+                                <span>
+                                    <b>{{ $event->start_date->format('d/m/Y') }} {{ $event->start_time ? '· '.Carbon::parse($event->start_time)->format('h:i a') : '' }}</b>
+                                    {{ $event->title }}
+                                </span>
+                                @if ((int) $event->created_by === (int) auth()->id() || auth()->user()->isAdmin())
+                                    <form class="upcoming-delete-form" method="POST" action="{{ route('admin.agenda.destroy', $event) }}" onsubmit="return confirm('¿Eliminar la cita \'{{ addslashes($event->title) }}\'?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="upcoming-delete" type="submit" aria-label="Eliminar cita {{ $event->title }}" title="Eliminar cita">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6"></path></svg>
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        @empty
+                            <p class="upcoming-empty">Sin citas próximas</p>
+                        @endforelse
                     </div>
                 </div>
             </aside>
         </div>
     </section>
 
-    <div class="agenda-modal" id="agendaModal" aria-hidden="true">
-        <div class="agenda-dialog" role="dialog" aria-modal="true" aria-labelledby="agendaDialogTitle">
-            <div class="agenda-dialog-head">
-                <h3 id="agendaDialogTitle">Nuevo Evento</h3>
-                <button class="agenda-close" type="button" data-agenda-modal-close aria-label="Cerrar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg>
-                </button>
+    <div class="event-popover" id="eventPopover" aria-hidden="true">
+        <div class="event-popover-head">
+            <span class="event-popover-avatar" id="popAvatar">A</span>
+            <div>
+                <b id="popTitle">Cita</b>
+                <small id="popCreator"></small>
             </div>
-            <form class="agenda-form" onsubmit="saveAgendaEvent(event);">
-                <div>
-                    <label for="agenda-title">Titulo</label>
-                    <input id="agenda-title" type="text" name="title" placeholder="Nombre del evento" required>
-                </div>
-                <div class="agenda-form-row agenda-form-row--three">
-                    <div>
-                        <label for="agenda-date">Fecha inicial</label>
-                        <input id="agenda-date" type="date" name="start_date" value="2026-07-04" required>
-                    </div>
-                    <div>
-                        <label for="agenda-end-date">Fecha final</label>
-                        <input id="agenda-end-date" type="date" name="end_date" value="2026-07-04" required>
-                    </div>
-                    <div>
-                        <label for="agenda-time">Hora</label>
-                        <input id="agenda-time" type="time" name="time" value="09:00" required>
-                    </div>
-                </div>
-                <div>
-                    <label for="agenda-type">Tipo</label>
-                    <select id="agenda-type" name="type">
-                        <option>Capacitacion</option>
-                        <option>Entrega de equipo</option>
-                        <option>Instalacion</option>
-                        <option>Mantenimiento</option>
-                        <option>Reunion</option>
-                        <option>Congreso</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="agenda-participants">Participantes</label>
-                    <textarea id="agenda-participants" name="participants" placeholder="Nombre de participantes, separados por coma"></textarea>
-                </div>
-                <div>
-                    <label for="agenda-notes">Notas</label>
-                    <textarea id="agenda-notes" name="notes" placeholder="Notas del evento"></textarea>
-                </div>
-                <button class="agenda-save" id="agendaSaveButton" type="submit">Guardar evento</button>
-            </form>
+        </div>
+        <div class="event-popover-rows">
+            <p><b>Fecha:</b> <span id="popDate"></span></p>
+            <p><b>Motivo:</b> <span id="popReason"></span></p>
+            <p><b>Tiempo:</b> <span id="popTime"></span></p>
+            <p id="popParticipantsRow"><b>Participantes:</b> <span id="popParticipants"></span></p>
+        </div>
+        <span class="event-popover-status" id="popStatus"></span>
+        <div class="event-popover-actions">
+            <a class="agenda-btn agenda-btn--primary" id="popReprogram" href="#">Reprogramar cita</a>
+            <button class="agenda-btn agenda-btn--danger" type="button" id="popDelete">Eliminar cita</button>
         </div>
     </div>
 
+    <form id="popoverDeleteForm" method="POST" style="display:none;">
+        @csrf
+        @method('DELETE')
+    </form>
+
     <script>
-        const agendaModal = document.getElementById('agendaModal');
-        const agendaTitleInput = document.getElementById('agenda-title');
-        const agendaDateInput = document.getElementById('agenda-date');
-        const agendaEndDateInput = document.getElementById('agenda-end-date');
-        const agendaTimeInput = document.getElementById('agenda-time');
-        const agendaTypeInput = document.getElementById('agenda-type');
-        const agendaParticipantsInput = document.getElementById('agenda-participants');
-        const agendaNotesInput = document.getElementById('agenda-notes');
-        const agendaDialogTitle = document.getElementById('agendaDialogTitle');
-        const agendaSaveButton = document.getElementById('agendaSaveButton');
-        const agendaReservedEvents = @json($eventList);
-        const agendaTypeLabels = {
-            training: 'Capacitacion',
-            delivery: 'Entrega de equipo',
-            install: 'Instalacion',
-            maintenance: 'Mantenimiento',
-            meeting: 'Reunion',
-            congress: 'Congreso',
-        };
-
-        function findAgendaEventByDate(date) {
-            return agendaReservedEvents.find((item) => date >= item.start_date && date <= item.end_date);
-        }
-
-        function rangeOverlapsReservedEvent(startDate, endDate, ignoredEventId) {
-            return agendaReservedEvents.some((item) => {
-                if (ignoredEventId && item.id === ignoredEventId) {
-                    return false;
-                }
-
-                return startDate <= item.end_date && endDate >= item.start_date;
-            });
-        }
-
-        function openAgendaModal(selectedDate, eventData) {
-            const date = typeof selectedDate === 'string' ? selectedDate : '2026-07-04';
-            const isEditing = !!eventData;
-            const normalizedEvent = isEditing ? {
-                id: eventData.id,
-                startDate: eventData.startDate || eventData.start_date,
-                endDate: eventData.endDate || eventData.end_date,
-                title: eventData.title,
-                time: eventData.time || eventData.time_value,
-                type: eventData.type,
-                notes: eventData.notes || '',
-                participants: eventData.participants || '',
-            } : null;
-
-            agendaModal.dataset.mode = isEditing ? 'edit' : 'create';
-            agendaModal.dataset.eventId = isEditing ? normalizedEvent.id : '';
-            agendaDialogTitle.textContent = isEditing ? 'Editar Evento' : 'Nuevo Evento';
-            agendaSaveButton.textContent = isEditing ? 'Guardar cambios' : 'Guardar evento';
-            agendaTitleInput.value = isEditing ? normalizedEvent.title : '';
-            agendaDateInput.value = isEditing ? normalizedEvent.startDate : date;
-            agendaEndDateInput.value = isEditing ? normalizedEvent.endDate : date;
-            agendaTimeInput.value = isEditing ? normalizedEvent.time : '09:00';
-            agendaTypeInput.value = isEditing ? (agendaTypeLabels[normalizedEvent.type] || normalizedEvent.type) : 'Capacitacion';
-            agendaParticipantsInput.value = isEditing ? normalizedEvent.participants : '';
-            agendaNotesInput.value = isEditing ? normalizedEvent.notes : '';
-
-            agendaModal.classList.add('is-open');
-            agendaModal.setAttribute('aria-hidden', 'false');
-            window.setTimeout(() => agendaTitleInput.focus(), 80);
-        }
-
-        function closeAgendaModal() {
-            agendaModal.classList.remove('is-open');
-            agendaModal.setAttribute('aria-hidden', 'true');
-        }
-
-        function saveAgendaEvent(event) {
-            event.preventDefault();
-
-            if (agendaEndDateInput.value < agendaDateInput.value) {
-                if (window.showToast) {
-                    window.showToast('La fecha final no puede ser menor que la fecha inicial.');
-                }
-
-                return;
-            }
-
-            if (rangeOverlapsReservedEvent(agendaDateInput.value, agendaEndDateInput.value, agendaModal.dataset.eventId)) {
-                if (window.showToast) {
-                    window.showToast('Ya existe un evento registrado en ese rango de fechas.');
-                }
-
-                return;
-            }
-
-            if (window.showToast) {
-                const message = agendaModal.dataset.mode === 'edit'
-                    ? 'Evento actualizado para el ' + agendaDateInput.value + '.'
-                    : 'Evento registrado para el ' + agendaDateInput.value + '.';
-                window.showToast(message);
-            }
-
-            closeAgendaModal();
-        }
-
-        document.querySelectorAll('[data-agenda-modal-open]').forEach((button) => {
-            button.addEventListener('click', () => openAgendaModal());
-        });
+        const agendaCreateUrl = '{{ route('admin.agenda.create') }}';
 
         document.querySelectorAll('[data-agenda-day]').forEach((day) => {
             day.addEventListener('click', () => {
-                const currentEvent = findAgendaEventByDate(day.dataset.agendaDate);
-                openAgendaModal(day.dataset.agendaDate, currentEvent);
+                window.location.href = agendaCreateUrl + '?date=' + day.dataset.agendaDate;
             });
             day.addEventListener('keydown', (event) => {
                 if (event.target.closest('[data-agenda-event]')) {
@@ -1019,49 +1876,131 @@
 
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
-                    const currentEvent = findAgendaEventByDate(day.dataset.agendaDate);
-                    openAgendaModal(day.dataset.agendaDate, currentEvent);
+                    window.location.href = agendaCreateUrl + '?date=' + day.dataset.agendaDate;
                 }
             });
         });
 
+        const eventPopover = document.getElementById('eventPopover');
+        const popAvatar = document.getElementById('popAvatar');
+        const popTitle = document.getElementById('popTitle');
+        const popCreator = document.getElementById('popCreator');
+        const popDate = document.getElementById('popDate');
+        const popReason = document.getElementById('popReason');
+        const popTime = document.getElementById('popTime');
+        const popParticipants = document.getElementById('popParticipants');
+        const popParticipantsRow = document.getElementById('popParticipantsRow');
+        const popStatus = document.getElementById('popStatus');
+        const popReprogram = document.getElementById('popReprogram');
+        const popDelete = document.getElementById('popDelete');
+        const popoverDeleteForm = document.getElementById('popoverDeleteForm');
+        let popoverHideTimer = null;
+
+        function formatDateEs(dateStr) {
+            const parts = (dateStr || '').split('-');
+            return parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : dateStr;
+        }
+
+        function openEventPopover(button) {
+            const data = JSON.parse(button.dataset.agendaJson || '{}');
+
+            popAvatar.textContent = (data.title || 'A').charAt(0);
+            popAvatar.style.background = (data.status_color || '#3b82f6');
+            popTitle.textContent = data.title || 'Cita';
+            popCreator.textContent = 'Creada por ' + (data.creator || '—');
+            popDate.textContent = formatDateEs(data.start_date) + (data.end_date !== data.start_date ? ' al ' + formatDateEs(data.end_date) : '');
+            popReason.textContent = data.reason || data.type_label || '—';
+            popTime.textContent = data.time
+                ? data.time + (data.time_end ? ' – ' + data.time_end : '')
+                : 'Todo el día';
+            popParticipants.textContent = data.participants || '—';
+            popParticipantsRow.hidden = ! data.participants;
+            popStatus.textContent = data.status_label || '—';
+            popStatus.style.color = data.status_color || '#3b82f6';
+            popReprogram.href = agendaCreateUrl + '?event=' + (data.id || '');
+            popDelete.hidden = ! data.can_delete;
+            popDelete.dataset.deleteUrl = data.delete_url || '';
+            popDelete.dataset.deleteTitle = data.title || '';
+
+            eventPopover.classList.add('is-open');
+            eventPopover.setAttribute('aria-hidden', 'false');
+
+            const rect = button.getBoundingClientRect();
+            const popRect = eventPopover.getBoundingClientRect();
+            let left = rect.right + 10;
+            let top = rect.top - 10;
+
+            if (left + popRect.width > window.innerWidth - 12) {
+                left = rect.left - popRect.width - 10;
+            }
+
+            if (top + popRect.height > window.innerHeight - 12) {
+                top = window.innerHeight - popRect.height - 12;
+            }
+
+            eventPopover.style.left = Math.max(8, left) + 'px';
+            eventPopover.style.top = Math.max(8, top) + 'px';
+        }
+
+        function schedulePopoverHide() {
+            popoverHideTimer = window.setTimeout(() => {
+                eventPopover.classList.remove('is-open');
+                eventPopover.setAttribute('aria-hidden', 'true');
+            }, 180);
+        }
+
+        function cancelPopoverHide() {
+            if (popoverHideTimer) {
+                window.clearTimeout(popoverHideTimer);
+                popoverHideTimer = null;
+            }
+        }
+
         document.querySelectorAll('[data-agenda-event]').forEach((item) => {
+            item.addEventListener('mouseenter', () => {
+                cancelPopoverHide();
+                openEventPopover(item);
+            });
+            item.addEventListener('mouseleave', schedulePopoverHide);
             item.addEventListener('click', (event) => {
                 event.stopPropagation();
-                openAgendaModal(item.dataset.agendaDate, {
-                    id: item.dataset.agendaId,
-                    startDate: item.dataset.agendaStartDate,
-                    endDate: item.dataset.agendaEndDate,
-                    title: item.dataset.agendaTitle,
-                    time: item.dataset.agendaTime,
-                    type: item.dataset.agendaType,
-                    notes: item.dataset.agendaNotes,
-                    participants: item.dataset.agendaParticipants,
+            });
+        });
+
+        eventPopover.addEventListener('mouseenter', cancelPopoverHide);
+        eventPopover.addEventListener('mouseleave', schedulePopoverHide);
+
+        popDelete.addEventListener('click', () => {
+            if (! popDelete.dataset.deleteUrl) {
+                return;
+            }
+
+            if (confirm('¿Eliminar la cita "' + popDelete.dataset.deleteTitle + '"?')) {
+                popoverDeleteForm.action = popDelete.dataset.deleteUrl;
+                popoverDeleteForm.submit();
+            }
+        });
+
+        document.querySelectorAll('[data-agenda-filter]').forEach((checkbox) => {
+            checkbox.addEventListener('change', () => {
+                const status = checkbox.dataset.agendaFilter;
+                document.querySelectorAll('[data-agenda-status="' + status + '"]').forEach((item) => {
+                    item.style.display = checkbox.checked ? '' : 'none';
                 });
             });
         });
 
-        document.querySelectorAll('[data-agenda-modal-close]').forEach((button) => {
-            button.addEventListener('click', closeAgendaModal);
-        });
-
-        agendaModal.addEventListener('click', (event) => {
-            if (event.target === agendaModal) {
-                closeAgendaModal();
-            }
-        });
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && agendaModal.classList.contains('is-open')) {
-                closeAgendaModal();
-            }
-        });
-
-        document.querySelectorAll('.agenda-view button').forEach((button) => {
-            button.addEventListener('click', () => {
-                document.querySelectorAll('.agenda-view button').forEach((item) => item.classList.remove('is-active'));
-                button.classList.add('is-active');
+        const agendaFullscreenButton = document.querySelector('[data-agenda-fullscreen]');
+        if (agendaFullscreenButton) {
+            agendaFullscreenButton.addEventListener('click', () => {
+                const card = document.querySelector('.agenda-card');
+                if (! document.fullscreenElement) {
+                    card.requestFullscreen && card.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
             });
-        });
+        }
+
     </script>
 @endsection

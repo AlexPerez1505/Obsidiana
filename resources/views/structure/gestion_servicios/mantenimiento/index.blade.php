@@ -1,72 +1,136 @@
-@extends('structure.commercial_management.erp')
+@extends('structure.gestion_servicios.layout')
 
 @section('title', 'Mantenimiento')
 
-@section('erp_content')
-    @php
-        $total = $services->count();
-        $internos = $services->where('service_type', 'interno')->count();
-        $externos = $services->where('service_type', 'externo')->count();
-        $entregados = $services->where('status', 'entregado')->count();
-    @endphp
+@section('service_content')
+    <style>
+        .category-link {
+            text-decoration: none;
+            color: inherit;
+        }
+        .category-item.active {
+            background: rgba(34, 197, 94, .12);
+            border-bottom-color: rgba(34, 197, 94, .7);
+        }
+        .category-item.active .category-name {
+            color: #22C55E;
+        }
+        .tech-initials {
+            width: 42px;
+            height: 42px;
+            flex: 0 0 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: rgba(34, 197, 94, .13);
+            color: #22C55E;
+            font-weight: 700;
+            font-size: 14px;
+        }
+    </style>
 
-    <div class="content-actions">
-        <a href="{{ route('gestion.servicios.historial.nueva_orden') }}" class="erp-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nueva orden
-        </a>
-    </div>
+    <div class="catalog-grid">
+        <div class="card catalog-card">
+            <div class="catalog-header">
+                <h2 class="page-title">Técnicos</h2>
+                <span class="catalog-count">{{ $technicians->count() }} {{ $technicians->count() === 1 ? 'opción' : 'opciones' }}</span>
+            </div>
 
-    <div class="erp-stats">
-        <div class="erp-stat"><span class="ic blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span><div><div class="n">{{ $total }}</div><div class="l">Mantenimientos</div></div></div>
-        <div class="erp-stat"><span class="ic green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polyline points="20 6 9 17 4 12"/></svg></span><div><div class="n">{{ $entregados }}</div><div class="l">Entregados</div></div></div>
-        <div class="erp-stat"><span class="ic amber"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span><div><div class="n">{{ $internos }}</div><div class="l">Internos</div></div></div>
-        <div class="erp-stat"><span class="ic slate"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12 20.73 6.96"/></svg></span><div><div class="n">{{ $externos }}</div><div class="l">Externos</div></div></div>
-    </div>
-
-    <div class="erp-card">
-        <div class="erp-table-wrap">
-            <table class="erp-table">
-                <thead>
-                    <tr><th>OS</th><th>Cliente</th><th>Tipo</th><th>Estatus</th><th>Paso actual</th><th>Fecha</th><th style="text-align:right;">Acciones</th></tr>
-                </thead>
-                <tbody>
-                    @forelse ($services as $service)
+            @if ($technicians->isEmpty())
+                <div class="catalog-empty">No hay técnicos registrados.</div>
+            @else
+                <div class="category-list">
+                    @foreach ($technicians as $tech)
                         @php
-                            $badge = match($service->status) {
-                                'entregado' => 'ok',
-                                'en_progreso' => 'info',
-                                'cancelado' => 'danger',
-                                default => 'neutral',
-                            };
+                            $isSelected = $selected && $selected->id === $tech->id && $selected->is_external === $tech->is_external;
+                            $link = $tech->is_external
+                                ? route('gestion.servicios.mantenimiento.index', ['tipo' => 'externo'])
+                                : route('gestion.servicios.mantenimiento.index', ['tecnico' => $tech->id]);
                         @endphp
-                        <tr>
-                            <td class="erp-strong">{{ $service->service_number }}</td>
-                            <td>{{ $service->customer?->nombre }} {{ $service->customer?->apellido }}</td>
-                            <td style="text-transform:capitalize;">{{ $service->service_type }}</td>
-                            <td><span class="erp-badge {{ $badge }}"><span class="dot"></span>{{ $service->status }}</span></td>
-                            <td>{{ $service->currentStep?->name ?? '—' }}</td>
-                            <td style="color:var(--muted);">{{ $service->created_at?->format('d/m/Y') }}</td>
-                            <td style="text-align:right;">
-                                <a href="{{ route('gestion.servicios.historial.show', $service) }}" class="tbl-link">Ver</a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7">
-                                <div class="empty-state">
-                                    <span class="ico">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                    </span>
-                                    <h3>Aún no hay mantenimientos</h3>
-                                    <p>Crea la primera orden de servicio y aparecerá aquí.</p>
-                                    <a href="{{ route('gestion.servicios.historial.nueva_orden') }}" class="erp-btn">Nueva orden</a>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                        <a href="{{ $link }}" class="category-item category-link {{ $isSelected ? 'active' : '' }}">
+                            <div class="tech-initials">{{ $tech->initials }}</div>
+                            <div class="category-info">
+                                <span class="category-name">{{ $tech->name }}</span>
+                                <span class="category-meta">{{ $tech->email }} · {{ $tech->count }} {{ $tech->count === 1 ? $tech->count_label : $tech->count_label . 's' }}</span>
+                            </div>
+                            <div class="category-arrow">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"/>
+                                </svg>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+
+        <div class="card catalog-card service-section">
+            @if ($selected)
+                <div class="catalog-header">
+                    <h2 class="page-title">
+                        @if ($selected->is_external)
+                            Servicios externos
+                        @else
+                            Servicios activos de {{ $selected->name }}
+                        @endif
+                    </h2>
+                    <span class="catalog-count">{{ $services->count() }} {{ $services->count() === 1 ? 'servicio' : 'servicios' }}</span>
+                </div>
+
+                <div class="service-table-wrap">
+                    <table class="service-table">
+                        <thead>
+                            <tr>
+                                <th>OS</th>
+                                <th>Cliente</th>
+                                <th>Tipo</th>
+                                <th>Estatus</th>
+                                <th>Paso actual</th>
+                                <th>Fecha</th>
+                                <th style="text-align:right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($services as $service)
+                                @php
+                                    $badgeClass = match ($service->status) {
+                                        'en_progreso' => 'active',
+                                        'registrado' => 'upcoming',
+                                        'entregado' => 'finished',
+                                        'cancelado' => 'finished',
+                                        default => 'finished',
+                                    };
+                                @endphp
+                                <tr>
+                                    <td class="service-name">{{ $service->service_number }}</td>
+                                    <td>{{ $service->customer?->nombre }} {{ $service->customer?->apellido }}</td>
+                                    <td style="text-transform:capitalize;">{{ $service->service_type }}</td>
+                                    <td>
+                                        <span class="service-badge {{ $badgeClass }}">{{ $service->status }}</span>
+                                    </td>
+                                    <td>{{ $service->currentStep?->name ?? '—' }}</td>
+                                    <td class="service-dates">{{ $service->created_at?->format('d/m/Y') }}</td>
+                                    <td style="text-align:right;">
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="empty-cell">
+                                        @if ($selected->is_external)
+                                            No hay servicios externos registrados.
+                                        @else
+                                            No hay servicios activos asignados a este técnico.
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="catalog-empty">Selecciona un técnico o mantenimiento externo para ver sus servicios.</div>
+            @endif
         </div>
     </div>
 @endsection

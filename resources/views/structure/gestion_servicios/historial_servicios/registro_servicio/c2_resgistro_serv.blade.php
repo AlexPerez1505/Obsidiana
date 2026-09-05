@@ -1,4 +1,4 @@
-        <!-- Paso 2: Equipo -->
+        <!-- Paso 2: Selección de Equipo -->
         <div class="step-panel" data-step="2">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:22px;">
                 <div style="display:flex; align-items:center; gap:12px;">
@@ -16,380 +16,135 @@
 
             <h3 style="display:flex; align-items:center; gap:10px; font-size:18px; margin:0 0 8px;">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="var(--primary)"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                Datos del equipo
+                Selecciona el equipo
             </h3>
-            <p class="muted" style="margin:0 0 18px; font-size:13px;">Ingresa la informacion del equipo que recibira el servicio tecnico</p>
+            <p class="muted" style="margin:0 0 18px; font-size:13px;">Elige el equipo registrado que recibirá el servicio.</p>
 
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="tipo_equipo">Tipo de equipo</label>
-                    <input type="text" name="tipo_equipo" id="tipo_equipo" list="tipo_equipo_list" placeholder="Ej. Equipo médico">
-                    <datalist id="tipo_equipo_list">
-                        @foreach ($equipmentTypes->unique('name')->sortBy('name')->values() as $type)
-                            <option value="{{ $type->name }}">
-                        @endforeach
-                    </datalist>
-                </div>
-                <div class="form-group">
-                    <label for="subtipo">Subtipo</label>
-                    <input type="text" name="subtipo" id="subtipo" list="subtipo_list" placeholder="Ej. Monitor de signos vitales" disabled>
-                    <datalist id="subtipo_list"></datalist>
-                </div>
-                <div class="form-group">
-                    <label for="marca">Marca</label>
-                    <input type="text" name="marca" id="marca" list="marca_list" placeholder="Ej. Olympus">
-                    <datalist id="marca_list">
-                        @foreach ($brands->unique('name')->sortBy('name')->values() as $brand)
-                            <option value="{{ $brand->name }}">
-                        @endforeach
-                    </datalist>
-                </div>
-                <div class="form-group">
-                    <label for="modelo">Modelo</label>
-                    <input type="text" name="modelo" id="modelo" list="modelo_list" placeholder="Ej. C-90" disabled>
-                    <datalist id="modelo_list"></datalist>
-                </div>
-                <div class="form-group">
-                    <label>Numero de serie</label>
-                    <input type="text" name="serie" placeholder="Ej. SN-893-832">
-                </div>
-                <div class="form-group" style="grid-column:1/-1;">
-                    <label>Descripcion del equipo</label>
-                    <textarea name="descripcion_equipo" rows="3" placeholder="Describe el equipo y su funcion"></textarea>
-                </div>
-                <div class="form-group" style="grid-column:1/-1;">
-                    <label>Observaciones</label>
-                    <textarea name="observaciones" rows="3" placeholder="Anotaciones sobre el estado del equipo"></textarea>
-                </div>
+            <div class="equipment-filter">
+                <button type="button" class="filter-btn" data-filter="Interno">Internos</button>
+                <button type="button" class="filter-btn" data-filter="Externo">Externos</button>
+                <button type="button" class="filter-btn" data-filter="todos">Todos</button>
             </div>
 
-            <div class="form-group" style="margin-top:18px;">
-                <label>Evidencia del equipo</label>
-                <div class="upload-grid">
-                    <label class="upload-card">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                        <div style="font-size:13px; margin-top:8px;">Imagen 1</div>
-                        <div style="font-size:12px;">Toca para subir</div>
-                        <input type="file" name="evidencia_1" accept="image/*" style="display:none;">
-                    </label>
-                    <label class="upload-card">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                        <div style="font-size:13px; margin-top:8px;">Imagen 2</div>
-                        <div style="font-size:12px;">Toca para subir</div>
-                        <input type="file" name="evidencia_2" accept="image/*" style="display:none;">
-                    </label>
-                    <label class="upload-card">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                        <div style="font-size:13px; margin-top:8px;">Imagen 3</div>
-                        <div style="font-size:12px;">Toca para subir</div>
-                        <input type="file" name="evidencia_3" accept="image/*" style="display:none;">
-                    </label>
-                    <label class="upload-card">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 23 17 7 17 7 7 23 7"/><rect x="1" y="3" width="4" height="18" rx="1"/><polyline points="5 7 7 7 7 17 5 17"/></svg>
-                        <div style="font-size:13px; margin-top:8px;">Video</div>
-                        <div style="font-size:12px;">Toca para subir</div>
-                        <input type="file" name="evidencia_video" accept="video/*" style="display:none;">
-                    </label>
-                </div>
-                <p style="font-size:12px; color:var(--muted); margin-top:8px;">Formatos permitidos: JPG, PNG, MP4. Tamano maximo: 10MB por archivo</p>
+            <div class="equipment-grid" id="equipment-grid">
+                @forelse ($equipos as $equipo)
+                    <div class="equipment-card"
+                         data-id="{{ $equipo->id }}"
+                         data-externo-interno="{{ $equipo->externo_interno }}"
+                         data-tipo="{{ $equipo->tipo }}"
+                         data-subtipo="{{ $equipo->subtipo }}"
+                         data-marca="{{ $equipo->marca }}"
+                         data-modelo="{{ $equipo->modelo }}"
+                         data-serie="{{ $equipo->serie }}"
+                         data-descripcion="{{ $equipo->descripcion }}"
+                         data-observaciones="{{ $equipo->observaciones }}">
+                        <div class="equip-header">
+                            @if ($equipo->imagen)
+                                <img src="{{ asset('storage/' . $equipo->imagen) }}" alt="" class="equip-thumb">
+                            @else
+                                <div class="equip-thumb-placeholder">{{ strtoupper(substr($equipo->tipo, 0, 2)) }}</div>
+                            @endif
+                            <div>
+                                <div class="equip-title">{{ $equipo->tipo }}{{ $equipo->marca ? ' - ' . $equipo->marca : '' }}</div>
+                                <div class="equip-meta">
+                                    {{ $equipo->modelo ? 'Modelo: ' . $equipo->modelo . ' | ' : '' }}
+                                    {{ $equipo->serie ? 'Serie: ' . $equipo->serie : '' }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="equip-meta" style="min-height:2.8em;">{{ Str::limit($equipo->descripcion, 80) }}</div>
+                        <span class="equip-badge {{ $equipo->externo_interno === 'Externo' ? 'externo' : 'interno' }}">
+                            {{ $equipo->externo_interno ?? 'Sin clasificar' }}
+                        </span>
+                    </div>
+                @empty
+                    <p class="muted" style="grid-column:1/-1; text-align:center;">No hay equipos registrados. Registra uno en <em>Gestión de Inventario &gt; Nuevo Equipo</em>.</p>
+                @endforelse
             </div>
+            <p id="no-equipment-msg" class="muted hidden" style="text-align:center; margin-top:18px;">No hay equipos registrados para esta categoría.</p>
 
-            <div class="form-group" style="margin-top:18px;">
-                <label>Firma Digital</label>
-                <canvas class="signature-box" id="signature-pad" style="cursor:crosshair;"></canvas>
-                <div style="display:flex; align-items:center; gap:14px; margin-top:8px;">
-                    <a href="#" style="font-size:13px; color:var(--primary);" onclick="clearSignature(); return false;">Limpiar firma</a>
-                    <a href="#" style="font-size:13px; color:var(--primary);" onclick="document.getElementById('signature-upload').click(); return false;">Cargar firma</a>
-                    <input type="file" id="signature-upload" accept="image/*" style="display:none;">
-                </div>
-                <input type="hidden" name="firma" id="firma-input">
-            </div>
+            <input type="hidden" id="equipo_seleccionado_id">
+            <input type="hidden" name="tipo_equipo" id="tipo_equipo" value="{{ old('tipo_equipo') }}">
+            <input type="hidden" name="subtipo" id="subtipo" value="{{ old('subtipo') }}">
+            <input type="hidden" name="marca" id="marca" value="{{ old('marca') }}">
+            <input type="hidden" name="modelo" id="modelo" value="{{ old('modelo') }}">
+            <input type="hidden" name="serie" id="serie" value="{{ old('serie') }}">
+            <input type="hidden" name="descripcion_equipo" id="descripcion_equipo" value="{{ old('descripcion_equipo') }}">
+            <input type="hidden" name="observaciones" id="observaciones" value="{{ old('observaciones') }}">
         </div>
 
 @push('scripts')
 <script>
-    // Firma basica (canvas vacio)
-    const canvas = document.getElementById('signature-pad');
-    const ctx = canvas.getContext('2d');
-    const firmaInput = document.getElementById('firma-input');
-    const signatureUpload = document.getElementById('signature-upload');
-    function resizeCanvas() {
-        const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height;
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = getComputedStyle(document.body).color || '#000';
-    }
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    function updateFirmaInput() {
-        if (firmaInput) firmaInput.value = canvas.toDataURL('image/png');
-    }
-
-    let drawing = false;
-    canvas.addEventListener('mousedown', e => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
-    canvas.addEventListener('mousemove', e => { if (drawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } });
-    canvas.addEventListener('mouseup', () => { drawing = false; updateFirmaInput(); });
-    canvas.addEventListener('mouseout', () => { drawing = false; updateFirmaInput(); });
-    canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; const t = e.touches[0]; const r = canvas.getBoundingClientRect(); ctx.beginPath(); ctx.moveTo(t.clientX - r.left, t.clientY - r.top); });
-    canvas.addEventListener('touchmove', e => { e.preventDefault(); if (drawing) { const t = e.touches[0]; const r = canvas.getBoundingClientRect(); ctx.lineTo(t.clientX - r.left, t.clientY - r.top); ctx.stroke(); } });
-    canvas.addEventListener('touchend', () => { drawing = false; updateFirmaInput(); });
-
-    function drawImageToCanvas(file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                const rect = canvas.getBoundingClientRect();
-                canvas.width = rect.width;
-                canvas.height = rect.height;
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                const scale = Math.min(canvas.width / img.width, canvas.height / img.height, 1);
-                const x = (canvas.width - img.width * scale) / 2;
-                const y = (canvas.height - img.height * scale) / 2;
-                ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-                updateFirmaInput();
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
-
-    if (signatureUpload) {
-        signatureUpload.addEventListener('change', function() {
-            if (this.files && this.files[0]) drawImageToCanvas(this.files[0]);
-        });
-    }
-
-    function clearSignature() {
-        const rect = canvas.getBoundingClientRect();
-        ctx.clearRect(0, 0, rect.width, rect.height);
-        if (firmaInput) firmaInput.value = '';
-        if (signatureUpload) signatureUpload.value = '';
-    }
-    window.clearSignature = clearSignature;
-</script>
-@endpush
-
-@push('scripts')
-<style>
-    .combobox { position: relative; display: flex; align-items: center; }
-    .combobox input { padding-right: 38px; }
-    .combobox-arrow {
-        position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-        background: transparent; border: none; color: var(--muted); cursor: pointer;
-        padding: 4px; display: flex; align-items: center; justify-content: center;
-    }
-    .combobox-list {
-        position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-        max-height: 220px; overflow-y: auto; background: var(--surface);
-        border: 1px solid var(--border); border-radius: 9px; box-shadow: var(--shadow);
-        z-index: 100; list-style: none; margin: 0; padding: 6px 0; display: none;
-    }
-    .combobox-list.open { display: block; }
-    .combobox-list li {
-        padding: 10px 14px; cursor: pointer; color: var(--text); font-size: 14px;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .combobox-list li:hover,
-    .combobox-list li.active { background: var(--primary-soft); color: var(--primary); }
-    .combobox-list .no-results { color: var(--muted); cursor: default; text-align: center; font-size: 13px; }
-</style>
-<script>
     (function () {
-        function Combobox(input) {
-            input.removeAttribute('list');
-            input.setAttribute('autocomplete', 'off');
+        function selectEquipment(card) {
+            document.querySelectorAll('.equipment-card').forEach(function (c) { c.classList.remove('selected'); });
+            card.classList.add('selected');
 
-            var wrapper = document.createElement('div');
-            wrapper.className = 'combobox';
-            input.parentNode.insertBefore(wrapper, input);
-            wrapper.appendChild(input);
+            document.getElementById('equipo_seleccionado_id').value = card.dataset.id || '';
+            document.getElementById('tipo_equipo').value = card.dataset.tipo || '';
+            document.getElementById('subtipo').value = card.dataset.subtipo || '';
+            document.getElementById('marca').value = card.dataset.marca || '';
+            document.getElementById('modelo').value = card.dataset.modelo || '';
+            document.getElementById('serie').value = card.dataset.serie || '';
+            document.getElementById('descripcion_equipo').value = card.dataset.descripcion || '';
+            document.getElementById('observaciones').value = card.dataset.observaciones || '';
 
-            var arrow = document.createElement('button');
-            arrow.type = 'button';
-            arrow.className = 'combobox-arrow';
-            arrow.setAttribute('tabindex', '-1');
-            arrow.setAttribute('aria-label', 'Mostrar opciones');
-            arrow.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>';
-            wrapper.appendChild(arrow);
+            document.getElementById('tipo_equipo').dispatchEvent(new Event('input', { bubbles: true }));
+        }
 
-            var list = document.createElement('ul');
-            list.className = 'combobox-list';
-            wrapper.appendChild(list);
-
-            var options = [];
-            var open = false;
-            var active = -1;
-
-            function render(filter) {
-                filter = filter || '';
-                list.innerHTML = '';
-                var term = filter.trim().toLowerCase();
-                var matches = options.filter(function (o) { return o.toLowerCase().indexOf(term) !== -1; });
-                matches.forEach(function (text, i) {
-                    var li = document.createElement('li');
-                    li.textContent = text;
-                    if (i === active) li.classList.add('active');
-                    li.addEventListener('mousedown', function (e) {
-                        e.preventDefault();
-                        pick(text);
-                    });
-                    list.appendChild(li);
-                });
-                if (matches.length === 0) {
-                    var li = document.createElement('li');
-                    li.className = 'no-results';
-                    li.textContent = 'Sin coincidencias';
-                    list.appendChild(li);
-                }
-            }
-
-            function pick(text) {
-                input.value = text;
-                active = -1;
-                close();
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-
-            function openList() {
-                if (input.disabled) return;
-                open = true;
-                list.classList.add('open');
-                active = -1;
-                render(input.value);
-            }
-
-            function close() {
-                open = false;
-                active = -1;
-                list.classList.remove('open');
-            }
-
-            input.addEventListener('focus', openList);
-            input.addEventListener('blur', function () { setTimeout(close, 150); });
-            input.addEventListener('input', function () {
-                if (!open) openList();
-                else render(input.value);
-            });
-
-            arrow.addEventListener('mousedown', function (e) {
-                e.preventDefault();
-                if (open) close();
-                else input.focus();
-            });
-
-            input.addEventListener('keydown', function (e) {
-                var items;
-                if (!open) {
-                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        openList();
-                    }
-                    return;
-                }
-                items = list.querySelectorAll('li:not(.no-results)');
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    active = (active + 1) % items.length;
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    active = (active - 1 + items.length) % items.length;
-                } else if (e.key === 'Enter') {
-                    e.preventDefault();
-                    if (active >= 0 && items[active]) {
-                        items[active].click();
-                    } else if (input.value.trim()) {
-                        close();
-                    }
-                } else if (e.key === 'Escape') {
-                    close();
-                    input.blur();
+        function filterCards(filter) {
+            var visibleCount = 0;
+            document.querySelectorAll('.equipment-card').forEach(function (card) {
+                var value = card.dataset.externoInterno || '';
+                if (!filter || filter === 'todos' || value === filter) {
+                    card.classList.remove('hidden');
+                    visibleCount++;
                 } else {
-                    return;
+                    card.classList.add('hidden');
                 }
-                render(input.value);
-                if (items[active]) items[active].scrollIntoView({ block: 'nearest' });
             });
 
-            return {
-                setOptions: function (arr) {
-                    options = arr;
-                    if (open) render(input.value);
-                }
-            };
+            var msg = document.getElementById('no-equipment-msg');
+            if (msg) msg.classList.toggle('hidden', visibleCount > 0);
         }
 
-        var typeInput = document.getElementById('tipo_equipo');
-        var subtypeInput = document.getElementById('subtipo');
-        var brandInput = document.getElementById('marca');
-        var modelInput = document.getElementById('modelo');
-
-        var typeCb = Combobox(typeInput);
-        var subtypeCb = Combobox(subtypeInput);
-        var brandCb = Combobox(brandInput);
-        var modelCb = Combobox(modelInput);
-
-        function debounce(fn, ms) {
-            var t;
-            return function () {
-                clearTimeout(t);
-                t = setTimeout(fn.bind(this), ms);
-            };
+        function setActiveFilter(filter) {
+            document.querySelectorAll('.equipment-filter .filter-btn').forEach(function (btn) {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
         }
 
-        function setEnabled(input, enabled) {
-            var cb = input === subtypeInput ? subtypeCb : (input === modelInput ? modelCb : null);
-            input.disabled = !enabled;
-            if (!enabled) {
-                input.value = '';
-                if (cb) cb.setOptions([]);
+        function restoreSelection() {
+            var id = document.getElementById('equipo_seleccionado_id').value;
+            if (!id) return;
+            var card = document.querySelector('.equipment-card[data-id="' + id + '"]');
+            if (card) {
+                document.querySelectorAll('.equipment-card').forEach(function (c) { c.classList.remove('selected'); });
+                card.classList.add('selected');
             }
         }
 
-        function loadSubtypes() {
-            var value = typeInput.value.trim();
-            setEnabled(subtypeInput, false);
+        window.filterEquipos = function (defaultFilter) {
+            if (!defaultFilter) {
+                if (parseInt(document.getElementById('mantenimiento_interno').value)) defaultFilter = 'Interno';
+                else if (parseInt(document.getElementById('mantenimiento_externo').value)) defaultFilter = 'Externo';
+                else defaultFilter = 'todos';
+            }
+            setActiveFilter(defaultFilter);
+            filterCards(defaultFilter);
+            restoreSelection();
+        };
 
-            if (!value) return;
+        document.querySelectorAll('.equipment-filter .filter-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                setActiveFilter(btn.dataset.filter);
+                filterCards(btn.dataset.filter);
+            });
+        });
 
-            fetch('{{ route('configuracion.tipos_equipo.subtypes') }}?equipment_type_name=' + encodeURIComponent(value))
-                .then(function (res) { return res.json(); })
-                .then(function (data) {
-                    var names = data.map(function (i) { return i.name; });
-                    subtypeCb.setOptions([...new Set(names)]);
-                    setEnabled(subtypeInput, true);
-                })
-                .catch(function () {
-                    setEnabled(subtypeInput, false);
-                });
-        }
-
-        function loadModels() {
-            var value = brandInput.value.trim();
-            setEnabled(modelInput, false);
-
-            if (!value) return;
-
-            fetch('{{ route('configuracion.tipos_equipo.models') }}?brand_name=' + encodeURIComponent(value))
-                .then(function (res) { return res.json(); })
-                .then(function (data) {
-                    var names = data.map(function (i) { return i.name; });
-                    modelCb.setOptions([...new Set(names)]);
-                    setEnabled(modelInput, true);
-                })
-                .catch(function () {
-                    setEnabled(modelInput, false);
-                });
-        }
-
-        typeCb.setOptions(Array.prototype.slice.call(document.querySelectorAll('#tipo_equipo_list option')).map(function (o) { return o.value; }));
-        brandCb.setOptions(Array.prototype.slice.call(document.querySelectorAll('#marca_list option')).map(function (o) { return o.value; }));
-
-        typeInput.addEventListener('input', debounce(loadSubtypes, 250));
-        brandInput.addEventListener('input', debounce(loadModels, 250));
+        document.querySelectorAll('.equipment-card').forEach(function (card) {
+            card.addEventListener('click', function () { selectEquipment(card); });
+        });
     })();
 </script>
 @endpush

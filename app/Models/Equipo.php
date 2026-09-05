@@ -12,13 +12,21 @@ class Equipo extends Model
 
     protected $fillable = [
         'tipo',
+        'subtipo',
         'modelo',
         'marca',
+        'serie',
         'precio',
         'imagen',
         'descripcion',
+        'observaciones',
         'sku',
         'activo',
+        'evidencia_2_path',
+        'evidencia_3_path',
+        'video_path',
+        'firma',
+        'externo_interno',
     ];
 
     protected function casts(): array

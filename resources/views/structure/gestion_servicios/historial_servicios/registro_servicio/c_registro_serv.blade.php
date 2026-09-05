@@ -53,6 +53,21 @@
 .summary-pill { display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border:1px solid var(--border); border-radius:999px; font-size:13px; }
 .signature-box { border:1px dashed var(--border); border-radius:12px; width:100%; height:120px; }
 .hidden { display:none !important; }
+.equipment-filter { display:flex; gap:10px; margin-bottom:18px; }
+.filter-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted); padding:8px 16px; border-radius:999px; cursor:pointer; font-size:14px; font-weight:700; }
+.filter-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+.equipment-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px; }
+.equipment-card { border:1px solid var(--border); border-radius:14px; padding:14px; background:var(--surface); cursor:pointer; display:flex; flex-direction:column; gap:10px; transition:border-color .15s, background .15s; }
+.equipment-card:hover { border-color:var(--primary); }
+.equipment-card.selected { border-color:var(--primary); background:var(--primary-soft); }
+.equipment-card .equip-header { display:flex; align-items:center; gap:12px; }
+.equipment-card .equip-thumb { width:64px; height:64px; border-radius:12px; object-fit:cover; background:var(--surface-2, #f7f8fa); flex:0 0 auto; }
+.equipment-card .equip-thumb-placeholder { width:64px; height:64px; border-radius:12px; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; flex:0 0 auto; }
+.equipment-card .equip-title { font-weight:700; font-size:15px; color:var(--text); }
+.equipment-card .equip-meta { font-size:13px; color:var(--muted); line-height:1.4; }
+.equipment-card .equip-badge { align-self:flex-start; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+.equipment-card .equip-badge.interno { background:var(--green-soft); color:var(--green); }
+.equipment-card .equip-badge.externo { background:var(--accent-soft); color:var(--accent); }
 </style>
 
 <div class="card condition-screen" id="condition-screen">
@@ -100,7 +115,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             Cancelar
         </button>
-        <button type="button" class="btn" id="btn-primary" style="display:inline-flex; align-items:center; gap:8px;">
+        <button type="button" class="btn" id="btn-primary" form="orden-form" style="display:inline-flex; align-items:center; gap:8px;">
             Siguiente: Equipo
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
@@ -121,8 +136,8 @@
         <div class="step" data-step="2"><span class="dot">2</span> Equipo</div>
         <div class="line"></div>
         <div class="step" data-step="3"><span class="dot">3</span> Tecnico</div>
-        <div class="line"></div>
-        <div class="step" data-step="4"><span class="dot">4</span> Cotizacion</div>
+        <div class="line" data-line="3-4"></div>
+        <div class="step" data-step="4" id="stepper-step-4"><span class="dot">4</span> Cotizacion</div>
         <div class="line"></div>
         <div class="step" data-step="5"><span class="dot">5</span> Resumen</div>
     </div>
@@ -166,6 +181,7 @@
         const interno = document.querySelector('.condition-card[data-condition="interno"]').classList.contains('selected');
         inputExterno.value = externo ? 1 : 0;
         inputInterno.value = interno ? 1 : 0;
+        updateStepperVisibility();
     }
 
     conditionCards.forEach(card => {
@@ -192,6 +208,33 @@
     const btnPrimary = document.getElementById('btn-primary');
     const btnSecondary = document.getElementById('btn-secondary');
     const form = document.getElementById('orden-form');
+    const stepperStep4 = document.getElementById('stepper-step-4');
+    const stepperLine3to4 = document.querySelector('[data-line="3-4"]');
+    const stepperDot5 = document.querySelector('.step[data-step="5"] .dot');
+
+    function isMantenimientoExterno() { return parseInt(inputExterno.value) === 1; }
+
+    function updateStepperVisibility() {
+        if (isMantenimientoExterno()) {
+            stepperStep4.classList.add('hidden');
+            stepperLine3to4.classList.add('hidden');
+            stepperDot5.textContent = '4';
+        } else {
+            stepperStep4.classList.remove('hidden');
+            stepperLine3to4.classList.remove('hidden');
+            stepperDot5.textContent = '5';
+        }
+    }
+
+    function getNextStep() {
+        if (currentStep === 3 && isMantenimientoExterno()) return 5;
+        return currentStep < 5 ? currentStep + 1 : currentStep;
+    }
+
+    function getPrevStep() {
+        if (currentStep === 5 && isMantenimientoExterno()) return 3;
+        return currentStep > 1 ? currentStep - 1 : currentStep;
+    }
 
     function saveFormState() {
         const state = { currentStep, externo: inputExterno.value, interno: inputInterno.value };
@@ -230,6 +273,8 @@
     }
 
     function updateStep() {
+        if (isMantenimientoExterno() && currentStep === 4) currentStep = 5;
+        updateStepperVisibility();
         document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
         if (currentStep === 3) {
             const isExterno = parseInt(inputExterno.value);
@@ -257,18 +302,21 @@
             btnPrimary.innerHTML = 'Siguiente: Equipo <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
             btnPrimary.type = 'button';
         } else if (currentStep === 2) {
-            wizardTitle.textContent = 'Registro';
-            wizardSubtitle.textContent = 'Completa la informacion del equipo para continuar';
+            wizardTitle.textContent = 'Selección de equipo';
+            wizardSubtitle.textContent = 'Elige el equipo registrado para continuar';
             wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
             btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Regresar';
             btnPrimary.innerHTML = 'Siguiente: Tecnico <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
             btnPrimary.type = 'button';
+            if (typeof window.filterEquipos === 'function') window.filterEquipos();
         } else if (currentStep === 3) {
             wizardTitle.textContent = 'Final tecnico';
             wizardSubtitle.textContent = 'Asigna un especialista al servicio programmado';
             wizardIcon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
             btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Regresar';
-            btnPrimary.innerHTML = 'Siguiente: Cotizacion <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+            btnPrimary.innerHTML = isMantenimientoExterno()
+                ? 'Siguiente: Resumen <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>'
+                : 'Siguiente: Cotizacion <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
             btnPrimary.type = 'button';
         } else if (currentStep === 4) {
             wizardTitle.textContent = 'Cotizacion';
@@ -284,13 +332,22 @@
             btnSecondary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Regresar';
             btnPrimary.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar Orden';
             btnPrimary.type = 'submit';
+            if (typeof window.updateResumen === 'function') window.updateResumen();
+            if (typeof window.updateResumenRefacciones === 'function') window.updateResumenRefacciones();
         }
         saveFormState();
     }
 
     btnPrimary.addEventListener('click', () => {
+        if (currentStep === 2) {
+            const selected = document.querySelector('.equipment-card.selected');
+            if (!selected || !document.getElementById('tipo_equipo').value) {
+                alert('Selecciona un equipo para continuar.');
+                return;
+            }
+        }
         if (currentStep < 5) {
-            currentStep++;
+            currentStep = getNextStep();
             updateStep();
         }
     });
@@ -307,7 +364,7 @@
 
     btnSecondary.addEventListener('click', () => {
         if (currentStep > 1) {
-            currentStep--;
+            currentStep = getPrevStep();
             updateStep();
         } else {
             resetWizard();
@@ -316,6 +373,15 @@
 
     form.addEventListener('input', saveFormState);
     form.addEventListener('change', saveFormState);
+
+    // Evitar que al llegar al resumen se envíe el formulario con Enter
+    form.addEventListener('keydown', (e) => {
+        if (currentStep === 5 && e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+        }
+    });
+
+    window.goToStep = (step) => { currentStep = step; updateStep(); };
 
     // Forzar inicio en seleccion de tipo de servicio si no es invitacion publica
     @if(!isset($invitation))

@@ -254,7 +254,7 @@ public function aprobacionFlyers(): View
      */
     public function agenda(): View
     {
-        return view('structure.gestion_marketing.agenda.index', [
+        return view('structure.gestion_marketing.calendario.calendario', [
             'users' => User::orderBy('name')->get(['id', 'name']),
         ]);
     }
