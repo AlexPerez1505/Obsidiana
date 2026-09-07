@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SincronizaNombresDeCatalogo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 
 class Producto extends Model
 {
+    use SincronizaNombresDeCatalogo;
+
     protected $table = 'productos';
 
     protected $fillable = [
@@ -26,7 +29,6 @@ class Producto extends Model
         'imagen_path',
         'stock',
         'descripcion',
-        'proveedor',
         'no_serie',
         'es_serializado',
     ];
@@ -37,47 +39,8 @@ class Producto extends Model
         'es_serializado' => 'boolean',
     ];
 
-    /**
-     * Las columnas de texto se llenan solas desde el catalogo.
-     *
-     * Cotizaciones, facturas, paquetes y servicios leen $producto->marca y
-     * companía directamente, y los PDF ya emitidos deben conservar el nombre
-     * que tenia el equipo ese dia. Por eso el texto se guarda ademas del id.
-     */
-    protected static function booted(): void
-    {
-        static::saving(function (Producto $producto) {
-            $producto->sincronizarNombresDeCatalogo();
-        });
-    }
-
-    public function sincronizarNombresDeCatalogo(): void
-    {
-        $mapa = [
-            'equipment_type_id' => ['tipo_equipo', EquipmentType::class],
-            'subtype_id' => ['subtipo', Subtype::class],
-            'brand_id' => ['marca', Brand::class],
-            'equipment_model_id' => ['modelo', EquipmentModel::class],
-        ];
-
-        foreach ($mapa as $llave => [$columnaTexto, $clase]) {
-            if (! $this->{$llave}) {
-                continue;
-            }
-
-            // Solo se consulta cuando la llave cambio, para no pegarle a la
-            // base en cada guardado.
-            if (! $this->isDirty($llave) && $this->{$columnaTexto}) {
-                continue;
-            }
-
-            $registro = $clase::find($this->{$llave});
-
-            if ($registro) {
-                $this->{$columnaTexto} = $registro->name;
-            }
-        }
-    }
+    // La sincronización con el catálogo vive en el trait, compartida con
+    // Equipo. El mapa por omisión ya usa los nombres de esta tabla.
 
     public function equipmentType(): BelongsTo
     {
@@ -124,9 +87,26 @@ class Producto extends Model
     }
 
     /** Unidades que todavía no se han vendido. */
+    /**
+     * Las unidades que de verdad se pueden vender.
+     *
+     * Una pieza parada en hojalatería o mantenimiento existe, pero no se
+     * puede ofrecer todavía: no cuenta como stock hasta que su ruta de
+     * procesos queda limpia y pasa a "disponible".
+     */
     public function serialesDisponibles(): HasMany
     {
-        return $this->seriales()->where('vendido', false);
+        return $this->seriales()
+            ->where('vendido', false)
+            ->whereNotIn('estado', ProductoSerial::NO_VENDIBLES);
+    }
+
+    /** Las que están detenidas en algún proceso, para poder avisarlo. */
+    public function serialesEnProceso(): HasMany
+    {
+        return $this->seriales()
+            ->where('vendido', false)
+            ->whereIn('estado', ProductoSerial::NO_VENDIBLES);
     }
 
     /**
@@ -148,9 +128,14 @@ class Producto extends Model
      * usuarios, o un doble clic), la segunda espera a que la primera
      * termine, en vez de calcular/insertar el mismo serial dos veces.
      */
-    public function agregarUnidades(int $cantidad, array $unidades = [], ?int $inventoryMovementId = null): void
-    {
-        DB::transaction(function () use ($cantidad, $unidades, $inventoryMovementId) {
+    public function agregarUnidades(
+        int $cantidad,
+        array $unidades = [],
+        ?int $inventoryMovementId = null,
+        string $condicion = 'nuevo',
+        string $estado = 'disponible'
+    ): void {
+        DB::transaction(function () use ($cantidad, $unidades, $inventoryMovementId, $condicion, $estado) {
             static::whereKey($this->id)->lockForUpdate()->first();
 
             $unidades = collect($unidades)
@@ -169,22 +154,33 @@ class Producto extends Model
 
             $capturadoPor = auth()->id();
 
+            // Cada pieza física lleva su etiqueta interna: es lo que se
+            // imprime en el QR y lo que permite seguirla por los procesos.
+            // Los códigos se reservan de una sola vez.
+            $total = max($cantidad, $unidades->count());
+            $codigos = ProductoSerial::generarCodigos($total);
+            $n = 0;
+
+            $comun = [
+                'condicion' => $condicion,
+                'estado' => $estado,
+                'vendido' => false,
+                'inventory_movement_id' => $inventoryMovementId,
+                'capturado_por' => $capturadoPor,
+            ];
+
             foreach ($unidades as $unidad) {
-                $this->seriales()->create([
+                $this->seriales()->create($comun + [
+                    'codigo' => $codigos[$n++],
                     'no_serie' => $unidad['no_serie'],
                     'foto_path' => $unidad['foto_path'],
-                    'vendido' => false,
-                    'inventory_movement_id' => $inventoryMovementId,
-                    'capturado_por' => $capturadoPor,
                 ]);
             }
 
             for ($i = $unidades->count(); $i < $cantidad; $i++) {
-                $this->seriales()->create([
+                $this->seriales()->create($comun + [
+                    'codigo' => $codigos[$n++],
                     'no_serie' => null,
-                    'vendido' => false,
-                    'inventory_movement_id' => $inventoryMovementId,
-                    'capturado_por' => $capturadoPor,
                 ]);
             }
 

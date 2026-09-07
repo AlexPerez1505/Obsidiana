@@ -134,6 +134,21 @@
     .modal-input:focus, .modal-textarea:focus, .modal-select:focus { border-color:var(--primary); background:var(--surface); }
     .modal-textarea { min-height:90px; resize:vertical; }
     .modal-preview { min-height:120px; border:1px dashed var(--border); border-radius:12px; display:flex; align-items:center; justify-content:center; text-align:center; padding:20px; color:var(--muted); font-size:13px; }
+    .modal-preview:has(iframe), .modal-preview:has(.lp-card) { padding:0; border-style:solid; border-color:var(--border); background:var(--surface-2); display:block; text-align:left; }
+    .lp-card { display:flex; border-radius:12px; overflow:hidden; background:var(--surface); text-decoration:none; color:inherit; }
+    .lp-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.12); }
+    .lp-card-img { width:140px; min-height:120px; max-height:180px; object-fit:cover; flex-shrink:0; background:var(--surface-2); }
+    .lp-card-body { padding:14px 16px; display:flex; flex-direction:column; gap:6px; min-width:0; flex:1; }
+    .lp-card-title { font-size:14px; font-weight:700; color:var(--text); line-height:1.35; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+    .lp-card-desc { font-size:12px; color:var(--muted); line-height:1.45; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; margin:0; }
+    .lp-card-host { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; font-weight:700; margin-top:auto; display:inline-flex; align-items:center; gap:5px; }
+    .lp-embed { width:100%; aspect-ratio:16/9; border:0; border-radius:12px; display:block; background:#000; }
+    .lp-embed.canva { aspect-ratio:auto; min-height:300px; }
+    .lp-img-full { width:100%; max-height:400px; object-fit:contain; border-radius:12px; display:block; background:var(--surface-2); }
+    .lp-loading { display:inline-flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; }
+    .lp-loading::before { content:''; width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:lp-spin .7s linear infinite; }
+    @keyframes lp-spin { to { transform:rotate(360deg); } }
+    .lp-error { color:var(--danger, #c0392b); font-size:13px; }
     .modal-dates { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
     .modal-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
     .modal-hint { font-size:12px; color:var(--muted); line-height:1.5; padding:12px 14px; border:1px dashed var(--border); border-radius:10px; }
@@ -280,7 +295,7 @@
                     <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                     Trabajo entregado (Canva / Drive / YouTube / imagen o video)
                 </label>
-                <input type="url" name="delivery_link" class="modal-input" placeholder="Pega el link de Canva, Drive o YouTube del trabajo (que esté cómo: cualquiera con el enlace)">
+                <input type="url" name="delivery_link" id="create-delivery-link" class="modal-input" placeholder="Pega el link de Canva, Drive o YouTube del trabajo (que esté cómo: cualquiera con el enlace)">
             </div>
 
             <div class="modal-field">
@@ -538,6 +553,12 @@
     const editDescription = document.getElementById('edit-description');
     const editDeliveryLink = document.getElementById('edit-delivery-link');
     const editDeliveryPreview = document.getElementById('edit-delivery-preview');
+    const createDeliveryLink = document.getElementById('create-delivery-link');
+    const createDeliveryPreview = document.getElementById('delivery-preview');
+    const previewLinkUrl = '{{ route("marketing.tareas.preview_link") }}';
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const previewCache = {};
+    let previewAbort = null;
     const editReviewDate = document.getElementById('edit-review-date');
     const editDueDate = document.getElementById('edit-due-date');
     const editUserId = document.getElementById('edit-user-id');
@@ -559,16 +580,118 @@
         editReviewDate.value = pub.toISOString().split('T')[0];
     }
 
-    function updateEditPreview() {
-        const link = editDeliveryLink.value.trim();
-        if (link) {
-            editDeliveryPreview.innerHTML = '<a href="' + link + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;background:var(--primary-soft);color:var(--primary);text-decoration:none;font-weight:700;font-size:13px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Abrir enlace</a>';
-        } else {
-            editDeliveryPreview.textContent = 'Aún no hay entrega. Pega el enlace arriba y aquí lo verá todo el equipo.';
+    function escapeHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = s ?? '';
+        return d.innerHTML;
+    }
+
+    function hostFromUrl(url) {
+        try { return new URL(url).hostname.replace(/^www\./, ''); }
+        catch (e) { return url; }
+    }
+
+    function renderPreviewData(data, container) {
+        if (!data || !data.type) {
+            container.textContent = 'Aún no hay entrega. Pega el enlace arriba y aquí lo verá todo el equipo.';
+            return;
+        }
+        const url = data.url || '';
+        switch (data.type) {
+            case 'youtube':
+            case 'vimeo':
+                container.innerHTML = '<iframe class="lp-embed" src="' + escapeHtml(data.embed_url) + '" allow="autoplay; fullscreen; encrypted-media" allowfullscreen loading="lazy"></iframe>';
+                break;
+            case 'canva':
+                if (data.embed_html) {
+                    container.innerHTML = data.embed_html;
+                    const iframe = container.querySelector('iframe');
+                    if (iframe) { iframe.className = 'lp-embed canva'; iframe.loading = 'lazy'; }
+                } else {
+                    container.innerHTML = '<iframe class="lp-embed canva" src="' + escapeHtml(data.embed_url) + '" allow="fullscreen" allowfullscreen loading="lazy"></iframe>';
+                }
+                break;
+            case 'drive':
+                container.innerHTML = '<iframe class="lp-embed" src="' + escapeHtml(data.embed_url) + '" allow="autoplay" allowfullscreen loading="lazy"></iframe>';
+                break;
+            case 'image':
+                container.innerHTML = '<img class="lp-img-full" src="' + escapeHtml(data.image || url) + '" alt="Vista previa" loading="lazy">';
+                break;
+            case 'og':
+            case 'link': {
+                if (data.image) {
+                    container.innerHTML = '<a class="lp-card" href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' +
+                        '<img class="lp-card-img" src="' + escapeHtml(data.image) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' +
+                        '<div class="lp-card-body">' +
+                        '<span class="lp-card-title">' + escapeHtml(data.title || url) + '</span>' +
+                        (data.description ? '<p class="lp-card-desc">' + escapeHtml(data.description) + '</p>' : '') +
+                        '<span class="lp-card-host"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> ' + escapeHtml(hostFromUrl(url)) + '</span>' +
+                        '</div></a>';
+                } else {
+                    container.innerHTML = '<a class="lp-card" href="' + escapeHtml(url) + '" target="_blank" rel="noopener" style="padding:16px;">' +
+                        '<div class="lp-card-body">' +
+                        '<span class="lp-card-title">' + escapeHtml(data.title || url) + '</span>' +
+                        '<span class="lp-card-host"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> ' + escapeHtml(hostFromUrl(url)) + '</span>' +
+                        '</div></a>';
+                }
+                break;
+            }
+            default:
+                container.textContent = 'Aún no hay entrega. Pega el enlace arriba y aquí lo verá todo el equipo.';
         }
     }
 
-    editDeliveryLink.addEventListener('input', updateEditPreview);
+    async function loadDeliveryPreview(url, container) {
+        if (!url) {
+            container.textContent = 'Aún no hay entrega. Pega el enlace arriba y aquí lo verá todo el equipo.';
+            return;
+        }
+        if (previewCache[url]) {
+            renderPreviewData(previewCache[url], container);
+            return;
+        }
+        if (previewAbort) { try { previewAbort.abort(); } catch (e) {} }
+        previewAbort = (window.AbortController) ? new AbortController() : null;
+        container.innerHTML = '<span class="lp-loading">Cargando vista previa…</span>';
+        try {
+            const resp = await fetch(previewLinkUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ url: url }),
+                signal: previewAbort ? previewAbort.signal : undefined,
+            });
+            const data = await resp.json();
+            previewCache[url] = data;
+            renderPreviewData(data, container);
+        } catch (e) {
+            if (e.name === 'AbortError') return;
+            container.innerHTML = '<span class="lp-error">No se pudo cargar la vista previa. <a href="' + escapeHtml(url) + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">Abrir enlace</a></span>';
+        }
+    }
+
+    function updateEditPreview() {
+        loadDeliveryPreview(editDeliveryLink.value.trim(), editDeliveryPreview);
+    }
+
+    function updateCreatePreview() {
+        loadDeliveryPreview(createDeliveryLink.value.trim(), createDeliveryPreview);
+    }
+
+    let editDebounce = null, createDebounce = null;
+    editDeliveryLink.addEventListener('input', function () {
+        clearTimeout(editDebounce);
+        editDebounce = setTimeout(updateEditPreview, 400);
+    });
+    if (createDeliveryLink) {
+        createDeliveryLink.addEventListener('input', function () {
+            clearTimeout(createDebounce);
+            createDebounce = setTimeout(updateCreatePreview, 400);
+        });
+    }
 
     editDueDate.addEventListener('change', function () {
         if (!editReviewDate.value) {

@@ -31,6 +31,30 @@ class InventorySerializadoTest extends TestCase
         ]);
     }
 
+    /** Data URL base64 mínima (PNG 1x1) para simular una firma capturada. */
+    private function firmaValida(): string
+    {
+        return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    }
+
+    /**
+     * Simula la subida de un video por chunks (en un solo pedazo, ya que
+     * es pequeño) y regresa la ruta ya ensamblada que el formulario real
+     * mandaría en "video_path".
+     */
+    private function subirVideoDePrueba(User $user): string
+    {
+        $respuesta = $this->actingAs($user)->post(route('inventory.movimientos.videoChunk'), [
+            'chunk' => UploadedFile::fake()->create('chunk.mp4', 500, 'video/mp4'),
+            'upload_id' => 'test-'.uniqid(),
+            'index' => 0,
+            'total' => 1,
+            'extension' => 'mp4',
+        ]);
+
+        return $respuesta->json('video_path');
+    }
+
     public function test_la_pagina_de_crear_entrada_carga(): void
     {
         $user = $this->usuarioAprobado();
@@ -52,6 +76,8 @@ class InventorySerializadoTest extends TestCase
             'proveedor' => 'ProveedorTest',
             'movement_date' => now()->format('Y-m-d'),
             'es_serializado' => '1',
+            'firma' => $this->firmaValida(),
+            'video_path' => $this->subirVideoDePrueba($user),
             'unidades' => [
                 ['no_serie' => 'SNU001', 'foto' => UploadedFile::fake()->create('u1.jpg', 50, 'image/jpeg')],
                 ['no_serie' => 'SNU002', 'foto' => UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')],
@@ -105,6 +131,8 @@ class InventorySerializadoTest extends TestCase
             'cantidad' => 2,
             'movement_date' => now()->format('Y-m-d'),
             'es_serializado' => '1',
+            'firma' => $this->firmaValida(),
+            'video_path' => $this->subirVideoDePrueba($user),
             'unidades' => [
                 ['no_serie' => 'SN-YA-EXISTE', 'foto' => UploadedFile::fake()->create('u1.jpg', 50, 'image/jpeg')],
                 ['no_serie' => 'SN-NUEVA', 'foto' => UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')],

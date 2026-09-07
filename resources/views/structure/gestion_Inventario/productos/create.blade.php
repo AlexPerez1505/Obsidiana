@@ -11,13 +11,8 @@
 @endpush
 
 @section('content')
-    @php
-        // Tipo, subtipo, marca y modelo salen del catálogo (Configuración → Catálogos).
-        // Aquí solo queda el proveedor, que sigue siendo texto libre.
-        $proveedorOptions = collect(($productoOptions ?? [])['proveedor'] ?? [])
-            ->filter()->unique()->values()->all();
-    @endphp
-
+    {{-- Tipo, subtipo, marca y modelo salen del catálogo
+         (Configuración → Catálogos). --}}
     <form method="POST" action="{{ route('inventory.productos.store') }}" enctype="multipart/form-data">
         @csrf
         <x-ui.card style="margin-bottom:18px;">
@@ -27,18 +22,12 @@
 
                 <div id="modeloExistenteAviso" class="cat-aviso" style="display:none; grid-column:1 / -1;"></div>
 
-                <x-ui.form-group label="Precio *" name="precio" type="number" step="0.01" min="0" placeholder="0.00" :required="true" />
+                {{-- Captura precios quien tenga precios.editar; para los demás el
+                     campo no existe y el producto queda sin precio. --}}
+                @if (\App\Support\PrecioVisible::editable())
+                    <x-ui.form-group label="Precio de venta" name="precio" type="number" step="0.01" min="0" placeholder="0.00" />
+                @endif
                 <x-ui.form-group label="Stock *" name="stock" type="number" min="0" placeholder="0" :required="true" />
-
-                <x-ui.form-group label="Proveedor" for="proveedor">
-                    <input id="proveedor" type="text" name="proveedor" list="proveedor_options"
-                           value="{{ old('proveedor') }}" placeholder="Nombre del proveedor" autocomplete="off">
-                    <datalist id="proveedor_options">
-                        @foreach ($proveedorOptions as $option)
-                            <option value="{{ $option }}"></option>
-                        @endforeach
-                    </datalist>
-                </x-ui.form-group>
             </div>
             <x-ui.form-group label="Números de serie (uno por línea, opcional)" for="series_texto">
                 <textarea id="series_texto" name="series_texto" rows="3" placeholder="Un número de serie por unidad. Déjalo vacío si el stock no tiene serial individual."
@@ -71,13 +60,12 @@
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 // Si el modelo elegido ya está registrado, se rellenan solos
-                // precio, descripción y proveedor. Stock y no. serie NO se
+                // precio y descripción. Stock y no. serie NO se
                 // tocan: son propios de cada unidad que se va a dar de alta.
                 const modeloSelect = document.getElementById('equipment_model_id');
                 const aviso = document.getElementById('modeloExistenteAviso');
                 const precioInput = document.getElementById('precio');
                 const descripcionInput = document.getElementById('descripcion');
-                const proveedorInput = document.getElementById('proveedor');
                 const seriesTextoInput = document.getElementById('series_texto');
                 const buscarPorModeloUrl = @json(route('inventory.productos.buscarPorModelo'));
 
@@ -98,9 +86,7 @@
                                 // momento, aunque ya hubiera algo escrito ahí.
                                 if (precioInput) precioInput.value = data.precio ?? '';
                                 if (descripcionInput && !descripcionInput.value) descripcionInput.value = data.descripcion ?? '';
-                                if (proveedorInput && !proveedorInput.value) proveedorInput.value = data.proveedor ?? '';
-
-                                let mensaje = 'Este modelo ya está registrado (stock actual: ' + data.stock_actual + '). Al guardar, esta cantidad se agregará como unidades nuevas de esa misma fila (no se crea un producto nuevo). Se completaron precio, descripción y proveedor.';
+                                let mensaje = 'Este modelo ya está registrado (stock actual: ' + data.stock_actual + '). Al guardar, esta cantidad se agregará como unidades nuevas de esa misma fila (no se crea un producto nuevo). Se completaron precio y descripción.';
 
                                 if (seriesTextoInput && !seriesTextoInput.value && data.no_serie_sugerido) {
                                     seriesTextoInput.value = data.no_serie_sugerido;

@@ -19,7 +19,10 @@
             <div class="rgrid-2">
                 @include('structure.gestion_Inventario.productos._selects_catalogo')
 
-                <x-ui.form-group label="Precio *" name="precio" type="number" step="0.01" min="0" :value="$producto->precio" :required="true" />
+                {{-- El campo solo se dibuja para quien tiene precios.editar. --}}
+                @if (\App\Support\PrecioVisible::editable())
+                    <x-ui.form-group label="Precio de venta" name="precio" type="number" step="0.01" min="0" :value="$producto->precio" />
+                @endif
 
                 <x-ui.form-group label="Stock" for="stock_display">
                     <input id="stock_display" type="number" value="{{ $producto->stock }}" disabled
@@ -28,15 +31,6 @@
                     <small style="color:var(--muted);">El stock se calcula solo, según las unidades de abajo. Usa "Agregar unidades" para sumarle.</small>
                 </x-ui.form-group>
 
-                <x-ui.form-group label="Proveedor" for="proveedor">
-                    <input id="proveedor" type="text" name="proveedor" list="proveedor_options"
-                           value="{{ old('proveedor', $producto->proveedor) }}" placeholder="Nombre del proveedor" autocomplete="off">
-                    <datalist id="proveedor_options">
-                        @foreach (collect(($productoOptions ?? [])['proveedor'] ?? [])->filter()->unique() as $option)
-                            <option value="{{ $option }}"></option>
-                        @endforeach
-                    </datalist>
-                </x-ui.form-group>
             </div>
             <x-ui.form-group label="Descripción" for="descripcion">
                 <textarea id="descripcion" name="descripcion" rows="3" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('descripcion', $producto->descripcion) }}</textarea>

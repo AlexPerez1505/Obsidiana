@@ -49,16 +49,19 @@
                         <th>Imagen</th>
                         <th>Equipo</th>
                         <th>Marca / Modelo</th>
-                        <th>Precio</th>
+                        {{-- El precio es dato de administración: la columna
+                             no se dibuja para quien no puede verlo. --}}
+                        @if (\App\Support\PrecioVisible::para())
+                            <th>Precio de venta</th>
+                        @endif
                         <th>Stock</th>
-                        <th>Proveedor</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($productos as $producto)
                         <tr class="producto-row" title="Ver unidades disponibles"
-                            onclick="if (!event.target.closest('.actions-dropdown') && event.target.tagName !== 'INPUT') { document.getElementById('unidades-modal-{{ $producto->id }}').style.display='flex'; }">
+                            onclick="if (!event.target.closest('.row-menu') && event.target.tagName !== 'INPUT') { document.getElementById('unidades-modal-{{ $producto->id }}').style.display='flex'; }">
                             <td onclick="event.stopPropagation();">
                                 <input type="checkbox" class="producto-checkbox" value="{{ $producto->id }}" onchange="actualizarSeleccionPaquete()" style="width:16px; height:16px; cursor:pointer;">
                             </td>
@@ -76,33 +79,46 @@
                                 @endif
                             </td>
                             <td>{{ $producto->marca ?: '—' }} {{ $producto->modelo }}</td>
-                            <td>${{ number_format($producto->precio, 2) }}</td>
+                            @if (\App\Support\PrecioVisible::para())
+                                <td>{{ \App\Support\PrecioVisible::texto($producto) }}</td>
+                            @endif
                             <td>
                                 <span class="badge {{ $producto->stock > 0 ? 'badge--ok' : 'badge--danger' }}">
                                     {{ $producto->stock }} u.
                                 </span>
                             </td>
-                            <td>{{ $producto->proveedor ?: '—' }}</td>
                             <td>
-                                <details class="actions-dropdown" style="position:relative;">
-                                    <summary style="list-style:none; cursor:pointer; display:inline-flex; padding:6px 8px; border-radius:6px; color:var(--text);">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="6" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="18" r="2"/></svg>
-                                    </summary>
-                                    <div style="position:absolute; right:0; top:100%; margin-top:6px; background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,.12); min-width:130px; z-index:20; overflow:hidden;">
-                                        <a href="{{ route('inventory.productos.edit', $producto) }}" style="display:flex; align-items:center; gap:8px; padding:10px 14px; font-size:13px; color:var(--text); text-decoration:none; white-space:nowrap;">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                {{-- Menú compartido: se posiciona en fijo, así que
+                                     no lo recorta el overflow de la tarjeta. El
+                                     de antes se cortaba cuando había una sola
+                                     fila y no se alcanzaba a ver. --}}
+                                <div class="row-menu" data-row-menu>
+                                    <button type="button" class="row-menu-btn" data-row-menu-toggle
+                                            aria-haspopup="true" aria-expanded="false"
+                                            aria-label="Acciones de {{ $producto->tipo_equipo }}">
+                                        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+                                    </button>
+
+                                    <div class="row-menu-pop" data-row-menu-pop role="menu" hidden>
+                                        <a href="{{ route('inventory.productos.show', $producto) }}" role="menuitem">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            Ver ficha
+                                        </a>
+                                        <a href="{{ route('inventory.productos.edit', $producto) }}" role="menuitem">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                                             Editar
                                         </a>
-                                        <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}" onsubmit="return confirm('¿Eliminar este producto?');" style="margin:0;">
+                                        <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}"
+                                              onsubmit="return confirm('¿Eliminar este producto?');" style="margin:0;">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" style="display:flex; align-items:center; gap:8px; width:100%; padding:10px 14px; font-size:13px; color:var(--danger); background:transparent; border:none; cursor:pointer; text-align:left; white-space:nowrap;">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                            <button type="submit" class="es-danger" role="menuitem">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
                                                 Eliminar
                                             </button>
                                         </form>
                                     </div>
-                                </details>
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -176,4 +192,6 @@
             window.location.href = @json(route('inventory.paquetes.create')) + '?' + params;
         }
     </script>
+
+    @include('partials.row-menu')
 @endsection
