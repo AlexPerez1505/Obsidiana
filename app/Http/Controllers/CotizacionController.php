@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -298,6 +299,10 @@ class CotizacionController extends Controller
         $d = $this->calc->desglose($items, $descTipo, $descValor, $envio, $aplicaIva, $valorACuenta);
 
         $cot->customer_id = $data['customer_id'];
+        if (Schema::hasColumn('cotizaciones', 'cliente_id')) {
+            $cot->cliente_id = $data['customer_id'];
+        }
+
         // El nombre del congreso lo escribe el modelo en lugar_propuesta.
         $cot->congreso_id = $data['congreso_id'] ?? null;
         $cot->nota_cliente = $data['nota_cliente'] ?? null;

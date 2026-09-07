@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\MaterialRequest;
+use App\Models\Producto;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -46,7 +47,6 @@ class MaterialRequestController extends Controller
     public function index(Request $request): View
     {
         $query = MaterialRequest::with(['requester', 'reviewer'])
-            ->latest('submitted_at')
             ->latest();
 
         if (! $request->user()->isAdmin()) {
@@ -58,7 +58,13 @@ class MaterialRequestController extends Controller
         return view('admin.materiales.index', [
             'categories' => self::CATEGORIES,
             'materialRequests' => $requests->map(fn (MaterialRequest $materialRequest): array => $this->row($materialRequest))->all(),
+            'availableMaterials' => $this->availableMaterials(),
             'pendingCount' => $requests->where('status', MaterialRequest::STATUS_PENDING)->count(),
+            'materialStats' => [
+                'total' => $requests->count(),
+                'drafts' => $requests->where('status', MaterialRequest::STATUS_DRAFT)->count(),
+                'approved' => $requests->whereIn('status', [MaterialRequest::STATUS_APPROVED, MaterialRequest::STATUS_DELIVERED])->count(),
+            ],
         ]);
     }
 
@@ -72,7 +78,10 @@ class MaterialRequestController extends Controller
             'required_date' => ['nullable', 'date'],
             'urgency' => ['required', Rule::in(['Normal', 'Urgente', 'Programada'])],
             'justification' => ['nullable', 'string', 'max:1500'],
+            'intent' => ['nullable', Rule::in(['draft', 'submit'])],
         ]);
+
+        $draft = ($data['intent'] ?? 'submit') === 'draft';
 
         MaterialRequest::create([
             'folio' => $this->nextFolio(),
@@ -83,17 +92,18 @@ class MaterialRequestController extends Controller
             'required_date' => $data['required_date'] ?? null,
             'urgency' => $data['urgency'],
             'justification' => $data['justification'] ?? null,
-            'status' => MaterialRequest::STATUS_PENDING,
+            'status' => $draft ? MaterialRequest::STATUS_DRAFT : MaterialRequest::STATUS_PENDING,
             'requested_by' => $request->user()->id,
-            'submitted_at' => now(),
+            'submitted_at' => $draft ? null : now(),
             'metadata' => [
                 'source' => 'admin_materiales_form',
+                'intent' => $draft ? 'draft' : 'submit',
             ],
         ]);
 
         return redirect()
             ->route('admin.materials.index')
-            ->with('status', 'Solicitud enviada a revision.');
+            ->with('status', $draft ? 'Borrador guardado en la base de datos.' : 'Solicitud enviada a revision.');
     }
 
     public function review(Request $request, MaterialRequest $materialRequest): RedirectResponse
@@ -131,9 +141,15 @@ class MaterialRequestController extends Controller
             'unit' => $materialRequest->unit,
             'required_date' => $materialRequest->required_date?->format('Y-m-d') ?: 'Sin fecha',
             'urgency' => $materialRequest->urgency,
+            'requester' => $materialRequest->requester?->name ?: 'Sin usuario',
+            'reviewer' => $materialRequest->reviewer?->name,
+            'registered_at' => $materialRequest->submitted_at?->format('Y-m-d H:i')
+                ?: $materialRequest->created_at?->format('Y-m-d H:i')
+                ?: 'Sin fecha',
             'status' => $materialRequest->status,
             'status_label' => self::STATUS_LABELS[$materialRequest->status] ?? ucfirst($materialRequest->status),
             'status_class' => match ($materialRequest->status) {
+                MaterialRequest::STATUS_DRAFT => 'draft',
                 MaterialRequest::STATUS_APPROVED,
                 MaterialRequest::STATUS_DELIVERED => 'approved',
                 MaterialRequest::STATUS_REJECTED => 'rejected',
@@ -151,5 +167,35 @@ class MaterialRequestController extends Controller
             ->max() ?? 0;
 
         return 'SOL-' . str_pad((string) ($lastNumber + 1), 4, '0', STR_PAD_LEFT);
+    }
+
+    private function availableMaterials(): array
+    {
+        return Producto::query()
+            ->orderBy('tipo_equipo')
+            ->orderBy('modelo')
+            ->limit(50)
+            ->get(['id', 'tipo_equipo', 'subtipo', 'marca', 'modelo', 'stock'])
+            ->map(function (Producto $producto): array {
+                $name = collect([$producto->tipo_equipo ?: $producto->subtipo, $producto->modelo, $producto->marca])
+                    ->filter(fn ($value): bool => filled($value))
+                    ->implode(' ');
+
+                $detail = collect([
+                    $producto->tipo_equipo ?: $producto->subtipo ?: 'Producto',
+                    $producto->marca,
+                    $producto->modelo,
+                    'Stock: '.((int) $producto->stock),
+                ])->filter(fn ($value): bool => filled($value))->implode(' - ');
+
+                return [
+                    'id' => $producto->id,
+                    'name' => $name !== '' ? $name : 'Producto #'.$producto->id,
+                    'category' => $producto->tipo_equipo ?: $producto->subtipo ?: 'Producto',
+                    'stock' => (int) $producto->stock,
+                    'detail' => $detail,
+                ];
+            })
+            ->all();
     }
 }
