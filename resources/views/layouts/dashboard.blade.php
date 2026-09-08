@@ -339,7 +339,7 @@
         label { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }
         /* Controles de formulario: mismo aspecto sin repetir estilos en cada vista. */
         input[type=text], input[type=email], input[type=password], input[type=tel],
-        input[type=number], input[type=date], input[type=search], input[type=file], select, textarea {
+        input[type=number], input[type=date], input[type=time], input[type=search], input[type=file], select, textarea {
             width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:7px; font-size:14px;
             font-family:inherit; outline:none; background:var(--surface); color:var(--text);
             transition:border-color .15s ease; }
