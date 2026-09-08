@@ -90,7 +90,7 @@
             </div>
 
             <button type="button" class="eq-add" data-modal-abrir="modalTipoCrear">
-                <x-gravityui-plus />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                 Agregar tipo
             </button>
         </section>
@@ -132,7 +132,7 @@
 
             <button type="button" class="eq-add" data-modal-abrir="modalSubtipoCrear"
                     @disabled($equipmentTypes->isEmpty())>
-                <x-gravityui-plus />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                 Agregar subtipo
             </button>
         </section>
@@ -180,7 +180,7 @@
 
             <button type="button" class="eq-add" data-modal-abrir="modalMarcaCrear"
                     @disabled($subtypes->isEmpty())>
-                <x-gravityui-plus />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                 Agregar marca
             </button>
         </section>
@@ -226,7 +226,7 @@
 
             <button type="button" class="eq-add" data-modal-abrir="modalModeloCrear"
                     @disabled($subtypes->isEmpty())>
-                <x-gravityui-plus />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                 Agregar modelo
             </button>
         </section>

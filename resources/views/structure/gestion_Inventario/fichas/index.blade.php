@@ -16,7 +16,7 @@
 
     <div class="content-actions">
         <a href="{{ route('inventory.fichas.create') }}" class="btn">
-            <x-gravityui-plus width="15" height="15" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>
             Nueva ficha técnica
         </a>
     </div>
@@ -25,7 +25,7 @@
     <div class="ft-stats">
         <div class="card card--accent stat">
             <span class="stat-ico blue">
-                <x-gravityui-file />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
             </span>
             <div>
                 <div class="stat-num">{{ $total }}</div>
@@ -35,7 +35,7 @@
 
         <div class="card card--accent is-green stat">
             <span class="stat-ico green">
-                <x-gravityui-arrow-down-to-line />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
             </span>
             <div>
                 <div class="stat-num">{{ $conPdf }}</div>
@@ -45,7 +45,7 @@
 
         <div class="card card--accent is-amber stat">
             <span class="stat-ico orange">
-                <x-gravityui-circle-info />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </span>
             <div>
                 <div class="stat-num">{{ $sinPdf }}</div>
@@ -57,13 +57,13 @@
     {{-- ===================== Barra de busqueda y filtros ===================== --}}
     <div class="f-toolbar">
         <div class="f-search">
-            <x-gravityui-magnifier />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="fBuscar" placeholder="Buscar por nombre, equipo o notas" autocomplete="off">
         </div>
 
         <div class="flt" data-flt>
             <button type="button" class="flt-btn" data-flt-toggle aria-expanded="false">
-                <x-gravityui-funnel />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
                 Filtros
                 <span class="flt-count" data-flt-count hidden>0</span>
             </button>
@@ -108,15 +108,15 @@
         {{-- Accesos rapidos: activas / inactivas --}}
         <div class="flt-toggles" role="group" aria-label="Estado de la ficha">
             <button type="button" class="flt-tgl is-on" data-valor="1" title="Ver fichas activas" aria-pressed="true">
-                <x-gravityui-folder />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
             </button>
             <button type="button" class="flt-tgl" data-valor="0" title="Ver fichas inactivas" aria-pressed="false">
-                <x-gravityui-archive />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
             </button>
         </div>
 
         <button type="button" class="flt-btn flt-btn--icon" id="fLimpiar" title="Limpiar todos los filtros" aria-label="Limpiar filtros">
-            <x-gravityui-funnel-xmark />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 3H2l8 9.46V19l4 2v-8.54"/><line x1="16" y1="5" x2="22" y2="11"/><line x1="22" y1="5" x2="16" y2="11"/></svg>
         </button>
 
         <x-ui.view-switch key="fichas" />
@@ -168,7 +168,7 @@
                         <td>
                             <div class="cell-id">
                                 <span class="ft-pdf {{ $ficha->archivo ? '' : 'es-vacio' }}">
-                                    <x-gravityui-file />
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
                                 </span>
                                 <div style="min-width:0;">
                                     <div class="t">{{ $ficha->titulo }}</div>
@@ -197,7 +197,7 @@
                         <td colspan="6">
                             <div class="empty-state">
                                 <span class="ico">
-                                    <x-gravityui-file />
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
                                 </span>
                                 <h3>Aún no hay fichas técnicas</h3>
                                 <p>Sube el primer PDF y aparecerá en esta lista.</p>
@@ -216,7 +216,7 @@
             <article class="data-card f-row" @foreach ($datos($ficha) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
                 <div class="data-card-top">
                     <span class="ft-pdf {{ $ficha->archivo ? '' : 'es-vacio' }}">
-                        <x-gravityui-file />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
                     </span>
                     <div style="min-width:0; flex:1;">
                         <div class="t">{{ $ficha->titulo }}</div>
@@ -241,7 +241,7 @@
             <div class="card">
                 <div class="empty-state">
                     <span class="ico">
-                        <x-gravityui-file />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
                     </span>
                     <h3>Aún no hay fichas técnicas</h3>
                     <p>Sube el primer PDF y aparecerá aquí.</p>
@@ -255,7 +255,7 @@
     <div class="card" id="fVacio" hidden>
         <div class="empty-state">
             <span class="ico">
-                <x-gravityui-magnifier />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </span>
             <h3>Ninguna ficha coincide</h3>
             <p>Prueba a quitar algún filtro o a cambiar la búsqueda.</p>
@@ -279,7 +279,7 @@
                 <div class="danger-box" style="margin:0;">
                     <div class="ft-del">
                         <span class="ft-del-ico">
-                            <x-gravityui-trash-bin />
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                         </span>
                         <div>
                             <div class="ft-del-name" data-nombre>—</div>

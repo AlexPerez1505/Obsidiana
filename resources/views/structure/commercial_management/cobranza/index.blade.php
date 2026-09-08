@@ -178,7 +178,7 @@
                         <td colspan="8">
                             <div class="empty-state">
                                 <span class="ico">
-                                    <x-gravityui-circle-dollar />
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                                 </span>
                                 <h3>Nada por aquí</h3>
                                 <p>No hay ventas que coincidan con este filtro.</p>

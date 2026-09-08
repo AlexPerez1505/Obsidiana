@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Models\ProductoSerial;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 
@@ -68,5 +69,81 @@ trait ManejaSeriesDeProducto
     private function esErrorDeDuplicado(QueryException $e): bool
     {
         return $e->getCode() === '23000';
+    }
+
+    /**
+     * El siguiente serial de un modelo es consecutivo al último que se
+     * registró, comparando numéricamente (no como texto, para que
+     * 23A12350 no se confunda con "menor" que 23A9999). Funciona con
+     * cualquier prefijo (letras, año, guiones...) siempre que el serial
+     * termine en dígitos; si no, no se sugiere nada y se deja en blanco.
+     */
+    private function sugerirSiguienteSerial(int $productoId): ?string
+    {
+        $ultimo = ProductoSerial::where('producto_id', $productoId)
+            ->whereNotNull('no_serie')
+            ->where('no_serie', '!=', '')
+            ->pluck('no_serie')
+            ->map(function ($serie) {
+                if (! preg_match('/^(.*?)(\d+)$/', $serie, $m)) {
+                    return null;
+                }
+
+                return ['prefijo' => $m[1], 'numero' => (int) $m[2], 'ancho' => strlen($m[2])];
+            })
+            ->filter()
+            ->sortByDesc(fn ($s) => $s['numero'])
+            ->first();
+
+        if ($ultimo === null) {
+            return null;
+        }
+
+        $siguiente = $ultimo['numero'] + 1;
+
+        return $ultimo['prefijo'].str_pad((string) $siguiente, $ultimo['ancho'], '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Revisa una lista de series (por índice, para que cuadre con las fotos
+     * de cada renglón) contra lo que ya existe en la base para ese producto
+     * y contra el resto del mismo lote. Las que chocan no se descartan por
+     * completo: se limpian a null (la unidad y su foto se conservan, solo
+     * se pierde la captura de ESE serial) y se listan como rechazadas para
+     * avisarle al usuario.
+     *
+     * @param  Collection<int, string|null>  $series
+     * @return array{series: Collection<int, string|null>, rechazadas: Collection<int, string>}
+     */
+    private function depurarSeriesDuplicadas(int $productoId, Collection $series): array
+    {
+        $noVacias = $series->filter()->values();
+
+        $existentes = $noVacias->isEmpty() ? [] : ProductoSerial::where('producto_id', $productoId)
+            ->whereIn('no_serie', $noVacias->all())
+            ->pluck('no_serie')
+            ->all();
+
+        $vistos = [];
+        $limpias = collect();
+        $rechazadas = collect();
+
+        foreach ($series as $serie) {
+            if ($serie === null || $serie === '') {
+                $limpias->push(null);
+                continue;
+            }
+
+            if (in_array($serie, $existentes, true) || in_array($serie, $vistos, true)) {
+                $rechazadas->push($serie);
+                $limpias->push(null);
+                continue;
+            }
+
+            $vistos[] = $serie;
+            $limpias->push($serie);
+        }
+
+        return ['series' => $limpias, 'rechazadas' => $rechazadas->values()];
     }
 }

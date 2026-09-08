@@ -19,7 +19,10 @@
             <div class="rgrid-2">
                 @include('structure.gestion_Inventario.productos._selects_catalogo')
 
-                <x-ui.form-group label="Precio *" name="precio" type="number" step="0.01" min="0" :value="$producto->precio" :required="true" />
+                {{-- El campo solo se dibuja para quien tiene precios.editar. --}}
+                @if (\App\Support\PrecioVisible::editable())
+                    <x-ui.form-group label="Precio de venta" name="precio" type="number" step="0.01" min="0" :value="$producto->precio" />
+                @endif
 
                 <x-ui.form-group label="Stock" for="stock_display">
                     <input id="stock_display" type="number" value="{{ $producto->stock }}" disabled
@@ -28,15 +31,6 @@
                     <small style="color:var(--muted);">El stock se calcula solo, según las unidades de abajo. Usa "Agregar unidades" para sumarle.</small>
                 </x-ui.form-group>
 
-                <x-ui.form-group label="Proveedor" for="proveedor">
-                    <input id="proveedor" type="text" name="proveedor" list="proveedor_options"
-                           value="{{ old('proveedor', $producto->proveedor) }}" placeholder="Nombre del proveedor" autocomplete="off">
-                    <datalist id="proveedor_options">
-                        @foreach (collect(($productoOptions ?? [])['proveedor'] ?? [])->filter()->unique() as $option)
-                            <option value="{{ $option }}"></option>
-                        @endforeach
-                    </datalist>
-                </x-ui.form-group>
             </div>
             <x-ui.form-group label="Descripción" for="descripcion">
                 <textarea id="descripcion" name="descripcion" rows="3" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('descripcion', $producto->descripcion) }}</textarea>
@@ -66,6 +60,7 @@
             <table>
                 <thead>
                     <tr>
+                        <th>Foto</th>
                         <th>No. Serie</th>
                         <th>Estado</th>
                         <th>Acciones</th>
@@ -74,13 +69,22 @@
                 <tbody>
                     @forelse ($seriales as $serial)
                         <tr>
+                            <td>
+                                @if ($serial->fotoUrl())
+                                    <img src="{{ $serial->fotoUrl() }}" alt="Foto de la unidad" style="width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid var(--border); cursor:pointer;" onclick="window.open('{{ $serial->fotoUrl() }}', '_blank')">
+                                @else
+                                    <span class="muted" style="font-size:12px;">—</span>
+                                @endif
+                            </td>
                             <td>{{ $serial->no_serie ?: '— (sin serial capturado)' }}</td>
                             <td>
                                 <span class="badge {{ $serial->vendido ? 'badge--danger' : 'badge--ok' }}">
                                     {{ $serial->vendido ? 'Vendida' : 'Disponible' }}
                                 </span>
                             </td>
-                            <td>
+                            <td style="display:flex; gap:6px;">
+                                <button type="button" class="btn btn--ghost" style="padding:5px 10px; font-size:12.5px;"
+                                        onclick="document.getElementById('editar-serial-{{ $serial->id }}').style.display='flex'">Editar</button>
                                 @unless ($serial->vendido)
                                     <form method="POST" action="{{ route('inventory.productos.seriales.destroy', $serial) }}" onsubmit="return confirm('¿Quitar esta unidad del inventario?');" style="margin:0;">
                                         @csrf
@@ -92,12 +96,37 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="3" style="text-align:center; padding:20px; color:var(--muted);">No hay unidades registradas.</td>
+                            <td colspan="4" style="text-align:center; padding:20px; color:var(--muted);">No hay unidades registradas.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+
+        {{-- Modales de edición de unidad (serial + foto), piden PIN/contraseña --}}
+        @foreach ($seriales as $serial)
+            <div id="editar-serial-{{ $serial->id }}" class="modal-overlay" style="display:none;">
+                <div style="background:var(--surface); border-radius:12px; max-width:420px; width:100%; padding:20px; margin:auto;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                        <strong>Editar unidad</strong>
+                        <button type="button" class="btn btn--ghost" style="padding:4px 8px;" onclick="document.getElementById('editar-serial-{{ $serial->id }}').style.display='none'">✕</button>
+                    </div>
+                    <form method="POST" action="{{ route('inventory.productos.seriales.update', $serial) }}" enctype="multipart/form-data">
+                        @csrf
+                        @method('PUT')
+                        <x-ui.form-group label="Número de serie" name="no_serie" :value="$serial->no_serie" />
+                        <x-ui.form-group label="Foto (déjalo vacío para no cambiarla)" for="foto_{{ $serial->id }}">
+                            <input type="file" id="foto_{{ $serial->id }}" name="foto" accept="image/*" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:9px; font-size:14px; background:var(--surface); color:var(--text);">
+                        </x-ui.form-group>
+                        <x-ui.form-group label="PIN o contraseña, para confirmar el cambio *" for="password_{{ $serial->id }}">
+                            <input type="password" id="password_{{ $serial->id }}" name="password" required
+                                   style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
+                        </x-ui.form-group>
+                        <x-ui.button type="submit" style="width:100%;">Guardar cambios</x-ui.button>
+                    </form>
+                </div>
+            </div>
+        @endforeach
 
         <x-ui.section-title style="margin:0 0 12px;">Agregar unidades (ajuste rápido, sin evidencia)</x-ui.section-title>
         <p style="margin:0 0 12px; color:var(--muted); font-size:13.5px;">

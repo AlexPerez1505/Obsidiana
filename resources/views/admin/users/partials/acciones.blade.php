@@ -14,18 +14,18 @@
     <button type="button" class="row-menu-btn" data-row-menu-toggle
             aria-haspopup="true" aria-expanded="false"
             aria-label="Acciones de {{ $u->name }}">
-        <x-gravityui-ellipsis-vertical />
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
     </button>
 
     <div class="row-menu-pop" data-row-menu-pop role="menu" hidden>
         <a href="{{ route('admin.users.show', $u) }}" role="menuitem">
-            <x-gravityui-eye />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
             Ver detalle
         </a>
 
         {{-- Abre el mismo modal, ya con este usuario seleccionado. --}}
         <button type="button" role="menuitem" data-abrir-rh data-usuario="{{ $u->id }}">
-            <x-gravityui-pencil />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
             Editar datos y roles
         </button>
 
@@ -41,7 +41,7 @@
             <form method="POST" action="{{ route('admin.users.approve', $u) }}">
                 @csrf
                 <button type="submit" role="menuitem" class="ok">
-                    <x-gravityui-check />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>
                     Aprobar acceso
                 </button>
             </form>
@@ -51,7 +51,7 @@
             <form method="POST" action="{{ route('admin.users.unban', $u) }}">
                 @csrf
                 <button type="submit" role="menuitem" class="ok">
-                    <x-gravityui-arrow-rotate-left />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                     Reactivar
                 </button>
             </form>
@@ -60,7 +60,7 @@
                   onsubmit="return confirm('¿Quitarle el acceso a {{ $u->name }}?');">
                 @csrf
                 <button type="submit" role="menuitem" class="danger">
-                    <x-gravityui-ban />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/></svg>
                     Quitar acceso
                 </button>
             </form>

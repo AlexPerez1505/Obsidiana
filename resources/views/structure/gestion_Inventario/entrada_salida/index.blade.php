@@ -2,310 +2,9 @@
 
 @section('title', 'Entrada / Salida')
 @section('page-title', 'Entrada / Salida')
-@section('page-sub', 'Gestion de Inventario > Entrada / Salida')
-
-@php
-    $toneMap = [
-        'entrada' => 'green',
-        'salida' => 'red',
-        'transferencia' => 'blue',  
-    ];
-@endphp
-
-@push('head')
-<style>
-    .movement-page {
-        display: grid;
-        gap: 18px;
-    }
-
-    .movement-head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-    }
-
-    .movement-head p {
-        margin: 0;
-        color: #718096;
-        font-size: 14px;
-        font-weight: 600;
-    }
-
-    .movement-create {
-        min-height: 38px;
-        margin-top: 22px;
-        padding: 0 14px;
-        border-radius: 4px;
-        background: #158be8;
-        color: #fff;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        text-decoration: none;
-        font-size: 12px;
-        font-weight: 900;
-        box-shadow: 0 7px 16px rgba(21, 139, 232, .22);
-        white-space: nowrap;
-    }
-
-    .movement-create:hover {
-        background: #0879d0;
-    }
-
-    .movement-create svg,
-    .movement-action svg {
-        width: 16px;
-        height: 16px;
-        flex: 0 0 auto;
-    }
-
-    .movement-tabs {
-        display: flex;
-        align-items: center;
-        gap: 46px;
-        min-height: 30px;
-    }
-
-    .movement-tab {
-        border: 0;
-        background: transparent;
-        color: #64748b;
-        font: inherit;
-        font-size: 14px;
-        font-weight: 800;
-        cursor: pointer;
-        padding: 0;
-    }
-
-    .movement-tab.is-active {
-        color: #1689ff;
-    }
-
-    .movement-filters {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(130px, 1fr));
-        gap: 16px;
-        align-items: end;
-        padding: 14px 18px;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, .62);
-        border: 1px solid rgba(226, 232, 240, .78);
-    }
-
-    .movement-field label {
-        display: block;
-        margin: 0 0 7px;
-        color: #718096;
-        font-size: 13px;
-        font-weight: 700;
-    }
-
-    .movement-field input,
-    .movement-field select {
-        width: 100%;
-        height: 36px;
-        padding: 0 10px;
-        border: 1px solid #cbd5e1;
-        border-radius: 4px;
-        background: #f8fafc;
-        color: #1f2937;
-        font: inherit;
-        font-size: 13px;
-        outline: none;
-    }
-
-    .movement-field input:focus,
-    .movement-field select:focus {
-        border-color: #158be8;
-        box-shadow: 0 0 0 3px rgba(21, 139, 232, .14);
-    }
-
-    .movement-table-panel {
-        overflow: hidden;
-        border: 1px solid #a8c5ff;
-        border-radius: 5px;
-        background: #fff;
-    }
-
-    .movement-table-wrap {
-        overflow-x: auto;
-    }
-
-    .movement-table {
-        width: 100%;
-        min-width: 960px;
-        border-collapse: collapse;
-        color: #202938;
-        font-size: 13px;
-    }
-
-    .movement-table th {
-        padding: 17px 16px;
-        background: #d8e2ff;
-        color: #111827;
-        font-size: 12px;
-        font-weight: 900;
-        text-align: left;
-        border-bottom: 1px solid #a8c5ff;
-    }
-
-    .movement-table td {
-        height: 70px;
-        padding: 11px 16px;
-        border-bottom: 1px solid #a8c5ff;
-        background: #fff;
-        vertical-align: middle;
-        font-weight: 600;
-    }
-
-    .movement-pill {
-        min-width: 72px;
-        min-height: 24px;
-        padding: 0 10px;
-        border-radius: 999px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: 800;
-        line-height: 1;
-        white-space: nowrap;
-    }
-
-    .movement-pill.green {
-        color: #16a329;
-        border: 1px solid #22c943;
-        background: #f7fff8;
-    }
-
-    .movement-pill.blue {
-        color: #1689ff;
-        border: 1px solid #1689ff;
-        background: #f5fbff;
-    }
-
-    .movement-pill.red {
-        color: #ff3131;
-        border: 1px solid #ff4b4b;
-        background: #fff8f8;
-    }
-
-    .movement-action {
-        width: 32px;
-        height: 32px;
-        border: 0;
-        border-radius: 50%;
-        background: transparent;
-        color: var(--text);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-    }
-
-    .movement-action:hover {
-        background: var(--surface-2);
-    }
-
-    .movement-foot {
-        min-height: 40px;
-        padding: 0 16px;
-        background: #d7e9ff;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-        color: #1689ff;
-        font-size: 12px;
-        font-weight: 700;
-    }
-
-    .movement-foot button {
-        border: 0;
-        background: transparent;
-        color: #1689ff;
-        font: inherit;
-        font-weight: 800;
-        cursor: pointer;
-    }
-
-    :root[data-theme="dark"] .movement-filters,
-    :root[data-theme="dark"] .movement-table-panel {
-        background: var(--surface);
-        border-color: var(--border);
-    }
-
-    :root[data-theme="dark"] .movement-field input,
-    :root[data-theme="dark"] .movement-field select,
-    :root[data-theme="dark"] .movement-table td {
-        background: var(--surface-2);
-        color: var(--text);
-        border-color: var(--border);
-    }
-
-    :root[data-theme="dark"] .movement-table th {
-        background: rgba(10, 132, 255, .18);
-        color: var(--text);
-        border-color: var(--border);
-    }
-
-    :root[data-theme="dark"] .movement-foot {
-        background: rgba(10, 132, 255, .14);
-    }
-
-    :root[data-theme="dark"] .movement-head p,
-    :root[data-theme="dark"] .movement-field label,
-    :root[data-theme="dark"] .movement-tab {
-        color: var(--muted);
-    }
-
-    :root[data-theme="dark"] .movement-tab.is-active {
-        color: var(--primary);
-    }
-
-    .movement-actions-list.is-open { display:block !important; }
-    .movement-actions-list .action-link:hover { background:var(--surface-2); }
-
-    @media (max-width: 860px) {
-        .movement-filters {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
-
-    @media (max-width: 640px) {
-        .movement-head {
-            align-items: stretch;
-            flex-direction: column;
-        }
-
-        .movement-create {
-            width: 100%;
-            margin-top: 0;
-        }
-
-        .movement-tabs {
-            gap: 20px;
-            overflow-x: auto;
-            padding-bottom: 4px;
-        }
-
-        .movement-filters {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
-@endpush
+@section('page-sub', 'Lo que llega con su evidencia; las salidas las genera Ventas')
 
 @section('content')
-<<<<<<< Updated upstream
-    <section class="movement-page">
-        <div class="movement-head">
-            <div>
-                <p>Entradas: lo que llega, con su evidencia. Salidas: lo que se vendió, se registra solo desde Ventas.</p>
-=======
     @php
         // Se recorre una sola vez: los mismos datos alimentan la tabla y las tarjetas.
         $filas = collect($movements->items())->map(function ($m) {
@@ -344,7 +43,7 @@
 
     <div class="content-actions">
         <a href="{{ route('inventory.movimientos.create') }}" class="btn">
-            <x-gravityui-plus width="15" height="15" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nueva entrada
         </a>
     </div>
@@ -353,7 +52,7 @@
     <div class="mv-stats">
         <div class="card card--accent stat">
             <span class="stat-ico blue">
-                <x-gravityui-box />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
             </span>
             <div>
                 <div class="stat-num">{{ $resumen['movimientos'] }}</div>
@@ -363,7 +62,7 @@
 
         <div class="card card--accent is-green stat">
             <span class="stat-ico green">
-                <x-gravityui-arrow-down />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
             </span>
             <div>
                 <div class="stat-num">{{ $resumen['entradas_mes'] }}</div>
@@ -373,7 +72,7 @@
 
         <div class="card card--accent stat">
             <span class="stat-ico blue">
-                <x-gravityui-boxes-3 />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
             </span>
             <div>
                 <div class="stat-num">{{ $resumen['piezas'] }}</div>
@@ -383,7 +82,7 @@
 
         <div class="card card--accent is-amber stat">
             <span class="stat-ico orange">
-                <x-gravityui-clock />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </span>
             <div>
                 <div class="stat-num">{{ $resumen['en_proceso'] }}</div>
@@ -400,13 +99,13 @@
     {{-- ===================== Búsqueda y filtros ===================== --}}
     <div class="f-toolbar">
         <div class="f-search">
-            <x-gravityui-magnifier />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="fBuscar" placeholder="Buscar por folio, equipo, almacén o quien registró" autocomplete="off">
         </div>
 
         <div class="flt" data-flt>
             <button type="button" class="flt-btn" data-flt-toggle aria-expanded="false">
-                <x-gravityui-funnel />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
                 Filtros
                 <span class="flt-count" data-flt-count hidden>0</span>
             </button>
@@ -471,15 +170,15 @@
         {{-- Accesos rápidos: lo que entra / lo que sale --}}
         <div class="flt-toggles" role="group" aria-label="Tipo de movimiento">
             <button type="button" class="flt-tgl" data-f="estado" data-valor="entrada" title="Ver solo entradas" aria-pressed="false">
-                <x-gravityui-arrow-down />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
             </button>
             <button type="button" class="flt-tgl" data-f="estado" data-valor="salida" title="Ver solo salidas" aria-pressed="false">
-                <x-gravityui-arrow-up />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
             </button>
         </div>
 
         <button type="button" class="flt-btn flt-btn--icon" id="fLimpiar" title="Limpiar todos los filtros" aria-label="Limpiar filtros">
-            <x-gravityui-funnel-xmark />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 3H2l8 9.46V19l4 2v-8.54"/><line x1="16" y1="5" x2="22" y2="11"/><line x1="22" y1="5" x2="16" y2="11"/></svg>
         </button>
 
         <x-ui.view-switch key="movimientos" />
@@ -509,11 +208,11 @@
                             <div class="cell-id">
                                 <span class="mv-ico {{ $fila['tipo'] }}">
                                     @if ($fila['tipo'] === 'entrada')
-                                        <x-gravityui-arrow-down />
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
                                     @elseif ($fila['tipo'] === 'salida')
-                                        <x-gravityui-arrow-up />
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
                                     @else
-                                        <x-gravityui-arrow-right-arrow-left />
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3 3 21"/></svg>
                                     @endif
                                 </span>
                                 <div style="min-width:0;">
@@ -538,7 +237,7 @@
                         <td colspan="6">
                             <div class="empty-state">
                                 <span class="ico">
-                                    <x-gravityui-box />
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
                                 </span>
                                 <h3>Todavía no hay movimientos</h3>
                                 <p>Registra la primera entrada y aparecerá aquí con su evidencia.</p>
@@ -560,11 +259,11 @@
                 <div class="data-card-top">
                     <span class="mv-ico {{ $fila['tipo'] }}">
                         @if ($fila['tipo'] === 'entrada')
-                            <x-gravityui-arrow-down />
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
                         @elseif ($fila['tipo'] === 'salida')
-                            <x-gravityui-arrow-up />
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
                         @else
-                            <x-gravityui-arrow-right-arrow-left />
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3 3 21"/></svg>
                         @endif
                     </span>
                     <div style="min-width:0; flex:1;">
@@ -590,7 +289,7 @@
             <div class="card">
                 <div class="empty-state">
                     <span class="ico">
-                        <x-gravityui-box />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
                     </span>
                     <h3>Todavía no hay movimientos</h3>
                     <p>Registra la primera entrada y aparecerá aquí con su evidencia.</p>
@@ -604,7 +303,7 @@
     <div class="card" id="fVacio" hidden>
         <div class="empty-state">
             <span class="ico">
-                <x-gravityui-magnifier />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </span>
             <h3>Ningún movimiento coincide</h3>
             <p>Prueba a quitar algún filtro o a cambiar la búsqueda.</p>
@@ -623,224 +322,111 @@
             @method('DELETE')
 
             <div class="mv-modal-ico">
-                <x-gravityui-triangle-exclamation />
->>>>>>> Stashed changes
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
 
-            <a href="{{ route('inventory.movimientos.create') }}" class="movement-create">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 5v14"></path>
-                    <path d="M5 12h14"></path>
-                </svg>
-                Nueva Entrada
-            </a>
-        </div>
+            <h3>Eliminar movimiento</h3>
+            <p class="campo-nota">
+                Se va a eliminar <b data-folio-eliminar></b> y las piezas que dio de alta.
+                Escribe tu PIN para confirmarlo.
+            </p>
 
-        <div class="movement-tabs" aria-label="Tipos de movimiento">
-            <button class="movement-tab is-active" type="button" data-movement-type="all">Todo</button>
-            <button class="movement-tab" type="button" data-movement-type="entrada">Entradas</button>
-            <button class="movement-tab" type="button" data-movement-type="salida">Salidas</button>
-            <button class="movement-tab" type="button" data-movement-type="transferencia">Transferencias</button>
-        </div>
+            <x-ui.form-group label="PIN" for="pinEliminar">
+                <input id="pinEliminar" name="password" type="password" inputmode="numeric" required
+                       placeholder="Tu PIN de aprobación" autocomplete="off">
+            </x-ui.form-group>
 
-        <form class="movement-filters" onsubmit="event.preventDefault(); filterMovements();">
-            <div class="movement-field">
-                <label for="movement-start">Fecha inicial</label>
-                <input id="movement-start" type="date">
-            </div>
-            <div class="movement-field">
-                <label for="movement-end">Fecha final</label>
-                <input id="movement-end" type="date">
-            </div>
-            <div class="movement-field">
-                <label for="movement-type">Estado</label>
-                <select id="movement-type">
-                    <option value="all">Todos</option>
-                    <option value="entrada">Entrada</option>
-                    <option value="salida">Salida</option>
-                    <option value="transferencia">Transferencia</option>
-                </select>
-            </div>
-            <div class="movement-field">
-                <label for="movement-warehouse">Almacen</label>
-                <select id="movement-warehouse">
-                    <option value="all">Todos</option>
-                    <option value="almacen central">Almacen Central</option>
-                </select>
+            @error('password')<p class="err">{{ $message }}</p>@enderror
+
+            <div class="mv-modal-pie">
+                <button type="button" class="btn btn--ghost" data-cerrar-modal>Cancelar</button>
+                <button type="submit" class="btn btn--danger">Eliminar</button>
             </div>
         </form>
+    </dialog>
 
-        <div class="movement-table-panel">
-            <div class="movement-table-wrap">
-                <table class="movement-table">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Estado</th>
-                            <th>Folio</th>
-                            <th>Almacen</th>
-                            <th>Equipo/Producto</th>
-                            <th>Cantidad</th>
-                            <th>Nombre Equipo/Producto</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="movementBody">
-                        @forelse ($movements as $movement)
-                            <tr data-type="{{ $movement->movement_type }}" data-warehouse="{{ strtolower($movement->warehouse) }}" data-date="{{ $movement->movement_date->format('Y-m-d') }}">
-                                <td>{{ $movement->movement_date->format('d/m/Y') }}</td>
-                                <td><span class="movement-pill {{ $toneMap[$movement->movement_type] ?? 'blue' }}">{{ ucfirst($movement->movement_type) }}</span></td>
-                                <td>{{ $movement->folio }}</td>
-                                <td>{{ $movement->warehouse }}</td>
-                                <td>{{ ucfirst($movement->item_type) }}</td>
-                                <td>{{ $movement->quantity }} {{ $movement->unit }}</td>
-                                <td>{{ $movement->item_name }}</td>
-                                <td>
-                                    <div class="movement-actions-menu" style="position:relative; display:inline-block;">
-                                        <button type="button" class="movement-action" aria-label="Acciones de {{ $movement->folio }}" onclick="this.nextElementSibling.classList.toggle('is-open')">
-                                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                                <circle cx="12" cy="5" r="1.8"></circle>
-                                                <circle cx="12" cy="12" r="1.8"></circle>
-                                                <circle cx="12" cy="19" r="1.8"></circle>
-                                            </svg>
-                                        </button>
-                                        <ul class="movement-actions-list" style="display:none; position:absolute; right:0; top:100%; margin-top:6px; min-width:160px; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,.12); z-index:100; list-style:none; padding:8px 0; margin:0; text-align:left;">
-                                            <li>
-                                                <a href="{{ route('inventory.movimientos.show', $movement) }}" class="action-link" style="display:flex; align-items:center; gap:8px; padding:9px 14px; color:var(--text); text-decoration:none; font-size:13px; font-weight:600;">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                                    Ver detalle
-                                                </a>
-                                            </li>
-                                            @if ($movement->movement_type === 'entrada')
-                                                <li>
-                                                    <button type="button" class="action-link delete-movement-btn" data-url="{{ route('inventory.movimientos.destroy', $movement) }}" data-folio="{{ $movement->folio }}" style="display:flex; align-items:center; gap:8px; width:100%; padding:9px 14px; color:var(--danger); background:none; border:none; cursor:pointer; font-size:13px; font-weight:600; text-align:left;">
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                                        Eliminar
-                                                    </button>
-                                                </li>
-                                            @endif
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" style="text-align:center; padding:32px; color:#718096;">No hay movimientos registrados.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            <div class="movement-foot">
-                <span id="movementCount">Mostrando {{ count($movements) }} movimiento{{ count($movements) === 1 ? '' : 's' }} de esta página</span>
-            </div>
-            @include('partials._paginacion', ['paginator' => $movements])
-        </div>
-    </section>
+    <style>
+        /* Solo lo propio de esta pantalla: lo demás vive en los partials. */
+        .mv-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-bottom:16px; }
+        .mv-table { width:100%; border-collapse:collapse; }
 
-    <div id="deleteModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center; padding:16px;">
-        <div style="width:100%; max-width:420px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow:0 20px 40px rgba(0,0,0,0.2); text-align:center;">
-            <div style="width:56px; height:56px; background:var(--danger-soft); color:var(--danger); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            </div>
-            <h3 style="margin:0 0 8px; font-size:18px;">Confirmar eliminación</h3>
-            <p class="muted" style="margin:0 0 20px; font-size:14px;">Ingresa tu contraseña para eliminar el movimiento <strong id="deleteFolio"></strong>.</p>
+        .mv-ico { display:flex; align-items:center; justify-content:center; width:36px; height:36px;
+                  border-radius:10px; flex:0 0 36px; background:var(--surface-2); color:var(--muted); }
+        .mv-ico svg { width:17px; height:17px; }
+        .mv-ico.entrada { background:var(--green-soft); color:var(--green); }
+        .mv-ico.salida { background:var(--danger-soft); color:var(--danger); }
+        .mv-ico.transferencia { background:var(--primary-soft); color:var(--primary); }
 
-            <form id="deleteForm" method="POST" action="" style="text-align:left;">
-                @csrf
-                @method('DELETE')
+        .mv-modal { width:min(420px, calc(100vw - 32px)); padding:24px; border:1px solid var(--border);
+                    border-radius:16px; background:var(--surface); color:var(--text); }
+        .mv-modal::backdrop { background:rgba(15,23,42,.45); }
+        .mv-modal h3 { margin:0 0 6px; font-size:17px; text-align:center; }
+        .mv-modal .campo-nota { margin:0 0 4px; text-align:center; }
+        .mv-modal-ico { width:52px; height:52px; margin:0 auto 12px; border-radius:50%;
+                        display:flex; align-items:center; justify-content:center;
+                        background:var(--danger-soft); color:var(--danger); }
+        .mv-modal-ico svg { width:24px; height:24px; }
+        .mv-modal-pie { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+        @media (max-width:520px) { .mv-modal-pie .btn { flex:1; justify-content:center; } }
+    </style>
 
-                <div style="margin-bottom:18px;">
-                    <label for="deletePassword" style="display:block; margin:0 0 6px; font-size:13px; font-weight:700; color:var(--text);">PIN</label>
-                    <input id="deletePassword" name="password" type="password" inputmode="numeric" required placeholder="Ingresa tu PIN" style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
-                </div>
+    @include('partials.tabla-filtrable.estilos')
 
-                <div style="display:flex; align-items:center; justify-content:flex-end; gap:12px;">
-                    <button type="button" id="cancelDelete" class="btn btn--ghost">Cancelar</button>
-                    <button type="submit" class="btn" style="background:var(--danger); border-color:var(--danger); color:#fff;">Eliminar</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    @include('partials.tabla-filtrable.script', [
+        'singular' => 'movimiento',
+        'plural' => 'movimientos',
+        'estadoCampo' => 'tipo',
+        // Entradas y salidas son alternativas: limpiar debe mostrar las dos.
+        'toggleInicial' => null,
+        'etiquetas' => [
+            'tipo' => 'Tipo',
+            'condicion' => 'Condición',
+            'almacen' => 'Almacén',
+            'quien' => 'Registró',
+            'estado:entrada' => 'Solo entradas',
+            'estado:salida' => 'Solo salidas',
+        ],
+    ])
 
-    <script>
-        let activeMovementType = 'all';
-        const movementRows = Array.from(document.querySelectorAll('#movementBody tr'));
-        const movementTypeSelect = document.getElementById('movement-type');
-        const movementWarehouse = document.getElementById('movement-warehouse');
-        const movementStart = document.getElementById('movement-start');
-        const movementEnd = document.getElementById('movement-end');
-        const movementCount = document.getElementById('movementCount');
+    @push('scripts')
+        <script>
+        (function () {
+            /*
+            | Se escucha en document y en fase de CAPTURA, por dos razones:
+            |
+            |  - Engancharse de inmediato, sin esperar DOMContentLoaded: para
+            |    cuando este script corre, ese evento puede haber pasado ya.
+            |  - El menú de tres puntos corta la propagación de los clics que
+            |    ocurren dentro de él (para no cerrarse solo), así que en
+            |    fase de burbuja el clic en "Eliminar" nunca llegaba aquí.
+            */
+            document.addEventListener('click', function (e) {
+                const modal = document.getElementById('modalEliminar');
+                if (!modal) return;
 
-        document.querySelectorAll('.movement-tab').forEach((button) => {
-            button.addEventListener('click', () => {
-                document.querySelectorAll('.movement-tab').forEach((item) => item.classList.remove('is-active'));
-                button.classList.add('is-active');
-                activeMovementType = button.dataset.movementType;
-                movementTypeSelect.value = activeMovementType;
-                filterMovements();
-            });
-        });
+                const boton = e.target.closest('[data-eliminar-movimiento]');
 
-        movementTypeSelect.addEventListener('change', () => {
-            activeMovementType = movementTypeSelect.value;
-            document.querySelectorAll('.movement-tab').forEach((item) => {
-                item.classList.toggle('is-active', item.dataset.movementType === activeMovementType);
-            });
-            filterMovements();
-        });
+                if (boton) {
+                    const form = document.getElementById('formEliminar');
+                    form.action = boton.dataset.url;
+                    modal.querySelector('[data-folio-eliminar]').textContent = boton.dataset.folio;
+                    modal.querySelector('#pinEliminar').value = '';
+                    modal.showModal();
 
-        movementWarehouse.addEventListener('change', filterMovements);
-        movementStart.addEventListener('change', filterMovements);
-        movementEnd.addEventListener('change', filterMovements);
+                    return;
+                }
 
-        function filterMovements() {
-            const type = activeMovementType;
-            const warehouse = movementWarehouse.value;
-            const start = movementStart.value;
-            const end = movementEnd.value;
-            let visible = 0;
+                // Clic en el fondo: el objetivo es el propio <dialog>.
+                if (e.target === modal || e.target.closest('[data-cerrar-modal]')) {
+                    modal.close();
+                }
+            }, true);
 
-            movementRows.forEach((row) => {
-                const matchesType = type === 'all' || row.dataset.type === type;
-                const matchesWarehouse = warehouse === 'all' || row.dataset.warehouse === warehouse;
-                const rowDate = row.dataset.date;
-                const matchesStart = !start || (rowDate && rowDate >= start);
-                const matchesEnd = !end || (rowDate && rowDate <= end);
-                const show = matchesType && matchesWarehouse && matchesStart && matchesEnd;
-
-                row.style.display = show ? '' : 'none';
-                if (show) visible += 1;
-            });
-
-            movementCount.textContent = visible === 0
-                ? 'Sin resultados'
-                : 'Mostrando ' + visible + ' movimiento' + (visible === 1 ? '' : 's');
-        }
-
-        const deleteModal = document.getElementById('deleteModal');
-        const deleteForm = document.getElementById('deleteForm');
-        const deleteFolio = document.getElementById('deleteFolio');
-        const deletePassword = document.getElementById('deletePassword');
-        const cancelDelete = document.getElementById('cancelDelete');
-
-        document.querySelectorAll('.delete-movement-btn').forEach((button) => {
-            button.addEventListener('click', (e) => {
-                e.stopPropagation();
-                deleteForm.action = button.dataset.url;
-                deleteFolio.textContent = button.dataset.folio;
-                deletePassword.value = '';
-                deleteModal.style.display = 'flex';
-            });
-        });
-
-        function closeDeleteModal() {
-            deleteModal.style.display = 'none';
-        }
-
-        cancelDelete.addEventListener('click', closeDeleteModal);
-        deleteModal.addEventListener('click', (e) => {
-            if (e.target === deleteModal) closeDeleteModal();
-        });
-    </script>
+            @if ($errors->has('password'))
+                // El PIN salió mal: se vuelve a abrir con el error a la vista.
+                document.getElementById('modalEliminar')?.showModal();
+            @endif
+        })();
+        </script>
+    @endpush
 @endsection

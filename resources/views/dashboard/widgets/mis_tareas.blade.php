@@ -1,7 +1,7 @@
 <div class="dw">
     <div class="dw-head">
         <span class="dw-ico ambar">
-            <x-gravityui-list-check />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
         </span>
         <h3>{{ $titulo }}</h3>
     </div>

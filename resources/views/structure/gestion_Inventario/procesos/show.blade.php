@@ -100,7 +100,7 @@
 
     @error('cierre')
         <div class="pv-bloqueo" style="margin-bottom:18px;">
-            <x-gravityui-circle-info />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <span><b>No se puede cerrar todavía.</b> {{ $message }}</span>
         </div>
     @enderror
@@ -212,7 +212,7 @@
                     @endif
 
                     <label class="ev-soltar" data-ev-soltar>
-                        <x-gravityui-arrow-up-from-line width="26" height="26" />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="26" height="26"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                         <span class="t">Arrastra las fotos o toca para elegir</span>
                         <span class="d" data-ev-cuenta>Ninguna todavía · máximo 5 · JPG o PNG de hasta 5 MB</span>
                         <input type="file" name="evidencias[]" accept="image/*" multiple @disabled(! $enCurso)>
@@ -231,12 +231,12 @@
                 {{-- ===================== Cerrar ===================== --}}
                 <x-ui.card>
                     <div data-bloqueo class="pv-bloqueo" style="margin-bottom:14px;">
-                        <x-gravityui-circle-info />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                         <span data-bloqueo-txt></span>
                     </div>
 
                     <div data-listo class="pv-listo" style="display:none; margin-bottom:14px;">
-                        <x-gravityui-check />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
                         <span>
                             Todo verificado.
                             @if ($siguientes->isNotEmpty())

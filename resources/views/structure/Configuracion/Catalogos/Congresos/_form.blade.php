@@ -87,7 +87,7 @@
                         @foreach ($archivos as $ruta)
                             <label class="cg-archivo">
                                 <span class="cg-archivo-ico">
-                                    <x-gravityui-file />
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
                                 </span>
                                 <span class="cg-archivo-txt">
                                     <a href="{{ asset('storage/' . $ruta) }}" target="_blank" rel="noopener">{{ basename($ruta) }}</a>
@@ -103,7 +103,7 @@
                 @endif
 
                 <label class="cg-drop" for="archivos" data-drop>
-                    <x-gravityui-arrow-up-from-line />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
                     <span class="cg-drop-t" data-nombre>Elige los archivos o arrástralos aquí</span>
                     <span class="cg-drop-s">Hasta 10 archivos · {{ ini_get('upload_max_filesize') }} cada uno</span>
                 </label>

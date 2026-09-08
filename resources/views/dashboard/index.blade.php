@@ -10,11 +10,11 @@
 
     <div class="content-actions">
         <button type="button" class="btn btn--ghost" data-abrir-agregar @disabled(empty($disponibles))>
-            <x-gravityui-plus width="15" height="15" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>
             Agregar tarjeta
         </button>
         <button type="button" class="btn" data-editar-toggle aria-pressed="false">
-            <x-gravityui-pencil-to-square width="15" height="15" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
             <span data-editar-texto>Editar tablero</span>
         </button>
     </div>
@@ -23,7 +23,7 @@
         <x-ui.card>
             <div class="empty-state">
                 <span class="ico">
-                    <x-gravityui-layout-cells />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
                 </span>
                 <h3>Tu tablero está vacío</h3>
                 <p>Agrega las tarjetas que quieras ver.</p>
@@ -51,7 +51,7 @@
 
                     <button type="button" class="dash-quitar" data-quitar
                             title="Quitar del tablero" aria-label="Quitar {{ $def['titulo'] }}">
-                        <x-gravityui-xmark />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                     </button>
 
                     <span class="dash-medida" data-medida aria-hidden="true">{{ $widget['w'] }}×{{ $widget['h'] }}</span>
@@ -65,7 +65,7 @@
 
                     {{-- Jalar esta esquina cambia ancho y alto a la vez --}}
                     <span class="dash-handle" data-handle title="Arrastra para cambiar el tamaño" aria-hidden="true">
-                        <x-gravityui-chevrons-expand-up-right />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15 15 21M21 9 9 21"/></svg>
                     </span>
                 </section>
             @endforeach
@@ -95,7 +95,7 @@
                     <p>El tamaño y la posición se ajustan luego, sobre el tablero.</p>
                 </div>
                 <button type="button" class="dash-modal-x" data-cerrar aria-label="Cerrar">
-                    <x-gravityui-xmark />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
             </div>
 
@@ -109,7 +109,7 @@
                             <span class="dash-add-desc">{{ $def['descripcion'] }}</span>
                         </span>
                         <span class="dash-add-grupo">{{ $def['grupo'] }}</span>
-                        <x-gravityui-plus />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                     </button>
                 @empty
                     <p class="dw-vacio">Ya tienes todas las tarjetas en el tablero.</p>

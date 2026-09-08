@@ -214,13 +214,13 @@
         .vd-info-grid { grid-template-columns: 1fr; }
     }
 </style>
-@endendpush
+@endpush
 
 @section('content')
     {{-- Header row --}}
     <div class="vd-header-row">
         <a href="{{ route('admin.vehicles.index') }}" class="vd-back">
-            <x-gravityui-arrow-chevron-left />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
             Volver
         </a>
         <div class="vd-title-block">
@@ -235,11 +235,11 @@
         </div>
         <div class="vd-actions">
             <button type="button" class="vd-btn vd-btn-edit" onclick="alert('Edición próximamente')">
-                <x-gravityui-pencil />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Editar Ficha
             </button>
             <button type="button" class="vd-btn vd-btn-danger" onclick="alert('Desactivar próximamente')">
-                <x-gravityui-ban />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
                 Desactivar
             </button>
         </div>
@@ -249,20 +249,16 @@
         {{-- Left Column --}}
         <div>
             {{-- Photo gallery --}}
+            @php($photos = $vehicle->photos ?: [])
             <div class="vd-photo-card">
                 <div class="vd-photo-main" id="vdMainPhoto">
-<<<<<<< Updated upstream
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 17h14M3 17l1.5-5.5A2 2 0 0 1 6.4 10h11.2a2 2 0 0 1 1.9 1.5L21 17M5 17v2M19 17v2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
-                    <div class="vd-photo-zoom" onclick="alert('Lightbox próximamente')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>
-=======
                     @if(count($photos))
                         <img src="{{ asset('storage/'.$photos[0]) }}" alt="Foto del vehículo" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
                     @else
                         <x-gravityui-car />
                     @endif
                     <a class="vd-photo-zoom" href="{{ count($photos) ? asset('storage/'.$photos[0]) : '#' }}" target="_blank" rel="noopener" style="{{ count($photos) ? '' : 'pointer-events:none;opacity:.4;' }}">
-                        <x-gravityui-magnifier-plus />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>
                     </a>
                 </div>
                 @if(count($photos))
@@ -271,69 +267,43 @@
                             <div class="vd-photo-thumb {{ $loop->first ? 'active' : '' }}" onclick="vdSelectThumb(this, '{{ asset('storage/'.$photo) }}')" style="background-image:url('{{ asset('storage/'.$photo) }}');background-size:cover;background-position:center;">
                             </div>
                         @endforeach
->>>>>>> Stashed changes
                     </div>
-                </div>
-                <div class="vd-photo-thumbs">
-                    <div class="vd-photo-thumb active" onclick="vdSelectThumb(this)">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 17h14M3 17l1.5-5.5A2 2 0 0 1 6.4 10h11.2a2 2 0 0 1 1.9 1.5L21 17M5 17v2M19 17v2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
-                        <span class="vd-photo-thumb-label">Frente</span>
-                    </div>
-                    <div class="vd-photo-thumb" onclick="vdSelectThumb(this)">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 17h14M3 17l1.5-5.5A2 2 0 0 1 6.4 10h11.2a2 2 0 0 1 1.9 1.5L21 17M5 17v2M19 17v2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
-                        <span class="vd-photo-thumb-label">Lateral</span>
-                    </div>
-                    <div class="vd-photo-thumb" onclick="vdSelectThumb(this)">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 17h14M3 17l1.5-5.5A2 2 0 0 1 6.4 10h11.2a2 2 0 0 1 1.9 1.5L21 17M5 17v2M19 17v2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
-                        <span class="vd-photo-thumb-label">Trasera</span>
-                    </div>
-                    <div class="vd-photo-thumb" onclick="vdSelectThumb(this)">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M5 17h14M3 17l1.5-5.5A2 2 0 0 1 6.4 10h11.2a2 2 0 0 1 1.9 1.5L21 17M5 17v2M19 17v2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
-                        <span class="vd-photo-thumb-label">Interior</span>
-                    </div>
-                </div>
+                @else
+                    <p style="margin:12px 0 0;color:var(--muted);font-size:13px;">Este vehículo no tiene fotos registradas.</p>
+                @endif
             </div>
 
             {{-- Expediente de Documentos --}}
             <div class="vd-docs-card">
                 <h3 class="vd-docs-title">
-                    <x-gravityui-file />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
                     Expediente de Documentos
                 </h3>
                 @foreach($documents as $doc)
                     <div class="vd-doc-item">
                         <div class="vd-doc-icon">
-                            <x-gravityui-file-text />
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
                         </div>
                         <div class="vd-doc-info">
                             <p class="vd-doc-name">{{ $doc['name'] }}</p>
                             <p class="vd-doc-status">{{ $doc['file'] ? 'Archivo adjunto' : 'Sin archivo adjunto' }}</p>
                         </div>
                         <div class="vd-doc-actions">
-<<<<<<< Updated upstream
-                            <button type="button" class="vd-doc-btn" onclick="alert('Ver documento próximamente')" title="Ver">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </button>
-                            <button type="button" class="vd-doc-btn" onclick="alert('Descargar documento próximamente')" title="Descargar">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            </button>
-=======
                             @if($doc['file'])
                                 <a class="vd-doc-btn" href="{{ asset('storage/'.$doc['file']) }}" target="_blank" rel="noopener" title="Ver">
-                                    <x-gravityui-eye />
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                 </a>
                                 <a class="vd-doc-btn" href="{{ asset('storage/'.$doc['file']) }}" download title="Descargar">
-                                    <x-gravityui-arrow-down-to-line />
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                 </a>
                             @else
                                 <button type="button" class="vd-doc-btn" disabled style="opacity:.4;cursor:not-allowed;" title="Sin archivo">
-                                    <x-gravityui-eye />
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                 </button>
                                 <button type="button" class="vd-doc-btn" disabled style="opacity:.4;cursor:not-allowed;" title="Sin archivo">
-                                    <x-gravityui-arrow-down-to-line />
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                 </button>
                             @endif
->>>>>>> Stashed changes
                         </div>
                     </div>
                 @endforeach
@@ -345,122 +315,64 @@
             {{-- Ficha Técnica --}}
             <div class="vd-info-card">
                 <h3 class="vd-info-title">
-                    <x-gravityui-circle-info />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
                     Ficha Técnica
                 </h3>
                 <div class="vd-info-grid">
                     <div class="vd-info-item">
                         <span class="vd-info-label">
-                            <x-gravityui-credit-card />
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 12h10"/></svg>
                             VIN
                         </span>
                         <span class="vd-info-value">{{ $vehicle->vin ?: 'N/A' }}</span>
                     </div>
                     <div class="vd-info-item">
                         <span class="vd-info-label">
-                            <x-gravityui-calendar />
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                             Año
                         </span>
                         <span class="vd-info-value">{{ $vehicle->year ?: 'N/A' }}</span>
                     </div>
                     <div class="vd-info-item">
                         <span class="vd-info-label">
-                            <x-gravityui-palette />
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
                             Color
                         </span>
                         <span class="vd-info-value">{{ $vehicle->color ?: 'N/A' }}</span>
                     </div>
                     <div class="vd-info-item">
                         <span class="vd-info-label">
-<<<<<<< Updated upstream
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 7H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1M9 7V4M14 7V4M5 7V4"/></svg>
-                            Tipo de Motor
-=======
-                            <x-gravityui-shield />
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                             Número de Póliza
->>>>>>> Stashed changes
                         </span>
-                        <span class="vd-info-value">{{ $vehicle->engine_type ?: 'N/A' }}</span>
-                    </div>
-                    <div class="vd-info-item">
-                        <span class="vd-info-label">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-                            Capacidad de Carga
-                        </span>
-                        <span class="vd-info-value">{{ $vehicle->load_capacity ? number_format($vehicle->load_capacity, 2) . ' kg' : 'N/A' }}</span>
-                    </div>
-                    <div class="vd-info-item">
-                        <span class="vd-info-label">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
-                            Rendimiento
-                        </span>
-                        <span class="vd-info-value">{{ $vehicle->fuel_efficiency ? number_format($vehicle->fuel_efficiency, 2) . ' Km/L' : 'N/A' }}</span>
-                    </div>
-                    <div class="vd-info-item">
-                        <span class="vd-info-label">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h12M15 8h2a2 2 0 0 1 2 2v8a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.5L19 5"/></svg>
-                            Combustible
-                        </span>
-                        <span class="vd-info-value">{{ $vehicle->fuel_type ?: 'N/A' }}</span>
-                    </div>
-                    <div class="vd-info-item">
-                        <span class="vd-info-label">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                            Kilometraje
-                        </span>
-                        <span class="vd-info-value">{{ number_format($vehicle->mileage ?? 0) . ' km' }}</span>
+                        <span class="vd-info-value">{{ $vehicle->insurance_policy_number ?: 'N/A' }}</span>
                     </div>
                 </div>
-            </div>
-
-            {{-- Mantenimiento y Control --}}
-            <div class="vd-info-card">
-                <h3 class="vd-info-title">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                    Mantenimiento y Control
-                </h3>
-                @php
-                    $maintItems = [
-                        ['label' => 'Último Mantenimiento', 'date' => $vehicle->last_maintenance, 'dot' => 'green', 'badge' => 'green', 'badgeText' => 'Completado'],
-                        ['label' => 'Próximo Mantenimiento', 'date' => $vehicle->next_maintenance, 'dot' => 'green', 'badge' => 'green', 'badgeText' => 'Al día'],
-                        ['label' => 'Última Verificación', 'date' => $vehicle->last_verification, 'dot' => 'green', 'badge' => 'green', 'badgeText' => 'Completado'],
-                        ['label' => 'Próxima Verificación', 'date' => $vehicle->next_verification, 'dot' => 'yellow', 'badge' => 'yellow', 'badgeText' => 'Próxima'],
-                        ['label' => 'Fecha de Adquisición', 'date' => $vehicle->acquisition_date, 'dot' => 'green', 'badge' => 'green', 'badgeText' => 'Registrada'],
-                    ];
-
-                    // Adjust badge colors based on date proximity
-                    foreach ($maintItems as &$item) {
-                        if ($item['date'] && in_array($item['label'], ['Próximo Mantenimiento', 'Próxima Verificación'])) {
-                            $daysUntil = now()->diffInDays($item['date'], false);
-                            if ($daysUntil < 0) {
-                                $item['dot'] = 'red'; $item['badge'] = 'red'; $item['badgeText'] = 'Vencido';
-                            } elseif ($daysUntil <= 30) {
-                                $item['dot'] = 'yellow'; $item['badge'] = 'yellow'; $item['badgeText'] = 'Próximo';
-                            } else {
-                                $item['dot'] = 'green'; $item['badge'] = 'green'; $item['badgeText'] = 'Al día';
-                            }
-                        }
-                    }
-                    unset($item);
-                @endphp
-                @foreach($maintItems as $item)
-                    <div class="vd-maint-item">
-                        <span class="vd-maint-dot {{ $item['dot'] }}"></span>
-                        <div class="vd-maint-info">
-                            <p class="vd-maint-label">{{ $item['label'] }}</p>
-                            <p class="vd-maint-date">{{ $item['date']?->format('d/M/Y') ?? 'No registrado' }}</p>
-                        </div>
-                        <span class="vd-maint-badge {{ $item['badge'] }}">{{ $item['badgeText'] }}</span>
-                    </div>
-                @endforeach
             </div>
         </div>
     </div>
 
     <script>
-        function vdSelectThumb(el) {
+        function vdSelectThumb(el, url) {
             document.querySelectorAll('.vd-photo-thumb').forEach(t => t.classList.remove('active'));
             el.classList.add('active');
+
+            var main = document.getElementById('vdMainPhoto');
+            var img = main.querySelector('img');
+            if (!img) {
+                img = document.createElement('img');
+                img.alt = 'Foto del vehículo';
+                img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:12px;';
+                main.insertBefore(img, main.firstChild);
+            }
+            img.src = url;
+
+            var zoom = main.querySelector('.vd-photo-zoom');
+            if (zoom) {
+                zoom.href = url;
+                zoom.style.pointerEvents = '';
+                zoom.style.opacity = '';
+            }
         }
     </script>
 @endsection

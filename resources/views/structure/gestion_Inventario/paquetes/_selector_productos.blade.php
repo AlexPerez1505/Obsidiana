@@ -20,7 +20,7 @@
     @endif
 
     <div style="position:relative; margin-bottom:14px;">
-        <x-gravityui-magnifier width="16" height="16" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;" />
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input type="text" id="paquete-producto-search" placeholder="Buscar producto por tipo, marca o modelo..." autocomplete="off"
                style="width:100%; padding:11px 12px 11px 38px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
     </div>

@@ -85,12 +85,31 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * ¿Es administrador?
+     * ¿Es administrador? Puede todo, sin revisar permiso por permiso.
+     *
+     * Cuentan dos cosas: la bandera `is_admin` de la propia cuenta y tener
+     * asignado el rol `admin`. Lo segundo hace falta porque la pantalla de
+     * roles promete que ese rol "puede todo": sin esto, asignárselo a alguien
+     * no le daba nada (el rol no lleva permisos marcados) y quedaba con menos
+     * de lo que decía la pantalla.
      */
     public function isAdmin(): bool
     {
-        return (bool) $this->is_admin;
+        if ($this->is_admin) {
+            return true;
+        }
+
+        // Memorizado: isAdmin() se consulta en cada revisión de permiso.
+        return $this->memoEsAdmin ??= $this->roles()
+            ->where('name', self::ROL_ADMIN)
+            ->where('is_active', true)
+            ->exists();
     }
+
+    /** El rol que no se configura porque siempre puede todo. */
+    public const ROL_ADMIN = 'admin';
+
+    private ?bool $memoEsAdmin = null;
 
     public function isPending(): bool
     {
@@ -279,7 +298,13 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function permissions(): BelongsToMany
     {
-        return $this->belongsToMany(Permission::class)->withPivot('level');
+        /*
+        | Sin withPivot('level'): esa columna nunca se creó en permission_user,
+        | así que pedirla reventaba la consulta en cuanto algo cargaba la
+        | relación completa. Un permiso directo se tiene o no se tiene; los
+        | matices los da el rol (ver CatalogoPermisos).
+        */
+        return $this->belongsToMany(Permission::class);
     }
 
     /**
@@ -377,8 +402,13 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Determina si el usuario tiene un permiso concreto.
-     * Los administradores siempre lo tienen.
+     * ¿El usuario puede hacer esto?
+     *
+     * Un permiso puede llegarle por dos caminos: por el rol que tiene
+     * (lo normal) o concedido directo a él (la excepción, para casos
+     * puntuales sin inventar un rol nuevo). Basta con uno.
+     *
+     * El administrador siempre puede todo.
      */
     public function hasPermission(string $name): bool
     {
@@ -386,6 +416,35 @@ class User extends Authenticatable implements MustVerifyEmail
             return true;
         }
 
-        return $this->permissions()->where('name', $name)->exists();
+        return $this->permisosEfectivos()->contains($name);
+    }
+
+    /**
+     * Todos los permisos del usuario, vengan de donde vengan.
+     *
+     * Se resuelve una vez por petición: en una pantalla se pregunta por
+     * varios permisos y no tiene caso ir a la base cada vez.
+     */
+    public function permisosEfectivos(): \Illuminate\Support\Collection
+    {
+        return $this->memoPermisos ??= $this->permissions()->pluck('name')
+            ->merge(
+                // Un rol desactivado deja de otorgar: es la forma de quitarle
+                // el acceso a todo un grupo sin borrar el rol ni tocar a nadie.
+                $this->roles()->where('is_active', true)->with('permissions')->get()
+                    ->flatMap(fn (Role $r) => $r->permissions->pluck('name'))
+            )
+            ->unique()
+            ->values();
+    }
+
+    /** Cache por petición de permisosEfectivos(). */
+    private ?\Illuminate\Support\Collection $memoPermisos = null;
+
+    /** Se olvida lo memorizado cuando cambian los permisos del usuario. */
+    public function olvidarPermisos(): void
+    {
+        $this->memoPermisos = null;
+        $this->memoEsAdmin = null;
     }
 }

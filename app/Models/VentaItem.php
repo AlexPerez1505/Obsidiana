@@ -36,6 +36,11 @@ class VentaItem extends Model
         return $this->belongsTo(Producto::class);
     }
 
+    public function paquete(): BelongsTo
+    {
+        return $this->belongsTo(Paquete::class);
+    }
+
     public function seriales(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(ProductoSerial::class);

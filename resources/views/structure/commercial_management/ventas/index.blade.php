@@ -7,16 +7,16 @@
     <div class="content-actions">
         <x-ui.view-switch key="ventas" />
         <a href="{{ route('commercial.ventas.create') }}" class="erp-btn">
-            <x-gravityui-plus />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nueva venta
         </a>
     </div>
 
     <div class="erp-stats">
-        <div class="erp-stat"><span class="ic blue"><x-gravityui-shopping-cart width="22" height="22" /></span><div><div class="n">{{ $total }}</div><div class="l">Ventas</div></div></div>
-        <div class="erp-stat"><span class="ic green"><x-gravityui-check width="22" height="22" /></span><div><div class="n">{{ $confirmadas }}</div><div class="l">Confirmadas</div></div></div>
-        <div class="erp-stat"><span class="ic amber"><x-gravityui-file-text width="22" height="22" /></span><div><div class="n">{{ $facturadas }}</div><div class="l">Facturadas</div></div></div>
-        <div class="erp-stat"><span class="ic slate"><x-gravityui-circle-dollar width="22" height="22" /></span><div><div class="n" style="font-size:19px;">${{ number_format($montoTotal, 2) }}</div><div class="l">Monto total</div></div></div>
+        <div class="erp-stat"><span class="ic blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span><div><div class="n">{{ $total }}</div><div class="l">Ventas</div></div></div>
+        <div class="erp-stat"><span class="ic green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polyline points="20 6 9 17 4 12"/></svg></span><div><div class="n">{{ $confirmadas }}</div><div class="l">Confirmadas</div></div></div>
+        <div class="erp-stat"><span class="ic amber"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span><div><div class="n">{{ $facturadas }}</div><div class="l">Facturadas</div></div></div>
+        <div class="erp-stat"><span class="ic slate"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><div><div class="n" style="font-size:19px;">${{ number_format($montoTotal, 2) }}</div><div class="l">Monto total</div></div></div>
     </div>
 
     <div class="erp-card" data-view-list>
@@ -43,22 +43,22 @@
                             <td style="text-align:right;">
                                 <x-erp.menu>
                                     <a class="erp-menu-item" href="{{ route('commercial.ventas.show', $v) }}">
-                                        <x-gravityui-eye />Ver detalle
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Ver detalle
                                     </a>
                                     <a class="erp-menu-item" href="{{ route('commercial.ventas.edit', $v) }}">
-                                        <x-gravityui-pencil />Editar
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar
                                     </a>
                                     <a class="erp-menu-item" href="{{ route('commercial.ventas.pdf', $v) }}" target="_blank">
-                                        <x-gravityui-file-text />Descargar PDF
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Descargar PDF
                                     </a>
                                     <a class="erp-menu-item" href="{{ route('commercial.facturas.create', ['venta' => $v->id]) }}">
-                                        <x-gravityui-file-dollar />Generar borrador de factura
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Generar borrador de factura
                                     </a>
                                     <div class="erp-menu-sep"></div>
                                     <form method="POST" action="{{ route('commercial.ventas.destroy', $v) }}" onsubmit="return confirm('¿Eliminar la venta {{ $v->folio }}?');">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="erp-menu-item danger">
-                                            <x-gravityui-trash-bin />Eliminar
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Eliminar
                                         </button>
                                     </form>
                                 </x-erp.menu>
@@ -69,7 +69,7 @@
                             <td colspan="7">
                                 <div class="empty-state">
                                     <span class="ico">
-                                        <x-gravityui-shopping-cart />
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
                                     </span>
                                     <h3>Aún no hay ventas</h3>
                                     <p>Registra la primera y aparecerá en esta lista.</p>
@@ -127,7 +127,7 @@
             <div class="erp-card">
                 <div class="empty-state">
                     <span class="ico">
-                        <x-gravityui-shopping-cart />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
                     </span>
                     <h3>Aún no hay ventas</h3>
                     <p>Registra la primera y aparecerá aquí.</p>

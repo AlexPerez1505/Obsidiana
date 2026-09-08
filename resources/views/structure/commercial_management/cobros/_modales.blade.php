@@ -9,7 +9,7 @@
         <div class="cb-modal-head">
             <h3>Registrar pago</h3>
             <button type="button" class="cb-x" data-cerrar aria-label="Cerrar">
-                <x-gravityui-xmark />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
         </div>
 
@@ -58,7 +58,7 @@
 
             <label for="cbEvidencias" class="cb-mt">Evidencia del pago</label>
             <label class="cb-drop" for="cbEvidencias" data-drop>
-                <x-gravityui-arrow-up-from-line />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
                 <span data-nombre>Comprobante, captura o ficha de depósito</span>
                 <small>Imagen o PDF · hasta 5 archivos</small>
             </label>
@@ -81,7 +81,7 @@
         <div class="cb-modal-head">
             <h3>Recorrer fechas</h3>
             <button type="button" class="cb-x" data-cerrar aria-label="Cerrar">
-                <x-gravityui-xmark />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
         </div>
 
@@ -111,7 +111,7 @@
         <div class="cb-modal-head">
             <h3>Agregar parcialidad</h3>
             <button type="button" class="cb-x" data-cerrar aria-label="Cerrar">
-                <x-gravityui-xmark />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
         </div>
 
@@ -146,7 +146,7 @@
         <div class="cb-modal-head">
             <h3>Editar <span data-titulo>parcialidad</span></h3>
             <button type="button" class="cb-x" data-cerrar aria-label="Cerrar">
-                <x-gravityui-xmark />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
         </div>
 

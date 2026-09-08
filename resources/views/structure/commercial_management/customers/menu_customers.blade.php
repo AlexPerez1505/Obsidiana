@@ -19,7 +19,7 @@
 
     <div class="content-actions">
         <a href="{{ route('commercial.clientes.create') }}" class="btn">
-            <x-gravityui-plus width="15" height="15" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Registrar cliente
         </a>
     </div>
@@ -28,7 +28,7 @@
     <div class="cl-stats">
         <div class="card card--accent stat">
             <span class="stat-ico blue">
-                <x-gravityui-persons />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </span>
             <div>
                 <div class="stat-num">{{ $total }}</div>
@@ -38,7 +38,7 @@
 
         <div class="card card--accent is-green stat">
             <span class="stat-ico green">
-                <x-gravityui-person-plus />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
             </span>
             <div>
                 <div class="stat-num">{{ $newCustomers }}</div>
@@ -48,7 +48,7 @@
 
         <div class="card card--accent is-amber stat">
             <span class="stat-ico orange">
-                <x-gravityui-circle-info />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </span>
             <div>
                 <div class="stat-num">{{ $inactiveCustomers }}</div>
@@ -60,14 +60,14 @@
     {{-- ===================== Barra de busqueda y filtros ===================== --}}
     <div class="f-toolbar">
         <div class="f-search">
-            <x-gravityui-magnifier />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="fBuscar" placeholder="Buscar por nombre, correo, telefono o asesor" autocomplete="off">
         </div>
 
         {{-- Panel principal de filtros --}}
         <div class="flt" data-flt>
             <button type="button" class="flt-btn" data-flt-toggle aria-expanded="false">
-                <x-gravityui-funnel />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
                 Filtros
                 <span class="flt-count" data-flt-count hidden>0</span>
             </button>
@@ -128,7 +128,7 @@
         @if ($congresos->isNotEmpty())
             <div class="flt" data-flt>
                 <button type="button" class="flt-btn" data-flt-toggle aria-expanded="false">
-                    <x-gravityui-tag />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                     Congresos
                     <span class="flt-count" data-flt-count hidden>0</span>
                 </button>
@@ -150,15 +150,15 @@
         {{-- Accesos rapidos: activos / inactivos --}}
         <div class="flt-toggles" role="group" aria-label="Estado del cliente">
             <button type="button" class="flt-tgl is-on" data-f="estado" data-valor="1" title="Ver clientes activos" aria-pressed="true">
-                <x-gravityui-folder />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
             </button>
             <button type="button" class="flt-tgl" data-f="estado" data-valor="0" title="Ver clientes inactivos" aria-pressed="false">
-                <x-gravityui-archive />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
             </button>
         </div>
 
         <button type="button" class="flt-btn flt-btn--icon" id="fLimpiar" title="Limpiar todos los filtros" aria-label="Limpiar filtros">
-            <x-gravityui-funnel-xmark />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 3H2l8 9.46V19l4 2v-8.54"/><line x1="16" y1="5" x2="22" y2="11"/><line x1="22" y1="5" x2="16" y2="11"/></svg>
         </button>
 
         <x-ui.view-switch key="clientes" />
@@ -244,15 +244,15 @@
                                 <button type="button" class="row-menu-btn" data-row-menu-toggle
                                         aria-haspopup="true" aria-expanded="false"
                                         aria-label="Acciones de {{ $fila['nombre'] }}">
-                                    <x-gravityui-ellipsis-vertical />
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
                                 </button>
                                 <div class="row-menu-pop" data-row-menu-pop role="menu" hidden>
                                     <a href="{{ route('commercial.clientes.show', $fila['modelo']) }}" role="menuitem">
-                                        <x-gravityui-eye />
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                                         Ver detalle
                                     </a>
                                     <a href="{{ route('commercial.clientes.edit', $fila['modelo']) }}" role="menuitem">
-                                        <x-gravityui-pencil />
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                                         Editar
                                     </a>
                                 </div>
@@ -264,7 +264,7 @@
                         <td colspan="6">
                             <div class="empty-state">
                                 <span class="ico">
-                                    <x-gravityui-persons />
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
                                 </span>
                                 <h3>Aún no hay clientes</h3>
                                 <p>Registra el primero y aparecerá en esta lista.</p>
@@ -304,15 +304,15 @@
                         <button type="button" class="row-menu-btn" data-row-menu-toggle
                                 aria-haspopup="true" aria-expanded="false"
                                 aria-label="Acciones de {{ $fila['nombre'] }}">
-                            <x-gravityui-ellipsis-vertical />
+                            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
                         </button>
                         <div class="row-menu-pop" data-row-menu-pop role="menu" hidden>
                             <a href="{{ route('commercial.clientes.show', $fila['modelo']) }}" role="menuitem">
-                                <x-gravityui-eye />
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                                 Ver detalle
                             </a>
                             <a href="{{ route('commercial.clientes.edit', $fila['modelo']) }}" role="menuitem">
-                                <x-gravityui-pencil />
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                                 Editar
                             </a>
                         </div>
@@ -323,7 +323,7 @@
             <div class="card">
                 <div class="empty-state">
                     <span class="ico">
-                        <x-gravityui-persons />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
                     </span>
                     <h3>Aún no hay clientes</h3>
                     <p>Registra el primero y aparecerá aquí.</p>
@@ -337,7 +337,7 @@
     <div class="card" id="fVacio" hidden>
         <div class="empty-state">
             <span class="ico">
-                <x-gravityui-magnifier />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </span>
             <h3>Ningún cliente coincide</h3>
             <p>Prueba a quitar algún filtro o a cambiar la búsqueda.</p>

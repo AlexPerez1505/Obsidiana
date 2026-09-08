@@ -35,7 +35,6 @@ return [
         ],
     ],
 
-<<<<<<< Updated upstream
     'whatsapp' => [
         'token' => env('WHATSAPP_TOKEN'),
         'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
@@ -43,27 +42,6 @@ return [
         'api_version' => env('WHATSAPP_API_VERSION', 'v20.0'),
         'default_template' => env('WHATSAPP_TEMPLATE_PROMO', 'promo_generica'),
         'template_language' => env('WHATSAPP_TEMPLATE_LANGUAGE', 'es_MX'),
-=======
-    /*
-    |--------------------------------------------------------------------------
-    | WhatsApp (promociones)
-    |--------------------------------------------------------------------------
-    |
-    | "driver" decide qué implementación de App\Contracts\WhatsAppSender se
-    | usa (ver App\Providers\WhatsAppServiceProvider). Por ahora solo existe
-    | "log" (no manda nada de verdad, solo lo registra). Cuando se conecte
-    | una cuenta real, se agrega su driver aquí y sus credenciales abajo.
-    */
-    'whatsapp' => [
-        'driver' => env('WHATSAPP_DRIVER', 'log'),
-
-        // Credenciales para cuando se conecte una cuenta real (Meta Cloud
-        // API, Twilio, 360dialog...). Se dejan aquí ya listas para no tener
-        // que tocar el flujo de promociones el día que se configuren.
-        'token' => env('WHATSAPP_TOKEN'),
-        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
-        'plantilla_confirmacion' => env('WHATSAPP_PLANTILLA_CONFIRMACION'),
->>>>>>> Stashed changes
     ],
 
 ];

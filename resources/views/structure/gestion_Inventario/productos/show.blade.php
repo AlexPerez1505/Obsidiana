@@ -62,7 +62,7 @@
                       :back="route('inventory.productos.index')">
         <a href="{{ route('inventory.movimientos.create') }}" class="btn btn--ghost">Registrar entrada</a>
         <a href="{{ route('inventory.productos.edit', $producto) }}" class="btn-icono" title="Editar producto" aria-label="Editar producto">
-            <x-gravityui-pencil />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
         </a>
     </x-ui.page-header>
 
@@ -73,7 +73,7 @@
                 <img src="{{ asset('storage/'.$producto->imagen_path) }}" alt="{{ $nombre }}">
             @else
                 <span class="sinfoto">
-                    <x-gravityui-box width="26" height="26" />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="26" height="26"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
                 </span>
             @endif
 

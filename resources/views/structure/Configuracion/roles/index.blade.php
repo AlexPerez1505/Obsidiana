@@ -43,7 +43,7 @@
 
     <div class="content-actions">
         <button type="button" class="btn" data-abrir-rol>
-            <x-gravityui-plus width="15" height="15" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nuevo rol
         </button>
     </div>
@@ -124,7 +124,7 @@
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn-icono" title="Eliminar rol" aria-label="Eliminar rol">
-                                <x-gravityui-trash-bin />
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                             </button>
                         </form>
                     @endunless

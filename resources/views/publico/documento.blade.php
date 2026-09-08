@@ -116,7 +116,7 @@
 
     <div class="pw-btns">
         <a href="{{ $rutaPdf }}" class="pw-btn" target="_blank" rel="noopener">
-            <x-gravityui-arrow-down-to-line />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
             Descargar el PDF
         </a>
         <a href="https://wa.me/?text={{ urlencode($tipo . ' ' . $doc->folio . ' — ' . url()->current()) }}"
@@ -168,7 +168,7 @@
                                     @if ($it->imagen)
                                         <img src="{{ $it->imagen }}" alt="{{ $it->nombre }}" loading="lazy">
                                     @else
-                                        <x-gravityui-box />
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
                                     @endif
                                 </span>
                             </td>

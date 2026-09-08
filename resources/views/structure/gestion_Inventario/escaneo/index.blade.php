@@ -113,7 +113,7 @@
         <div style="display:flex; flex-direction:column; gap:18px;">
             <x-ui.card>
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <x-gravityui-circle-info width="26" height="26" style="color: var(--green);" />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" width="26" height="26"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     <x-ui.section-title style="margin:0;">Cómo funciona</x-ui.section-title>
                 </div>
                 <p class="muted" style="margin:0;">

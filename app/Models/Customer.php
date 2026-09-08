@@ -22,10 +22,6 @@ class Customer extends Model
         'como_conocio',
         'categoria_id',
         'recibe_promocion',
-        'promocion_autorizada_en',
-        'promocion_autorizada_por',
-        'promocion_confirmada_en',
-        'promocion_revocada_en',
         'activo',
         'asesor_id',
     ];
@@ -33,9 +29,6 @@ class Customer extends Model
     protected $casts = [
         'recibe_promocion' => 'boolean',
         'activo' => 'boolean',
-        'promocion_autorizada_en' => 'datetime',
-        'promocion_confirmada_en' => 'datetime',
-        'promocion_revocada_en' => 'datetime',
     ];
 
     public function asesor(): BelongsTo
@@ -69,6 +62,26 @@ class Customer extends Model
         return $this->hasMany(Cotizacion::class, 'customer_id');
     }
 
+    public function ventas(): HasMany
+    {
+        return $this->hasMany(Venta::class, 'customer_id');
+    }
+
+    /**
+     * Lo que este cliente todavía debe de sus ventas.
+     *
+     * Se apoya en el saldo de cada venta en vez de recalcular la cuenta
+     * aquí: esa lógica ya considera el valor a cuenta y los cobros
+     * registrados, y duplicarla en dos lugares es como terminan
+     * discrepando.
+     */
+    public function saldoPendiente(): float
+    {
+        return (float) $this->ventas
+            ->where('estado', '!=', 'cancelada')
+            ->sum(fn (Venta $v) => $v->saldo());
+    }
+
     public function planPagos(): HasMany
     {
         return $this->hasMany(PlanPago::class, 'cliente_id');
@@ -77,60 +90,5 @@ class Customer extends Model
     public function pagos(): HasMany
     {
         return $this->hasMany(Pago::class, 'cliente_id');
-    }
-
-    public function promocionAutorizadaPor(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'promocion_autorizada_por');
-    }
-
-    public function promoConfirmaciones(): HasMany
-    {
-        return $this->hasMany(PromoConfirmacion::class, 'cliente_id');
-    }
-
-    public function campanaDestinatarios(): HasMany
-    {
-        return $this->hasMany(CampanaDestinatario::class, 'cliente_id');
-    }
-
-    /**
-     * El asesor preguntó y el cliente dijo que sí, pero todavía no lo
-     * confirma él mismo. Mientras esté aquí, no se le puede mandar
-     * ninguna campaña: solo el mensaje de confirmación.
-     */
-    public function promocionPendienteDeConfirmar(): bool
-    {
-        return $this->promocion_autorizada_en !== null
-            && $this->promocion_confirmada_en === null
-            && $this->promocion_revocada_en === null;
-    }
-
-    /**
-     * La única condición real para poder mandarle una campaña: el
-     * cliente lo confirmó él mismo y no lo ha revocado después.
-     */
-    public function puedeRecibirPromociones(): bool
-    {
-        return $this->promocion_confirmada_en !== null
-            && $this->promocion_revocada_en === null;
-    }
-
-    /** Para mostrar en un vistazo en qué va el consentimiento de este cliente. */
-    public function estadoPromocion(): string
-    {
-        if ($this->promocion_revocada_en) {
-            return 'revocado';
-        }
-
-        if ($this->promocion_confirmada_en) {
-            return 'confirmado';
-        }
-
-        if ($this->promocion_autorizada_en) {
-            return 'pendiente_confirmacion';
-        }
-
-        return 'sin_autorizar';
     }
 }

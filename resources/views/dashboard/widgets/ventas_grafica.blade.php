@@ -1,7 +1,7 @@
 <div class="dw">
     <div class="dw-head">
         <span class="dw-ico verde">
-            <x-gravityui-chart-column />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7"/><rect x="12" y="6" width="3" height="11"/><rect x="17" y="13" width="3" height="4"/></svg>
         </span>
         <h3>{{ $titulo }}</h3>
     </div>

@@ -2,16 +2,9 @@
 
 namespace App\Providers;
 
-<<<<<<< Updated upstream
-=======
-use App\Contracts\WhatsAppSender;
 use App\Models\User;
-use App\Services\WhatsApp\LogWhatsAppSender;
 use App\Support\CatalogoPermisos;
-use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\RateLimiter;
->>>>>>> Stashed changes
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,45 +14,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->registrarWhatsApp();
+        //
     }
 
-    /**
-     * Qué implementación de WhatsAppSender se usa según
-     * config('services.whatsapp.driver'). Hoy solo existe "log"; cuando se
-     * conecte una cuenta real se agrega su driver aquí (ej. 'meta' =>
-     * MetaWhatsAppSender::class) sin tocar nada del flujo de promociones.
-     */
-    private function registrarWhatsApp(): void
-    {
-        $this->app->bind(WhatsAppSender::class, function () {
-            return match (config('services.whatsapp.driver', 'log')) {
-                default => new LogWhatsAppSender(),
-            };
-        });
-    }
-
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-<<<<<<< Updated upstream
-        //
-=======
         $this->registrarPermisos();
-        $this->registrarLimitesDeEnvio();
-    }
-
-    /**
-     * Ritmo de envío de WhatsApp: 1 mensaje por segundo. Lo respetan tanto
-     * las confirmaciones como las campañas (EnviarConfirmacionPromocionJob
-     * y EnviarMensajeCampanaJob), para no rebasar el límite de la cuenta
-     * cuando se conecte una API real.
-     */
-    private function registrarLimitesDeEnvio(): void
-    {
-        RateLimiter::for('whatsapp', fn () => Limit::perSecond(1));
     }
 
     /**
@@ -85,6 +45,5 @@ class AppServiceProvider extends ServiceProvider
         foreach (CatalogoPermisos::llaves() as $permiso) {
             Gate::define($permiso, fn (User $user) => $user->hasPermission($permiso));
         }
->>>>>>> Stashed changes
     }
 }

@@ -15,10 +15,10 @@
 
 <div class="view-switch" role="group" aria-label="Cambiar vista" data-view-switch="{{ $key }}">
     <button type="button" data-view="lista" class="active" title="Ver como lista" aria-label="Ver como lista">
-        <x-gravityui-list-ul />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
     </button>
     <button type="button" data-view="tarjetas" title="Ver como tarjetas" aria-label="Ver como tarjetas">
-        <x-gravityui-layout-cells />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
     </button>
 </div>
 

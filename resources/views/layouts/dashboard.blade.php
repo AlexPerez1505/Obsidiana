@@ -339,12 +339,31 @@
         label { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }
         /* Controles de formulario: mismo aspecto sin repetir estilos en cada vista. */
         input[type=text], input[type=email], input[type=password], input[type=tel],
-        input[type=number], input[type=date], input[type=search], select, textarea {
+        input[type=number], input[type=date], input[type=search], input[type=file], select, textarea {
             width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:7px; font-size:14px;
             font-family:inherit; outline:none; background:var(--surface); color:var(--text);
             transition:border-color .15s ease; }
         select { cursor:pointer; }
         textarea { resize:vertical; }
+        /* El selector de archivo traia su propio estilo pegado en cada vista;
+           ahora se ve igual que los demas controles del sistema. */
+        input[type=file] { cursor:pointer; }
+        input[type=file]::file-selector-button {
+            margin:-3px 10px -3px -4px; padding:6px 11px; border:1px solid var(--border);
+            border-radius:6px; background:var(--surface-2); color:var(--text);
+            font-family:inherit; font-size:13px; cursor:pointer; }
+        input[type=file]::file-selector-button:hover { border-color:var(--muted); }
+
+        /* Campo del componente x-ui.form-group: etiqueta, control y error
+           en un mismo bloque, para que no se separen dentro de una rejilla. */
+        .form-group { min-width:0; }
+        /* Nota corta debajo de un control. */
+        .campo-nota { color:var(--muted); font-size:13px; line-height:1.5; }
+        small.campo-nota { display:block; margin-top:6px; }
+        /* Casilla con su texto, alineadas y ambas clicables. */
+        .ui-check { display:flex; align-items:center; gap:9px; margin:4px 0 16px;
+                    font-size:14px; font-weight:500; cursor:pointer; }
+        .ui-check input[type=checkbox] { width:17px; height:17px; margin:0; flex:0 0 17px; cursor:pointer; }
         input:hover, select:hover, textarea:hover { border-color:var(--muted); }
         input:focus, select:focus, textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft); }
         input::placeholder, textarea::placeholder { color:var(--muted); }
@@ -578,7 +597,7 @@
                 {{-- Icono del logo (public/images/logo-icon.png). Si no existe, usa el ícono por defecto. --}}
                 <img src="{{ asset('images/logo-icon.png') }}" alt="{{ config('app.name') }}"
                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <x-gravityui-box style="display:none" width="20" height="20" />
+                <svg style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/></svg>
             </div>
             <div class="brand-text">
                 <div class="brand-name">{{ config('app.name') }}</div>
@@ -587,156 +606,140 @@
         </div>
 
         <button class="collapse-btn" id="collapse-btn" type="button" aria-label="Contraer menú" title="Contraer menú">
-            <x-gravityui-chevron-left />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
 
         <nav class="nav">
             <a class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}" data-tip="Dashboard">
-                <x-gravityui-layout-cells-large />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
                 <span class="nav-label">Dashboard</span>
             </a>
             <div class="nav-section">Operación</div>
             <div class="nav-group {{ request()->routeIs('commercial.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Comercial">
-                    <x-gravityui-persons />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 5a3 3 0 0 1 0 6"/><path d="M20 20c0-2.5-1.3-4.2-3.5-5"/></svg>
                     <span class="nav-label">Gestión Comercial</span>
-                    <x-gravityui-chevron-down class="nav-chev" width="16" height="16" />
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.clientes.index') ? 'active' : '' }}" href="{{ route('commercial.clientes.index') }}" data-tip="Clientes">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Clientes</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.cotizaciones.*') ? 'active' : '' }}" href="{{ route('commercial.cotizaciones.index') }}" data-tip="Cotizaciones">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cotizaciones</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.ventas.*') ? 'active' : '' }}" href="{{ route('commercial.ventas.index') }}" data-tip="Ventas">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Ventas</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.cobranza.*') ? 'active' : '' }}" href="{{ route('commercial.cobranza.index') }}" data-tip="Cobranza">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cobranza</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.facturas.*') ? 'active' : '' }}" href="{{ route('commercial.facturas.index') }}" data-tip="Facturación">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Facturación</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.promociones.*') ? 'active' : '' }}" href="{{ route('commercial.promociones.index') }}" data-tip="Promociones">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                    <a class="nav-item nav-sub" href="#" data-tip="Promociones">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Promociones</span>
                     </a>
                 </div>
             </div>
-            <div class="nav-group {{ request()->routeIs('inventory.*') ? 'open' : '' }}">
+            <div class="nav-group {{ request()->routeIs('inventory.*') || request()->routeIs('configuracion.catalogos.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Inventario">
-                    <x-gravityui-box />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                     <span class="nav-label">Gestión de Inventario</span>
-                    <x-gravityui-chevron-down class="nav-chev" width="16" height="16" />
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.movimientos.*') ? 'active' : '' }}" href="{{ route('inventory.movimientos.index') }}" data-tip="Entrada / Salida">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Entrada / Salida</span>
                     </a>
-<<<<<<< Updated upstream
-=======
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.procesos.*') ? 'active' : '' }}" href="{{ route('inventory.procesos.index') }}" data-tip="Procesos">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Procesos</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.escaneo.*') ? 'active' : '' }}" href="{{ route('inventory.escaneo.index') }}" data-tip="Escanear">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Escanear</span>
                     </a>
->>>>>>> Stashed changes
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.equipos.*') ? 'active' : '' }}" href="{{ route('inventory.equipos.index') }}" data-tip="Equipos">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Equipos</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.productos.*') ? 'active' : '' }}" href="{{ route('inventory.productos.index') }}" data-tip="Productos">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Productos</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.fichas.*') ? 'active' : '' }}" href="{{ route('inventory.fichas.index') }}" data-tip="Fichas técnicas">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Fichas técnicas</span>
                     </a>
                     <a class="nav-item nav-sub" href="#" data-tip="Stock">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Stock</span>
                     </a>
-<<<<<<< Updated upstream
-=======
                     <a class="nav-item nav-sub {{ request()->routeIs('configuracion.catalogos.*') ? 'active' : '' }}" href="{{ route('configuracion.catalogos.index') }}" data-tip="Catálogo">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Catálogo</span>
                     </a>
                 </div>
             </div>
             <div class="nav-group {{ request()->routeIs('gestion.servicios.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Servicios">
-                    <x-gravityui-wrench />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
                     <span class="nav-label">Gestión de Servicios</span>
-                    <x-gravityui-chevron-down class="nav-chev" width="16" height="16" />
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.historial') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial') }}" data-tip="Historial de servicios">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Historial de servicios</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.historial.nueva_orden') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial.nueva_orden') }}" data-tip="Nueva orden de servicio">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Nueva orden de servicio</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.historial.invite') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial.invite') }}" data-tip="Invitar técnico">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Invitar técnico</span>
                     </a>
->>>>>>> Stashed changes
                 </div>
             </div>
-            <a class="nav-item" href="#" data-tip="Gestión de Servicios">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                <span class="nav-label">Gestión de Servicios</span>
-            </a>
             <div class="nav-section">Administración</div>
-<<<<<<< Updated upstream
-            <a class="nav-item" href="#" data-tip="Gestión Administrativa">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                <span class="nav-label">Gestión Administrativa</span>
-            </a>
-=======
             <div class="nav-group {{ request()->routeIs('admin.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Administrativa">
-                    <x-gravityui-layers />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                     <span class="nav-label">Gestión Administrativa</span>
-                    <x-gravityui-chevron-down class="nav-chev" width="16" height="16" />
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.agenda.index') ? 'active' : '' }}" href="{{ route('admin.agenda.index') }}" data-tip="Agenda">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Agenda</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}" data-tip="Usuarios">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Usuarios</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.vehicles.*') ? 'active' : '' }}" href="{{ route('admin.vehicles.index') }}" data-tip="Vehículos">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Vehículos</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.viatics.*') ? 'active' : '' }}" href="{{ route('admin.viatics.index') }}" data-tip="Viáticos">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Viáticos</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.materials.*') ? 'active' : '' }}" href="{{ route('admin.materials.index') }}" data-tip="Materiales">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Materiales</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}" data-tip="Reportes">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Reportes</span>
                     </a>
                     {{--
@@ -747,72 +750,55 @@
                     --}}
                 </div>
             </div>
->>>>>>> Stashed changes
             <div class="nav-group {{ request()->is('structure/marketing*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Marketing">
-                    <x-gravityui-megaphone />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                     <span class="nav-label">Gestión de Marketing</span>
-                    <x-gravityui-chevron-down class="nav-chev" width="16" height="16" />
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
                     <a class="nav-item nav-sub" href="#" data-tip="Inicio">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Inicio</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.guia_de_marca.index') ? 'active' : '' }}" href="{{ route('marketing.guia_de_marca.index') }}" data-tip="Guía de marca">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Guía de marca</span>
                     </a>
-<<<<<<< Updated upstream
-                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.agenda.index') ? 'active' : '' }}" href="{{ route('marketing.agenda.index') }}" data-tip="Calendario">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-=======
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.calendario.index') ? 'active' : '' }}" href="{{ route('marketing.calendario.index') }}" data-tip="Calendario">
-                        <x-gravityui-circle-fill class="nav-bullet" />
->>>>>>> Stashed changes
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Calendario</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.aprobacion_flyers.index') ? 'active' : '' }}" href="{{ route('marketing.aprobacion_flyers.index') }}" data-tip="Aprobación de flyers">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Aprobación de flyers</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.biblioteca_catalogo.index') ? 'active' : '' }}" href="{{ route('marketing.biblioteca_catalogo.index') }}" data-tip="Biblioteca & catálogo">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Biblioteca & catálogo</span>
                     </a>
                     <div class="submenu-label">Datos</div>
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.tareas.index') ? 'active' : '' }}" href="{{ route('marketing.tareas.index') }}" data-tip="Tareas">
-                        <x-gravityui-circle-fill class="nav-bullet" />
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Tareas</span>
                         <span class="nav-count">6</span>
                     </a>
                 </div>
             </div>
             <div class="nav-section">Sistema</div>
-            <div class="nav-group">
+            <div class="nav-group {{ request()->routeIs('configuracion.roles.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Configuración">
-                    <x-gravityui-gear />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     <span class="nav-label">Configuración</span>
-                    <x-gravityui-chevron-down class="nav-chev" width="16" height="16" />
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-<<<<<<< Updated upstream
-                    <a class="nav-item nav-sub" href="{{ route('configuracion.catalogos.index') }}" data-tip="Catálogo">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Catálogo</span>
-                    </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Permisos">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Permisos</span>
-                    </a>
-=======
                     @can('roles.gestionar')
                         <a class="nav-item nav-sub {{ request()->routeIs('configuracion.roles.*') ? 'active' : '' }}" href="{{ route('configuracion.roles.index') }}" data-tip="Roles y permisos">
-                            <x-gravityui-circle-fill class="nav-bullet" />
+                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                             <span class="nav-label">Roles y permisos</span>
                         </a>
                     @endcan
->>>>>>> Stashed changes
                 </div>
             </div>
         </nav>
@@ -823,7 +809,7 @@
     <div class="main">
         <header class="topbar">
             <button class="hamburger" id="hamburger" type="button" aria-label="Menú">
-                <x-gravityui-bars width="22" height="22" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
             <div class="topbar-titulo">
                 {{-- Dentro de una seccion se muestra su nombre; en el inicio, el saludo.
@@ -840,14 +826,14 @@
 
             {{-- Tema --}}
             <button class="icon-btn" id="theme-toggle" type="button" aria-label="Cambiar tema">
-                <x-gravityui-moon class="ico-moon" />
-                <x-gravityui-sun class="ico-sun" />
+                <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+                <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
             </button>
 
             {{-- Notificaciones --}}
             <div class="dd" id="dd-notif">
                 <button class="icon-btn" type="button" aria-label="Notificaciones" data-dd="dd-notif">
-                    <x-gravityui-bell />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
                 </button>
                 <div class="dd-panel">
                     <div class="dd-head"><b>Notificaciones</b></div>
@@ -860,23 +846,23 @@
                 <button class="user-btn" type="button" data-dd="dd-user">
                     <span class="avatar">{{ Str::upper($initials) }}</span>
                     <span class="user-name">{{ $u->name }}</span>
-                    <x-gravityui-chevron-down class="chev" width="16" height="16" />
+                    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
                 <div class="dd-panel">
                     <div class="dd-head"><b>Acciones rápidas</b><small>Tu cuenta y herramientas</small></div>
                     <a class="dd-item" href="{{ route('profile.edit') }}">
-                        <span class="di-ico"><x-gravityui-pencil width="18" height="18" /></span>
+                        <span class="di-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></span>
                         <span><b>Editar perfil</b><small>Actualiza tu información personal</small></span>
                     </a>
                     {{-- El tablero dejo de ser la pantalla de cuenta, asi que
                          la seguridad de la sesion se entra por aqui. --}}
                     <a class="dd-item" href="{{ route('account') }}">
-                        <span class="di-ico"><x-gravityui-shield width="18" height="18" /></span>
+                        <span class="di-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3z"/></svg></span>
                         <span><b>Mi cuenta</b><small>Sesiones activas e historial de accesos</small></span>
                     </a>
                     @if ($u->isAdmin())
                         <a class="dd-item" href="{{ route('admin.users.index') }}">
-                            <span class="di-ico"><x-gravityui-layout-cells-large width="18" height="18" /></span>
+                            <span class="di-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg></span>
                             <span><b>Panel de usuarios</b><small>Administra las cuentas</small></span>
                         </a>
                     @endif
@@ -884,7 +870,7 @@
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button class="dd-item danger" type="submit">
-                            <span class="di-ico"><x-gravityui-arrow-right-from-square width="18" height="18" /></span>
+                            <span class="di-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
                             <span><b>Cerrar sesión</b><small>Cerrar sesión en tu cuenta actual</small></span>
                         </button>
                     </form>

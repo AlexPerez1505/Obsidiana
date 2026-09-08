@@ -20,7 +20,7 @@
 {{-- Cabecera estandar del sistema. El guardado vive al pie del formulario. --}}
 <x-ui.page-header :title="$titulo" :subtitle="$subtitulo" :back="$backRoute">
     <x-slot:icon>
-        <x-gravityui-file-text />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
     </x-slot:icon>
 </x-ui.page-header>
 
@@ -107,7 +107,7 @@
                 </div>
                 <div class="cot-panel-body" style="padding-bottom:6px;">
                     <div style="position:relative;">
-                        <x-gravityui-magnifier style="position:absolute; left:13px; top:50%; transform:translateY(-50%); width:17px; height:17px; color:var(--muted); pointer-events:none;" />
+                        <svg style="position:absolute; left:13px; top:50%; transform:translateY(-50%); width:17px; height:17px; color:var(--muted); pointer-events:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         <input type="text" id="prodSearch" class="cot-input" placeholder="Buscar producto o paquete para agregar..." autocomplete="off" style="padding-left:40px;">
                         <div id="prodResults" class="cot-ac"></div>
                     </div>
@@ -117,11 +117,11 @@
                         <thead>
                             <tr>
                                 <th>Imagen</th><th>Equipo</th><th>Modelo</th><th>Marca</th>
-                                <th>Cantidad</th><th>Subtotal</th><th>Sobreprecio</th><th>Regalo</th><th>Acción</th>
+                                <th>Stock</th><th>Cantidad</th><th>Subtotal</th><th>Sobreprecio</th><th>Regalo</th><th>Acción</th>
                             </tr>
                         </thead>
                         <tbody id="itemsBody">
-                            <tr id="itemsEmpty"><td colspan="9" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>
+                            <tr id="itemsEmpty"><td colspan="10" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -168,11 +168,11 @@
                     <input type="hidden" id="modalidad" value="contado">
                     <div class="cot-seg" role="tablist">
                         <button type="button" class="cot-seg-btn" data-mod="contado">
-                            <x-gravityui-credit-card width="16" height="16" />
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                             De contado
                         </button>
                         <button type="button" class="cot-seg-btn" data-mod="financiamiento">
-                            <x-gravityui-calendar width="16" height="16" />
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
                             En pagos
                         </button>
                     </div>
@@ -219,6 +219,46 @@
     .cot-table td { padding:10px 8px; border-bottom:1px solid var(--border); vertical-align:middle; }
     .cot-table .cot-cell-num { width:70px; padding:7px 8px; text-align:right; }
     .cot-thumb { width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid var(--border); background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--muted); }
+
+    /* Ficha del cliente elegido */
+    .cli-cab { display:flex; align-items:flex-start; gap:10px; }
+    .cli-cab b { font-size:14.5px; }
+    .cli-cat { display:inline-block; margin-left:7px; padding:2px 8px; border-radius:999px;
+               background:var(--surface); border:1px solid var(--border);
+               color:var(--muted); font-size:11.5px; font-weight:600; vertical-align:middle; }
+    .cli-baja { display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px;
+                background:var(--danger-soft); color:var(--danger); font-size:11.5px; font-weight:700; }
+
+    .cli-datos { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+                 gap:8px 14px; margin-top:12px; }
+    .cli-dato .e { display:block; color:var(--muted); font-size:11px; font-weight:700;
+                   letter-spacing:.05em; text-transform:uppercase; }
+    .cli-dato .v { display:block; margin-top:1px; font-size:13px; overflow-wrap:anywhere; }
+
+    .cli-nota { margin:12px 0 0; padding:8px 11px; border-radius:8px; background:var(--surface);
+                border:1px solid var(--border); color:var(--muted); font-size:12.5px; line-height:1.45; }
+
+    .cli-historial { display:flex; flex-wrap:wrap; gap:14px; margin-top:12px; padding-top:10px;
+                     border-top:1px solid var(--border); color:var(--muted); font-size:12.5px; }
+    .cli-historial b { color:var(--text); }
+
+    /* Que deba dinero es lo primero que hay que ver antes de venderle más. */
+    .cli-debe { margin:10px 0 0; padding:9px 12px; border-radius:8px;
+                background:var(--danger-soft); color:var(--danger); font-size:13px; font-weight:600; }
+    .cli-alcorriente { margin:10px 0 0; color:var(--green); font-size:12.5px; font-weight:600; }
+
+    /* Elegir cuáles piezas se entregan */
+    .cot-link { padding:0; border:0; background:none; color:var(--primary); font-family:inherit;
+                font-size:12px; font-weight:600; cursor:pointer; text-decoration:underline; }
+    .cot-piezas { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:8px; }
+    .cot-pieza { display:flex; align-items:center; gap:9px; padding:8px 11px; cursor:pointer;
+                 border:1px solid var(--border); border-radius:9px; background:var(--surface);
+                 transition:border-color .14s ease, background .14s ease; }
+    .cot-pieza:hover { border-color:var(--muted); }
+    .cot-pieza.puesta { border-color:var(--primary); background:var(--primary-soft); }
+    .cot-pieza input { flex:none; width:15px; height:15px; margin:0; cursor:pointer; accent-color:var(--primary); }
+    .cot-pieza .cod { font-family:ui-monospace, Consolas, monospace; font-size:12.5px; font-weight:700; }
+    .cot-pieza .det { color:var(--muted); font-size:11.5px; }
     .cot-totes label { font-weight:600; }
     .cot-tote-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:8px 0; }
     .cot-line { display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:14px; color:var(--text); border-top:1px dashed var(--border); }
@@ -319,10 +359,10 @@
     const INITIAL = @json($initial);
     const IVA = 0.16;
 
-    const ICON_TRASH = '<x-gravityui-trash-bin />';
-    const ICON_LOCK = '<x-gravityui-lock />';
-    const ICON_UNLOCK = '<x-gravityui-lock-open />';
-    const ICON_X = '<x-gravityui-xmark />';
+    const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+    const ICON_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+    const ICON_UNLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>';
+    const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
     const state = {
         customer: INITIAL.customer,
@@ -331,6 +371,7 @@
             nombre: i.nombre, modelo: i.modelo, marca: i.marca, imagen: i.imagen,
             cantidad: +i.cantidad || 1, precio_unitario: +i.precio_unitario || 0,
             sobreprecio: +i.sobreprecio || 0, es_regalo: !!i.es_regalo,
+            stock: +i.stock || 0, piezas: i.piezas || [], seriales: i.seriales || [], abierto: false,
         })),
         pagos: (INITIAL.pagos || []).map(p => ({ ...p, porcentaje:+p.porcentaje, monto:+p.monto, bloqueado:!!p.bloqueado })),
         fichas: INITIAL.fichas || [],
@@ -346,6 +387,66 @@
     const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g, '')); return isNaN(n) ? 0 : n; };
     const MESES_ABBR = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
     const fmtFecha = s => { if (!s) return ''; const d = new Date(s + 'T00:00:00'); return `${String(d.getDate()).padStart(2,'0')} ${MESES_ABBR[d.getMonth()]} ${d.getFullYear()}`; };
+
+    /* ==========================================================
+       Stock y piezas
+
+       Un paquete no tiene stock propio (lo tienen los productos que lo
+       componen), así que ahí no se muestra nada.
+    ========================================================== */
+    function celdaStock(it, idx) {
+        if (it.tipo_item !== 'producto') return '<span style="color:var(--muted);">—</span>';
+
+        const stock = +it.stock || 0;
+        const elegidas = (it.seriales || []).length;
+        const falta = it.cantidad > stock;
+
+        const color = falta ? 'var(--danger)' : (stock > 0 ? 'var(--green)' : 'var(--muted)');
+        const texto = `<b style="color:${color};">${stock}</b> <span style="color:var(--muted); font-size:12px;">disp.</span>`;
+
+        // Sin piezas identificadas no hay nada que elegir.
+        if (!(it.piezas || []).length) return texto;
+
+        const etiqueta = elegidas ? `${elegidas} elegida(s)` : 'Elegir';
+
+        return `${texto}<br><button type="button" class="cot-link" data-piezas="${idx}">${etiqueta}</button>`;
+    }
+
+    function filaDePiezas(it, idx) {
+        const tr = document.createElement('tr');
+        const elegidas = it.seriales || [];
+
+        const chips = it.piezas.map(p => {
+            const puesta = elegidas.includes(p.id);
+            const detalle = [p.no_serie, p.condicion === 'usado' ? 'usado' : null].filter(Boolean).join(' · ');
+
+            return `<label class="cot-pieza ${puesta ? 'puesta' : ''}">
+                        <input type="checkbox" data-pieza="${idx}" value="${p.id}" ${puesta ? 'checked' : ''}>
+                        <span class="cod">${p.codigo || 'sin etiqueta'}</span>
+                        ${detalle ? `<span class="det">${detalle}</span>` : ''}
+                    </label>`;
+        }).join('');
+
+        const sobran = elegidas.length > it.cantidad;
+
+        tr.innerHTML = `
+            <td colspan="10" style="background:var(--surface-2); padding:14px 16px;">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                    <b style="font-size:13px;">¿Cuáles piezas se entregan?</b>
+                    <span style="color:${sobran ? 'var(--danger)' : 'var(--muted)'}; font-size:12.5px;">
+                        ${elegidas.length} de ${it.cantidad} elegida(s)${sobran ? ' — sobran' : ''}
+                    </span>
+                    <span style="flex:1;"></span>
+                    <button type="button" class="cot-link" data-piezas-cerrar="${idx}">Cerrar</button>
+                </div>
+                <div class="cot-piezas">${chips}</div>
+                <p style="margin:10px 0 0; color:var(--muted); font-size:12.5px;">
+                    Si no eliges ninguna, el sistema toma las más antiguas.
+                </p>
+            </td>`;
+
+        return tr;
+    }
 
     function bindAutocomplete(inputEl, resultsEl, url, onPick, render) {
         let timer = null;
@@ -374,25 +475,60 @@
     function renderCliente() {
         const box = $('clienteSelected');
         if (!state.customer) { box.style.display = 'none'; return; }
+
+        const c = state.customer;
+
+        // Solo se dibuja el dato que existe: un renglón vacío estorba más
+        // de lo que informa.
+        const dato = (etiqueta, valor) => valor
+            ? `<div class="cli-dato"><span class="e">${etiqueta}</span><span class="v">${valor}</span></div>`
+            : '';
+
+        const saldo = +c.saldo || 0;
+
         box.style.display = 'block';
-        box.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-            <div style="min-width:0;">
-                <b>${state.customer.nombre}</b>
-                <div style="color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${state.customer.rfc || ''} ${state.customer.correo ? '· ' + state.customer.correo : ''}</div>
-                ${state.customer.conocido ? `<div style="color:var(--muted); font-size:12px;">Conocido por: ${state.customer.conocido}</div>` : ''}
+        box.innerHTML = `
+            <div class="cli-cab">
+                <div style="min-width:0; flex:1;">
+                    <b>${c.nombre}</b>
+                    ${c.categoria ? `<span class="cli-cat">${c.categoria}</span>` : ''}
+                    ${c.activo === false ? '<span class="cli-baja">Inactivo</span>' : ''}
+                </div>
+                <button type="button" id="clienteClear" class="cot-ico-btn" title="Quitar cliente" aria-label="Quitar cliente">${ICON_X}</button>
             </div>
-            <button type="button" id="clienteClear" class="cot-ico-btn" title="Quitar cliente" aria-label="Quitar cliente">${ICON_X}</button></div>`;
+
+            <div class="cli-datos">
+                ${dato('Teléfono', c.telefono)}
+                ${dato('Correo', c.correo)}
+                ${dato('RFC', c.rfc)}
+                ${dato('Dirección', c.direccion)}
+                ${dato('Asesor', c.asesor)}
+                ${dato('Conocido por', c.conocido)}
+            </div>
+
+            ${c.comentarios ? `<p class="cli-nota">${c.comentarios}</p>` : ''}
+
+            <div class="cli-historial">
+                <span><b>${c.compras || 0}</b> compra(s)</span>
+                <span><b>${c.cotizaciones || 0}</b> cotización(es)</span>
+                ${c.ultima_compra ? `<span>Última: <b>${c.ultima_compra}</b></span>` : ''}
+            </div>
+
+            ${saldo > 0
+                ? `<p class="cli-debe">Debe <b>${money(saldo)}</b> de compras anteriores.</p>`
+                : (c.compras ? '<p class="cli-alcorriente">Al corriente con sus pagos.</p>' : '')}`;
+
         $('clienteClear').addEventListener('click', () => { state.customer = null; $('clienteSearch').focus(); renderCliente(); });
     }
     bindAutocomplete($('clienteSearch'), $('clienteResults'), ROUTES.clientes,
         d => { state.customer = d; $('clienteSearch').value = ''; renderCliente(); },
-        d => `<b>${d.nombre}</b><small>${d.rfc || ''} ${d.correo ? '· ' + d.correo : ''}</small>`);
+        d => `<b>${d.nombre}</b><small>${[d.telefono, d.rfc, d.correo].filter(Boolean).join(' · ')}</small>`);
 
     function renderItems() {
         const body = $('itemsBody');
         body.innerHTML = '';
         if (!state.items.length) {
-            body.innerHTML = '<tr id="itemsEmpty"><td colspan="9" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>';
+            body.innerHTML = '<tr id="itemsEmpty"><td colspan="10" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>';
             recalc(); return;
         }
         state.items.forEach((it, idx) => {
@@ -400,18 +536,24 @@
             const sub = it.es_regalo ? 0 : (it.precio_unitario + it.sobreprecio) * it.cantidad;
             const thumb = it.imagen
                 ? `<img class="cot-thumb" src="${it.imagen}" alt="">`
-                : `<div class="cot-thumb"><x-gravityui-picture width="16" height="16" /></div>`;
+                : `<div class="cot-thumb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
             tr.innerHTML = `
                 <td>${thumb}</td>
                 <td style="font-weight:600;">${it.nombre}</td>
                 <td>${it.modelo || '—'}</td>
                 <td>${it.marca || '—'}</td>
+                <td>${celdaStock(it, idx)}</td>
                 <td><input type="number" min="1" class="cot-input cot-cell-num" data-k="cantidad" data-i="${idx}" value="${it.cantidad}"></td>
                 <td>${it.es_regalo ? '<span style="color:var(--green); font-weight:700;">Regalo</span>' : money(sub)}</td>
                 <td><input type="text" inputmode="decimal" class="cot-input cot-cell-num" data-k="sobreprecio" data-i="${idx}" value="${it.sobreprecio}"></td>
                 <td><label class="cot-switch"><input type="checkbox" data-k="es_regalo" data-i="${idx}" ${it.es_regalo ? 'checked' : ''}><span class="track"></span></label></td>
                 <td style="text-align:right;"><button type="button" class="cot-ico-btn danger" data-del="${idx}" title="Eliminar" aria-label="Eliminar">${ICON_TRASH}</button></td>`;
             body.appendChild(tr);
+
+            // Renglón desplegable para elegir cuáles piezas se entregan.
+            if (it.abierto && (it.piezas || []).length) {
+                body.appendChild(filaDePiezas(it, idx));
+            }
         });
         body.querySelectorAll('input[data-k]').forEach(inp => {
             inp.addEventListener('input', e => {
@@ -424,6 +566,31 @@
             });
         });
         body.querySelectorAll('button[data-del]').forEach(b => b.addEventListener('click', () => { state.items.splice(+b.dataset.del, 1); renderItems(); }));
+
+        // Abrir y cerrar el selector de piezas.
+        body.querySelectorAll('button[data-piezas]').forEach(b => b.addEventListener('click', () => {
+            const i = +b.dataset.piezas;
+            state.items[i].abierto = !state.items[i].abierto;
+            renderItems();
+        }));
+        body.querySelectorAll('button[data-piezas-cerrar]').forEach(b => b.addEventListener('click', () => {
+            state.items[+b.dataset.piezasCerrar].abierto = false;
+            renderItems();
+        }));
+
+        // Elegir o quitar una pieza concreta.
+        body.querySelectorAll('input[data-pieza]').forEach(c => c.addEventListener('change', e => {
+            const i = +e.target.dataset.pieza;
+            const id = +e.target.value;
+            const elegidas = state.items[i].seriales || [];
+
+            state.items[i].seriales = e.target.checked
+                ? [...elegidas, id]
+                : elegidas.filter(x => x !== id);
+
+            renderItems();
+        }));
+
         recalc();
     }
     function addItem(d) {
@@ -433,6 +600,8 @@
             producto_id: d.tipo_item === 'producto' ? d.id : null,
             nombre: d.nombre, modelo: d.modelo, marca: d.marca, imagen: d.imagen,
             cantidad: 1, precio_unitario: +d.precio || 0, sobreprecio: 0, es_regalo: false,
+            // Cuánto hay y cuáles piezas se pueden entregar.
+            stock: +d.stock || 0, piezas: d.piezas || [], seriales: [], abierto: false,
         });
         renderItems();
         // El producto solo puede tener una ficha técnica: si la tiene, se adjunta sola.
@@ -616,7 +785,7 @@
 
         html += `
             <div class="cot-plan-foot">
-                <button type="button" class="cot-add" id="addPagoBtn"><x-gravityui-plus width="15" height="15" />Agregar pago</button>
+                <button type="button" class="cot-add" id="addPagoBtn"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar pago</button>
                 <div class="cot-pay-sum ${cuadra ? 'ok' : 'bad'}"><span>${cuadra ? '✓ Cuadra con el contrato' : '⚠ No cuadra'}</span><span>${money(suma)} / ${money(contrato)}</span></div>
             </div>
         </div>`;
@@ -705,6 +874,10 @@
             add(`items[${i}][precio_unitario]`, it.precio_unitario);
             add(`items[${i}][sobreprecio]`, it.sobreprecio);
             add(`items[${i}][es_regalo]`, it.es_regalo ? 1 : 0);
+
+            // Las piezas que se eligieron a mano. Si no se eligió ninguna,
+            // el servidor toma las más antiguas.
+            (it.seriales || []).forEach(id => add(`items[${i}][seriales][]`, id));
         });
 
         if ($('modalidad').value === 'financiamiento') {
