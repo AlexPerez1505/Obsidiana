@@ -2,11 +2,11 @@
         <div class="step-panel active" data-step="1">
             <div class="client-tabs">
                 <button type="button" class="tab-btn active" data-tab="search">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <x-gravityui-person width="18" height="18" />
                     Buscar cliente existente
                 </button>
                 <a href="{{ route('commercial.clientes.create', ['return_to' => route('gestion.servicios.historial.nueva_orden')]) }}" class="tab-btn" style="text-decoration:none;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                    <x-gravityui-person-plus width="18" height="18" />
                     Registrar nuevo cliente
                 </a>
             </div>
@@ -15,7 +15,7 @@
 
             <div id="tab-search">
                 <div class="search-box">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <x-gravityui-magnifier width="18" height="18" />
                     <input type="text" placeholder="Buscar por nombre, telefono o correo" id="client-search">
                 </div>
                 <p class="muted" style="text-align:center; margin:14px 0; font-size:13px;">Resultados encontrados</p>
@@ -47,7 +47,7 @@
             </div>
 
             <p style="margin-top:18px; font-size:13px; color:var(--muted);">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <x-gravityui-circle-info width="16" height="16" style="vertical-align:middle;" />
                 ¿No encuentras al cliente? Cambiate a "Registrar nuevo cliente" para agregar un nuevo cliente al sistema.
             </p>
         </div>

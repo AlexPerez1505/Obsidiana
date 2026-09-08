@@ -17,7 +17,7 @@
 <div class="ui-menu" data-ui-menu>
     <button type="button" class="btn btn--ghost ui-menu-trigger" aria-expanded="false" aria-haspopup="true">
         {{ $etiqueta }}
-        <svg class="ui-menu-flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        <x-gravityui-arrow-chevron-down class="ui-menu-flecha" />
     </button>
 
     <div class="ui-menu-panel" data-align="{{ $align }}" role="menu" hidden>

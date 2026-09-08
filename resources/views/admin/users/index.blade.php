@@ -120,6 +120,7 @@
 
         <div class="uc-spacer"></div>
 
+<<<<<<< Updated upstream
         <button type="button" class="uc-btn-add" onclick="document.getElementById('modal-hr-profile').style.display='flex'">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             Agregar usuario
@@ -127,6 +128,109 @@
         <div class="uc-view-toggle">
             <button type="button" class="uc-view-btn active" data-view="grid" title="Vista de cuadrícula">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+=======
+        // Solo se ofrece filtrar por lo que de verdad existe en los datos.
+        $puestos = $filas->pluck('puesto')->unique()->sort()->values();
+
+        $datos = function (array $fila) use ($roles) {
+            $attrs = [
+                'data-buscar' => mb_strtolower(implode(' ', array_filter([
+                    $fila['modelo']->name,
+                    $fila['modelo']->email,
+                    $fila['modelo']->payroll_number,
+                    $fila['modelo']->phone,
+                    $fila['puesto'],
+                    $fila['roles']->implode(' '),
+                ]))),
+                // El valor legible, no el slug: es lo que acaba en los chips.
+                'data-estado' => $fila['estadoTexto'],
+                'data-puesto' => $fila['puesto'],
+                'data-conectado' => $fila['sesiones'] > 0 ? '1' : '0',
+                'data-telefono' => $fila['modelo']->phone ? '1' : '0',
+                'data-nomina' => $fila['modelo']->payroll_number ? '1' : '0',
+                'data-sinrol' => $fila['modelo']->roles->isEmpty() ? '1' : '0',
+                'data-fecha' => $fila['modelo']->created_at?->format('Y-m-d') ?? '',
+            ];
+
+            /*
+            | Un usuario puede tener varios roles, así que el rol no cabe en un
+            | solo data-*: cada rol va como bandera propia y el filtro los
+            | trata como preferencias (se pueden exigir varias a la vez).
+            */
+            foreach ($roles as $rol) {
+                $attrs['data-rol'.$rol->id] = $fila['modelo']->roles->contains($rol->id) ? '1' : '0';
+            }
+
+            return $attrs;
+        };
+
+        // Acciones del menú de tres puntos, iguales en lista y en tarjetas.
+        $acciones = fn ($fila) => view('admin.users.partials.acciones', ['fila' => $fila]);
+    @endphp
+
+    <div class="content-actions">
+        <button type="button" class="btn" data-abrir-rh>
+            <x-gravityui-plus width="15" height="15" />
+            Completar datos
+        </button>
+    </div>
+
+    {{-- ===================== Métricas ===================== --}}
+    <div class="us-stats">
+        <div class="card card--accent stat">
+            <span class="stat-ico blue">
+                <x-gravityui-persons />
+            </span>
+            <div>
+                <div class="stat-num">{{ $users->count() }}</div>
+                <div class="stat-lbl">Usuarios registrados</div>
+            </div>
+        </div>
+
+        <div class="card card--accent is-amber stat">
+            <span class="stat-ico orange">
+                <x-gravityui-clock />
+            </span>
+            <div>
+                <div class="stat-num">{{ $pendientes->count() }}</div>
+                <div class="stat-lbl">Pendientes de aprobar</div>
+            </div>
+        </div>
+
+        <div class="card card--accent is-green stat">
+            <span class="stat-ico green">
+                <x-gravityui-check />
+            </span>
+            <div>
+                <div class="stat-num">{{ $activos->count() }}</div>
+                <div class="stat-lbl">Con acceso</div>
+            </div>
+        </div>
+
+        <div class="card card--accent stat">
+            <span class="stat-ico blue">
+                <x-gravityui-display />
+            </span>
+            <div>
+                <div class="stat-num">{{ $conectados->count() }}</div>
+                <div class="stat-lbl">Conectados ahora</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===================== Búsqueda y filtros ===================== --}}
+    <div class="f-toolbar">
+        <div class="f-search">
+            <x-gravityui-magnifier />
+            <input type="text" id="fBuscar" placeholder="Buscar por nombre, correo, nómina, teléfono o rol" autocomplete="off">
+        </div>
+
+        <div class="flt" data-flt>
+            <button type="button" class="flt-btn" data-flt-toggle aria-expanded="false">
+                <x-gravityui-funnel />
+                Filtros
+                <span class="flt-count" data-flt-count hidden>0</span>
+>>>>>>> Stashed changes
             </button>
             <button type="button" class="uc-view-btn" data-view="list" title="Vista de lista">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
@@ -228,11 +332,118 @@
                     <label class="hr-field"><span>Domicilio</span><input type="text" name="domicilio"></label>
                 </div>
 
+<<<<<<< Updated upstream
                 <div class="hr-section">
                     <p class="hr-section-title">Contacto de emergencia</p>
                     <div class="hr-grid-2">
                         <label class="hr-field"><span>Nombre</span><input type="text" name="nombre_contacto_emergencia"></label>
                         <label class="hr-field"><span>Teléfono</span><input type="text" name="numero_contacto_emergencia"></label>
+=======
+        {{-- Accesos rápidos: quién está en el sistema en este momento. --}}
+        <div class="flt-toggles" role="group" aria-label="Sesión">
+            <button type="button" class="flt-tgl" data-f="conectado" data-valor="1" title="Solo conectados ahora" aria-pressed="false">
+                <x-gravityui-display />
+            </button>
+            <button type="button" class="flt-tgl" data-f="conectado" data-valor="0" title="Solo sin sesión" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h20v14H2z"/><line x1="3" y1="3" x2="21" y2="17"/><path d="M8 21h8"/></svg>
+            </button>
+        </div>
+
+        <button type="button" class="flt-btn flt-btn--icon" id="fLimpiar" title="Limpiar todos los filtros" aria-label="Limpiar filtros">
+            <x-gravityui-funnel-xmark />
+        </button>
+
+        <x-ui.view-switch key="usuarios" />
+    </div>
+
+    <div class="flt-chips" id="fChips" hidden></div>
+
+    {{-- ===================== Vista lista ===================== --}}
+    <div class="card" data-view-list style="overflow-x:auto; padding:0;">
+        <table class="us-table">
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Puesto</th>
+                    <th>Rol</th>
+                    <th>Contacto</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($filas as $fila)
+                    <tr class="f-row" @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
+                        <td>
+                            <div class="cell-id">
+                                <span class="us-avatar">
+                                    @if ($fila['modelo']->avatar)
+                                        <img src="{{ $fila['modelo']->avatar }}" alt="">
+                                    @else
+                                        <span class="avatar {{ $fila['tinte'] }}">{{ $fila['iniciales'] }}</span>
+                                    @endif
+                                    @if ($fila['sesiones'] > 0)
+                                        <span class="us-online" title="Conectado ahora"></span>
+                                    @endif
+                                </span>
+                                <div style="min-width:0;">
+                                    <div class="t">{{ $fila['modelo']->name }}</div>
+                                    <div class="s">{{ $fila['modelo']->email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ $fila['puesto'] }}</td>
+                        <td>
+                            @forelse ($fila['roles'] as $etiqueta)
+                                <span class="badge">{{ $etiqueta }}</span>
+                            @empty
+                                <span class="s" style="color:var(--muted);">Sin rol</span>
+                            @endforelse
+                        </td>
+                        <td>{{ $fila['contacto'] }}</td>
+                        <td>
+                            <span class="badge {{ $fila['estado'] === 'approved' ? 'badge--ok' : ($fila['estado'] === 'banned' ? 'badge--danger' : '') }}">
+                                {{ $fila['estadoTexto'] }}
+                            </span>
+                        </td>
+                        <td style="text-align:right; white-space:nowrap;">{{ $acciones($fila) }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <span class="ico">
+                                    <x-gravityui-person />
+                                </span>
+                                <h3>Aún no hay usuarios</h3>
+                                <p>Las cuentas aparecen aquí cuando alguien se registra.</p>
+                            </div>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    {{-- ===================== Vista tarjetas ===================== --}}
+    <div class="data-cards" data-view-cards style="display:none;">
+        @forelse ($filas as $fila)
+            <article class="data-card f-row" @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
+                <div class="data-card-top">
+                    <span class="us-avatar">
+                        @if ($fila['modelo']->avatar)
+                            <img src="{{ $fila['modelo']->avatar }}" alt="">
+                        @else
+                            <span class="avatar {{ $fila['tinte'] }}">{{ $fila['iniciales'] }}</span>
+                        @endif
+                        @if ($fila['sesiones'] > 0)
+                            <span class="us-online" title="Conectado ahora"></span>
+                        @endif
+                    </span>
+                    <div style="min-width:0; flex:1;">
+                        <div class="t">{{ $fila['modelo']->name }}</div>
+                        <div class="s">{{ $fila['puesto'] }}</div>
+>>>>>>> Stashed changes
                     </div>
                     <label class="hr-field"><span>Domicilio del contacto</span><input type="text" name="domicilio_contacto_emergencia"></label>
                 </div>
@@ -243,14 +454,40 @@
                         <label class="hr-field"><span>Nombre</span><input type="text" name="nombre_contacto_emergencia_secundario"></label>
                         <label class="hr-field"><span>Teléfono</span><input type="text" name="numero_contacto_emergencia_secundario"></label>
                     </div>
+<<<<<<< Updated upstream
                     <label class="hr-field"><span>Domicilio del contacto</span><input type="text" name="domicilio_contacto_emergencia_secundario"></label>
+=======
+                </dl>
+
+                <div class="data-card-foot">{{ $acciones($fila) }}</div>
+            </article>
+        @empty
+            <div class="card">
+                <div class="empty-state">
+                    <span class="ico">
+                        <x-gravityui-person />
+                    </span>
+                    <h3>Aún no hay usuarios</h3>
+                    <p>Las cuentas aparecen aquí cuando alguien se registra.</p>
+>>>>>>> Stashed changes
                 </div>
 
+<<<<<<< Updated upstream
                 <div class="hr-modal-foot">
                     <button type="button" class="btn btn--ghost" onclick="document.getElementById('modal-hr-profile').style.display='none'">Cancelar</button>
                     <x-ui.button type="submit" style="width:auto;">Guardar</x-ui.button>
                 </div>
             </form>
+=======
+    <div class="card" id="fVacio" hidden>
+        <div class="empty-state">
+            <span class="ico">
+                <x-gravityui-magnifier />
+            </span>
+            <h3>Ningún usuario coincide</h3>
+            <p>Prueba a quitar algún filtro o a cambiar la búsqueda.</p>
+            <button type="button" class="btn" data-limpiar-filtros>Limpiar filtros</button>
+>>>>>>> Stashed changes
         </div>
     </div>
 

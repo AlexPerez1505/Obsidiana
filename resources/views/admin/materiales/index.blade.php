@@ -621,10 +621,7 @@
         <div class="materials-header">
             <div class="materials-heading">
                 <span class="materials-heading-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4z"></path>
-                        <path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"></path>
-                    </svg>
+                    <x-gravityui-box />
                 </span>
                 <div>
                     <h2>Nueva solicitud</h2>
@@ -648,10 +645,7 @@
                         <label for="category">Categoría</label>
                         <div class="materials-control">
                             <span class="field-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M4 4h16v16H4z"></path>
-                                    <path d="M8 4v16M4 9h16M4 15h16"></path>
-                                </svg>
+                                <x-gravityui-layout-cells />
                             </span>
                             <select id="category" name="category">
                                 @foreach ($categories as $category)
@@ -666,10 +660,7 @@
                             <label for="material">Material/Equipo/Etc</label>
                             <div class="materials-control">
                                 <span class="field-icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4z"></path>
-                                        <path d="M3.27 6.96 12 12l8.73-5.04"></path>
-                                    </svg>
+                                    <x-gravityui-box />
                                 </span>
                                 <input id="material" name="material_name" type="text" value="{{ old('material_name') }}" autocomplete="off" placeholder="Ej. hojas carta, guantes, cable HDMI" required>
                             </div>
@@ -679,10 +670,7 @@
                             <label for="quantity">Cantidad</label>
                             <div class="materials-control">
                                 <span class="field-icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M8 7h8M8 12h8M8 17h8"></path>
-                                        <path d="M4 7h.01M4 12h.01M4 17h.01"></path>
-                                    </svg>
+                                    <x-gravityui-list-ul />
                                 </span>
                                 <div class="quantity-control">
                                     <button type="button" onclick="adjustQuantity(-1)" aria-label="Disminuir cantidad">-</button>
@@ -698,9 +686,7 @@
                             <label for="unit">Unidad</label>
                             <div class="materials-control">
                                 <span class="field-icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M4 7h16M4 12h16M4 17h10"></path>
-                                    </svg>
+                                    <x-gravityui-bars-ascending-align-left />
                                 </span>
                                 <select id="unit" name="unit">
                                     @foreach (['Pieza', 'Paquete', 'Caja', 'Kit', 'Servicio'] as $unitOption)
@@ -714,10 +700,7 @@
                             <label for="required-date">Fecha requerida</label>
                             <div class="materials-control">
                                 <span class="field-icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M8 2v4M16 2v4M3 10h18"></path>
-                                        <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-                                    </svg>
+                                    <x-gravityui-calendar />
                                 </span>
                                 <input id="required-date" name="required_date" type="date" value="{{ old('required_date', now()->addDay()->format('Y-m-d')) }}">
                             </div>
@@ -738,10 +721,7 @@
                         <label for="justification">Justificación</label>
                         <div class="materials-control textarea-control">
                             <span class="field-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                    <path d="M14 2v6h6M8 13h8M8 17h5"></path>
-                                </svg>
+                                <x-gravityui-file-text />
                             </span>
                             <textarea id="justification" name="justification" placeholder="Describe la necesidad del equipo o insumo solicitado, su uso y urgencia.">{{ old('justification') }}</textarea>
                         </div>
@@ -749,17 +729,11 @@
 
                     <div class="materials-actions">
                         <button class="materials-btn ghost" type="button" onclick="showMaterialToast('Borrador guardado localmente.')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                                <path d="M17 21v-8H7v8M7 3v5h8"></path>
-                            </svg>
+                            <x-gravityui-floppy-disk />
                             Guardar borrador
                         </button>
                         <button class="materials-btn primary" type="submit">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M22 2 11 13"></path>
-                                <path d="M22 2 15 22l-4-9-9-4 20-7z"></path>
-                            </svg>
+                            <x-gravityui-paper-plane />
                             Enviar Solicitud
                         </button>
                     </div>

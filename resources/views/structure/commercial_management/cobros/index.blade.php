@@ -79,7 +79,7 @@
                                     data-fecha="{{ optional($p->fecha)->format('Y-m-d') }}"
                                     data-monto="{{ $p->monto }}"
                                     data-cobrado="{{ $p->cobrado() }}">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                <x-gravityui-pencil />
                             </button>
 
                             @if ($p->saldo() > 0)
@@ -87,7 +87,7 @@
                                         data-cobrar
                                         data-parcialidad="{{ $p->id }}"
                                         data-monto="{{ $p->saldo() }}">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 5v14M5 12h14"/></svg>
+                                    <x-gravityui-plus />
                                 </button>
                             @endif
 
@@ -95,7 +95,7 @@
                                 <form method="POST" action="{{ route('commercial.ventas.cobros.parcialidad.eliminar', [$venta, $p]) }}" style="display:inline;">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="cb-mini cb-mini--danger" title="Eliminar">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                                        <x-gravityui-trash-bin />
                                     </button>
                                 </form>
                             @endunless
@@ -154,20 +154,20 @@
                             @foreach ($c->evidencias as $ev)
                                 <a href="{{ asset('storage/' . $ev->archivo) }}" target="_blank" rel="noopener"
                                    class="cb-mini" title="{{ $ev->nombre }}">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                                    <x-gravityui-file />
                                 </a>
                             @endforeach
 
                             <a href="{{ route('commercial.ventas.cobros.recibo', [$venta, $c]) }}" target="_blank"
                                class="cb-mini" title="Recibo">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+                                <x-gravityui-arrow-down-to-line />
                             </a>
 
                             <form method="POST" action="{{ route('commercial.ventas.cobros.destroy', [$venta, $c]) }}"
                                   style="display:inline;" data-confirmar="Se cancelará el cobro {{ $c->folio }} y se borrarán sus evidencias.">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="cb-mini cb-mini--danger" title="Cancelar cobro">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                                    <x-gravityui-xmark />
                                 </button>
                             </form>
                         </div>

@@ -149,11 +149,11 @@
     <div class="calendario-header">
         <div class="calendario-nav">
             <a href="{{ route('marketing.calendario.index', ['month' => $current->copy()->subMonth()->month, 'year' => $current->copy()->subMonth()->year]) }}" aria-label="Mes anterior">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="15 18 9 12 15 6"/></svg>
+                <x-gravityui-arrow-chevron-left width="18" height="18" />
             </a>
             <span>{{ ucfirst($current->locale('es')->translatedFormat('F Y')) }}</span>
             <a href="{{ route('marketing.calendario.index', ['month' => $current->copy()->addMonth()->month, 'year' => $current->copy()->addMonth()->year]) }}" aria-label="Mes siguiente">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>
+                <x-gravityui-arrow-chevron-right width="18" height="18" />
             </a>
         </div>
         <a href="{{ route('marketing.calendario.index', ['month' => now()->month, 'year' => now()->year]) }}" class="calendario-hoy">Hoy</a>
@@ -165,7 +165,7 @@
                 <button type="button" class="filter-chip" data-filter="category" data-value="{{ $cat['name'] }}">
                     <span class="filter-chip-dot" style="background-color:{{ $cat['color'] }};"></span>
                     @if (!empty($cat['hasIcon']))
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10" style="color:var(--muted);"><polyline points="20 6 9 17 4 12"/></svg>
+                        <x-gravityui-check width="10" height="10" style="color:var(--muted);" />
                     @endif
                     {{ $cat['name'] }}
                 </button>
@@ -177,7 +177,7 @@
                 <button type="button" class="filter-chip" data-filter="user" data-value="{{ $u['name'] }}">
                     <span class="filter-chip-badge" style="background-color:{{ $u['color'] }};">
                         @if (!empty($u['isVideo']))
-                            <svg viewBox="0 0 24 24" fill="currentColor" width="10" height="10"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            <x-gravityui-play width="10" height="10" />
                         @else
                             {{ $u['initial'] }}
                         @endif
@@ -257,7 +257,7 @@
                 <h2 class="modal-title">Crear tarea</h2>
             </div>
             <button type="button" class="modal-close" onclick="closeTaskModal()" aria-label="Cerrar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <x-gravityui-xmark width="22" height="22" />
             </button>
         </div>
 
@@ -269,7 +269,7 @@
 
             <div class="modal-field">
                 <label class="modal-label">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <x-gravityui-file-text width="12" height="12" />
                     Copy
                 </label>
                 <textarea name="description" class="modal-textarea" placeholder="Escribe aquí el copy / texto de la publicación..."></textarea>
@@ -277,7 +277,7 @@
 
             <div class="modal-field">
                 <label class="modal-label">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <x-gravityui-picture width="12" height="12" />
                     Trabajo entregado (Canva / Drive / YouTube / imagen o video)
                 </label>
                 <input type="url" name="delivery_link" class="modal-input" placeholder="Pega el link de Canva, Drive o YouTube del trabajo (que esté cómo: cualquiera con el enlace)">
@@ -342,14 +342,14 @@
             </div>
 
             <div class="modal-status-pill">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <x-gravityui-clock width="16" height="16" />
                 Revisión: <span id="modal-revision-text">Pendiente</span>
             </div>
         </div>
 
         <div class="modal-foot">
             <button type="submit" class="btn-guardar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
+                <x-gravityui-check width="18" height="18" />
                 Guardar
             </button>
         </div>
@@ -366,7 +366,7 @@
                 <h2 class="modal-title" id="view-task-title">Prueba</h2>
             </div>
             <button type="button" class="modal-close" onclick="closeViewModal()" aria-label="Cerrar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <x-gravityui-xmark width="22" height="22" />
             </button>
         </div>
 
@@ -384,7 +384,7 @@
 
                 <div class="modal-field">
                     <label class="modal-label">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        <x-gravityui-file-text width="12" height="12" />
                         Copy
                     </label>
                     <textarea name="description" id="edit-description" class="modal-textarea" placeholder="Escribe aquí el copy / texto de la publicación..."></textarea>
@@ -392,7 +392,7 @@
 
                 <div class="modal-field">
                     <label class="modal-label">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <x-gravityui-picture width="12" height="12" />
                         Trabajo entregado (Canva / Drive / YouTube / imagen o video)
                     </label>
                     <input type="url" name="delivery_link" id="edit-delivery-link" class="modal-input" placeholder="Pega el link de Canva, Drive o YouTube del trabajo (que esté cómo: cualquiera con el enlace)">
@@ -461,7 +461,7 @@
                 @csrf
                 <input type="hidden" name="_method" value="PUT">
                 <div class="modal-status-pill">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <x-gravityui-clock width="16" height="16" />
                     Revisión: <span id="edit-review-status">Pendiente</span>
                 </div>
                 <div class="modal-field">
@@ -495,7 +495,7 @@
                 <h2 class="modal-title" id="category-modal-title"></h2>
             </div>
             <button type="button" class="modal-close" onclick="closeCategoryModal()" aria-label="Cerrar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <x-gravityui-xmark width="22" height="22" />
             </button>
         </div>
         <div class="modal-body" id="category-task-list" style="gap:12px;"></div>

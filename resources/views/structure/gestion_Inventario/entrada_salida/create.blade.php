@@ -20,7 +20,7 @@
                 <p class="header-subtitle" style="margin:0;">Registra una entrada de inventario con evidencia de cómo llegó</p>
             </div>
             <a href="{{ route('inventory.movimientos.index') }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                <x-gravityui-arrow-left width="16" height="16" />
                 Regresar
             </a>
         </div>
@@ -28,6 +28,46 @@
 
     <form method="POST" action="{{ route('inventory.movimientos.store') }}" enctype="multipart/form-data">
         @csrf
+<<<<<<< Updated upstream
+=======
+
+        <x-ui.card style="margin-bottom:18px;">
+            <x-ui.section-title style="margin:0 0 6px;">¿El equipo es nuevo o usado?</x-ui.section-title>
+            <p style="margin:0 0 14px; color:var(--muted); font-size:13.5px;">
+                De esto depende lo que se te pida después: el usado lleva checklist de recepción.
+            </p>
+
+            <div class="opciones">
+                <label class="opcion">
+                    <input type="radio" name="condicion" value="nuevo" id="condicion-nuevo"
+                           {{ old('condicion', 'nuevo') === 'nuevo' ? 'checked' : '' }}>
+                    <span class="ico">
+                        <x-gravityui-box />
+                    </span>
+                    <span>
+                        <span class="t">Nuevo</span>
+                        <span class="d">De fábrica, sin uso. Entra directo a stock.</span>
+                    </span>
+                </label>
+
+                <label class="opcion">
+                    <input type="radio" name="condicion" value="usado" id="condicion-usado"
+                           {{ old('condicion') === 'usado' ? 'checked' : '' }}>
+                    <span class="ico">
+                        <x-gravityui-wrench />
+                    </span>
+                    <span>
+                        <span class="t">Usado</span>
+                        <span class="d">Entra en revisión hasta pasar por su proceso.</span>
+                    </span>
+                </label>
+            </div>
+            @error('condicion')
+                <div style="color:var(--danger); font-size:13px; margin-top:8px;">{{ $message }}</div>
+            @enderror
+        </x-ui.card>
+
+>>>>>>> Stashed changes
         <x-ui.card style="margin-bottom:18px;">
             <x-ui.section-title style="margin:0 0 16px;">¿Qué llegó?</x-ui.section-title>
             <div id="modeloExistenteAviso" class="cat-aviso" style="display:none; margin-bottom:14px;"></div>
@@ -95,8 +135,17 @@
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', function () {
+<<<<<<< Updated upstream
                 const evidenciasInput = document.getElementById('evidencias');
                 const previewWrap = document.getElementById('evidencia-preview-wrap');
+=======
+                const ICONO_CAMARA = '<x-gravityui-camera />';
+                const ICONO_VIDEO = '<x-gravityui-video />';
+                const VIDEO_CHUNK_URL = @json(route('inventory.movimientos.videoChunk'));
+                const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB por pedazo
+                const EXTENSIONES_VALIDAS = ['mp4', 'mov', 'm4v', 'webm'];
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+>>>>>>> Stashed changes
 
                 if (evidenciasInput && previewWrap) {
                     evidenciasInput.addEventListener('change', function () {

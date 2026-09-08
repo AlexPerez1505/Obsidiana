@@ -8,14 +8,14 @@
         {{-- Mismo lenguaje que la venta: editar como icono, la acción
              principal como único botón lleno. --}}
         <a href="{{ route('commercial.cotizaciones.edit', $cotizacion) }}" class="btn-icono" title="Editar cotización" aria-label="Editar cotización">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            <x-gravityui-pencil />
         </a>
         <a href="{{ route('commercial.cotizaciones.pdf', $cotizacion) }}" target="_blank" class="btn btn--ghost">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <x-gravityui-file-text width="15" height="15" />
             PDF
         </a>
         <a href="{{ route('commercial.ventas.create', ['cotizacion' => $cotizacion->id]) }}" class="btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            <x-gravityui-shopping-cart width="15" height="15" />
             Convertir a venta
         </a>
     </x-ui.page-header>

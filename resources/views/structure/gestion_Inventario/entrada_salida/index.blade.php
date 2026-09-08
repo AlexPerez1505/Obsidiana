@@ -300,10 +300,331 @@
 @endpush
 
 @section('content')
+<<<<<<< Updated upstream
     <section class="movement-page">
         <div class="movement-head">
             <div>
                 <p>Entradas: lo que llega, con su evidencia. Salidas: lo que se vendió, se registra solo desde Ventas.</p>
+=======
+    @php
+        // Se recorre una sola vez: los mismos datos alimentan la tabla y las tarjetas.
+        $filas = collect($movements->items())->map(function ($m) {
+            $tipo = $m->movement_type;
+
+            return [
+                'modelo' => $m,
+                'tipo' => $tipo,
+                'tipoLabel' => ucfirst($tipo),
+                'condicion' => $m->condicion ?: 'nuevo',
+                'almacen' => $m->warehouse ?: 'Sin almacén',
+                'quien' => $m->creator?->name ?: 'Sin registrar',
+                'fecha' => $m->movement_date?->format('Y-m-d') ?? '',
+                'fechaVista' => $m->movement_date?->format('d/m/Y') ?? '—',
+                'nombre' => $m->item_name ?: 'Sin nombre',
+            ];
+        });
+
+        $almacenes = $filas->pluck('almacen')->filter()->unique()->sort()->values();
+        $quienes = $filas->pluck('quien')->filter()->unique()->sort()->values();
+
+        // Cómo se pinta cada tipo de movimiento.
+        $tono = ['entrada' => 'badge--ok', 'salida' => 'badge--danger', 'transferencia' => 'badge--info'];
+
+        $datos = function (array $fila) {
+            return [
+                'data-buscar' => mb_strtolower($fila['modelo']->folio.' '.$fila['nombre'].' '.$fila['almacen'].' '.$fila['quien']),
+                'data-tipo' => $fila['tipo'],
+                'data-almacen' => $fila['almacen'],
+                'data-condicion' => $fila['condicion'],
+                'data-quien' => $fila['quien'],
+                'data-fecha' => $fila['fecha'],
+            ];
+        };
+    @endphp
+
+    <div class="content-actions">
+        <a href="{{ route('inventory.movimientos.create') }}" class="btn">
+            <x-gravityui-plus width="15" height="15" />
+            Nueva entrada
+        </a>
+    </div>
+
+    {{-- ===================== Métricas ===================== --}}
+    <div class="mv-stats">
+        <div class="card card--accent stat">
+            <span class="stat-ico blue">
+                <x-gravityui-box />
+            </span>
+            <div>
+                <div class="stat-num">{{ $resumen['movimientos'] }}</div>
+                <div class="stat-lbl">Movimientos registrados</div>
+            </div>
+        </div>
+
+        <div class="card card--accent is-green stat">
+            <span class="stat-ico green">
+                <x-gravityui-arrow-down />
+            </span>
+            <div>
+                <div class="stat-num">{{ $resumen['entradas_mes'] }}</div>
+                <div class="stat-lbl">Entradas este mes</div>
+            </div>
+        </div>
+
+        <div class="card card--accent stat">
+            <span class="stat-ico blue">
+                <x-gravityui-boxes-3 />
+            </span>
+            <div>
+                <div class="stat-num">{{ $resumen['piezas'] }}</div>
+                <div class="stat-lbl">Piezas en inventario</div>
+            </div>
+        </div>
+
+        <div class="card card--accent is-amber stat">
+            <span class="stat-ico orange">
+                <x-gravityui-clock />
+            </span>
+            <div>
+                <div class="stat-num">{{ $resumen['en_proceso'] }}</div>
+                <div class="stat-lbl">
+                    En proceso, sin poder venderse
+                    @if ($resumen['en_proceso'] > 0)
+                        · <a href="{{ route('inventory.procesos.index') }}" class="link">ver</a>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===================== Búsqueda y filtros ===================== --}}
+    <div class="f-toolbar">
+        <div class="f-search">
+            <x-gravityui-magnifier />
+            <input type="text" id="fBuscar" placeholder="Buscar por folio, equipo, almacén o quien registró" autocomplete="off">
+        </div>
+
+        <div class="flt" data-flt>
+            <button type="button" class="flt-btn" data-flt-toggle aria-expanded="false">
+                <x-gravityui-funnel />
+                Filtros
+                <span class="flt-count" data-flt-count hidden>0</span>
+            </button>
+
+            <div class="flt-panel" data-flt-panel hidden>
+                <div class="flt-group">
+                    <h4>Tipo de movimiento</h4>
+                    @foreach (['entrada' => 'Entradas', 'salida' => 'Salidas', 'transferencia' => 'Transferencias'] as $valor => $texto)
+                        <label class="flt-opt">
+                            <span class="flt-opt-txt">{{ $texto }}</span>
+                            <input type="checkbox" data-f="tipo" value="{{ $valor }}">
+                        </label>
+                    @endforeach
+                </div>
+
+                <div class="flt-group">
+                    <h4>Condición</h4>
+                    <label class="flt-opt">
+                        <span class="flt-opt-txt">Equipo nuevo</span>
+                        <input type="checkbox" data-f="condicion" value="nuevo">
+                    </label>
+                    <label class="flt-opt">
+                        <span class="flt-opt-txt">Equipo usado</span>
+                        <input type="checkbox" data-f="condicion" value="usado">
+                    </label>
+                </div>
+
+                @if ($almacenes->count() > 1)
+                    <div class="flt-group">
+                        <h4>Almacén</h4>
+                        @foreach ($almacenes as $almacen)
+                            <label class="flt-opt">
+                                <span class="flt-opt-txt">{{ $almacen }}</span>
+                                <input type="checkbox" data-f="almacen" value="{{ $almacen }}">
+                            </label>
+                        @endforeach
+                    </div>
+                @endif
+
+                @if ($quienes->count() > 1)
+                    <div class="flt-group">
+                        <h4>Registró</h4>
+                        @foreach ($quienes as $quien)
+                            <label class="flt-opt">
+                                <span class="flt-opt-txt">{{ $quien }}</span>
+                                <input type="checkbox" data-f="quien" value="{{ $quien }}">
+                            </label>
+                        @endforeach
+                    </div>
+                @endif
+
+                <div class="flt-group">
+                    <h4>Fecha del movimiento</h4>
+                    <div class="flt-fechas">
+                        <input type="date" data-f="desde" aria-label="Movimiento desde">
+                        <input type="date" data-f="hasta" aria-label="Movimiento hasta">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Accesos rápidos: lo que entra / lo que sale --}}
+        <div class="flt-toggles" role="group" aria-label="Tipo de movimiento">
+            <button type="button" class="flt-tgl" data-f="estado" data-valor="entrada" title="Ver solo entradas" aria-pressed="false">
+                <x-gravityui-arrow-down />
+            </button>
+            <button type="button" class="flt-tgl" data-f="estado" data-valor="salida" title="Ver solo salidas" aria-pressed="false">
+                <x-gravityui-arrow-up />
+            </button>
+        </div>
+
+        <button type="button" class="flt-btn flt-btn--icon" id="fLimpiar" title="Limpiar todos los filtros" aria-label="Limpiar filtros">
+            <x-gravityui-funnel-xmark />
+        </button>
+
+        <x-ui.view-switch key="movimientos" />
+    </div>
+
+    <div class="flt-chips" id="fChips" hidden></div>
+
+    {{-- ===================== Vista lista ===================== --}}
+    <div class="card" data-view-list style="overflow-x:auto; padding:0;">
+        <table class="mv-table">
+            <thead>
+                <tr>
+                    <th>Movimiento</th>
+                    <th>Equipo</th>
+                    <th>Cantidad</th>
+                    <th>Almacén</th>
+                    <th>Registró</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($filas as $fila)
+                    @php $m = $fila['modelo']; @endphp
+
+                    <tr class="f-row" @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
+                        <td>
+                            <div class="cell-id">
+                                <span class="mv-ico {{ $fila['tipo'] }}">
+                                    @if ($fila['tipo'] === 'entrada')
+                                        <x-gravityui-arrow-down />
+                                    @elseif ($fila['tipo'] === 'salida')
+                                        <x-gravityui-arrow-up />
+                                    @else
+                                        <x-gravityui-arrow-right-arrow-left />
+                                    @endif
+                                </span>
+                                <div style="min-width:0;">
+                                    <div class="t">{{ $m->folio }}</div>
+                                    <div class="s">{{ $fila['fechaVista'] }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="t">{{ $fila['nombre'] }}</div>
+                            <div class="s">{{ ucfirst($m->item_type) }} · {{ ucfirst($fila['condicion']) }}</div>
+                        </td>
+                        <td style="white-space:nowrap;">{{ $m->quantity }} {{ $m->unit }}</td>
+                        <td>{{ $fila['almacen'] }}</td>
+                        <td>{{ $fila['quien'] }}</td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            @include('structure.gestion_Inventario.entrada_salida._acciones', ['movimiento' => $m])
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <span class="ico">
+                                    <x-gravityui-box />
+                                </span>
+                                <h3>Todavía no hay movimientos</h3>
+                                <p>Registra la primera entrada y aparecerá aquí con su evidencia.</p>
+                                <a href="{{ route('inventory.movimientos.create') }}" class="btn">Nueva entrada</a>
+                            </div>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    {{-- ===================== Vista tarjetas ===================== --}}
+    <div class="data-cards" data-view-cards style="display:none;">
+        @forelse ($filas as $fila)
+            @php $m = $fila['modelo']; @endphp
+
+            <article class="data-card f-row" @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
+                <div class="data-card-top">
+                    <span class="mv-ico {{ $fila['tipo'] }}">
+                        @if ($fila['tipo'] === 'entrada')
+                            <x-gravityui-arrow-down />
+                        @elseif ($fila['tipo'] === 'salida')
+                            <x-gravityui-arrow-up />
+                        @else
+                            <x-gravityui-arrow-right-arrow-left />
+                        @endif
+                    </span>
+                    <div style="min-width:0; flex:1;">
+                        <div class="t">{{ $m->folio }}</div>
+                        <div class="s">{{ $fila['fechaVista'] }}</div>
+                    </div>
+                    <span class="badge {{ $tono[$fila['tipo']] ?? '' }}">{{ $fila['tipoLabel'] }}</span>
+                </div>
+
+                <dl>
+                    <div><dt>Equipo</dt><dd>{{ $fila['nombre'] }}</dd></div>
+                    <div><dt>Cantidad</dt><dd>{{ $m->quantity }} {{ $m->unit }}</dd></div>
+                    <div><dt>Condición</dt><dd>{{ ucfirst($fila['condicion']) }}</dd></div>
+                    <div><dt>Almacén</dt><dd>{{ $fila['almacen'] }}</dd></div>
+                    <div><dt>Registró</dt><dd>{{ $fila['quien'] }}</dd></div>
+                </dl>
+
+                <div class="data-card-foot">
+                    @include('structure.gestion_Inventario.entrada_salida._acciones', ['movimiento' => $m])
+                </div>
+            </article>
+        @empty
+            <div class="card">
+                <div class="empty-state">
+                    <span class="ico">
+                        <x-gravityui-box />
+                    </span>
+                    <h3>Todavía no hay movimientos</h3>
+                    <p>Registra la primera entrada y aparecerá aquí con su evidencia.</p>
+                    <a href="{{ route('inventory.movimientos.create') }}" class="btn">Nueva entrada</a>
+                </div>
+            </div>
+        @endforelse
+    </div>
+
+    {{-- Aviso cuando los filtros no dejan nada visible --}}
+    <div class="card" id="fVacio" hidden>
+        <div class="empty-state">
+            <span class="ico">
+                <x-gravityui-magnifier />
+            </span>
+            <h3>Ningún movimiento coincide</h3>
+            <p>Prueba a quitar algún filtro o a cambiar la búsqueda.</p>
+            <button type="button" class="btn" data-limpiar-filtros>Limpiar filtros</button>
+        </div>
+    </div>
+
+    <p class="f-conteo" id="fConteo"></p>
+
+    @include('partials._paginacion', ['paginator' => $movements])
+
+    {{-- ===================== Eliminar ===================== --}}
+    <dialog id="modalEliminar" class="mv-modal">
+        <form method="POST" action="" id="formEliminar">
+            @csrf
+            @method('DELETE')
+
+            <div class="mv-modal-ico">
+                <x-gravityui-triangle-exclamation />
+>>>>>>> Stashed changes
             </div>
 
             <a href="{{ route('inventory.movimientos.create') }}" class="movement-create">

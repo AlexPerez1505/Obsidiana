@@ -1,7 +1,7 @@
 <div class="dw">
     <div class="dw-head">
         <span class="dw-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
+            <x-gravityui-persons />
         </span>
         <h3>{{ $titulo }}</h3>
         <a href="{{ route('commercial.clientes.index') }}" class="dw-link">Ver</a>

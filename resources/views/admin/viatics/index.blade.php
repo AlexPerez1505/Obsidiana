@@ -193,12 +193,12 @@
     {{-- Header --}}
     <div class="vl-header">
         <a href="{{ route('dashboard') }}" class="vl-back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            <x-gravityui-arrow-chevron-left />
         </a>
         <h1 class="vl-header-title">Mis Viáticos</h1>
         <div style="flex:1"></div>
         <a href="{{ route('admin.viatics.create') }}" class="vl-add-desktop">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            <x-gravityui-plus />
             Nuevo Viático
         </a>
     </div>
@@ -238,7 +238,7 @@
                         @if($vt->ticket_photo)
                             <img src="{{ asset('storage/' . $vt->ticket_photo) }}" alt="Ticket">
                         @else
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+                            <x-gravityui-file-text />
                         @endif
                     </div>
                     <div class="vl-card-info">
@@ -246,13 +246,13 @@
                             <p class="vl-card-place">{{ $vt->place ?: 'Sin lugar' }}</p>
                             @if($vt->vehicle_name)
                                 <span class="vl-vehicle-tag">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14M3 17l1.5-5.5A2 2 0 0 1 6.4 10h11.2a2 2 0 0 1 1.9 1.5L21 17M5 17v2M19 17v2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
+                                    <x-gravityui-car />
                                     {{ $vt->vehicle_name }}
                                 </span>
                             @endif
                         </div>
                         <p class="vl-card-sub">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                            <x-gravityui-clock />
                             {{ $timeLabel }}
                         </p>
                     </div>
@@ -262,13 +262,13 @@
                     </div>
                     <div class="vl-card-actions" onclick="event.stopPropagation()">
                         <a href="{{ route('admin.viatics.edit', $vt) }}" class="vl-card-btn" aria-label="Editar">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            <x-gravityui-pencil />
                         </a>
                         <form method="POST" action="{{ route('admin.viatics.destroy', $vt) }}" onsubmit="return confirm('¿Eliminar este viático?')" style="display:inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="vl-card-btn vl-btn-danger" aria-label="Eliminar">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                <x-gravityui-trash-bin />
                             </button>
                         </form>
                     </div>
@@ -277,7 +277,7 @@
         </div>
     @else
         <div class="vl-empty">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <x-gravityui-map-pin />
             <p>No hay viáticos registrados</p>
             <span>Toca el botón + para registrar tu primer viático</span>
         </div>
@@ -287,6 +287,6 @@
 
 {{-- FAB --}}
 <a href="{{ route('admin.viatics.create') }}" class="vl-fab" aria-label="Nuevo viático">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+    <x-gravityui-plus />
 </a>
 @endsection

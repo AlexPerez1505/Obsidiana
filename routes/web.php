@@ -26,6 +26,7 @@ require __DIR__.'/web/dashboard/dashboard.php';
 
 // Gestion comercial
 require __DIR__.'/web/commercial/commercial.php';
+require __DIR__.'/web/commercial/promociones.php';
 require __DIR__.'/web/cotizaciones.php';
 require __DIR__.'/web/ventas.php';
 require __DIR__.'/web/facturas.php';

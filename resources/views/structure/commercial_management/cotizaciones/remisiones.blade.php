@@ -9,7 +9,7 @@
             <input id="remisiones-search" type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por cliente, teléfono, producto, folio o total..."
                    style="flex:1; min-width:220px; padding:11px 14px; border:1px solid var(--border); border-radius:9px; font-size:14.5px; background:var(--surface); color:var(--text);">
             <button type="submit" class="btn btn--ghost" style="padding:10px 14px; display:inline-flex; align-items:center; gap:6px;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <x-gravityui-magnifier width="15" height="15" />
                 Buscar
             </button>
             @if(! empty($filters['search']))
@@ -18,7 +18,7 @@
         </form>
         <div style="flex:1;"></div>
         <a href="{{ route('commercial.cotizaciones.create') }}" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            <x-gravityui-plus width="16" height="16" />
             Nueva cotización
         </a>
     </div>
@@ -65,11 +65,11 @@
                             <td>
                                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
                                     <a href="{{ route('commercial.cotizaciones.show', $rem) }}" class="btn btn--ghost" style="padding:6px 12px; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        <x-gravityui-eye width="14" height="14" />
                                         Ver detalle
                                     </a>
                                     <a href="{{ route('commercial.remisiones.pdf', $rem) }}" class="btn" style="padding:6px 12px; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                                        <x-gravityui-arrow-down-to-line width="14" height="14" />
                                         Descargar PDF
                                     </a>
                                 </div>

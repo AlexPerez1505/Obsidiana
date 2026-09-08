@@ -58,7 +58,7 @@
 <div class="card condition-screen" id="condition-screen">
     <div class="wizard-header">
         <div class="wizard-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <x-gravityui-pencil width="28" height="28" />
         </div>
         <div>
             <h1 class="section-title" style="font-size:24px; margin:0;">Tipo de servicio</h1>
@@ -67,7 +67,7 @@
     </div>
 
     <div class="condition-card condition-card--externo" data-condition="externo">
-        <div class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check"><x-gravityui-check width="14" height="14" /></div>
         <div class="info">
             <strong>Mantenimiento externo</strong>
             <span>El equipo se atiende fuera de las instalaciones del cliente.</span>
@@ -75,7 +75,7 @@
     </div>
 
     <div class="condition-card condition-card--interno" data-condition="interno">
-        <div class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check"><x-gravityui-check width="14" height="14" /></div>
         <div class="info">
             <strong>Mantenimiento interno</strong>
             <span>El tecnico asiste en las instalaciones del cliente.</span>
@@ -84,12 +84,12 @@
 
     <div style="display:flex; gap:10px; margin-top:8px;">
         <button type="button" class="btn btn--ghost" onclick="history.back()" style="flex:1; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <x-gravityui-xmark width="16" height="16" />
             Cancelar
         </button>
         <button type="button" class="btn" id="btn-start" style="flex:1; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
             Continuar
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <x-gravityui-arrow-chevron-right width="16" height="16" />
         </button>
     </div>
 </div>
@@ -97,17 +97,17 @@
 <div class="card hidden" id="wizard-card" style="position:relative;">
     <div class="wizard-actions" id="wizard-actions" style="position:absolute; top:18px; right:18px; z-index:10;">
         <button type="button" class="btn btn--ghost" id="btn-secondary" style="display:inline-flex; align-items:center; gap:8px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <x-gravityui-xmark width="16" height="16" />
             Cancelar
         </button>
         <button type="button" class="btn" id="btn-primary" style="display:inline-flex; align-items:center; gap:8px;">
             Siguiente: Equipo
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <x-gravityui-arrow-chevron-right width="16" height="16" />
         </button>
     </div>
     <div class="wizard-header">
         <div class="wizard-icon" id="wizard-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <x-gravityui-file-text width="28" height="28" />
         </div>
         <div>
             <h1 class="section-title" style="font-size:24px; margin:0;" id="wizard-title">Nuevo servicio</h1>

@@ -306,7 +306,7 @@
             color="orange"
         >
             <x-slot:icon>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="26" height="26"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                <x-gravityui-wrench width="26" height="26" />
             </x-slot:icon>
         </x-ui.stat-card>
 
@@ -316,7 +316,7 @@
             color="green"
         >
             <x-slot:icon>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="26" height="26"><path d="M20 6L9 17l-5-5"/></svg>
+                <x-gravityui-check width="26" height="26" />
             </x-slot:icon>
         </x-ui.stat-card>
     </div>
@@ -324,7 +324,7 @@
     {{-- Toolbar --}}
     <form method="GET" action="{{ route('admin.vehicles.index') }}" class="vh-toolbar">
         <div class="vh-search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <x-gravityui-magnifier />
             <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar placa, marca, VIN...">
         </div>
         <div class="vh-filter">
@@ -341,7 +341,7 @@
     <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
         <div style="flex:1;"></div>
         <button type="button" class="vh-btn-add" onclick="document.getElementById('vhModal').classList.add('open')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            <x-gravityui-plus />
             Agregar vehículo
         </button>
     </div>
@@ -403,7 +403,7 @@
     <div class="vh-overlay" id="vhModal">
         <div class="vh-modal">
             <button type="button" class="vh-modal-close" onclick="document.getElementById('vhModal').classList.remove('open')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                <x-gravityui-xmark />
             </button>
 
             <div class="vh-modal-header">
@@ -418,49 +418,49 @@
                     {{-- Section 1: Identificación y Especificaciones --}}
                     <div class="vh-form-section">
                         <h3 class="vh-section-title">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                            <x-gravityui-circle-info />
                             Identificación y Especificaciones
                         </h3>
                         <div class="vh-form-grid">
                             <div class="vh-field">
                                 <label>Número de Placa</label>
                                 <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 12h10"/></svg>
+                                    <x-gravityui-credit-card />
                                     <input type="text" name="plate_number" required placeholder="ABC-123">
                                 </div>
                             </div>
                             <div class="vh-field">
                                 <label>Número de Serie (VIN)</label>
                                 <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                                    <x-gravityui-file />
                                     <input type="text" name="vin" placeholder="1HGCM82633A123456">
                                 </div>
                             </div>
                             <div class="vh-field">
                                 <label>Marca</label>
                                 <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                    <x-gravityui-star />
                                     <input type="text" name="brand" placeholder="Toyota, Ford, Nissan...">
                                 </div>
                             </div>
                             <div class="vh-field">
                                 <label>Modelo</label>
                                 <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                    <x-gravityui-star />
                                     <input type="text" name="model" placeholder="Hilux, Focus, Sentra...">
                                 </div>
                             </div>
                             <div class="vh-field">
                                 <label>Año</label>
                                 <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                                    <x-gravityui-calendar />
                                     <input type="number" name="year" placeholder="2024" min="1900" max="{{ date('Y') + 1 }}">
                                 </div>
                             </div>
                             <div class="vh-field">
                                 <label>Color</label>
                                 <div class="vh-input-wrap">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+                                    <x-gravityui-palette />
                                     <input type="text" name="color" placeholder="Blanco, Negro, Rojo...">
                                 </div>
                             </div>
@@ -564,11 +564,16 @@
                     {{-- Section 3: Galería de Fotos --}}
                     <div class="vh-form-section">
                         <h3 class="vh-section-title">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                            <x-gravityui-picture />
                             Galería de Fotos del Vehículo
                         </h3>
+<<<<<<< Updated upstream
                         <div class="vh-drop-zone" onclick="alert('Funcionalidad de subida de fotos próximamente')">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+=======
+                        <div class="vh-drop-zone" onclick="document.getElementById('vh-photos-input').click()">
+                            <x-gravityui-file-arrow-up />
+>>>>>>> Stashed changes
                             <p>Arrastra y suelta las fotos aquí</p>
                             <span>o haz clic para explorar (frente, lateral, trasera, interior)</span>
                         </div>
@@ -592,12 +597,12 @@
                     {{-- Section 4: Documentación Obligatoria --}}
                     <div class="vh-form-section">
                         <h3 class="vh-section-title">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg>
+                            <x-gravityui-file-check />
                             Documentación Obligatoria
                         </h3>
                         <div class="vh-doc-row">
                             <div class="vh-doc-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 12h10"/></svg>
+                                <x-gravityui-credit-card />
                             </div>
                             <div class="vh-doc-info">
                                 <p class="vh-doc-name">Tarjeta de Circulación</p>
@@ -607,7 +612,7 @@
                         </div>
                         <div class="vh-doc-row">
                             <div class="vh-doc-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                                <x-gravityui-shield-check />
                             </div>
                             <div class="vh-doc-info">
                                 <p class="vh-doc-name">Verificación Vehicular</p>
@@ -617,7 +622,7 @@
                         </div>
                         <div class="vh-doc-row">
                             <div class="vh-doc-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                <x-gravityui-circle-dollar />
                             </div>
                             <div class="vh-doc-info">
                                 <p class="vh-doc-name">Pago de Tenencia</p>
@@ -627,11 +632,24 @@
                         </div>
                         <div class="vh-doc-row">
                             <div class="vh-doc-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                <x-gravityui-shield />
                             </div>
                             <div class="vh-doc-info">
                                 <p class="vh-doc-name">Póliza de Seguro</p>
+<<<<<<< Updated upstream
                                 <p class="vh-doc-status">Sin archivo adjunto</p>
+=======
+                                <p class="vh-doc-status" data-doc-status>Sin archivo adjunto</p>
+                            </div>
+                            <input type="file" id="vh-doc-insurance_doc" name="insurance_doc" accept=".jpg,.jpeg,.png,.pdf" hidden data-doc-input>
+                            <button type="button" class="vh-doc-btn" onclick="document.getElementById('vh-doc-insurance_doc').click()">Explorar</button>
+                        </div>
+                        <div class="vh-field" style="margin-top:6px;">
+                            <label>Número de Póliza</label>
+                            <div class="vh-input-wrap">
+                                <x-gravityui-shield />
+                                <input type="text" name="insurance_policy_number" placeholder="Número de la póliza de seguro">
+>>>>>>> Stashed changes
                             </div>
                             <button type="button" class="vh-doc-btn" onclick="alert('Explorar archivos próximamente')">Explorar</button>
                         </div>
@@ -644,7 +662,7 @@
                 <div class="vh-modal-footer">
                     <button type="button" class="vh-btn vh-btn-cancel" onclick="document.getElementById('vhModal').classList.remove('open')">Cancelar</button>
                     <button type="submit" class="vh-btn vh-btn-save">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        <x-gravityui-floppy-disk width="18" height="18" />
                         Guardar vehículo
                     </button>
                 </div>

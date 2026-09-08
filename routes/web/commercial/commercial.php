@@ -74,8 +74,4 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('commercial.promociones.destroy');
     Route::get('/gestion-comercial/remisiones/{cotizacion}/pdf', [CotizacionController::class, 'descargarRemisionPdf'])
         ->name('commercial.remisiones.pdf');
-
-    Route::get('/gestion-comercial/promociones', function () {
-        return view('structure.commercial_management.placeholder', ['titulo' => 'Promociones']);
-    })->name('commercial.promociones.index');
 });

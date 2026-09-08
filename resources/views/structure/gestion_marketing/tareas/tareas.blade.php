@@ -339,14 +339,14 @@
     <div class="kanban-header">
         <div class="kanban-header-left">
             <span class="kanban-tag">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <x-gravityui-persons />
                 Operación del equipo
             </span>
             <h1 class="kanban-title">Tareas</h1>
             <p class="kanban-sub">Pendientes del equipo de marketing. Asigna responsable, fecha y prioridad; vincula la tarea a una pieza del calendario si aplica.</p>
         </div>
         <a href="{{ route('marketing.tareas.create') }}" class="kanban-new">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <x-gravityui-plus />
             Nueva tarea
         </a>
     </div>
@@ -435,7 +435,7 @@
                 <h1 class="task-modal-title" id="modalTitle">Tarea</h1>
             </div>
             <button type="button" class="task-modal-close" onclick="closeTaskModal()" title="Cerrar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <x-gravityui-xmark width="18" height="18" />
             </button>
         </div>
 
@@ -559,7 +559,7 @@
                 Mandar a revisión
             </button>
             <button type="submit" class="task-save" id="btnGuardar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
+                <x-gravityui-check width="18" height="18" />
                 Guardar cambios
             </button>
         </div>

@@ -10,7 +10,7 @@
                 </div>
                 <div style="display:flex; align-items:center; gap:12px; color:var(--muted); font-size:14px;">
                     Registrado por: <strong style="color:var(--text);">{{ auth()->user()?->name ?? 'Invitado' }}</strong>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <x-gravityui-person width="22" height="22" />
                 </div>
             </div>
 
@@ -57,7 +57,7 @@
 
                 <div class="card" style="padding:18px;" id="ext-tech-detail">
                     <h3 style="display:flex; align-items:center; gap:10px; font-size:17px; margin:0 0 14px;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="var(--accent)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <x-gravityui-persons width="20" height="20" color="var(--accent)" />
                         Informacion del tecnico externo
                     </h3>
                     <p class="muted" style="font-size:13px; margin:0 0 12px;">Detalles de <strong id="active-ext-tech-name">{{ $externalTechnicians->first()?->name ?? 'Nuevo tecnico' }}</strong></p>
@@ -80,7 +80,7 @@
                                 <label>Ubicacion</label>
                                 <input type="text" id="ext-tech-location-text" value="{{ $externalTechnicians->first()?->location ?? '' }}" readonly>
                                 <a href="#" id="ext-tech-location" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; color:var(--primary); font-size:14px; text-decoration:none; margin-top:6px;">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    <x-gravityui-map-pin width="16" height="16" />
                                     <span>Ver en Google Maps</span>
                                 </a>
                             </div>

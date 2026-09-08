@@ -1,7 +1,7 @@
 <div class="dw">
     <div class="dw-head">
         <span class="dw-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
+            <x-gravityui-box />
         </span>
         <h3>{{ $titulo }}</h3>
         <a href="{{ route('inventory.productos.index') }}" class="dw-link">Ver</a>

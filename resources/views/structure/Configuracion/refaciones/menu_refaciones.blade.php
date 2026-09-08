@@ -7,7 +7,7 @@
     {{-- Acciones de la pantalla: el titulo lo pinta la barra superior del layout --}}
     <div class="content-actions">
         <a href="{{ route('configuracion.refaciones.create') }}" class="btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <x-gravityui-plus width="16" height="16" />
             Agregar refacción
         </a>
     </div>
@@ -15,7 +15,7 @@
     <div class="stats-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:18px; margin-bottom:22px;">
         <div class="stat-card">
             <div class="stat-icon" style="background:rgba(0,168,255,0.12); color:#00A8FF;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+                <x-gravityui-box width="22" height="22" />
             </div>
             <div class="stat-info">
                 <div class="stat-number">{{ number_format($totalRefacciones) }}</div>
@@ -25,7 +25,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="background:rgba(124,58,237,0.12); color:#A855F7;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></svg>
+                <x-gravityui-bars width="22" height="22" />
             </div>
             <div class="stat-info">
                 <div class="stat-number">{{ number_format($totalSubtypes) }}</div>
@@ -35,7 +35,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="background:rgba(34,197,94,0.12); color:#22C55E;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                <x-gravityui-suitcase width="22" height="22" />
             </div>
             <div class="stat-info">
                 <div class="stat-number">{{ number_format($totalStock) }}</div>
@@ -45,7 +45,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="background:rgba(249,115,22,0.12); color:#F97316;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <x-gravityui-star width="22" height="22" />
             </div>
             <div class="stat-info">
                 <div class="stat-number">{{ number_format($totalCompatible) }}</div>
@@ -58,7 +58,7 @@
     <div class="catalog-card">
         <div class="toolbar" style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px;">
             <div class="search-box" style="flex:1; min-width:260px;">
-                <svg class="search-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <x-gravityui-magnifier class="search-icon" width="17" height="17" />
                 <input type="text" placeholder="Buscar refacción..." readonly>
             </div>
         </div>
@@ -96,22 +96,22 @@
                             <td>
                                 <div class="congress-menu">
                                     <button type="button" class="congress-menu-trigger" aria-label="Acciones de la refacción" aria-expanded="false">
-                                        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+                                        <x-gravityui-ellipsis-vertical />
                                     </button>
                                     <div class="congress-menu-dropdown">
                                         <a href="#" class="congress-menu-item" title="Ver" aria-label="Ver refacción" style="text-decoration:none;">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            <x-gravityui-eye />
                                             <span>Ver</span>
                                         </a>
                                         <a href="#" class="congress-menu-item" title="Editar" aria-label="Editar refacción" style="text-decoration:none;">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                            <x-gravityui-pencil />
                                             <span>Editar</span>
                                         </a>
                                         <form method="POST" action="{{ route('configuracion.refaciones.destroy', $refaccion) }}" style="display:contents;" onsubmit="return confirm('¿Estás seguro de eliminar esta refacción?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="congress-menu-item danger" title="Eliminar" aria-label="Eliminar refacción" style="width:100%; text-align:left; background:transparent; border:none; cursor:pointer;">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                                                <x-gravityui-trash-bin />
                                                 <span>Eliminar</span>
                                             </button>
                                         </form>

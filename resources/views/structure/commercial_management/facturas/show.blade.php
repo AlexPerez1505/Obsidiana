@@ -8,7 +8,7 @@
     <div class="erp-head">
         <div class="erp-head-l">
             <span class="erp-ic">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <x-gravityui-file-text width="24" height="24" />
             </span>
             <div>
                 <h1 class="erp-h1">{{ $factura->folio }} <span class="erp-badge {{ $badge }}"><span class="dot"></span>{{ $factura->estadoLabel() }}</span></h1>
@@ -22,7 +22,7 @@
     </div>
 
     <div style="display:flex; align-items:center; gap:10px; background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent-soft); padding:12px 16px; border-radius:12px; margin-bottom:20px; font-weight:600; font-size:14px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <x-gravityui-triangle-exclamation width="18" height="18" />
         Borrador sin validez fiscal — no está timbrado ante el SAT.
     </div>
 

@@ -6,7 +6,7 @@
 @section('content')
     <div style="display:flex; justify-content:flex-end; margin-bottom:18px;">
         <a href="{{ route('inventory.paquetes.create') }}" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            <x-gravityui-plus width="16" height="16" />
             Agregar paquete
         </a>
     </div>

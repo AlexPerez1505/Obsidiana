@@ -157,7 +157,7 @@
 
     <div class="filters-row">
         <div class="filter-input">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <x-gravityui-magnifier />
             <input type="text" id="searchInput" placeholder="Buscar pieza, producto, ID, comentario..." onkeyup="filterTable()">
         </div>
         <select class="filter-select" id="filterCategory" onchange="filterTable()">
@@ -287,7 +287,7 @@
         <div class="approval-modal-head">
             <h2 class="approval-modal-title" id="modalTitle">Revisar pieza</h2>
             <button type="button" class="approval-modal-close" onclick="closeApprovalModal()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <x-gravityui-xmark width="18" height="18" />
             </button>
         </div>
         <form id="approvalForm" method="POST">

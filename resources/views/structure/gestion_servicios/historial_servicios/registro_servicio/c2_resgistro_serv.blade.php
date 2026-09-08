@@ -10,12 +10,12 @@
                 </div>
                 <div style="display:flex; align-items:center; gap:12px; color:var(--muted); font-size:14px;">
                     Registrado por: <strong style="color:var(--text);">{{ auth()->user()?->name ?? 'Invitado' }}</strong>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <x-gravityui-person width="22" height="22" />
                 </div>
             </div>
 
             <h3 style="display:flex; align-items:center; gap:10px; font-size:18px; margin:0 0 8px;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="var(--primary)"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                <x-gravityui-briefcase width="22" height="22" color="var(--primary)" />
                 Datos del equipo
             </h3>
             <p class="muted" style="margin:0 0 18px; font-size:13px;">Ingresa la informacion del equipo que recibira el servicio tecnico</p>
@@ -67,25 +67,25 @@
                 <label>Evidencia del equipo</label>
                 <div class="upload-grid">
                     <label class="upload-card">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <x-gravityui-picture width="28" height="28" />
                         <div style="font-size:13px; margin-top:8px;">Imagen 1</div>
                         <div style="font-size:12px;">Toca para subir</div>
                         <input type="file" name="evidencia_1" accept="image/*" style="display:none;">
                     </label>
                     <label class="upload-card">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <x-gravityui-picture width="28" height="28" />
                         <div style="font-size:13px; margin-top:8px;">Imagen 2</div>
                         <div style="font-size:12px;">Toca para subir</div>
                         <input type="file" name="evidencia_2" accept="image/*" style="display:none;">
                     </label>
                     <label class="upload-card">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <x-gravityui-picture width="28" height="28" />
                         <div style="font-size:13px; margin-top:8px;">Imagen 3</div>
                         <div style="font-size:12px;">Toca para subir</div>
                         <input type="file" name="evidencia_3" accept="image/*" style="display:none;">
                     </label>
                     <label class="upload-card">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 23 17 7 17 7 7 23 7"/><rect x="1" y="3" width="4" height="18" rx="1"/><polyline points="5 7 7 7 7 17 5 17"/></svg>
+                        <x-gravityui-video width="28" height="28" />
                         <div style="font-size:13px; margin-top:8px;">Video</div>
                         <div style="font-size:12px;">Toca para subir</div>
                         <input type="file" name="evidencia_video" accept="video/*" style="display:none;">

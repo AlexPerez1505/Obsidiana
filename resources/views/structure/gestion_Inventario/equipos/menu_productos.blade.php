@@ -6,7 +6,7 @@
 @section('content')
     <div class="content-actions">
         <a href="{{ route('inventory.equipos.create') }}" class="btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <x-gravityui-plus width="15" height="15" />
             Nuevo equipo
         </a>
     </div>
@@ -31,7 +31,7 @@
                                 <img src="{{ asset('storage/'.$equipo->imagen) }}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">
                             @else
                                 <div style="width:44px;height:44px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                    <x-gravityui-picture width="18" height="18" />
                                 </div>
                             @endif
                         </td>

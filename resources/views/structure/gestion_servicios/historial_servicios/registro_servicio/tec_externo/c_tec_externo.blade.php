@@ -3,7 +3,7 @@
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
             <h3 style="margin:0; font-size:17px;">Agregar tecnico externo</h3>
             <button type="button" class="btn btn--ghost" id="btn-close-ext-modal" aria-label="Cerrar">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <x-gravityui-xmark width="18" height="18" />
             </button>
         </div>
         <form id="add-ext-tech-form" method="POST" action="{{ route('gestion.servicios.historial.external_technicians.store') }}" enctype="multipart/form-data">

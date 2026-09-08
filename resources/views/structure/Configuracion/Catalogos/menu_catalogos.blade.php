@@ -21,17 +21,14 @@
             <div class="catalog-header-actions">
                 <span class="catalog-count">{{ $categories->count() }} {{ $categories->count() === 1 ? 'categoría' : 'categorías' }}</span>
                 <button type="button" class="catalog-search-btn" id="catalogSearchBtn" aria-label="Buscar categorías" aria-expanded="false">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="11" cy="11" r="7"/>
-                        <path d="m21 21-4.3-4.3"/>
-                    </svg>
+                    <x-gravityui-magnifier aria-hidden="true" />
                 </button>
             </div>
         </div>
         <div class="catalog-search-wrap" id="catalogSearchWrap">
             <div class="catalog-search">
                 <span class="search-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                    <x-gravityui-magnifier />
                 </span>
                 <input type="text" id="catalogSearchInput" placeholder="Buscar categoría por nombre o ID..." autocomplete="off">
             </div>
@@ -46,10 +43,7 @@
                     @php $color = $categoryColors[$loop->index % count($categoryColors)]; @endphp
                     <div class="category-item" data-search="{{ strtolower($category->nombre . ' ' . $category->id) }}">
                         <div class="category-icon" style="background:{{ $color['background'] }}; color:{{ $color['color'] }};">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/>
-                                <path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>
-                            </svg>
+                            <x-gravityui-cube aria-hidden="true" />
                         </div>
                         <div class="category-info">
                             <span class="category-name">{{ $category->nombre }}</span>
@@ -57,21 +51,21 @@
                         </div>
                         <div class="congress-menu">
                             <button type="button" class="congress-menu-trigger" aria-label="Acciones de la categoría" aria-expanded="false">
-                                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+                                <x-gravityui-ellipsis-vertical />
                             </button>
                             <div class="congress-menu-dropdown">
                                 <a href="{{ route('configuracion.categorias.edit', $category) }}" class="congress-menu-item" title="Editar" aria-label="Editar categoría" style="text-decoration:none;"
                                    data-cat-editar
                                    data-url="{{ route('configuracion.categorias.update', $category) }}"
                                    data-nombre="{{ $category->nombre }}">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                    <x-gravityui-pencil />
                                     <span>Editar</span>
                                 </a>
                                 <a href="{{ route('configuracion.categorias.delete', $category) }}" class="congress-menu-item danger" title="Eliminar" aria-label="Eliminar categoría" style="text-decoration:none;"
                                    data-cat-eliminar
                                    data-url="{{ route('configuracion.categorias.destroy', $category) }}"
                                    data-nombre="{{ $category->nombre }}">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                                    <x-gravityui-trash-bin />
                                     <span>Eliminar</span>
                                 </a>
                             </div>
@@ -83,7 +77,7 @@
         @endif
 
         <a href="{{ route('configuracion.categorias.create') }}" class="catalog-create" data-cat-crear>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <x-gravityui-plus width="17" height="17" aria-hidden="true" />
             Crear nueva categoría
         </a>
     </div>
@@ -95,17 +89,14 @@
             <div class="catalog-header-actions">
                 <span class="catalog-count">{{ $congresses->count() }} {{ $congresses->count() === 1 ? 'congreso' : 'congresos' }}</span>
                 <button type="button" class="catalog-search-btn" id="congressSearchBtn" aria-label="Buscar congresos" aria-expanded="false">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="11" cy="11" r="7"/>
-                        <path d="m21 21-4.3-4.3"/>
-                    </svg>
+                    <x-gravityui-magnifier aria-hidden="true" />
                 </button>
             </div>
         </div>
         <div class="catalog-search-wrap" id="congressSearchWrap">
             <div class="catalog-search">
                 <span class="search-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                    <x-gravityui-magnifier />
                 </span>
                 <input type="text" id="congressSearchInput" placeholder="Buscar congreso por nombre, lugar o estado..." autocomplete="off">
             </div>
@@ -150,21 +141,21 @@
                                     @elseif ($fileExists)
                                         <div class="congress-thumb-file" title="{{ basename($firstFile) }}">
                                             @if ($fileExt === 'pdf')
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg>
+                                                <x-gravityui-file-text />
                                             @elseif (in_array($fileExt, ['doc', 'docx']))
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13l-2 4-2-4M10 17v-4M10 15h2.5"/></svg>
+                                                <x-gravityui-file-letter-w />
                                             @elseif (in_array($fileExt, ['xls', 'xlsx']))
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m8 17 2-4 2 4M8 13v4M14 13l-2 4 2 4"/></svg>
+                                                <x-gravityui-file-letter-x />
                                             @elseif (in_array($fileExt, ['ppt', 'pptx']))
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><rect x="8" y="13" width="8" height="4" rx="1"/><path d="M12 13v4"/></svg>
+                                                <x-gravityui-file-letter-p />
                                             @else
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+                                                <x-gravityui-arrow-up-from-line />
                                             @endif
                                             <span class="file-ext">{{ strtoupper($fileExt) }}</span>
                                         </div>
                                     @else
                                         <div class="congress-thumb-placeholder" aria-hidden="true">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                                            <x-gravityui-picture />
                                         </div>
                                     @endif
                                     @if ($fileCount > 1)
@@ -184,19 +175,19 @@
                                 <td>
                                     <div class="congress-menu">
                                         <button type="button" class="congress-menu-trigger" aria-label="Acciones del congreso" aria-expanded="false">
-                                            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+                                            <x-gravityui-ellipsis-vertical />
                                         </button>
                                         <div class="congress-menu-dropdown">
                                             <a href="{{ route('configuracion.congresos.show', $congress) }}" class="congress-menu-item" title="Ver" aria-label="Ver congreso" style="text-decoration:none;">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                                <x-gravityui-eye />
                                                 <span>Ver</span>
                                             </a>
                                             <a href="{{ route('configuracion.congresos.edit', $congress) }}" class="congress-menu-item" title="Editar" aria-label="Editar congreso" style="text-decoration:none;">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                                <x-gravityui-pencil />
                                                 <span>Editar</span>
                                             </a>
                                             <a href="{{ route('configuracion.congresos.delete', $congress) }}" class="congress-menu-item danger" title="Eliminar" aria-label="Eliminar congreso" style="text-decoration:none;">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                                                <x-gravityui-trash-bin />
                                                 <span>Eliminar</span>
                                             </a>
                                         </div>
@@ -211,7 +202,7 @@
         @endif
 
         <a href="{{ route('configuracion.congresos.create') }}" class="catalog-create">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <x-gravityui-plus width="17" height="17" aria-hidden="true" />
             Crear nuevo congreso
         </a>
     </div>
@@ -232,7 +223,7 @@
             <div class="cfg-modal-head">
                 <h3 id="modalCatCrearT">Nueva categoría</h3>
                 <button type="button" class="cfg-modal-x" data-cerrar aria-label="Cerrar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    <x-gravityui-xmark />
                 </button>
             </div>
 
@@ -264,7 +255,7 @@
             <div class="cfg-modal-head">
                 <h3 id="modalCatEditarT">Editar categoría</h3>
                 <button type="button" class="cfg-modal-x" data-cerrar aria-label="Cerrar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    <x-gravityui-xmark />
                 </button>
             </div>
 
@@ -292,7 +283,7 @@
             <div class="cfg-modal-head">
                 <h3 id="modalCatEliminarT">Eliminar categoría</h3>
                 <button type="button" class="cfg-modal-x" data-cerrar aria-label="Cerrar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    <x-gravityui-xmark />
                 </button>
             </div>
 
@@ -300,7 +291,7 @@
                 <div class="danger-box" style="margin:0;">
                     <div class="cfg-del">
                         <span class="cfg-del-ico">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                            <x-gravityui-trash-bin />
                         </span>
                         <div>
                             <div class="cfg-del-name" data-nombre>—</div>

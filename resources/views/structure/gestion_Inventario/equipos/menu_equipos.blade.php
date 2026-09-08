@@ -373,19 +373,13 @@
             </div>
 
             <a href="{{ route('inventory.equipos.create') }}" class="equipment-create">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 5v14"></path>
-                    <path d="M5 12h14"></path>
-                </svg>
+                <x-gravityui-plus />
                 Nuevo Equipo
             </a>
         </div>
 
         <div class="equipment-search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="7"></circle>
-                <path d="m20 20-3.5-3.5"></path>
-            </svg>
+            <x-gravityui-magnifier />
             <input id="equipmentSearch" type="search" placeholder="Buscar por nombre, codigo o categoria..." autocomplete="off">
         </div>
 
@@ -421,56 +415,32 @@
                                 <td>
                                     <div class="equipment-action-menu" data-equipment-action-menu>
                                         <button class="equipment-action" type="button" aria-label="Acciones de {{ $equipment['code'] }}" aria-haspopup="true" aria-expanded="false" data-equipment-action-toggle>
-                                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                                <circle cx="12" cy="5" r="1.8"></circle>
-                                                <circle cx="12" cy="12" r="1.8"></circle>
-                                                <circle cx="12" cy="19" r="1.8"></circle>
-                                            </svg>
+                                            <x-gravityui-ellipsis-vertical />
                                         </button>
 
                                         <div class="equipment-action-list" role="menu">
                                             <a href="{{ route('inventory.equipos.show', ['equipo' => $equipment['code']]) }}" role="menuitem">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path>
-                                                    <circle cx="12" cy="12" r="3"></circle>
-                                                </svg>
+                                                <x-gravityui-eye />
                                                 Ver detalle
                                             </a>
                                             <a href="{{ route('inventory.equipos.edit', ['equipo' => $equipment['code']]) }}" role="menuitem">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M12 20h9"></path>
-                                                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
-                                                </svg>
+                                                <x-gravityui-pencil />
                                                 Editar
                                             </a>
                                             <button type="button" role="menuitem" data-equipment-action-message="Asignacion de responsable pendiente de conectar.">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M20 21a8 8 0 0 0-16 0"></path>
-                                                    <circle cx="12" cy="7" r="4"></circle>
-                                                </svg>
+                                                <x-gravityui-person />
                                                 Asignar responsable
                                             </button>
                                             <button type="button" role="menuitem" data-equipment-action-message="Cambio de ubicacion pendiente de conectar.">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z"></path>
-                                                    <circle cx="12" cy="10" r="3"></circle>
-                                                </svg>
+                                                <x-gravityui-map-pin />
                                                 Cambiar ubicacion
                                             </button>
                                             <button type="button" role="menuitem" data-equipment-action-message="Registro de mantenimiento pendiente de conectar.">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1a6 6 0 0 1-7.8 7.8l-5.7 5.7a2.1 2.1 0 0 1-3-3l5.7-5.7a6 6 0 0 1 7.8-7.8l-3.1 3.1z"></path>
-                                                </svg>
+                                                <x-gravityui-wrench />
                                                 Registrar mantenimiento
                                             </button>
                                             <button type="button" class="equipment-action-danger" role="menuitem" data-equipment-action-message="Eliminacion de equipo pendiente de confirmar.">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                    <path d="M3 6h18"></path>
-                                                    <path d="M8 6V4h8v2"></path>
-                                                    <path d="M19 6l-1 14H6L5 6"></path>
-                                                    <path d="M10 11v5"></path>
-                                                    <path d="M14 11v5"></path>
-                                                </svg>
+                                                <x-gravityui-trash-bin />
                                                 Eliminar
                                             </button>
                                         </div>

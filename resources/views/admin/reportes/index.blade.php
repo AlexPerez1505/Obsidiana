@@ -665,11 +665,7 @@
 
         <div class="reports-header">
             <div class="reports-heading">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 3v18h18"></path>
-                    <path d="M7 15l4-4 3 3 5-7"></path>
-                    <path d="M18 7h1v1"></path>
-                </svg>
+                <x-gravityui-chart-line />
                 <div>
                     <h2>Reportes administrativos</h2>
                     <p>Control por colaborador de asistencias, faltas, vacaciones, permisos e incidencias.</p>
@@ -679,12 +675,12 @@
             <div class="reports-header-actions">
                 @if (auth()->user()?->isAdmin())
                     <button class="reports-primary" type="button" data-report-generator-open>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+                        <x-gravityui-plus />
                         Generar reporte
                     </button>
                 @endif
                 <button class="reports-light" type="button" onclick="exportReport()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
+                    <x-gravityui-arrow-down-to-line />
                     Exportar reporte
                 </button>
             </div>
@@ -827,7 +823,7 @@
                 </datalist>
             </div>
             <button class="reports-light" type="submit">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 3H2l8 9.5V20l4-2v-5.5L22 3z"></path></svg>
+                <x-gravityui-funnel />
                 Filtrar
             </button>
         </form>
@@ -839,17 +835,17 @@
                         <span class="metric-label">{{ $metric['label'] }}</span>
                         <span class="reports-icon">
                             @if ($metric['type'] === 'employee')
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                <x-gravityui-persons />
                             @elseif ($metric['type'] === 'attendance')
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                                <x-gravityui-check />
                             @elseif ($metric['type'] === 'absence')
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+                                <x-gravityui-xmark />
                             @elseif ($metric['type'] === 'vacation')
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"></path><path d="M12 3v16"></path><path d="M7 8c2-3 8-3 10 0"></path></svg>
+                                <x-gravityui-umbrella />
                             @elseif ($metric['type'] === 'permission')
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
+                                <x-gravityui-file />
                             @else
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+                                <x-gravityui-triangle-exclamation />
                             @endif
                         </span>
                     </div>

@@ -10,7 +10,7 @@
         {{-- Editar es una acción de apoyo: va como icono para no competir
              con la acción principal de la pantalla. --}}
         <a href="{{ route('commercial.ventas.edit', $venta) }}" class="btn-icono" title="Editar venta" aria-label="Editar venta">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            <x-gravityui-pencil />
         </a>
 
         {{-- Los tres documentos son lo mismo: se agrupan en un solo control. --}}
@@ -18,7 +18,7 @@
             <x-ui.menu-item :href="route('commercial.ventas.pdf', $venta)" blank
                             detalle="La venta con sus anexos y fichas">
                 <x-slot:icono>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <x-gravityui-file-text />
                 </x-slot:icono>
                 PDF de la venta
             </x-ui.menu-item>
@@ -30,7 +30,7 @@
                 <x-ui.menu-item :href="route('commercial.ventas.contrato', $venta)" blank
                                 detalle="Compraventa con reserva de dominio">
                     <x-slot:icono>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M8 13h6M8 17h4"/></svg>
+                        <x-gravityui-file-text />
                     </x-slot:icono>
                     Contrato
                 </x-ui.menu-item>
@@ -39,7 +39,7 @@
             <x-ui.menu-item :href="route('commercial.ventas.garantia', $venta)" blank
                             :detalle="$venta->garantia_meses . ' meses sobre el equipo'">
                 <x-slot:icono>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                    <x-gravityui-shield-check />
                 </x-slot:icono>
                 Carta garantía
             </x-ui.menu-item>
@@ -59,7 +59,7 @@
         </a>
 
         <a href="{{ route('commercial.facturas.create', ['venta' => $venta->id]) }}" class="btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <x-gravityui-file-text width="15" height="15" />
             Borrador de factura
         </a>
     </x-ui.page-header>

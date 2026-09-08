@@ -13,10 +13,26 @@
                 </span>
                 <span style="margin-left:8px; color:var(--muted);">{{ $movimiento->movement_date->format('d/m/Y') }}</span>
             </div>
+<<<<<<< Updated upstream
             <a href="{{ route('inventory.movimientos.index') }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
                 Regresar
             </a>
+=======
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                {{-- Las etiquetas con QR se imprimen y se pegan en cada pieza. --}}
+                @if ($movimiento->seriales()->exists())
+                    <a href="{{ route('inventory.movimientos.etiquetas', $movimiento) }}" target="_blank" class="btn">
+                        <x-gravityui-qr-code width="15" height="15" />
+                        Etiquetas QR
+                    </a>
+                @endif
+
+                <a href="{{ route('inventory.movimientos.index') }}" class="btn-icono" title="Regresar" aria-label="Regresar">
+                    <x-gravityui-arrow-left />
+                </a>
+            </div>
+>>>>>>> Stashed changes
         </div>
     </div>
 

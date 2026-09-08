@@ -730,22 +730,33 @@
 
         <div class="agenda-hero">
             <div class="agenda-title">
-                <svg class="agenda-title-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="4" y="3" width="16" height="18" rx="2"></rect>
-                    <path d="M8 3v18M4 8h16M4 13h16M4 18h16"></path>
-                </svg>
+                <x-gravityui-calendar class="agenda-title-ico" />
                 <h2>Agenda/Evento</h2>
             </div>
 
+<<<<<<< Updated upstream
             <button class="agenda-add" type="button" data-agenda-modal-open>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
                 Nuevo Evento
             </button>
+=======
+            <div class="agenda-hero-actions">
+                <a class="agenda-add is-outline" href="{{ route('configuracion.congresos.create') }}">
+                    <x-gravityui-plus />
+                    Agregar Congreso
+                </a>
+                <button class="agenda-add" type="button" data-agenda-modal-open>
+                    <x-gravityui-plus />
+                    Nuevo Evento
+                </button>
+            </div>
+>>>>>>> Stashed changes
         </div>
 
         <div class="agenda-shell">
             <div class="agenda-main">
                 <div class="agenda-toolbar">
+<<<<<<< Updated upstream
                     <button class="agenda-today" type="button">Hoy</button>
                     <button class="agenda-icon-btn" type="button" aria-label="Mes anterior">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
@@ -754,6 +765,16 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
                     </button>
                     <p class="agenda-month">Julio 2026</p>
+=======
+                    <a class="agenda-today" href="{{ route('admin.agenda.index', ['month' => $currentMonth]) }}">Hoy</a>
+                    <a class="agenda-icon-btn" href="{{ route('admin.agenda.index', ['month' => $prevMonth]) }}" aria-label="Mes anterior">
+                        <x-gravityui-arrow-chevron-left />
+                    </a>
+                    <a class="agenda-icon-btn" href="{{ route('admin.agenda.index', ['month' => $nextMonth]) }}" aria-label="Mes siguiente">
+                        <x-gravityui-arrow-chevron-right />
+                    </a>
+                    <p class="agenda-month">{{ $monthLabel }}</p>
+>>>>>>> Stashed changes
                     <div class="agenda-view" aria-label="Vista de calendario">
                         <button type="button" class="is-active">Mes</button>
                         <button type="button">Semana</button>
@@ -829,7 +850,7 @@
 
             <aside class="agenda-side" aria-label="Proximos eventos">
                 <button class="agenda-filter" type="button">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 3H2l8 9.5V20l4-2v-5.5L22 3z"></path></svg>
+                    <x-gravityui-funnel />
                     Filtrar
                 </button>
 
@@ -857,7 +878,7 @@
             <div class="agenda-dialog-head">
                 <h3 id="agendaDialogTitle">Nuevo Evento</h3>
                 <button class="agenda-close" type="button" data-agenda-modal-close aria-label="Cerrar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+                    <x-gravityui-xmark />
                 </button>
             </div>
             <form class="agenda-form" onsubmit="saveAgendaEvent(event);">

@@ -204,21 +204,29 @@
         text-transform: uppercase; letter-spacing: .04em;
         color: var(--muted); margin: 0 0 6px;
     }
-    .tp-input {
+    /*
+       El layout general (layouts/dashboard) ya trae un estilo genérico
+       para "input[type=text], input[type=number]..." que, por
+       especificidad CSS, le gana a una sola clase (el selector con
+       atributo+elemento pesa más que una sola clase). Por eso se
+       escribe siempre calificado con ".tp-modal" por delante: dos
+       clases juntas sí superan esa especificidad.
+    */
+    .tp-modal .tp-input {
         width: 100%; padding: 14px; border: 2px solid #94a3b8;
         border-radius: 12px; font-size: 16px; font-family: inherit;
         background: var(--surface); color: var(--text);
         outline: none; transition: border .15s, box-shadow .15s;
         -webkit-appearance: none; appearance: none;
     }
-    .tp-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
-    .tp-input::placeholder { color: #cbd5e1; }
+    .tp-modal .tp-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
+    .tp-modal .tp-input::placeholder { color: #cbd5e1; }
     .tp-amount-wrap { position: relative; display: flex; align-items: center; }
     .tp-amount-wrap .tp-prefix {
-        position: absolute; left: 16px; font-size: 22px;
+        position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 22px;
         font-weight: 800; color: var(--muted); pointer-events: none;
     }
-    .tp-amount-wrap input {
+    .tp-modal .tp-amount-wrap input {
         padding-left: 42px; padding-top: 16px; padding-bottom: 16px;
         font-size: 22px; font-weight: 800; text-align: left;
     }
@@ -377,7 +385,7 @@
     {{-- Header --}}
     <div class="tp-header">
         <a href="{{ route('admin.viatics.index') }}" class="tp-back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            <x-gravityui-arrow-chevron-left />
         </a>
         <div class="tp-title-row">
             <h1 class="tp-title">Viaje en Curso</h1>
@@ -388,7 +396,7 @@
         </div>
     </div>
     <p class="tp-subtitle">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <x-gravityui-map-pin />
         {{ $trip->place ?: 'Sin lugar' }} · {{ $trip->vehicle_name ?: 'Sin vehículo' }}
     </p>
 
@@ -400,7 +408,7 @@
         <p class="tp-total-label">Total acumulado</p>
         <p class="tp-total-amount" x-text="formatMoney(total)">${{ number_format((float) $trip->total_computed, 2) }}</p>
         <p class="tp-total-meta">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <x-gravityui-clock />
             <span x-text="count + ' gastos'">{{ $trip->expenses->count() }} gastos</span> · Iniciado {{ $trip->started_at?->format('H:i') }}
         </p>
     </div>
@@ -411,7 +419,7 @@
     {{-- Expense list section --}}
     <div class="tp-list-section">
     <h3 class="tp-list-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+        <x-gravityui-file-text />
         Gastos del viaje
         <span class="tp-list-count" x-text="count">{{ $trip->expenses->count() }}</span>
     </h3>
@@ -424,19 +432,19 @@
                         <template x-if="g.type === 'toll'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M4 12v6h16v-6M8 12V8a4 4 0 0 1 8 0v4"/></svg></template>
                         <template x-if="g.type === 'fuel'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h12M15 8h2a2 2 0 0 1 2 2v8a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.5L19 5"/></svg></template>
                         <template x-if="g.type === 'meal'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg></template>
-                        <template x-if="g.type === 'other'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></template>
+                        <template x-if="g.type === 'other'"><x-gravityui-tag /></template>
                     </div>
                     <div class="tp-row-info">
                         <p class="tp-row-label" x-text="g.label"></p>
                         <p class="tp-row-time">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                            <x-gravityui-clock />
                             <span x-text="g.time_label"></span>
                         </p>
                     </div>
                     <div class="tp-row-right">
                         <span class="tp-row-amount" x-text="formatMoney(g.amount)"></span>
                         <button type="button" class="tp-row-edit" @click="openEdit(g)">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            <x-gravityui-pencil />
                         </button>
                     </div>
                 </div>
@@ -445,7 +453,7 @@
     </template>
     <template x-if="gastos.length === 0">
         <div class="tp-empty-list">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            <x-gravityui-file />
             <p>No hay gastos registrados</p>
             <span>Agrega el primer gasto del viaje con el botón de abajo</span>
         </div>
@@ -456,13 +464,13 @@
     {{-- Bottom buttons --}}
     <div class="tp-bottom">
         <button type="button" class="tp-add-btn" @click="openAdd()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            <x-gravityui-plus />
             Agregar gasto
         </button>
         <form method="POST" action="{{ route('admin.trips.finish', $trip) }}">
             @csrf
             <button type="submit" class="tp-finish-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <x-gravityui-shield-check />
                 Finalizar viaje
             </button>
         </form>
@@ -492,7 +500,7 @@
                     <span>Viático</span>
                 </button>
                 <button type="button" class="tp-type-btn" :class="{ selected: form.type === 'other' }" @click="form.type = 'other'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    <x-gravityui-tag />
                     <span>Adicional</span>
                 </button>
             </div>
@@ -515,7 +523,7 @@
             {{-- Photo upload --}}
             <div class="tp-upload-mini">
                 <div class="tp-upload-mini-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <x-gravityui-camera />
                 </div>
                 <p>Agregar foto del ticket</p>
                 <span>Toca para tomar o seleccionar una foto</span>
@@ -523,7 +531,7 @@
 
             {{-- Save button --}}
             <button type="submit" class="tp-save-btn" :disabled="loading">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <x-gravityui-floppy-disk />
                 <span x-text="loading ? 'Guardando...' : 'Guardar gasto'"></span>
             </button>
         </form>
@@ -554,7 +562,7 @@
                     <span>Viático</span>
                 </button>
                 <button type="button" class="tp-type-btn" :class="{ selected: editForm.type === 'other' }" @click="editForm.type = 'other'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    <x-gravityui-tag />
                     <span>Adicional</span>
                 </button>
             </div>
@@ -577,21 +585,21 @@
             {{-- Photo preview --}}
             <div class="tp-photo-preview">
                 <div class="tp-photo-preview-thumb">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+                    <x-gravityui-file-text />
                 </div>
                 <button type="button" class="tp-photo-remove" aria-label="Quitar foto">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    <x-gravityui-xmark />
                 </button>
             </div>
 
             {{-- Actions: Save + Delete --}}
             <div class="tp-edit-actions">
                 <button type="submit" class="tp-btn-save" :disabled="loading">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    <x-gravityui-floppy-disk />
                     <span x-text="loading ? 'Guardando...' : 'Guardar cambios'"></span>
                 </button>
                 <button type="button" class="tp-btn-delete" @click="deleteExpense()" :disabled="loading">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    <x-gravityui-trash-bin />
                     Eliminar
                 </button>
             </div>
