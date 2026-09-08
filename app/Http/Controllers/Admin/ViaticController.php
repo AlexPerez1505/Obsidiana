@@ -9,6 +9,7 @@ use App\Models\Vehicle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ViaticController extends Controller
@@ -54,16 +55,18 @@ class ViaticController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'vehicle_id'   => ['nullable', 'exists:vehicles,id'],
-            'vehicle_name' => ['nullable', 'string', 'max:100'],
-            'place'        => ['nullable', 'string', 'max:255'],
-            'tolls'        => ['nullable', 'numeric', 'min:0'],
-            'fuel'         => ['nullable', 'numeric', 'min:0'],
-            'meals'        => ['nullable', 'numeric', 'min:0'],
-            'lodging'      => ['nullable', 'numeric', 'min:0'],
-            'additional'   => ['nullable', 'numeric', 'min:0'],
-            'description'  => ['nullable', 'string', 'max:1000'],
-            'expense_date' => ['nullable', 'date'],
+            'vehicle_id'      => ['nullable', 'exists:vehicles,id'],
+            'vehicle_name'    => ['nullable', 'string', 'max:100'],
+            'place'           => ['nullable', 'string', 'max:255'],
+            'tolls'           => ['nullable', 'numeric', 'min:0'],
+            'fuel'            => ['nullable', 'numeric', 'min:0'],
+            'meals'           => ['nullable', 'numeric', 'min:0'],
+            'lodging'         => ['nullable', 'numeric', 'min:0'],
+            'additional'      => ['nullable', 'numeric', 'min:0'],
+            'description'     => ['nullable', 'string', 'max:1000'],
+            'expense_date'    => ['nullable', 'date'],
+            'ticket_photos'   => ['nullable', 'array'],
+            'ticket_photos.*' => ['image', 'max:5120'],
         ]);
 
         $data['user_id'] = $request->user()->id;
@@ -72,6 +75,10 @@ class ViaticController extends Controller
             $vehicle = Vehicle::find($data['vehicle_id']);
             $data['vehicle_name'] = $vehicle ? "{$vehicle->brand} {$vehicle->model}" : null;
         }
+
+        $data['ticket_photos'] = collect($request->file('ticket_photos', []))
+            ->map(fn ($archivo) => $archivo->store('viaticos/tickets', 'public'))
+            ->all();
 
         // Save initial totals for backward compatibility (optional), but create expense records
         $expenseMap = [
@@ -131,16 +138,20 @@ class ViaticController extends Controller
         $this->authorizeViatic($viatic);
 
         $data = $request->validate([
-            'vehicle_id'   => ['nullable', 'exists:vehicles,id'],
-            'vehicle_name' => ['nullable', 'string', 'max:100'],
-            'place'        => ['nullable', 'string', 'max:255'],
-            'tolls'        => ['nullable', 'numeric', 'min:0'],
-            'fuel'         => ['nullable', 'numeric', 'min:0'],
-            'meals'        => ['nullable', 'numeric', 'min:0'],
-            'lodging'      => ['nullable', 'numeric', 'min:0'],
-            'additional'   => ['nullable', 'numeric', 'min:0'],
-            'description'  => ['nullable', 'string', 'max:1000'],
-            'expense_date' => ['nullable', 'date'],
+            'vehicle_id'       => ['nullable', 'exists:vehicles,id'],
+            'vehicle_name'     => ['nullable', 'string', 'max:100'],
+            'place'            => ['nullable', 'string', 'max:255'],
+            'tolls'            => ['nullable', 'numeric', 'min:0'],
+            'fuel'             => ['nullable', 'numeric', 'min:0'],
+            'meals'            => ['nullable', 'numeric', 'min:0'],
+            'lodging'          => ['nullable', 'numeric', 'min:0'],
+            'additional'       => ['nullable', 'numeric', 'min:0'],
+            'description'      => ['nullable', 'string', 'max:1000'],
+            'expense_date'     => ['nullable', 'date'],
+            'ticket_photos'    => ['nullable', 'array'],
+            'ticket_photos.*'  => ['image', 'max:5120'],
+            'quitar_fotos'     => ['nullable', 'array'],
+            'quitar_fotos.*'   => ['string'],
         ]);
 
         if (isset($data['vehicle_id']) && $data['vehicle_id']) {
@@ -148,7 +159,24 @@ class ViaticController extends Controller
             $data['vehicle_name'] = $vehicle ? "{$vehicle->brand} {$vehicle->model}" : null;
         }
 
+        // Las que quedan tras quitar las marcadas, más las nuevas que llegaron.
+        $fotosActuales = collect($viatic->ticket_photos ?? [])
+            ->reject(fn ($ruta) => in_array($ruta, $data['quitar_fotos'] ?? [], true))
+            ->values();
+
+        $this->borrarFotos($data['quitar_fotos'] ?? []);
+
+        $fotosNuevas = collect($request->file('ticket_photos', []))
+            ->map(fn ($archivo) => $archivo->store('viaticos/tickets', 'public'));
+
+        $data['ticket_photos'] = $fotosActuales->concat($fotosNuevas)->values()->all();
+        unset($data['quitar_fotos']);
+
         $viatic->update($data);
+
+        if ($request->input('redirect_to') === 'show') {
+            return redirect()->route('admin.viatics.show', $viatic)->with('status', 'Fotos actualizadas correctamente.');
+        }
 
         return redirect()->route('admin.viatics.index')->with('status', 'Viático actualizado correctamente.');
     }
@@ -157,9 +185,18 @@ class ViaticController extends Controller
     {
         $this->authorizeViatic($viatic);
 
+        $this->borrarFotos($viatic->ticket_photos ?? []);
+
         $viatic->delete();
 
         return redirect()->route('admin.viatics.index')->with('status', 'Viático eliminado correctamente.');
+    }
+
+    private function borrarFotos(array $rutas): void
+    {
+        foreach ($rutas as $ruta) {
+            Storage::disk('public')->delete($ruta);
+        }
     }
 
     public function show(Viatic $viatic): View

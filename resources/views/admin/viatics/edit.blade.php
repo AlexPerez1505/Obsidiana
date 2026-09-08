@@ -131,6 +131,46 @@
         }
     }
 
+    /* Fotos del ticket */
+    .vt-upload {
+        border: 2.5px dashed #94a3b8; border-radius: 14px;
+        padding: 28px 20px; text-align: center; cursor: pointer;
+        transition: border-color .15s, background .15s;
+        background: var(--surface-2);
+    }
+    .vt-upload:hover { border-color: var(--primary); background: var(--primary-soft); }
+    .vt-upload-icon {
+        width: 52px; height: 52px; border-radius: 14px;
+        background: var(--primary-soft); color: var(--primary);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 10px;
+        border: 1.5px solid #94a3b8;
+    }
+    .vt-upload-icon svg { width: 26px; height: 26px; }
+    .vt-upload p { margin: 0; font-size: 14px; font-weight: 700; color: var(--text); }
+    .vt-upload span { font-size: 12px; color: var(--muted); display: block; margin-top: 3px; }
+    .vt-photo-previews {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+        margin-bottom: 20px;
+    }
+    .vt-photo-thumb {
+        position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+        border: 1.5px solid #94a3b8; background: var(--surface-2);
+    }
+    .vt-photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .vt-photo-thumb.is-removed { opacity: .35; }
+    .vt-photo-remove {
+        position: absolute; top: 6px; right: 6px;
+        width: 24px; height: 24px; border-radius: 50%;
+        background: rgba(15,23,42,.65); color: #fff; border: none;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+    }
+    .vt-photo-remove svg { width: 13px; height: 13px; }
+    @media (min-width: 768px) {
+        .vt-photo-previews { grid-template-columns: repeat(4, 1fr); }
+    }
+
     /* Submit button */
     .vt-submit {
         display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -188,7 +228,7 @@
     </div>
 
     {{-- Form --}}
-    <form method="POST" action="{{ route('admin.viatics.update', $viatic) }}">
+    <form method="POST" action="{{ route('admin.viatics.update', $viatic) }}" enctype="multipart/form-data" id="vtForm">
         @csrf
         @method('PATCH')
         <input type="hidden" name="vehicle_id" id="vtVehicleId" value="{{ $viatic->vehicle_id ?? '' }}">
@@ -259,6 +299,28 @@
             </div>
         </div>
 
+        {{-- Fotos del ticket --}}
+        <div class="vt-photo-previews" id="vtPhotoPreviews">
+            @foreach($viatic->ticket_photos ?? [] as $ruta)
+                <div class="vt-photo-thumb" data-ruta="{{ $ruta }}">
+                    <img src="{{ asset('storage/' . $ruta) }}" alt="Foto del ticket">
+                    <button type="button" class="vt-photo-remove" aria-label="Quitar foto" onclick="vtQuitarFotoExistente(this, '{{ $ruta }}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            @endforeach
+        </div>
+        <div id="vtPhotoPreviewsNuevas" class="vt-photo-previews"></div>
+        <div class="vt-upload" onclick="document.getElementById('vtPhotosInput').click()" style="margin-bottom:20px;">
+            <div class="vt-upload-icon">
+                <x-gravityui-camera />
+            </div>
+            <p>Agregar fotos del ticket</p>
+            <span>Toca para tomar o seleccionar una o varias fotos</span>
+        </div>
+        <input type="file" id="vtPhotosInput" name="ticket_photos[]" accept="image/*" multiple hidden>
+        <div id="vtQuitarFotosBox"></div>
+
         {{-- Submit --}}
         <button type="submit" class="vt-submit">
             <x-gravityui-floppy-disk />
@@ -284,5 +346,56 @@
         btn.classList.add('selected');
         document.getElementById('vtVehicleId').value = id;
     }
+
+    function vtQuitarFotoExistente(btn, ruta) {
+        const thumb = btn.closest('.vt-photo-thumb');
+        thumb.classList.add('is-removed');
+        btn.disabled = true;
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'quitar_fotos[]';
+        input.value = ruta;
+        document.getElementById('vtQuitarFotosBox').appendChild(input);
+    }
+
+    (function () {
+        const input = document.getElementById('vtPhotosInput');
+        const previews = document.getElementById('vtPhotoPreviewsNuevas');
+        let archivos = [];
+
+        function sincronizarInput() {
+            const dt = new DataTransfer();
+            archivos.forEach(archivo => dt.items.add(archivo));
+            input.files = dt.files;
+        }
+
+        function render() {
+            previews.innerHTML = '';
+            archivos.forEach((archivo, index) => {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const thumb = document.createElement('div');
+                    thumb.className = 'vt-photo-thumb';
+                    thumb.innerHTML = '<img src="' + event.target.result + '" alt="Foto del ticket">' +
+                        '<button type="button" class="vt-photo-remove" aria-label="Quitar foto">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button>';
+                    thumb.querySelector('.vt-photo-remove').addEventListener('click', function () {
+                        archivos.splice(index, 1);
+                        sincronizarInput();
+                        render();
+                    });
+                    previews.appendChild(thumb);
+                };
+                reader.readAsDataURL(archivo);
+            });
+        }
+
+        input.addEventListener('change', function () {
+            archivos = archivos.concat(Array.from(input.files));
+            sincronizarInput();
+            render();
+        });
+    })();
 </script>
 @endsection

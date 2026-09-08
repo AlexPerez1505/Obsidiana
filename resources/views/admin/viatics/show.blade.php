@@ -40,6 +40,39 @@
     .vp-total-meta svg { width: 13px; height: 13px; }
 
     /* Summary by type */
+    /* Galería de fotos del ticket */
+    .vp-photos { margin-bottom: 22px; }
+    .vp-photos-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .vp-photos-title { font-size: 15px; font-weight: 800; color: var(--text); margin: 0; }
+    .vp-photos-add {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 7px 14px; border-radius: 10px; border: 1.5px solid #94a3b8;
+        background: var(--surface); color: var(--primary); font-size: 12.5px; font-weight: 700;
+        cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .vp-photos-add:hover { border-color: var(--primary); background: var(--primary-soft); }
+    .vp-photos-add svg { width: 15px; height: 15px; }
+    .vp-photos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .vp-photo-thumb {
+        position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+        border: 1.5px solid #94a3b8; background: var(--surface-2); display: block;
+    }
+    .vp-photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .vp-photo-thumb-remove {
+        position: absolute; top: 6px; right: 6px;
+        width: 24px; height: 24px; border-radius: 50%;
+        background: rgba(15,23,42,.65); color: #fff; border: none;
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .vp-photo-thumb-remove svg { width: 13px; height: 13px; }
+    .vp-photos-empty {
+        text-align: center; padding: 20px; color: var(--muted); font-size: 13px;
+        border: 2px dashed #94a3b8; border-radius: 14px;
+    }
+    @media (min-width: 768px) {
+        .vp-photos-grid { grid-template-columns: repeat(6, 1fr); }
+    }
+
     .vp-summary { margin-bottom: 20px; }
     .vp-summary-title { font-size: 15px; font-weight: 800; color: var(--text); margin: 0 0 10px; }
     .vp-summary-grid {
@@ -239,6 +272,49 @@
         <x-gravityui-car />
         {{ $viatic->vehicle_name ?: 'Sin vehículo' }} · {{ $viatic->expense_date?->format('d/m/Y') ?: 'Sin fecha' }}
     </p>
+
+    {{-- Fotos del ticket --}}
+    <div class="vp-photos">
+        <div class="vp-photos-head">
+            <p class="vp-photos-title">Fotos del ticket</p>
+            <button type="button" class="vp-photos-add" onclick="document.getElementById('vpPhotosInput').click()">
+                <x-gravityui-plus />
+                Agregar
+            </button>
+        </div>
+
+        @php($fotosTicket = $viatic->ticket_photos ?? [])
+        @if (count($fotosTicket))
+            <div class="vp-photos-grid">
+                @foreach ($fotosTicket as $ruta)
+                    <div class="vp-photo-thumb">
+                        <a href="{{ asset('storage/' . $ruta) }}" target="_blank" rel="noopener">
+                            <img src="{{ asset('storage/' . $ruta) }}" alt="Foto del ticket">
+                        </a>
+                        <form method="POST" action="{{ route('admin.viatics.update', $viatic) }}" onsubmit="return confirm('¿Quitar esta foto?');">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="redirect_to" value="show">
+                            <input type="hidden" name="quitar_fotos[]" value="{{ $ruta }}">
+                            <button type="submit" class="vp-photo-thumb-remove" aria-label="Quitar foto">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                            </button>
+                        </form>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="vp-photos-empty">Sin fotos del ticket todavía.</div>
+        @endif
+
+        <form method="POST" action="{{ route('admin.viatics.update', $viatic) }}" enctype="multipart/form-data" id="vpPhotosForm">
+            @csrf
+            @method('PATCH')
+            <input type="hidden" name="redirect_to" value="show">
+            <input type="file" id="vpPhotosInput" name="ticket_photos[]" accept="image/*" multiple hidden
+                   onchange="document.getElementById('vpPhotosForm').submit()">
+        </form>
+    </div>
 
     <div class="vp-total-card">
         <p class="vp-total-label">Total acumulado</p>

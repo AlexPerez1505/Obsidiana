@@ -235,7 +235,9 @@
                 @endphp
                 <div class="vl-card" onclick="window.location='{{ route('admin.viatics.show', $vt) }}'" style="cursor:pointer">
                     <div class="vl-thumb">
-                        @if($vt->ticket_photo)
+                        @if(! empty($vt->ticket_photos))
+                            <img src="{{ asset('storage/' . $vt->ticket_photos[0]) }}" alt="Ticket">
+                        @elseif($vt->ticket_photo)
                             <img src="{{ asset('storage/' . $vt->ticket_photo) }}" alt="Ticket">
                         @else
                             <x-gravityui-file-text />

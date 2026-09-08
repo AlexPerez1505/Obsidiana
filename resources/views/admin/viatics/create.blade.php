@@ -151,6 +151,28 @@
     .vt-upload p { margin: 0; font-size: 14px; font-weight: 700; color: var(--text); }
     .vt-upload span { font-size: 12px; color: var(--muted); display: block; margin-top: 3px; }
 
+    /* Fotos del ticket ya elegidas */
+    .vt-photo-previews {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+        margin-bottom: 20px;
+    }
+    .vt-photo-thumb {
+        position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+        border: 1.5px solid #94a3b8; background: var(--surface-2);
+    }
+    .vt-photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .vt-photo-remove {
+        position: absolute; top: 6px; right: 6px;
+        width: 24px; height: 24px; border-radius: 50%;
+        background: rgba(15,23,42,.65); color: #fff; border: none;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+    }
+    .vt-photo-remove svg { width: 13px; height: 13px; }
+    @media (min-width: 768px) {
+        .vt-photo-previews { grid-template-columns: repeat(4, 1fr); }
+    }
+
     /* Submit button */
     .vt-submit {
         display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -199,7 +221,7 @@
     </div>
 
     {{-- Form --}}
-    <form method="POST" action="{{ route('admin.viatics.store') }}">
+    <form method="POST" action="{{ route('admin.viatics.store') }}" enctype="multipart/form-data" id="vtForm">
         @csrf
         <input type="hidden" name="vehicle_id" id="vtVehicleId" value="{{ $vehicles->first()?->id ?? '' }}">
         <input type="hidden" name="expense_date" value="{{ now()->format('Y-m-d') }}">
@@ -269,14 +291,16 @@
             </div>
         </div>
 
-        {{-- Upload zone --}}
-        <div class="vt-upload" onclick="alert('Subida de foto próximamente')" style="margin-bottom:20px;">
+        {{-- Fotos del ticket --}}
+        <div class="vt-photo-previews" id="vtPhotoPreviews"></div>
+        <div class="vt-upload" onclick="document.getElementById('vtPhotosInput').click()" style="margin-bottom:20px;">
             <div class="vt-upload-icon">
                 <x-gravityui-camera />
             </div>
-            <p>Agregar foto del ticket</p>
-            <span>Toca para tomar o seleccionar una foto</span>
+            <p>Agregar fotos del ticket</p>
+            <span>Toca para tomar o seleccionar una o varias fotos</span>
         </div>
+        <input type="file" id="vtPhotosInput" name="ticket_photos[]" accept="image/*" multiple hidden>
 
         {{-- Submit --}}
         <button type="submit" class="vt-submit">
@@ -293,5 +317,44 @@
         btn.classList.add('selected');
         document.getElementById('vtVehicleId').value = id;
     }
+
+    (function () {
+        const input = document.getElementById('vtPhotosInput');
+        const previews = document.getElementById('vtPhotoPreviews');
+        let archivos = [];
+
+        function sincronizarInput() {
+            const dt = new DataTransfer();
+            archivos.forEach(archivo => dt.items.add(archivo));
+            input.files = dt.files;
+        }
+
+        function render() {
+            previews.innerHTML = '';
+            archivos.forEach((archivo, index) => {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const thumb = document.createElement('div');
+                    thumb.className = 'vt-photo-thumb';
+                    thumb.innerHTML = '<img src="' + event.target.result + '" alt="Foto del ticket">' +
+                        '<button type="button" class="vt-photo-remove" aria-label="Quitar foto">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button>';
+                    thumb.querySelector('.vt-photo-remove').addEventListener('click', function () {
+                        archivos.splice(index, 1);
+                        sincronizarInput();
+                        render();
+                    });
+                    previews.appendChild(thumb);
+                };
+                reader.readAsDataURL(archivo);
+            });
+        }
+
+        input.addEventListener('change', function () {
+            archivos = archivos.concat(Array.from(input.files));
+            sincronizarInput();
+            render();
+        });
+    })();
 </script>
 @endsection
