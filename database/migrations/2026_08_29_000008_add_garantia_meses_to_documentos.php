@@ -21,7 +21,7 @@ return new class extends Migration
             }
 
             Schema::table($tabla, function (Blueprint $table) {
-                $table->unsignedSmallInteger('garantia_meses')->default(6)->after('num_meses');
+                $table->unsignedSmallInteger('garantia_meses')->default(6);
             });
         }
     }

@@ -23,6 +23,21 @@ class ServiceTracking extends Model
         'finished_at',
     ];
 
+    public function service()
+    {
+        return $this->belongsTo(Service::class);
+    }
+
+    public function serviceStep()
+    {
+        return $this->belongsTo(ServiceStep::class);
+    }
+
+    public function performer()
+    {
+        return $this->belongsTo(User::class, 'performed_by');
+    }
+
     protected function casts(): array
     {
         return [

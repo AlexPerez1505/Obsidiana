@@ -74,6 +74,7 @@ $clients = $customers->map(function($customer) {
 @endphp
 <script>
     const clients = @json($clients);
+    window.clients = clients;
     let selectedClient = 0;
     function selectClient(index) {
         selectedClient = index;

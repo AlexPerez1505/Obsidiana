@@ -74,10 +74,26 @@ return new class extends Migration
                 $table->unique(['brand_id', 'subtype_id', 'name']);
             });
         }
+
+        if (! Schema::hasTable('equipment')) {
+            Schema::create('equipment', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('equipment_type_id')->constrained('equipment_types')->cascadeOnDelete();
+                $table->foreignId('subtype_id')->nullable()->constrained('subtypes')->nullOnDelete();
+                $table->foreignId('brand_id')->constrained('brands')->cascadeOnDelete();
+                $table->foreignId('equipment_model_id')->nullable()->constrained('equipment_models')->nullOnDelete();
+                $table->string('type_description')->nullable();
+                $table->string('subtype_description')->nullable();
+                $table->string('brand_description')->nullable();
+                $table->string('model_description')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('equipment');
         Schema::dropIfExists('equipment_models');
         Schema::dropIfExists('brand_subtype');
         Schema::dropIfExists('brands');
