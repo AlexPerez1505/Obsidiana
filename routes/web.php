@@ -31,7 +31,6 @@ require __DIR__.'/web/ventas.php';
 require __DIR__.'/web/facturas.php';
 
 // Inventario
-require __DIR__.'/web/inventory.php';
 require __DIR__.'/web/inventory/inventory.php';
 
 // Configuracion

@@ -81,8 +81,6 @@ class SmokeIconosTest extends TestCase
             ['inventory.paquetes.create'],
             ['inventory.fichas.index'],
             ['inventory.fichas.create'],
-            ['inventory.equipos.index'],
-            ['inventory.equipos.create'],
             ['configuracion.roles.index'],
             ['configuracion.tipos_equipo.index'],
             ['configuracion.refaciones.index'],
