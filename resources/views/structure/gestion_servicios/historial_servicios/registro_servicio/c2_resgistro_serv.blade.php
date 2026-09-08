@@ -15,13 +15,8 @@
             </div>
 
             <h3 style="display:flex; align-items:center; gap:10px; font-size:18px; margin:0 0 8px;">
-<<<<<<< HEAD
-                <x-gravityui-briefcase width="22" height="22" color="var(--primary)" />
-                Datos del equipo
-=======
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="var(--primary)"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
                 Selecciona el equipo
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
             </h3>
             <p class="muted" style="margin:0 0 18px; font-size:13px;">Elige el equipo registrado que recibirá el servicio.</p>
 
@@ -31,37 +26,6 @@
                 <button type="button" class="filter-btn" data-filter="todos">Todos</button>
             </div>
 
-<<<<<<< HEAD
-            <div class="form-group" style="margin-top:18px;">
-                <label>Evidencia del equipo</label>
-                <div class="upload-grid">
-                    <label class="upload-card">
-                        <x-gravityui-picture width="28" height="28" />
-                        <div style="font-size:13px; margin-top:8px;">Imagen 1</div>
-                        <div style="font-size:12px;">Toca para subir</div>
-                        <input type="file" name="evidencia_1" accept="image/*" style="display:none;">
-                    </label>
-                    <label class="upload-card">
-                        <x-gravityui-picture width="28" height="28" />
-                        <div style="font-size:13px; margin-top:8px;">Imagen 2</div>
-                        <div style="font-size:12px;">Toca para subir</div>
-                        <input type="file" name="evidencia_2" accept="image/*" style="display:none;">
-                    </label>
-                    <label class="upload-card">
-                        <x-gravityui-picture width="28" height="28" />
-                        <div style="font-size:13px; margin-top:8px;">Imagen 3</div>
-                        <div style="font-size:12px;">Toca para subir</div>
-                        <input type="file" name="evidencia_3" accept="image/*" style="display:none;">
-                    </label>
-                    <label class="upload-card">
-                        <x-gravityui-video width="28" height="28" />
-                        <div style="font-size:13px; margin-top:8px;">Video</div>
-                        <div style="font-size:12px;">Toca para subir</div>
-                        <input type="file" name="evidencia_video" accept="video/*" style="display:none;">
-                    </label>
-                </div>
-                <p style="font-size:12px; color:var(--muted); margin-top:8px;">Formatos permitidos: JPG, PNG, MP4. Tamano maximo: 10MB por archivo</p>
-=======
             <div class="equipment-grid" id="equipment-grid">
                 @forelse ($equipos as $equipo)
                     <div class="equipment-card"
@@ -96,7 +60,6 @@
                 @empty
                     <p class="muted" style="grid-column:1/-1; text-align:center;">No hay equipos registrados. Registra uno en <em>Gestión de Inventario &gt; Nuevo Equipo</em>.</p>
                 @endforelse
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
             </div>
             <p id="no-equipment-msg" class="muted hidden" style="text-align:center; margin-top:18px;">No hay equipos registrados para esta categoría.</p>
 

@@ -43,26 +43,6 @@
 <form method="POST" action="{{ route('inventory.equipos.store') }}" enctype="multipart/form-data" autocomplete="off" style="max-width:900px; margin:0 auto;">
     @csrf
 
-<<<<<<< HEAD
-        <x-ui.card>
-            <div class="eq-campos">
-                {{-- Tipo, subtipo, marca y modelo salen del catálogo, igual
-                     que en Productos: escribirlos a mano dejaba el mismo
-                     equipo con dos nombres distintos en cada módulo. --}}
-                @include('structure.gestion_Inventario.productos._selects_catalogo')
-
-                {{-- El campo solo se dibuja para quien tiene precios.editar. --}}
-                @if (\App\Support\PrecioVisible::editable())
-                    <x-ui.form-group label="Precio de venta" name="precio" type="text" inputmode="decimal" placeholder="0.00" />
-                @endif
-
-                <x-ui.form-group label="SKU / Clave" name="sku" placeholder="Opcional" />
-
-                <x-ui.form-group for="imagen" label="Imagen">
-                    <input id="imagen" type="file" name="imagen" accept="image/*">
-                    <small class="campo-nota">JPG, PNG o GIF. Máximo 4 MB.</small>
-                </x-ui.form-group>
-=======
     <x-ui.card>
         <h3 style="display:flex; align-items:center; gap:10px; font-size:18px; margin:0 0 8px;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="var(--primary)"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
@@ -118,7 +98,6 @@
             <div class="form-group" style="grid-column:1/-1;">
                 <label for="observaciones">Observaciones</label>
                 <textarea name="observaciones" id="observaciones" rows="3" placeholder="Anotaciones sobre el estado del equipo">{{ old('observaciones') }}</textarea>
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
             </div>
         </div>
 

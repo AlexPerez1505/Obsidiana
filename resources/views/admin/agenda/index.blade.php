@@ -1350,31 +1350,8 @@
         cursor: pointer;
     }
 
-<<<<<<< HEAD
-    .agenda-delete {
-        min-height: 42px;
-        padding: 0 18px;
-        border: 1.5px solid #dc2626;
-        border-radius: 7px;
-        background: #fff;
-        color: #dc2626;
-        font: inherit;
-        font-weight: 800;
-        cursor: pointer;
-        margin-right: auto;
-    }
-
-    .agenda-delete:hover {
-        background: #fef2f2;
-    }
-
-    :root[data-theme="dark"] .agenda-view button.is-active,
-    :root[data-theme="dark"] .agenda-filter {
-        background: rgba(37, 99, 235, .18);
-=======
     .agenda-save:hover {
         background: #2563eb;
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
     }
 
     .event-popover {
@@ -1619,34 +1596,6 @@
             width: 100%;
         }
 
-<<<<<<< HEAD
-        .agenda-hero-actions {
-            width: 100%;
-            flex-direction: column;
-        }
-
-        .agenda-toolbar {
-            display: grid;
-            grid-template-columns: repeat(3, 42px);
-        }
-
-        .agenda-today {
-            grid-column: 1 / -1;
-            width: 100%;
-        }
-
-        .agenda-month,
-        .agenda-view {
-            grid-column: 1 / -1;
-            justify-self: stretch;
-        }
-
-        .agenda-view {
-            grid-template-columns: repeat(3, 1fr);
-        }
-
-=======
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
         .calendar-grid {
             overflow-x: auto;
         }
@@ -1672,40 +1621,17 @@
                 <p>Gestiona tus citas y procedimientos</p>
             </div>
 
-<<<<<<< HEAD
-            <div class="agenda-hero-actions">
-                <a class="agenda-add is-outline" href="{{ route('configuracion.congresos.create') }}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
-                    Agregar Congreso
-                </a>
-                <button class="agenda-add" type="button" data-agenda-modal-open>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
-                    Nuevo Evento
-                </button>
-=======
             <div class="agenda-actions">
                 <a class="agenda-btn agenda-btn--primary" href="{{ route('admin.agenda.create') }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
                     Agendar cita
                 </a>
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
             </div>
         </div>
 
         <div class="agenda-shell">
             <div class="agenda-card">
                 <div class="agenda-toolbar">
-<<<<<<< HEAD
-                    <a class="agenda-today" href="{{ route('admin.agenda.index', ['month' => $currentMonth]) }}">Hoy</a>
-                    <a class="agenda-icon-btn" href="{{ route('admin.agenda.index', ['month' => $prevMonth]) }}" aria-label="Mes anterior">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
-                    </a>
-                    <a class="agenda-icon-btn" href="{{ route('admin.agenda.index', ['month' => $nextMonth]) }}" aria-label="Mes siguiente">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
-                    </a>
-                    <p class="agenda-month">{{ $monthLabel }}</p>
-=======
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
                     <div class="agenda-view" aria-label="Vista de calendario">
                         <a class="{{ $view === 'dia' ? 'is-active' : '' }}" href="{{ route('admin.agenda.index', ['view' => 'dia', 'date' => $current->toDateString()]) }}">Día</a>
                         <a class="{{ $view === 'semana' ? 'is-active' : '' }}" href="{{ route('admin.agenda.index', ['view' => 'semana', 'date' => $current->toDateString()]) }}">Semana</a>
@@ -1729,38 +1655,15 @@
                     </div>
                 </div>
 
-<<<<<<< HEAD
-                <div class="calendar-grid" aria-label="Calendario de {{ $monthLabel }}">
-                    @foreach (['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'] as $day)
-=======
                 @if ($view === 'mes')
                 <div class="calendar-grid" aria-label="Calendario de {{ $periodLabel }}">
                     @foreach ($weekDayNames as $day)
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
                         <div class="calendar-day-name">{{ $day }}</div>
                     @endforeach
 
                     @foreach ($calendar as $day)
                         @php
-<<<<<<< HEAD
-                            $dayEvents = empty($day['muted']) ? ($events[$day['num']] ?? []) : [];
-                            $selectedDate = $day['date'];
-                            $dayClasses = ['calendar-cell'];
-
-                            if ($dayEvents) {
-                                $dayClasses[] = 'is-busy';
-
-                                if (collect($dayEvents)->contains('is_start', true)) {
-                                    $dayClasses[] = 'is-range-start';
-                                }
-
-                                if (collect($dayEvents)->contains('is_end', true)) {
-                                    $dayClasses[] = 'is-range-end';
-                                }
-                            }
-=======
                             $dayEvents = $events[$day['date']] ?? [];
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
                         @endphp
 
                         <div class="calendar-cell" role="button" tabindex="0" data-agenda-day data-agenda-date="{{ $day['date'] }}" aria-label="{{ $dayEvents ? 'Editar cita del '.$day['date'] : 'Agendar cita el '.$day['date'] }}">
@@ -1780,35 +1683,12 @@
                                             data-agenda-event
                                             data-agenda-status="{{ $event['status'] }}"
                                             data-agenda-id="{{ $event['id'] }}"
-<<<<<<< HEAD
-                                            data-agenda-source="{{ $event['source'] }}"
-                                            data-agenda-model-id="{{ $event['model_id'] }}"
-                                            data-agenda-date="{{ $selectedDate }}"
-                                            data-agenda-start-date="{{ $event['start_date'] }}"
-                                            data-agenda-end-date="{{ $event['end_date'] }}"
-                                            data-agenda-title="{{ $event['title'] }}"
-                                            data-agenda-time="{{ $event['time_value'] }}"
-                                            data-agenda-type="{{ $event['type'] }}"
-                                            data-agenda-notes="{{ $event['notes'] }}"
-                                            data-agenda-participants="{{ $event['participants'] }}"
-                                            style="background: {{ $color['bg'] }}; color: {{ $color['text'] }};"
-                                            aria-label="{{ $event['source'] === 'congress' ? 'Ver congreso' : 'Editar evento' }} {{ $event['title'] }} del {{ $selectedDate }}"
-                                        >
-                                            @if ($event['time'] !== '')
-                                                <b>{{ $event['time'] }}</b>
-                                            @endif
-                                            <span>{{ $event['title'] }}</span>
-                                            @if ($isMultiDay && $event['source'] !== 'congress')
-                                                <small>{{ $rangeLabel }}</small>
-                                            @endif
-=======
                                             data-agenda-date="{{ $day['date'] }}"
                                             data-agenda-json='@json($event)'
                                             style="background: {{ $color }}33; color: {{ $color }}; box-shadow: inset 0 0 0 1px {{ $color }}66;"
                                             aria-label="Ver cita {{ $event['title'] }} del {{ $day['date'] }}"
                                         >
                                             {{ $event['time'] ? $event['time'].' · ' : '' }}{{ $event['title'] }}{{ $isMultiDay ? ' ('.$rangeLabel.')' : '' }}
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
                                         </button>
                                     @endforeach
                                 </div>
@@ -1816,30 +1696,6 @@
                         </div>
                     @endforeach
                 </div>
-<<<<<<< HEAD
-            </div>
-
-            <aside class="agenda-side" aria-label="Proximos eventos">
-                <button class="agenda-filter" type="button">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 3H2l8 9.5V20l4-2v-5.5L22 3z"></path></svg>
-                    Filtrar
-                </button>
-
-                <div class="upcoming-panel">
-                    <h3>Proximos eventos</h3>
-                    <div class="upcoming-list">
-                        @forelse ($upcoming as $event)
-                            @php($color = $eventColors[$event['type']])
-                            <div class="upcoming-item" style="color: {{ $color['text'] }};">
-                                <span class="upcoming-line" style="background: {{ $color['line'] }};"></span>
-                                <span>
-                                    <b>{{ \Carbon\Carbon::parse($event['start_date'])->translatedFormat('d M') }} · {{ $event['time'] }}</b>
-                                    <span>{{ $event['title'] }}</span>
-                                </span>
-                            </div>
-                        @empty
-                            <p class="upcoming-empty">No hay eventos ni congresos próximos.</p>
-=======
                 @elseif ($view === 'semana')
                 <div class="week-view" aria-label="Semana de {{ $periodLabel }}">
                     <div class="week-grid">
@@ -1985,7 +1841,6 @@
                             </div>
                         @empty
                             <p class="upcoming-empty">Sin citas próximas</p>
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
                         @endforelse
                     </div>
                 </div>
@@ -2000,56 +1855,6 @@
                 <b id="popTitle">Cita</b>
                 <small id="popCreator"></small>
             </div>
-<<<<<<< HEAD
-            <form class="agenda-form" id="agendaForm" method="POST" action="{{ route('admin.agenda.events.store') }}">
-                @csrf
-                <input type="hidden" name="_method" id="agenda-method" value="POST">
-                <div>
-                    <label for="agenda-title">Titulo</label>
-                    <input id="agenda-title" type="text" name="title" placeholder="Nombre del evento" required>
-                </div>
-                <div class="agenda-form-row agenda-form-row--three">
-                    <div>
-                        <label for="agenda-date">Fecha inicial</label>
-                        <input id="agenda-date" type="date" name="start_date" required>
-                    </div>
-                    <div>
-                        <label for="agenda-end-date">Fecha final</label>
-                        <input id="agenda-end-date" type="date" name="end_date" required>
-                    </div>
-                    <div>
-                        <label for="agenda-time">Hora</label>
-                        <input id="agenda-time" type="time" name="time" value="09:00" required>
-                    </div>
-                </div>
-                <div>
-                    <label for="agenda-type">Tipo</label>
-                    <select id="agenda-type" name="type">
-                        <option value="training">Capacitacion</option>
-                        <option value="delivery">Entrega de equipo</option>
-                        <option value="install">Instalacion</option>
-                        <option value="maintenance">Mantenimiento</option>
-                        <option value="meeting">Reunion</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="agenda-participants">Participantes</label>
-                    <textarea id="agenda-participants" name="participants" placeholder="Nombre de participantes, separados por coma"></textarea>
-                </div>
-                <div>
-                    <label for="agenda-notes">Notas</label>
-                    <textarea id="agenda-notes" name="notes" placeholder="Notas del evento"></textarea>
-                </div>
-                <div class="agenda-form-actions">
-                    <button class="agenda-delete" id="agendaDeleteButton" type="button" hidden>Eliminar evento</button>
-                    <button class="agenda-save" id="agendaSaveButton" type="submit">Guardar evento</button>
-                </div>
-            </form>
-            <form id="agendaDeleteForm" method="POST" action="" hidden>
-                @csrf
-                @method('DELETE')
-            </form>
-=======
         </div>
         <div class="event-popover-rows">
             <p><b>Fecha:</b> <span id="popDate"></span></p>
@@ -2061,7 +1866,6 @@
         <div class="event-popover-actions">
             <a class="agenda-btn agenda-btn--primary" id="popReprogram" href="#">Reprogramar cita</a>
             <button class="agenda-btn agenda-btn--danger" type="button" id="popDelete">Eliminar cita</button>
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
         </div>
     </div>
 
@@ -2071,98 +1875,11 @@
     </form>
 
     <script>
-<<<<<<< HEAD
-        const agendaModal = document.getElementById('agendaModal');
-        const agendaForm = document.getElementById('agendaForm');
-        const agendaMethodInput = document.getElementById('agenda-method');
-        const agendaTitleInput = document.getElementById('agenda-title');
-        const agendaDateInput = document.getElementById('agenda-date');
-        const agendaEndDateInput = document.getElementById('agenda-end-date');
-        const agendaTimeInput = document.getElementById('agenda-time');
-        const agendaTypeInput = document.getElementById('agenda-type');
-        const agendaParticipantsInput = document.getElementById('agenda-participants');
-        const agendaNotesInput = document.getElementById('agenda-notes');
-        const agendaDialogTitle = document.getElementById('agendaDialogTitle');
-        const agendaSaveButton = document.getElementById('agendaSaveButton');
-        const agendaDeleteButton = document.getElementById('agendaDeleteButton');
-        const agendaDeleteForm = document.getElementById('agendaDeleteForm');
-        const agendaStoreUrl = @json(route('admin.agenda.events.store'));
-        const agendaUpdateUrlTemplate = @json(route('admin.agenda.events.update', ['agendaEvent' => '__ID__']));
-        const agendaDeleteUrlTemplate = @json(route('admin.agenda.events.destroy', ['agendaEvent' => '__ID__']));
-        const congressShowUrlTemplate = @json(route('configuracion.congresos.show', ['congress' => '__ID__']));
-        const todayIso = @json(now()->format('Y-m-d'));
-
-        function openAgendaModal(selectedDate, eventData) {
-            const date = typeof selectedDate === 'string' ? selectedDate : todayIso;
-            const isEditing = !!eventData;
-
-            agendaModal.dataset.mode = isEditing ? 'edit' : 'create';
-            agendaModal.dataset.eventId = isEditing ? eventData.modelId : '';
-            agendaDialogTitle.textContent = isEditing ? 'Editar Evento' : 'Nuevo Evento';
-            agendaSaveButton.textContent = isEditing ? 'Guardar cambios' : 'Guardar evento';
-            agendaTitleInput.value = isEditing ? eventData.title : '';
-            agendaDateInput.value = isEditing ? eventData.startDate : date;
-            agendaEndDateInput.value = isEditing ? eventData.endDate : date;
-            agendaTimeInput.value = isEditing ? eventData.time : '09:00';
-            agendaTypeInput.value = isEditing ? eventData.type : 'training';
-            agendaParticipantsInput.value = isEditing ? eventData.participants : '';
-            agendaNotesInput.value = isEditing ? eventData.notes : '';
-
-            if (isEditing) {
-                agendaForm.action = agendaUpdateUrlTemplate.replace('__ID__', eventData.modelId);
-                agendaMethodInput.value = 'PUT';
-                agendaDeleteButton.hidden = false;
-                agendaDeleteForm.action = agendaDeleteUrlTemplate.replace('__ID__', eventData.modelId);
-            } else {
-                agendaForm.action = agendaStoreUrl;
-                agendaMethodInput.value = 'POST';
-                agendaDeleteButton.hidden = true;
-            }
-
-            agendaModal.classList.add('is-open');
-            agendaModal.setAttribute('aria-hidden', 'false');
-            window.setTimeout(() => agendaTitleInput.focus(), 80);
-        }
-
-        function closeAgendaModal() {
-            agendaModal.classList.remove('is-open');
-            agendaModal.setAttribute('aria-hidden', 'true');
-        }
-
-        agendaForm.addEventListener('submit', (event) => {
-            if (agendaEndDateInput.value < agendaDateInput.value) {
-                event.preventDefault();
-
-                if (window.showToast) {
-                    window.showToast('La fecha final no puede ser menor que la fecha inicial.');
-                }
-            }
-        });
-
-        agendaDeleteButton.addEventListener('click', () => {
-            if (window.confirm('¿Eliminar este evento de la agenda?')) {
-                agendaDeleteForm.submit();
-            }
-        });
-
-        document.querySelectorAll('[data-agenda-modal-open]').forEach((button) => {
-            button.addEventListener('click', () => openAgendaModal());
-        });
-
-        document.querySelectorAll('[data-agenda-day]').forEach((day) => {
-            day.addEventListener('click', (event) => {
-                if (event.target.closest('[data-agenda-event]')) {
-                    return;
-                }
-
-                openAgendaModal(day.dataset.agendaDate);
-=======
         const agendaCreateUrl = '{{ route('admin.agenda.create') }}';
 
         document.querySelectorAll('[data-agenda-day]').forEach((day) => {
             day.addEventListener('click', () => {
                 window.location.href = agendaCreateUrl + '?date=' + day.dataset.agendaDate;
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
             });
             day.addEventListener('keydown', (event) => {
                 if (event.target.closest('[data-agenda-event]')) {
@@ -2171,11 +1888,7 @@
 
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
-<<<<<<< HEAD
-                    openAgendaModal(day.dataset.agendaDate);
-=======
                     window.location.href = agendaCreateUrl + '?date=' + day.dataset.agendaDate;
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
                 }
             });
         });
@@ -2263,23 +1976,6 @@
             item.addEventListener('mouseleave', schedulePopoverHide);
             item.addEventListener('click', (event) => {
                 event.stopPropagation();
-<<<<<<< HEAD
-
-                if (item.dataset.agendaSource === 'congress') {
-                    window.location.href = congressShowUrlTemplate.replace('__ID__', item.dataset.agendaModelId);
-                    return;
-                }
-
-                openAgendaModal(item.dataset.agendaDate, {
-                    modelId: item.dataset.agendaModelId,
-                    startDate: item.dataset.agendaStartDate,
-                    endDate: item.dataset.agendaEndDate,
-                    title: item.dataset.agendaTitle,
-                    time: item.dataset.agendaTime,
-                    type: item.dataset.agendaType,
-                    notes: item.dataset.agendaNotes,
-                    participants: item.dataset.agendaParticipants,
-=======
             });
         });
 
@@ -2302,7 +1998,6 @@
                 const status = checkbox.dataset.agendaFilter;
                 document.querySelectorAll('[data-agenda-status="' + status + '"]').forEach((item) => {
                     item.style.display = checkbox.checked ? '' : 'none';
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
                 });
             });
         });
@@ -2317,15 +2012,7 @@
                     document.exitFullscreen();
                 }
             });
-<<<<<<< HEAD
-        });
-
-        @if ($errors->any())
-            openAgendaModal();
-        @endif
-=======
         }
 
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
     </script>
 @endsection

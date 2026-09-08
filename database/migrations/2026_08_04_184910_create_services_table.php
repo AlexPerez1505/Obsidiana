@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('services', function (Blueprint $table) {
             $table->id();
             $table->string('service_number')->nullable()->unique();
-            $table->foreignId('customer_id')->constrained('customers');
+            $table->foreignId('customer_id')->constrained('clientes');
             $table->enum('service_type', ['interno', 'externo']);
             $table->foreignId('internal_technician_id')->nullable()->constrained('users');
             $table->foreignId('external_technician_id')->nullable()->constrained('external_technicians');

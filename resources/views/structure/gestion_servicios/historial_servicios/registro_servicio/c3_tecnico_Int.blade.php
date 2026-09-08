@@ -75,13 +75,8 @@
 
                 <div class="card" style="padding:18px;">
                     <h3 style="display:flex; align-items:center; gap:10px; font-size:17px; margin:0 0 14px;">
-<<<<<<< HEAD
-                        <x-gravityui-persons width="20" height="20" color="var(--primary)" />
-                        Informacion del tecnico
-=======
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="var(--primary)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         Servicios activos del tecnico
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
                     </h3>
                     <p class="muted" style="font-size:13px; margin:0 0 12px;">Mostrando servicios activos de <strong id="active-int-tech-name">{{ $technicians->first()?->name ?? 'Selecciona un tecnico' }}</strong></p>
 

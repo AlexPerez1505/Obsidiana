@@ -8,21 +8,6 @@
         </h3>
 
         <div class="resumen-alert">
-<<<<<<< HEAD
-            <x-gravityui-circle-info width="18" height="18" />
-            <span>Registro protegido. Requiere captura vía formulario QR para asegurar identidad y firmas.</span>
-        </div>
-
-        <div class="resumen-actions">
-            <button type="button" class="resumen-btn resumen-btn--primary">
-                <x-gravityui-layout-cells-large width="16" height="16" />
-                Generar QR
-            </button>
-            <button type="button" class="resumen-btn resumen-btn--ghost">
-                <x-gravityui-link width="16" height="16" />
-                Abrir Enlace
-            </button>
-=======
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
             <span>Escanear el código abre el formulario de reporte del equipo con los datos del cliente y del equipo.</span>
         </div>
@@ -33,7 +18,6 @@
             </div>
             <div id="resumen-qr-svg" style="display:none;"></div>
             <p style="font-size:12px; color:var(--muted); margin:10px 0 0;">Vista previa del QR de reporte</p>
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
         </div>
 
         <ul class="resumen-list" style="margin-top:14px;">
@@ -44,11 +28,6 @@
     </div>
 
     <div class="resumen-card">
-<<<<<<< HEAD
-        <h3 class="resumen-title">
-            <x-gravityui-circle-info width="18" height="18" />
-            Ficha Técnica del Servicio
-=======
         <h3 class="resumen-title resumen-title--between">
             <span style="display:inline-flex; align-items:center; gap:8px;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -60,7 +39,6 @@
                 <button type="button" class="resumen-edit-btn" onclick="window.goToStep && window.goToStep(3)">Técnico</button>
                 <button type="button" class="resumen-edit-btn" id="res-edit-cotizacion" onclick="window.goToStep && window.goToStep(4)">Cotización</button>
             </div>
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
         </h3>
 
         <div class="resumen-detail">
@@ -120,12 +98,6 @@
             <span class="resumen-value" id="res-tech-phone">-</span>
         </div>
         <div class="resumen-detail">
-<<<<<<< HEAD
-            <span class="resumen-label">VALIDACIÓN OS</span>
-            <span class="resumen-value resumen-pending">
-                <x-gravityui-clock width="14" height="14" />
-                Pendiente
-=======
             <span class="resumen-label">CORREO TÉCNICO</span>
             <span class="resumen-value" id="res-tech-email">-</span>
         </div>
@@ -141,7 +113,6 @@
             <span style="display:inline-flex; align-items:center; gap:8px;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                 Cotización de refacciones
->>>>>>> 388e3255803021b8d1bf5319ecc057c288f79cff
             </span>
             <button type="button" class="resumen-edit-btn" id="resumen-cotizacion-edit" onclick="window.goToStep && window.goToStep(4)">Editar</button>
         </h3>

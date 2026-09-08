@@ -12,8 +12,6 @@ use Illuminate\View\View;
 
 class EquipoController extends Controller
 {
-    use ConstruyeCatalogoEquipo;
-
     public function index(): View
     {
         $equipos = Equipo::latest()->get();
