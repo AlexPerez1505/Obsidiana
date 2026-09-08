@@ -108,6 +108,7 @@
     .tp-row-icon.toll { background: #fef9c3; color: #a16207; }
     .tp-row-icon.fuel { background: #dbeafe; color: #2563eb; }
     .tp-row-icon.meal { background: #fce7f3; color: #db2777; }
+    .tp-row-icon.lodging { background: #ede9fe; color: #7c3aed; }
     .tp-row-icon.other { background: var(--primary-soft); color: var(--primary); }
     .tp-row-icon svg { width: 20px; height: 20px; }
 
@@ -432,6 +433,7 @@
                         <template x-if="g.type === 'toll'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M4 12v6h16v-6M8 12V8a4 4 0 0 1 8 0v4"/></svg></template>
                         <template x-if="g.type === 'fuel'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h12M15 8h2a2 2 0 0 1 2 2v8a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.5L19 5"/></svg></template>
                         <template x-if="g.type === 'meal'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg></template>
+                        <template x-if="g.type === 'lodging'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></template>
                         <template x-if="g.type === 'other'"><x-gravityui-tag /></template>
                     </div>
                     <div class="tp-row-info">
@@ -499,6 +501,10 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg>
                     <span>Viático</span>
                 </button>
+                <button type="button" class="tp-type-btn" :class="{ selected: form.type === 'lodging' }" @click="form.type = 'lodging'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+                    <span>Hospedaje</span>
+                </button>
                 <button type="button" class="tp-type-btn" :class="{ selected: form.type === 'other' }" @click="form.type = 'other'">
                     <x-gravityui-tag />
                     <span>Adicional</span>
@@ -560,6 +566,10 @@
                 <button type="button" class="tp-type-btn" :class="{ selected: editForm.type === 'meal' }" @click="editForm.type = 'meal'">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg>
                     <span>Viático</span>
+                </button>
+                <button type="button" class="tp-type-btn" :class="{ selected: editForm.type === 'lodging' }" @click="editForm.type = 'lodging'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+                    <span>Hospedaje</span>
                 </button>
                 <button type="button" class="tp-type-btn" :class="{ selected: editForm.type === 'other' }" @click="editForm.type = 'other'">
                     <x-gravityui-tag />

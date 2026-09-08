@@ -13,7 +13,7 @@ class Viatic extends Model
 
     protected $fillable = [
         'user_id', 'vehicle_id', 'vehicle_name', 'place',
-        'tolls', 'fuel', 'meals', 'additional',
+        'tolls', 'fuel', 'meals', 'lodging', 'additional',
         'description', 'ticket_photo', 'expense_date', 'status',
     ];
 
@@ -21,6 +21,7 @@ class Viatic extends Model
         'tolls'       => 'decimal:2',
         'fuel'        => 'decimal:2',
         'meals'       => 'decimal:2',
+        'lodging'     => 'decimal:2',
         'additional'  => 'decimal:2',
         'expense_date'=> 'date',
     ];
@@ -50,7 +51,7 @@ class Viatic extends Model
         if ($expensesTotal > 0) {
             return $expensesTotal;
         }
-        return (float) $this->tolls + (float) $this->fuel + (float) $this->meals + (float) $this->additional;
+        return (float) $this->tolls + (float) $this->fuel + (float) $this->meals + (float) $this->lodging + (float) $this->additional;
     }
 
     public function getTotalAttribute(): string

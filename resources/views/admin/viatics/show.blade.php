@@ -55,11 +55,12 @@
     .vp-summary-icon.toll { background: #fef9c3; color: #a16207; }
     .vp-summary-icon.fuel { background: #dbeafe; color: #2563eb; }
     .vp-summary-icon.meal { background: #fce7f3; color: #db2777; }
+    .vp-summary-icon.lodging { background: #ede9fe; color: #7c3aed; }
     .vp-summary-icon.other { background: var(--primary-soft); color: var(--primary); }
     .vp-summary-icon svg { width: 16px; height: 16px; }
     .vp-summary-amount { font-size: 15px; font-weight: 800; color: var(--primary); }
     @media (min-width: 768px) {
-        .vp-summary-grid { grid-template-columns: repeat(4, 1fr); }
+        .vp-summary-grid { grid-template-columns: repeat(5, 1fr); }
     }
 
     .vp-list-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; color: var(--text); margin: 0 0 14px; }
@@ -76,6 +77,7 @@
     .vp-row-icon.toll { background: #fef9c3; color: #a16207; }
     .vp-row-icon.fuel { background: #dbeafe; color: #2563eb; }
     .vp-row-icon.meal { background: #fce7f3; color: #db2777; }
+    .vp-row-icon.lodging { background: #ede9fe; color: #7c3aed; }
     .vp-row-icon.other { background: var(--primary-soft); color: var(--primary); }
     .vp-row-icon svg { width: 20px; height: 20px; }
     .vp-row-info { flex: 1; min-width: 0; }
@@ -213,10 +215,11 @@
     ])->values()->all();
     $summary = collect($initialGastos)->groupBy('type')->map(fn($g) => $g->sum('amount'));
     $summaryTotals = [
-        'toll'  => (float) ($summary['toll'] ?? 0),
-        'fuel'  => (float) ($summary['fuel'] ?? 0),
-        'meal'  => (float) ($summary['meal'] ?? 0),
-        'other' => (float) ($summary['other'] ?? 0),
+        'toll'    => (float) ($summary['toll'] ?? 0),
+        'fuel'    => (float) ($summary['fuel'] ?? 0),
+        'meal'    => (float) ($summary['meal'] ?? 0),
+        'lodging' => (float) ($summary['lodging'] ?? 0),
+        'other'   => (float) ($summary['other'] ?? 0),
     ];
 @endphp
 
@@ -270,6 +273,13 @@
                 </div>
                 <span class="vp-summary-amount" id="vpSummaryMeal">${{ number_format($summaryTotals['meal'], 2) }}</span>
             </div>
+            <div class="vp-summary-row" data-type="lodging">
+                <div class="vp-summary-left">
+                    <span class="vp-summary-icon lodging"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></span>
+                    <span>Hospedaje</span>
+                </div>
+                <span class="vp-summary-amount" id="vpSummaryLodging">${{ number_format($summaryTotals['lodging'], 2) }}</span>
+            </div>
             <div class="vp-summary-row" data-type="other">
                 <div class="vp-summary-left">
                     <span class="vp-summary-icon other"><x-gravityui-tag /></span>
@@ -297,6 +307,8 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h12M15 8h2a2 2 0 0 1 2 2v8a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.5L19 5"/></svg>
                 @elseif($g['type'] === 'meal')
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg>
+                @elseif($g['type'] === 'lodging')
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
                 @else
                     <x-gravityui-tag />
                 @endif
@@ -357,6 +369,10 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg>
                     <span>Viático</span>
                 </button>
+                <button type="button" class="vp-type-btn" data-type="lodging" onclick="vpApp.selectType(this, 'lodging', 'add')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+                    <span>Hospedaje</span>
+                </button>
                 <button type="button" class="vp-type-btn" data-type="other" onclick="vpApp.selectType(this, 'other', 'add')">
                     <x-gravityui-tag />
                     <span>Adicional</span>
@@ -401,6 +417,10 @@
                 <button type="button" class="vp-type-btn" data-type="meal" onclick="vpApp.selectType(this, 'meal', 'edit')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg>
                     <span>Viático</span>
+                </button>
+                <button type="button" class="vp-type-btn" data-type="lodging" onclick="vpApp.selectType(this, 'lodging', 'edit')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+                    <span>Hospedaje</span>
                 </button>
                 <button type="button" class="vp-type-btn" data-type="other" onclick="vpApp.selectType(this, 'other', 'edit')">
                     <x-gravityui-tag />
@@ -447,6 +467,7 @@
             toll: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M4 12v6h16v-6M8 12V8a4 4 0 0 1 8 0v4"/></svg>`,
             fuel: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h12M15 8h2a2 2 0 0 1 2 2v8a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.5L19 5"/></svg>`,
             meal: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg>`,
+            lodging: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>`,
             other: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
         };
 
@@ -455,11 +476,12 @@
         }
 
         function updateSummary() {
-            const byType = { toll: 0, fuel: 0, meal: 0, other: 0 };
+            const byType = { toll: 0, fuel: 0, meal: 0, lodging: 0, other: 0 };
             gastos.forEach(g => { if (byType[g.type] !== undefined) byType[g.type] += Number(g.amount); });
             document.getElementById('vpSummaryToll').textContent = formatMoney(byType.toll);
             document.getElementById('vpSummaryFuel').textContent = formatMoney(byType.fuel);
             document.getElementById('vpSummaryMeal').textContent = formatMoney(byType.meal);
+            document.getElementById('vpSummaryLodging').textContent = formatMoney(byType.lodging);
             document.getElementById('vpSummaryOther').textContent = formatMoney(byType.other);
         }
 

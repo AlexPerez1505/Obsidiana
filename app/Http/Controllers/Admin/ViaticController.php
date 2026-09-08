@@ -60,6 +60,7 @@ class ViaticController extends Controller
             'tolls'        => ['nullable', 'numeric', 'min:0'],
             'fuel'         => ['nullable', 'numeric', 'min:0'],
             'meals'        => ['nullable', 'numeric', 'min:0'],
+            'lodging'      => ['nullable', 'numeric', 'min:0'],
             'additional'   => ['nullable', 'numeric', 'min:0'],
             'description'  => ['nullable', 'string', 'max:1000'],
             'expense_date' => ['nullable', 'date'],
@@ -74,19 +75,29 @@ class ViaticController extends Controller
 
         // Save initial totals for backward compatibility (optional), but create expense records
         $expenseMap = [
-            'toll'   => (float) ($data['tolls']    ?? 0),
-            'fuel'   => (float) ($data['fuel']     ?? 0),
-            'meal'   => (float) ($data['meals']    ?? 0),
-            'other'  => (float) ($data['additional'] ?? 0),
+            'toll'    => (float) ($data['tolls']      ?? 0),
+            'fuel'    => (float) ($data['fuel']       ?? 0),
+            'meal'    => (float) ($data['meals']      ?? 0),
+            'lodging' => (float) ($data['lodging']    ?? 0),
+            'other'   => (float) ($data['additional'] ?? 0),
         ];
 
         $viatic = Viatic::create($data);
 
         $labels = [
-            'toll'  => 'Caseta',
-            'fuel'  => 'Gasolina',
-            'meal'  => 'Viático',
-            'other' => 'Adicional',
+            'toll'    => 'Caseta',
+            'fuel'    => 'Gasolina',
+            'meal'    => 'Viático',
+            'lodging' => 'Hospedaje',
+            'other'   => 'Adicional',
+        ];
+
+        $icons = [
+            'toll'    => 'toll',
+            'fuel'    => 'fuel',
+            'meal'    => 'receipt',
+            'lodging' => 'lodging',
+            'other'   => 'receipt',
         ];
 
         foreach ($expenseMap as $type => $amount) {
@@ -95,7 +106,7 @@ class ViaticController extends Controller
                     'type'   => $type,
                     'label'  => $labels[$type],
                     'amount' => $amount,
-                    'icon'   => $type === 'toll' ? 'toll' : ($type === 'fuel' ? 'fuel' : 'receipt'),
+                    'icon'   => $icons[$type],
                 ]);
             }
         }
@@ -126,6 +137,7 @@ class ViaticController extends Controller
             'tolls'        => ['nullable', 'numeric', 'min:0'],
             'fuel'         => ['nullable', 'numeric', 'min:0'],
             'meals'        => ['nullable', 'numeric', 'min:0'],
+            'lodging'      => ['nullable', 'numeric', 'min:0'],
             'additional'   => ['nullable', 'numeric', 'min:0'],
             'description'  => ['nullable', 'string', 'max:1000'],
             'expense_date' => ['nullable', 'date'],
@@ -166,16 +178,17 @@ class ViaticController extends Controller
         $this->authorizeViatic($viatic);
 
         $data = $request->validate([
-            'type'   => ['required', 'string', 'in:toll,fuel,meal,other'],
+            'type'   => ['required', 'string', 'in:toll,fuel,meal,lodging,other'],
             'label'  => ['nullable', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0'],
         ]);
 
         $iconMap = [
-            'toll'  => 'toll',
-            'fuel'  => 'fuel',
-            'meal'  => 'receipt',
-            'other' => 'receipt',
+            'toll'    => 'toll',
+            'fuel'    => 'fuel',
+            'meal'    => 'receipt',
+            'lodging' => 'lodging',
+            'other'   => 'receipt',
         ];
 
         $expense = $viatic->expenses()->create([
@@ -208,16 +221,17 @@ class ViaticController extends Controller
         $this->authorizeExpense($viatic, $expense);
 
         $data = $request->validate([
-            'type'   => ['required', 'string', 'in:toll,fuel,meal,other'],
+            'type'   => ['required', 'string', 'in:toll,fuel,meal,lodging,other'],
             'label'  => ['nullable', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0'],
         ]);
 
         $iconMap = [
-            'toll'  => 'toll',
-            'fuel'  => 'fuel',
-            'meal'  => 'receipt',
-            'other' => 'receipt',
+            'toll'    => 'toll',
+            'fuel'    => 'fuel',
+            'meal'    => 'receipt',
+            'lodging' => 'lodging',
+            'other'   => 'receipt',
         ];
 
         $expense->update([

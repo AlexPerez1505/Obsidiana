@@ -50,16 +50,17 @@ class TripController extends Controller
         $this->authorizeTrip($trip);
 
         $data = $request->validate([
-            'type'   => ['required', 'string', 'in:toll,fuel,meal,other'],
+            'type'   => ['required', 'string', 'in:toll,fuel,meal,lodging,other'],
             'label'  => ['nullable', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0'],
         ]);
 
         $iconMap = [
-            'toll'  => 'toll',
-            'fuel'  => 'fuel',
-            'meal'  => 'receipt',
-            'other' => 'receipt',
+            'toll'    => 'toll',
+            'fuel'    => 'fuel',
+            'meal'    => 'receipt',
+            'lodging' => 'lodging',
+            'other'   => 'receipt',
         ];
 
         $expense = $trip->expenses()->create([
@@ -92,16 +93,17 @@ class TripController extends Controller
         $this->authorizeExpense($trip, $expense);
 
         $data = $request->validate([
-            'type'   => ['required', 'string', 'in:toll,fuel,meal,other'],
+            'type'   => ['required', 'string', 'in:toll,fuel,meal,lodging,other'],
             'label'  => ['nullable', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0'],
         ]);
 
         $iconMap = [
-            'toll'  => 'toll',
-            'fuel'  => 'fuel',
-            'meal'  => 'receipt',
-            'other' => 'receipt',
+            'toll'    => 'toll',
+            'fuel'    => 'fuel',
+            'meal'    => 'receipt',
+            'lodging' => 'lodging',
+            'other'   => 'receipt',
         ];
 
         $expense->update([

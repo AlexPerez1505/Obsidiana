@@ -232,7 +232,7 @@
                 </div>
             </div>
 
-            {{-- Viáticos & Adicional --}}
+            {{-- Viáticos & Hospedaje --}}
             <div class="vt-row-2">
                 <div class="vt-field">
                     <label class="vt-label">Viáticos</label>
@@ -242,11 +242,20 @@
                     </div>
                 </div>
                 <div class="vt-field">
-                    <label class="vt-label">Adicional</label>
+                    <label class="vt-label">Hospedaje</label>
                     <div class="vt-input-wrap">
                         <span class="vt-prefix">$</span>
-                        <input type="number" name="additional" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+                        <input type="number" name="lodging" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
                     </div>
+                </div>
+            </div>
+
+            {{-- Adicional --}}
+            <div class="vt-field">
+                <label class="vt-label">Adicional</label>
+                <div class="vt-input-wrap">
+                    <span class="vt-prefix">$</span>
+                    <input type="number" name="additional" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
                 </div>
             </div>
 
