@@ -112,6 +112,7 @@
                                     <td>{{ $service->currentStep?->name ?? '—' }}</td>
                                     <td class="service-dates">{{ $service->created_at?->format('d/m/Y') }}</td>
                                     <td style="text-align:right;">
+                                        <a href="{{ route('gestion.servicios.mantenimiento.show', $service) }}" class="btn btn--ghost" style="padding:6px 14px; font-size:12px; text-decoration:none;">Ver</a>
                                     </td>
                                 </tr>
                             @empty

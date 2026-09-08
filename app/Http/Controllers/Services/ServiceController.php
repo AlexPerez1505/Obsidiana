@@ -109,7 +109,7 @@ class ServiceController extends Controller
     private function persistService(Request $request, int $registeredBy): Service
     {
         $validated = $request->validate([
-            'customer_id' => 'required|exists:clientes,id',
+            'customer_id' => 'nullable|exists:clientes,id',
             'mantenimiento_externo' => 'nullable|in:0,1',
             'mantenimiento_interno' => 'nullable|in:0,1',
             'internal_technician_id' => 'nullable|exists:users,id',
@@ -140,13 +140,17 @@ class ServiceController extends Controller
             abort(422, 'Selecciona el tipo de servicio.');
         }
 
+        if ($serviceType === 'externo' && empty($validated['customer_id'])) {
+            abort(422, 'Selecciona un cliente para el servicio externo.');
+        }
+
         $step = ServiceStep::where('service_type', $serviceType)
             ->orderBy('order')
             ->first();
 
         $service = Service::create([
             'service_number' => null,
-            'customer_id' => $validated['customer_id'],
+            'customer_id' => $validated['customer_id'] ?? null,
             'service_type' => $serviceType,
             'internal_technician_id' => $serviceType === 'interno' ? ($validated['internal_technician_id'] ?? null) : null,
             'external_technician_id' => $serviceType === 'externo' ? ($validated['external_technician_id'] ?? null) : null,
