@@ -258,11 +258,7 @@ public function aprobacionFlyers(): View
      */
     public function agenda(): RedirectResponse
     {
-<<<<<<< HEAD
-        return view('structure.gestion_marketing.calendario.calendario');
-=======
         return redirect()->route('marketing.calendario.index');
->>>>>>> da79ffe04361631f8eb97f223cef5cbde4ea6d30
     }
 
     /**

@@ -12,13 +12,6 @@
         .rl-cab h3 { flex:1; margin:0; font-size:16px; font-weight:600; }
         .rl-clave { font-family:ui-monospace, Consolas, monospace; font-size:11.5px; color:var(--muted); }
 
-        .rl-barra { height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; margin-top:14px; }
-        .rl-barra > span { display:block; height:100%; background:var(--primary); }
-        .rl-barra.todo > span { background:var(--green); }
-
-        .rl-cuenta { display:flex; justify-content:space-between; gap:10px; margin-top:7px;
-                     color:var(--muted); font-size:12.5px; }
-
         .rl-modulos { display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
         .rl-mod { padding:3px 9px; border-radius:999px; background:var(--surface-2);
                   border:1px solid var(--border); font-size:11.5px; }
@@ -53,8 +46,6 @@
             @php
                 $esAdmin = $role->name === 'admin';
                 $tiene = $role->permissions->pluck('name');
-                $n = $esAdmin ? $totalPermisos : $tiene->count();
-                $pct = $totalPermisos ? round($n / $totalPermisos * 100) : 0;
             @endphp
 
             <x-ui.card>
@@ -78,14 +69,6 @@
                         es la cuenta que garantiza que alguien siempre pueda entrar a arreglar las demás.
                     </p>
                 @else
-                    <div class="rl-barra {{ $n === $totalPermisos ? 'todo' : '' }}">
-                        <span style="width:{{ $pct }}%"></span>
-                    </div>
-                    <div class="rl-cuenta">
-                        <span><b>{{ $n }}</b> de {{ $totalPermisos }} permisos</span>
-                        <span>{{ $pct }}%</span>
-                    </div>
-
                     {{-- De un vistazo: a qué módulos entra este rol. --}}
                     <div class="rl-modulos">
                         @foreach ($grupos as $clave => $grupo)

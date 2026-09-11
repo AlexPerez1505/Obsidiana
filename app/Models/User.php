@@ -324,6 +324,21 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * A qué pantalla de inicio llega el usuario tras iniciar sesión.
+     *
+     * El rol Mantenimiento tiene su propio tablero; el resto usa el
+     * tablero general.
+     */
+    public function homeRoute(): string
+    {
+        if (! $this->isAdmin() && $this->hasRole('mantenimiento')) {
+            return 'mantenimiento.dashboard';
+        }
+
+        return 'dashboard';
+    }
+
+    /**
      * Genera y guarda el hash de un nuevo PIN de aprobación rápida.
      */
     public function setApprovalPin(string $pin): void
