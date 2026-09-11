@@ -70,10 +70,7 @@
                 <span class="resumen-label">ESTATUS</span>
                 <span class="resumen-value" style="text-transform:capitalize;">{{ $service->status }}</span>
             </div>
-            <div class="resumen-detail">
-                <span class="resumen-label">PASO ACTUAL</span>
-                <span class="resumen-value">{{ $service->currentStep?->name ?? '—' }}</span>
-            </div>
+
             <div class="resumen-detail">
                 <span class="resumen-label">FECHA DE REGISTRO</span>
                 <span class="resumen-value">{{ $service->created_at?->format('d/m/Y H:i') ?? '—' }}</span>
@@ -149,6 +146,49 @@
                 </div>
             @endif
         </div>
+    </div>
+
+    <div class="resumen-grid" style="margin-top:18px;">
+        <div class="resumen-card">
+            <h3 class="resumen-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                Enviar al cliente
+            </h3>
+            @if ($service->customer?->gmail)
+                @php
+                    $customerUrl = url()->signedRoute('gestion.servicios.historial.aprobaciones.cliente', $service, now()->addDays(7));
+                    $subject = urlencode('Aprobación de servicio ' . $service->service_number);
+                    $body = urlencode('Hola, por favor revisa el resumen del servicio y confirma tu aprobación: ' . $customerUrl);
+                @endphp
+                <div class="resumen-detail">
+                    <span class="resumen-label">CORREO DEL CLIENTE</span>
+                    <span class="resumen-value">{{ $service->customer->gmail }}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap;">
+                    <input type="text" id="customerLink" value="{{ $customerUrl }}" readonly style="flex:1; min-width:260px; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:13px;">
+                    <a href="mailto:{{ $service->customer->gmail }}?subject={{ $subject }}&body={{ $body }}" class="erp-btn" target="_blank" rel="noopener">Enviar cliente</a>
+                </div>
+            @else
+                <p style="color:var(--muted); font-size:13px; margin:0;">El cliente no tiene correo registrado.</p>
+            @endif
+        </div>
+
+        @if ($service->customer_decision)
+            <div class="resumen-card">
+                <h3 class="resumen-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    Decisión del cliente
+                </h3>
+                <div class="resumen-detail">
+                    <span class="resumen-label">RESPUESTA</span>
+                    <span class="resumen-value" style="text-transform:capitalize; font-weight:700; color:{{ $service->customer_decision === 'aprobado' ? 'var(--green)' : 'var(--danger)' }}">{{ $service->customer_decision }}</span>
+                </div>
+                <div class="resumen-detail">
+                    <span class="resumen-label">FECHA</span>
+                    <span class="resumen-value">{{ $service->customer_decision_at?->format('d/m/Y H:i') ?? '—' }}</span>
+                </div>
+            </div>
+        @endif
     </div>
 
     <div class="resumen-actions">

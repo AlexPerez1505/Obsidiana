@@ -22,7 +22,6 @@
     </style>
 
     <div class="qr-head">
-        <div class="qr-step">Paso actual: {{ $tracking->serviceStep->name }}</div>
         <h1>Actualizar orden de servicio</h1>
         <p>Orden {{ $service->service_number }} · Producto {{ $service->serviceEquipment->product_code ?? 'N/A' }}</p>
     </div>

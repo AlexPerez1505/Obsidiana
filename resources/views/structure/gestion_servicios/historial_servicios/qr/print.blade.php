@@ -27,7 +27,7 @@
         <div style="text-align:left; border-top:1px solid var(--border); padding-top:16px; font-size:13px; color:var(--text);">
             <p style="margin:0 0 6px;"><strong>Cliente:</strong> {{ $service->customer?->nombre ?? '—' }} {{ $service->customer?->apellido ?? '' }}</p>
             <p style="margin:0 0 6px;"><strong>Equipo:</strong> {{ $service->serviceEquipment?->type_text ?? '—' }} {{ $service->serviceEquipment?->brand_text ?? '' }} {{ $service->serviceEquipment?->model_text ?? '' }}</p>
-            <p style="margin:0;"><strong>Paso actual:</strong> {{ $service->currentStep?->name ?? '—' }}</p>
+
         </div>
 
         <button type="button" class="btn" onclick="window.print()" style="margin-top:22px; width:auto; padding-left:24px; padding-right:24px;">Imprimir / Guardar como PDF</button>

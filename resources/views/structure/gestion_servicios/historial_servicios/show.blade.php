@@ -37,10 +37,7 @@
                 <span class="resumen-label">Product code</span>
                 <span class="resumen-value" style="font-weight:700;">{{ $service->serviceEquipment->product_code ?? 'N/A' }}</span>
             </div>
-            <div class="resumen-detail">
-                <span class="resumen-label">Paso actual</span>
-                <span class="resumen-value" style="font-weight:700;">{{ $service->currentStep?->name ?? 'Completado' }}</span>
-            </div>
+
         </div>
 
         <!-- Ficha Técnica -->

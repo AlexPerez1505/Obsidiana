@@ -564,6 +564,9 @@
 </div>
 
 <div class="toolbar">
+  <button class="ico" onclick="history.back()" title="Volver" aria-label="Volver">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
   <span class="prog" id="prog">0 / 30 evaluados</span>
   <button class="ico ico-primary" id="btnPdf" onclick="descargarPDF()" title="Descargar PDF" aria-label="Descargar PDF">
     <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v5m0 0l-2-2m2 2l2-2"/></svg>

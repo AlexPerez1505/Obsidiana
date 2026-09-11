@@ -8,6 +8,7 @@ class ServiceSparePart extends Model
 {
     protected $fillable = [
         'service_id',
+        'refaccion_id',
         'nombre',
         'cantidad',
         'precio_unitario',
@@ -26,5 +27,10 @@ class ServiceSparePart extends Model
     public function service()
     {
         return $this->belongsTo(Service::class);
+    }
+
+    public function refaccion()
+    {
+        return $this->belongsTo(Refaccion::class);
     }
 }
