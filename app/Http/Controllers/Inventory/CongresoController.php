@@ -141,6 +141,8 @@ class CongresoController extends Controller
     {
         return view('structure.gestion_Inventario.congresos.create', [
             'categories' => Category::query()->orderBy('nombre')->get(),
+            'productosDisponibles' => Producto::orderBy('tipo_equipo')->get(),
+            'usuarios' => User::orderBy('name')->get(['id', 'name', 'email']),
         ]);
     }
 
@@ -148,12 +150,52 @@ class CongresoController extends Controller
     {
         $data = $this->validado($request);
 
+        $request->validate([
+            'serial_ids' => ['nullable', 'array'],
+            'serial_ids.*' => ['integer', 'exists:producto_seriales,id'],
+            'user_ids' => ['nullable', 'array'],
+            'user_ids.*' => ['integer', 'exists:users,id'],
+        ]);
+
         $data['path_archivo'] = $this->subirArchivos($request);
 
         $congress = Congress::create($data);
 
+        $this->asignarProductosYUsuariosIniciales($request, $congress);
+
         return redirect()->route('inventory.congresos.index', ['congreso' => $congress->id])
             ->with('status', 'Congreso guardado correctamente.');
+    }
+
+    /**
+     * Desde la propia pantalla de "Nuevo congreso" ya se pueden elegir las
+     * unidades (viendo su foto) y los usuarios que van, sin tener que
+     * guardar el congreso primero y entrar luego a agregarlos.
+     */
+    private function asignarProductosYUsuariosIniciales(Request $request, Congress $congress): void
+    {
+        $serialIds = array_filter((array) $request->input('serial_ids', []));
+
+        if ($serialIds) {
+            $validos = ProductoSerial::whereIn('id', $serialIds)
+                ->where('vendido', false)
+                ->whereNotIn('estado', ProductoSerial::NO_VENDIBLES)
+                ->whereNull('congress_id')
+                ->pluck('id');
+
+            ProductoSerial::whereIn('id', $validos)->update([
+                'congress_id' => $congress->id,
+                'enviado_a_congreso_en' => now(),
+            ]);
+        }
+
+        $userIds = array_filter((array) $request->input('user_ids', []));
+
+        if ($userIds) {
+            $congress->notifiedUsers()->syncWithoutDetaching(
+                User::whereIn('id', $userIds)->pluck('id')
+            );
+        }
     }
 
     public function edit(Congress $congress): View

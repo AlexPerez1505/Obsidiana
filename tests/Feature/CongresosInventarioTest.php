@@ -84,6 +84,39 @@ class CongresosInventarioTest extends TestCase
         $response->assertRedirect(route('inventory.congresos.index', ['congreso' => $congress->id]));
     }
 
+    public function test_crear_congreso_con_productos_y_usuarios_desde_la_misma_pantalla(): void
+    {
+        $admin = $this->usuarioAprobado();
+        $categoria = Category::create(['nombre' => 'Endoscopia']);
+        $vendedor = User::factory()->create(['status' => User::STATUS_APPROVED, 'approved_at' => now()]);
+
+        $producto = Producto::create([
+            'tipo_equipo' => 'Endoscopio',
+            'marca' => 'Olympus',
+            'modelo' => 'X1',
+            'stock' => 0,
+        ]);
+        $producto->agregarUnidades(2, ['SN-A', 'SN-B']);
+        $unidades = $producto->seriales()->pluck('id');
+
+        $response = $this->actingAs($admin)->post(route('inventory.congresos.store'), [
+            'nombre' => 'Congreso Con Todo',
+            'categoria_id' => $categoria->id,
+            'fecha_inicio' => now()->addDay()->toDateString(),
+            'fecha_finalizacion' => now()->addDays(2)->toDateString(),
+            'hora_montaje' => '08:00',
+            'hora_desmontaje' => '18:00',
+            'serial_ids' => $unidades->all(),
+            'user_ids' => [$vendedor->id],
+        ]);
+
+        $congress = Congress::where('nombre', 'Congreso Con Todo')->firstOrFail();
+        $response->assertRedirect(route('inventory.congresos.index', ['congreso' => $congress->id]));
+
+        $this->assertCount(2, ProductoSerial::where('congress_id', $congress->id)->get());
+        $this->assertTrue($congress->notifiedUsers()->where('users.id', $vendedor->id)->exists());
+    }
+
     public function test_agregar_producto_marca_las_unidades_disponibles_sin_afectar_su_estado(): void
     {
         $user = $this->usuarioAprobado();

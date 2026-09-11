@@ -9,5 +9,7 @@
         'congress' => new \App\Models\Congress(),
         'accion' => route('inventory.congresos.store'),
         'metodo' => 'POST',
+        'productosDisponibles' => $productosDisponibles,
+        'usuarios' => $usuarios,
     ])
 @endsection
