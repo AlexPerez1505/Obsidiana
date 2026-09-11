@@ -67,4 +67,68 @@ class Congress extends Model
         ->withPivot(['notified', 'notified_at'])
         ->withTimestamps();
     }
+
+    /** Las unidades (piezas con serie/QR) que se llevaron a este congreso. */
+    public function unidadesEnCongreso(): HasMany
+    {
+        return $this->hasMany(ProductoSerial::class, 'congress_id')->with('producto');
+    }
+
+    /** Quién asistió: ponentes, distribuidores, asistentes... */
+    public function participantes(): HasMany
+    {
+        return $this->hasMany(CongresoParticipante::class);
+    }
+
+    /**
+     * Las unidades en congreso, agrupadas por producto: para la tabla de
+     * "Productos del congreso" no importa la pieza suelta, importa cuántas
+     * de cada modelo se llevaron.
+     */
+    public function productosResumen()
+    {
+        return $this->unidadesEnCongreso
+            ->groupBy('producto_id')
+            ->map(function ($unidades) {
+                $producto = $unidades->first()->producto;
+
+                return [
+                    'producto' => $producto,
+                    'cantidad' => $unidades->count(),
+                    'unidades' => $unidades,
+                ];
+            })
+            ->values();
+    }
+
+    /** upcoming | active | finished, según hoy contra las fechas del congreso. */
+    public function estado(): string
+    {
+        $hoy = now()->startOfDay();
+
+        if ($hoy->lt($this->fecha_inicio->copy()->startOfDay())) {
+            return 'upcoming';
+        }
+
+        if ($hoy->gt($this->fecha_finalizacion->copy()->startOfDay())) {
+            return 'finished';
+        }
+
+        return 'active';
+    }
+
+    public function estadoLabel(): string
+    {
+        return match ($this->estado()) {
+            'upcoming' => 'Próximo',
+            'finished' => 'Finalizado',
+            default => 'Activo',
+        };
+    }
+
+    /** "Lugar" es el nombre que usa la pantalla; el dato es "direccion". */
+    public function getLugarAttribute(): ?string
+    {
+        return $this->direccion;
+    }
 }

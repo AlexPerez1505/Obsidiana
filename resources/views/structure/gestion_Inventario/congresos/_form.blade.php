@@ -177,7 +177,7 @@
             <x-ui.card>
                 <div class="cg-head"><x-ui.section-title style="margin:0;">Ubicación</x-ui.section-title></div>
 
-                <x-ui.form-group label="Dirección" name="direccion"
+                <x-ui.form-group label="Dirección / Lugar" name="direccion"
                                  placeholder="Ej. Hotel Hilton, Ciudad de México"
                                  :value="$v('direccion')" />
 
@@ -189,7 +189,7 @@
     </div>
 
     <div class="page-foot">
-        <a href="{{ route('configuracion.catalogos.index') }}" class="btn btn--ghost">Regresar</a>
+        <a href="{{ route('inventory.congresos.index') }}" class="btn btn--ghost">Regresar</a>
         <button type="submit" class="btn">{{ $esEdicion ? 'Guardar cambios' : 'Guardar congreso' }}</button>
     </div>
 </form>

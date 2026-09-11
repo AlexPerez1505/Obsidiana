@@ -32,6 +32,7 @@ require __DIR__.'/web/facturas.php';
 
 // Inventario
 require __DIR__.'/web/inventory/inventory.php';
+require __DIR__.'/web/inventory/congresos.php';
 
 // Configuracion
 require __DIR__.'/web/configuracion/catalogo.php';

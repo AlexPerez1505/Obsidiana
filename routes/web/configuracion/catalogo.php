@@ -2,12 +2,11 @@
 
 use App\Http\Controllers\Configuracion\CatalogoEquipoController;
 use App\Http\Controllers\Configuracion\CategoryController;
-use App\Http\Controllers\Configuracion\CongressController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Catálogo (categorías, congresos, etc.)
+| Catálogo (categorías, tipos de equipo, etc.)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
@@ -31,27 +30,6 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
     Route::delete('/configuracion/categorias/{category}', [CategoryController::class, 'destroy'])
         ->name('configuracion.categorias.destroy');
-
-    Route::get('/configuracion/congresos/crear', [CongressController::class, 'create'])
-        ->name('configuracion.congresos.create');
-
-    Route::post('/configuracion/congresos', [CongressController::class, 'store'])
-        ->name('configuracion.congresos.store');
-
-    Route::get('/configuracion/congresos/{congress}', [CongressController::class, 'show'])
-        ->name('configuracion.congresos.show');
-
-    Route::get('/configuracion/congresos/editar/{congress}', [CongressController::class, 'edit'])
-        ->name('configuracion.congresos.edit');
-
-    Route::put('/configuracion/congresos/{congress}', [CongressController::class, 'update'])
-        ->name('configuracion.congresos.update');
-
-    Route::get('/configuracion/congresos/eliminar/{congress}', [CongressController::class, 'delete'])
-        ->name('configuracion.congresos.delete');
-
-    Route::delete('/configuracion/congresos/{congress}', [CongressController::class, 'destroy'])
-        ->name('configuracion.congresos.destroy');
 
     /*
     |----------------------------------------------------------------------
