@@ -198,37 +198,32 @@
             <x-ui.card>
                 <div class="cg-head"><x-ui.section-title style="margin:0;">Productos que se van a llevar</x-ui.section-title></div>
                 <p class="muted" style="margin:0 0 10px; font-size:13px;">
-                    Elige el producto para ver sus unidades disponibles y marca, viendo la foto,
-                    cuáles se llevan. Es solo una etiqueta: no se descuenta del stock.
+                    Busca el producto por nombre, márcalo y elige, viendo la foto, cuáles unidades
+                    se llevan. Es solo una etiqueta: no se descuenta del stock.
                 </p>
 
-                <select id="cgxProductoSelect">
-                    <option value="">Producto…</option>
-                    @foreach ($productosDisponibles as $p)
-                        <option value="{{ $p->id }}">{{ trim(($p->marca ?? '').' '.($p->modelo ?? '')) ?: $p->tipo_equipo }}</option>
-                    @endforeach
-                </select>
+                <div class="cgx-picker" data-picker>
+                    <div class="cgx-picker-chips" id="cgxProductosChips"></div>
+                    <input type="text" class="cgx-picker-input" id="cgxProductosBuscar" placeholder="Escribe el nombre del producto…" autocomplete="off">
+                    <div class="cgx-picker-dropdown" id="cgxProductosDropdown" hidden></div>
+                </div>
 
-                <div id="cgxUnidadesBox" class="cgx-unidades-box"></div>
+                <div id="cgxUnidadesContenedor"></div>
             </x-ui.card>
 
             <x-ui.card>
                 <div class="cg-head"><x-ui.section-title style="margin:0;">Usuarios que van a asistir</x-ui.section-title></div>
                 <p class="muted" style="margin:0 0 10px; font-size:13px;">
-                    Quién de tu equipo va a este congreso.
+                    Busca por nombre o correo a quién de tu equipo va a este congreso.
                 </p>
 
                 @if ($usuarios->isEmpty())
                     <p class="cg-hint">No hay usuarios registrados.</p>
                 @else
-                    <div class="cgx-usuarios-box">
-                        @foreach ($usuarios as $u)
-                            <label class="cgx-usuario-item">
-                                <input type="checkbox" name="user_ids[]" value="{{ $u->id }}">
-                                <span>{{ $u->name }}</span>
-                                <small>{{ $u->email }}</small>
-                            </label>
-                        @endforeach
+                    <div class="cgx-picker" data-picker>
+                        <div class="cgx-picker-chips" id="cgxUsuariosChips"></div>
+                        <input type="text" class="cgx-picker-input" id="cgxUsuariosBuscar" placeholder="Escribe un nombre o correo…" autocomplete="off">
+                        <div class="cgx-picker-dropdown" id="cgxUsuariosDropdown" hidden></div>
                     </div>
                 @endif
             </x-ui.card>
@@ -307,11 +302,36 @@
         .cg-drop, .cg-switch .slider, .cg-switch .slider:before { transition:none; }
     }
 
-    #cgxProductoSelect { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:9px;
-                        background:var(--surface); color:var(--text); font-family:inherit; font-size:14px; }
+    /* Buscador con checklist: escribes, aparece la lista filtrada, eliges
+       y queda como "chip"; quitas con la ×; puedes seguir agregando más. */
+    .cgx-picker { position:relative; }
+    .cgx-picker-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+    .cgx-picker-chips:empty { margin-bottom:0; }
+    .cgx-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 6px 5px 11px;
+               border-radius:999px; background:var(--primary-soft); color:var(--primary);
+               font-size:12.5px; font-weight:600; }
+    .cgx-chip button { display:flex; align-items:center; justify-content:center; width:18px; height:18px;
+                       border:none; border-radius:50%; background:transparent; color:inherit; cursor:pointer;
+                       font-size:14px; line-height:1; }
+    .cgx-chip button:hover { background:rgba(0,0,0,.08); }
 
-    .cgx-unidades-box { display:grid; grid-template-columns:repeat(auto-fill, minmax(90px, 1fr)); gap:8px; margin-top:14px; }
-    .cgx-unidades-box:empty { display:none; }
+    .cgx-picker-input { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:9px;
+                        background:var(--surface); color:var(--text); font-family:inherit; font-size:14px; }
+    .cgx-picker-input:focus { border-color:var(--primary); }
+
+    .cgx-picker-dropdown { position:absolute; z-index:20; top:calc(100% + 4px); left:0; right:0;
+                          max-height:230px; overflow-y:auto; background:var(--surface);
+                          border:1px solid var(--border); border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,.12); }
+    .cgx-picker-opcion { display:flex; flex-direction:column; gap:1px; padding:9px 12px; cursor:pointer;
+                        font-size:13px; border-bottom:1px solid var(--border); }
+    .cgx-picker-opcion:last-child { border-bottom:none; }
+    .cgx-picker-opcion:hover, .cgx-picker-opcion.is-activa { background:var(--primary-soft); }
+    .cgx-picker-opcion small { color:var(--muted); font-size:11.5px; }
+    .cgx-picker-vacio { padding:10px 12px; font-size:12.5px; color:var(--muted); }
+
+    .cgx-unidades-grupo { margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
+    .cgx-unidades-grupo-titulo { font-size:12.5px; font-weight:700; margin:0 0 8px; }
+    .cgx-unidades-box { display:grid; grid-template-columns:repeat(auto-fill, minmax(90px, 1fr)); gap:8px; }
     .cgx-unidad-card { position:relative; border:1.5px solid var(--border); border-radius:9px; overflow:hidden;
                        cursor:pointer; background:var(--surface-2); }
     .cgx-unidad-card.is-elegida { border-color:var(--primary); box-shadow:0 0 0 2px var(--primary-soft); }
@@ -321,14 +341,7 @@
     .cgx-unidad-card input { position:absolute; top:5px; right:5px; width:15px; height:15px; margin:0; }
     .cgx-unidad-codigo { display:block; font-size:10px; padding:3px 5px; text-align:center; background:var(--surface);
                          font-family:ui-monospace, Consolas, monospace; }
-    .cgx-unidades-vacio { font-size:12px; color:var(--muted); margin:10px 0 0; }
-
-    .cgx-usuarios-box { display:flex; flex-direction:column; gap:2px; max-height:280px; overflow-y:auto; }
-    .cgx-usuario-item { display:flex; align-items:center; gap:9px; padding:8px 4px; border-bottom:1px solid var(--border);
-                        font-size:13px; cursor:pointer; }
-    .cgx-usuario-item:last-child { border-bottom:none; }
-    .cgx-usuario-item input { width:16px; height:16px; margin:0; flex:0 0 auto; cursor:pointer; }
-    .cgx-usuario-item small { color:var(--muted); font-size:11.5px; margin-left:auto; }
+    .cgx-unidades-vacio { font-size:12px; color:var(--muted); margin:0; }
 </style>
 
 <script>
@@ -387,53 +400,167 @@
         pintarMapa();
     }
 
-    // Galería de unidades disponibles del producto elegido (con foto),
-    // para marcar a mano cuáles se llevan al congreso que se está creando.
-    var selectProducto = document.getElementById('cgxProductoSelect');
-    var boxUnidades = document.getElementById('cgxUnidadesBox');
+    /* =====================================================================
+       Buscador con checklist ("picker"): escribes, filtra, click agrega
+       como chip, la × lo quita. Se usa igual para productos y usuarios.
+    ===================================================================== */
+    function crearPicker(opciones) {
+        var buscar = document.getElementById(opciones.inputId);
+        var dropdown = document.getElementById(opciones.dropdownId);
+        var chips = document.getElementById(opciones.chipsId);
+        if (! buscar || ! dropdown || ! chips) return null;
 
-    if (selectProducto && boxUnidades) {
-        var urlUnidades = @json(route('inventory.congresos.unidadesDisponibles'));
+        var elegidos = [];
 
-        selectProducto.addEventListener('change', function () {
-            boxUnidades.innerHTML = '';
-            if (! selectProducto.value) return;
-
-            fetch(urlUnidades + '?producto_id=' + selectProducto.value, { headers: { 'Accept': 'application/json' } })
-                .then(function (r) { return r.json(); })
-                .then(function (data) { pintarUnidades(data.unidades || []); })
-                .catch(function () {
-                    boxUnidades.innerHTML = '<p class="cgx-unidades-vacio">No se pudo consultar las unidades.</p>';
-                });
-        });
-
-        function pintarUnidades(unidades) {
-            boxUnidades.innerHTML = '';
-
-            if (! unidades.length) {
-                boxUnidades.innerHTML = '<p class="cgx-unidades-vacio">Ese producto no tiene unidades disponibles.</p>';
-                return;
-            }
-
-            unidades.forEach(function (u) {
-                var card = document.createElement('label');
-                card.className = 'cgx-unidad-card';
-
-                var media = u.foto
-                    ? '<img src="' + u.foto + '" alt="' + u.codigo + '">'
-                    : '<span class="cgx-unidad-sinfoto">Sin foto</span>';
-
-                card.innerHTML = media
-                    + '<input type="checkbox" name="serial_ids[]" value="' + u.id + '">'
-                    + '<span class="cgx-unidad-codigo">' + u.codigo + (u.no_serie ? ' · ' + u.no_serie : '') + '</span>';
-
-                card.querySelector('input').addEventListener('change', function (e) {
-                    card.classList.toggle('is-elegida', e.target.checked);
-                });
-
-                boxUnidades.appendChild(card);
+        function disponibles() {
+            return opciones.datos.filter(function (d) {
+                return elegidos.indexOf(d.id) === -1;
             });
         }
+
+        function filtrar(texto) {
+            texto = texto.trim().toLowerCase();
+            var lista = disponibles();
+            if (! texto) return lista;
+            return lista.filter(function (d) { return opciones.texto(d).toLowerCase().indexOf(texto) !== -1; });
+        }
+
+        function pintarDropdown(texto) {
+            var lista = filtrar(texto);
+            dropdown.innerHTML = '';
+
+            if (! lista.length) {
+                dropdown.innerHTML = '<div class="cgx-picker-vacio">Sin resultados.</div>';
+            } else {
+                lista.forEach(function (d) {
+                    var opcion = document.createElement('div');
+                    opcion.className = 'cgx-picker-opcion';
+                    opcion.innerHTML = opciones.render(d);
+                    opcion.addEventListener('click', function () {
+                        elegir(d);
+                    });
+                    dropdown.appendChild(opcion);
+                });
+            }
+
+            dropdown.hidden = false;
+        }
+
+        function elegir(d) {
+            elegidos.push(d.id);
+
+            var chip = document.createElement('span');
+            chip.className = 'cgx-chip';
+            chip.dataset.id = d.id;
+            chip.innerHTML = '<span>' + opciones.chip(d) + '</span>'
+                + '<input type="hidden" name="' + opciones.name + '" value="' + d.id + '">'
+                + '<button type="button" aria-label="Quitar">×</button>';
+
+            chip.querySelector('button').addEventListener('click', function () {
+                elegidos = elegidos.filter(function (id) { return id !== d.id; });
+                chip.remove();
+                if (opciones.alQuitar) opciones.alQuitar(d);
+            });
+
+            chips.appendChild(chip);
+            buscar.value = '';
+            dropdown.hidden = true;
+
+            if (opciones.alElegir) opciones.alElegir(d);
+        }
+
+        buscar.addEventListener('input', function () { pintarDropdown(buscar.value); });
+        buscar.addEventListener('focus', function () { pintarDropdown(buscar.value); });
+
+        document.addEventListener('click', function (e) {
+            if (e.target === buscar || dropdown.contains(e.target)) return;
+            dropdown.hidden = true;
+        });
+
+        return { elegir: elegir };
+    }
+
+    // ---- Usuarios: solo el chip, nada más que agregar ----
+    crearPicker({
+        inputId: 'cgxUsuariosBuscar',
+        dropdownId: 'cgxUsuariosDropdown',
+        chipsId: 'cgxUsuariosChips',
+        name: 'user_ids[]',
+        datos: @json($usuarios->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email])->values()),
+        texto: function (u) { return u.name + ' ' + u.email; },
+        render: function (u) { return '<span>' + u.name + '</span><small>' + u.email + '</small>'; },
+        chip: function (u) { return u.name; },
+    });
+
+    // ---- Productos: al elegir uno, además se abre su propia galería de
+    // unidades disponibles (con foto) para marcar cuáles se llevan.
+    var contenedorUnidades = document.getElementById('cgxUnidadesContenedor');
+    var urlUnidades = @json(route('inventory.congresos.unidadesDisponibles'));
+
+    crearPicker({
+        inputId: 'cgxProductosBuscar',
+        dropdownId: 'cgxProductosDropdown',
+        chipsId: 'cgxProductosChips',
+        name: 'producto_ids_elegidos[]',
+        datos: @json($productosDisponibles->map(fn ($p) => [
+            'id' => $p->id,
+            'nombre' => trim(($p->marca ?? '').' '.($p->modelo ?? '')) ?: $p->tipo_equipo,
+        ])->values()),
+        texto: function (p) { return p.nombre; },
+        render: function (p) { return '<span>' + p.nombre + '</span>'; },
+        chip: function (p) { return p.nombre; },
+        alElegir: function (p) {
+            if (! contenedorUnidades) return;
+
+            var grupo = document.createElement('div');
+            grupo.className = 'cgx-unidades-grupo';
+            grupo.dataset.productoId = p.id;
+            grupo.innerHTML = '<p class="cgx-unidades-grupo-titulo">' + p.nombre + '</p>'
+                + '<div class="cgx-unidades-box"><p class="cgx-unidades-vacio">Cargando…</p></div>';
+            contenedorUnidades.appendChild(grupo);
+
+            var box = grupo.querySelector('.cgx-unidades-box');
+
+            fetch(urlUnidades + '?producto_id=' + p.id, { headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.json(); })
+                .then(function (data) { pintarUnidades(box, data.unidades || []); })
+                .catch(function () {
+                    box.innerHTML = '<p class="cgx-unidades-vacio">No se pudo consultar las unidades.</p>';
+                });
+        },
+        alQuitar: function (p) {
+            if (! contenedorUnidades) return;
+            var grupo = contenedorUnidades.querySelector('[data-producto-id="' + p.id + '"]');
+            if (grupo) grupo.remove();
+        },
+    });
+
+    function pintarUnidades(box, unidades) {
+        box.innerHTML = '';
+
+        if (! unidades.length) {
+            box.innerHTML = '<p class="cgx-unidades-vacio">Ese producto no tiene unidades disponibles.</p>';
+            return;
+        }
+
+        unidades.forEach(function (u) {
+            var card = document.createElement('label');
+            card.className = 'cgx-unidad-card';
+
+            var media = u.foto
+                ? '<img src="' + u.foto + '" alt="' + u.codigo + '">'
+                : '<span class="cgx-unidad-sinfoto">Sin foto</span>';
+
+            card.innerHTML = media
+                + '<input type="checkbox" name="serial_ids[]" value="' + u.id + '">'
+                + '<span class="cgx-unidad-codigo">' + u.codigo + (u.no_serie ? ' · ' + u.no_serie : '') + '</span>';
+
+            card.querySelector('input').addEventListener('change', function (e) {
+                card.classList.toggle('is-elegida', e.target.checked);
+            });
+
+            box.appendChild(card);
+        });
     }
 })();
 </script>
