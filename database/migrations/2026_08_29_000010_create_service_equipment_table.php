@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('product_code')->nullable()->unique();
             $table->foreignId('service_id')->constrained('services')->cascadeOnDelete();
-            $table->foreignId('equipment_id')->nullable()->constrained('equipment');
+            $table->foreignId('equipment_id')->nullable()->constrained('equipos');
             $table->foreignId('equipment_type_id')->nullable()->constrained('equipment_types');
             $table->foreignId('subtype_id')->nullable()->constrained('subtypes');
             $table->foreignId('brand_id')->nullable()->constrained('brands');

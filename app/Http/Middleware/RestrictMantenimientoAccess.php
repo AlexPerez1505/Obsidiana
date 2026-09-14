@@ -26,6 +26,10 @@ class RestrictMantenimientoAccess
         'account.destroy',
         'account.sessions.destroyOthers',
         'profile.*',
+        'logout',
+        'login',
+        'verification.*',
+        'approval.pending',
     ];
 
     public function handle(Request $request, Closure $next): Response

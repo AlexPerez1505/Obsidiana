@@ -13,7 +13,7 @@
         .f-search { position:relative; flex:1; min-width:220px; }
         .f-search svg { position:absolute; left:11px; top:50%; transform:translateY(-50%);
                         width:16px; height:16px; color:var(--muted); pointer-events:none; }
-        .f-search input { width:100%; padding:9px 12px 9px 34px; border:1px solid var(--border); border-radius:9px;
+        .f-toolbar .f-search input[type] { width:100%; padding:9px 12px 9px 34px; border:1px solid var(--border); border-radius:9px;
                           background:var(--surface); color:var(--text); font-family:inherit; font-size:13.5px; outline:none; }
         .f-search input:focus { border-color:var(--primary); }
 
