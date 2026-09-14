@@ -14,7 +14,9 @@
         // Listas para los filtros: solo se ofrece lo que realmente existe en los datos.
         $asesores = $customers->pluck('asesor.name')->filter()->unique()->sort()->values();
         $categorias = $customers->pluck('category.nombre')->filter()->unique()->sort()->values();
-        $congresos = $customers->pluck('congress.nombre')->filter()->unique()->sort()->values();
+        // Congresos: los manda el controlador (todos los del sistema); si no
+        // llegaran, se cae a los que aparecen en los clientes.
+        $congresos = collect($congresos ?? $customers->pluck('congress.nombre'))->filter()->unique()->sort()->values();
     @endphp
 
     <div class="content-actions">
@@ -61,7 +63,7 @@
     <div class="f-toolbar">
         <div class="f-search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="fBuscar" placeholder="Buscar por nombre, correo, telefono o asesor" autocomplete="off">
+            <input type="text" id="fBuscar" placeholder="Buscar por nombre, correo, telefono, direccion o asesor" autocomplete="off">
         </div>
 
         {{-- Panel principal de filtros --}}
@@ -73,7 +75,8 @@
             </button>
 
             <div class="flt-panel" data-flt-panel hidden>
-                @if ($asesores->isNotEmpty())
+                {{-- Quien solo ve sus propios clientes no necesita filtrar por asesor. --}}
+                @if (($veTodos ?? true) && $asesores->isNotEmpty())
                     <div class="flt-group">
                         <h4>Asignado</h4>
                         @foreach ($asesores as $nombreAsesor)
@@ -115,25 +118,22 @@
                 @endif
 
                 <div class="flt-group">
-                    <h4>Rango de fechas</h4>
-                    <div class="flt-fechas">
-                        <input type="date" data-f="desde" aria-label="Alta desde">
-                        <input type="date" data-f="hasta" aria-label="Alta hasta">
-                    </div>
+                    <h4>Etapa</h4>
+                    <label class="flt-opt">
+                        <span class="flt-opt-txt">Clientes</span>
+                        <input type="checkbox" data-f="etapa" value="cliente">
+                    </label>
+                    <label class="flt-opt">
+                        <span class="flt-opt-txt">Prospectos</span>
+                        <input type="checkbox" data-f="etapa" value="prospecto">
+                    </label>
+                    <label class="flt-opt">
+                        <span class="flt-opt-txt">Con seguimiento pendiente</span>
+                        <input type="checkbox" data-f="pref" value="seguimiento">
+                    </label>
                 </div>
-            </div>
-        </div>
 
-        {{-- Panel de congresos (equivale a las etiquetas) --}}
-        @if ($congresos->isNotEmpty())
-            <div class="flt" data-flt>
-                <button type="button" class="flt-btn" data-flt-toggle aria-expanded="false">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                    Congresos
-                    <span class="flt-count" data-flt-count hidden>0</span>
-                </button>
-
-                <div class="flt-panel" data-flt-panel hidden>
+                @if ($congresos->isNotEmpty())
                     <div class="flt-group">
                         <h4>Congreso de origen</h4>
                         @foreach ($congresos as $nombreCongreso)
@@ -142,10 +142,31 @@
                                 <input type="checkbox" data-f="congreso" value="{{ $nombreCongreso }}">
                             </label>
                         @endforeach
+                        <label class="flt-opt">
+                            <span class="flt-opt-txt">Sin congreso</span>
+                            <input type="checkbox" data-f="congreso" value="">
+                        </label>
+                    </div>
+                @endif
+
+                {{-- La dirección es texto libre: se filtra por "contiene"
+                     (una colonia, una ciudad, una calle). --}}
+                <div class="flt-group">
+                    <h4>Dirección</h4>
+                    <div class="flt-fechas">
+                        <input type="text" data-f-texto="direccion" placeholder="Ciudad, colonia o calle" aria-label="Filtrar por dirección" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="flt-group">
+                    <h4>Rango de fechas</h4>
+                    <div class="flt-fechas">
+                        <input type="date" data-f="desde" aria-label="Alta desde">
+                        <input type="date" data-f="hasta" aria-label="Alta hasta">
                     </div>
                 </div>
             </div>
-        @endif
+        </div>
 
         {{-- Accesos rapidos: activos / inactivos --}}
         <div class="flt-toggles" role="group" aria-label="Estado del cliente">
@@ -193,7 +214,10 @@
         // Los mismos atributos alimentan la tabla y las tarjetas, asi que se arman una sola vez.
         $datos = function (array $fila) {
             return [
-                'data-buscar' => mb_strtolower($fila['nombre'] . ' ' . ($fila['modelo']->gmail ?? '') . ' ' . ($fila['modelo']->telefono ?? '') . ' ' . $fila['asesor']),
+                'data-buscar' => mb_strtolower($fila['nombre'] . ' ' . ($fila['modelo']->gmail ?? '') . ' ' . ($fila['modelo']->telefono ?? '') . ' ' . ($fila['modelo']->direccion ?? '') . ' ' . $fila['congreso'] . ' ' . $fila['asesor']),
+                'data-direccion' => mb_strtolower($fila['modelo']->direccion ?? ''),
+                'data-etapa' => $fila['modelo']->etapa ?: 'cliente',
+                'data-seguimiento' => $fila['modelo']->proximoSeguimiento() ? '1' : '0',
                 'data-asesor' => $fila['asesor'],
                 'data-categoria' => $fila['categoria'],
                 'data-congreso' => $fila['congreso'],
@@ -214,6 +238,7 @@
                     <th>Cliente</th>
                     <th>Telefono</th>
                     <th>Correo</th>
+                    <th>Direccion</th>
                     <th>Asesor</th>
                     <th>Promocion</th>
                     <th></th>
@@ -226,13 +251,24 @@
                             <div class="cell-id">
                                 <span class="avatar {{ $fila['tinte'] }}">{{ $fila['iniciales'] }}</span>
                                 <div style="min-width:0;">
-                                    <div class="t">{{ $fila['nombre'] }}</div>
-                                    <div class="s">{{ $fila['categoria'] }}</div>
+                                    <div class="t">
+                                        {{ $fila['nombre'] }}
+                                        @if ($fila['modelo']->esProspecto())
+                                            <span class="badge badge--info" style="margin-left:6px; font-size:10.5px;">Prospecto</span>
+                                        @endif
+                                    </div>
+                                    <div class="s">
+                                        {{ $fila['categoria'] }}
+                                        @if ($sig = $fila['modelo']->proximoSeguimiento())
+                                            · <span style="color:{{ $sig->vencido() ? 'var(--danger)' : ($sig->esHoy() ? 'var(--accent)' : 'var(--muted)') }};">{{ $sig->tipoLabel() }}: {{ mb_strtolower($sig->cuando()) }}</span>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </td>
                         <td>{{ $fila['modelo']->telefono ?: '—' }}</td>
                         <td>{{ $fila['modelo']->gmail ?: '—' }}</td>
+                        <td style="max-width:220px; white-space:normal;">{{ $fila['modelo']->direccion ?: '—' }}</td>
                         <td>{{ $fila['asesor'] }}</td>
                         <td>
                             <span class="badge {{ $fila['promo'] === '1' ? 'badge--ok' : '' }}">
@@ -261,7 +297,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="empty-state">
                                 <span class="ico">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
@@ -295,6 +331,8 @@
                 <dl>
                     <div><dt>Telefono</dt><dd>{{ $fila['modelo']->telefono ?: '—' }}</dd></div>
                     <div><dt>Correo</dt><dd>{{ $fila['modelo']->gmail ?: '—' }}</dd></div>
+                    <div><dt>Direccion</dt><dd>{{ $fila['modelo']->direccion ?: '—' }}</dd></div>
+                    <div><dt>Congreso</dt><dd>{{ $fila['congreso'] ?: '—' }}</dd></div>
                     <div><dt>Asesor</dt><dd>{{ $fila['asesor'] }}</dd></div>
                     <div><dt>Promocion</dt><dd>{{ $fila['promo'] === '1' ? 'Si' : 'No' }}</dd></div>
                 </dl>
@@ -363,6 +401,10 @@
             'asesor' => 'Asesor',
             'categoria' => 'Categoría',
             'congreso' => 'Congreso',
+            'congreso:' => 'Sin congreso',
+            'direccion' => 'Dirección',
+            'etapa' => 'Etapa',
+            'seguimiento' => 'Con seguimiento pendiente',
             'promo' => 'Con promoción',
             'correo' => 'Con correo',
             'telefono' => 'Con teléfono',

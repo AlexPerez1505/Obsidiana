@@ -14,11 +14,13 @@
             @foreach ($w['filas'] as $cot)
                 @php
                     $cliente = trim(($cot->customer->nombre ?? '') . ' ' . ($cot->customer->apellido ?? ''));
+                    // Qué se cotizó, para ubicar la cotización sin abrirla.
+                    $productos = $cot->resumenProductos();
                 @endphp
                 <a href="{{ route('commercial.cotizaciones.show', $cot) }}" class="dw-fila">
                     <span class="dw-fila-txt">
                         <span class="dw-fila-t">{{ $cot->folio ?: 'Cotización #' . $cot->id }}</span>
-                        <span class="dw-fila-s">{{ $cliente ?: 'Sin cliente' }}</span>
+                        <span class="dw-fila-s">{{ $cliente ?: 'Sin cliente' }}@if ($productos) · {{ $productos }}@endif</span>
                     </span>
                     <span class="dw-fila-v">${{ number_format((float) $cot->total, 2) }}</span>
                 </a>

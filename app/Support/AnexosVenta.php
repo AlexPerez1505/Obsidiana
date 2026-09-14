@@ -30,11 +30,14 @@ class AnexosVenta
             ];
         }
 
-        // La carta garantía ampara el equipo de cualquier venta.
-        $anexos[] = [
-            'titulo' => 'Carta garantía',
-            'contenido' => self::render('garantia', $venta),
-        ];
+        // La carta garantía solo va cuando el equipo la tiene: hay ventas
+        // (usado, refacciones, consumibles) que se cierran sin garantía.
+        if ($venta->tieneGarantia()) {
+            $anexos[] = [
+                'titulo' => 'Carta garantía',
+                'contenido' => self::render('garantia', $venta),
+            ];
+        }
 
         return $anexos;
     }

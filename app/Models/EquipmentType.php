@@ -7,7 +7,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EquipmentType extends Model
 {
-    protected $fillable = ['name', 'description'];
+    protected $fillable = ['name', 'description', 'requiere_emplayado'];
+
+    protected $casts = [
+        // Al vender, dice si las partidas de este tipo se emplayan antes de salir.
+        'requiere_emplayado' => 'boolean',
+    ];
 
     public function subtypes(): HasMany
     {

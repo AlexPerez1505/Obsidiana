@@ -147,15 +147,22 @@
                 </div>
 
                 @forelse ($producto->serialesDisponibles as $serial)
+                    @php($evidencias = $serial->evidenceUrls())
                     <div class="unidad-item">
-                        @if ($serial->fotoUrl())
-                            <img src="{{ $serial->fotoUrl() }}" alt="Foto de la unidad" onclick="window.open('{{ $serial->fotoUrl() }}', '_blank')">
+                        @if (count($evidencias))
+                            <img src="{{ $evidencias[0] }}" alt="Foto de la unidad" onclick="window.open('{{ $evidencias[0] }}', '_blank')">
                         @else
                             <div class="unidad-sin-foto">Sin foto</div>
                         @endif
                         <div style="flex:1;">
                             <div style="font-weight:600; font-size:13.5px;">{{ $serial->no_serie ?: '— (sin serial capturado)' }}</div>
                             <span class="badge badge--ok" style="font-size:11px;">Disponible</span>
+                            @if (count($evidencias) > 1)
+                                <span class="muted" style="font-size:11px; margin-left:4px;">+{{ count($evidencias) - 1 }} foto{{ count($evidencias) - 1 > 1 ? 's' : '' }}</span>
+                            @endif
+                            @if ($serial->videoUrl())
+                                <a href="{{ $serial->videoUrl() }}" target="_blank" style="font-size:11px; margin-left:6px;">Ver video</a>
+                            @endif
                         </div>
                     </div>
                 @empty

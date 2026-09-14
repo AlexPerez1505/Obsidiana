@@ -34,7 +34,12 @@
                             };
                         @endphp
                         <tr>
-                            <td class="erp-strong">{{ $v->folio }}</td>
+                            <td class="erp-strong">
+                                {{ $v->folio }}
+                                @if ($v->resumenProductos())
+                                    <div style="font-weight:400; font-size:12px; color:var(--muted); margin-top:2px; max-width:240px; white-space:normal;">{{ $v->resumenProductos() }}</div>
+                                @endif
+                            </td>
                             <td>{{ $v->customer?->nombre }} {{ $v->customer?->apellido }}</td>
                             <td style="text-transform:capitalize;">{{ $v->modalidad }}@if($v->modalidad === 'financiamiento') · {{ $v->num_meses }}m @endif</td>
                             <td class="erp-strong">${{ number_format($v->total, 2) }}</td>
@@ -54,13 +59,13 @@
                                     <a class="erp-menu-item" href="{{ route('commercial.facturas.create', ['venta' => $v->id]) }}">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Generar borrador de factura
                                     </a>
-                                    <div class="erp-menu-sep"></div>
-                                    <form method="POST" action="{{ route('commercial.ventas.destroy', $v) }}" onsubmit="return confirm('¿Eliminar la venta {{ $v->folio }}?');">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="erp-menu-item danger">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Eliminar
-                                        </button>
-                                    </form>
+                                    @if ($v->estado !== 'cancelada')
+                                        <div class="erp-menu-sep"></div>
+                                        {{-- Cancelar conserva historial y cobros; se confirma con motivo y PIN en el detalle. --}}
+                                        <a class="erp-menu-item danger" href="{{ route('commercial.ventas.show', $v) }}#cancelar">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>Cancelar venta
+                                        </a>
+                                    @endif
                                 </x-erp.menu>
                             </td>
                         </tr>
@@ -98,6 +103,9 @@
                     <div style="min-width:0;">
                         <div class="t">{{ $v->folio }}</div>
                         <div class="s">{{ $v->customer?->nombre }} {{ $v->customer?->apellido }}</div>
+                        @if ($v->resumenProductos())
+                            <div class="s">{{ $v->resumenProductos() }}</div>
+                        @endif
                     </div>
                     <span class="right erp-badge {{ $badge }}"><span class="dot"></span>{{ $v->estadoLabel() }}</span>
                 </div>

@@ -17,7 +17,19 @@
     $con = config('medibuy.contacto');
     $ban = config('medibuy.banco');
     $comp = config('medibuy.comprobantes');
-    $terminos = config('medibuy.terminos', []);
+    /*
+    | La línea de garantía de los términos se arma con lo que dice el
+    | documento, no con el texto fijo de la configuración: hay ventas a
+    | 12 meses y hay equipo que se vende sin garantía.
+    */
+    $mesesGarantia = (int) ($doc->garantia_meses ?? 6);
+    $lineaGarantia = $mesesGarantia > 0
+        ? "La garantía del equipo es de {$mesesGarantia} meses a partir de la fecha de entrega."
+        : 'El equipo se vende sin garantía, en el estado en que se encuentra y que el cliente declara haber revisado.';
+
+    $terminos = collect(config('medibuy.terminos', []))
+        ->map(fn ($t) => mb_stripos($t, 'garantía') !== false ? $lineaGarantia : $t)
+        ->all();
 
     $leyenda = $leyenda ?? 'Precios en MXN';
 
@@ -169,7 +181,9 @@
     <table>
         <tr>
             <td>
-                @if ($con['nombre'])<span class="quien">{{ $con['nombre'] }}</span> · {{ $con['cargo'] }}<br>@endif
+                {{-- Solo el contacto general de la empresa; quien atendió va
+                     arriba, en "Asesor", con su propio teléfono. --}}
+                <span class="quien">{{ $emp['nombre'] }}</span><br>
                 @if ($con['telefono']){{ $con['telefono'] }}@endif
                 @if ($con['correo']) · {{ $con['correo'] }}@endif
             </td>
@@ -210,7 +224,15 @@
                     <td class="k">Pago</td>
                     <td class="v">{{ ucfirst($doc->modalidad) }}@if ($financiado) · {{ $doc->num_meses }} meses @endif</td>
                 </tr>
-                <tr><td class="k">Atendió</td><td class="v">{{ $doc->seller?->name ?: '—' }}</td></tr>
+                <tr>
+                    <td class="k">Asesor</td>
+                    <td class="v">
+                        {{ $doc->seller?->name ?: '—' }}
+                        @if ($doc->seller?->phone)
+                            · {{ $doc->seller->phone }}
+                        @endif
+                    </td>
+                </tr>
                 @if ($doc->lugar_propuesta)
                     <tr><td class="k">Congreso</td><td class="v">{{ $doc->lugar_propuesta }}</td></tr>
                 @endif

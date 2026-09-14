@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CobranzaController;
 use App\Http\Controllers\CobroController;
+use App\Http\Controllers\ComisionController;
 use App\Http\Controllers\VentaController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +14,24 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified', 'approved'])
     ->get('/gestion-comercial/cobranza', [CobranzaController::class, 'index'])
     ->name('commercial.cobranza.index');
+
+/*
+|--------------------------------------------------------------------------
+| Comisiones: quién vendió más y cuánto le toca
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'verified', 'approved', 'can:comisiones.ver'])
+    ->prefix('/gestion-comercial/comisiones')
+    ->name('commercial.comisiones.')
+    ->group(function () {
+        Route::get('/', [ComisionController::class, 'index'])->name('index');
+
+        Route::middleware('can:comisiones.gestionar')->group(function () {
+            Route::put('/asesor/{asesor}/porcentaje', [ComisionController::class, 'porcentaje'])->name('porcentaje');
+            Route::post('/pagos', [ComisionController::class, 'pagar'])->name('pagar');
+            Route::delete('/pagos/{pago}', [ComisionController::class, 'eliminarPago'])->name('pagos.destroy');
+        });
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +50,8 @@ Route::middleware(['auth', 'verified', 'approved'])
         Route::get('/{venta}/editar', [VentaController::class, 'edit'])->name('edit');
         Route::put('/{venta}', [VentaController::class, 'update'])->name('update');
         Route::delete('/{venta}', [VentaController::class, 'destroy'])->name('destroy');
+        // Cancelar no borra: la venta queda como cancelada con su historial.
+        Route::post('/{venta}/cancelar', [VentaController::class, 'cancelar'])->name('cancelar');
         Route::get('/{venta}/pdf', [VentaController::class, 'pdf'])->name('pdf');
 
         // Documentos que se entregan junto con el equipo

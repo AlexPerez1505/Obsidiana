@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Commercial\CustomerController;
+use App\Http\Controllers\Commercial\SeguimientoController;
 use App\Http\Controllers\CotizacionController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +20,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/gestion-comercial/clientes/registrar', [CustomerController::class, 'store'])
         ->name('commercial.clientes.store');
 
+    // Va antes de {cliente} para que "similar" no se tome como un id.
+    Route::get('/gestion-comercial/clientes/similar', [CustomerController::class, 'similar'])
+        ->name('commercial.clientes.similar');
+
     Route::get('/gestion-comercial/clientes/{cliente}', [CustomerController::class, 'show'])
         ->name('commercial.clientes.show');
         
@@ -31,6 +36,18 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
     Route::post('/gestion-comercial/clientes/categorias', [CustomerController::class, 'storeCategory'])
         ->name('commercial.clientes.categories.store');
+
+    // Seguimientos de clientes y prospectos (recordatorios)
+    Route::post('/gestion-comercial/clientes/{cliente}/seguimientos', [SeguimientoController::class, 'store'])
+        ->name('commercial.clientes.seguimientos.store');
+    Route::post('/gestion-comercial/clientes/{cliente}/seguimientos/{seguimiento}/hecho', [SeguimientoController::class, 'hecho'])
+        ->name('commercial.clientes.seguimientos.hecho');
+    Route::post('/gestion-comercial/clientes/{cliente}/seguimientos/{seguimiento}/reprogramar', [SeguimientoController::class, 'reprogramar'])
+        ->name('commercial.clientes.seguimientos.reprogramar');
+    Route::delete('/gestion-comercial/clientes/{cliente}/seguimientos/{seguimiento}', [SeguimientoController::class, 'destroy'])
+        ->name('commercial.clientes.seguimientos.destroy');
+    Route::post('/gestion-comercial/clientes/{cliente}/convertir', [SeguimientoController::class, 'convertir'])
+        ->name('commercial.clientes.convertir');
 
     // Rutas heredadas: el apartado de planes de pago ya no existe como modulo.
     Route::redirect('/gestion-comercial/planes-pago', '/gestion-comercial/cotizaciones');

@@ -36,7 +36,12 @@
                             };
                         @endphp
                         <tr>
-                            <td class="erp-strong">{{ $cot->folio }}</td>
+                            <td class="erp-strong">
+                                {{ $cot->folio }}
+                                @if ($cot->resumenProductos())
+                                    <div style="font-weight:400; font-size:12px; color:var(--muted); margin-top:2px; max-width:240px; white-space:normal;">{{ $cot->resumenProductos() }}</div>
+                                @endif
+                            </td>
                             <td>{{ $cot->customer?->nombre }} {{ $cot->customer?->apellido }}</td>
                             <td style="text-transform:capitalize;">{{ $cot->modalidad }}@if($cot->modalidad === 'financiamiento') · {{ $cot->num_meses }}m @endif</td>
                             <td class="erp-strong">${{ number_format($cot->total, 2) }}</td>
@@ -102,6 +107,9 @@
                     <div style="min-width:0;">
                         <div class="t">{{ $cot->folio }}</div>
                         <div class="s">{{ $cot->customer?->nombre }} {{ $cot->customer?->apellido }}</div>
+                        @if ($cot->resumenProductos())
+                            <div class="s">{{ $cot->resumenProductos() }}</div>
+                        @endif
                     </div>
                     <span class="right erp-badge {{ $badge }}"><span class="dot"></span>{{ $cot->estadoLabel() }}</span>
                 </div>

@@ -23,8 +23,11 @@
         'rFichas' => route('commercial.cotizaciones.fichas.buscar'),
         'backRoute' => route('commercial.ventas.index'),
         'titulo' => $esEdicion ? 'Editar venta '.$venta->folio : ($origenId ? 'Nueva venta (desde cotización)' : 'Nueva venta'),
-        'subtitulo' => 'Puedes modificar productos, montos y plan de pagos antes de guardar.',
+        'subtitulo' => ($planBloqueado ?? false)
+            ? 'Esta venta ya tiene cobros aplicados: puedes cambiar equipo y montos, pero el plan de pagos se conserva y la diferencia se reparte entre lo que falta por cobrar.'
+            : 'Puedes modificar productos, montos y plan de pagos antes de guardar.',
         'textoGuardar' => 'Guardar venta',
         'avisosStock' => $avisosStock ?? [],
+        'planBloqueado' => $planBloqueado ?? false,
     ])
 @endsection

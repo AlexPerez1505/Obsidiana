@@ -41,6 +41,8 @@ class ProductoSerial extends Model
         'estado',
         'no_serie',
         'foto_path',
+        'evidence_paths',
+        'video_path',
         'vendido',
         'vendido_en',
         'venta_item_id',
@@ -54,6 +56,7 @@ class ProductoSerial extends Model
         return [
             'vendido' => 'boolean',
             'vendido_en' => 'datetime',
+            'evidence_paths' => 'array',
         ];
     }
 
@@ -165,6 +168,32 @@ class ProductoSerial extends Model
     {
         return $this->foto_path
             ? Storage::disk(config('filesystems.fotos_disk', 'public'))->url($this->foto_path)
+            : null;
+    }
+
+    /**
+     * URLs públicas de todas las fotos de evidencia de esta unidad (hasta
+     * 3, de cómo llegó ella en particular). Si es un registro viejo que
+     * solo tiene foto_path (antes de existir evidencia por unidad), cae
+     * a esa sola foto para no dejar el listado vacío.
+     */
+    public function evidenceUrls(): array
+    {
+        $disco = config('filesystems.fotos_disk', 'public');
+        $paths = $this->evidence_paths ?: array_filter([$this->foto_path]);
+
+        return collect($paths)
+            ->filter()
+            ->map(fn (string $path) => Storage::disk($disco)->url($path))
+            ->values()
+            ->all();
+    }
+
+    /** URL pública del video de verificación de esta unidad, si tiene. */
+    public function videoUrl(): ?string
+    {
+        return $this->video_path
+            ? Storage::disk(config('filesystems.fotos_disk', 'public'))->url($this->video_path)
             : null;
     }
 }
