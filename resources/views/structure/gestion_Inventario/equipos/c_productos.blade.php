@@ -2,142 +2,32 @@
 
 @section('title', 'Nuevo equipo')
 @section('page-title', 'Nuevo equipo')
-@section('page-sub', 'El equipo que se puede cotizar y vender')
-
-@push('head')
-    <style>
-        .eq-campos { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:0 16px; }
-        @media (max-width:560px) { .eq-campos { grid-template-columns:1fr; } }
-    </style>
-@endpush
-
-@push('head')
-<style>
-.form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; margin-top:18px; }
-.form-group label { font-size:13px; font-weight:700; margin-bottom:6px; display:block; }
-.form-group input, .form-group select, .form-group textarea { width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--text); font-size:14px; }
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--primary); outline:none; }
-.form-group input::placeholder, .form-group textarea::placeholder { color:#aaa; }
-.form-group input:disabled { opacity:0.55; cursor:not-allowed; }
-.upload-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-top:8px; }
-.upload-card { position:relative; border:1px dashed var(--border); border-radius:12px; padding:14px; text-align:center; cursor:pointer; color:var(--muted); background:var(--surface); overflow:hidden; }
-.upload-card:hover { border-color:var(--primary); color:var(--primary); }
-.upload-card .evidence-preview { max-width:100%; max-height:100px; object-fit:contain; border-radius:8px; }
-.upload-card .file-name { font-size:11px; margin-top:6px; word-break:break-word; color:var(--text); }
-.upload-card .remove-evidence { position:absolute; top:6px; right:6px; width:22px; height:22px; background:var(--danger, #ff4a4a); color:#fff; border:none; border-radius:50%; cursor:pointer; font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center; z-index:10; }
-.signature-box { border:1px dashed var(--border); border-radius:12px; width:100%; height:120px; touch-action:none; }
-
-.combobox { position:relative; display:flex; align-items:center; }
-.combobox input { padding-right:38px; }
-.combobox-arrow { position:absolute; right:10px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:var(--muted); cursor:pointer; padding:4px; display:flex; align-items:center; justify-content:center; }
-.combobox-list { position:absolute; top:calc(100% + 6px); left:0; right:0; max-height:220px; overflow-y:auto; background:var(--surface); border:1px solid var(--border); border-radius:9px; box-shadow:var(--shadow); z-index:100; list-style:none; margin:0; padding:6px 0; display:none; }
-.combobox-list.open { display:block; }
-.combobox-list li { padding:10px 14px; cursor:pointer; color:var(--text); font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.combobox-list li:hover,
-.combobox-list li.active { background:var(--primary-soft); color:var(--primary); }
-.combobox-list .no-results { color:var(--muted); cursor:default; text-align:center; font-size:13px; }
-</style>
-@endpush
 
 @section('content')
 <form method="POST" action="{{ route('inventory.equipos.store') }}" enctype="multipart/form-data" autocomplete="off" style="max-width:900px; margin:0 auto;">
     @csrf
 
-    <x-ui.card>
-        <h3 style="display:flex; align-items:center; gap:10px; font-size:18px; margin:0 0 8px;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="var(--primary)"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-            Datos del equipo
-        </h3>
-        <p class="muted" style="margin:0 0 18px; font-size:13px;">Ingresa la información del equipo para registrarlo en inventario</p>
-
-        <div class="eq-campos">
-            {{-- Tipo, subtipo, marca y modelo salen del catálogo, igual
-                 que en Productos: escribirlos a mano dejaba el mismo
-                 equipo con dos nombres distintos en cada módulo. --}}
-            @include('structure.gestion_Inventario.productos._selects_catalogo')
-
-            {{-- El campo solo se dibuja para quien tiene precios.editar. --}}
-            @if (\App\Support\PrecioVisible::editable())
-                <x-ui.form-group label="Precio de venta" name="precio" type="text" inputmode="decimal" placeholder="0.00" />
-            @endif
-
-            <x-ui.form-group label="SKU / Clave" name="sku" placeholder="Opcional" />
-
-            <div class="form-group">
-                <label for="serie">Número de serie</label>
-                <input type="text" name="serie" id="serie" placeholder="Ej. SN-893-832" value="{{ old('serie') }}">
+        <x-ui.card>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <x-ui.form-group label="Equipo / Tipo *" name="tipo" placeholder="Ej. LAPAROSCOPIA" :required="true" />
+                <x-ui.form-group label="Modelo" name="modelo" placeholder="Ej. AIM 1588" />
+                <x-ui.form-group label="Marca" name="marca" placeholder="Ej. STRYKER" />
+                <x-ui.form-group label="Precio *" name="precio" type="text" inputmode="decimal" placeholder="0.00" :required="true" />
+                <x-ui.form-group label="SKU / Clave" name="sku" placeholder="Opcional" />
+                <x-ui.form-group for="imagen" label="Imagen">
+                    <input id="imagen" type="file" name="imagen" accept="image/*"
+                           style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:9px; font-size:14px; background:var(--surface); color:var(--text);" />
+                </x-ui.form-group>
             </div>
-            <div class="form-group">
-                <label for="externo_interno">Externo / Interno</label>
-                <select name="externo_interno" id="externo_interno">
-                    <option value="" disabled {{ old('externo_interno') ? '' : 'selected' }}>Seleccionar</option>
-                    <option value="Externo" {{ old('externo_interno') === 'Externo' ? 'selected' : '' }}>Externo</option>
-                    <option value="Interno" {{ old('externo_interno') === 'Interno' ? 'selected' : '' }}>Interno</option>
-                </select>
-            </div>
-            <x-ui.form-group for="imagen" label="Imagen">
-                <input id="imagen" type="file" name="imagen" accept="image/*">
-                <small class="campo-nota">JPG, PNG o GIF. Máximo 4 MB.</small>
+            <x-ui.form-group for="descripcion" label="Descripción">
+                <textarea id="descripcion" name="descripcion" rows="3" placeholder="Descripción del equipo">{{ old('descripcion') }}</textarea>
             </x-ui.form-group>
-        </div>
-
-        <x-ui.form-group for="descripcion" label="Descripción">
-            <textarea id="descripcion" name="descripcion" rows="3" placeholder="Descripción del equipo">{{ old('descripcion') }}</textarea>
-        </x-ui.form-group>
-
-        <div class="form-group" style="margin-top:14px;">
-            <label for="observaciones">Observaciones</label>
-            <textarea name="observaciones" id="observaciones" rows="3" placeholder="Anotaciones sobre el estado del equipo">{{ old('observaciones') }}</textarea>
-        </div>
-
-        <label class="ui-check" style="margin-top:14px;">
-            <input type="hidden" name="activo" value="0">
-            <input type="checkbox" name="activo" value="1" checked>
-            <span>Activo (disponible para cotizar)</span>
-        </label>
-
-        <div class="form-group" style="margin-top:18px;">
-            <label>Evidencia del equipo</label>
-            <div class="upload-grid">
-                <label class="upload-card">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    <div style="font-size:13px; margin-top:8px;">Imagen 1</div>
-                    <div style="font-size:12px;">Toca para subir</div>
-                    <input type="file" name="evidencia_1" accept="image/*" style="display:none;">
-                </label>
-                <label class="upload-card">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    <div style="font-size:13px; margin-top:8px;">Imagen 2</div>
-                    <div style="font-size:12px;">Toca para subir</div>
-                    <input type="file" name="evidencia_2" accept="image/*" style="display:none;">
-                </label>
-                <label class="upload-card">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    <div style="font-size:13px; margin-top:8px;">Imagen 3</div>
-                    <div style="font-size:12px;">Toca para subir</div>
-                    <input type="file" name="evidencia_3" accept="image/*" style="display:none;">
-                </label>
-                <label class="upload-card">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 23 17 7 17 7 7 23 7"/><rect x="1" y="3" width="4" height="18" rx="1"/><polyline points="5 7 7 7 7 17 5 17"/></svg>
-                    <div style="font-size:13px; margin-top:8px;">Video</div>
-                    <div style="font-size:12px;">Toca para subir</div>
-                    <input type="file" name="evidencia_video" accept="video/*" style="display:none;">
-                </label>
-            </div>
-            <p style="font-size:12px; color:var(--muted); margin-top:8px;">Formatos permitidos: JPG, PNG, MP4. Tamaño máximo: 10MB por archivo</p>
-        </div>
-
-        <div class="form-group" style="margin-top:18px;">
-            <label>Firma Digital</label>
-            <canvas class="signature-box" id="signature-pad" style="cursor:crosshair;"></canvas>
-            <div style="display:flex; align-items:center; gap:14px; margin-top:8px;">
-                <a href="#" style="font-size:13px; color:var(--primary);" onclick="clearSignature(); return false;">Limpiar firma</a>
-                <a href="#" style="font-size:13px; color:var(--primary);" onclick="document.getElementById('signature-upload').click(); return false;">Cargar firma</a>
-                <input type="file" id="signature-upload" accept="image/*" style="display:none;">
-            </div>
-            <input type="hidden" name="firma" id="firma-input">
-        </div>
-    </x-ui.card>
+            <label class="ui-switch-row" style="display:flex; align-items:center; gap:10px; margin-top:14px;">
+                <input type="hidden" name="activo" value="0">
+                <input type="checkbox" name="activo" value="1" checked>
+                <span>Activo (disponible para cotizar)</span>
+            </label>
+        </x-ui.card>
 
     <div class="page-foot">
         <a href="{{ route('inventory.equipos.index') }}" class="btn btn--ghost">Cancelar</a>

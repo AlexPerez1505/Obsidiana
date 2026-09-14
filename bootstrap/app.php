@@ -16,6 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'approved' => \App\Http\Middleware\EnsureAccountApproved::class,
         ]);
+
+        // Global: el rol Mantenimiento no entra a nada fuera de su tablero
+        // y Órdenes de servicio, ni tecleando la URL directo.
+        $middleware->web(append: [
+            \App\Http\Middleware\RestrictMantenimientoAccess::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // Cuando el archivo pasa el limite de PHP, el servidor descarta el
