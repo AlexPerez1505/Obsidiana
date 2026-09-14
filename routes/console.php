@@ -8,11 +8,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-<<<<<<< HEAD
-// Promociones: cada mañana revisa quién sigue esperando que se le pida
-// la confirmación (autorizado por el asesor, sin contestar todavía).
-Schedule::command('app:enviar-confirmaciones-promocion')->dailyAt('09:00');
-=======
 /*
 |--------------------------------------------------------------------------
 | Tareas programadas
@@ -23,4 +18,7 @@ Schedule::command('app:enviar-confirmaciones-promocion')->dailyAt('09:00');
 | cuando alguien lo usa (ver App\Services\Seguimientos::recordarSiToca).
 */
 Schedule::command('seguimientos:recordar')->dailyAt('08:00');
->>>>>>> 737af94976909b53781626ad9a03ea7f8344a55f
+
+// Promociones: cada mañana revisa quién sigue esperando que se le pida
+// la confirmación (autorizado por el asesor, sin contestar todavía).
+Schedule::command('app:enviar-confirmaciones-promocion')->dailyAt('09:00');

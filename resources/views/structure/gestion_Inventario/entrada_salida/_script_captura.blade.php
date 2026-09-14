@@ -308,27 +308,35 @@
             }
         }
 
-        /* ===================== Antes de enviar ===================== */
+        /* ===================== Antes de enviar =====================
+           Lo que falte (video, firma, fotos...) lo revisa y lo dice la
+           validación por paso; aquí solo se cuida no enviar a media subida. */
         form.addEventListener('submit', function (e) {
             if (videoSubiendo) {
                 e.preventDefault();
                 alert('Espera a que termine de subirse el video.');
-                return;
-            }
-
-            if (!videoPathInput.value) {
-                e.preventDefault();
-                alert('Sube el video de verificación antes de registrar la entrada.');
-                form.dispatchEvent(new CustomEvent('paso:ir', { detail: { paso: 'evidencia' } }));
-                return;
-            }
-
-            if (firmaInput && !firmaInput.value) {
-                e.preventDefault();
-                alert('Firma en el recuadro antes de registrar la entrada.');
-                form.dispatchEvent(new CustomEvent('paso:ir', { detail: { paso: 'firma' } }));
             }
         });
+
+        /*
+        | El video ya subido no se vuelve a pedir.
+        |
+        | Se sube por chunks antes del submit, así que cuando el servidor
+        | rechaza el formulario por otra cosa la ruta sigue viva en
+        | old('video_path'): sin este aviso parecía que se había perdido y
+        | se subía de nuevo el archivo completo.
+        */
+        if (videoPathInput?.value) {
+            const zonaVideo = form.querySelector('[data-soltar="video"]');
+            const cuentaVideo = zonaVideo?.querySelector('[data-cuenta-video]');
+
+            if (zonaVideo) zonaVideo.classList.add('lleno');
+            if (cuentaVideo) cuentaVideo.textContent = 'Video ya subido · toca solo si quieres cambiarlo';
+
+            videoProgresoWrap.style.display = 'block';
+            videoProgresoBarra.style.width = '100%';
+            videoProgresoTexto.textContent = 'Video subido correctamente.';
+        }
 
         /* ==========================================================
            Renglones de captura una por una
@@ -336,6 +344,16 @@
         const unidadesRows = document.getElementById('unidades-rows');
         const notaUnidades = form.querySelector('[data-nota-unidades]');
         let sugeridoBase = null;
+
+        /*
+        | Las series que ya se habían capturado, si el servidor regresó el
+        | formulario con error. Los renglones los arma este script, así que
+        | sin esto se volvían a dibujar vacíos y había que teclearlas otra
+        | vez. (Las fotos no se pueden restaurar: el navegador no permite
+        | rellenar un input de archivo por seguridad.)
+        */
+        const UNIDADES_PREVIAS = @json(array_values((array) old('unidades', [])));
+        let usarPrevias = UNIDADES_PREVIAS.length > 0;
 
         function incrementarSerial(base, delta) {
             const m = /^(.*?)(\d+)$/.exec(base || '');
@@ -371,7 +389,8 @@
             for (let i = 0; i < cantidad; i++) {
                 const row = document.createElement('div');
                 row.className = 'unidad-row';
-                const sugerido = sugeridoBase ? incrementarSerial(sugeridoBase, i) : '';
+                const previa = usarPrevias ? (UNIDADES_PREVIAS[i]?.no_serie || '') : '';
+                const sugerido = sugeridoBase ? incrementarSerial(sugeridoBase, i) : previa;
 
                 row.innerHTML = `
                     <span class="unidad-num">#${i + 1}</span>
@@ -393,6 +412,10 @@
                     preview.style.display = 'block';
                 });
             });
+
+            // Las series de vuelta se ponen una sola vez: si después cambia
+            // la cantidad, los renglones nuevos salen limpios.
+            usarPrevias = false;
         };
 
         /* ==========================================================

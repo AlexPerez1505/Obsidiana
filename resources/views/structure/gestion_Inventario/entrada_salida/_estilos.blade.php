@@ -17,9 +17,27 @@
                         color:var(--muted); font-size:11.5px; font-weight:700; flex:0 0 20px; }
         .paso-chip[data-estado="actual"] { border-color:var(--primary); color:var(--text); }
         .paso-chip[data-estado="actual"] .n { background:var(--primary); color:#fff; }
-        .paso-chip[data-estado="listo"] { color:var(--text); }
-        .paso-chip[data-estado="listo"] .n { background:var(--green); color:#fff; }
+        /* Un paso ya completado se queda iluminado en azul aunque te regreses. */
+        .paso-chip[data-estado="listo"] { border-color:var(--primary); color:var(--text);
+                                          background:var(--primary-soft); }
+        .paso-chip[data-estado="listo"] .n { background:var(--primary); color:#fff; }
+        /* Ya lo viste pero le falta algo: se avisa aquí, no hasta el final. */
+        .paso-chip[data-estado="falta"] { border-color:var(--danger); color:var(--text); }
+        .paso-chip[data-estado="falta"] .n { background:var(--danger); color:#fff; }
         @media (max-width:640px) { .paso-chip .txt { display:none; } .paso-chip { padding:8px 10px; } }
+
+        /* Lo que falta en este paso, dicho en el paso mismo. */
+        .paso-faltan { margin:0 0 16px; padding:12px 14px; border:1px solid var(--danger);
+                       border-radius:10px; background:var(--danger-soft); color:var(--danger);
+                       font-size:13.5px; }
+        .paso-faltan b { display:block; margin-bottom:4px; }
+        .paso-faltan ul { margin:0; padding-left:18px; }
+        .paso-faltan li { margin-top:2px; }
+
+        /* Al volver del servidor con error: los archivos hay que re-adjuntarlos. */
+        .aviso-archivos { margin:0 0 18px; padding:13px 15px; border:1px solid var(--warn, #d97706);
+                          border-radius:10px; background:var(--warn-soft, rgba(217,119,6,.1));
+                          font-size:13.5px; line-height:1.5; }
 
         .paso { display:none; }
         .paso[data-activo] { display:block; }

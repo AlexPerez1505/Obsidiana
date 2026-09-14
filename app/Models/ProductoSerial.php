@@ -59,6 +59,10 @@ class ProductoSerial extends Model
             'vendido' => 'boolean',
             'vendido_en' => 'datetime',
             'enviado_a_congreso_en' => 'datetime',
+            // Las fotos de cómo llegó esta pieza en particular (hasta 3).
+            // Sin el cast, Eloquent intentaba guardar el arreglo tal cual y
+            // tronaba con "Array to string conversion".
+            'evidence_paths' => 'array',
         ];
     }
 

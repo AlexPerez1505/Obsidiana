@@ -14,6 +14,24 @@
         .unidad-item .unidad-sin-foto { width:54px; height:54px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; text-align:center; }
         .producto-row { cursor:pointer; }
         .producto-row:hover { background:var(--surface-2); }
+
+        /* Toda la evidencia de cómo llegó esa pieza (hasta 3 fotos + video),
+           no nada más la primera foto. */
+        .ver-evidencia { border:none; background:transparent; padding:0; margin-left:6px;
+                         color:var(--primary); font-size:11.5px; font-weight:600; cursor:pointer; }
+        .ver-evidencia:hover { text-decoration:underline; }
+
+        .galeria-overlay { position:fixed; inset:0; background:rgba(0,0,0,.82); display:none;
+                           align-items:center; justify-content:center; z-index:1100; padding:20px; }
+        .galeria-caja { position:relative; max-width:900px; width:100%; text-align:center; }
+        .galeria-medio img, .galeria-medio video { max-width:100%; max-height:74vh; border-radius:10px; }
+        .galeria-cerrar { position:absolute; top:-38px; right:0; border:none; background:transparent;
+                          color:#fff; font-size:28px; line-height:1; cursor:pointer; }
+        .galeria-nav { display:flex; align-items:center; justify-content:center; gap:18px; margin-top:14px; }
+        .galeria-nav button { width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,.35);
+                              background:rgba(255,255,255,.1); color:#fff; font-size:20px; cursor:pointer; }
+        .galeria-nav button:hover { background:rgba(255,255,255,.22); }
+        .galeria-nav span { color:#fff; font-size:13px; }
     </style>
 @endpush
 
@@ -147,21 +165,33 @@
                 </div>
 
                 @forelse ($producto->serialesDisponibles as $serial)
-                    @php($evidencias = $serial->evidenceUrls())
-                    <div class="unidad-item">
+                    @php
+                        $evidencias = $serial->evidenceUrls();
+                        $video = $serial->videoUrl();
+
+                        // Todo lo que documenta cómo llegó esta pieza, en el
+                        // orden en que se ve en la galería.
+                        $medios = collect($evidencias)->map(fn ($url) => ['tipo' => 'foto', 'url' => $url]);
+                        if ($video) {
+                            $medios->push(['tipo' => 'video', 'url' => $video]);
+                        }
+
+                        $nFotos = count($evidencias);
+                        $etiquetaMedios = $nFotos.' '.($nFotos === 1 ? 'foto' : 'fotos').($video ? ' + video' : '');
+                    @endphp
+                    <div class="unidad-item" @if ($medios->isNotEmpty()) data-medios="{{ $medios->toJson() }}" @endif>
                         @if (count($evidencias))
-                            <img src="{{ $evidencias[0] }}" alt="Foto de la unidad" onclick="window.open('{{ $evidencias[0] }}', '_blank')">
+                            <img src="{{ $evidencias[0] }}" alt="Foto de la unidad" onclick="abrirGaleria(this)">
                         @else
                             <div class="unidad-sin-foto">Sin foto</div>
                         @endif
                         <div style="flex:1;">
                             <div style="font-weight:600; font-size:13.5px;">{{ $serial->no_serie ?: '— (sin serial capturado)' }}</div>
                             <span class="badge badge--ok" style="font-size:11px;">Disponible</span>
-                            @if (count($evidencias) > 1)
-                                <span class="muted" style="font-size:11px; margin-left:4px;">+{{ count($evidencias) - 1 }} foto{{ count($evidencias) - 1 > 1 ? 's' : '' }}</span>
-                            @endif
-                            @if ($serial->videoUrl())
-                                <a href="{{ $serial->videoUrl() }}" target="_blank" style="font-size:11px; margin-left:6px;">Ver video</a>
+                            @if ($medios->isNotEmpty())
+                                <button type="button" class="ver-evidencia" onclick="abrirGaleria(this)">
+                                    Ver evidencia ({{ $etiquetaMedios }})
+                                </button>
                             @endif
                         </div>
                     </div>
@@ -172,7 +202,76 @@
         </div>
     @endforeach
 
+    {{-- Visor de la evidencia de una pieza: sus fotos y su video, uno por uno --}}
+    <div id="galeria-overlay" class="galeria-overlay" onclick="cerrarGaleria(event)">
+        <div class="galeria-caja">
+            <button type="button" class="galeria-cerrar" onclick="cerrarGaleria(event)" aria-label="Cerrar">&times;</button>
+            <div class="galeria-medio" id="galeria-medio"></div>
+            <div class="galeria-nav">
+                <button type="button" onclick="moverGaleria(-1)" aria-label="Anterior">&lsaquo;</button>
+                <span id="galeria-cuenta"></span>
+                <button type="button" onclick="moverGaleria(1)" aria-label="Siguiente">&rsaquo;</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        /* ===================== Galería de evidencia por pieza =====================
+           Los medios viajan en data-medios del renglón de la unidad: cada uno
+           con su tipo (foto o video), así el visor sabe qué etiqueta pintar. */
+        let galeriaMedios = [];
+        let galeriaIndice = 0;
+
+        function abrirGaleria(el) {
+            const fuente = el.closest('[data-medios]');
+            if (!fuente) return;
+
+            try {
+                galeriaMedios = JSON.parse(fuente.dataset.medios || '[]');
+            } catch (e) {
+                galeriaMedios = [];
+            }
+
+            if (!galeriaMedios.length) return;
+
+            galeriaIndice = 0;
+            document.getElementById('galeria-overlay').style.display = 'flex';
+            pintarGaleria();
+        }
+
+        function pintarGaleria() {
+            const medio = galeriaMedios[galeriaIndice];
+            const caja = document.getElementById('galeria-medio');
+
+            caja.innerHTML = medio.tipo === 'video'
+                ? '<video src="' + medio.url + '" controls autoplay playsinline></video>'
+                : '<img src="' + medio.url + '" alt="Evidencia de la unidad">';
+
+            document.getElementById('galeria-cuenta').textContent =
+                (galeriaIndice + 1) + ' de ' + galeriaMedios.length + (medio.tipo === 'video' ? ' · video' : '');
+        }
+
+        function moverGaleria(paso) {
+            if (!galeriaMedios.length) return;
+            galeriaIndice = (galeriaIndice + paso + galeriaMedios.length) % galeriaMedios.length;
+            pintarGaleria();
+        }
+
+        function cerrarGaleria(evento) {
+            // Solo cierra al tocar el fondo o la ×, no al tocar la foto.
+            if (evento && evento.target.closest('.galeria-medio')) return;
+
+            document.getElementById('galeria-overlay').style.display = 'none';
+            document.getElementById('galeria-medio').innerHTML = '';
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (document.getElementById('galeria-overlay').style.display !== 'flex') return;
+
+            if (e.key === 'Escape') cerrarGaleria();
+            if (e.key === 'ArrowLeft') moverGaleria(-1);
+            if (e.key === 'ArrowRight') moverGaleria(1);
+        });
         function actualizarSeleccionPaquete() {
             const marcados = document.querySelectorAll('.producto-checkbox:checked');
             const boton = document.getElementById('btn-agrupar-paquete');
