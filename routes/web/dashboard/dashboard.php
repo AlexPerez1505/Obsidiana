@@ -21,6 +21,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/cuenta/cerrar-otras-sesiones', [AccountController::class, 'destroyOtherSessions'])
         ->name('account.sessions.destroyOthers');
 
+    // Campana de notificaciones
+    Route::get('/notificaciones/{id}/abrir', [\App\Http\Controllers\NotificacionController::class, 'abrir'])->name('notificaciones.abrir');
+    Route::post('/notificaciones/leer-todas', [\App\Http\Controllers\NotificacionController::class, 'leerTodas'])->name('notificaciones.leerTodas');
+
     // Perfil
     Route::get('/perfil', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/perfil', [ProfileController::class, 'update'])->name('profile.update');

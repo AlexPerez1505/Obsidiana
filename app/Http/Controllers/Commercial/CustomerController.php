@@ -20,10 +20,18 @@ class CustomerController extends Controller
      */
     public function index(Request $request): View
     {
-        $customers = Customer::with(['asesor', 'category', 'congress'])->latest()->get();
+        // Cada quien ve lo suyo, salvo que tenga permiso de ver todos.
+        $customers = Customer::visiblesPara($request->user())
+            ->with(['asesor', 'category', 'congress', 'seguimientos'])
+            ->latest()
+            ->get();
 
         return view('structure.commercial_management.customers.menu_customers', [
             'customers' => $customers,
+            'veTodos' => $request->user()->can('clientes.ver_todos'),
+            // Todos los congresos del sistema, no solo los que ya tienen
+            // clientes: así el filtro se ve completo desde el primer día.
+            'congresos' => Congress::query()->orderBy('nombre')->pluck('nombre'),
         ]);
     }
 
@@ -32,8 +40,15 @@ class CustomerController extends Controller
      */
     public function show(Customer $cliente): View
     {
+        $this->asegurarVisible($cliente);
+
         return view('structure.commercial_management.customers.ver_cliente', [
-            'customer' => $cliente->load(['asesor', 'category', 'congress', 'cotizaciones']),
+            'customer' => $cliente->load(['asesor', 'category', 'congress', 'cotizaciones', 'seguimientos.responsable', 'seguimientos.hechoPor']),
+            'tiposSeguimiento' => \App\Models\ClienteSeguimiento::TIPOS,
+            // Solo quien ve a todos puede asignarle el seguimiento a otro.
+            'usuarios' => auth()->user()->can('clientes.ver_todos')
+                ? \App\Models\User::orderBy('name')->get(['id', 'name'])
+                : collect(),
         ]);
     }
 
@@ -55,6 +70,10 @@ class CustomerController extends Controller
     {
         $this->normalizeCustomerInput($request);
 
+        if ($alto = $this->detenerSiYaExiste($request)) {
+            return $alto;
+        }
+
         $data = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
             'apellido' => ['required', 'string', 'max:255'],
@@ -67,16 +86,38 @@ class CustomerController extends Controller
             'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
             'como_conocio' => ['nullable', 'string', 'max:255'],
             'recibe_promocion' => ['nullable', 'boolean'],
+            'etapa' => ['nullable', Rule::in(array_keys(Customer::ETAPAS))],
+            // Primer seguimiento, opcional: "cotizarle en un mes", etc.
+            'seguimiento_tipo' => ['nullable', Rule::in(array_keys(\App\Models\ClienteSeguimiento::TIPOS))],
+            'seguimiento_fecha' => ['nullable', 'date', 'after_or_equal:today', 'required_with:seguimiento_tipo'],
+            'seguimiento_nota' => ['nullable', 'string', 'max:500'],
         ], [
             'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
             'rfc.unique' => 'Este RFC ya está registrado en otro cliente.',
+            'seguimiento_fecha.after_or_equal' => 'La fecha del seguimiento no puede ser anterior a hoy.',
+            'seguimiento_fecha.required_with' => 'Indica la fecha del seguimiento.',
         ]);
 
         $data['recibe_promocion'] = $request->boolean('recibe_promocion');
         $data['activo'] = true;
         $data['asesor_id'] = auth()->id();
+        $data['etapa'] = $data['etapa'] ?? 'cliente';
+
+        $seguimiento = $request->filled('seguimiento_fecha') ? [
+            'user_id' => auth()->id(),
+            'tipo' => $data['seguimiento_tipo'] ?? 'llamada',
+            'fecha' => $data['seguimiento_fecha'],
+            'nota' => $data['seguimiento_nota'] ?? null,
+            'created_by' => auth()->id(),
+        ] : null;
+
+        unset($data['seguimiento_tipo'], $data['seguimiento_fecha'], $data['seguimiento_nota']);
 
         $customer = Customer::create($data);
+
+        if ($seguimiento) {
+            $customer->seguimientos()->create($seguimiento);
+        }
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -95,6 +136,8 @@ class CustomerController extends Controller
      */
     public function edit(Customer $cliente): View
     {
+        $this->asegurarVisible($cliente);
+
         return view('structure.commercial_management.customers.actulizar_cliente', [
             'customer' => $cliente,
             'categories' => Category::query()->orderBy('nombre')->get(),
@@ -107,7 +150,13 @@ class CustomerController extends Controller
      */
     public function update(Request $request, Customer $cliente): RedirectResponse
     {
+        $this->asegurarVisible($cliente);
+
         $this->normalizeCustomerInput($request);
+
+        if ($alto = $this->detenerSiYaExiste($request, $cliente)) {
+            return $alto;
+        }
 
         $data = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
@@ -122,6 +171,7 @@ class CustomerController extends Controller
             'como_conocio' => ['nullable', 'string', 'max:255'],
             'recibe_promocion' => ['nullable', 'boolean'],
             'activo' => ['nullable', 'boolean'],
+            'etapa' => ['nullable', Rule::in(array_keys(Customer::ETAPAS))],
         ], [
             'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
             'rfc.unique' => 'Este RFC ya está registrado en otro cliente.',
@@ -129,10 +179,77 @@ class CustomerController extends Controller
 
         $data['recibe_promocion'] = $request->boolean('recibe_promocion');
         $data['activo'] = $request->boolean('activo', true);
+        $data['etapa'] = $data['etapa'] ?? $cliente->etapa;
 
         $cliente->update($data);
 
         return redirect()->route('commercial.clientes.index')->with('status', 'Cliente actualizado correctamente.');
+    }
+
+    /**
+     * Consulta en vivo desde el formulario: ¿ya existe un cliente con este
+     * teléfono o correo? Se llama al salir del campo, para avisar antes
+     * de que el usuario llene todo lo demás.
+     */
+    public function similar(Request $request): JsonResponse
+    {
+        $similar = Customer::buscarSimilar(
+            $request->input('telefono'),
+            $request->input('gmail'),
+            $request->integer('ignorar') ?: null
+        );
+
+        return response()->json([
+            'similar' => $similar ? $this->avisoDeSimilar($similar, $request) : null,
+        ]);
+    }
+
+    /**
+     * Si el teléfono o el correo ya son de otro cliente, no se guarda: se
+     * regresa al formulario con los datos de ese cliente para mostrarlos
+     * en el modal. En AJAX responde 422 con lo mismo.
+     */
+    private function detenerSiYaExiste(Request $request, ?Customer $ignorar = null): RedirectResponse|JsonResponse|null
+    {
+        $similar = Customer::buscarSimilar($request->input('telefono'), $request->input('gmail'), $ignorar?->id);
+
+        if (! $similar) {
+            return null;
+        }
+
+        $aviso = $this->avisoDeSimilar($similar, $request);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['message' => $aviso['mensaje'], 'cliente_similar' => $aviso], 422);
+        }
+
+        return back()
+            ->withInput()
+            ->withErrors([$similar['motivo'] === 'correo' ? 'gmail' : 'telefono' => $aviso['mensaje']])
+            ->with('cliente_similar', $aviso);
+    }
+
+    /** Arma lo que ve el usuario: el motivo en palabras y el cliente que ya existe. */
+    private function avisoDeSimilar(array $similar, Request $request): array
+    {
+        $mensaje = $similar['motivo'] === 'correo'
+            ? 'Ya hay un cliente registrado con ese correo electrónico.'
+            : 'Ya hay un cliente registrado con ese número de teléfono.';
+
+        return [
+            'motivo' => $similar['motivo'],
+            'mensaje' => $mensaje,
+            'cliente' => $similar['cliente']->resumenParaAviso($request->user()),
+        ];
+    }
+
+    /**
+     * Un cliente de otro asesor no se abre ni se edita tecleando su id en
+     * la URL: si no le aparece en la lista, tampoco existe para él.
+     */
+    private function asegurarVisible(Customer $cliente): void
+    {
+        abort_unless($cliente->visiblePara(auth()->user()), 403, 'Este cliente lo registró otro asesor.');
     }
 
     /**

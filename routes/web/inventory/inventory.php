@@ -3,6 +3,7 @@
 use App\Http\Controllers\EscaneoController;
 use App\Http\Controllers\Inventory\FichaTecnicaController;
 use App\Http\Controllers\InventoryMovementController;
+use App\Http\Controllers\OrdenSalidaController;
 use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\ProcesoController;
 use App\Http\Controllers\ProductoController;
@@ -22,6 +23,22 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('inventory.movimientos.store');
     Route::post('/gestion-inventario/entrada-salida/video-chunk', [InventoryMovementController::class, 'subirVideoChunk'])
         ->name('inventory.movimientos.videoChunk');
+
+    /*
+    | Órdenes de salida: lo que almacén prepara, emplaya y firma cuando
+    | se vende. Nacen solas al registrar la venta.
+    */
+    Route::middleware('can:salidas.ver')->prefix('/gestion-inventario/ordenes-salida')->name('inventory.salidas.')->group(function () {
+        Route::get('/', [OrdenSalidaController::class, 'index'])->name('index');
+        Route::get('/{orden}', [OrdenSalidaController::class, 'show'])->name('show');
+        Route::get('/{orden}/pdf', [OrdenSalidaController::class, 'pdf'])->name('pdf');
+
+        Route::middleware('can:salidas.preparar')->group(function () {
+            Route::post('/{orden}/partidas/{item}', [OrdenSalidaController::class, 'item'])->name('item');
+            Route::post('/{orden}/notas', [OrdenSalidaController::class, 'notas'])->name('notas');
+            Route::post('/{orden}/entregar', [OrdenSalidaController::class, 'entregar'])->name('entregar');
+        });
+    });
     /*
     | Procesos: las colas de hojalatería, mantenimiento y limpieza.
     */

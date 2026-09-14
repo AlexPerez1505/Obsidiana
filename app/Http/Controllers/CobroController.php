@@ -42,6 +42,10 @@ class CobroController extends Controller
 
     public function store(Request $request, Venta $venta): RedirectResponse
     {
+        if ($venta->cancelada()) {
+            return back()->withErrors(['monto' => 'Esta venta está cancelada: no se le pueden registrar cobros.']);
+        }
+
         $data = $request->validate([
             'venta_pago_id' => ['nullable', Rule::exists('venta_pagos', 'id')->where('venta_id', $venta->id)],
             'fecha' => ['required', 'date'],

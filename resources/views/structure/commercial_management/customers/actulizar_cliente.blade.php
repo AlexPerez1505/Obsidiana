@@ -58,6 +58,14 @@
                             <span class="slider"></span>
                         </label>
                     </x-ui.form-group>
+                    <x-ui.form-group for="etapa" label="Etapa">
+                        <select id="etapa" name="etapa">
+                            @foreach (\App\Models\Customer::ETAPAS as $valor => $texto)
+                                <option value="{{ $valor }}" @selected(old('etapa', $customer->etapa) === $valor)>{{ $texto }}</option>
+                            @endforeach
+                        </select>
+                        <small style="color:var(--muted);">Prospecto: interesado que todavía no compra.</small>
+                    </x-ui.form-group>
                     <x-ui.form-group for="activo" label="¿Cliente Activo?">
                         <input type="hidden" name="activo" value="0">
                         <label class="ui-switch">
@@ -111,6 +119,9 @@
             <x-ui.button>Actualizar Cliente</x-ui.button>
         </div>
     </form>
+
+    {{-- Aviso cuando el teléfono o el correo ya son de otro cliente (sin contarse a sí mismo). --}}
+    @include('structure.commercial_management.customers._modal_duplicado', ['ignorar' => $customer->id])
 
     <style>
         .ui-switch { position: relative; display: inline-block; width: 50px; height: 26px; }

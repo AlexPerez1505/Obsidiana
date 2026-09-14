@@ -387,8 +387,16 @@
                         var destinoTexto = modal.querySelector('[data-texto="' + clave + '"]');
                         if (destinoTexto) { destinoTexto.textContent = valores[clave]; return; }
 
-                        var campo = form.querySelector('[name="' + clave + '"]');
-                        if (campo) campo.value = valores[clave];
+                        // Un checkbox comparte nombre con su hidden "0": se
+                        // marca o desmarca en vez de asignarle valor.
+                        var campos = form.querySelectorAll('[name="' + clave + '"]');
+                        campos.forEach(function (campo) {
+                            if (campo.type === 'checkbox') {
+                                campo.checked = valores[clave] === true || valores[clave] === 1 || valores[clave] === '1';
+                            } else if (campo.type !== 'hidden' || campos.length === 1) {
+                                campo.value = valores[clave];
+                            }
+                        });
                     });
 
                     llenarMarcas(modal, valores.brand_id || null);

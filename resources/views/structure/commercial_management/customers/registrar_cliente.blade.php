@@ -8,6 +8,49 @@
         <input type="hidden" name="return_to" value="{{ $returnTo ?? '' }}">
 
         <div>
+            {{-- ¿Ya compra o apenas está interesado? --}}
+            <x-ui.card style="margin-bottom:18px;">
+                <x-ui.section-title style="margin:0 0 6px;">¿Cliente o prospecto?</x-ui.section-title>
+                <p class="muted" style="margin:0 0 14px; font-size:13.5px;">
+                    Un prospecto es alguien interesado que todavía no compra. Se registra igual y se le programan seguimientos
+                    para no perderle la pista; cuando compre, lo conviertes en cliente desde su ficha.
+                </p>
+                <div class="et-opciones">
+                    <label class="et-opcion">
+                        <input type="radio" name="etapa" value="cliente" @checked(old('etapa', 'cliente') === 'cliente')>
+                        <span><b>Cliente</b><small>Ya compra o va a comprar ahora.</small></span>
+                    </label>
+                    <label class="et-opcion">
+                        <input type="radio" name="etapa" value="prospecto" @checked(old('etapa') === 'prospecto')>
+                        <span><b>Prospecto</b><small>Interesado; hay que darle seguimiento.</small></span>
+                    </label>
+                </div>
+
+                {{-- Primer seguimiento, opcional --}}
+                <div class="et-seg" id="etSeguimiento">
+                    <div class="rgrid-2" style="margin-top:14px;">
+                        <x-ui.form-group for="seguimiento_tipo" label="Qué hay que hacer">
+                            <select id="seguimiento_tipo" name="seguimiento_tipo">
+                                <option value="">Sin seguimiento por ahora</option>
+                                @foreach (\App\Models\ClienteSeguimiento::TIPOS as $valor => $texto)
+                                    <option value="{{ $valor }}" @selected(old('seguimiento_tipo') === $valor)>{{ $texto }}</option>
+                                @endforeach
+                            </select>
+                        </x-ui.form-group>
+                        <x-ui.form-group for="seguimiento_fecha" label="Cuándo">
+                            <input type="date" id="seguimiento_fecha" name="seguimiento_fecha" value="{{ old('seguimiento_fecha') }}" min="{{ now()->toDateString() }}">
+                        </x-ui.form-group>
+                        <div style="grid-column:1 / -1;">
+                            <x-ui.form-group for="seguimiento_nota" label="Nota del seguimiento">
+                                <input type="text" id="seguimiento_nota" name="seguimiento_nota" maxlength="500" value="{{ old('seguimiento_nota') }}"
+                                       placeholder="Ej. quiere cotización de torre de endoscopia en un mes, llamar después de su congreso...">
+                            </x-ui.form-group>
+                        </div>
+                    </div>
+                    <small style="color:var(--muted);">Ese día te llega el aviso en la campana del sistema y por correo.</small>
+                </div>
+            </x-ui.card>
+
             {{-- Datos personales --}}
             <x-ui.card style="margin-bottom:18px;">
                 <x-ui.section-title style="margin:0 0 16px;">Datos Personales</x-ui.section-title>
@@ -103,7 +146,16 @@
         </div>
     </form>
 
+    {{-- Aviso cuando el teléfono o el correo ya son de otro cliente. --}}
+    @include('structure.commercial_management.customers._modal_duplicado')
+
     <style>
+        .et-opciones { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; }
+        .et-opcion { display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border:1px solid var(--border); border-radius:12px; cursor:pointer; background:var(--surface); }
+        .et-opcion:has(input:checked) { border-color:var(--primary); background:var(--primary-soft); }
+        .et-opcion input { margin-top:3px; }
+        .et-opcion b { display:block; font-size:14px; }
+        .et-opcion small { display:block; color:var(--muted); font-size:12.5px; margin-top:2px; }
         .ui-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .ui-switch input { opacity: 0; width: 0; height: 0; }
         .ui-switch .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; border-radius: 26px; transition: .4s; }
@@ -127,6 +179,16 @@
 
             congresoSelect.addEventListener('change', sincronizar);
             sincronizar();
+        });
+
+        // Si se elige un tipo de seguimiento, la fecha se vuelve obligatoria.
+        document.addEventListener('DOMContentLoaded', function () {
+            const tipo = document.getElementById('seguimiento_tipo');
+            const fecha = document.getElementById('seguimiento_fecha');
+            if (!tipo || !fecha) return;
+            const sync = () => { fecha.required = !!tipo.value; };
+            tipo.addEventListener('change', sync);
+            sync();
         });
     </script>
 @endsection

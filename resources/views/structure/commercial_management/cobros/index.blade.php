@@ -17,6 +17,14 @@
         </div>
     @endif
 
+    @if ($venta->cancelada())
+        <div class="erp-card pad" style="margin-bottom:18px; border-color:var(--danger); background:var(--danger-soft);">
+            <b style="color:var(--danger);">Venta cancelada.</b>
+            <span style="font-size:13px;">Los cobros de abajo se conservan como historial y ya no se pueden registrar más.
+            @if ($venta->totalCobrado() > 0.009) Queda pendiente devolver ${{ number_format($venta->totalCobrado(), 2) }} al cliente. @endif</span>
+        </div>
+    @endif
+
     {{-- ===================== Resumen ===================== --}}
     <div class="cb-stats">
         <div class="cb-stat">
@@ -82,7 +90,7 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                             </button>
 
-                            @if ($p->saldo() > 0)
+                            @if ($p->saldo() > 0 && ! $venta->cancelada())
                                 <button type="button" class="cb-mini cb-mini--ok" title="Registrar pago"
                                         data-cobrar
                                         data-parcialidad="{{ $p->id }}"
@@ -133,7 +141,9 @@
             <div class="erp-card pad" style="margin-top:18px;">
                 <div class="cb-head">
                     <h3>Pagos recibidos</h3>
-                    <button type="button" class="erp-btn sm" data-cobrar>Registrar pago</button>
+                    @unless ($venta->cancelada())
+                        <button type="button" class="erp-btn sm" data-cobrar>Registrar pago</button>
+                    @endunless
                 </div>
 
                 @forelse ($venta->cobros as $c)
