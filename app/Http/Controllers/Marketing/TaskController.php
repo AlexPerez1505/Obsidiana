@@ -258,7 +258,9 @@ public function aprobacionFlyers(): View
      */
     public function agenda(): RedirectResponse
     {
-        return redirect()->route('marketing.calendario.index');
+        return view('structure.gestion_marketing.calendario.calendario', [
+            'users' => User::orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
     /**

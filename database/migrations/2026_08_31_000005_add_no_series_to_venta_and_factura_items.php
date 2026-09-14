@@ -13,13 +13,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('venta_items', function (Blueprint $table) {
-            $table->text('no_series')->nullable()->after('cantidad');
-        });
+        if (! Schema::hasColumn('venta_items', 'no_series')) {
+            Schema::table('venta_items', function (Blueprint $table) {
+                $table->text('no_series')->nullable()->after('cantidad');
+            });
+        }
 
-        Schema::table('factura_items', function (Blueprint $table) {
-            $table->text('no_series')->nullable()->after('cantidad');
-        });
+        if (Schema::hasTable('factura_items') && ! Schema::hasColumn('factura_items', 'no_series')) {
+            Schema::table('factura_items', function (Blueprint $table) {
+                $table->text('no_series')->nullable()->after('cantidad');
+            });
+        }
     }
 
     public function down(): void

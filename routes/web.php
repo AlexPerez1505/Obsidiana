@@ -41,9 +41,14 @@ require __DIR__.'/web/configuracion/roles.php';
 require __DIR__.'/web/configuracion/refaciones.php';
 require __DIR__.'/web/configuracion/tipo_equipo.php';
 
-// Marketing y servicios
+// Marketing
 require __DIR__.'/web/marketing/marketing.php';
+
+// Gestion de servicios
 require __DIR__.'/web/services/historial.php';
+require __DIR__.'/web/services/registro.php';
+require __DIR__.'/web/services/endoscopia.php';
+require __DIR__.'/web/services/refacciones.php';
 
 // Administracion
 require __DIR__.'/web/admin/admin.php';

@@ -100,8 +100,61 @@ class QrController extends Controller
             'finished_at' => now(),
         ]);
 
+        return redirect()->route('qr.completed')
+            ->with('status', 'Servicio completado. Gracias.');
+    }
+
+    public function print(string $token)
+    {
+        $service = Service::with(['customer', 'serviceEquipment', 'currentStep'])
+            ->where('qr_token', $token)
+            ->where('service_type', 'externo')
+            ->firstOrFail();
+
+        if ($service->qr_expires_at && $service->qr_expires_at->isPast()) {
+            abort(403, 'Este QR ha expirado.');
+        }
+
+        return view('structure.gestion_servicios.historial_servicios.qr.print', compact('service'));
+    }
+
+    public function renew(Service $service)
+    {
+        if ($service->service_type !== 'externo') {
+            return back()->with('error', 'Solo se pueden renovar QR de mantenimientos externos.');
+        }
+
+        $oldToken = $service->qr_token;
+        $newToken = $this->generateQrToken();
+        $expires = now()->addDay();
+
+        $service->update([
+            'qr_token' => $newToken,
+            'qr_expires_at' => $expires,
+        ]);
+
+        $tracking = ServiceTracking::where('service_id', $service->id)
+            ->where('status', 'pendiente')
+            ->where('qr_token', $oldToken)
+            ->first();
+
+        if (!$tracking && $service->current_step_id) {
+            $tracking = ServiceTracking::where('service_id', $service->id)
+                ->where('status', 'pendiente')
+                ->where('service_step_id', $service->current_step_id)
+                ->first();
+        }
+
+        if ($tracking) {
+            $tracking->update([
+                'qr_token' => $newToken,
+                'qr_expires_at' => $expires,
+                'started_at' => now(),
+            ]);
+        }
+
         return redirect()->route('gestion.servicios.historial')
-            ->with('success', 'Servicio completado.');
+            ->with('success', 'QR renovado. Válido por 24 horas.');
     }
 
     private function storeEvidence(Request $request, string $field, int $serviceId): ?string

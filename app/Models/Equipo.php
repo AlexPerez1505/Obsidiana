@@ -24,11 +24,18 @@ class Equipo extends Model
         'subtipo',
         'modelo',
         'marca',
+        'serie',
         'precio',
         'imagen',
         'descripcion',
+        'observaciones',
         'sku',
         'activo',
+        'evidencia_2_path',
+        'evidencia_3_path',
+        'video_path',
+        'firma',
+        'externo_interno',
     ];
 
     /** Equipo nombra "tipo" a lo que Producto llama "tipo_equipo". */

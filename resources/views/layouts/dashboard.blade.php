@@ -710,17 +710,33 @@
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.historial') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial') }}" data-tip="Historial de servicios">
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.historial') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial') }}" data-tip="Historial de Servicios">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Historial de servicios</span>
+                        <span class="nav-label">Historial de Servicios</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.historial.nueva_orden') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial.nueva_orden') }}" data-tip="Nueva orden de servicio">
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.refacciones.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.refacciones.index') }}" data-tip="Refacciones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Nueva orden de servicio</span>
+                        <span class="nav-label">Refacciones</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.historial.invite') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial.invite') }}" data-tip="Invitar técnico">
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.garantia.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.garantia.index') }}" data-tip="Cartas de Garantía">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Invitar técnico</span>
+                        <span class="nav-label">Cartas de Garantía</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.registro') ? 'active' : '' }}" href="{{ route('gestion.servicios.registro') }}" data-tip="Registro">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Registro</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.area_endoscopia') ? 'active' : '' }}" href="{{ route('gestion.servicios.area_endoscopia') }}" data-tip="Área de Endoscopia">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Área de Endoscopia</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.area') ? 'active' : '' }}" href="{{ route('gestion.servicios.area') }}" data-tip="Área General">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Área</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.externo') ? 'active' : '' }}" href="{{ route('gestion.servicios.externo') }}" data-tip="Mantenimiento Externo">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Externo</span>
                     </a>
                 </div>
             </div>

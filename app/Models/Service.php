@@ -18,6 +18,9 @@ class Service extends Model
         'qr_expires_at',
         'signature',
         'status',
+        'customer_decision',
+        'customer_decision_at',
+        'mano_obra',
         'started_at',
         'finished_at',
     ];
@@ -26,8 +29,10 @@ class Service extends Model
     {
         return [
             'qr_expires_at' => 'datetime',
+            'customer_decision_at' => 'datetime',
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
+            'mano_obra' => 'decimal:2',
         ];
     }
 
@@ -59,5 +64,10 @@ class Service extends Model
     public function externalTechnician()
     {
         return $this->belongsTo(ExternalTechnician::class, 'external_technician_id');
+    }
+
+    public function spareParts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ServiceSparePart::class);
     }
 }
