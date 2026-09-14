@@ -24,6 +24,11 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admi
     Route::get('/materiales', [MaterialRequestController::class, 'index'])->name('materials.index');
     Route::post('/materiales', [MaterialRequestController::class, 'store'])->name('materials.store');
     Route::get('/reportes', [ReportController::class, 'index'])->name('reports.index');
+
+    // Línea de tiempo de actividad de todos los usuarios
+    Route::get('/actividad', [\App\Http\Controllers\Admin\ActividadController::class, 'index'])
+        ->middleware('can:actividad.ver')
+        ->name('actividad.index');
 });
 
 Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->name('admin.')->group(function () {

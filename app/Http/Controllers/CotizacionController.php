@@ -28,7 +28,13 @@ class CotizacionController extends Controller
 
     public function index(): View
     {
-        $cotizaciones = Cotizacion::with(['customer', 'seller'])->latest()->paginate(20)->withQueryString();
+        // items: para mostrar qué se cotizó en cada fila sin abrirla.
+        // Cada asesor ve las suyas, salvo que tenga permiso de ver todas.
+        $cotizaciones = Cotizacion::visiblesPara(auth()->user())
+            ->with(['customer', 'seller', 'items'])
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
 
         return view('structure.commercial_management.cotizaciones.index', [
             'cotizaciones' => $cotizaciones,
@@ -143,7 +149,9 @@ class CotizacionController extends Controller
     {
         $q = trim($request->get('q', ''));
 
-        $clientes = Customer::query()
+        // Mismo criterio que el directorio: quien no tiene permiso de ver
+        // todos los clientes solo encuentra los que él registró.
+        $clientes = Customer::visiblesPara($request->user())
             // Se traen de una vez: sin esto, calcular el saldo de cada
             // cliente dispararía una consulta por venta.
             ->with(['congress', 'category', 'asesor', 'ventas.cobros', 'ventas.pagos'])

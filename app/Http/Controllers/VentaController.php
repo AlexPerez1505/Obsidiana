@@ -14,6 +14,7 @@ use App\Models\VentaBitacora;
 use App\Models\VentaItem;
 use App\Services\CalculadoraCotizacion;
 use App\Services\CalendarioPagos;
+use App\Services\OrdenesDeSalida;
 use App\Support\AnexosVenta;
 use App\Support\DocumentoInitial;
 use App\Support\FusionadorPdf;
@@ -33,7 +34,13 @@ class VentaController extends Controller
 
     public function index(): View
     {
-        $ventas = Venta::with(['customer', 'seller'])->latest()->paginate(20)->withQueryString();
+        // items: para mostrar qué se vendió en cada fila sin abrirla.
+        // Cada asesor ve las suyas, salvo que tenga permiso de ver todas.
+        $ventas = Venta::visiblesPara(auth()->user())
+            ->with(['customer', 'seller', 'items'])
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
 
         return view('structure.commercial_management.ventas.index', [
             'ventas' => $ventas,
@@ -53,7 +60,10 @@ class VentaController extends Controller
         $clientePre = null;
 
         if ($request->filled('cotizacion')) {
-            $origen = Cotizacion::with(['customer', 'items.producto', 'pagos', 'fichas'])->find($request->integer('cotizacion'));
+            // Solo se puede convertir una cotización que el usuario pueda ver.
+            $origen = Cotizacion::visiblesPara($request->user())
+                ->with(['customer', 'items.producto', 'pagos', 'fichas'])
+                ->find($request->integer('cotizacion'));
             $clientePre = $origen?->customer;
         } elseif ($request->filled('cliente')) {
             $clientePre = Customer::find($request->integer('cliente'));
@@ -147,6 +157,10 @@ class VentaController extends Controller
                 Cotizacion::whereKey($cotizacionId)->update(['estado' => 'convertida']);
             }
 
+            // Con la venta nace la orden de salida para almacén (solo si
+            // hay equipo físico que preparar).
+            app(OrdenesDeSalida::class)->generarPara($venta);
+
             return $venta;
         });
 
@@ -156,7 +170,7 @@ class VentaController extends Controller
 
     public function show(Venta $venta): View
     {
-        $venta->load(['customer', 'seller', 'items', 'pagos', 'fichas', 'cotizacion']);
+        $venta->load(['customer', 'seller', 'items', 'pagos', 'fichas', 'cotizacion', 'bitacora.user', 'ordenSalida']);
 
         return view('structure.commercial_management.ventas.show', [
             'venta' => $venta,
@@ -167,28 +181,65 @@ class VentaController extends Controller
     {
         $venta->load(['customer', 'items', 'pagos', 'fichas']);
 
+        if ($venta->cancelada()) {
+            return redirect()->route('commercial.ventas.show', $venta)
+                ->withErrors(['venta' => 'Una venta cancelada no se edita. Si hace falta, regístrala de nuevo.']);
+        }
+
         return view('structure.commercial_management.ventas.form', [
             'venta' => $venta,
             'initial' => DocumentoInitial::build($venta, $venta->customer),
             'congresos' => Congress::orderBy('nombre')->get(),
             'origenId' => null,
+            // Con dinero cobrado sobre alguna parcialidad, el plan se congela
+            // en el formulario: se ajusta desde Cobranza, no desde aquí.
+            'planBloqueado' => $venta->planBloqueado(),
         ]);
     }
 
     public function update(Request $request, Venta $venta): RedirectResponse
     {
+        if ($venta->cancelada()) {
+            return redirect()->route('commercial.ventas.show', $venta)
+                ->withErrors(['venta' => 'Una venta cancelada no se edita.']);
+        }
+
         $data = $this->validar($request);
 
         /*
-        | Si la venta ya tiene cobros, el calendario NO se rehace: borrarlo y
-        | recrearlo dejaría los cobros sin parcialidad y contradiría los
-        | recibos que el cliente ya tiene. En ese caso se respetan las
-        | parcialidades y la diferencia de montos se reparte después entre
-        | las que todavía no se han cobrado.
+        | Reglas para no pelearse con el dinero que ya entró:
+        |
+        | 1. Si alguna parcialidad ya tiene cobros, el calendario NO se
+        |    rehace: borrarlo y recrearlo dejaría los cobros sin parcialidad
+        |    y contradiría los recibos que el cliente ya tiene. Se conservan
+        |    modalidad y meses tal como estaban, y la diferencia de montos
+        |    se reparte después entre las parcialidades sin cobrar.
+        |
+        | 2. Si solo hay abonos sueltos (sin parcialidad), el plan sí se
+        |    puede rehacer: los abonos se vuelven a aplicar sobre el plan
+        |    nuevo, sin crear cobros de más.
+        |
+        | 3. Nunca se deja el total por debajo de lo ya cobrado.
         */
-        $tieneCobros = $venta->cobros()->exists();
+        $planBloqueado = $venta->planBloqueado();
+        $cobrado = $venta->totalCobrado();
 
-        DB::transaction(function () use ($venta, $data, $tieneCobros) {
+        if ($planBloqueado) {
+            $data['modalidad'] = $venta->modalidad;
+            $data['num_meses'] = $venta->num_meses;
+            unset($data['pagos']);
+        }
+
+        $nuevoExigible = $this->exigibleDe($data);
+
+        if ($cobrado > 0.009 && $nuevoExigible + 0.009 < $cobrado) {
+            return back()->withInput()->withErrors([
+                'items' => 'El nuevo total ($'.number_format($nuevoExigible, 2).') queda por debajo de lo que el cliente ya pagó ($'
+                    .number_format($cobrado, 2).'). Cancela primero algún cobro en Cobranza o ajusta los montos.',
+            ]);
+        }
+
+        DB::transaction(function () use ($venta, $data, $planBloqueado) {
             $this->llenarDesde($venta, $data);
             $venta->save();
 
@@ -196,39 +247,123 @@ class VentaController extends Controller
             $venta->items()->delete();
             $this->guardarItems($venta, $data['items']);
 
-            if (! $tieneCobros) {
+            if (! $planBloqueado) {
+                // Los cobros sueltos quedan con venta_pago_id en null al
+                // borrar (nullOnDelete) y se reasignan abajo.
                 $venta->pagos()->delete();
                 $this->guardarPagos($venta, $data);
             }
 
             $venta->fichas()->sync($data['fichas'] ?? []);
+
+            // La orden de salida se rehace con las partidas nuevas, salvo
+            // que el equipo ya haya salido.
+            app(OrdenesDeSalida::class)->sincronizar($venta);
         });
 
-        if ($tieneCobros) {
-            $venta->refresh()->load('pagos.cobros');
+        $venta->refresh()->load(['pagos.cobros', 'cobros']);
+        $calendario = app(CalendarioPagos::class);
+        $aviso = '';
 
+        if ($planBloqueado) {
             VentaBitacora::registrar(
                 $venta,
                 'items_editados',
-                'Se editó el equipo de la venta; el calendario se conservó por tener cobros'
+                'Se editó la venta; el calendario se conservó porque ya tiene cobros aplicados'
             );
 
-            $r = app(CalendarioPagos::class)->rebalancear($venta);
+            $r = $calendario->rebalancear($venta);
 
-            $aviso = ! empty($r['sin_donde'])
-                ? ' El plan quedó descuadrado y todas las parcialidades tienen cobros: agrega una parcialidad en Cobranza.'
-                : ($r['ajustadas'] > 0 ? ' La diferencia se repartió entre las parcialidades sin cobrar.' : '');
+            if (! empty($r['sin_donde']) && $r['diferencia'] > 0.009) {
+                // Todas las parcialidades ya tienen cobros: la diferencia
+                // no cabe en ninguna, así que se abre una nueva al final en
+                // vez de dejar el plan descuadrado.
+                $this->agregarParcialidadDeAjuste($venta, (float) $r['diferencia']);
+                $aviso = ' Como todas las parcialidades ya tenían cobros, la diferencia de $'
+                    .number_format($r['diferencia'], 2).' quedó en una parcialidad nueva al final del plan.';
+            } elseif ($r['ajustadas'] > 0) {
+                $aviso = ' La diferencia se repartió entre las parcialidades sin cobrar.';
+            }
+        } elseif ($cobrado > 0.009) {
+            // Plan nuevo con abonos previos: se vuelven a aplicar, en orden,
+            // sobre las parcialidades nuevas.
+            $r = $calendario->absorberExcedente($venta);
 
-            return redirect()->route('commercial.ventas.show', $venta)
-                ->with('status', "Venta {$venta->folio} actualizada.{$aviso}");
+            if ($r['excedente'] > 0.009) {
+                $aviso = ' Los $'.number_format($r['excedente'], 2).' ya cobrados se aplicaron al plan nuevo.';
+            }
         }
 
         return redirect()->route('commercial.ventas.show', $venta)
-            ->with('status', "Venta {$venta->folio} actualizada.");
+            ->with('status', "Venta {$venta->folio} actualizada.{$aviso}");
     }
 
+    /**
+     * Cancelar una venta. No se borra: queda como cancelada con su motivo,
+     * el equipo regresa al inventario, la orden de salida se cancela y los
+     * cobros se conservan como historial (si hubo dinero, se avisa cuánto
+     * hay que devolver). Pide el PIN de aprobación o la contraseña.
+     */
+    public function cancelar(Request $request, Venta $venta): RedirectResponse
+    {
+        if ($venta->cancelada()) {
+            return back()->withErrors(['venta' => 'Esta venta ya estaba cancelada.']);
+        }
+
+        $data = $request->validate([
+            'motivo' => ['required', 'string', 'max:500'],
+            'password' => ['required', 'string'],
+        ], ['motivo.required' => 'Escribe el motivo de la cancelación.']);
+
+        $user = $request->user();
+        $valido = $user->approval_pin_hash
+            ? $user->checkApprovalPin($data['password'])
+            : \Illuminate\Support\Facades\Hash::check($data['password'], $user->password);
+
+        if (! $valido) {
+            return back()->withInput()->withErrors(['password' => 'PIN o contraseña incorrecta.']);
+        }
+
+        $cobrado = $venta->totalCobrado();
+
+        DB::transaction(function () use ($venta, $data, $cobrado) {
+            $this->liberarSerialesDe($venta);
+
+            $venta->estado = 'cancelada';
+            $venta->save();
+
+            // La orden de almacén se marca cancelada (no se borra: queda el
+            // rastro de qué se alcanzó a preparar).
+            $venta->ordenSalida?->update(['estado' => \App\Models\OrdenSalida::CANCELADA]);
+
+            VentaBitacora::registrar(
+                $venta,
+                'venta_cancelada',
+                'Venta cancelada: '.$data['motivo']
+                    .($cobrado > 0.009 ? ' · Cobrado hasta ese momento: $'.number_format($cobrado, 2).' (pendiente de devolver)' : ''),
+                ['motivo' => $data['motivo'], 'cobrado' => $cobrado]
+            );
+        });
+
+        $aviso = $cobrado > 0.009
+            ? " El cliente tenía pagados \$".number_format($cobrado, 2).'; los cobros se conservan como historial y queda pendiente su devolución.'
+            : '';
+
+        return redirect()->route('commercial.ventas.show', $venta)
+            ->with('status', "Venta {$venta->folio} cancelada. El equipo volvió al inventario.{$aviso}");
+    }
+
+    /**
+     * Eliminar del todo solo se permite cuando la venta no tiene ningún
+     * cobro: si ya entró dinero, se cancela (y el historial se queda).
+     */
     public function destroy(Venta $venta): RedirectResponse
     {
+        if ($venta->cobros()->exists()) {
+            return redirect()->route('commercial.ventas.show', $venta)
+                ->withErrors(['venta' => 'Esta venta ya tiene cobros registrados: no se puede eliminar, solo cancelar.']);
+        }
+
         $folio = $venta->folio;
         $cotizacionId = $venta->cotizacion_id;
 
@@ -236,6 +371,7 @@ class VentaController extends Controller
         // tiene sentido dejar la cotización suelta cuando su venta se cancela.
         DB::transaction(function () use ($venta, $cotizacionId) {
             $this->liberarSerialesDe($venta);
+            app(OrdenesDeSalida::class)->cancelarDe($venta);
             $venta->delete();
 
             if ($cotizacionId) {
@@ -245,6 +381,52 @@ class VentaController extends Controller
 
         return redirect()->route('commercial.ventas.index')
             ->with('status', "Venta {$folio} eliminada.");
+    }
+
+    /** Lo que se le cobrará al cliente con los datos nuevos, antes de guardar. */
+    private function exigibleDe(array $data): float
+    {
+        $items = array_map(fn ($i) => [
+            'precio_unitario' => (float) $i['precio_unitario'],
+            'sobreprecio' => (float) ($i['sobreprecio'] ?? 0),
+            'cantidad' => (int) $i['cantidad'],
+            'es_regalo' => (bool) ($i['es_regalo'] ?? false),
+        ], $data['items']);
+
+        $valorACuenta = (float) ($data['valor_a_cuenta'] ?? 0);
+
+        $d = $this->calc->desglose(
+            $items,
+            $data['descuento_tipo'] ?? null,
+            (float) ($data['descuento_valor'] ?? 0),
+            (float) ($data['envio'] ?? 0),
+            (bool) ($data['aplica_iva'] ?? false),
+            $valorACuenta
+        );
+
+        return (float) ($valorACuenta > 0 ? $d['contrato'] : $d['total']);
+    }
+
+    /** Una parcialidad extra, un mes después de la última, con lo que no cupo. */
+    private function agregarParcialidadDeAjuste(Venta $venta, float $monto): void
+    {
+        // pagos() ya ordena ascendente: se quita ese orden para tomar la última.
+        $ultima = $venta->pagos()->reorder('orden', 'desc')->orderByDesc('id')->first();
+
+        $venta->pagos()->create([
+            'nombre' => 'Ajuste por cambio en la venta',
+            'fecha' => $ultima?->fecha ? $ultima->fecha->copy()->addMonth() : now()->addMonth(),
+            'porcentaje' => 0,
+            'monto' => round($monto, 2),
+            'bloqueado' => true,
+            'orden' => ((int) $venta->pagos()->max('orden')) + 1,
+        ]);
+
+        VentaBitacora::registrar(
+            $venta,
+            'parcialidad_agregada',
+            'Se agregó una parcialidad de ajuste por $'.number_format($monto, 2).' porque todas las demás ya tenían cobros'
+        );
     }
 
     public function pdf(Venta $venta)
@@ -287,6 +469,11 @@ class VentaController extends Controller
     /** Carta garantía del equipo. Aplica a toda venta. */
     public function garantia(Venta $venta)
     {
+        if (! $venta->tieneGarantia()) {
+            return redirect()->route('commercial.ventas.show', $venta)
+                ->withErrors(['venta' => 'Esta venta se registró sin garantía: no hay carta garantía que generar.']);
+        }
+
         $venta->load(['customer', 'seller', 'items']);
 
         return $this->entregarPdf(

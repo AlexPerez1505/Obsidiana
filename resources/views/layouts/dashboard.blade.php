@@ -586,6 +586,13 @@
     $u = auth()->user();
     $initials = collect(explode(' ', trim($u->name)))->filter()->take(2)->map(fn($p) => mb_substr($p, 0, 1))->implode('');
     $primerNombre = collect(explode(' ', trim($u->name)))->filter()->first() ?: $u->name;
+
+    // Respaldo del programador de tareas: los recordatorios de seguimiento
+    // se disparan desde aquí como máximo una vez cada 10 minutos.
+    app(\App\Services\Seguimientos::class)->recordarSiToca();
+
+    $notifs = $u->unreadNotifications()->latest()->limit(8)->get();
+    $notifsTotal = $u->unreadNotifications()->count();
 @endphp
 <div class="app" id="app">
     <div class="overlay" id="overlay"></div>
@@ -651,6 +658,12 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cobranza</span>
                     </a>
+                    @can('comisiones.ver')
+                        <a class="nav-item nav-sub {{ request()->routeIs('commercial.comisiones.*') ? 'active' : '' }}" href="{{ route('commercial.comisiones.index') }}" data-tip="Comisiones">
+                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                            <span class="nav-label">Comisiones</span>
+                        </a>
+                    @endcan
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.facturas.*') ? 'active' : '' }}" href="{{ route('commercial.facturas.index') }}" data-tip="Facturación">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Facturación</span>
@@ -672,6 +685,12 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Entrada / Salida</span>
                     </a>
+                    @can('salidas.ver')
+                        <a class="nav-item nav-sub {{ request()->routeIs('inventory.salidas.*') ? 'active' : '' }}" href="{{ route('inventory.salidas.index') }}" data-tip="Órdenes de salida">
+                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                            <span class="nav-label">Órdenes de salida</span>
+                        </a>
+                    @endcan
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.procesos.*') ? 'active' : '' }}" href="{{ route('inventory.procesos.index') }}" data-tip="Procesos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Procesos</span>
@@ -759,6 +778,12 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Agenda</span>
                     </a>
+                    @can('actividad.ver')
+                        <a class="nav-item nav-sub {{ request()->routeIs('admin.actividad.*') ? 'active' : '' }}" href="{{ route('admin.actividad.index') }}" data-tip="Actividad">
+                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                            <span class="nav-label">Actividad</span>
+                        </a>
+                    @endcan
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}" data-tip="Usuarios">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Usuarios</span>
@@ -870,14 +895,50 @@
 
             {{-- Notificaciones --}}
             <div class="dd" id="dd-notif">
-                <button class="icon-btn" type="button" aria-label="Notificaciones" data-dd="dd-notif">
+                <button class="icon-btn" type="button" aria-label="Notificaciones{{ $notifsTotal ? ' ('.$notifsTotal.' sin leer)' : '' }}" data-dd="dd-notif">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                    @if ($notifsTotal)
+                        <span class="notif-num">{{ $notifsTotal > 9 ? '9+' : $notifsTotal }}</span>
+                    @endif
                 </button>
                 <div class="dd-panel">
-                    <div class="dd-head"><b>Notificaciones</b></div>
-                    <div class="dd-empty">No tienes notificaciones nuevas.</div>
+                    <div class="dd-head" style="display:flex; align-items:center; gap:8px;">
+                        <b style="flex:1;">Notificaciones</b>
+                        @if ($notifsTotal)
+                            <form method="POST" action="{{ route('notificaciones.leerTodas') }}">
+                                @csrf
+                                <button type="submit" class="notif-todas">Marcar todas leídas</button>
+                            </form>
+                        @endif
+                    </div>
+                    @if ($notifs->isEmpty())
+                        <div class="dd-empty">No tienes notificaciones nuevas.</div>
+                    @else
+                        <div class="dd-notif">
+                            @foreach ($notifs as $n)
+                                <a class="dd-item" href="{{ route('notificaciones.abrir', $n->id) }}">
+                                    <span class="di-ico">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                                    </span>
+                                    <span style="min-width:0;">
+                                        <b style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $n->data['titulo'] ?? 'Notificación' }}</b>
+                                        <small style="display:block; color:var(--muted); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $n->data['texto'] ?? '' }}</small>
+                                        <small style="display:block; color:var(--muted); font-size:11px;">{{ $n->created_at?->diffForHumans() }}</small>
+                                    </span>
+                                </a>
+                            @endforeach
+                        </div>
+                        @if ($notifsTotal > $notifs->count())
+                            <div class="dd-empty">Y {{ $notifsTotal - $notifs->count() }} más sin leer.</div>
+                        @endif
+                    @endif
                 </div>
             </div>
+            <style>
+                .notif-num { position:absolute; top:6px; right:6px; min-width:17px; height:17px; padding:0 4px; border-radius:9px; background:var(--danger); color:#fff; font-size:10.5px; font-weight:800; display:flex; align-items:center; justify-content:center; line-height:1; }
+                .notif-todas { border:none; background:transparent; color:var(--primary); font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; padding:0; }
+                .notif-todas:hover { text-decoration:underline; }
+            </style>
 
             {{-- Usuario --}}
             <div class="dd" id="dd-user">

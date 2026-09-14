@@ -2,9 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Cotizacion;
 use App\Models\User;
+use App\Models\Venta;
 use App\Support\CatalogoPermisos;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,6 +23,29 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registrarPermisos();
+        $this->limitarDocumentosPorAsesor();
+    }
+
+    /**
+     * Una cotización o venta de otro asesor no se abre tecleando su id.
+     *
+     * Se resuelve aquí, en el binding de la ruta, para que aplique a todo
+     * lo que recibe {cotizacion} o {venta}: detalle, edición, PDF, contrato,
+     * cobranza... sin tener que repetir la revisión en cada método. Las
+     * consultas públicas (QR) usan {token}, así que no pasan por aquí.
+     */
+    private function limitarDocumentosPorAsesor(): void
+    {
+        foreach (['cotizacion' => Cotizacion::class, 'venta' => Venta::class] as $parametro => $modelo) {
+            Route::bind($parametro, function (string $valor) use ($modelo) {
+                $documento = $modelo::findOrFail($valor);
+                $usuario = auth()->user();
+
+                abort_if($usuario && ! $documento->visiblePara($usuario), 403, 'Este documento lo hizo otro asesor.');
+
+                return $documento;
+            });
+        }
     }
 
     /**

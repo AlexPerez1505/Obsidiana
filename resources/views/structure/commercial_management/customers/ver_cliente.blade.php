@@ -30,6 +30,9 @@
                     {{ $customer->asesor?->name ?? 'Sin asesor' }}
                 </p>
                 <div class="vc-badges">
+                    @if ($customer->esProspecto())
+                        <span class="badge badge--info">Prospecto</span>
+                    @endif
                     <span class="badge {{ $customer->activo ? 'badge--ok' : '' }}">
                         {{ $customer->activo ? 'Activo' : 'Inactivo' }}
                     </span>
@@ -41,6 +44,12 @@
 
             <div class="vc-actions">
                 <a href="{{ route('commercial.clientes.index') }}" class="btn btn--ghost">Regresar</a>
+                @if ($customer->esProspecto())
+                    <form method="POST" action="{{ route('commercial.clientes.convertir', $customer) }}" onsubmit="return confirm('¿Convertir a {{ $nombreCompleto }} en cliente?');">
+                        @csrf
+                        <button type="submit" class="btn btn--ghost" title="Ya compró o ya se decidió: pasa a cliente">Convertir en cliente</button>
+                    </form>
+                @endif
                 <a href="{{ route('commercial.clientes.edit', $customer) }}" class="btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                     Editar
@@ -151,6 +160,97 @@
         </div>
 
         <div class="vc-col">
+            {{-- ===================== Seguimientos ===================== --}}
+            @php
+                $pendientes = $customer->seguimientos->filter(fn ($s) => ! $s->hecho());
+                $hechos = $customer->seguimientos->filter(fn ($s) => $s->hecho())->sortByDesc('hecho_en');
+            @endphp
+            <x-ui.card id="seguimientos">
+                <div class="vc-head">
+                    <x-ui.section-title style="margin:0;">Seguimientos</x-ui.section-title>
+                    @if ($pendientes->isNotEmpty())
+                        <span class="vc-count">{{ $pendientes->count() }} pendiente(s)</span>
+                    @endif
+                </div>
+
+                @if (session('status'))
+                    <x-ui.alert type="success" style="margin:12px 0 0;">{{ session('status') }}</x-ui.alert>
+                @endif
+                @if ($errors->any())
+                    <x-ui.alert type="danger" style="margin:12px 0 0;">
+                        <ul style="margin:0; padding-left:18px;">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
+                    </x-ui.alert>
+                @endif
+
+                @forelse ($pendientes as $s)
+                    <div class="sg-item {{ $s->vencido() ? 'is-vencido' : ($s->esHoy() ? 'is-hoy' : '') }}">
+                        <div class="sg-txt">
+                            <div class="sg-t">{{ $s->tipoLabel() }} <span class="sg-cuando">{{ $s->cuando() }} · {{ $s->fecha?->format('d/m/Y') }}</span></div>
+                            @if ($s->nota)<div class="sg-s">{{ $s->nota }}</div>@endif
+                            <div class="sg-s">Responsable: {{ $s->responsable?->name ?? '—' }}{{ $s->notificado_en ? ' · avisado el '.$s->notificado_en->format('d/m H:i') : '' }}</div>
+                        </div>
+                        <div class="sg-acc">
+                            <form method="POST" action="{{ route('commercial.clientes.seguimientos.hecho', [$customer, $s]) }}" class="sg-hecho">
+                                @csrf
+                                <input type="text" name="resultado" maxlength="500" placeholder="¿Cómo salió? (opcional)" aria-label="Resultado">
+                                <button type="submit" class="btn" style="padding:6px 12px;">Hecho</button>
+                            </form>
+                            <form method="POST" action="{{ route('commercial.clientes.seguimientos.reprogramar', [$customer, $s]) }}" class="sg-mover">
+                                @csrf
+                                <input type="date" name="fecha" required min="{{ now()->toDateString() }}" value="{{ $s->fecha?->toDateString() }}" aria-label="Nueva fecha">
+                                <button type="submit" class="btn btn--ghost" style="padding:6px 10px;">Mover</button>
+                            </form>
+                            <form method="POST" action="{{ route('commercial.clientes.seguimientos.destroy', [$customer, $s]) }}" onsubmit="return confirm('¿Eliminar este seguimiento?');">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="sg-x" title="Eliminar">×</button>
+                            </form>
+                        </div>
+                    </div>
+                @empty
+                    <p class="vc-text vc-empty" style="margin:12px 0 0;">Sin seguimientos pendientes.</p>
+                @endforelse
+
+                {{-- Programar uno nuevo --}}
+                <form method="POST" action="{{ route('commercial.clientes.seguimientos.store', $customer) }}" class="sg-nuevo">
+                    @csrf
+                    <div class="sg-nuevo-grid">
+                        <select name="tipo" required aria-label="Qué hacer">
+                            @foreach ($tiposSeguimiento as $valor => $texto)
+                                <option value="{{ $valor }}" @selected(old('tipo', 'llamada') === $valor)>{{ $texto }}</option>
+                            @endforeach
+                        </select>
+                        <input type="date" name="fecha" required min="{{ now()->toDateString() }}" value="{{ old('fecha') }}" aria-label="Cuándo">
+                        @if ($usuarios->isNotEmpty())
+                            <select name="user_id" aria-label="Responsable">
+                                @foreach ($usuarios as $usr)
+                                    <option value="{{ $usr->id }}" @selected((int) old('user_id', auth()->id()) === $usr->id)>{{ $usr->name }}</option>
+                                @endforeach
+                            </select>
+                        @endif
+                        <input type="text" name="nota" maxlength="500" value="{{ old('nota') }}" placeholder="Nota (ej. quiere cotización en un mes)" aria-label="Nota" style="grid-column:1 / -1;">
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap;">
+                        <small style="color:var(--muted);">Ese día llega el aviso en la campana y por correo al responsable.</small>
+                        <button type="submit" class="btn btn--ghost">Programar seguimiento</button>
+                    </div>
+                </form>
+
+                @if ($hechos->isNotEmpty())
+                    <details class="sg-hist">
+                        <summary>Historial ({{ $hechos->count() }})</summary>
+                        @foreach ($hechos as $s)
+                            <div class="sg-item is-hecho">
+                                <div class="sg-txt">
+                                    <div class="sg-t">{{ $s->tipoLabel() }} <span class="sg-cuando">{{ $s->fecha?->format('d/m/Y') }} · hecho el {{ $s->hecho_en->format('d/m/Y') }} por {{ $s->hechoPor?->name ?? '—' }}</span></div>
+                                    @if ($s->nota)<div class="sg-s">{{ $s->nota }}</div>@endif
+                                    @if ($s->resultado)<div class="sg-s"><b>Resultado:</b> {{ $s->resultado }}</div>@endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </details>
+                @endif
+            </x-ui.card>
+
             <x-ui.card>
                 <div class="vc-head">
                     <x-ui.section-title style="margin:0;">Cotizaciones</x-ui.section-title>
@@ -262,6 +362,26 @@
         .vc-total { display:flex; align-items:baseline; justify-content:space-between; gap:14px;
                     margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
         .vc-total-v { font-size:17px; font-weight:700; letter-spacing:-.01em; }
+
+        /* ===== Seguimientos ===== */
+        .sg-item { padding:12px 0; border-bottom:1px solid var(--border); }
+        .sg-item.is-hoy .sg-cuando { color:var(--accent); font-weight:700; }
+        .sg-item.is-vencido .sg-cuando { color:var(--danger); font-weight:700; }
+        .sg-item.is-hecho { opacity:.75; }
+        .sg-t { font-size:14.5px; font-weight:600; }
+        .sg-cuando { font-weight:500; color:var(--muted); font-size:12.5px; margin-left:6px; }
+        .sg-s { color:var(--muted); font-size:12.5px; margin-top:2px; overflow-wrap:anywhere; }
+        .sg-acc { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+        .sg-hecho, .sg-mover { display:flex; gap:6px; align-items:center; }
+        .sg-hecho input { width:180px; padding:6px 9px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:var(--surface); color:var(--text); }
+        .sg-mover input { padding:6px 9px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:var(--surface); color:var(--text); }
+        .sg-x { width:28px; height:28px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--muted); cursor:pointer; font-size:16px; line-height:1; }
+        .sg-x:hover { color:var(--danger); border-color:var(--danger); }
+        .sg-nuevo { margin-top:14px; padding-top:14px; border-top:1px dashed var(--border); }
+        .sg-nuevo-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; }
+        .sg-nuevo-grid select, .sg-nuevo-grid input { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:13.5px; background:var(--surface); color:var(--text); font-family:inherit; }
+        .sg-hist { margin-top:12px; }
+        .sg-hist summary { cursor:pointer; color:var(--muted); font-size:13px; }
 
         /* ===== Adaptable ===== */
         @media (max-width:1000px) {

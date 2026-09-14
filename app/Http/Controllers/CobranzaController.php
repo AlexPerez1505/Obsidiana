@@ -30,7 +30,9 @@ class CobranzaController extends Controller
         $asesorId = $request->integer('asesor') ?: null;
         $buscar = trim((string) $request->get('buscar', ''));
 
-        $ventas = Venta::with(['customer', 'seller', 'pagos.cobros', 'cobros'])
+        // La cobranza sigue a las ventas: quien solo ve las suyas, solo cobra las suyas.
+        $ventas = Venta::activas()->visiblesPara($request->user())
+            ->with(['customer', 'seller', 'items', 'pagos.cobros', 'cobros'])
             ->when($asesorId, fn ($q) => $q->where('seller_id', $asesorId))
             ->latest()
             ->get();
@@ -40,10 +42,13 @@ class CobranzaController extends Controller
 
         return view('structure.commercial_management.cobranza.index', [
             'filas' => $this->filtrar($filas, $estado, $buscar),
-            'resumen' => $this->resumen($filas),
-            'porMes' => $this->porMes(),
-            'asesores' => $this->rankingAsesores(),
-            'listaAsesores' => User::orderBy('name')->get(['id', 'name']),
+            'resumen' => $this->resumen($filas, $request->user()),
+            'porMes' => $this->porMes($request->user()),
+            'asesores' => $this->rankingAsesores($request->user()),
+            // Quien solo ve sus ventas no tiene a quién más filtrar.
+            'listaAsesores' => $request->user()->can(Venta::PERMISO_VER_TODAS)
+                ? User::orderBy('name')->get(['id', 'name'])
+                : User::whereKey($request->user()->id)->get(['id', 'name']),
             'estado' => $estado,
             'asesorId' => $asesorId,
             'buscar' => $buscar,
@@ -67,6 +72,7 @@ class CobranzaController extends Controller
         return [
             'venta' => $venta,
             'cliente' => trim(($venta->customer->nombre ?? '') . ' ' . ($venta->customer->apellido ?? '')) ?: 'Sin cliente',
+            'productos' => $venta->resumenProductos(),
             'asesor' => $venta->seller?->name ?? 'Sin asesor',
             'total' => $venta->montoExigible(),
             'cobrado' => $venta->totalCobrado(),
@@ -94,7 +100,7 @@ class CobranzaController extends Controller
             $aguja = mb_strtolower($buscar);
 
             $filas = $filas->filter(fn ($f) => str_contains(mb_strtolower(
-                $f['venta']->folio . ' ' . $f['cliente'] . ' ' . $f['asesor']
+                $f['venta']->folio . ' ' . $f['cliente'] . ' ' . $f['asesor'] . ' ' . ($f['productos'] ?? '')
             ), $aguja));
         }
 
@@ -102,7 +108,7 @@ class CobranzaController extends Controller
         return $filas->sortByDesc(fn ($f) => [$f['dias_atraso'], $f['saldo']])->values();
     }
 
-    private function resumen($filas): array
+    private function resumen($filas, User $user): array
     {
         $inicioMes = now()->startOfMonth();
 
@@ -114,10 +120,19 @@ class CobranzaController extends Controller
             'clientes_deben' => $filas->where('saldo', '>', 0.009)->count(),
             'clientes_atrasados' => $filas->where('atrasada', true)->count(),
 
-            'ventas_mes' => (float) Venta::where('created_at', '>=', $inicioMes)->sum('total'),
-            'ventas_mes_cantidad' => Venta::where('created_at', '>=', $inicioMes)->count(),
-            'cobrado_mes' => (float) Cobro::where('fecha', '>=', $inicioMes)->sum('monto'),
+            'ventas_mes' => (float) Venta::activas()->visiblesPara($user)->where('created_at', '>=', $inicioMes)->sum('total'),
+            'ventas_mes_cantidad' => Venta::activas()->visiblesPara($user)->where('created_at', '>=', $inicioMes)->count(),
+            'cobrado_mes' => (float) $this->cobrosDe($user)->where('fecha', '>=', $inicioMes)->sum('monto'),
         ];
+    }
+
+    /**
+     * Los cobros que el usuario puede ver: los de las ventas que le
+     * corresponden. Mismo criterio que el listado.
+     */
+    private function cobrosDe(User $user)
+    {
+        return Cobro::query()->whereHas('venta', fn ($q) => $q->activas()->visiblesPara($user));
     }
 
     /**
@@ -126,16 +141,16 @@ class CobranzaController extends Controller
      * Son dos cosas distintas y conviene verlas juntas: se puede vender
      * mucho un mes y cobrarlo tres meses después.
      */
-    private function porMes(): array
+    private function porMes(User $user): array
     {
         $desde = now()->startOfMonth()->subMonths(self::MESES_GRAFICA - 1);
 
-        $ventas = Venta::where('created_at', '>=', $desde)
+        $ventas = Venta::activas()->visiblesPara($user)->where('created_at', '>=', $desde)
             ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as mes, SUM(total) as monto")
             ->groupBy('mes')
             ->pluck('monto', 'mes');
 
-        $cobros = Cobro::where('fecha', '>=', $desde)
+        $cobros = $this->cobrosDe($user)->where('fecha', '>=', $desde)
             ->selectRaw("DATE_FORMAT(fecha, '%Y-%m') as mes, SUM(monto) as monto")
             ->groupBy('mes')
             ->pluck('monto', 'mes');
@@ -160,14 +175,17 @@ class CobranzaController extends Controller
     }
 
     /** Quién vende más, y cuánto de eso ya se cobró. */
-    private function rankingAsesores(): array
+    private function rankingAsesores(User $user): array
     {
-        $vendido = Venta::selectRaw('seller_id, COUNT(*) as ventas, SUM(total) as monto')
+        // Quien solo ve sus ventas se ve solo a sí mismo en el ranking.
+        $vendido = Venta::activas()->visiblesPara($user)->selectRaw('seller_id, COUNT(*) as ventas, SUM(total) as monto')
             ->groupBy('seller_id')
             ->get()
             ->keyBy('seller_id');
 
         $cobrado = Cobro::join('ventas', 'cobros.venta_id', '=', 'ventas.id')
+            ->where('ventas.estado', '!=', 'cancelada')
+            ->when(! $user->can(Venta::PERMISO_VER_TODAS), fn ($q) => $q->where('ventas.seller_id', $user->id))
             ->selectRaw('ventas.seller_id, SUM(cobros.monto) as monto')
             ->groupBy('ventas.seller_id')
             ->pluck('monto', 'seller_id');

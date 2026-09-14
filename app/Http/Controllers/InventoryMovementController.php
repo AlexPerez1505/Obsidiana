@@ -564,7 +564,9 @@ class InventoryMovementController extends Controller
         $disco ??= config('filesystems.fotos_disk', 'public');
 
         foreach ($paths as $path) {
-            Storage::disk($disco)->delete($path);
+            if ($path) {
+                Storage::disk($disco)->delete($path);
+            }
         }
     }
 
@@ -624,9 +626,11 @@ class InventoryMovementController extends Controller
             $unidades = $movimiento->seriales()->get();
             $productoIds = $unidades->pluck('producto_id')->unique();
 
-            // Las fotos individuales de cada unidad también son evidencia
-            // de esta entrada: se borran junto con las del lote.
-            $this->borrarEvidencias($unidades->pluck('foto_path')->filter()->all());
+            // La evidencia de cada unidad (foto individual, o hasta 3 fotos
+            // + video en registros con evidencia por unidad) también es
+            // evidencia de esta entrada: se borra junto con la del lote.
+            $this->borrarEvidencias($unidades->flatMap(fn ($u) => $u->evidence_paths ?: array_filter([$u->foto_path]))->filter()->all());
+            $this->borrarEvidencias($unidades->pluck('video_path')->filter()->all());
 
             $movimiento->seriales()->delete();
 

@@ -27,7 +27,10 @@ class CatalogoEquipoController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('equipment_types', 'name')],
+            'requiere_emplayado' => ['nullable', 'boolean'],
         ], ['name.unique' => 'Ya existe un tipo de equipo con ese nombre.']);
+
+        $data['requiere_emplayado'] = $request->boolean('requiere_emplayado');
 
         EquipmentType::create($data);
 
@@ -38,7 +41,10 @@ class CatalogoEquipoController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('equipment_types', 'name')->ignore($type->id)],
+            'requiere_emplayado' => ['nullable', 'boolean'],
         ], ['name.unique' => 'Ya existe un tipo de equipo con ese nombre.']);
+
+        $data['requiere_emplayado'] = $request->boolean('requiere_emplayado');
 
         $type->update($data);
 

@@ -11,7 +11,14 @@ use Illuminate\Support\Str;
 class Venta extends Model
 {
     /** Plazos de garantía que se pueden ofrecer, en meses. */
-    public const GARANTIAS = [6, 9, 12, 18, 36];
+    /** Meses de garantía que se pueden elegir; 0 = el equipo se vende sin garantía. */
+    public const GARANTIAS = [0, 6, 9, 12, 18, 36];
+
+    use \App\Models\Concerns\ResumeProductos;
+    use \App\Models\Concerns\VisiblePorAsesor;
+
+    /** Quien no lo tiene, solo ve sus propias ventas (y su cobranza). */
+    public const PERMISO_VER_TODAS = 'ventas.ver_todas';
 
     protected $table = 'ventas';
 
@@ -47,9 +54,25 @@ class Venta extends Model
     }
 
     /** Hasta cuándo cubre la garantía, contada desde la venta. */
+    /** No todo el equipo lleva garantía (usado, refacciones, consumibles). */
+    public function tieneGarantia(): bool
+    {
+        return (int) $this->garantia_meses > 0;
+    }
+
+    /** "12 meses" o "Sin garantía", para pantallas y documentos. */
+    public function garantiaLabel(): string
+    {
+        return $this->tieneGarantia() ? $this->garantia_meses.' meses' : 'Sin garantía';
+    }
+
     public function garantiaHasta(): ?\Illuminate\Support\Carbon
     {
-        return $this->created_at?->copy()->addMonths($this->garantia_meses ?: 6);
+        if (! $this->tieneGarantia()) {
+            return null;
+        }
+
+        return $this->created_at?->copy()->addMonths((int) $this->garantia_meses);
     }
 
     public function garantiaVigente(): bool
@@ -91,6 +114,34 @@ class Venta extends Model
     public function cobros(): HasMany
     {
         return $this->hasMany(Cobro::class)->orderBy('fecha')->orderBy('id');
+    }
+
+    /** Lo que almacén tiene que preparar y firmar para que salga esta venta. */
+    public function ordenSalida(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(OrdenSalida::class);
+    }
+
+    /** Las que cuentan: todo menos las canceladas. */
+    public function scopeActivas($query)
+    {
+        return $query->where('estado', '!=', 'cancelada');
+    }
+
+    public function cancelada(): bool
+    {
+        return $this->estado === 'cancelada';
+    }
+
+    /**
+     * ¿Alguna parcialidad ya tiene dinero encima? Entonces el plan de pagos
+     * no se rehace al editar: se conserva y solo se ajustan las que siguen
+     * sin cobrar. Un abono suelto (sin parcialidad) no bloquea: se reparte
+     * después sobre el plan nuevo.
+     */
+    public function planBloqueado(): bool
+    {
+        return $this->pagos()->whereHas('cobros')->exists();
     }
 
     public function bitacora(): HasMany

@@ -33,6 +33,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'position',
         'cargo',
         'payroll_number',
+        'porcentaje_comision',
         'checador_id',
         'avatar',
 

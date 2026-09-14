@@ -17,6 +17,9 @@
       data-fecha    Y-m-d, para el rango
       data-<campo>  cualquier campo declarado en un checkbox data-f="<campo>"
       data-<pref>   "1" o "0", para los checkbox de data-f="pref"
+      data-<campo>  texto en minúsculas, para una caja data-f-texto="<campo>"
+                    (filtra por "contiene": sirve para campos libres como
+                    la dirección, donde no hay lista de valores que ofrecer)
 
     Parámetros del include:
       $singular, $plural   para el texto del conteo
@@ -59,6 +62,7 @@
     var desde = document.querySelector('[data-f="desde"]');
     var hasta = document.querySelector('[data-f="hasta"]');
     var toggles = Array.prototype.slice.call(document.querySelectorAll('.flt-tgl'));
+    var textos = Array.prototype.slice.call(document.querySelectorAll('.flt-panel [data-f-texto]'));
 
     function etiqueta(valor) {
         return CFG.etiquetas[valor] || valor;
@@ -86,12 +90,23 @@
         return on.length === 1 ? on : [];
     }
 
+    /** Cajas de texto por campo con algo escrito: { campo: "texto" }. */
+    function textosEscritos() {
+        var escritos = {};
+        textos.forEach(function (t) {
+            var v = (t.value || '').toLowerCase().trim();
+            if (v) escritos[t.dataset.fTexto] = v;
+        });
+        return escritos;
+    }
+
     function filtrar() {
         var texto = buscar ? (buscar.value || '').toLowerCase().trim() : '';
         var prefs = marcados('pref');
         var estados = estadosActivos();
         var fDesde = desde ? desde.value : '';
         var fHasta = hasta ? hasta.value : '';
+        var porTexto = textosEscritos();
 
         var seleccion = {};
         grupos().forEach(function (g) { seleccion[g] = marcados(g); });
@@ -107,6 +122,13 @@
             if (ok) {
                 for (var g in seleccion) {
                     if (seleccion[g].length && seleccion[g].indexOf(d[g]) === -1) { ok = false; break; }
+                }
+            }
+
+            // Un campo de texto exige que la fila lo contenga.
+            if (ok) {
+                for (var campo in porTexto) {
+                    if ((d[campo] || '').indexOf(porTexto[campo]) === -1) { ok = false; break; }
                 }
             }
 
@@ -140,7 +162,7 @@
         if (tarjetas) tarjetas.classList.toggle('f-oculto', sinResultados);
 
         pintarContadores(fDesde, fHasta);
-        pintarChips(seleccion, prefs, estados, fDesde, fHasta, texto);
+        pintarChips(seleccion, prefs, estados, fDesde, fHasta, texto, porTexto);
     }
 
     function pintarContadores(fDesde, fHasta) {
@@ -154,6 +176,10 @@
                 if (fDesde) n++;
                 if (fHasta) n++;
             }
+
+            bloque.querySelectorAll('[data-f-texto]').forEach(function (t) {
+                if ((t.value || '').trim()) n++;
+            });
 
             badge.textContent = n;
             badge.hidden = n === 0;
@@ -185,7 +211,15 @@
         };
     }
 
-    function pintarChips(seleccion, prefs, estados, fDesde, fHasta, texto) {
+    function quitarTexto(campo) {
+        return function () {
+            textos.forEach(function (t) {
+                if (t.dataset.fTexto === campo) t.value = '';
+            });
+        };
+    }
+
+    function pintarChips(seleccion, prefs, estados, fDesde, fHasta, texto, porTexto) {
         if (!chips) return;
 
         chips.textContent = '';
@@ -194,8 +228,14 @@
 
         for (var g in seleccion) {
             seleccion[g].forEach(function (v) {
-                chip(etiqueta(g) + ': ' + v, quitarCheck(g, v));
+                // Un valor vacío es la opción "sin …": su texto viene de las
+                // etiquetas con la llave "<campo>:" (ej. "congreso:").
+                chip(v === '' ? etiqueta(g + ':') : etiqueta(g) + ': ' + v, quitarCheck(g, v));
             });
+        }
+
+        for (var campo in porTexto) {
+            chip(etiqueta(campo) + ': ' + porTexto[campo], quitarTexto(campo));
         }
 
         prefs.forEach(function (v) { chip(etiqueta(v), quitarCheck('pref', v)); });
@@ -245,6 +285,7 @@
     if (buscar) buscar.addEventListener('input', filtrar);
     checks.forEach(function (c) { c.addEventListener('change', filtrar); });
     [desde, hasta].forEach(function (c) { if (c) c.addEventListener('change', filtrar); });
+    textos.forEach(function (t) { t.addEventListener('input', filtrar); });
 
     toggles.forEach(function (t) {
         t.addEventListener('click', function () {
@@ -260,6 +301,7 @@
         checks.forEach(function (c) { c.checked = false; });
         if (desde) desde.value = '';
         if (hasta) hasta.value = '';
+        textos.forEach(function (t) { t.value = ''; });
         toggles.forEach(function (t, i) {
             // Cuál queda encendido lo decide cada pantalla; con null, ninguno.
             var on = CFG.toggleInicial !== null && i === CFG.toggleInicial;

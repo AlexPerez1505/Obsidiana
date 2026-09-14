@@ -68,7 +68,7 @@
                     @endforeach
                 </div>
             @else
-                <p class="muted">Este movimiento no tiene evidencia fotográfica.</p>
+                <p class="muted">Este movimiento no tiene evidencia fotográfica del lote.</p>
             @endif
 
             @if ($movimiento->videoUrl())
@@ -77,9 +77,47 @@
                     <video src="{{ $movimiento->videoUrl() }}" controls style="max-width:320px; border-radius:10px; border:1px solid var(--border);"></video>
                 </div>
             @endif
+        </x-ui.card>
+
+        <x-ui.card style="margin-bottom:18px;">
+            <x-ui.section-title style="margin:0 0 6px;">Evidencia por unidad</x-ui.section-title>
+            <p class="muted" style="margin:0 0 16px; font-size:13.5px;">
+                Cada unidad que llegó tiene su propia evidencia, para revisar cómo llegó cada una por separado.
+            </p>
+
+            @forelse ($movimiento->unidadesRelacionadas() as $serial)
+                <div style="border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px;">
+                    <div style="display:flex; align-items:center; justify-content:between; gap:10px; margin-bottom:10px;">
+                        <strong>{{ $serial->no_serie ?: 'Unidad sin serial capturado' }}</strong>
+                        <span class="badge {{ $serial->vendido ? 'badge--danger' : 'badge--ok' }}" style="margin-left:8px;">
+                            {{ $serial->vendido ? 'Vendida' : 'Disponible' }}
+                        </span>
+                    </div>
+
+                    @if (count($serial->evidenceUrls()))
+                        <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                            @foreach ($serial->evidenceUrls() as $url)
+                                <a href="{{ $url }}" target="_blank">
+                                    <img src="{{ $url }}" alt="Evidencia de la unidad" style="width:110px; height:110px; object-fit:cover; border-radius:9px; border:1px solid var(--border);">
+                                </a>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="muted" style="font-size:13px; margin:0;">Esta unidad no tiene fotos de evidencia.</p>
+                    @endif
+
+                    @if ($serial->videoUrl())
+                        <div style="margin-top:10px;">
+                            <video src="{{ $serial->videoUrl() }}" controls style="max-width:220px; border-radius:9px; border:1px solid var(--border);"></video>
+                        </div>
+                    @endif
+                </div>
+            @empty
+                <p class="muted">Este movimiento no tiene unidades registradas.</p>
+            @endforelse
 
             @if ($movimiento->signatureUrl())
-                <div style="margin-top:16px;">
+                <div style="margin-top:6px;">
                     <div class="muted" style="font-size:12.5px; margin-bottom:6px;">Firma de {{ $movimiento->creator?->name ?: 'quien registró' }}</div>
                     <img src="{{ $movimiento->signatureUrl() }}" alt="Firma digital" style="max-width:260px; border-radius:10px; border:1px solid var(--border); background:#fff;">
                 </div>
