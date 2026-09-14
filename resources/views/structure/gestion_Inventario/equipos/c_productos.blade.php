@@ -1,7 +1,15 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Nuevo Equipo')
+@section('title', 'Nuevo equipo')
 @section('page-title', 'Nuevo equipo')
+@section('page-sub', 'El equipo que se puede cotizar y vender')
+
+@push('head')
+    <style>
+        .eq-campos { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:0 16px; }
+        @media (max-width:560px) { .eq-campos { grid-template-columns:1fr; } }
+    </style>
+@endpush
 
 @push('head')
 <style>
@@ -42,56 +50,51 @@
         </h3>
         <p class="muted" style="margin:0 0 18px; font-size:13px;">Ingresa la información del equipo para registrarlo en inventario</p>
 
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="tipo_equipo">Tipo de equipo</label>
-                <input type="text" name="tipo_equipo" id="tipo_equipo" list="tipo_equipo_list" placeholder="Ej. Equipo médico" value="{{ old('tipo_equipo') }}" required>
-                <datalist id="tipo_equipo_list">
-                    @foreach ($equipmentTypes->unique('name')->sortBy('name')->values() as $type)
-                        <option value="{{ $type->name }}">
-                    @endforeach
-                </datalist>
-            </div>
-            <div class="form-group">
-                <label for="subtipo">Subtipo</label>
-                <input type="text" name="subtipo" id="subtipo" list="subtipo_list" placeholder="Ej. Monitor de signos vitales" value="{{ old('subtipo') }}" disabled>
-                <datalist id="subtipo_list"></datalist>
-            </div>
-            <div class="form-group">
-                <label for="marca">Marca</label>
-                <input type="text" name="marca" id="marca" list="marca_list" placeholder="Ej. Olympus" value="{{ old('marca') }}">
-                <datalist id="marca_list">
-                    @foreach ($brands->unique('name')->sortBy('name')->values() as $brand)
-                        <option value="{{ $brand->name }}">
-                    @endforeach
-                </datalist>
-            </div>
-            <div class="form-group">
-                <label for="modelo">Modelo</label>
-                <input type="text" name="modelo" id="modelo" list="modelo_list" placeholder="Ej. C-90" value="{{ old('modelo') }}" disabled>
-                <datalist id="modelo_list"></datalist>
-            </div>
+        <div class="eq-campos">
+            {{-- Tipo, subtipo, marca y modelo salen del catálogo, igual
+                 que en Productos: escribirlos a mano dejaba el mismo
+                 equipo con dos nombres distintos en cada módulo. --}}
+            @include('structure.gestion_Inventario.productos._selects_catalogo')
+
+            {{-- El campo solo se dibuja para quien tiene precios.editar. --}}
+            @if (\App\Support\PrecioVisible::editable())
+                <x-ui.form-group label="Precio de venta" name="precio" type="text" inputmode="decimal" placeholder="0.00" />
+            @endif
+
+            <x-ui.form-group label="SKU / Clave" name="sku" placeholder="Opcional" />
+
             <div class="form-group">
                 <label for="serie">Número de serie</label>
                 <input type="text" name="serie" id="serie" placeholder="Ej. SN-893-832" value="{{ old('serie') }}">
             </div>
             <div class="form-group">
                 <label for="externo_interno">Externo / Interno</label>
-                <select name="externo_interno" id="externo_interno" required>
+                <select name="externo_interno" id="externo_interno">
                     <option value="" disabled {{ old('externo_interno') ? '' : 'selected' }}>Seleccionar</option>
                     <option value="Externo" {{ old('externo_interno') === 'Externo' ? 'selected' : '' }}>Externo</option>
                     <option value="Interno" {{ old('externo_interno') === 'Interno' ? 'selected' : '' }}>Interno</option>
                 </select>
             </div>
-            <div class="form-group" style="grid-column:1/-1;">
-                <label for="descripcion_equipo">Descripción del equipo</label>
-                <textarea name="descripcion_equipo" id="descripcion_equipo" rows="3" placeholder="Describe el equipo y su función">{{ old('descripcion_equipo') }}</textarea>
-            </div>
-            <div class="form-group" style="grid-column:1/-1;">
-                <label for="observaciones">Observaciones</label>
-                <textarea name="observaciones" id="observaciones" rows="3" placeholder="Anotaciones sobre el estado del equipo">{{ old('observaciones') }}</textarea>
-            </div>
+            <x-ui.form-group for="imagen" label="Imagen">
+                <input id="imagen" type="file" name="imagen" accept="image/*">
+                <small class="campo-nota">JPG, PNG o GIF. Máximo 4 MB.</small>
+            </x-ui.form-group>
         </div>
+
+        <x-ui.form-group for="descripcion" label="Descripción">
+            <textarea id="descripcion" name="descripcion" rows="3" placeholder="Descripción del equipo">{{ old('descripcion') }}</textarea>
+        </x-ui.form-group>
+
+        <div class="form-group" style="margin-top:14px;">
+            <label for="observaciones">Observaciones</label>
+            <textarea name="observaciones" id="observaciones" rows="3" placeholder="Anotaciones sobre el estado del equipo">{{ old('observaciones') }}</textarea>
+        </div>
+
+        <label class="ui-check" style="margin-top:14px;">
+            <input type="hidden" name="activo" value="0">
+            <input type="checkbox" name="activo" value="1" checked>
+            <span>Activo (disponible para cotizar)</span>
+        </label>
 
         <div class="form-group" style="margin-top:18px;">
             <label>Evidencia del equipo</label>

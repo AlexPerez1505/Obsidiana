@@ -34,11 +34,15 @@ class InventoryMovement extends Model
         'stock_before',
         'stock_after',
         'reference',
-        'supplier',
         'movement_date',
         'notes',
+        'condicion',
+        'checklist_recepcion',
+        'estado_general',
         'metadata',
         'evidence_paths',
+        'signature_path',
+        'video_path',
         'created_by',
     ];
 
@@ -52,6 +56,7 @@ class InventoryMovement extends Model
             'movement_date' => 'date',
             'metadata' => 'array',
             'evidence_paths' => 'array',
+            'checklist_recepcion' => 'array',
         ];
     }
 
@@ -97,6 +102,18 @@ class InventoryMovement extends Model
         return collect($this->evidence_paths ?? [])
             ->map(fn ($path) => Storage::disk('public')->url($path))
             ->all();
+    }
+
+    /** URL pública de la firma digital de quien registró la entrada. */
+    public function signatureUrl(): ?string
+    {
+        return $this->signature_path ? Storage::disk('public')->url($this->signature_path) : null;
+    }
+
+    /** URL pública del video de verificación del producto. */
+    public function videoUrl(): ?string
+    {
+        return $this->video_path ? Storage::disk('public')->url($this->video_path) : null;
     }
 
     /** Siguiente folio de movimiento: ENT-2026-0001, SAL-2026-0001... */

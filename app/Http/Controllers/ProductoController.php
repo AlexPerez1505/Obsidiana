@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ConstruyeCatalogoEquipo;
 use App\Http\Controllers\Concerns\ManejaSeriesDeProducto;
+use App\Models\InventoryMovement;
 use App\Models\Producto;
 use App\Models\ProductoSerial;
+use App\Support\GeneradorDeSeries;
+use App\Support\PrecioVisible;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -23,7 +26,7 @@ class ProductoController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Producto::query()->latest();
+        $query = Producto::query()->with('serialesDisponibles')->latest();
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -139,12 +142,22 @@ class ProductoController extends Controller
             Storage::disk('public')->delete($existente->imagen_path);
         }
 
-        $existente->precio = $data['precio'];
+        // Sin precio nuevo se conserva el que ya tenía el modelo.
+        if (($data['precio'] ?? null) !== null) {
+            $existente->precio = $data['precio'];
+        }
+
         $existente->descripcion = $data['descripcion'] ?? $existente->descripcion;
-        $existente->proveedor = $data['proveedor'] ?? $existente->proveedor;
 
         if (! empty($data['imagen_path'])) {
             $existente->imagen_path = $data['imagen_path'];
+        }
+
+        // Una vez marcado como serializado, se queda así: no se le quita
+        // la marca solo porque una entrada posterior no trajo el checkbox
+        // marcado.
+        if (! empty($data['es_serializado'])) {
+            $existente->es_serializado = true;
         }
 
         $existente->save();
@@ -253,7 +266,7 @@ class ProductoController extends Controller
 
     /**
      * Si ese modelo ya está registrado, se manda lo que ya se sabe de él
-     * (precio, descripción, proveedor...) para autocompletar el alta. El
+     * (precio, descripción...) para autocompletar el alta. El
      * stock y el número de serie no se tocan: son propios de cada unidad.
      */
     public function buscarPorModelo(Request $request): JsonResponse
@@ -270,69 +283,180 @@ class ProductoController extends Controller
             return response()->json(['existe' => false]);
         }
 
+        /*
+        | El precio solo viaja si a quien pregunta le toca verlo. Esconder
+        | el campo en el formulario no bastaría: la respuesta de este
+        | endpoint se lee desde las herramientas del navegador.
+        */
+        $vePrecio = PrecioVisible::para($request->user());
+
         return response()->json([
             'existe' => true,
-            'precio' => (float) $producto->precio,
+            've_precio' => $vePrecio,
+            'tiene_precio' => $producto->precio !== null,
+            'precio' => $vePrecio && $producto->precio !== null ? (float) $producto->precio : null,
+            'precio_texto' => PrecioVisible::texto($producto, $request->user()),
             'descripcion' => $producto->descripcion,
-            'proveedor' => $producto->proveedor,
             'imagen' => $producto->imagen_path ? asset('storage/'.$producto->imagen_path) : null,
             'stock_actual' => (int) $producto->stock,
-            'no_serie_sugerido' => $this->siguienteNumeroSerie($producto->id),
+            'es_serializado' => (bool) $producto->es_serializado,
+            'no_serie_sugerido' => $this->sugerirSiguienteSerial($producto->id),
         ]);
     }
 
     /**
-     * El siguiente serial de un modelo es consecutivo al último que se
-     * registró: si la última pieza es 23A12345, la que sigue es 23A12346,
-     * luego 23A12347... Funciona con cualquier prefijo (letras, año,
-     * guiones) siempre que el serial termine en dígitos; si no, no se
-     * sugiere nada y se deja el campo en blanco para llenarlo a mano.
+     * Ficha del producto: el kardex.
+     *
+     * Responde de un vistazo las tres preguntas de almacén: qué entró,
+     * cuándo entró y cuánto hay hoy. El stock no se guarda como un número
+     * suelto, se cuenta a partir de las piezas, así que aquí se enseña de
+     * dónde sale.
      */
-    private function siguienteNumeroSerie(int $productoId): ?string
+    public function show(Producto $producto): View
     {
-        $ultimo = ProductoSerial::where('producto_id', $productoId)
-            ->whereNotNull('no_serie')
-            ->where('no_serie', '!=', '')
-            ->pluck('no_serie')
-            ->map(function ($serie) {
-                if (! preg_match('/^(.*?)(\d+)$/', $serie, $m)) {
-                    return null;
-                }
+        $producto->load(['seriales.entrada', 'seriales.procesos', 'seriales.ventaItem.venta']);
 
-                return ['prefijo' => $m[1], 'numero' => (int) $m[2], 'ancho' => strlen($m[2])];
-            })
-            ->filter()
-            ->sortByDesc(fn ($s) => $s['numero'])
-            ->first();
+        $piezas = $producto->seriales->sortByDesc('id')->values();
 
-        if ($ultimo === null) {
-            return null;
+        // La bitácora del producto: entradas y salidas, más reciente arriba.
+        $movimientos = InventoryMovement::where('item_type', InventoryMovement::ITEM_PRODUCT)
+            ->where('item_id', $producto->id)
+            ->with('creator')
+            ->orderByDesc('movement_date')
+            ->orderByDesc('id')
+            ->get();
+
+        return view('structure.gestion_Inventario.productos.show', [
+            'producto' => $producto,
+            'piezas' => $piezas,
+            'movimientos' => $movimientos,
+            'conteos' => [
+                'total' => $piezas->count(),
+                'disponibles' => $piezas->filter->vendible()->count(),
+                'en_proceso' => $piezas->where('vendido', false)
+                    ->filter(fn ($p) => in_array($p->estado, ProductoSerial::NO_VENDIBLES, true))
+                    ->count(),
+                'vendidas' => $piezas->where('vendido', true)->count(),
+            ],
+        ]);
+    }
+
+    /**
+     * Arma series propias para equipo que no trae serial de fábrica.
+     *
+     * La serie se construye con el catálogo elegido (tipo, subtipo, marca,
+     * modelo) más un consecutivo que no choque con las que ya existen.
+     */
+    public function generarSeries(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'equipment_type_id' => ['nullable', 'exists:equipment_types,id'],
+            'subtype_id' => ['nullable', 'exists:subtypes,id'],
+            'brand_id' => ['nullable', 'exists:brands,id'],
+            'equipment_model_id' => ['nullable', 'exists:equipment_models,id'],
+            'cantidad' => ['required', 'integer', 'min:1', 'max:5000'],
+        ]);
+
+        $prefijo = GeneradorDeSeries::prefijo(
+            $data['equipment_type_id'] ?? null,
+            $data['subtype_id'] ?? null,
+            $data['brand_id'] ?? null,
+            $data['equipment_model_id'] ?? null,
+        );
+
+        $series = GeneradorDeSeries::generar($prefijo, (int) $data['cantidad']);
+
+        return response()->json([
+            'prefijo' => $prefijo,
+            'series' => $series,
+        ]);
+    }
+
+    /**
+     * Corrige el número de serie y/o la foto de una unidad ya guardada.
+     * Pide PIN de aprobación (o contraseña, si el usuario no tiene PIN
+     * configurado), igual que las demás acciones destructivas/sensibles
+     * del sistema, porque altera un dato que ya quedó como evidencia.
+     */
+    public function actualizarSerial(Request $request, ProductoSerial $serial): RedirectResponse
+    {
+        $data = $request->validate([
+            'password' => ['required', 'string'],
+            'no_serie' => ['nullable', 'string', 'max:255'],
+            'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $user = auth()->user();
+
+        $valido = $user->approval_pin_hash
+            ? $user->checkApprovalPin($data['password'])
+            : \Illuminate\Support\Facades\Hash::check($data['password'], $user->password);
+
+        if (! $valido) {
+            return back()->withErrors(['password' => 'PIN o contraseña incorrecta.']);
         }
 
-        $siguiente = $ultimo['numero'] + 1;
+        $nuevaSerie = trim((string) ($data['no_serie'] ?? '')) ?: null;
+        $disco = config('filesystems.fotos_disk', 'public');
 
-        return $ultimo['prefijo'].str_pad((string) $siguiente, $ultimo['ancho'], '0', STR_PAD_LEFT);
+        try {
+            DB::transaction(function () use ($request, $serial, $nuevaSerie, $disco) {
+                $cambios = ['editado_por' => auth()->id()];
+
+                if ($nuevaSerie !== $serial->no_serie) {
+                    $cambios['no_serie'] = $nuevaSerie;
+                }
+
+                if ($request->hasFile('foto')) {
+                    $fotoAnterior = $serial->foto_path;
+                    $cambios['foto_path'] = $request->file('foto')->store('productos/seriales', $disco);
+
+                    if ($fotoAnterior) {
+                        Storage::disk($disco)->delete($fotoAnterior);
+                    }
+                }
+
+                $serial->update($cambios);
+                $serial->producto->recalcularStock();
+            });
+        } catch (QueryException $e) {
+            if (! $this->esErrorDeDuplicado($e)) {
+                throw $e;
+            }
+
+            return back()->withErrors(['no_serie' => 'Ese número de serie ya existe para este producto.']);
+        }
+
+        return back()->with('status', 'Unidad actualizada correctamente.');
     }
 
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'equipment_type_id' => ['required', 'exists:equipment_types,id'],
             'subtype_id' => ['nullable', 'exists:subtypes,id'],
             'brand_id' => ['nullable', 'exists:brands,id'],
             'equipment_model_id' => ['nullable', 'exists:equipment_models,id'],
-            'precio' => ['required', 'numeric', 'min:0'],
+            'precio' => ['nullable', 'numeric', 'min:0'],
             'stock' => ['required', 'integer', 'min:0'],
             'descripcion' => ['nullable', 'string', 'max:1000'],
-            'proveedor' => ['nullable', 'string', 'max:255'],
             'no_serie' => ['nullable', 'string', 'max:255'],
             'imagen' => ['nullable', 'image', 'max:5120'], // max 5MB
+            'es_serializado' => ['sometimes', 'boolean'],
         ]);
+
+        // El formulario no dibuja el campo para quien no puede definir precios;
+        // si aun así llegó uno, se descarta en vez de confiar en él.
+        if (! PrecioVisible::editable($request->user())) {
+            $data['precio'] = null;
+        }
+
+        return $data;
     }
 
     private function productoOptions(): array
     {
-        $options = collect(['tipo_equipo', 'subtipo', 'marca', 'modelo', 'proveedor'])
+        $options = collect(['tipo_equipo', 'subtipo', 'marca', 'modelo'])
             ->mapWithKeys(function (string $column): array {
                 return [
                     $column => Producto::query()

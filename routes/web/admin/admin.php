@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AgendaController;
 use App\Http\Controllers\Admin\AgendaEventController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\MaterialRequestController;
@@ -16,7 +17,12 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admin.')->group(function () {
-    Route::view('/agenda', 'admin.agenda.index')->name('agenda.index');
+    Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda.index');
+    Route::post('/agenda/eventos', [AgendaController::class, 'store'])->name('agenda.events.store');
+    Route::put('/agenda/eventos/{agendaEvent}', [AgendaController::class, 'update'])->name('agenda.events.update');
+    Route::delete('/agenda/eventos/{agendaEvent}', [AgendaController::class, 'destroy'])->name('agenda.events.destroy');
+
+    // Pantalla dedicada de captura; la lista principal es /agenda.
     Route::view('/agenda/crear', 'admin.agenda.create_date')->name('agenda.create');
     Route::post('/agenda', [AgendaEventController::class, 'store'])->name('agenda.store');
     Route::put('/agenda/{event}', [AgendaEventController::class, 'update'])->name('agenda.update');

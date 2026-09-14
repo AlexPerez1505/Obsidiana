@@ -1,498 +1,397 @@
 @extends('layouts.dashboard')
-@section('title', 'Control de Usuarios')
-@section('page-title', 'Control de Usuarios')
-@section('page-sub', 'Administra las cuentas del sistema')
 
-@php
-    $pending = $users->where('status', \App\Models\User::STATUS_PENDING);
-    $approved = $users->where('status', \App\Models\User::STATUS_APPROVED);
-    $banned = $users->where('status', \App\Models\User::STATUS_BANNED);
-
-    $avatarColors = [
-        'A' => ['#e6ffe6', '#15803d'],
-        'B' => ['#e6f0ff', '#007aff'],
-        'C' => ['#fff3e8', '#f97316'],
-        'D' => ['#f3e8ff', '#9333ea'],
-        'E' => ['#ffebeb', '#ff4a4a'],
-        'F' => ['#e6fff7', '#0d9488'],
-        'G' => ['#fff3e8', '#fb923c'],
-        'H' => ['#e6f0ff', '#4da3ff'],
-        'I' => ['#fef9c3', '#ca8a04'],
-        'J' => ['#e6ffe6', '#22c55e'],
-        'K' => ['#fce7f3', '#db2777'],
-        'L' => ['#e0f2fe', '#0284c7'],
-        'M' => ['#f5f3ff', '#7c3aed'],
-        'N' => ['#ecfdf5', '#059669'],
-        'O' => ['#fff7ed', '#ea580c'],
-        'P' => ['#eff6ff', '#2563eb'],
-        'Q' => ['#fdf4ff', '#c026d3'],
-        'R' => ['#f0fdf4', '#16a34a'],
-        'S' => ['#fefce8', '#a16207'],
-        'T' => ['#f0f9ff', '#0891b2'],
-        'U' => ['#fdf2f8', '#db2777'],
-        'V' => ['#f0fdfa', '#0d9488'],
-        'W' => ['#fefcfa', '#d946ef'],
-        'X' => ['#f8fafc', '#64748b'],
-        'Y' => ['#fffbeb', '#d97706'],
-        'Z' => ['#faf5ff', '#9333ea'],
-    ];
-
-    $initials = function ($name) {
-        $parts = explode(' ', trim($name));
-        $i = '';
-        foreach ($parts as $p) {
-            if ($p !== '') $i .= strtoupper($p[0]);
-            if (strlen($i) >= 2) break;
-        }
-        return $i ?: '?';
-    };
-
-    $statusInfo = function ($user) {
-        if ($user->isBanned()) return ['dot' => 'red', 'label' => 'Baneado'];
-        if ($user->isPending()) return ['dot' => 'yellow', 'label' => 'Pendiente'];
-        return ['dot' => 'green', 'label' => 'Activo'];
-    };
-@endphp
-
-@push('head')
-    @include('admin.users.partials._styles')
-@endpush
+@section('title', 'Usuarios')
+@section('page-title', 'Usuarios')
+@section('page-sub', 'Quién entra al sistema y con qué rol')
 
 @section('content')
-<div class="uc-wrap">
-    <div class="grid stat-row" style="margin-bottom:18px;">
-        <x-ui.stat-card
-            :value="$users->count()"
-            label="Usuarios registrados"
-            color="blue"
-        >
-            <x-slot:icon>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="26" height="26"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 5a3 3 0 0 1 0 6"/></svg>
-            </x-slot:icon>
-        </x-ui.stat-card>
+    @if (session('status'))
+        <x-ui.alert type="ok">{{ session('status') }}</x-ui.alert>
+    @endif
 
-        <x-ui.stat-card
-            :value="$pending->count()"
-            label="Pendientes de aprobar"
-            color="orange"
-        >
-            <x-slot:icon>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="26" height="26"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-            </x-slot:icon>
-        </x-ui.stat-card>
+    @php
+        $pendientes = $users->filter(fn ($u) => $u->isPending());
+        $activos = $users->filter(fn ($u) => ! $u->isPending() && ! $u->isBanned());
+        $conectados = $users->filter(fn ($u) => ($activeCounts[$u->id] ?? 0) > 0);
 
-        <x-ui.stat-card
-            :value="$approved->count()"
-            label="Usuarios activos"
-            color="green"
-        >
-            <x-slot:icon>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="26" height="26"><path d="M20 6L9 17l-5-5"/></svg>
-            </x-slot:icon>
-        </x-ui.stat-card>
+        /*
+        | Cada fila se arma una sola vez: los mismos datos alimentan la tabla,
+        | las tarjetas y los data-* que lee el filtro.
+        */
+        $filas = $users->map(function ($u) use ($activeCounts) {
+            $partes = array_values(array_filter(explode(' ', trim($u->name))));
+            $iniciales = count($partes) >= 2
+                ? mb_strtoupper(mb_substr($partes[0], 0, 1).mb_substr($partes[1], 0, 1))
+                : (count($partes) === 1 ? mb_strtoupper(mb_substr($partes[0], 0, 2)) : 'US');
+
+            $estado = $u->isBanned() ? 'banned' : ($u->isPending() ? 'pending' : 'approved');
+            $sesiones = $activeCounts[$u->id] ?? 0;
+
+            return [
+                'modelo' => $u,
+                'iniciales' => $iniciales,
+                'tinte' => 'a'.((crc32($iniciales) % 5) + 1),
+                'estado' => $estado,
+                'estadoTexto' => ['approved' => 'Activo', 'pending' => 'Pendiente', 'banned' => 'Baneado'][$estado],
+                'puesto' => $u->position ?: ($u->is_admin ? 'Administrador' : 'Sin puesto'),
+                'roles' => $u->roles->pluck('label'),
+                'sesiones' => $sesiones,
+                'contacto' => $u->phone ?: $u->email,
+            ];
+        });
+
+        // Solo se ofrece filtrar por lo que de verdad existe en los datos.
+        $puestos = $filas->pluck('puesto')->unique()->sort()->values();
+
+        $datos = function (array $fila) use ($roles) {
+            $attrs = [
+                'data-buscar' => mb_strtolower(implode(' ', array_filter([
+                    $fila['modelo']->name,
+                    $fila['modelo']->email,
+                    $fila['modelo']->payroll_number,
+                    $fila['modelo']->phone,
+                    $fila['puesto'],
+                    $fila['roles']->implode(' '),
+                ]))),
+                // El valor legible, no el slug: es lo que acaba en los chips.
+                'data-estado' => $fila['estadoTexto'],
+                'data-puesto' => $fila['puesto'],
+                'data-conectado' => $fila['sesiones'] > 0 ? '1' : '0',
+                'data-telefono' => $fila['modelo']->phone ? '1' : '0',
+                'data-nomina' => $fila['modelo']->payroll_number ? '1' : '0',
+                'data-sinrol' => $fila['modelo']->roles->isEmpty() ? '1' : '0',
+                'data-fecha' => $fila['modelo']->created_at?->format('Y-m-d') ?? '',
+            ];
+
+            /*
+            | Un usuario puede tener varios roles, así que el rol no cabe en un
+            | solo data-*: cada rol va como bandera propia y el filtro los
+            | trata como preferencias (se pueden exigir varias a la vez).
+            */
+            foreach ($roles as $rol) {
+                $attrs['data-rol'.$rol->id] = $fila['modelo']->roles->contains($rol->id) ? '1' : '0';
+            }
+
+            return $attrs;
+        };
+
+        // Acciones del menú de tres puntos, iguales en lista y en tarjetas.
+        $acciones = fn ($fila) => view('admin.users.partials.acciones', ['fila' => $fila]);
+    @endphp
+
+    <div class="content-actions">
+        <button type="button" class="btn" data-abrir-rh>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Completar datos
+        </button>
     </div>
 
-    {{-- Toolbar unificada: búsqueda, filtros, agregar y toggle de vista --}}
-    <form method="GET" action="{{ route('admin.users.index') }}" class="uc-toolbar">
-        <div class="uc-search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar usuario, nómina...">
-        </div>
-        <div class="uc-filter">
-            <select name="status">
-                <option value="">Estado: Todos</option>
-                <option value="approved" {{ ($filters['status'] ?? '') === 'approved' ? 'selected' : '' }}>Activos</option>
-                <option value="pending" {{ ($filters['status'] ?? '') === 'pending' ? 'selected' : '' }}>Pendientes</option>
-                <option value="banned" {{ ($filters['status'] ?? '') === 'banned' ? 'selected' : '' }}>Baneados</option>
-            </select>
-        </div>
-        @if($positions->isNotEmpty())
-        <div class="uc-filter">
-            <select name="position">
-                <option value="">Puesto: Todos</option>
-                @foreach($positions as $pos)
-                    <option value="{{ $pos }}" {{ ($filters['position'] ?? '') === $pos ? 'selected' : '' }}>{{ $pos }}</option>
-                @endforeach
-            </select>
-        </div>
-        @endif
-        <button type="submit" style="display:none;">Filtrar</button>
-
-        <div class="uc-spacer"></div>
-
-        <button type="button" class="uc-btn-add" onclick="document.getElementById('modal-hr-profile').style.display='flex'">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Agregar usuario
-        </button>
-        <div class="uc-view-toggle">
-            <button type="button" class="uc-view-btn active" data-view="grid" title="Vista de cuadrícula">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-            </button>
-            <button type="button" class="uc-view-btn" data-view="list" title="Vista de lista">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-            </button>
-        </div>
-    </form>
-
-    {{-- Modal: completar datos de RH de un usuario ya registrado --}}
-    <div id="modal-hr-profile" class="modal-overlay" style="display:none;">
-        <div class="hr-modal">
-            <div class="hr-modal-head">
-                <div>
-                    <h3>Agregar usuario a Recursos Humanos</h3>
-                    <p>Selecciona un usuario ya registrado y completa sus datos. No se crean cuentas nuevas.</p>
-                </div>
-                <button type="button" class="hr-modal-close" onclick="document.getElementById('modal-hr-profile').style.display='none'" aria-label="Cerrar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
+    {{-- ===================== Métricas ===================== --}}
+    <div class="us-stats">
+        <div class="card card--accent stat">
+            <span class="stat-ico blue">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            <div>
+                <div class="stat-num">{{ $users->count() }}</div>
+                <div class="stat-lbl">Usuarios registrados</div>
             </div>
+        </div>
 
-            <form method="POST" action="{{ route('admin.users.hrProfile.update') }}" enctype="multipart/form-data" class="hr-modal-body">
-                @csrf
+        <div class="card card--accent is-amber stat">
+            <span class="stat-ico orange">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            </span>
+            <div>
+                <div class="stat-num">{{ $pendientes->count() }}</div>
+                <div class="stat-lbl">Pendientes de aprobar</div>
+            </div>
+        </div>
 
-                <select id="hr_user_id" name="user_id" required onchange="rellenarDatosRhUsuario(this)" class="hr-select">
-                    <option value="">— Selecciona un usuario —</option>
-                    @foreach($users as $u)
-                        <option value="{{ $u->id }}"
-                            data-position="{{ $u->position }}"
-                            data-cargo="{{ $u->cargo }}"
-                            data-phone="{{ $u->phone }}"
-                            data-payroll="{{ $u->payroll_number }}"
-                            data-checador="{{ $u->checador_id }}"
-                            data-curp="{{ $u->curp }}"
-                            data-ine="{{ $u->ine }}"
-                            data-acta="{{ $u->acta_nacimiento }}"
-                            data-licencia="{{ $u->licencia }}"
-                            data-domicilio="{{ $u->domicilio }}"
-                            data-fecha-ingreso="{{ optional($u->fecha_ingreso)->format('Y-m-d') }}"
-                            data-vacaciones="{{ $u->vacaciones_disponibles }}"
-                            data-nce="{{ $u->nombre_contacto_emergencia }}"
-                            data-numce="{{ $u->numero_contacto_emergencia }}"
-                            data-domce="{{ $u->domicilio_contacto_emergencia }}"
-                            data-nces="{{ $u->nombre_contacto_emergencia_secundario }}"
-                            data-numces="{{ $u->numero_contacto_emergencia_secundario }}"
-                            data-domces="{{ $u->domicilio_contacto_emergencia_secundario }}"
-                            data-roles="{{ $u->roles->pluck('id')->implode(',') }}"
-                            data-docs='@json($u->employeeDocuments->pluck("file_path", "name")->map(fn ($p) => \Illuminate\Support\Facades\Storage::url($p)))'>
-                            {{ $u->name }} — {{ $u->email }}
-                        </option>
-                    @endforeach
-                </select>
+        <div class="card card--accent is-green stat">
+            <span class="stat-ico green">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6L9 17l-5-5"/></svg>
+            </span>
+            <div>
+                <div class="stat-num">{{ $activos->count() }}</div>
+                <div class="stat-lbl">Con acceso</div>
+            </div>
+        </div>
 
-                <div class="hr-section">
-                    <p class="hr-section-title">Datos laborales</p>
-                    <div class="hr-grid-2">
-                        <label class="hr-field"><span>Puesto</span><input type="text" name="position" placeholder="Ej. Ingeniero de sistemas"></label>
-                        <label class="hr-field"><span>Cargo</span><input type="text" name="cargo" placeholder="Ej. Ingeniero, Licenciado"></label>
-                        <label class="hr-field"><span>Teléfono</span><input type="text" name="phone"></label>
-                        <label class="hr-field"><span>Número de nómina</span><input type="text" name="payroll_number"></label>
-                        <label class="hr-field"><span>ID de checador</span><input type="text" name="checador_id"></label>
-                        <label class="hr-field"><span>Fecha de ingreso</span><input type="date" name="fecha_ingreso"></label>
-                        <label class="hr-field hr-field--full"><span>Vacaciones disponibles (días)</span><input type="number" name="vacaciones_disponibles" min="0"></label>
-                    </div>
+        <div class="card card--accent stat">
+            <span class="stat-ico blue">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </span>
+            <div>
+                <div class="stat-num">{{ $conectados->count() }}</div>
+                <div class="stat-lbl">Conectados ahora</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===================== Búsqueda y filtros ===================== --}}
+    <div class="f-toolbar">
+        <div class="f-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="fBuscar" placeholder="Buscar por nombre, correo, nómina, teléfono o rol" autocomplete="off">
+        </div>
+
+        <div class="flt" data-flt>
+            <button type="button" class="flt-btn" data-flt-toggle aria-expanded="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                Filtros
+                <span class="flt-count" data-flt-count hidden>0</span>
+            </button>
+
+            <div class="flt-panel" data-flt-panel hidden>
+                <div class="flt-group">
+                    <h4>Estado</h4>
+                    <label class="flt-opt">
+                        <span class="flt-dot c3"></span>
+                        <span class="flt-opt-txt">Activo</span>
+                        <input type="checkbox" data-f="estado" value="Activo">
+                    </label>
+                    <label class="flt-opt">
+                        <span class="flt-dot c2"></span>
+                        <span class="flt-opt-txt">Pendiente de aprobar</span>
+                        <input type="checkbox" data-f="estado" value="Pendiente">
+                    </label>
+                    <label class="flt-opt">
+                        <span class="flt-dot c1"></span>
+                        <span class="flt-opt-txt">Baneado</span>
+                        <input type="checkbox" data-f="estado" value="Baneado">
+                    </label>
                 </div>
 
-                <div class="hr-section">
-                    <p class="hr-section-title">Roles</p>
-                    <div class="hr-roles">
-                        @foreach($roles as $role)
-                            <label class="hr-chip">
-                                <input type="checkbox" name="roles[]" value="{{ $role->id }}">
-                                <span>{{ $role->label }}</span>
+                @if ($roles->isNotEmpty())
+                    <div class="flt-group">
+                        <h4>Rol</h4>
+                        @foreach ($roles as $rol)
+                            <label class="flt-opt">
+                                <span class="flt-opt-txt">{{ $rol->label }}</span>
+                                <input type="checkbox" data-f="pref" value="rol{{ $rol->id }}">
+                            </label>
+                        @endforeach
+                        <label class="flt-opt">
+                            <span class="flt-opt-txt">Sin rol asignado</span>
+                            <input type="checkbox" data-f="pref" value="sinrol">
+                        </label>
+                    </div>
+                @endif
+
+                @if ($puestos->isNotEmpty())
+                    <div class="flt-group">
+                        <h4>Puesto</h4>
+                        @foreach ($puestos as $puesto)
+                            <label class="flt-opt">
+                                <span class="flt-opt-txt">{{ $puesto }}</span>
+                                <input type="checkbox" data-f="puesto" value="{{ $puesto }}">
                             </label>
                         @endforeach
                     </div>
+                @endif
+
+                <div class="flt-group">
+                    <h4>Ficha</h4>
+                    <label class="flt-opt">
+                        <span class="flt-opt-txt">Con teléfono</span>
+                        <input type="checkbox" data-f="pref" value="telefono">
+                    </label>
+                    <label class="flt-opt">
+                        <span class="flt-opt-txt">Con número de nómina</span>
+                        <input type="checkbox" data-f="pref" value="nomina">
+                    </label>
                 </div>
 
-                <div class="hr-section">
-                    <p class="hr-section-title">Identificación</p>
-                    <p class="hr-hint">Captura el número/folio y, si quieres, sube el documento escaneado (PDF o imagen, máx. 5MB).</p>
-                    <div class="hr-grid-2">
-                        <div class="hr-doc">
-                            <label class="hr-field"><span>CURP</span><input type="text" name="curp" maxlength="18"></label>
-                            <x-ui.file-chip name="curp_file" doc="CURP" />
-                        </div>
-                        <div class="hr-doc">
-                            <label class="hr-field"><span>INE</span><input type="text" name="ine"></label>
-                            <x-ui.file-chip name="ine_file" doc="INE" />
-                        </div>
-                        <div class="hr-doc">
-                            <label class="hr-field"><span>Acta de nacimiento</span><input type="text" name="acta_nacimiento"></label>
-                            <x-ui.file-chip name="acta_nacimiento_file" doc="Acta de nacimiento" />
-                        </div>
-                        <div class="hr-doc">
-                            <label class="hr-field"><span>Licencia de manejo</span><input type="text" name="licencia"></label>
-                            <x-ui.file-chip name="licencia_file" doc="Licencia de manejo" />
-                        </div>
+                <div class="flt-group">
+                    <h4>Fecha de alta</h4>
+                    <div class="flt-fechas">
+                        <input type="date" data-f="desde" aria-label="Alta desde">
+                        <input type="date" data-f="hasta" aria-label="Alta hasta">
                     </div>
-                    <label class="hr-field"><span>Domicilio</span><input type="text" name="domicilio"></label>
                 </div>
+            </div>
+        </div>
 
-                <div class="hr-section">
-                    <p class="hr-section-title">Contacto de emergencia</p>
-                    <div class="hr-grid-2">
-                        <label class="hr-field"><span>Nombre</span><input type="text" name="nombre_contacto_emergencia"></label>
-                        <label class="hr-field"><span>Teléfono</span><input type="text" name="numero_contacto_emergencia"></label>
+        {{-- Accesos rápidos: quién está en el sistema en este momento. --}}
+        <div class="flt-toggles" role="group" aria-label="Sesión">
+            <button type="button" class="flt-tgl" data-f="conectado" data-valor="1" title="Solo conectados ahora" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </button>
+            <button type="button" class="flt-tgl" data-f="conectado" data-valor="0" title="Solo sin sesión" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h20v14H2z"/><line x1="3" y1="3" x2="21" y2="17"/><path d="M8 21h8"/></svg>
+            </button>
+        </div>
+
+        <button type="button" class="flt-btn flt-btn--icon" id="fLimpiar" title="Limpiar todos los filtros" aria-label="Limpiar filtros">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 3H2l8 9.46V19l4 2v-8.54"/><line x1="16" y1="5" x2="22" y2="11"/><line x1="22" y1="5" x2="16" y2="11"/></svg>
+        </button>
+
+        <x-ui.view-switch key="usuarios" />
+    </div>
+
+    <div class="flt-chips" id="fChips" hidden></div>
+
+    {{-- ===================== Vista lista ===================== --}}
+    <div class="card" data-view-list style="overflow-x:auto; padding:0;">
+        <table class="us-table">
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Puesto</th>
+                    <th>Rol</th>
+                    <th>Contacto</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($filas as $fila)
+                    <tr class="f-row" @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
+                        <td>
+                            <div class="cell-id">
+                                <span class="us-avatar">
+                                    @if ($fila['modelo']->avatar)
+                                        <img src="{{ $fila['modelo']->avatar }}" alt="">
+                                    @else
+                                        <span class="avatar {{ $fila['tinte'] }}">{{ $fila['iniciales'] }}</span>
+                                    @endif
+                                    @if ($fila['sesiones'] > 0)
+                                        <span class="us-online" title="Conectado ahora"></span>
+                                    @endif
+                                </span>
+                                <div style="min-width:0;">
+                                    <div class="t">{{ $fila['modelo']->name }}</div>
+                                    <div class="s">{{ $fila['modelo']->email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ $fila['puesto'] }}</td>
+                        <td>
+                            @forelse ($fila['roles'] as $etiqueta)
+                                <span class="badge">{{ $etiqueta }}</span>
+                            @empty
+                                <span class="s" style="color:var(--muted);">Sin rol</span>
+                            @endforelse
+                        </td>
+                        <td>{{ $fila['contacto'] }}</td>
+                        <td>
+                            <span class="badge {{ $fila['estado'] === 'approved' ? 'badge--ok' : ($fila['estado'] === 'banned' ? 'badge--danger' : '') }}">
+                                {{ $fila['estadoTexto'] }}
+                            </span>
+                        </td>
+                        <td style="text-align:right; white-space:nowrap;">{{ $acciones($fila) }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <span class="ico">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                                </span>
+                                <h3>Aún no hay usuarios</h3>
+                                <p>Las cuentas aparecen aquí cuando alguien se registra.</p>
+                            </div>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    {{-- ===================== Vista tarjetas ===================== --}}
+    <div class="data-cards" data-view-cards style="display:none;">
+        @forelse ($filas as $fila)
+            <article class="data-card f-row" @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
+                <div class="data-card-top">
+                    <span class="us-avatar">
+                        @if ($fila['modelo']->avatar)
+                            <img src="{{ $fila['modelo']->avatar }}" alt="">
+                        @else
+                            <span class="avatar {{ $fila['tinte'] }}">{{ $fila['iniciales'] }}</span>
+                        @endif
+                        @if ($fila['sesiones'] > 0)
+                            <span class="us-online" title="Conectado ahora"></span>
+                        @endif
+                    </span>
+                    <div style="min-width:0; flex:1;">
+                        <div class="t">{{ $fila['modelo']->name }}</div>
+                        <div class="s">{{ $fila['puesto'] }}</div>
                     </div>
-                    <label class="hr-field"><span>Domicilio del contacto</span><input type="text" name="domicilio_contacto_emergencia"></label>
+                    <span class="badge {{ $fila['estado'] === 'approved' ? 'badge--ok' : ($fila['estado'] === 'banned' ? 'badge--danger' : '') }}">
+                        {{ $fila['estadoTexto'] }}
+                    </span>
                 </div>
 
-                <div class="hr-section hr-section--last">
-                    <p class="hr-section-title">Contacto de emergencia secundario</p>
-                    <div class="hr-grid-2">
-                        <label class="hr-field"><span>Nombre</span><input type="text" name="nombre_contacto_emergencia_secundario"></label>
-                        <label class="hr-field"><span>Teléfono</span><input type="text" name="numero_contacto_emergencia_secundario"></label>
+                <dl>
+                    <div><dt>Correo</dt><dd>{{ $fila['modelo']->email }}</dd></div>
+                    <div><dt>Teléfono</dt><dd>{{ $fila['modelo']->phone ?: '—' }}</dd></div>
+                    <div><dt>Nómina</dt><dd>{{ $fila['modelo']->payroll_number ?: '—' }}</dd></div>
+                    <div>
+                        <dt>Rol</dt>
+                        <dd>{{ $fila['roles']->isNotEmpty() ? $fila['roles']->implode(', ') : 'Sin rol' }}</dd>
                     </div>
-                    <label class="hr-field"><span>Domicilio del contacto</span><input type="text" name="domicilio_contacto_emergencia_secundario"></label>
-                </div>
+                </dl>
 
-                <div class="hr-modal-foot">
-                    <button type="button" class="btn btn--ghost" onclick="document.getElementById('modal-hr-profile').style.display='none'">Cancelar</button>
-                    <x-ui.button type="submit" style="width:auto;">Guardar</x-ui.button>
+                <div class="data-card-foot">{{ $acciones($fila) }}</div>
+            </article>
+        @empty
+            <div class="card">
+                <div class="empty-state">
+                    <span class="ico">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    </span>
+                    <h3>Aún no hay usuarios</h3>
+                    <p>Las cuentas aparecen aquí cuando alguien se registra.</p>
                 </div>
-            </form>
+            </div>
+        @endforelse
+    </div>
+
+    <div class="card" id="fVacio" hidden>
+        <div class="empty-state">
+            <span class="ico">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+            <h3>Ningún usuario coincide</h3>
+            <p>Prueba a quitar algún filtro o a cambiar la búsqueda.</p>
+            <button type="button" class="btn" data-limpiar-filtros>Limpiar filtros</button>
         </div>
     </div>
 
+    <p class="f-conteo" id="fConteo"></p>
+
+    @include('admin.users.partials.modal-rh')
+
     <style>
-        :root { --field-border: #c9ccd2; }
-        :root[data-theme="dark"] { --field-border: var(--border); }
+        /* Solo lo propio de esta pantalla: lo demás vive en los partials. */
+        .us-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-bottom:16px; }
+        .us-table { width:100%; border-collapse:collapse; }
+        .us-table td .badge + .badge { margin-left:4px; }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(15,17,21,0.5); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
-
-        .hr-modal { background: var(--surface); border-radius: 16px; width: 100%; max-width: 620px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.25); overflow: hidden; }
-
-        .hr-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 22px 26px 18px; border-bottom: 1px solid var(--border); }
-        .hr-modal-head h3 { margin: 0 0 4px; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
-        .hr-modal-head p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.4; max-width: 440px; }
-        .hr-modal-close { flex-shrink: 0; width: 30px; height: 30px; border: none; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s, color .15s; }
-        .hr-modal-close:hover { background: var(--surface-2); color: var(--text); }
-        .hr-modal-close svg { width: 16px; height: 16px; }
-
-        .hr-modal-body { padding: 20px 26px 0; overflow-y: auto; flex: 1; }
-
-        .hr-select { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--field-border, var(--border)); background: var(--surface); color: var(--text); font-size: 14px; margin-bottom: 4px; }
-
-        .hr-section { padding: 16px 0; border-bottom: 1px solid var(--border); }
-        .hr-section--last { border-bottom: none; padding-bottom: 4px; }
-        .hr-section-title { margin: 0 0 2px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-        .hr-hint { margin: 2px 0 10px; font-size: 12px; color: var(--muted); }
-
-        .hr-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
-        .hr-field { display: flex; flex-direction: column; gap: 5px; margin: 8px 0; font-size: 12.5px; color: var(--muted); }
-        .hr-field--full { grid-column: 1 / -1; }
-        .hr-field input { padding: 9px 12px; border-radius: 9px; border: 1px solid var(--field-border, var(--border)); background: var(--surface); color: var(--text); font-size: 13.5px; }
-        .hr-field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
-
-        .hr-roles { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-        .hr-chip { position: relative; }
-        .hr-chip input { position: absolute; opacity: 0; width: 0; height: 0; }
-        .hr-chip span { display: inline-flex; align-items: center; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--field-border, var(--border)); font-size: 13px; color: var(--text); cursor: pointer; transition: background .15s, border-color .15s, color .15s; user-select: none; }
-        .hr-chip input:checked + span { background: var(--primary); border-color: var(--primary); color: #fff; }
-
-        .hr-doc { margin-bottom: 4px; }
-
-        .hr-file-chip { display: flex; align-items: center; gap: 10px; margin: 2px 0 8px; flex-wrap: wrap; }
-        .hr-file-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px dashed var(--field-border, var(--border)); font-size: 12px; color: var(--muted); cursor: pointer; transition: border-color .15s, color .15s; }
-        .hr-file-btn:hover { border-color: var(--primary); color: var(--primary); }
-        .hr-file-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
-        .hr-file-btn input[type="file"] { position: absolute; opacity: 0; width: 0; height: 0; }
-        .hr-file-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .hr-file-link { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--primary); text-decoration: none; }
-        .hr-file-link svg { width: 13px; height: 13px; }
-        .hr-file-link:hover { text-decoration: underline; }
-
-        .hr-modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 18px 0 22px; margin-top: 6px; }
+        /* El punto de "conectado" cuelga del avatar, sea foto o iniciales. */
+        .us-avatar { position:relative; flex:0 0 auto; display:inline-flex; }
+        .us-avatar img { width:34px; height:34px; border-radius:50%; object-fit:cover; display:block; }
+        .us-online { position:absolute; right:-1px; bottom:-1px; width:10px; height:10px; border-radius:50%;
+                     background:var(--green); border:2px solid var(--surface); }
     </style>
 
-    <script>
-        function rellenarDatosRhUsuario(select) {
-            const opt = select.options[select.selectedIndex];
-            const modal = document.getElementById('modal-hr-profile');
-            const set = (name, value) => {
-                const el = modal.querySelector('[name="' + name + '"]');
-                if (el) el.value = value || '';
-            };
-            set('position', opt.dataset.position);
-            set('cargo', opt.dataset.cargo);
-            set('phone', opt.dataset.phone);
-            set('payroll_number', opt.dataset.payroll);
-            set('checador_id', opt.dataset.checador);
-            set('curp', opt.dataset.curp);
-            set('ine', opt.dataset.ine);
-            set('acta_nacimiento', opt.dataset.acta);
-            set('licencia', opt.dataset.licencia);
-            set('domicilio', opt.dataset.domicilio);
-            set('fecha_ingreso', opt.dataset.fechaIngreso);
-            set('vacaciones_disponibles', opt.dataset.vacaciones);
-            set('nombre_contacto_emergencia', opt.dataset.nce);
-            set('numero_contacto_emergencia', opt.dataset.numce);
-            set('domicilio_contacto_emergencia', opt.dataset.domce);
-            set('nombre_contacto_emergencia_secundario', opt.dataset.nces);
-            set('numero_contacto_emergencia_secundario', opt.dataset.numces);
-            set('domicilio_contacto_emergencia_secundario', opt.dataset.domces);
+    @include('partials.tabla-filtrable.estilos')
 
-            const selectedRoleIds = (opt.dataset.roles || '').split(',').filter(Boolean);
-            modal.querySelectorAll('input[name="roles[]"]').forEach(cb => {
-                cb.checked = selectedRoleIds.includes(cb.value);
-            });
-
-            let docs = {};
-            try { docs = JSON.parse(opt.dataset.docs || '{}'); } catch (e) { docs = {}; }
-            modal.querySelectorAll('.hr-file-link').forEach(link => {
-                const url = docs[link.dataset.doc];
-                if (url) {
-                    link.href = url;
-                    link.style.display = 'inline-flex';
-                } else {
-                    link.href = '#';
-                    link.style.display = 'none';
-                }
-            });
-        }
-
-        document.getElementById('modal-hr-profile').addEventListener('click', function (e) {
-            if (e.target === this) this.style.display = 'none';
-        });
-
-        document.querySelectorAll('.hr-file-input').forEach(function (input) {
-            input.addEventListener('change', function () {
-                const label = input.closest('.hr-file-chip').querySelector('.hr-file-name');
-                label.textContent = input.files.length ? input.files[0].name : 'Subir documento';
-            });
-        });
-    </script>
-
-    @if($users->isEmpty())
-        <x-ui.card>
-            <div class="uc-empty">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
-                <p>No se encontraron usuarios con los filtros aplicados.</p>
-            </div>
-        </x-ui.card>
-    @else
-    <div class="uc-grid" id="ucGrid">
-        @foreach($users as $u)
-            @php
-                $si = $statusInfo($u);
-                $init = $initials($u->name);
-                $firstLetter = strtoupper($u->name[0] ?? 'A');
-                $colors = $avatarColors[$firstLetter] ?? ['#e6f0ff', '#007aff'];
-            @endphp
-            <div class="uc-card">
-                <div class="uc-card-top">
-                    <div class="uc-avatar-wrap">
-                        <div class="uc-avatar">
-                            @if($u->avatar)
-                                <img src="{{ $u->avatar }}" alt="{{ $u->name }}">
-                            @else
-                                <span style="background:{{ $colors[0] }}; color:{{ $colors[1] }}; width:100%; height:100%; display:flex; align-items:center; justify-content:center;">{{ $init }}</span>
-                            @endif
-                        </div>
-                        <span class="uc-status-dot {{ $si['dot'] }}"></span>
-                    </div>
-                    <div class="uc-info">
-                        <h3 class="uc-name"><a href="{{ route('admin.users.show', $u) }}" class="link" style="text-decoration:none;color:var(--text);">{{ $u->name }}</a></h3>
-                        <p class="uc-role">{{ $u->position ?: ($u->is_admin ? 'Administrador' : 'Usuario') }}</p>
-                        <span class="uc-status-badge {{ $si['dot'] === 'green' ? 'active' : ($si['dot'] === 'yellow' ? 'leave' : 'banned') }}">
-                            <span class="dot {{ $si['dot'] }}"></span>
-                            {{ $si['label'] }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="uc-contact">
-                    @if($u->payroll_number)
-                    <div class="uc-contact-row">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-                        <span>Nómina: {{ $u->payroll_number }}</span>
-                    </div>
-                    @endif
-                    <div class="uc-contact-row">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                        <span>{{ $u->phone ?: $u->email }}</span>
-                    </div>
-                </div>
-
-                <button class="uc-dots" onclick="event.stopPropagation();toggleDotsMenu(this)" title="Acciones rápidas">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
-                </button>
-                <div class="uc-dots-menu">
-                    <a href="{{ route('admin.users.show', $u) }}">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        Ver detalle
-                    </a>
-                    <a href="{{ route('admin.users.permissions', $u) }}">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                        Permisos
-                    </a>
-                    @if($u->isPending())
-                        <form method="POST" action="{{ route('admin.users.approve', $u) }}">
-                            @csrf
-                            <button type="submit" class="ok">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-                                Aprobar acceso
-                            </button>
-                        </form>
-                    @endif
-                    @if($u->isBanned())
-                        <form method="POST" action="{{ route('admin.users.unban', $u) }}">
-                            @csrf
-                            <button type="submit" class="ok">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                                Reactivar
-                            </button>
-                        </form>
-                    @elseif(! $u->is_admin)
-                        <form method="POST" action="{{ route('admin.users.ban', $u) }}">
-                            @csrf
-                            <button type="submit" class="danger">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/></svg>
-                                Banear
-                            </button>
-                        </form>
-                    @endif
-                </div>
-            </div>
-        @endforeach
-    </div>
-    @endif
-
-    <script>
-        // Toggle dots menu
-        function toggleDotsMenu(btn) {
-            const menu = btn.nextElementSibling;
-            const isOpen = menu.classList.contains('open');
-            document.querySelectorAll('.uc-dots-menu.open').forEach(m => m.classList.remove('open'));
-            if (!isOpen) menu.classList.add('open');
-        }
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.uc-dots') && !e.target.closest('.uc-dots-menu')) {
-                document.querySelectorAll('.uc-dots-menu.open').forEach(m => m.classList.remove('open'));
-            }
-        });
-
-        // Toggle grid/list view
-        document.querySelectorAll('.uc-view-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.uc-view-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                const grid = document.getElementById('ucGrid');
-                if (this.dataset.view === 'list') {
-                    grid.classList.add('uc-list-view');
-                } else {
-                    grid.classList.remove('uc-list-view');
-                }
-                localStorage.setItem('uc-view', this.dataset.view);
-            });
-        });
-        // Restore view preference
-        (function() {
-            const saved = localStorage.getItem('uc-view');
-            if (saved === 'list') {
-                document.querySelector('.uc-view-btn[data-view="list"]')?.click();
-            }
-        })();
-    </script>
-</div>
+    @include('partials.tabla-filtrable.script', [
+        'singular' => 'usuario',
+        'plural' => 'usuarios',
+        'estadoCampo' => 'conectado',
+        // Los accesos rápidos son alternativas entre sí: al limpiar, ninguno.
+        'toggleInicial' => null,
+        'etiquetas' => collect($roles)->mapWithKeys(fn ($r) => ['rol'.$r->id => 'Rol: '.$r->label])->all() + [
+            'estado' => 'Estado',
+            'puesto' => 'Puesto',
+            'telefono' => 'Con teléfono',
+            'nomina' => 'Con nómina',
+            'sinrol' => 'Sin rol asignado',
+            'estado:1' => 'Solo conectados',
+            'estado:0' => 'Solo sin sesión',
+        ],
+    ])
 @endsection

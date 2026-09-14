@@ -14,39 +14,41 @@ class CustomerCatalogSeeder extends Seeder
     public function run(): void
     {
         $categories = [
-            ['name' => 'VIP'],
-            ['name' => 'Regular'],
-            ['name' => 'Nuevo'],
+            ['nombre' => 'VIP'],
+            ['nombre' => 'Regular'],
+            ['nombre' => 'Nuevo'],
         ];
 
+        $categoriaIds = [];
         foreach ($categories as $category) {
-            Category::firstOrCreate(['name' => $category['name']]);
+            $model = Category::firstOrCreate(['nombre' => $category['nombre']]);
+            $categoriaIds[$category['nombre']] = $model->id;
         }
 
         $congresses = [
             [
-                'name' => 'congreso_a',
-                'label' => 'Congreso A',
-                'description' => 'Congreso de ejemplo A',
-                'start_date' => '2026-08-15',
-                'end_date' => '2026-08-18',
-                'assembly_time' => '08:00',
-                'disassembly_time' => '20:00',
+                'nombre' => 'Congreso A',
+                'descripcion' => 'Congreso de ejemplo A',
+                'categoria_id' => $categoriaIds['VIP'],
+                'fecha_inicio' => '2026-08-15',
+                'fecha_finalizacion' => '2026-08-18',
+                'hora_montaje' => '08:00',
+                'hora_desmontaje' => '20:00',
             ],
             [
-                'name' => 'congreso_b',
-                'label' => 'Congreso B',
-                'description' => 'Congreso de ejemplo B',
-                'start_date' => '2026-09-10',
-                'end_date' => '2026-09-13',
-                'assembly_time' => '09:00',
-                'disassembly_time' => '21:00',
+                'nombre' => 'Congreso B',
+                'descripcion' => 'Congreso de ejemplo B',
+                'categoria_id' => $categoriaIds['Regular'],
+                'fecha_inicio' => '2026-09-10',
+                'fecha_finalizacion' => '2026-09-13',
+                'hora_montaje' => '09:00',
+                'hora_desmontaje' => '21:00',
             ],
         ];
 
         foreach ($congresses as $congress) {
             Congress::firstOrCreate(
-                ['name' => $congress['name']],
+                ['nombre' => $congress['nombre']],
                 $congress
             );
         }

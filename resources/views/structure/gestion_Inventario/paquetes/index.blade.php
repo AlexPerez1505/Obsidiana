@@ -1,4 +1,4 @@
-@extends('lSolo guarada ayouts.dashboard')
+@extends('layouts.dashboard')
 @section('title', 'Paquetes')
 @section('page-title', 'Paquetes')
 @section('page-sub', 'Paquetes armados a partir de productos del inventario')

@@ -91,6 +91,23 @@
     .task-field textarea::placeholder { color: var(--muted); opacity: .7; }
     .task-field textarea { min-height: 90px; resize: vertical; }
 
+    .kanban-delivery-preview { min-height:80px; border:1px dashed var(--border); border-radius:10px; padding:14px; color:var(--muted); font-size:13px; display:flex; align-items:center; justify-content:center; text-align:center; }
+    .kanban-delivery-preview:has(iframe), .kanban-delivery-preview:has(.lp-card), .kanban-delivery-preview:has(.lp-img-full) { padding:0; border-style:solid; display:block; text-align:left; }
+    .lp-card { display:flex; border-radius:10px; overflow:hidden; background:var(--surface); text-decoration:none; color:inherit; }
+    .lp-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.12); }
+    .lp-card-img { width:120px; min-height:100px; max-height:160px; object-fit:cover; flex-shrink:0; background:var(--surface-2); }
+    .lp-card-body { padding:12px 14px; display:flex; flex-direction:column; gap:5px; min-width:0; flex:1; }
+    .lp-card-title { font-size:13px; font-weight:700; color:var(--text); line-height:1.35; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+    .lp-card-desc { font-size:12px; color:var(--muted); line-height:1.45; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; margin:0; }
+    .lp-card-host { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; font-weight:700; margin-top:auto; display:inline-flex; align-items:center; gap:5px; }
+    .lp-embed { width:100%; aspect-ratio:16/9; border:0; border-radius:10px; display:block; background:#000; }
+    .lp-embed.canva { aspect-ratio:auto; min-height:280px; }
+    .lp-img-full { width:100%; max-height:360px; object-fit:contain; border-radius:10px; display:block; background:var(--surface-2); }
+    .lp-loading { display:inline-flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; }
+    .lp-loading::before { content:''; width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:lp-spin .7s linear infinite; }
+    @keyframes lp-spin { to { transform:rotate(360deg); } }
+    .lp-error { color:var(--danger, #c0392b); font-size:13px; }
+
     .task-row {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -385,6 +402,11 @@
             </div>
 
             <div class="task-field">
+                <span class="field-label">Vista previa del enlace</span>
+                <div class="kanban-delivery-preview" id="crearDeliveryPreview">Pega el enlace arriba para ver la vista previa.</div>
+            </div>
+
+            <div class="task-field">
                 <label for="task_description">Descripción</label>
                 <textarea id="task_description" name="task_description" placeholder="Descripción de la pieza / instrucciones...">{{ old('task_description') }}</textarea>
             </div>
@@ -404,4 +426,112 @@
         </div>
     </form>
 </div>
+
+<script>
+(function () {
+    var input = document.getElementById('delivery_link');
+    var preview = document.getElementById('crearDeliveryPreview');
+    if (!input || !preview) return;
+
+    var csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '';
+    var previewUrl = '{{ route("marketing.tareas.preview_link") }}';
+    var cache = {};
+    var abortCtrl = null;
+
+    function escapeHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+    }
+    function hostFromUrl(url) {
+        try { return new URL(url).hostname.replace(/^www\./, ''); }
+        catch (e) { return url; }
+    }
+    function renderPreview(data) {
+        if (!data || !data.type) {
+            preview.textContent = 'Pega el enlace arriba para ver la vista previa.';
+            return;
+        }
+        var url = data.url || '';
+        switch (data.type) {
+            case 'youtube':
+            case 'vimeo':
+                preview.innerHTML = '<iframe class="lp-embed" src="' + escapeHtml(data.embed_url) + '" allow="autoplay; fullscreen; encrypted-media" allowfullscreen loading="lazy"></iframe>';
+                break;
+            case 'canva':
+                if (data.embed_html) {
+                    preview.innerHTML = data.embed_html;
+                    var iframe = preview.querySelector('iframe');
+                    if (iframe) { iframe.className = 'lp-embed canva'; iframe.loading = 'lazy'; }
+                } else {
+                    preview.innerHTML = '<iframe class="lp-embed canva" src="' + escapeHtml(data.embed_url) + '" allow="fullscreen" allowfullscreen loading="lazy"></iframe>';
+                }
+                break;
+            case 'drive':
+                preview.innerHTML = '<iframe class="lp-embed" src="' + escapeHtml(data.embed_url) + '" allow="autoplay" allowfullscreen loading="lazy"></iframe>';
+                break;
+            case 'image':
+                preview.innerHTML = '<img class="lp-img-full" src="' + escapeHtml(data.image || url) + '" alt="Vista previa" loading="lazy">';
+                break;
+            case 'og':
+            case 'link':
+                if (data.image) {
+                    preview.innerHTML = '<a class="lp-card" href="' + escapeHtml(url) + '" target="_blank" rel="noopener">' +
+                        '<img class="lp-card-img" src="' + escapeHtml(data.image) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' +
+                        '<div class="lp-card-body">' +
+                        '<span class="lp-card-title">' + escapeHtml(data.title || url) + '</span>' +
+                        (data.description ? '<p class="lp-card-desc">' + escapeHtml(data.description) + '</p>' : '') +
+                        '<span class="lp-card-host">' + escapeHtml(hostFromUrl(url)) + '</span>' +
+                        '</div></a>';
+                } else {
+                    preview.innerHTML = '<a class="lp-card" href="' + escapeHtml(url) + '" target="_blank" rel="noopener" style="padding:14px;">' +
+                        '<div class="lp-card-body">' +
+                        '<span class="lp-card-title">' + escapeHtml(data.title || url) + '</span>' +
+                        '<span class="lp-card-host">' + escapeHtml(hostFromUrl(url)) + '</span>' +
+                        '</div></a>';
+                }
+                break;
+            default:
+                preview.textContent = 'Pega el enlace arriba para ver la vista previa.';
+        }
+    }
+
+    async function loadPreview(url) {
+        if (!url) {
+            preview.textContent = 'Pega el enlace arriba para ver la vista previa.';
+            return;
+        }
+        if (cache[url]) { renderPreview(cache[url]); return; }
+        if (abortCtrl) { try { abortCtrl.abort(); } catch (e) {} }
+        abortCtrl = (window.AbortController) ? new AbortController() : null;
+        preview.innerHTML = '<span class="lp-loading">Cargando vista previa…</span>';
+        try {
+            var resp = await fetch(previewUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ url: url }),
+                signal: abortCtrl ? abortCtrl.signal : undefined,
+            });
+            var data = await resp.json();
+            cache[url] = data;
+            renderPreview(data);
+        } catch (e) {
+            if (e.name === 'AbortError') return;
+            preview.innerHTML = '<span class="lp-error">No se pudo cargar. <a href="' + escapeHtml(url) + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">Abrir enlace</a></span>';
+        }
+    }
+
+    var debounce = null;
+    input.addEventListener('input', function () {
+        clearTimeout(debounce);
+        debounce = setTimeout(function () { loadPreview(input.value.trim()); }, 400);
+    });
+
+    if (input.value.trim()) { loadPreview(input.value.trim()); }
+})();
+</script>
 @endsection

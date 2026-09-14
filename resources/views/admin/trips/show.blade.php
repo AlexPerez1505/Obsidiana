@@ -349,7 +349,7 @@
     }
 </style>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.0/dist/cdn.min.js"></script>
-@endendpush
+@endpush
 
 @php
     $initialData = [

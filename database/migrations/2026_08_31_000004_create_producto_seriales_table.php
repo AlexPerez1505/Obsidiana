@@ -14,17 +14,45 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('producto_seriales')) {
+            return;
+        }
+
         Schema::create('producto_seriales', function (Blueprint $table) {
             $table->id();
             $table->foreignId('producto_id')->constrained('productos')->cascadeOnDelete();
+            // codigo, condicion y estado las agregaba 2026_08_29_000009, que
+            // corre antes que esta tabla exista: en una base nueva nacen
+            // ya incluidas aquí.
+            $table->string('codigo', 30)->nullable()->unique();
             $table->string('no_serie')->nullable();
+            $table->enum('condicion', ['nuevo', 'usado'])->default('nuevo');
+            $table->string('estado', 20)->default('disponible');
             $table->boolean('vendido')->default(false);
             $table->timestamp('vendido_en')->nullable();
             $table->foreignId('venta_item_id')->nullable()->constrained('venta_items')->nullOnDelete();
             $table->timestamps();
+            $table->index('estado');
         });
 
         $this->migrarDatosExistentes();
+
+        // pieza_procesos (2026_08_29_000012) se crea antes que esta tabla:
+        // su FK no pudo declararse allá, se agrega aquí.
+        if (Schema::hasTable('pieza_procesos')) {
+            Schema::table('pieza_procesos', function (Blueprint $table) {
+                $table->foreign('producto_serial_id')
+                    ->references('id')->on('producto_seriales')->cascadeOnDelete();
+            });
+        }
+
+        // Mismo criterio que 2026_08_29_000009 para las piezas migradas.
+        \Illuminate\Support\Facades\DB::table('producto_seriales')->whereNull('codigo')->orderBy('id')->each(function ($fila) {
+            \Illuminate\Support\Facades\DB::table('producto_seriales')->where('id', $fila->id)->update([
+                'codigo' => 'MB-'.str_pad((string) $fila->id, 6, '0', STR_PAD_LEFT),
+                'estado' => $fila->vendido ? 'vendido' : 'disponible',
+            ]);
+        });
     }
 
     /**

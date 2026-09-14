@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     // La primera pantalla siempre es el login; si ya hay sesion, al panel.
     return auth()->check()
-        ? redirect()->route('dashboard')
+        ? redirect()->route(auth()->user()->homeRoute())
         : redirect()->route('login');
 })->name('home');
 
@@ -23,6 +23,7 @@ require __DIR__.'/web/publico.php';
 // Autenticacion y cuenta
 require __DIR__.'/web/auth/auth.php';
 require __DIR__.'/web/dashboard/dashboard.php';
+require __DIR__.'/web/mantenimiento/mantenimiento.php';
 
 // Gestion comercial
 require __DIR__.'/web/commercial/commercial.php';
@@ -36,6 +37,7 @@ require __DIR__.'/web/inventory/inventory.php';
 
 // Configuracion
 require __DIR__.'/web/configuracion/catalogo.php';
+require __DIR__.'/web/configuracion/roles.php';
 require __DIR__.'/web/configuracion/refaciones.php';
 require __DIR__.'/web/configuracion/tipo_equipo.php';
 

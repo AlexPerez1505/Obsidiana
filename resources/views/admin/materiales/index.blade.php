@@ -28,7 +28,14 @@
         'Otros',
     ];
     $materialRequests = $materialRequests ?? [];
+    $availableMaterials = $availableMaterials ?? [];
     $pendingCount = $pendingCount ?? collect($materialRequests)->where('status', 'pendiente')->count();
+    $materialStats = $materialStats ?? [
+        'total' => count($materialRequests),
+        'drafts' => collect($materialRequests)->where('status', 'borrador')->count(),
+        'approved' => collect($materialRequests)->whereIn('status', ['aprobada', 'entregada'])->count(),
+    ];
+    $selectedCategory = old('category', $categories[0] ?? 'Otros');
     $selectedUrgency = old('urgency', 'Normal');
 @endphp
 
@@ -167,6 +174,15 @@
         font-size: 15px;
         line-height: 1.2;
         font-weight: 900;
+    }
+
+    .materials-field-hint {
+        display: block;
+        margin-top: 7px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.35;
     }
 
     .materials-control {
@@ -433,6 +449,35 @@
         color: var(--primary);
     }
 
+    .inventory-list {
+        display: grid;
+        gap: 0;
+        padding: 0 20px 18px;
+    }
+
+    .inventory-item {
+        display: grid;
+        gap: 3px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .inventory-item:last-child {
+        border-bottom: 0;
+    }
+
+    .inventory-item strong {
+        color: var(--text);
+        font-size: 13px;
+        line-height: 1.35;
+    }
+
+    .inventory-item span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
     .approvals-panel {
         overflow: hidden;
     }
@@ -479,7 +524,7 @@
 
     .approvals-table {
         width: 100%;
-        min-width: 860px;
+        min-width: 1040px;
         border-collapse: collapse;
         color: var(--text);
     }
@@ -526,6 +571,11 @@
     .approval-status.pending {
         background: var(--accent-soft);
         color: var(--accent);
+    }
+
+    .approval-status.draft {
+        background: var(--primary-soft);
+        color: var(--primary);
     }
 
     .approval-status.approved {
@@ -655,7 +705,7 @@
                             </span>
                             <select id="category" name="category">
                                 @foreach ($categories as $category)
-                                    <option value="{{ $category }}" @selected(old('category') === $category)>{{ $category }}</option>
+                                    <option value="{{ $category }}" @selected($selectedCategory === $category)>{{ $category }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -671,8 +721,16 @@
                                         <path d="M3.27 6.96 12 12l8.73-5.04"></path>
                                     </svg>
                                 </span>
-                                <input id="material" name="material_name" type="text" value="{{ old('material_name') }}" autocomplete="off" placeholder="Ej. hojas carta, guantes, cable HDMI" required>
+                                <input id="material" name="material_name" type="text" value="{{ old('material_name') }}" list="available-materials" autocomplete="off" placeholder="Ej. hojas carta, guantes, cable HDMI" required>
+                                <datalist id="available-materials">
+                                    @foreach ($availableMaterials as $availableMaterial)
+                                        <option value="{{ $availableMaterial['name'] }}">{{ $availableMaterial['detail'] }}</option>
+                                    @endforeach
+                                </datalist>
                             </div>
+                            @if (! empty($availableMaterials))
+                                <small class="materials-field-hint">Sugerencias reales del inventario: {{ collect($availableMaterials)->take(3)->pluck('name')->implode(', ') }}</small>
+                            @endif
                         </div>
 
                         <div class="materials-field">
@@ -748,14 +806,14 @@
                     </div>
 
                     <div class="materials-actions">
-                        <button class="materials-btn ghost" type="button" onclick="showMaterialToast('Borrador guardado localmente.')">
+                        <button class="materials-btn ghost" type="submit" name="intent" value="draft">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                                 <path d="M17 21v-8H7v8M7 3v5h8"></path>
                             </svg>
                             Guardar borrador
                         </button>
-                        <button class="materials-btn primary" type="submit">
+                        <button class="materials-btn primary" type="submit" name="intent" value="submit">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M22 2 11 13"></path>
                                 <path d="M22 2 15 22l-4-9-9-4 20-7z"></path>
@@ -775,7 +833,7 @@
                 <div class="summary-list">
                     <div class="summary-item">
                         <span class="summary-dot">1</span>
-                        <span><strong id="summaryCategory">Papelería</strong>Categoría seleccionada</span>
+                        <span><strong id="summaryCategory">{{ $selectedCategory }}</strong>Categoría seleccionada</span>
                     </div>
                     <div class="summary-item">
                         <span class="summary-dot">2</span>
@@ -785,6 +843,45 @@
                         <span class="summary-dot">3</span>
                         <span><strong id="summaryUrgency">Normal</strong>Nivel de urgencia</span>
                     </div>
+                </div>
+
+                <div class="side-head">
+                    <h3>Datos reales</h3>
+                    <p>Registros guardados en la base</p>
+                </div>
+
+                <div class="summary-list">
+                    <div class="summary-item">
+                        <span class="summary-dot">{{ $materialStats['total'] }}</span>
+                        <span><strong>Solicitudes</strong><span>Total registradas</span></span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-dot">{{ $pendingCount }}</span>
+                        <span><strong>Pendientes</strong><span>Listas para revision</span></span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-dot">{{ $materialStats['drafts'] }}</span>
+                        <span><strong>Borradores</strong><span>Guardados sin enviar</span></span>
+                    </div>
+                </div>
+
+                <div class="side-head">
+                    <h3>Inventario</h3>
+                    <p>Productos cargados en la base</p>
+                </div>
+
+                <div class="inventory-list">
+                    @forelse (array_slice($availableMaterials, 0, 5) as $availableMaterial)
+                        <div class="inventory-item">
+                            <strong>{{ $availableMaterial['name'] }}</strong>
+                            <span>{{ $availableMaterial['category'] }} - Stock: {{ $availableMaterial['stock'] }}</span>
+                        </div>
+                    @empty
+                        <div class="inventory-item">
+                            <strong>Sin productos registrados</strong>
+                            <span>Cuando se carguen productos, apareceran aqui.</span>
+                        </div>
+                    @endforelse
                 </div>
 
                 <div class="side-head">
@@ -824,8 +921,10 @@
                         <tr>
                             <th>Folio</th>
                             <th>Material</th>
+                            <th>Solicitante</th>
                             <th>Cantidad</th>
                             <th>Fecha requerida</th>
+                            <th>Registro</th>
                             <th>Urgencia</th>
                             <th>Estado</th>
                             <th>Acciones</th>
@@ -836,8 +935,10 @@
                             <tr>
                                 <td>{{ $requestRow['folio'] }}</td>
                                 <td>{{ $requestRow['material_name'] }}<small>{{ $requestRow['category'] }}</small></td>
+                                <td>{{ $requestRow['requester'] }}</td>
                                 <td>{{ $requestRow['quantity'] }} {{ $requestRow['unit'] }}</td>
                                 <td>{{ $requestRow['required_date'] }}</td>
+                                <td>{{ $requestRow['registered_at'] }}</td>
                                 <td>{{ $requestRow['urgency'] }}</td>
                                 <td><span class="approval-status {{ $requestRow['status_class'] }}">{{ $requestRow['status_label'] }}</span></td>
                                 <td>
@@ -863,7 +964,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7">No hay solicitudes registradas.</td>
+                                <td colspan="9">No hay solicitudes registradas en la base de datos.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -874,21 +975,21 @@
 
     <script>
         const category = document.getElementById('category');
-        const material = document.getElementById('material');
         const quantity = document.getElementById('quantity');
         const unit = document.getElementById('unit');
         const urgencyInput = document.getElementById('urgency');
-        const requiredDate = document.getElementById('required-date');
-        const materialsApprovalBody = document.getElementById('materialsApprovalBody');
-        const approvalCount = document.getElementById('approvalCount');
         const summaryCategory = document.getElementById('summaryCategory');
         const summaryQuantity = document.getElementById('summaryQuantity');
         const summaryUrgency = document.getElementById('summaryUrgency');
-        let materialRequestSequence = 9;
 
         function updateSummary() {
-            summaryCategory.textContent = category.value;
-            summaryQuantity.textContent = `${quantity.value || 1} ${unit.value}`;
+            if (summaryCategory && category) {
+                summaryCategory.textContent = category.value;
+            }
+
+            if (summaryQuantity && quantity && unit) {
+                summaryQuantity.textContent = `${quantity.value || 1} ${unit.value}`;
+            }
         }
 
         function adjustQuantity(amount) {
@@ -897,81 +998,9 @@
             updateSummary();
         }
 
-        function showMaterialToast(message) {
-            if (typeof window.showToast === 'function') {
-                window.showToast(message);
-            }
-        }
-
-        function escapeHtml(value) {
-            return String(value)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
-        function currentUrgency() {
-            return urgencyInput?.value || document.querySelector('.segment.is-active')?.dataset.urgency || 'Normal';
-        }
-
-        function updateApprovalCount() {
-            const pending = materialsApprovalBody.querySelectorAll('.approval-status.pending').length;
-            approvalCount.textContent = pending === 1 ? '1 pendiente' : `${pending} pendientes`;
-        }
-
-        function bindApprovalButtons(scope = document) {
-            scope.querySelectorAll('[data-approval-action]').forEach((button) => {
-                button.addEventListener('click', () => {
-                    const row = button.closest('tr');
-                    const status = row.querySelector('.approval-status');
-                    const action = button.dataset.approvalAction;
-                    const approved = action === 'approve';
-
-                    status.className = `approval-status ${approved ? 'approved' : 'rejected'}`;
-                    status.textContent = approved ? 'Aprobada' : 'Rechazada';
-                    row.querySelectorAll('[data-approval-action]').forEach((item) => item.disabled = true);
-                    updateApprovalCount();
-                    showMaterialToast(approved ? 'Solicitud aprobada.' : 'Solicitud rechazada.');
-                });
-            });
-        }
-
-        function submitMaterialRequest(event) {
-            event.preventDefault();
-
-            const materialName = material.value.trim() || 'Material sin nombre';
-            const folio = `SOL-${String(materialRequestSequence).padStart(4, '0')}`;
-            materialRequestSequence += 1;
-
-            materialsApprovalBody.insertAdjacentHTML('afterbegin', `
-                <tr>
-                    <td>${folio}</td>
-                    <td>${escapeHtml(materialName)}<small>${escapeHtml(category.value)}</small></td>
-                    <td>${escapeHtml(quantity.value || 1)} ${escapeHtml(unit.value)}</td>
-                    <td>${escapeHtml(requiredDate.value)}</td>
-                    <td>${escapeHtml(currentUrgency())}</td>
-                    <td><span class="approval-status pending">Pendiente</span></td>
-                    <td>
-                        <div class="approval-actions">
-                            <button class="approval-action approve" type="button" data-approval-action="approve">Aprobar</button>
-                            <button class="approval-action reject" type="button" data-approval-action="reject">Rechazar</button>
-                        </div>
-                    </td>
-                </tr>
-            `);
-
-            bindApprovalButtons(materialsApprovalBody.firstElementChild);
-            updateApprovalCount();
-            showMaterialToast('Solicitud enviada a revision. Ahora aparece en Revision de solicitudes.');
-        }
-
-        category.addEventListener('change', updateSummary);
-        quantity.addEventListener('input', updateSummary);
-        unit.addEventListener('change', updateSummary);
-        bindApprovalButtons();
-        updateApprovalCount();
+        category?.addEventListener('change', updateSummary);
+        quantity?.addEventListener('input', updateSummary);
+        unit?.addEventListener('change', updateSummary);
 
         document.querySelectorAll('.segment').forEach((button) => {
             button.addEventListener('click', () => {
@@ -980,8 +1009,16 @@
                 if (urgencyInput) {
                     urgencyInput.value = button.dataset.urgency;
                 }
-                summaryUrgency.textContent = button.dataset.urgency;
+                if (summaryUrgency) {
+                    summaryUrgency.textContent = button.dataset.urgency;
+                }
             });
         });
+
+        if (summaryUrgency && urgencyInput) {
+            summaryUrgency.textContent = urgencyInput.value;
+        }
+
+        updateSummary();
     </script>
 @endsection

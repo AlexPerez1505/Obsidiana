@@ -30,7 +30,7 @@ class InventoryEntradaTest extends TestCase
         ]);
     }
 
-    private function datosBase(array $overrides = []): array
+    private function datosBase(User $user, array $overrides = []): array
     {
         $tipo = EquipmentType::create(['name' => 'Torre de endoscopia']);
 
@@ -40,7 +40,33 @@ class InventoryEntradaTest extends TestCase
             'cantidad' => 1,
             'proveedor' => 'ProveedorTest',
             'movement_date' => now()->format('Y-m-d'),
+            'firma' => $this->firmaValida(),
+            'video_path' => $this->subirVideoDePrueba($user),
         ], $overrides);
+    }
+
+    /** Data URL base64 mínima (PNG 1x1) para simular una firma capturada. */
+    private function firmaValida(): string
+    {
+        return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    }
+
+    /**
+     * Simula la subida de un video por chunks (en un solo pedazo, ya que
+     * es pequeño) y regresa la ruta ya ensamblada que el formulario real
+     * mandaría en "video_path".
+     */
+    private function subirVideoDePrueba(User $user): string
+    {
+        $respuesta = $this->actingAs($user)->post(route('inventory.movimientos.videoChunk'), [
+            'chunk' => UploadedFile::fake()->create('chunk.mp4', 500, 'video/mp4'),
+            'upload_id' => 'test-'.uniqid(),
+            'index' => 0,
+            'total' => 1,
+            'extension' => 'mp4',
+        ]);
+
+        return $respuesta->json('video_path');
     }
 
     public function test_registrar_entrada_crea_el_producto_sus_unidades_y_guarda_la_evidencia(): void
@@ -50,7 +76,7 @@ class InventoryEntradaTest extends TestCase
         $user = $this->usuarioAprobado();
 
         $response = $this->actingAs($user)->post(route('inventory.movimientos.store'), array_merge(
-            $this->datosBase(['cantidad' => 3, 'series_texto' => '23A00001']),
+            $this->datosBase($user, ['cantidad' => 3, 'series_texto' => '23A00001']),
             ['evidencias' => [UploadedFile::fake()->create('evidencia.jpg', 50, 'image/jpeg')]]
         ));
 
@@ -68,6 +94,12 @@ class InventoryEntradaTest extends TestCase
         $this->assertNotNull($movimiento);
         $this->assertCount(1, $movimiento->evidence_paths);
         Storage::disk('public')->assertExists($movimiento->evidence_paths[0]);
+
+        $this->assertNotNull($movimiento->signature_path);
+        Storage::disk('public')->assertExists($movimiento->signature_path);
+        $this->assertNotNull($movimiento->video_path);
+        Storage::disk('public')->assertExists($movimiento->video_path);
+        $this->assertSame($user->id, $movimiento->created_by);
     }
 
     public function test_entrada_sin_evidencia_no_se_guarda(): void
@@ -77,10 +109,74 @@ class InventoryEntradaTest extends TestCase
 
         $response = $this->actingAs($user)->post(
             route('inventory.movimientos.store'),
-            $this->datosBase()
+            $this->datosBase($user)
         );
 
         $response->assertSessionHasErrors('evidencias');
+        $this->assertDatabaseCount('inventory_movements', 0);
+    }
+
+    public function test_entrada_con_mas_de_3_fotos_de_evidencia_regresa_error(): void
+    {
+        Storage::fake('public');
+        $user = $this->usuarioAprobado();
+
+        $response = $this->actingAs($user)->post(route('inventory.movimientos.store'), array_merge(
+            $this->datosBase($user),
+            ['evidencias' => [
+                UploadedFile::fake()->create('e1.jpg', 50, 'image/jpeg'),
+                UploadedFile::fake()->create('e2.jpg', 50, 'image/jpeg'),
+                UploadedFile::fake()->create('e3.jpg', 50, 'image/jpeg'),
+                UploadedFile::fake()->create('e4.jpg', 50, 'image/jpeg'),
+            ]]
+        ));
+
+        $response->assertSessionHasErrors('evidencias');
+        $this->assertDatabaseCount('inventory_movements', 0);
+    }
+
+    public function test_entrada_sin_firma_no_se_guarda(): void
+    {
+        Storage::fake('public');
+        $user = $this->usuarioAprobado();
+
+        $response = $this->actingAs($user)->post(route('inventory.movimientos.store'), array_merge(
+            $this->datosBase($user, ['firma' => '']),
+            ['evidencias' => [UploadedFile::fake()->create('evidencia.jpg', 50, 'image/jpeg')]]
+        ));
+
+        $response->assertSessionHasErrors('firma');
+        $this->assertDatabaseCount('inventory_movements', 0);
+    }
+
+    public function test_entrada_sin_video_no_se_guarda(): void
+    {
+        Storage::fake('public');
+        $user = $this->usuarioAprobado();
+
+        $data = $this->datosBase($user);
+        unset($data['video_path']);
+
+        $response = $this->actingAs($user)->post(route('inventory.movimientos.store'), array_merge(
+            $data,
+            ['evidencias' => [UploadedFile::fake()->create('evidencia.jpg', 50, 'image/jpeg')]]
+        ));
+
+        $response->assertSessionHasErrors('video_path');
+        $this->assertDatabaseCount('inventory_movements', 0);
+    }
+
+    public function test_entrada_con_video_path_inventado_no_se_guarda(): void
+    {
+        Storage::fake('public');
+        $user = $this->usuarioAprobado();
+
+        $response = $this->actingAs($user)->post(route('inventory.movimientos.store'), array_merge(
+            $this->datosBase($user, ['video_path' => 'inventario/entradas/video_no-existe.mp4']),
+            ['evidencias' => [UploadedFile::fake()->create('evidencia.jpg', 50, 'image/jpeg')]]
+        ));
+
+        $response->assertSessionHasErrors('video_path');
         $this->assertDatabaseCount('inventory_movements', 0);
     }
 
@@ -90,7 +186,7 @@ class InventoryEntradaTest extends TestCase
         $user = $this->usuarioAprobado();
 
         $response = $this->actingAs($user)->post(route('inventory.movimientos.store'), array_merge(
-            $this->datosBase(['cantidad' => 3, 'series_texto' => "SN1\nSN2"]),
+            $this->datosBase($user, ['cantidad' => 3, 'series_texto' => "SN1\nSN2"]),
             ['evidencias' => [UploadedFile::fake()->create('evidencia.jpg', 50, 'image/jpeg')]]
         ));
 
@@ -104,12 +200,14 @@ class InventoryEntradaTest extends TestCase
         $user = $this->usuarioAprobado();
 
         $this->actingAs($user)->post(route('inventory.movimientos.store'), array_merge(
-            $this->datosBase(['cantidad' => 1]),
+            $this->datosBase($user, ['cantidad' => 1]),
             ['evidencias' => [UploadedFile::fake()->create('evidencia.jpg', 50, 'image/jpeg')]]
         ));
 
         $movimiento = InventoryMovement::first();
         $evidencia = $movimiento->evidence_paths[0];
+        $firma = $movimiento->signature_path;
+        $video = $movimiento->video_path;
 
         $this->actingAs($user)
             ->delete(route('inventory.movimientos.destroy', $movimiento), ['password' => 'password'])
@@ -117,6 +215,8 @@ class InventoryEntradaTest extends TestCase
 
         $this->assertSame(0, InventoryMovement::count());
         Storage::disk('public')->assertMissing($evidencia);
+        Storage::disk('public')->assertMissing($firma);
+        Storage::disk('public')->assertMissing($video);
     }
 
     public function test_no_se_puede_eliminar_una_entrada_con_unidades_ya_vendidas(): void
@@ -125,7 +225,7 @@ class InventoryEntradaTest extends TestCase
         $user = $this->usuarioAprobado();
 
         $this->actingAs($user)->post(route('inventory.movimientos.store'), array_merge(
-            $this->datosBase(['cantidad' => 1, 'series_texto' => 'SN-VENDIDA']),
+            $this->datosBase($user, ['cantidad' => 1, 'series_texto' => 'SN-VENDIDA']),
             ['evidencias' => [UploadedFile::fake()->create('evidencia.jpg', 50, 'image/jpeg')]]
         ));
 
