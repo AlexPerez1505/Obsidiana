@@ -730,9 +730,18 @@ class VentaController extends Controller
         $faltan = $cantidad - $seriales->count();
 
         if ($faltan > 0) {
+            /*
+            | Al completar solo, primero las que están en el almacén.
+            |
+            | Una pieza que se fue a un congreso sí se puede vender (allá
+            | mismo la venden), pero si el sistema la toma por ser la más
+            | antigua, almacén va a buscarla al anaquel y no está. Si de
+            | verdad se vendió la del congreso, el asesor la elige a mano.
+            */
             $seriales = $seriales->merge(
                 (clone $disponibles)
                     ->whereNotIn('id', $seriales->pluck('id')->all() ?: [0])
+                    ->orderByRaw('CASE WHEN congress_id IS NULL THEN 0 ELSE 1 END')
                     ->orderBy('id')
                     ->take($faltan)
                     ->get()

@@ -26,7 +26,10 @@ class ProductoController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Producto::query()->with('serialesDisponibles')->latest();
+        // Se trae también la entrada y el congreso de cada unidad: el modal
+        // muestra la fecha de llegada y avisa si la pieza no está en el
+        // almacén. Sin esto era una consulta por unidad.
+        $query = Producto::query()->with('serialesDisponibles.entrada', 'serialesDisponibles.congress')->latest();
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -37,11 +40,21 @@ class ProductoController extends Controller
             });
         }
 
+        /*
+        | Para sacar de un jalón qué se llevaron a los congresos: son piezas
+        | que siguen contando como stock (allá se pueden vender), pero que
+        | no están físicamente en el anaquel.
+        */
+        if ($request->get('ubicacion') === 'congreso') {
+            $query->whereHas('serialesDisponibles', fn ($q) => $q->whereNotNull('congress_id'));
+        }
+
         $productos = $query->paginate(20)->withQueryString();
 
         return view('structure.gestion_Inventario.productos.index', [
             'productos' => $productos,
-            'filters' => $request->only('search'),
+            'filters' => $request->only('search', 'ubicacion'),
+            'enCongreso' => ProductoSerial::whereNotNull('congress_id')->where('vendido', false)->count(),
         ]);
     }
 

@@ -41,7 +41,12 @@ class OrdenSalidaController extends Controller
 
     public function show(OrdenSalida $orden): View
     {
-        $orden->load(['venta.customer', 'venta.seller', 'items', 'preparadaPor', 'entregadaPor']);
+        // Las piezas de cada partida vienen con su congreso: si el equipo
+        // se vendió en uno, no está en el almacén y no hay que buscarlo.
+        $orden->load([
+            'venta.customer', 'venta.seller', 'preparadaPor', 'entregadaPor',
+            'items.ventaItem.seriales.congress',
+        ]);
 
         return view('structure.gestion_Inventario.ordenes_salida.show', [
             'orden' => $orden,

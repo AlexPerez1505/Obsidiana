@@ -354,6 +354,16 @@
             font-family:inherit; font-size:13px; cursor:pointer; }
         input[type=file]::file-selector-button:hover { border-color:var(--muted); }
 
+        /* El reloj de los campos de hora y el calendario de los de fecha los
+           dibuja el navegador en negro, así que en tema oscuro quedaban
+           invisibles sobre el fondo. Se invierten para que se vean blancos. */
+        [data-theme="dark"] input[type=time]::-webkit-calendar-picker-indicator,
+        [data-theme="dark"] input[type=date]::-webkit-calendar-picker-indicator,
+        [data-theme="dark"] input[type=datetime-local]::-webkit-calendar-picker-indicator,
+        [data-theme="dark"] input[type=month]::-webkit-calendar-picker-indicator,
+        [data-theme="dark"] input[type=week]::-webkit-calendar-picker-indicator {
+            filter:invert(1) brightness(1.6); cursor:pointer; }
+
         /* Campo del componente x-ui.form-group: etiqueta, control y error
            en un mismo bloque, para que no se separen dentro de una rejilla. */
         .form-group { min-width:0; }

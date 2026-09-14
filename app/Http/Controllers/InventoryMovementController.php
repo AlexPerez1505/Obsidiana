@@ -79,12 +79,25 @@ class InventoryMovementController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        /*
+        | Los errores de las piezas llegan con su índice
+        | (unidades.0.evidencias, unidades.2.video_path...). Los bloques de
+        | cada pieza los dibuja el script en el navegador, así que no pueden
+        | traer su propio error: se juntan aquí para mostrarlos como lista.
+        */
+        $erroresPiezas = collect(optional($request->session()->get('errors'))->getBag('default')?->messages() ?? [])
+            ->filter(fn ($mensajes, $llave) => str_starts_with((string) $llave, 'unidades'))
+            ->flatten()
+            ->unique()
+            ->values();
+
         return view('structure.gestion_Inventario.entrada_salida.create', [
             'catalogo' => $this->catalogoEquipo(),
             'checklist' => ChecklistRecepcion::grupos(),
             'estadosGenerales' => ChecklistRecepcion::ESTADOS,
+            'erroresPiezas' => $erroresPiezas,
         ]);
     }
 

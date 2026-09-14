@@ -146,28 +146,19 @@
                 }
             }
 
-            if (paso.dataset.paso === 'evidencia') {
-                const fotos = paso.querySelector('#evidencias');
-                if (fotos && (! fotos.files || fotos.files.length === 0)) {
-                    falta.push('Subir al menos una foto de cómo llegó');
-                }
+            /*
+            | Cada pieza necesita su propia foto: se dice cuál es la que
+            | falta, por número, en vez de un "sube evidencia" a secas.
+            */
+            if (paso.dataset.paso === 'piezas') {
+                const sinFoto = Array.from(paso.querySelectorAll('.pieza-card'))
+                    .filter(card => (card.querySelector('input[type=file][multiple]')?.files.length || 0) === 0)
+                    .map(card => '#' + (Number(card.dataset.pieza) + 1));
 
-                const video = paso.querySelector('#video-path-input');
-                if (video && ! video.value) {
-                    falta.push('Subir el video de verificación');
-                }
-            }
-
-            if (paso.dataset.paso === 'identificacion') {
-                const panel = paso.querySelector('[data-panel="unidades"]');
-
-                if (panel && panel.style.display !== 'none') {
-                    const sinFoto = Array.from(panel.querySelectorAll('input[type=file]'))
-                        .filter(i => i.required && (! i.files || i.files.length === 0)).length;
-
-                    if (sinFoto > 0) {
-                        falta.push(`Foto de ${sinFoto} pieza(s) sin capturar`);
-                    }
+                if (sinFoto.length) {
+                    falta.push(sinFoto.length === 1
+                        ? `Falta la foto de la pieza ${sinFoto[0]}`
+                        : `Faltan las fotos de las piezas ${sinFoto.join(', ')}`);
                 }
             }
 
@@ -261,30 +252,13 @@
                 const pasoChk = form.querySelector('[data-solo-usado]');
                 pasoChk.querySelectorAll('input, textarea').forEach(c => { c.disabled = !esUsado(); });
 
-                if (window.pintarUnidades) window.pintarUnidades();
                 mostrar();
             });
         });
 
-        /* ===================== Modo de identificación ===================== */
-        function aplicarModo() {
-            const modo = form.querySelector('[data-modo]:checked')?.value || 'lote';
-
-            ['lote', 'series', 'unidades'].forEach(function (m) {
-                const panel = form.querySelector(`[data-panel="${m}"]`);
-                if (!panel) return;
-
-                panel.style.display = m === modo ? '' : 'none';
-                // Un campo escondido no debe enviarse ni bloquear el envío.
-                panel.querySelectorAll('input, textarea').forEach(c => { c.disabled = m !== modo; });
-            });
-
-            if (modo === 'unidades' && window.pintarUnidades) window.pintarUnidades();
-        }
-
-        form.querySelectorAll('[data-modo]').forEach(r => r.addEventListener('change', aplicarModo));
-
-        /* ===================== Ecos de la cantidad ===================== */
+        /* ===================== Ecos de la cantidad =====================
+           La cantidad manda cuántos bloques de pieza hay que dibujar: una
+           evidencia por cada pieza que llegó. */
         const cantidad = document.getElementById('cantidad');
 
         if (cantidad) {
@@ -292,10 +266,7 @@
                 const n = Math.max(1, parseInt(cantidad.value || '1', 10) || 1);
                 form.querySelectorAll('[data-eco-cantidad]').forEach(e => { e.textContent = n; });
 
-                if (form.querySelector('[data-modo]:checked')?.value === 'unidades' && window.pintarUnidades) {
-                    window.pintarUnidades();
-                }
-
+                if (window.pintarPiezas) window.pintarPiezas();
                 if (window.actualizarResumenEntrada) window.actualizarResumenEntrada();
             });
         }
@@ -389,7 +360,6 @@
         const pasoChk = form.querySelector('[data-solo-usado]');
         pasoChk.querySelectorAll('input, textarea').forEach(c => { c.disabled = !esUsado(); });
 
-        aplicarModo();
         contarChecklist();
         if (cantidad) cantidad.dispatchEvent(new Event('input'));
         mostrar();

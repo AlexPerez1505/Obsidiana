@@ -29,6 +29,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->name('inventory.congresos.productos.store');
     Route::delete('/gestion-inventario/congresos/{congress}/productos/{serial}', [CongresoController::class, 'quitarUnidad'])
         ->name('inventory.congresos.productos.destroy');
+    Route::post('/gestion-inventario/congresos/{congress}/regresar-todas', [CongresoController::class, 'regresarTodas'])
+        ->name('inventory.congresos.productos.regresarTodas');
 
     Route::post('/gestion-inventario/congresos/{congress}/participantes', [CongresoController::class, 'agregarParticipante'])
         ->name('inventory.congresos.participantes.store');

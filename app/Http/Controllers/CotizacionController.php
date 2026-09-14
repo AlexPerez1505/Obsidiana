@@ -201,7 +201,12 @@ class CotizacionController extends Controller
         $q = trim($request->get('q', ''));
 
         $productos = Producto::query()
-            ->with(['fichaTecnica', 'serialesDisponibles' => fn ($s) => $s->orderBy('id')->limit(60)])
+            ->with([
+                'fichaTecnica',
+                // El congreso viene con la pieza: el selector avisa cuáles
+                // no están en el almacén, y sin esto era una consulta por pieza.
+                'serialesDisponibles' => fn ($s) => $s->with('congress')->orderBy('id')->limit(60),
+            ])
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($sub) use ($q) {
                     $sub->where('tipo_equipo', 'like', "%{$q}%")
@@ -234,6 +239,9 @@ class CotizacionController extends Controller
                     'codigo' => $s->codigo,
                     'no_serie' => $s->no_serie,
                     'condicion' => $s->condicion,
+                    // Se puede vender, pero no está en el almacén: quien
+                    // arma la venta necesita saberlo antes de elegirla.
+                    'congreso' => $s->congress?->nombre,
                 ])->values(),
 
                 // Si el producto tiene su ficha técnica, se adjunta sola al agregarlo.

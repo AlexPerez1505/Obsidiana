@@ -131,7 +131,11 @@
 
                 <div class="opciones">
                     @foreach ($estadosGenerales as $valor => $texto)
-                        @php ([$titulo, $detalle] = array_pad(explode(' · ', $texto, 2), 2, ''))
+                        {{-- Ojo: la directiva de una línea va pegada al
+                             paréntesis. Con un espacio en medio, Blade la toma
+                             como apertura de bloque y se traga el HTML que
+                             sigue hasta el cierre del siguiente bloque. --}}
+                        @php([$titulo, $detalle] = array_pad(explode(' · ', $texto, 2), 2, ''))
                         <label class="opcion">
                             <input type="radio" name="estado_general" value="{{ $valor }}"
                                    {{ old('estado_general') === $valor ? 'checked' : '' }}>
@@ -252,7 +256,17 @@
                     <button type="button" class="btn btn--ghost" data-generar-series>Generar series</button>
                 </div>
 
-                @error('unidades')<p class="err">{{ $message }}</p>@enderror
+                {{-- Los errores de cada pieza vienen con su índice
+                     (unidades.0.evidencias): el controlador los junta porque
+                     los bloques los dibuja el script y no pueden traerlos. --}}
+                @if ($erroresPiezas->isNotEmpty())
+                    <div class="paso-faltan" style="margin:12px 0 0;">
+                        <b>Revisa esto:</b>
+                        <ul>
+                            @foreach ($erroresPiezas as $mensaje)<li>{{ $mensaje }}</li>@endforeach
+                        </ul>
+                    </div>
+                @endif
             </x-ui.card>
 
             <div id="piezas-rows"></div>
@@ -297,9 +311,22 @@
                     Firma con el mouse o el dedo para confirmar quién capturó esta entrada.
                 </p>
 
-                <canvas class="signature-box" id="signature-pad"></canvas>
-                <p style="margin:10px 0 0;">
+                <canvas class="signature-box" id="signature-pad"
+                        @if (auth()->user()->tieneFirma())
+                            data-firma-registrada="{{ auth()->user()->firmaDataUri() }}"
+                        @endif></canvas>
+                <p style="margin:10px 0 0; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
                     <a href="#" id="limpiar-firma" class="link" style="font-size:13px;">Limpiar firma</a>
+
+                    @if (auth()->user()->tieneFirma())
+                        <span class="campo-nota" data-firma-aviso>Se cargó tu firma registrada.</span>
+                        <a href="#" class="link" style="font-size:13px; display:none;" data-usar-firma>Usar mi firma registrada</a>
+                    @else
+                        <span class="campo-nota">
+                            Puedes <a href="{{ route('profile.edit') }}" class="link">registrar tu firma</a>
+                            para que se cargue sola la próxima vez.
+                        </span>
+                    @endif
                 </p>
 
                 {{-- La firma viaja como imagen en base64: conservarla evita
@@ -320,7 +347,7 @@
         </div>
     </form>
 
-    {{-- Captura primero: define pintarUnidades() y el resumen que usan los pasos. --}}
+    {{-- Captura primero: define pintarPiezas() y el resumen que usan los pasos. --}}
     @include('structure.gestion_Inventario.entrada_salida._script_captura')
     @include('structure.gestion_Inventario.entrada_salida._script_pasos')
 @endsection

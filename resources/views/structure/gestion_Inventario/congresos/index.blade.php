@@ -51,7 +51,16 @@
     .cgx-detalle-meta span { display:flex; align-items:center; gap:6px; }
     .cgx-detalle-meta svg { width:14px; height:14px; flex:0 0 auto; }
 
-    .cgx-stats { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin:16px 0; }
+    /* Terminó el congreso y las piezas siguen marcadas como que están allá. */
+    .cgx-pendientes { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:14px 0 0;
+                      padding:12px 14px; border:1px solid var(--warn, #d97706); border-radius:10px;
+                      background:var(--warn-soft, rgba(217,119,6,.1)); font-size:13px; }
+    .cgx-pendientes > div { flex:1; min-width:180px; }
+    .cgx-pendientes b { display:block; }
+    .cgx-pendientes span { color:var(--muted); font-size:12.5px; }
+    .cgx-pendientes form { flex:0 0 auto; }
+
+    .cgx-stats { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin:16px 0; }
     .cgx-stat { border:1px solid var(--border); border-radius:10px; padding:10px 12px; text-align:center; }
     .cgx-stat b { display:block; font-size:18px; font-weight:800; }
     .cgx-stat span { font-size:11px; color:var(--muted); }
@@ -257,10 +266,33 @@
                         <p class="muted" style="font-size:13px; margin:0 0 14px;">{{ $congress->descripcion }}</p>
                     @endif
 
+                    {{--
+                        El congreso terminó y nadie regresó las piezas: si
+                        no se avisa, se quedan marcadas para siempre y el
+                        "está en congreso" deja de ser confiable.
+                    --}}
+                    @if ($congress->tienePiezasSinRegresar())
+                        <div class="cgx-pendientes">
+                            <div>
+                                <b>Este congreso ya terminó y todavía tiene piezas allá.</b>
+                                <span>Si ya volvieron al almacén, regrésalas aquí para que el inventario diga la verdad.</span>
+                            </div>
+                            <form method="POST" action="{{ route('inventory.congresos.productos.regresarTodas', $congress) }}"
+                                  onsubmit="return confirm('¿Regresar al almacén todas las piezas que no se vendieron?');">
+                                @csrf
+                                <button type="submit" class="btn">Regresar todas</button>
+                            </form>
+                        </div>
+                    @endif
+
                     <div class="cgx-stats">
                         <div class="cgx-stat">
-                            <b>{{ $productosResumen->count() }}</b>
-                            <span>Productos asignados</span>
+                            <b>{{ $productosResumen->sum('cantidad') }}</b>
+                            <span>Piezas allá</span>
+                        </div>
+                        <div class="cgx-stat">
+                            <b>{{ $vendidasEnCongreso }}</b>
+                            <span>Vendidas aquí</span>
                         </div>
                         <div class="cgx-stat">
                             <b>{{ $participantes->count() }}</b>
@@ -274,11 +306,20 @@
 
                     {{-- ---------- Productos del congreso ---------- --}}
                     <div class="cgx-sub-title">
-                        <h4>Productos del congreso</h4>
+                        <h4>Productos en el congreso</h4>
+                        @if ($productosResumen->isNotEmpty())
+                            <span class="muted" style="font-size:11.5px;">{{ $productosResumen->count() }} modelo(s)</span>
+                        @endif
                     </div>
 
                     @if ($productosResumen->isEmpty())
-                        <p class="muted" style="margin:0; font-size:12.5px;">Todavía no se ha llevado ningún producto.</p>
+                        <p class="muted" style="margin:0; font-size:12.5px;">
+                            @if ($vendidasEnCongreso > 0)
+                                Ya no queda nada allá: las {{ $vendidasEnCongreso }} pieza(s) que se llevaron se vendieron.
+                            @else
+                                Todavía no se ha llevado ningún producto.
+                            @endif
+                        </p>
                     @else
                         <table class="cgx-mini-table">
                             <thead>

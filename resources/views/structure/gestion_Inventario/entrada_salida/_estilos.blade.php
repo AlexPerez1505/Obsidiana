@@ -141,17 +141,33 @@
             .chk-punto .txt { flex:1 0 100%; }
         }
 
-        /* ===================== Unidades una por una ===================== */
-        .unidad-row { display:grid; grid-template-columns:34px 1fr 170px; align-items:center;
-                      gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
-        .unidad-row:last-child { border-bottom:none; }
-        .unidad-row .unidad-num { color:var(--muted); font-size:13px; font-weight:700; }
-        .unidad-row input[type="file"] { padding:6px 9px; font-size:12.5px; }
-        .unidad-foto-preview { width:44px; height:44px; object-fit:cover; border-radius:7px;
-                               border:1px solid var(--border); display:none; margin-top:6px; }
+        /* ===================== Una pieza, una evidencia =====================
+           Un bloque por cada pieza que llegó: su serie, sus fotos y su
+           video. No hay evidencia "del lote". */
+        .pieza-card { border:1px solid var(--border); border-radius:12px; background:var(--surface);
+                      padding:16px 18px; margin-bottom:14px; }
+        .pieza-card:last-child { margin-bottom:0; }
+        .pieza-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+        .pieza-num { font-size:14px; font-weight:700; }
+        .pieza-estado { margin-left:auto; font-size:12px; font-weight:600; padding:3px 10px;
+                        border-radius:999px; background:var(--danger-soft); color:var(--danger); }
+        .pieza-estado.listo { background:var(--primary-soft); color:var(--primary); }
+
+        .pieza-serie { width:100%; padding:10px 12px; margin-bottom:12px; border:1px solid var(--border);
+                       border-radius:9px; background:var(--surface); color:var(--text);
+                       font-family:inherit; font-size:14px; }
+        .pieza-serie:focus { border-color:var(--primary); outline:none; }
+
+        .pieza-medios { display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; }
+        .soltar--chico { padding:16px 14px; gap:4px; }
+        .soltar--chico .ico svg { width:20px; height:20px; }
+        .soltar--chico .t { font-size:13px; }
+        .soltar--chico .d { font-size:11.5px; }
+        .pieza-card .miniaturas { grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); margin-top:8px; }
+        .pieza-progreso { margin-top:8px; }
+
         @media (max-width:640px) {
-            .unidad-row { grid-template-columns:26px 1fr; }
-            .unidad-row input[type="file"] { grid-column:2; }
+            .pieza-medios { grid-template-columns:1fr; }
         }
 
         /* ===================== Firma ===================== */

@@ -9,6 +9,7 @@ use App\Models\CongresoParticipante;
 use App\Models\Producto;
 use App\Models\ProductoSerial;
 use App\Models\User;
+use App\Services\RegresoDeCongresos;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -33,6 +34,14 @@ class CongresoController extends Controller
      */
     public function index(Request $request): View
     {
+        /*
+        | Respaldo del aviso de piezas sin regresar, por si el programador
+        | de tareas del servidor no está corriendo. Trae su propio candado
+        | (media hora), así que abrir esta pantalla seguido no manda nada
+        | de más.
+        */
+        app(RegresoDeCongresos::class)->avisarSiToca();
+
         $congresses = Congress::query()->orderBy('fecha_inicio')->get();
 
         $seleccionado = null;
@@ -95,6 +104,7 @@ class CongresoController extends Controller
             'congresses' => $congresses,
             'congress' => $seleccionado,
             'productosResumen' => $seleccionado?->productosResumen() ?? collect(),
+            'vendidasEnCongreso' => $seleccionado?->unidadesVendidas()->count() ?? 0,
             'participantes' => $seleccionado?->participantes()->latest()->get() ?? collect(),
             'usuariosAsignados' => $usuariosAsignados,
             'usuariosDisponibles' => User::query()
@@ -294,6 +304,31 @@ class CongresoController extends Controller
 
         return redirect()->route('inventory.congresos.index', ['congreso' => $congress->id])
             ->with('status', 'Unidad regresada del congreso.');
+    }
+
+    /**
+     * Regresa de un jalón todo lo que no se vendió.
+     *
+     * Es lo que cierra el ciclo: al terminar el congreso, lo que sobró
+     * vuelve al almacén. Sin esto las piezas se quedaban marcadas para
+     * siempre y el dato dejaba de servir.
+     */
+    public function regresarTodas(Congress $congress): RedirectResponse
+    {
+        $cuantas = $congress->unidadesPresentes()->count();
+
+        if ($cuantas === 0) {
+            return back()->withErrors(['unidades' => 'Este congreso no tiene piezas por regresar.']);
+        }
+
+        // Las vendidas no se tocan: su marca es el rastro de dónde se
+        // vendieron.
+        ProductoSerial::where('congress_id', $congress->id)
+            ->where('vendido', false)
+            ->update(['congress_id' => null, 'enviado_a_congreso_en' => null]);
+
+        return redirect()->route('inventory.congresos.index', ['congreso' => $congress->id])
+            ->with('status', "Se regresaron {$cuantas} pieza(s) al almacén.");
     }
 
     public function agregarParticipante(Request $request, Congress $congress): RedirectResponse

@@ -57,7 +57,8 @@ class EntradaConservaDatosTest extends TestCase
         $video = $this->subirVideoDePrueba($user);
         $firma = $this->firmaValida();
 
-        // Falta la evidencia fotográfica a propósito: el servidor rechaza.
+        // Las fotos de la segunda y tercera pieza faltan a propósito: el
+        // servidor rechaza, porque cada pieza necesita la suya.
         $respuesta = $this->actingAs($user)
             ->from(route('inventory.movimientos.create'))
             ->post(route('inventory.movimientos.store'), [
@@ -67,14 +68,20 @@ class EntradaConservaDatosTest extends TestCase
                 'movement_date' => now()->format('Y-m-d'),
                 'descripcion' => 'Llegó en caja sellada',
                 'notas' => 'Se abrió para inspección',
-                'modo_identificacion' => 'series',
-                'series_texto' => "23A00010\n23A00011\n23A00012",
                 'firma' => $firma,
-                'video_path' => $video,
+                'unidades' => [
+                    [
+                        'no_serie' => '23A00010',
+                        'video_path' => $video,
+                        'evidencias' => [UploadedFile::fake()->create('p1.jpg', 40, 'image/jpeg')],
+                    ],
+                    ['no_serie' => '23A00011', 'evidencias' => []],
+                    ['no_serie' => '23A00012', 'evidencias' => []],
+                ],
             ]);
 
         $respuesta->assertRedirect(route('inventory.movimientos.create'));
-        $respuesta->assertSessionHasErrors('evidencias');
+        $respuesta->assertSessionHasErrors(['unidades.1.evidencias', 'unidades.2.evidencias']);
 
         // El formulario se vuelve a dibujar con lo que ya se había capturado.
         $pagina = $this->actingAs($user)->get(route('inventory.movimientos.create'));
@@ -82,17 +89,21 @@ class EntradaConservaDatosTest extends TestCase
         $pagina->assertOk();
         $pagina->assertSee('Llegó en caja sellada', false);
         $pagina->assertSee('Se abrió para inspección', false);
-        $pagina->assertSee('23A00010', false);
         $pagina->assertSee('value="3"', false);
+        // Las series de cada pieza regresan para que el script las repinte.
+        $pagina->assertSee('23A00010', false);
+        $pagina->assertSee('23A00012', false);
         // La firma regresa como valor del input: el lienzo la re-dibuja.
         $pagina->assertSee($firma, false);
-        // El video ya vive en el servidor: no se vuelve a subir.
-        $pagina->assertSee($video, false);
+        // El video de esa pieza ya vive en el servidor: no se vuelve a subir.
+        $pagina->assertSee(str_replace('/', '\/', $video), false);
         // Y se avisa que las fotos sí hay que volver a adjuntarlas.
         $pagina->assertSee('volver a adjuntar', false);
+        // El error de cada pieza se muestra con su número.
+        $pagina->assertSee('foto de cómo llegó ella', false);
     }
 
-    public function test_el_modo_y_la_condicion_elegidos_siguen_marcados(): void
+    public function test_la_condicion_elegida_sigue_marcada(): void
     {
         Storage::fake(config('filesystems.fotos_disk', 'public'));
 
@@ -106,9 +117,8 @@ class EntradaConservaDatosTest extends TestCase
                 'equipment_type_id' => $tipo->id,
                 'cantidad' => 1,
                 'movement_date' => now()->format('Y-m-d'),
-                'modo_identificacion' => 'series',
                 'firma' => $this->firmaValida(),
-                // Sin video ni evidencias: se rechaza.
+                // Sin piezas ni checklist: se rechaza.
             ]);
 
         $pagina = $this->actingAs($user)->get(route('inventory.movimientos.create'));
