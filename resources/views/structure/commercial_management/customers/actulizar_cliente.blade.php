@@ -92,7 +92,7 @@
         <div style="display:flex; flex-direction:column; gap:18px;">
             <x-ui.card>
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" width="26" height="26"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    <x-gravityui-circle-info style="color:var(--green);" width="26" height="26" />
                     <x-ui.section-title style="margin:0;">Información</x-ui.section-title>
                 </div>
                 <p class="muted" style="margin:0; font-size:14px;">Modifica los datos básicos del cliente.</p>
@@ -102,7 +102,7 @@
                 <x-ui.section-title style="margin:0 0 14px;">Vista Previa</x-ui.section-title>
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
                     <div style="width:40px; height:40px; border-radius:50%; background:var(--primary-soft); display:flex; align-items:center; justify-content:center; color:var(--primary);">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <x-gravityui-person width="20" height="20" />
                     </div>
                     <span class="muted" style="font-size:14px;">{{ $customer->nombre }} {{ $customer->apellido }}</span>
                 </div>

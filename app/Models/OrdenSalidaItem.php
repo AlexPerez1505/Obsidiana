@@ -43,4 +43,18 @@ class OrdenSalidaItem extends Model
     {
         return $this->preparado && (! $this->requiere_emplayado || $this->emplayado);
     }
+
+    /**
+     * El congreso donde está (o de donde salió) el equipo de esta partida.
+     *
+     * Si se vendió en un congreso, la pieza conserva esa marca: almacén no
+     * tiene que buscarla en el anaquel porque nunca volvió, y quien lee la
+     * remisión entiende de dónde salió el equipo.
+     */
+    public function congresoDeOrigen(): ?string
+    {
+        return $this->ventaItem?->seriales
+            ->firstWhere(fn (ProductoSerial $s) => $s->congress_id !== null)
+            ?->congress?->nombre;
+    }
 }

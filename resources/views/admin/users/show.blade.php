@@ -325,7 +325,7 @@
                 </div>
                 <div class="emp-sidebar-info-item">
                     <div class="emp-sidebar-info-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                        <x-gravityui-credit-card />
                     </div>
                     <div class="emp-sidebar-info-text">
                         <p class="emp-sidebar-info-label">Nómina</p>
@@ -334,7 +334,7 @@
                 </div>
                 <div class="emp-sidebar-info-item">
                     <div class="emp-sidebar-info-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+                        <x-gravityui-envelope />
                     </div>
                     <div class="emp-sidebar-info-text">
                         <p class="emp-sidebar-info-label">Correo</p>
@@ -348,7 +348,7 @@
                     <form method="POST" action="{{ route('admin.users.approve', $user) }}">
                         @csrf
                         <button type="submit" class="btn-primary">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20 6L9 17l-5-5"/></svg>
+                            <x-gravityui-check width="16" height="16" />
                             Aprobar acceso
                         </button>
                     </form>
@@ -358,7 +358,7 @@
                     <form method="POST" action="{{ route('admin.users.unban', $user) }}">
                         @csrf
                         <button type="submit" class="btn-primary">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                            <x-gravityui-arrow-rotate-left width="16" height="16" />
                             Reactivar cuenta
                         </button>
                     </form>
@@ -366,21 +366,21 @@
                     <form method="POST" action="{{ route('admin.users.ban', $user) }}">
                         @csrf
                         <button type="submit" class="btn-danger" onclick="return confirm('¿Banear a este usuario?')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/></svg>
+                            <x-gravityui-ban width="16" height="16" />
                             Banear
                         </button>
                     </form>
                 @endif
 
                 <a href="{{ route('admin.users.permissions', $user) }}" class="btn-ghost">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <x-gravityui-star width="16" height="16" />
                     Administrar permisos
                 </a>
 
                 <form method="POST" action="{{ route('admin.users.toggleAdmin', $user) }}">
                     @csrf
                     <button type="submit" class="btn-ghost">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 1l3 6 6 .9-4.5 4.4 1 6.7L12 16l-5.5 3 1-6.7L3 7.9 9 7z"/></svg>
+                        <x-gravityui-crown-diamond width="16" height="16" />
                         {{ $user->is_admin ? 'Quitar admin' : 'Hacer admin' }}
                     </button>
                 </form>
@@ -391,15 +391,15 @@
         <div class="emp-main">
             <div class="emp-tabs">
                 <button class="emp-tab active" data-tab="expediente">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2M8 17h2M14 13h2M14 17h2"/></svg>
+                    <x-gravityui-file-text />
                     Expediente Digital
                 </button>
                 <button class="emp-tab" data-tab="asistencia">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    <x-gravityui-calendar />
                     Asistencia y Turnos
                 </button>
                 <button class="emp-tab" data-tab="auditoria">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <x-gravityui-shield-check />
                     Historial de Auditoría
                 </button>
             </div>
@@ -407,13 +407,13 @@
             {{-- Tab: Expediente Digital --}}
             <div class="emp-tab-content active" id="tab-expediente">
                 <button class="doc-upload-btn" onclick="alert('Funcionalidad de subida de documentos próximamente')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    <x-gravityui-plus />
                     Subir Documento
                 </button>
 
                 @if($documents->isEmpty())
                     <div class="doc-empty">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                        <x-gravityui-file />
                         <p style="margin:0;font-weight:600;">No hay documentos en el expediente</p>
                         <p style="margin:4px 0 0;font-size:13px;">Sube el primer documento usando el botón superior.</p>
                     </div>
@@ -437,11 +437,11 @@
                                 </div>
                                 <div class="doc-actions">
                                     <a href="#" class="doc-btn" onclick="event.preventDefault();alert('Vista previa no disponible aún')">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        <x-gravityui-eye />
                                         Ver
                                     </a>
                                     <a href="#" class="doc-btn" onclick="event.preventDefault();alert('Descarga no disponible aún')">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                                        <x-gravityui-arrow-down-to-line />
                                         Descargar
                                     </a>
                                 </div>
@@ -527,7 +527,7 @@
             <div class="emp-tab-content" id="tab-auditoria">
                 @if($logs->isEmpty())
                     <div class="proj-empty">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        <x-gravityui-shield-check />
                         <p style="margin:0;font-weight:600;">No hay registros de auditoría</p>
                         <p style="margin:4px 0 0;font-size:13px;">No se han registrado actividades para este usuario.</p>
                     </div>

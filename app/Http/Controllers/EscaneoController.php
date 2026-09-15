@@ -50,7 +50,7 @@ class EscaneoController extends Controller
         $codigo = strtoupper($m[1]);
 
         $pieza = ProductoSerial::where('codigo', $codigo)
-            ->with('producto')
+            ->with(['producto', 'congress'])
             ->first();
 
         if (! $pieza) {
@@ -80,6 +80,15 @@ class EscaneoController extends Controller
             'foto' => $pieza->fotoUrl()
                 ?: ($producto?->imagen_path ? asset('storage/'.$producto->imagen_path) : null),
             'ficha' => $pieza->urlPublica(),
+
+            /*
+            | Si la pieza se fue a un congreso, es lo primero que hay que
+            | saber: no está en el almacén. Se sigue pudiendo vender (allá
+            | mismo la venden), pero quien la esté buscando en el anaquel
+            | necesita enterarse aquí y no después de dar la vuelta.
+            */
+            'congreso' => $pieza->congress?->nombre,
+            'congreso_desde' => $pieza->enviado_a_congreso_en?->format('d/m/Y'),
         ]);
     }
 }

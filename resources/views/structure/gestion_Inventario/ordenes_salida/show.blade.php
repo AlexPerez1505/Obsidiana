@@ -82,6 +82,14 @@
                             <div class="os-item-sub">Series: {{ $item->no_series }}</div>
                         @endif
 
+                        {{-- Se vendió en un congreso: el equipo ya está allá,
+                             no hay que buscarlo en el anaquel. --}}
+                        @if ($congreso = $item->congresoDeOrigen())
+                            <div class="os-item-congreso">
+                                Este equipo está en el {{ $congreso }}: no lo busques en el almacén.
+                            </div>
+                        @endif
+
                         {{-- Observaciones de la partida --}}
                         @if ($editable)
                             <form method="POST" action="{{ route('inventory.salidas.item', [$orden, $item]) }}" class="os-obs">
@@ -185,10 +193,40 @@
                         Se habilita cuando todas las partidas estén preparadas y, las que aplican, emplayadas.
                         Faltan {{ $avance['total'] - $avance['hechos'] }} paso(s).
                     </p>
+
+                {{--
+                    Checklist terminado pero sin cerrar: quien prepara deja la
+                    orden lista y se va; la firma la hace quien entregue, que
+                    puede ser otra persona y otro día.
+                --}}
+                @elseif ($orden->puedeConfirmarPreparacion())
+                    @if ($puedePreparar)
+                        <div class="os-lista-aviso">
+                            <div>
+                                <b>El checklist está completo.</b>
+                                <span>Déjala lista para salir y se queda esperando que alguien firme la salida.</span>
+                            </div>
+                            <form method="POST" action="{{ route('inventory.salidas.preparada', $orden) }}">
+                                @csrf
+                                <button type="submit" class="btn">Dejar lista para salir</button>
+                            </form>
+                        </div>
+                    @else
+                        <p class="muted" style="margin:0; font-size:13px;">
+                            El checklist está completo. Falta que almacén la deje lista para salir.
+                        </p>
+                    @endif
+
                 @elseif (! $puedePreparar)
-                    <p class="muted" style="margin:0; font-size:13px;">Todo está listo. La salida la firma almacén.</p>
+                    <p class="muted" style="margin:0; font-size:13px;">
+                        Lista para salir desde el {{ $orden->preparada_en?->format('d/m/Y H:i') }}. La firma la hace almacén.
+                    </p>
                 @else
-                    <p class="muted" style="margin:0 0 12px; font-size:13px;">Todo listo. Firma quien entrega y quien se lleva el equipo.</p>
+                    <p class="muted" style="margin:0 0 12px; font-size:13px;">
+                        Lista para salir: la preparó {{ $orden->preparadaPor?->name ?? '—' }}
+                        el {{ $orden->preparada_en?->format('d/m/Y H:i') }}.
+                        Ahora firma quien entrega y quien se lleva el equipo.
+                    </p>
 
                     <form method="POST" action="{{ route('inventory.salidas.entregar', $orden) }}" id="formEntrega">
                         @csrf
@@ -200,9 +238,18 @@
                         <div class="os-firmas">
                             <div>
                                 <div class="k">Firma de quien entrega (almacén)</div>
-                                <canvas class="os-pad" data-pad="firma_entrega" width="400" height="150"></canvas>
+                                {{-- La firma registrada del usuario se carga sola.
+                                     La de quien recibe no: esa es del cliente o del
+                                     chofer y se traza en el momento. --}}
+                                <canvas class="os-pad" data-pad="firma_entrega" width="400" height="150"
+                                        @if (auth()->user()->tieneFirma())
+                                            data-firma-registrada="{{ auth()->user()->firmaDataUri() }}"
+                                        @endif></canvas>
                                 <input type="hidden" name="firma_entrega" id="firma_entrega">
                                 <a href="#" class="os-link" data-limpiar="firma_entrega">Limpiar</a>
+                                @if (! auth()->user()->tieneFirma())
+                                    <a href="{{ route('profile.edit') }}" class="os-link">Registrar mi firma</a>
+                                @endif
                             </div>
                             <div>
                                 <div class="k">Firma de quien recibe</div>
@@ -239,6 +286,19 @@
         .os-item-nombre { font-weight:700; font-size:14.5px; }
         .os-item-cant { color:var(--muted); font-weight:600; font-size:13px; margin-left:4px; }
         .os-item-sub { color:var(--muted); font-size:12.5px; margin-top:2px; overflow-wrap:anywhere; }
+        /* El equipo se vendió en un congreso: nunca volvió al almacén. */
+        .os-item-congreso { display:inline-block; margin-top:5px; padding:3px 9px; border-radius:999px;
+                            background:var(--warn-soft, rgba(217,119,6,.12)); color:var(--warn, #b45309);
+                            font-size:12px; font-weight:700; }
+
+        /* Checklist completo, esperando que almacén cierre la preparación. */
+        .os-lista-aviso { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:10px;
+                          padding:14px 16px; border:1px solid var(--primary); border-radius:11px;
+                          background:var(--primary-soft); font-size:13.5px; }
+        .os-lista-aviso > div { flex:1; min-width:190px; }
+        .os-lista-aviso b { display:block; }
+        .os-lista-aviso span { color:var(--muted); font-size:12.5px; }
+        .os-lista-aviso form { flex:0 0 auto; }
         .os-obs { display:flex; gap:8px; margin-top:8px; max-width:520px; }
         .os-obs input { flex:1; min-width:0; padding:7px 10px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:var(--surface); color:var(--text); }
 
@@ -272,6 +332,15 @@
                 const input = document.getElementById(lienzo.dataset.pad);
                 const ctx = lienzo.getContext('2d');
                 let firmando = false;
+
+                /*
+                | La firma que el usuario registró en su perfil se carga sola
+                | en la de "quien entrega". La de "quien recibe" no la trae
+                | nadie: es del cliente o del chofer y se traza en el momento.
+                */
+                if (! input.value && lienzo.dataset.firmaRegistrada) {
+                    input.value = lienzo.dataset.firmaRegistrada;
+                }
 
                 const ajustar = () => {
                     const previo = input.value;

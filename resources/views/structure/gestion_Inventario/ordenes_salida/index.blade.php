@@ -55,7 +55,16 @@
                             </div>
                             <div class="os-riel-txt">{{ $avance['hechos'] }}/{{ $avance['total'] }} pasos</div>
                         </td>
-                        <td><span class="badge {{ $o->estadoTono() }}">{{ $o->estadoLabel() }}</span></td>
+                        <td>
+                            <span class="badge {{ $o->estadoTono() }}">{{ $o->estadoLabel() }}</span>
+                            {{-- Terminó el checklist pero nadie la ha dejado
+                                 lista: es la que hay que cerrar. --}}
+                            @if ($o->puedeConfirmarPreparacion())
+                                <div class="os-por-cerrar">Checklist completo · falta dejarla lista</div>
+                            @elseif ($o->listaParaFirmar())
+                                <div class="os-por-cerrar" style="color:var(--primary);">Esperando firma de salida</div>
+                            @endif
+                        </td>
                         <td style="color:var(--muted);">{{ $o->venta?->seller?->name ?? '—' }}</td>
                         <td style="text-align:right; white-space:nowrap;">
                             <a href="{{ route('inventory.salidas.pdf', $o) }}" target="_blank" class="btn btn--ghost" style="padding:6px 10px;" title="Hoja de salida en PDF">PDF</a>
@@ -102,5 +111,6 @@
         .os-riel { height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; }
         .os-riel span { display:block; height:100%; background:var(--green); }
         .os-riel-txt { margin-top:3px; color:var(--muted); font-size:11.5px; }
+        .os-por-cerrar { margin-top:4px; color:var(--accent); font-size:11.5px; font-weight:600; }
     </style>
 @endsection

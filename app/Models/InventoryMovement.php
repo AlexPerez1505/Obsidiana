@@ -35,6 +35,7 @@ class InventoryMovement extends Model
         'stock_after',
         'reference',
         'movement_date',
+        'entregado_en',
         'notes',
         'condicion',
         'checklist_recepcion',
@@ -54,10 +55,51 @@ class InventoryMovement extends Model
             'stock_before' => 'integer',
             'stock_after' => 'integer',
             'movement_date' => 'date',
+            'entregado_en' => 'datetime',
             'metadata' => 'array',
             'evidence_paths' => 'array',
             'checklist_recepcion' => 'array',
         ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Vendido vs. ya salió
+    |--------------------------------------------------------------------------
+    | El stock se descuenta al vender, pero el equipo puede tardar en salir
+    | del almacén. Mientras no se firme su orden de salida, el movimiento es
+    | una venta pendiente de entrega, no una salida consumada.
+    */
+
+    /** ¿Es una salida que todavía no se entrega físicamente? */
+    public function ventaPendienteDeEntrega(): bool
+    {
+        return $this->movement_type === self::TYPE_EXIT && $this->entregado_en === null;
+    }
+
+    public function entregada(): bool
+    {
+        return $this->movement_type === self::TYPE_EXIT && $this->entregado_en !== null;
+    }
+
+    /** "Entrada", "Vendido" (pendiente) o "Salida" (ya salió). */
+    public function tipoVista(): string
+    {
+        return match (true) {
+            $this->ventaPendienteDeEntrega() => 'vendido',
+            default => $this->movement_type,
+        };
+    }
+
+    public function tipoVistaLabel(): string
+    {
+        return match ($this->tipoVista()) {
+            self::TYPE_ENTRY => 'Entrada',
+            'vendido' => 'Vendido',
+            self::TYPE_EXIT => 'Salida',
+            self::TYPE_TRANSFER => 'Transferencia',
+            default => ucfirst($this->movement_type),
+        };
     }
 
     public function creator(): BelongsTo

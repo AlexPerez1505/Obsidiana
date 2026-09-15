@@ -16,7 +16,7 @@
 
             <div id="cliente-buscador" style="display:none;">
                 <div style="position:relative;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <x-gravityui-magnifier style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;" width="16" height="16" />
                     <input type="text" id="cliente-search" placeholder="Buscar cliente por nombre o teléfono..." autocomplete="off"
                            style="width:100%; padding:11px 12px 11px 38px; border:1px solid var(--field-border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text);">
                     <div id="cliente-resultados" style="position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--field-border); border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:20; display:none; max-height:220px; overflow-y:auto;"></div>
@@ -30,7 +30,7 @@
                 <span id="cliente-seleccionado-nombre">
                     {{ $cotizacion->cliente?->nombre }} {{ $cotizacion->cliente?->apellido }} — {{ $cotizacion->cliente?->telefono ?: 'sin teléfono' }}
                 </span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted); flex:0 0 auto;"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                <x-gravityui-pencil style="color:var(--muted); flex:0 0 auto;" width="16" height="16" />
             </div>
         </x-ui.card>
 
@@ -38,7 +38,7 @@
         <x-ui.card style="margin-bottom:18px;">
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
                 <div class="qbox-ico blue" style="width:42px; height:42px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                    <x-gravityui-shopping-bag width="20" height="20" />
                 </div>
                 <div>
                     <div style="font-weight:700; font-size:16px;">Productos o paquetes</div>
@@ -49,7 +49,7 @@
             <div style="max-width:520px;">
                 <label class="qlabel">Buscar producto o paquete</label>
                 <div style="position:relative;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <x-gravityui-magnifier style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;" width="16" height="16" />
                     <input type="text" id="buscador-items" class="qinput" placeholder="Escribe el nombre, marca o modelo..." autocomplete="off" style="padding-left:38px;">
                     <div id="resultados-items" style="position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--field-border); border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:20; display:none; max-height:320px; overflow-y:auto;"></div>
                 </div>
@@ -63,7 +63,7 @@
                 <div id="items-list"></div>
                 <div id="items-empty" style="margin-top:8px; text-align:center; padding:32px 16px;">
                     <div class="qbox-ico blue" style="width:52px; height:52px; margin:0 auto 14px;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+                        <x-gravityui-box width="24" height="24" />
                     </div>
                     <div style="font-weight:700; font-size:15px;">Aún no has agregado productos ni paquetes.</div>
                     <div class="muted" style="font-size:13.5px; margin-top:4px;">Selecciona un producto o paquete arriba para agregarlo automáticamente.</div>
@@ -75,7 +75,7 @@
         <x-ui.card style="margin-bottom:18px;">
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
                 <div class="qbox-ico blue" style="width:42px; height:42px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M15 9.5a3 3 0 0 0-3-1.5c-1.7 0-3 1-3 2.5S10.3 13 12 13s3 1 3 2.5-1.3 2.5-3 2.5a3 3 0 0 1-3-1.5"/></svg>
+                    <x-gravityui-circle-dollar width="20" height="20" />
                 </div>
                 <x-ui.section-title style="margin:0;">Montos</x-ui.section-title>
             </div>
@@ -83,21 +83,21 @@
             <div class="qgrid">
                 <div class="qbox">
                     <div class="qbox-head">
-                        <div class="qbox-ico blue"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg></div>
+                        <div class="qbox-ico blue"><x-gravityui-credit-card width="17" height="17" /></div>
                         <span class="qbox-label">Subtotal</span>
                     </div>
                     <div class="qbox-value" id="subtotal-display">$0.00</div>
                 </div>
                 <div class="qbox">
                     <div class="qbox-head">
-                        <div class="qbox-ico green"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41 12 22l-9.41-9.41A2 2 0 0 1 2 11.17V4a2 2 0 0 1 2-2h7.17a2 2 0 0 1 1.42.59l9.41 9.41a2 2 0 0 1 0 2.41Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></div>
+                        <div class="qbox-ico green"><x-gravityui-tag width="17" height="17" /></div>
                         <span class="qbox-label">Descuentos</span>
                     </div>
                     <div class="qbox-value" id="descuentos-display" style="color:var(--green);">$0.00</div>
                 </div>
                 <div class="qbox">
                     <span class="qbox-label" title="Descuento manual adicional aplicado a la cotización">Descuento adicional
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 1.8-2.5 3.5"/><path d="M12 17h.01"/></svg>
+                        <x-gravityui-circle-question style="vertical-align:-2px;" width="13" height="13" />
                     </span>
                     <div style="position:relative; margin-top:8px;">
                         <span class="qprefix">$</span>
@@ -117,7 +117,7 @@
                 </div>
                 <div class="qbox">
                     <div class="qbox-head">
-                        <div class="qbox-ico orange"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+                        <div class="qbox-ico orange"><x-gravityui-map-pin width="17" height="17" /></div>
                         <span class="qbox-label">Lugar de entrega</span>
                     </div>
                     <input id="lugar" name="lugar" type="text" placeholder="Lugar de entrega" value="{{ $cotizacion->lugar }}" class="qinput" style="margin-top:8px;">
@@ -132,7 +132,7 @@
 
                 <div class="qbox">
                     <div class="qbox-head">
-                        <div class="qbox-ico purple"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h8M8 14h4"/></svg></div>
+                        <div class="qbox-ico purple"><x-gravityui-file-text width="17" height="17" /></div>
                         <span class="qbox-label">IVA calculado</span>
                     </div>
                     <div class="qbox-value" id="iva-display" style="color:#9333ea;">$0.00</div>
@@ -140,9 +140,9 @@
 
                 <div class="qbox">
                     <div class="qbox-head">
-                        <div class="qbox-ico green"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+                        <div class="qbox-ico green"><x-gravityui-circle-dollar width="17" height="17" /></div>
                         <span class="qbox-label" title="Monto que el cliente ya adelantó. Se resta del total antes de repartirlo en el plan de pagos.">Anticipo
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 1.8-2.5 3.5"/><path d="M12 17h.01"/></svg>
+                            <x-gravityui-circle-question style="vertical-align:-2px;" width="13" height="13" />
                         </span>
                     </div>
                     <div style="position:relative; margin-top:8px;">
@@ -173,7 +173,7 @@
         <x-ui.card style="margin-bottom:18px;">
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
                 <div class="qbox-ico purple" style="width:42px; height:42px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h8M8 14h4"/></svg>
+                    <x-gravityui-file-text width="20" height="20" />
                 </div>
                 <div>
                     <div style="font-weight:700; font-size:16px;">Plan de Pagos</div>
@@ -224,7 +224,7 @@
                 <div id="plan-pagos-form">
                     <div class="qgrid" style="grid-template-columns:repeat(3, 1fr);">
                         <div class="qbox">
-                            <label class="qlabel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h8M8 14h4"/></svg> Nuevo plan de pago</label>
+                            <label class="qlabel"><x-gravityui-file-text width="14" height="14" /> Nuevo plan de pago</label>
                             <select id="plan-pago-plantilla" class="qinput">
                                 <option value="">— Conservar cuotas actuales —</option>
                                 @foreach($planesPago as $plan)
@@ -244,7 +244,7 @@
                             </select>
                         </div>
                         <div class="qbox">
-                            <label class="qlabel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Fecha del primer pago</label>
+                            <label class="qlabel"><x-gravityui-calendar width="14" height="14" /> Fecha del primer pago</label>
                             <input id="fecha_inicio" name="fecha_inicio" type="date" value="{{ now()->toDateString() }}" class="qinput">
                         </div>
                     </div>
@@ -264,14 +264,14 @@
                         </div>
                         <div class="qbox">
                             <div class="qbox-head">
-                                <div class="qbox-ico green"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg></div>
+                                <div class="qbox-ico green"><x-gravityui-credit-card width="17" height="17" /></div>
                                 <span class="qbox-label">Monto por pago (estimado)</span>
                             </div>
                             <div class="qbox-value" id="resumen-monto-pago" style="color:var(--green);">$0.00</div>
                         </div>
                         <div class="qbox">
                             <div class="qbox-head">
-                                <div class="qbox-ico orange"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+                                <div class="qbox-ico orange"><x-gravityui-clock width="17" height="17" /></div>
                                 <span class="qbox-label">Número de pagos</span>
                             </div>
                             <div class="qbox-value" id="resumen-numero-pagos">—</div>

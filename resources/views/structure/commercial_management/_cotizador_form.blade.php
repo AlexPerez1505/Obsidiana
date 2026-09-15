@@ -259,6 +259,11 @@
     .cot-pieza input { flex:none; width:15px; height:15px; margin:0; cursor:pointer; accent-color:var(--primary); }
     .cot-pieza .cod { font-family:ui-monospace, Consolas, monospace; font-size:12.5px; font-weight:700; }
     .cot-pieza .det { color:var(--muted); font-size:11.5px; }
+    /* Vendible, pero fuera del almacén: se ve distinta para no elegirla sin darse cuenta. */
+    .cot-pieza.fuera { border-style:dashed; }
+    .cot-pieza-fuera { margin-left:auto; padding:1px 7px; border-radius:999px;
+                       background:var(--warn-soft, rgba(217,119,6,.12));
+                       color:var(--warn, #b45309) !important; font-weight:700; }
     .cot-totes label { font-weight:600; }
     .cot-tote-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:8px 0; }
     .cot-line { display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:14px; color:var(--text); border-top:1px dashed var(--border); }
@@ -422,10 +427,18 @@
             const puesta = elegidas.includes(p.id);
             const detalle = [p.no_serie, p.condicion === 'usado' ? 'usado' : null].filter(Boolean).join(' · ');
 
-            return `<label class="cot-pieza ${puesta ? 'puesta' : ''}">
+            // La pieza que está en un congreso se puede vender (allá mismo
+            // la venden), pero no está en el almacén: se avisa para que se
+            // elija a propósito y no por descuido.
+            const fuera = p.congreso
+                ? `<span class="det cot-pieza-fuera">En ${p.congreso}</span>`
+                : '';
+
+            return `<label class="cot-pieza ${puesta ? 'puesta' : ''} ${p.congreso ? 'fuera' : ''}">
                         <input type="checkbox" data-pieza="${idx}" value="${p.id}" ${puesta ? 'checked' : ''}>
                         <span class="cod">${p.codigo || 'sin etiqueta'}</span>
                         ${detalle ? `<span class="det">${detalle}</span>` : ''}
+                        ${fuera}
                     </label>`;
         }).join('');
 

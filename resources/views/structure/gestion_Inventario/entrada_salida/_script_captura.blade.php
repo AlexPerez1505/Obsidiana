@@ -5,33 +5,46 @@
         if (!form) return;
 
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
-
-        // Se declaran arriba porque el resumen las lee, y el resumen corre
-        // desde las zonas de archivo, que se arman antes que el resto.
         const cantidadInput = document.getElementById('cantidad');
-        const videoPathInput = document.getElementById('video-path-input');
+
+        const CHUNK_SIZE = 4 * 1024 * 1024;
+        const EXTENSIONES_VIDEO = ['mp4', 'mov', 'm4v', 'webm'];
+        const MAX_FOTOS = 3;
+
+        // Cuántos videos se están subiendo ahora: mientras haya uno, el
+        // formulario no se envía.
+        let subiendoVideos = 0;
+
+        /*
+        | Lo capturado antes, si el servidor regresó el formulario con error.
+        |
+        | Los bloques de cada pieza los arma este script, así que sin esto
+        | volvían vacíos. Las fotos no se pueden restaurar (el navegador no
+        | permite rellenar un input de archivo), pero la serie y el video ya
+        | subido sí, y eso se avisa en pantalla.
+        */
+        const PREVIAS = @json(array_values((array) old('unidades', [])));
 
         /* ==========================================================
            Zona para soltar archivos
 
-           Antes era un <input type="file"> pelón: no se veía lo que ya
-           habías elegido y no se podía quitar una foto sin volver a
-           elegirlas todas.
+           Recibe la zona ya creada (cada pieza tiene la suya) en vez de
+           buscarla por nombre: en esta pantalla hay una por cada pieza que
+           llegó, no una sola del lote.
         ========================================================== */
-        function zonaDeArchivos(nombre, { max = null, alQuitar = null, alElegir = null } = {}) {
-            const zona = form.querySelector(`[data-soltar="${nombre}"]`);
+        function zonaDeArchivos(zona, minis, { max = null, alCambiar = null } = {}) {
             if (!zona) return null;
 
             const input = zona.querySelector('input[type=file]');
-            const minis = form.querySelector(`[data-miniaturas="${nombre}"]`);
-            const cuenta = zona.querySelector(`[data-cuenta-${nombre}]`);
+            const cuenta = zona.querySelector('[data-cuenta]');
             const textoBase = cuenta ? cuenta.textContent : '';
-            let primeraPintada = true;
 
             function pintar() {
-                minis.innerHTML = '';
+                if (minis) minis.innerHTML = '';
 
                 Array.from(input.files || []).forEach(function (archivo, i) {
+                    if (!minis) return;
+
                     const caja = document.createElement('div');
                     caja.className = 'mini';
 
@@ -62,11 +75,11 @@
                 if (cuenta) {
                     cuenta.textContent = n === 0
                         ? textoBase
-                        : (n === 1 ? '1 archivo elegido' : n + ' archivos elegidos')
+                        : (n === 1 ? '1 foto elegida' : n + ' fotos elegidas')
                           + (max ? ' de ' + max : '') + ' · toca para cambiar';
                 }
 
-                if (alElegir && !primeraPintada) alElegir(n);
+                if (alCambiar) alCambiar(n);
             }
 
             // Un FileList no se puede editar: se arma uno nuevo sin el que
@@ -76,7 +89,16 @@
                 Array.from(input.files).forEach((a, i) => { if (i !== indice) dt.items.add(a); });
                 input.files = dt.files;
                 pintar();
-                if (alQuitar) alQuitar(input.files.length);
+            }
+
+            function recortar() {
+                if (!max || !input.files || input.files.length <= max) return false;
+
+                const dt = new DataTransfer();
+                Array.from(input.files).slice(0, max).forEach(a => dt.items.add(a));
+                input.files = dt.files;
+
+                return true;
             }
 
             function recibir(lista) {
@@ -100,70 +122,34 @@
                 if (e.dataTransfer?.files?.length) recibir(e.dataTransfer.files);
             });
 
-            input.addEventListener('change', pintar);
-            pintar();
-            primeraPintada = false;
-
-            return { input, pintar, zona };
-        }
-
-        /* ===================== Fotos de evidencia ===================== */
-        const errorFotos = document.getElementById('evidencias-error');
-
-        const fotos = zonaDeArchivos('fotos', {
-            max: 3,
-            alElegir: function (n) {
-                if (errorFotos) errorFotos.style.display = n > 3 ? 'block' : 'none';
-                actualizarResumen();
-            },
-            alQuitar: actualizarResumen,
-        });
-
-        if (fotos) {
-            fotos.input.addEventListener('change', function () {
-                // El navegador permite elegir más de 3 desde el diálogo:
-                // se recorta aquí para no llegar al servidor con un error.
-                if (fotos.input.files.length > 3) {
-                    const dt = new DataTransfer();
-                    Array.from(fotos.input.files).slice(0, 3).forEach(a => dt.items.add(a));
-                    fotos.input.files = dt.files;
-                    if (errorFotos) errorFotos.style.display = 'block';
-                    fotos.pintar();
-                }
+            input.addEventListener('change', function () {
+                recortar();
+                pintar();
             });
+
+            pintar();
+
+            return { input, pintar };
         }
 
         /* ==========================================================
-           Video: se sube en pedazos de 4MB para no mandar el archivo
-           completo de golpe. El servidor regresa la ruta ya ensamblada y
-           eso es lo único que viaja en el submit.
+           Video de una pieza
+
+           Se sube en pedazos de 4MB para que un archivo pesado no truene
+           la carga. El servidor regresa la ruta ya ensamblada y eso es lo
+           único que viaja en el submit.
         ========================================================== */
-        const videoInput = document.getElementById('evidencia_video');
-        const videoProgresoWrap = document.getElementById('video-progreso-wrap');
-        const videoProgresoBarra = document.getElementById('video-progreso-barra');
-        const videoProgresoTexto = document.getElementById('video-progreso-texto');
-        const videoError = document.getElementById('video-error');
-        const CHUNK_SIZE = 4 * 1024 * 1024;
-        const EXTENSIONES_VALIDAS = ['mp4', 'mov', 'm4v', 'webm'];
-        let videoSubiendo = false;
+        async function subirVideo(file, destino) {
+            const { pathInput, progresoWrap, barra, texto, error, zona, cuenta } = destino;
 
-        const video = zonaDeArchivos('video', { max: 1, alElegir: actualizarResumen });
-
-        function bloquearEnvio(bloquear) {
-            form.querySelectorAll('button[type="submit"]').forEach(b => { b.disabled = bloquear; });
-        }
-
-        async function subirVideoPorChunks(file) {
-            videoError.style.display = 'none';
-            videoPathInput.value = '';
+            error.hidden = true;
+            pathInput.value = '';
 
             const extension = (file.name.split('.').pop() || '').toLowerCase();
 
-            if (!EXTENSIONES_VALIDAS.includes(extension)) {
-                videoError.textContent = 'Formato de video no permitido. Usa MP4, MOV o WEBM.';
-                videoError.style.display = 'block';
-                videoInput.value = '';
-                if (video) video.pintar();
+            if (!EXTENSIONES_VIDEO.includes(extension)) {
+                error.textContent = 'Formato de video no permitido. Usa MP4, MOV o WEBM.';
+                error.hidden = false;
                 return;
             }
 
@@ -173,9 +159,8 @@
 
             const total = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
 
-            videoSubiendo = true;
-            bloquearEnvio(true);
-            videoProgresoWrap.style.display = 'block';
+            subiendoVideos++;
+            progresoWrap.hidden = false;
 
             try {
                 for (let index = 0; index < total; index++) {
@@ -202,32 +187,182 @@
                     }
 
                     const porcentaje = Math.round(((index + 1) / total) * 100);
-                    videoProgresoBarra.style.width = porcentaje + '%';
-                    videoProgresoTexto.textContent = 'Subiendo video... ' + porcentaje + '%';
+                    barra.style.width = porcentaje + '%';
+                    texto.textContent = 'Subiendo video... ' + porcentaje + '%';
 
                     if (json.status === 'listo') {
-                        videoPathInput.value = json.video_path;
-                        videoProgresoTexto.textContent = 'Video subido correctamente.';
+                        pathInput.value = json.video_path;
+                        texto.textContent = 'Video subido correctamente.';
+                        zona.classList.add('lleno');
+                        if (cuenta) cuenta.textContent = 'Video listo · toca para cambiarlo';
                     }
                 }
             } catch (err) {
-                videoError.textContent = err.message || 'No se pudo subir el video. Vuelve a intentarlo.';
-                videoError.style.display = 'block';
-                videoPathInput.value = '';
-                videoProgresoWrap.style.display = 'none';
+                error.textContent = err.message || 'No se pudo subir el video. Vuelve a intentarlo.';
+                error.hidden = false;
+                pathInput.value = '';
+                progresoWrap.hidden = true;
             } finally {
-                videoSubiendo = false;
-                bloquearEnvio(false);
+                subiendoVideos--;
                 actualizarResumen();
             }
         }
 
-        if (videoInput) {
+        /* ==========================================================
+           Un bloque por pieza: su serie, sus fotos y su video
+
+           La evidencia es de cada pieza, no del lote: si llegaron 3, son 3
+           juegos de fotos. Solo así se sabe después cuál venía golpeada.
+        ========================================================== */
+        const contenedorPiezas = document.getElementById('piezas-rows');
+        let sugeridoBase = null;
+
+        function crearPieza(i) {
+            const previa = PREVIAS[i] || {};
+
+            const card = document.createElement('div');
+            card.className = 'pieza-card';
+            card.dataset.pieza = i;
+
+            card.innerHTML = `
+                <div class="pieza-head">
+                    <span class="pieza-num">Pieza #${i + 1}</span>
+                    <span class="pieza-estado" data-estado>Falta su foto</span>
+                </div>
+
+                <input type="text" class="pieza-serie" name="unidades[${i}][no_serie]"
+                       placeholder="No. de serie del fabricante (opcional)"
+                       value="${(previa.no_serie || '').replace(/"/g, '&quot;')}">
+
+                <div class="pieza-medios">
+                    <div>
+                        <label class="soltar soltar--chico" data-zona-fotos>
+                            <span class="ico">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            </span>
+                            <span class="t">Fotos de esta pieza *</span>
+                            <span class="d" data-cuenta>Hasta ${MAX_FOTOS} · JPG o PNG</span>
+                            <input type="file" name="unidades[${i}][evidencias][]" accept="image/*" multiple>
+                        </label>
+                        <div class="miniaturas" data-minis></div>
+                    </div>
+
+                    <div>
+                        <label class="soltar soltar--chico" data-zona-video>
+                            <span class="ico">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                            </span>
+                            <span class="t">Video de esta pieza</span>
+                            <span class="d" data-cuenta>Opcional · MP4, MOV o WEBM</span>
+                            <input type="file" accept="video/*" data-video-input>
+                        </label>
+
+                        <input type="hidden" name="unidades[${i}][video_path]" data-video-path
+                               value="${(previa.video_path || '').replace(/"/g, '&quot;')}">
+
+                        <div class="pieza-progreso" data-progreso hidden>
+                            <div class="barra-progreso"><span data-barra></span></div>
+                            <p class="campo-nota" style="margin:5px 0 0;" data-video-texto>Subiendo video...</p>
+                        </div>
+
+                        <p class="err" data-video-error hidden></p>
+                    </div>
+                </div>
+            `;
+
+            const zonaFotos = card.querySelector('[data-zona-fotos]');
+            const minis = card.querySelector('[data-minis]');
+            const estado = card.querySelector('[data-estado]');
+
+            const fotos = zonaDeArchivos(zonaFotos, minis, {
+                max: MAX_FOTOS,
+                alCambiar: function (n) {
+                    estado.textContent = n === 0
+                        ? 'Falta su foto'
+                        : (n === 1 ? '1 foto' : n + ' fotos');
+                    estado.classList.toggle('listo', n > 0);
+                    actualizarResumen();
+                },
+            });
+
+            // Video de esta pieza
+            const zonaVideo = card.querySelector('[data-zona-video]');
+            const videoInput = card.querySelector('[data-video-input]');
+            const pathInput = card.querySelector('[data-video-path]');
+            const progreso = card.querySelector('[data-progreso]');
+            const cuentaVideo = zonaVideo.querySelector('[data-cuenta]');
+
+            const destino = {
+                pathInput,
+                progresoWrap: progreso,
+                barra: card.querySelector('[data-barra]'),
+                texto: card.querySelector('[data-video-texto]'),
+                error: card.querySelector('[data-video-error]'),
+                zona: zonaVideo,
+                cuenta: cuentaVideo,
+            };
+
             videoInput.addEventListener('change', function () {
                 if (videoInput.files && videoInput.files[0]) {
-                    subirVideoPorChunks(videoInput.files[0]);
+                    subirVideo(videoInput.files[0], destino);
                 }
             });
+
+            // El video que ya estaba subido no se vuelve a pedir.
+            if (pathInput.value) {
+                zonaVideo.classList.add('lleno');
+                cuentaVideo.textContent = 'Video ya subido · toca para cambiarlo';
+            }
+
+            card.__fotos = fotos;
+
+            return card;
+        }
+
+        /*
+        | Se agregan o quitan bloques solo por la diferencia: volver a
+        | dibujarlos todos borraría las fotos ya elegidas de las piezas que
+        | no cambiaron (y esas no se pueden recuperar).
+        */
+        window.pintarPiezas = function () {
+            if (!contenedorPiezas) return;
+
+            const cantidad = Math.max(1, parseInt(cantidadInput?.value || '1', 10) || 1);
+            const bloques = contenedorPiezas.querySelectorAll('.pieza-card');
+
+            if (cantidad === bloques.length) return;
+
+            if (cantidad < bloques.length) {
+                for (let i = bloques.length - 1; i >= cantidad; i--) {
+                    bloques[i].remove();
+                }
+            } else {
+                for (let i = bloques.length; i < cantidad; i++) {
+                    contenedorPiezas.appendChild(crearPieza(i));
+                }
+            }
+
+            aplicarSugerido();
+            actualizarResumen();
+        };
+
+        /* La serie sugerida por el servidor se reparte como secuencia. */
+        function incrementarSerial(base, delta) {
+            const m = /^(.*?)(\d+)$/.exec(base || '');
+            if (!m) return '';
+            return m[1] + String(parseInt(m[2], 10) + delta).padStart(m[2].length, '0');
+        }
+
+        function aplicarSugerido() {
+            if (!sugeridoBase || !contenedorPiezas) return;
+
+            contenedorPiezas.querySelectorAll('.pieza-serie').forEach(function (input, i) {
+                if (!input.value) input.value = incrementarSerial(sugeridoBase, i);
+            });
+        }
+
+        function seriesDeLasPiezas() {
+            return Array.from(contenedorPiezas?.querySelectorAll('.pieza-serie') || []);
         }
 
         /* ===================== Firma ===================== */
@@ -237,6 +372,17 @@
 
         if (lienzo && firmaInput) {
             const ctx = lienzo.getContext('2d');
+
+            /*
+            | La firma que el usuario registró una vez en su perfil se carga
+            | sola: no tiene que volver a trazarla con el mouse en cada
+            | entrada. Si prefiere firmar distinto, le da a "Limpiar firma".
+            |
+            | No se pisa lo que ya venga (old() tras un rechazo del servidor).
+            */
+            if (! firmaInput.value && lienzo.dataset.firmaRegistrada) {
+                firmaInput.value = lienzo.dataset.firmaRegistrada;
+            }
 
             function ajustarLienzo() {
                 // Redimensionar limpia el trazo, así que se conserva y se
@@ -299,101 +445,44 @@
             lienzo.addEventListener('touchmove', mover, { passive: false });
             lienzo.addEventListener('touchend', terminar);
 
+            /* Se puede quitar la firma registrada para firmar a mano, y
+               volver a ponerla si fue sin querer. */
+            const avisoFirma = form.querySelector('[data-firma-aviso]');
+            const usarFirma = form.querySelector('[data-usar-firma]');
+
+            function alternarAvisos(cargada) {
+                if (avisoFirma) avisoFirma.style.display = cargada ? '' : 'none';
+                if (usarFirma) usarFirma.style.display = cargada ? 'none' : '';
+            }
+
             if (limpiarFirma) {
                 limpiarFirma.addEventListener('click', function (e) {
                     e.preventDefault();
                     ctx.clearRect(0, 0, lienzo.width, lienzo.height);
                     firmaInput.value = '';
+                    alternarAvisos(false);
+                });
+            }
+
+            if (usarFirma) {
+                usarFirma.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    firmaInput.value = lienzo.dataset.firmaRegistrada || '';
+                    ajustarLienzo();
+                    alternarAvisos(true);
                 });
             }
         }
 
-        /* ===================== Antes de enviar ===================== */
+        /* ===================== Antes de enviar =====================
+           Lo que falte (fotos, firma...) lo revisa y lo dice la validación
+           por paso; aquí solo se cuida no enviar a media subida. */
         form.addEventListener('submit', function (e) {
-            if (videoSubiendo) {
+            if (subiendoVideos > 0) {
                 e.preventDefault();
-                alert('Espera a que termine de subirse el video.');
-                return;
-            }
-
-            if (!videoPathInput.value) {
-                e.preventDefault();
-                alert('Sube el video de verificación antes de registrar la entrada.');
-                form.dispatchEvent(new CustomEvent('paso:ir', { detail: { paso: 'evidencia' } }));
-                return;
-            }
-
-            if (firmaInput && !firmaInput.value) {
-                e.preventDefault();
-                alert('Firma en el recuadro antes de registrar la entrada.');
-                form.dispatchEvent(new CustomEvent('paso:ir', { detail: { paso: 'firma' } }));
+                alert('Espera a que terminen de subirse los videos.');
             }
         });
-
-        /* ==========================================================
-           Renglones de captura una por una
-        ========================================================== */
-        const unidadesRows = document.getElementById('unidades-rows');
-        const notaUnidades = form.querySelector('[data-nota-unidades]');
-        let sugeridoBase = null;
-
-        function incrementarSerial(base, delta) {
-            const m = /^(.*?)(\d+)$/.exec(base || '');
-            if (!m) return '';
-            return m[1] + String(parseInt(m[2], 10) + delta).padStart(m[2].length, '0');
-        }
-
-        function esUsado() {
-            return form.querySelector('[data-condicion]:checked')?.value === 'usado';
-        }
-
-        window.pintarUnidades = function () {
-            if (!unidadesRows) return;
-
-            const cantidad = Math.max(0, parseInt(cantidadInput?.value || '0', 10) || 0);
-            const fotoObligatoria = esUsado();
-
-            if (notaUnidades) {
-                notaUnidades.innerHTML = fotoObligatoria
-                    ? 'Un renglón por pieza. En equipo usado <b>la foto de cada pieza es obligatoria</b>; el número de serie es opcional.'
-                    : 'Un renglón por pieza. Serie y foto son opcionales: aun sin capturarlas, cada pieza recibe su etiqueta con QR.';
-            }
-
-            // Se vuelve a pintar solo si cambió el número de renglones, para
-            // no borrar lo que ya se capturó al cambiar de paso.
-            if (cantidad === unidadesRows.querySelectorAll('.unidad-row').length) {
-                unidadesRows.querySelectorAll('input[type=file]').forEach(i => { i.required = fotoObligatoria; });
-                return;
-            }
-
-            unidadesRows.innerHTML = '';
-
-            for (let i = 0; i < cantidad; i++) {
-                const row = document.createElement('div');
-                row.className = 'unidad-row';
-                const sugerido = sugeridoBase ? incrementarSerial(sugeridoBase, i) : '';
-
-                row.innerHTML = `
-                    <span class="unidad-num">#${i + 1}</span>
-                    <input type="text" name="unidades[${i}][no_serie]" placeholder="No. de serie (opcional)" value="${sugerido}">
-                    <div>
-                        <input type="file" name="unidades[${i}][foto]" accept="image/*" data-preview="foto-preview-${i}" ${fotoObligatoria ? 'required' : ''}>
-                        <img id="foto-preview-${i}" class="unidad-foto-preview" alt="Vista previa">
-                    </div>
-                `;
-
-                unidadesRows.appendChild(row);
-            }
-
-            unidadesRows.querySelectorAll('input[type=file]').forEach(function (input) {
-                input.addEventListener('change', function () {
-                    const preview = document.getElementById(input.dataset.preview);
-                    if (!preview || !input.files || !input.files[0]) return;
-                    preview.src = URL.createObjectURL(input.files[0]);
-                    preview.style.display = 'block';
-                });
-            });
-        };
 
         /* ==========================================================
            Si el modelo ya está registrado, se rellena lo que se sabe.
@@ -402,7 +491,6 @@
         const aviso = document.getElementById('modeloExistenteAviso');
         const precioInput = document.getElementById('precio');
         const descripcionInput = document.getElementById('descripcion');
-        const seriesTextoInput = document.getElementById('series_texto');
         const imagenActualWrap = document.getElementById('imagen-actual-wrap');
         const imagenActual = document.getElementById('imagen-actual');
         const buscarPorModeloUrl = @json(route('inventory.productos.buscarPorModelo'));
@@ -484,18 +572,9 @@
 
                         sugeridoBase = data.no_serie_sugerido || null;
 
-                        if (seriesTextoInput && !seriesTextoInput.value && data.no_serie_sugerido) {
-                            seriesTextoInput.value = data.no_serie_sugerido;
-                            mensaje += ' La serie se sugirió como ' + data.no_serie_sugerido + ' (consecutivo del último registrado).';
-                        }
-
-                        if (data.es_serializado) {
-                            const modoUnidades = form.querySelector('[data-modo][value="unidades"]');
-                            if (modoUnidades && !form.querySelector('[data-modo]:checked')?.value.match(/series|unidades/)) {
-                                modoUnidades.checked = true;
-                                modoUnidades.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                            mensaje += ' Este modelo ya se maneja pieza por pieza.';
+                        if (sugeridoBase) {
+                            aplicarSugerido();
+                            mensaje += ' Las series se sugirieron desde ' + sugeridoBase + ' (consecutivo del último registrado).';
                         }
 
                         if (data.imagen) {
@@ -560,10 +639,11 @@
                     return;
                 }
 
-                const cuantas = Math.max(1, parseInt(cantidadInput?.value || '1', 10) || 1);
+                const inputsSerie = seriesDeLasPiezas();
+                const cuantas = Math.max(1, inputsSerie.length);
 
                 // Lo capturado no se pisa sin avisar.
-                if (seriesTextoInput?.value.trim() && !confirm('Ya hay series capturadas. ¿Reemplazarlas por las generadas?')) {
+                if (inputsSerie.some(i => i.value.trim()) && !confirm('Ya hay series capturadas. ¿Reemplazarlas por las generadas?')) {
                     return;
                 }
 
@@ -594,7 +674,9 @@
                         throw new Error(data.message || 'No se pudieron generar.');
                     }
 
-                    seriesTextoInput.value = data.series.join('\n');
+                    inputsSerie.forEach(function (input, i) {
+                        if (data.series[i]) input.value = data.series[i];
+                    });
 
                     if (notaGenerar) {
                         notaGenerar.textContent = `Se generaron ${data.series.length} con el prefijo ${data.prefijo}.`;
@@ -609,10 +691,27 @@
         }
 
         /* ===================== Resumen del último paso ===================== */
+        function esUsado() {
+            return form.querySelector('[data-condicion]:checked')?.value === 'usado';
+        }
+
         function actualizarResumen() {
             const usado = esUsado();
             const n = parseInt(cantidadInput?.value || '1', 10) || 1;
-            const nFotos = fotos?.input.files.length || 0;
+
+            // Las fotos y los videos se cuentan de todas las piezas juntas,
+            // pero lo que importa es que ninguna se haya quedado sin foto.
+            const bloques = Array.from(contenedorPiezas?.querySelectorAll('.pieza-card') || []);
+            let fotos = 0;
+            let sinFoto = 0;
+            let videos = 0;
+
+            bloques.forEach(function (card) {
+                const cuantas = card.querySelector('input[type=file][multiple]')?.files.length || 0;
+                fotos += cuantas;
+                if (cuantas === 0) sinFoto++;
+                if (card.querySelector('[data-video-path]')?.value) videos++;
+            });
 
             const poner = (llave, texto) => {
                 const el = form.querySelector(`[data-res-${llave}]`);
@@ -622,11 +721,15 @@
             poner('condicion', usado ? 'Usado' : 'Nuevo');
             poner('cantidad', n === 1 ? '1 pieza' : n + ' piezas');
             poner('estado', usado ? 'En revisión' : 'Disponible');
-            poner('evidencia', (nFotos === 1 ? '1 foto' : nFotos + ' fotos')
-                + (videoPathInput?.value ? ' y video' : ', falta video'));
+            poner('evidencia', sinFoto > 0
+                ? `Faltan las fotos de ${sinFoto} pieza(s)`
+                : `${fotos} foto(s)` + (videos ? ` y ${videos} video(s)` : ', sin video'));
         }
 
         window.actualizarResumenEntrada = actualizarResumen;
+
+        /* ===================== Arranque ===================== */
+        window.pintarPiezas();
         actualizarResumen();
     });
     </script>

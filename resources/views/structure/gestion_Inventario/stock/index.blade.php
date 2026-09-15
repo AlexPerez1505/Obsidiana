@@ -325,13 +325,13 @@
                 <div class="stock-metric {{ $metric['tone'] }}">
                     <span class="stock-metric-icon">
                         @if ($metric['icon'] === 'chart')
-                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 14h4v7H4z"/><path d="M10 10h4v11h-4z"/><path d="M16 5h4v16h-4z"/><path d="M4 11l5-5 4 3 6-7 1.5 1.3-7.4 8.6-4-3-3.7 3.7z"/></svg>
+                            <x-gravityui-chart-column />
                         @elseif ($metric['icon'] === 'box')
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.4 8.4 12 13l8.6-4.6"/><path d="M12 21v-8"/><path d="m7.5 5.5 9 5"/></svg>
+                            <x-gravityui-box />
                         @elseif ($metric['icon'] === 'calculator')
-                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><rect x="8" y="6" width="8" height="3" rx="1" fill="#dbeafe"/><circle cx="9" cy="13" r="1" fill="#dbeafe"/><circle cx="13" cy="13" r="1" fill="#dbeafe"/><circle cx="17" cy="13" r="1" fill="#dbeafe"/><circle cx="9" cy="17" r="1" fill="#dbeafe"/><circle cx="13" cy="17" r="1" fill="#dbeafe"/><circle cx="17" cy="17" r="1" fill="#dbeafe"/></svg>
+                            <x-gravityui-calculator />
                         @else
-                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><rect x="11" y="8" width="2" height="6" rx="1" fill="#fff"/><rect x="11" y="16.5" width="2" height="2" rx="1" fill="#fff"/></svg>
+                            <x-gravityui-triangle-exclamation-fill />
                         @endif
                     </span>
                     <span>
@@ -368,11 +368,7 @@
                                 <td><span class="stock-state">{{ $row['status'] }}</span></td>
                                 <td>
                                     <button class="stock-action" type="button" aria-label="Acciones de {{ $row['product'] }}">
-                                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                            <circle cx="12" cy="5" r="1.8"></circle>
-                                            <circle cx="12" cy="12" r="1.8"></circle>
-                                            <circle cx="12" cy="19" r="1.8"></circle>
-                                        </svg>
+                                        <x-gravityui-ellipsis-vertical />
                                     </button>
                                 </td>
                             </tr>

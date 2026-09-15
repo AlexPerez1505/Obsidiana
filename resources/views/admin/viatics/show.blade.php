@@ -40,6 +40,39 @@
     .vp-total-meta svg { width: 13px; height: 13px; }
 
     /* Summary by type */
+    /* Galería de fotos del ticket */
+    .vp-photos { margin-bottom: 22px; }
+    .vp-photos-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .vp-photos-title { font-size: 15px; font-weight: 800; color: var(--text); margin: 0; }
+    .vp-photos-add {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 7px 14px; border-radius: 10px; border: 1.5px solid #94a3b8;
+        background: var(--surface); color: var(--primary); font-size: 12.5px; font-weight: 700;
+        cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .vp-photos-add:hover { border-color: var(--primary); background: var(--primary-soft); }
+    .vp-photos-add svg { width: 15px; height: 15px; }
+    .vp-photos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .vp-photo-thumb {
+        position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+        border: 1.5px solid #94a3b8; background: var(--surface-2); display: block;
+    }
+    .vp-photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .vp-photo-thumb-remove {
+        position: absolute; top: 6px; right: 6px;
+        width: 24px; height: 24px; border-radius: 50%;
+        background: rgba(15,23,42,.65); color: #fff; border: none;
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .vp-photo-thumb-remove svg { width: 13px; height: 13px; }
+    .vp-photos-empty {
+        text-align: center; padding: 20px; color: var(--muted); font-size: 13px;
+        border: 2px dashed #94a3b8; border-radius: 14px;
+    }
+    @media (min-width: 768px) {
+        .vp-photos-grid { grid-template-columns: repeat(6, 1fr); }
+    }
+
     .vp-summary { margin-bottom: 20px; }
     .vp-summary-title { font-size: 15px; font-weight: 800; color: var(--text); margin: 0 0 10px; }
     .vp-summary-grid {
@@ -55,11 +88,12 @@
     .vp-summary-icon.toll { background: #fef9c3; color: #a16207; }
     .vp-summary-icon.fuel { background: #dbeafe; color: #2563eb; }
     .vp-summary-icon.meal { background: #fce7f3; color: #db2777; }
+    .vp-summary-icon.lodging { background: #ede9fe; color: #7c3aed; }
     .vp-summary-icon.other { background: var(--primary-soft); color: var(--primary); }
     .vp-summary-icon svg { width: 16px; height: 16px; }
     .vp-summary-amount { font-size: 15px; font-weight: 800; color: var(--primary); }
     @media (min-width: 768px) {
-        .vp-summary-grid { grid-template-columns: repeat(4, 1fr); }
+        .vp-summary-grid { grid-template-columns: repeat(5, 1fr); }
     }
 
     .vp-list-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; color: var(--text); margin: 0 0 14px; }
@@ -76,6 +110,7 @@
     .vp-row-icon.toll { background: #fef9c3; color: #a16207; }
     .vp-row-icon.fuel { background: #dbeafe; color: #2563eb; }
     .vp-row-icon.meal { background: #fce7f3; color: #db2777; }
+    .vp-row-icon.lodging { background: #ede9fe; color: #7c3aed; }
     .vp-row-icon.other { background: var(--primary-soft); color: var(--primary); }
     .vp-row-icon svg { width: 20px; height: 20px; }
     .vp-row-info { flex: 1; min-width: 0; }
@@ -128,17 +163,25 @@
 
     .vp-field { margin-bottom: 14px; }
     .vp-label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 6px; }
-    .vp-input {
+    /*
+       El layout general (layouts/dashboard) ya trae un estilo genérico
+       para "input[type=text], input[type=number]..." que, por
+       especificidad CSS, le gana a una sola clase (el selector con
+       atributo+elemento pesa más que una sola clase). Por eso se
+       escribe siempre calificado con ".vp-modal" por delante: dos
+       clases juntas sí superan esa especificidad.
+    */
+    .vp-modal .vp-input {
         width: 100%; padding: 14px; border: 2px solid #94a3b8;
         border-radius: 12px; font-size: 16px; font-family: inherit;
         background: var(--surface); color: var(--text);
         outline: none; transition: border .15s, box-shadow .15s; -webkit-appearance: none; appearance: none;
     }
-    .vp-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
-    .vp-input::placeholder { color: #cbd5e1; }
+    .vp-modal .vp-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
+    .vp-modal .vp-input::placeholder { color: #cbd5e1; }
     .vp-amount-wrap { position: relative; display: flex; align-items: center; }
-    .vp-amount-wrap .vp-prefix { position: absolute; left: 16px; font-size: 22px; font-weight: 800; color: var(--muted); pointer-events: none; }
-    .vp-amount-wrap input { padding-left: 42px; padding-top: 16px; padding-bottom: 16px; font-size: 22px; font-weight: 800; text-align: left; }
+    .vp-amount-wrap .vp-prefix { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 22px; font-weight: 800; color: var(--muted); pointer-events: none; }
+    .vp-modal .vp-amount-wrap input { padding-left: 42px; padding-top: 16px; padding-bottom: 16px; font-size: 22px; font-weight: 800; text-align: left; }
 
     .vp-save-btn, .vp-btn-save, .vp-add-btn {
         display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -205,10 +248,11 @@
     ])->values()->all();
     $summary = collect($initialGastos)->groupBy('type')->map(fn($g) => $g->sum('amount'));
     $summaryTotals = [
-        'toll'  => (float) ($summary['toll'] ?? 0),
-        'fuel'  => (float) ($summary['fuel'] ?? 0),
-        'meal'  => (float) ($summary['meal'] ?? 0),
-        'other' => (float) ($summary['other'] ?? 0),
+        'toll'    => (float) ($summary['toll'] ?? 0),
+        'fuel'    => (float) ($summary['fuel'] ?? 0),
+        'meal'    => (float) ($summary['meal'] ?? 0),
+        'lodging' => (float) ($summary['lodging'] ?? 0),
+        'other'   => (float) ($summary['other'] ?? 0),
     ];
 @endphp
 
@@ -217,7 +261,7 @@
 
     <div class="vp-header">
         <a href="{{ route('admin.viatics.index') }}" class="vp-back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            <x-gravityui-arrow-chevron-left />
         </a>
         <div class="vp-title-row">
             <h1 class="vp-title">{{ $viatic->place ?: 'Viático' }}</h1>
@@ -225,15 +269,58 @@
         </div>
     </div>
     <p class="vp-subtitle">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14M3 17l1.5-5.5A2 2 0 0 1 6.4 10h11.2a2 2 0 0 1 1.9 1.5L21 17M5 17v2M19 17v2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
+        <x-gravityui-car />
         {{ $viatic->vehicle_name ?: 'Sin vehículo' }} · {{ $viatic->expense_date?->format('d/m/Y') ?: 'Sin fecha' }}
     </p>
+
+    {{-- Fotos del ticket --}}
+    <div class="vp-photos">
+        <div class="vp-photos-head">
+            <p class="vp-photos-title">Fotos del ticket</p>
+            <button type="button" class="vp-photos-add" onclick="document.getElementById('vpPhotosInput').click()">
+                <x-gravityui-plus />
+                Agregar
+            </button>
+        </div>
+
+        @php($fotosTicket = $viatic->ticket_photos ?? [])
+        @if (count($fotosTicket))
+            <div class="vp-photos-grid">
+                @foreach ($fotosTicket as $ruta)
+                    <div class="vp-photo-thumb">
+                        <a href="{{ asset('storage/' . $ruta) }}" target="_blank" rel="noopener">
+                            <img src="{{ asset('storage/' . $ruta) }}" alt="Foto del ticket">
+                        </a>
+                        <form method="POST" action="{{ route('admin.viatics.update', $viatic) }}" onsubmit="return confirm('¿Quitar esta foto?');">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="redirect_to" value="show">
+                            <input type="hidden" name="quitar_fotos[]" value="{{ $ruta }}">
+                            <button type="submit" class="vp-photo-thumb-remove" aria-label="Quitar foto">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                            </button>
+                        </form>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="vp-photos-empty">Sin fotos del ticket todavía.</div>
+        @endif
+
+        <form method="POST" action="{{ route('admin.viatics.update', $viatic) }}" enctype="multipart/form-data" id="vpPhotosForm">
+            @csrf
+            @method('PATCH')
+            <input type="hidden" name="redirect_to" value="show">
+            <input type="file" id="vpPhotosInput" name="ticket_photos[]" accept="image/*" multiple hidden
+                   onchange="document.getElementById('vpPhotosForm').submit()">
+        </form>
+    </div>
 
     <div class="vp-total-card">
         <p class="vp-total-label">Total acumulado</p>
         <p class="vp-total-amount" id="vpTotalAmount">${{ number_format((float) $viatic->total_computed, 2) }}</p>
         <p class="vp-total-meta">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <x-gravityui-clock />
             <span id="vpCountText">{{ $viatic->expenses->count() }} gastos</span>
         </p>
     </div>
@@ -262,9 +349,16 @@
                 </div>
                 <span class="vp-summary-amount" id="vpSummaryMeal">${{ number_format($summaryTotals['meal'], 2) }}</span>
             </div>
+            <div class="vp-summary-row" data-type="lodging">
+                <div class="vp-summary-left">
+                    <span class="vp-summary-icon lodging"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></span>
+                    <span>Hospedaje</span>
+                </div>
+                <span class="vp-summary-amount" id="vpSummaryLodging">${{ number_format($summaryTotals['lodging'], 2) }}</span>
+            </div>
             <div class="vp-summary-row" data-type="other">
                 <div class="vp-summary-left">
-                    <span class="vp-summary-icon other"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
+                    <span class="vp-summary-icon other"><x-gravityui-tag /></span>
                     <span>Adicional</span>
                 </div>
                 <span class="vp-summary-amount" id="vpSummaryOther">${{ number_format($summaryTotals['other'], 2) }}</span>
@@ -274,7 +368,7 @@
 
     <div class="vp-list-section">
     <h3 class="vp-list-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+        <x-gravityui-file-text />
         Gastos del viático
         <span class="vp-list-count" id="vpListCount">{{ $viatic->expenses->count() }}</span>
     </h3>
@@ -289,21 +383,23 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h12M15 8h2a2 2 0 0 1 2 2v8a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.5L19 5"/></svg>
                 @elseif($g['type'] === 'meal')
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg>
+                @elseif($g['type'] === 'lodging')
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
                 @else
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    <x-gravityui-tag />
                 @endif
             </div>
             <div class="vp-row-info">
                 <p class="vp-row-label">{{ $g['label'] }}</p>
                 <p class="vp-row-time">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    <x-gravityui-clock />
                     <span>{{ $g['time_label'] }}</span>
                 </p>
             </div>
             <div class="vp-row-right">
                 <span class="vp-row-amount">${{ number_format($g['amount'], 2) }}</span>
                 <button type="button" class="vp-row-edit" onclick="vpApp.openEdit({{ $g['id'] }})">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <x-gravityui-pencil />
                 </button>
             </div>
         </div>
@@ -311,7 +407,7 @@
         @endforelse
     </div>
     <div id="vpEmpty" class="vp-empty-list" @if($viatic->expenses->isNotEmpty()) style="display:none" @endif>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        <x-gravityui-file />
         <p>No hay gastos registrados</p>
         <span>Agrega el primer gasto con el botón de abajo</span>
     </div>
@@ -319,11 +415,11 @@
 
     <div class="vp-bottom">
         <button type="button" class="vp-add-btn" id="vpBtnAdd" onclick="vpApp.openAdd()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            <x-gravityui-plus />
             Agregar gasto
         </button>
         <a href="{{ route('admin.viatics.index') }}" class="vp-back-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            <x-gravityui-arrow-chevron-left />
             Volver a viáticos
         </a>
     </div>
@@ -349,8 +445,12 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg>
                     <span>Viático</span>
                 </button>
+                <button type="button" class="vp-type-btn" data-type="lodging" onclick="vpApp.selectType(this, 'lodging', 'add')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+                    <span>Hospedaje</span>
+                </button>
                 <button type="button" class="vp-type-btn" data-type="other" onclick="vpApp.selectType(this, 'other', 'add')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    <x-gravityui-tag />
                     <span>Adicional</span>
                 </button>
             </div>
@@ -367,7 +467,7 @@
                 <input type="text" id="vpAddLabel" class="vp-input" placeholder="Ej. Caseta - Guadalajara Norte">
             </div>
             <button type="submit" class="vp-save-btn" id="vpBtnSaveAdd">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <x-gravityui-floppy-disk />
                 <span id="vpBtnSaveAddText">Guardar gasto</span>
             </button>
         </form>
@@ -394,8 +494,12 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg>
                     <span>Viático</span>
                 </button>
+                <button type="button" class="vp-type-btn" data-type="lodging" onclick="vpApp.selectType(this, 'lodging', 'edit')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+                    <span>Hospedaje</span>
+                </button>
                 <button type="button" class="vp-type-btn" data-type="other" onclick="vpApp.selectType(this, 'other', 'edit')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    <x-gravityui-tag />
                     <span>Adicional</span>
                 </button>
             </div>
@@ -413,11 +517,11 @@
             </div>
             <div class="vp-edit-actions">
                 <button type="submit" class="vp-btn-save" id="vpBtnSaveEdit">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    <x-gravityui-floppy-disk />
                     <span id="vpBtnSaveEditText">Guardar cambios</span>
                 </button>
                 <button type="button" class="vp-btn-delete" onclick="vpApp.deleteExpense()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    <x-gravityui-trash-bin />
                     Eliminar
                 </button>
             </div>
@@ -439,6 +543,7 @@
             toll: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M4 12v6h16v-6M8 12V8a4 4 0 0 1 8 0v4"/></svg>`,
             fuel: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h12M15 8h2a2 2 0 0 1 2 2v8a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.5L19 5"/></svg>`,
             meal: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3z"/></svg>`,
+            lodging: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>`,
             other: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
         };
 
@@ -447,11 +552,12 @@
         }
 
         function updateSummary() {
-            const byType = { toll: 0, fuel: 0, meal: 0, other: 0 };
+            const byType = { toll: 0, fuel: 0, meal: 0, lodging: 0, other: 0 };
             gastos.forEach(g => { if (byType[g.type] !== undefined) byType[g.type] += Number(g.amount); });
             document.getElementById('vpSummaryToll').textContent = formatMoney(byType.toll);
             document.getElementById('vpSummaryFuel').textContent = formatMoney(byType.fuel);
             document.getElementById('vpSummaryMeal').textContent = formatMoney(byType.meal);
+            document.getElementById('vpSummaryLodging').textContent = formatMoney(byType.lodging);
             document.getElementById('vpSummaryOther').textContent = formatMoney(byType.other);
         }
 

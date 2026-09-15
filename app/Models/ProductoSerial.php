@@ -49,6 +49,8 @@ class ProductoSerial extends Model
         'inventory_movement_id',
         'capturado_por',
         'editado_por',
+        'congress_id',
+        'enviado_a_congreso_en',
     ];
 
     protected function casts(): array
@@ -56,6 +58,10 @@ class ProductoSerial extends Model
         return [
             'vendido' => 'boolean',
             'vendido_en' => 'datetime',
+            'enviado_a_congreso_en' => 'datetime',
+            // Las fotos de cómo llegó esta pieza en particular (hasta 3).
+            // Sin el cast, Eloquent intentaba guardar el arreglo tal cual y
+            // tronaba con "Array to string conversion".
             'evidence_paths' => 'array',
         ];
     }
@@ -63,6 +69,23 @@ class ProductoSerial extends Model
     public function producto(): BelongsTo
     {
         return $this->belongsTo(Producto::class);
+    }
+
+    /**
+     * A qué congreso se llevaron esta pieza, si aplica.
+     *
+     * Es solo informativo: mientras está en el congreso la pieza sigue
+     * vendible (allá mismo la pueden vender), no se bloquea ni cambia de
+     * estado por esto.
+     */
+    public function congress(): BelongsTo
+    {
+        return $this->belongsTo(Congress::class);
+    }
+
+    public function enCongreso(): bool
+    {
+        return $this->congress_id !== null;
     }
 
     public function ventaItem(): BelongsTo

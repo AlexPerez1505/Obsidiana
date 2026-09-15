@@ -151,4 +151,79 @@ class VentaStockTest extends TestCase
         $this->assertSame(1, $producto->stock);
         $this->assertSame(0, InventoryMovement::count());
     }
+
+    /**
+     * Una pieza que se fue a un congreso sí se vende (allá mismo la
+     * venden), pero al completar solo se prefieren las del almacén: si el
+     * sistema tomara la del congreso por ser la más antigua, almacén iría
+     * a buscarla al anaquel y no está.
+     */
+    public function test_al_completar_solo_se_prefieren_las_piezas_del_almacen(): void
+    {
+        $user = $this->usuarioAprobado();
+        $customer = Customer::create(['nombre' => 'Cliente', 'apellido' => 'De Prueba']);
+        $producto = $this->productoConUnidades(2, ['SN-VIEJA-EN-CONGRESO', 'SN-NUEVA-EN-ALMACEN']);
+
+        $congress = \App\Models\Congress::create([
+            'nombre' => 'Congreso de Prueba',
+            'categoria_id' => \App\Models\Category::create(['nombre' => 'Endoscopia'])->id,
+            'fecha_inicio' => now()->toDateString(),
+            'fecha_finalizacion' => now()->addDay()->toDateString(),
+            'hora_montaje' => '08:00',
+            'hora_desmontaje' => '18:00',
+        ]);
+
+        // La más antigua (la que el FIFO tomaría primero) está en el congreso.
+        $producto->seriales()->where('no_serie', 'SN-VIEJA-EN-CONGRESO')->first()
+            ->update(['congress_id' => $congress->id]);
+
+        $this->actingAs($user)->post(route('commercial.ventas.store'), [
+            'customer_id' => $customer->id,
+            'modalidad' => 'contado',
+            'items' => $this->itemsParaVenta($producto, 1),
+        ])->assertRedirect();
+
+        $vendida = $producto->seriales()->where('vendido', true)->first();
+
+        $this->assertSame('SN-NUEVA-EN-ALMACEN', $vendida->no_serie);
+        $this->assertNull($vendida->congress_id);
+    }
+
+    public function test_se_puede_vender_a_proposito_la_pieza_que_esta_en_el_congreso(): void
+    {
+        $user = $this->usuarioAprobado();
+        $customer = Customer::create(['nombre' => 'Cliente', 'apellido' => 'De Prueba']);
+        $producto = $this->productoConUnidades(2, ['SN-EN-CONGRESO', 'SN-EN-ALMACEN']);
+
+        $congress = \App\Models\Congress::create([
+            'nombre' => 'Congreso de Prueba',
+            'categoria_id' => \App\Models\Category::create(['nombre' => 'Endoscopia'])->id,
+            'fecha_inicio' => now()->toDateString(),
+            'fecha_finalizacion' => now()->addDay()->toDateString(),
+            'hora_montaje' => '08:00',
+            'hora_desmontaje' => '18:00',
+        ]);
+
+        $enCongreso = $producto->seriales()->where('no_serie', 'SN-EN-CONGRESO')->first();
+        $enCongreso->update(['congress_id' => $congress->id]);
+
+        $items = $this->itemsParaVenta($producto, 1);
+        // El asesor la elige a mano: la venta se cerró en el congreso.
+        $items[0]['seriales'] = [$enCongreso->id];
+
+        $this->actingAs($user)->post(route('commercial.ventas.store'), [
+            'customer_id' => $customer->id,
+            'modalidad' => 'contado',
+            'items' => $items,
+        ])->assertRedirect();
+
+        $enCongreso->refresh();
+
+        $this->assertTrue($enCongreso->vendido);
+        // La marca del congreso se conserva: es el rastro de dónde se vendió.
+        $this->assertSame($congress->id, $enCongreso->congress_id);
+        $this->assertSame(1, $congress->unidadesVendidas()->count());
+        // Y la del almacén sigue disponible.
+        $this->assertFalse($producto->seriales()->where('no_serie', 'SN-EN-ALMACEN')->first()->vendido);
+    }
 }

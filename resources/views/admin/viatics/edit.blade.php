@@ -67,16 +67,30 @@
         position: relative; display: flex; align-items: center;
     }
     .vt-input-wrap .vt-input-icon {
-        position: absolute; left: 14px;
+        position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
         width: 20px; height: 20px; color: var(--muted);
-        pointer-events: none; flex: 0 0 auto;
+        pointer-events: none; flex: 0 0 auto; display: block;
+    }
+    /* La descripción es un textarea alto: el ícono se queda fijo arriba,
+       no centrado verticalmente como en los inputs de una sola línea. */
+    .vt-input-wrap .vt-input-icon--top {
+        top: 14px; transform: none;
     }
     .vt-input-wrap .vt-prefix {
-        position: absolute; left: 14px;
+        position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
         font-size: 16px; font-weight: 700; color: var(--muted);
         pointer-events: none;
     }
-    .vt-input {
+    /*
+       El layout general (layouts/dashboard) ya trae un estilo genérico
+       para "input[type=text], input[type=number], textarea..." que, por
+       especificidad CSS, le gana a una sola clase como ".vt-input" (el
+       selector con atributo+elemento pesa más que una sola clase). Por
+       eso se escribe siempre calificado con ".vt-form-card" por delante:
+       dos clases juntas sí superan esa especificidad y el padding-left
+       que deja espacio para el ícono se respeta de verdad.
+    */
+    .vt-form-card .vt-input {
         width: 100%; padding: 14px 14px 14px 44px;
         border: 2px solid #94a3b8; border-radius: 12px;
         font-size: 16px; font-family: inherit;
@@ -84,13 +98,13 @@
         outline: none; transition: border .15s, box-shadow .15s;
         -webkit-appearance: none; appearance: none;
     }
-    .vt-input:focus {
+    .vt-form-card .vt-input:focus {
         border-color: var(--primary);
         box-shadow: 0 0 0 3px rgba(0,122,255,.12);
     }
-    .vt-input::placeholder { color: #cbd5e1; }
+    .vt-form-card .vt-input::placeholder { color: #cbd5e1; }
 
-    textarea.vt-input {
+    .vt-form-card textarea.vt-input {
         resize: vertical; min-height: 90px; padding-top: 14px;
         line-height: 1.5;
     }
@@ -106,7 +120,7 @@
         .vt-form-card { padding: 28px 32px; }
         .vt-field { margin-bottom: 20px; }
         .vt-label { font-size: 13px; }
-        .vt-input { padding: 16px 16px 16px 48px; font-size: 17px; }
+        .vt-form-card .vt-input { padding: 16px 16px 16px 48px; font-size: 17px; }
         .vt-row-2 { gap: 16px; }
         .vt-chip { padding: 12px 28px; font-size: 15px; }
         .vt-submit { max-width: 400px; margin: 0 auto; padding: 18px; font-size: 17px; }
@@ -115,6 +129,46 @@
         .vt-form-grid-desktop {
             display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
         }
+    }
+
+    /* Fotos del ticket */
+    .vt-upload {
+        border: 2.5px dashed #94a3b8; border-radius: 14px;
+        padding: 28px 20px; text-align: center; cursor: pointer;
+        transition: border-color .15s, background .15s;
+        background: var(--surface-2);
+    }
+    .vt-upload:hover { border-color: var(--primary); background: var(--primary-soft); }
+    .vt-upload-icon {
+        width: 52px; height: 52px; border-radius: 14px;
+        background: var(--primary-soft); color: var(--primary);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 10px;
+        border: 1.5px solid #94a3b8;
+    }
+    .vt-upload-icon svg { width: 26px; height: 26px; }
+    .vt-upload p { margin: 0; font-size: 14px; font-weight: 700; color: var(--text); }
+    .vt-upload span { font-size: 12px; color: var(--muted); display: block; margin-top: 3px; }
+    .vt-photo-previews {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+        margin-bottom: 20px;
+    }
+    .vt-photo-thumb {
+        position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+        border: 1.5px solid #94a3b8; background: var(--surface-2);
+    }
+    .vt-photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .vt-photo-thumb.is-removed { opacity: .35; }
+    .vt-photo-remove {
+        position: absolute; top: 6px; right: 6px;
+        width: 24px; height: 24px; border-radius: 50%;
+        background: rgba(15,23,42,.65); color: #fff; border: none;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+    }
+    .vt-photo-remove svg { width: 13px; height: 13px; }
+    @media (min-width: 768px) {
+        .vt-photo-previews { grid-template-columns: repeat(4, 1fr); }
     }
 
     /* Submit button */
@@ -150,7 +204,7 @@
     {{-- Header --}}
     <div class="vt-header">
         <a href="{{ route('admin.viatics.index') }}" class="vt-back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            <x-gravityui-arrow-chevron-left />
         </a>
         <h1 class="vt-header-title">Editar Viático</h1>
     </div>
@@ -161,20 +215,20 @@
             <button type="button" class="vt-chip {{ $viatic->vehicle_id === $v->id ? 'selected' : '' }}"
                     data-vehicle-id="{{ $v->id }}"
                     onclick="vtSelectVehicle(this, {{ $v->id }})">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14M3 17l1.5-5.5A2 2 0 0 1 6.4 10h11.2a2 2 0 0 1 1.9 1.5L21 17M5 17v2M19 17v2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
+                <x-gravityui-car />
                 {{ $v->model ?: $v->brand ?: 'Vehículo' }}
             </button>
         @endforeach
         @if($vehicles->isEmpty())
             <button type="button" class="vt-chip selected" data-vehicle-id="">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14M3 17l1.5-5.5A2 2 0 0 1 6.4 10h11.2a2 2 0 0 1 1.9 1.5L21 17M5 17v2M19 17v2"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg>
+                <x-gravityui-car />
                 Sin vehículo
             </button>
         @endif
     </div>
 
     {{-- Form --}}
-    <form method="POST" action="{{ route('admin.viatics.update', $viatic) }}">
+    <form method="POST" action="{{ route('admin.viatics.update', $viatic) }}" enctype="multipart/form-data" id="vtForm">
         @csrf
         @method('PATCH')
         <input type="hidden" name="vehicle_id" id="vtVehicleId" value="{{ $viatic->vehicle_id ?? '' }}">
@@ -185,7 +239,7 @@
             <div class="vt-field">
                 <label class="vt-label">Lugar</label>
                 <div class="vt-input-wrap">
-                    <svg class="vt-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <x-gravityui-map-pin class="vt-input-icon" />
                     <input type="text" name="place" class="vt-input" placeholder="Ej. Guadalajara, Jalisco" value="{{ old('place', $viatic->place) }}">
                 </div>
             </div>
@@ -208,7 +262,7 @@
                 </div>
             </div>
 
-            {{-- Viáticos & Adicional --}}
+            {{-- Viáticos & Hospedaje --}}
             <div class="vt-row-2">
                 <div class="vt-field">
                     <label class="vt-label">Viáticos</label>
@@ -218,11 +272,20 @@
                     </div>
                 </div>
                 <div class="vt-field">
-                    <label class="vt-label">Adicional</label>
+                    <label class="vt-label">Hospedaje</label>
                     <div class="vt-input-wrap">
                         <span class="vt-prefix">$</span>
-                        <input type="number" name="additional" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal" value="{{ old('additional', $viatic->additional) }}">
+                        <input type="number" name="lodging" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal" value="{{ old('lodging', $viatic->lodging) }}">
                     </div>
+                </div>
+            </div>
+
+            {{-- Adicional --}}
+            <div class="vt-field">
+                <label class="vt-label">Adicional</label>
+                <div class="vt-input-wrap">
+                    <span class="vt-prefix">$</span>
+                    <input type="number" name="additional" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal" value="{{ old('additional', $viatic->additional) }}">
                 </div>
             </div>
 
@@ -230,15 +293,37 @@
             <div class="vt-field">
                 <label class="vt-label">Descripción</label>
                 <div class="vt-input-wrap">
-                    <svg class="vt-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="top:14px; left:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+                    <x-gravityui-file-text class="vt-input-icon vt-input-icon--top" />
                     <textarea name="description" class="vt-input" placeholder="Describe el motivo del viaje o gastos adicionales...">{{ old('description', $viatic->description) }}</textarea>
                 </div>
             </div>
         </div>
 
+        {{-- Fotos del ticket --}}
+        <div class="vt-photo-previews" id="vtPhotoPreviews">
+            @foreach($viatic->ticket_photos ?? [] as $ruta)
+                <div class="vt-photo-thumb" data-ruta="{{ $ruta }}">
+                    <img src="{{ asset('storage/' . $ruta) }}" alt="Foto del ticket">
+                    <button type="button" class="vt-photo-remove" aria-label="Quitar foto" onclick="vtQuitarFotoExistente(this, '{{ $ruta }}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            @endforeach
+        </div>
+        <div id="vtPhotoPreviewsNuevas" class="vt-photo-previews"></div>
+        <div class="vt-upload" onclick="document.getElementById('vtPhotosInput').click()" style="margin-bottom:20px;">
+            <div class="vt-upload-icon">
+                <x-gravityui-camera />
+            </div>
+            <p>Agregar fotos del ticket</p>
+            <span>Toca para tomar o seleccionar una o varias fotos</span>
+        </div>
+        <input type="file" id="vtPhotosInput" name="ticket_photos[]" accept="image/*" multiple hidden>
+        <div id="vtQuitarFotosBox"></div>
+
         {{-- Submit --}}
         <button type="submit" class="vt-submit">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <x-gravityui-floppy-disk />
             Guardar Cambios
         </button>
     </form>
@@ -248,7 +333,7 @@
         @csrf
         @method('DELETE')
         <button type="submit" class="vt-delete-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <x-gravityui-trash-bin />
             Eliminar Viático
         </button>
     </form>
@@ -261,5 +346,56 @@
         btn.classList.add('selected');
         document.getElementById('vtVehicleId').value = id;
     }
+
+    function vtQuitarFotoExistente(btn, ruta) {
+        const thumb = btn.closest('.vt-photo-thumb');
+        thumb.classList.add('is-removed');
+        btn.disabled = true;
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'quitar_fotos[]';
+        input.value = ruta;
+        document.getElementById('vtQuitarFotosBox').appendChild(input);
+    }
+
+    (function () {
+        const input = document.getElementById('vtPhotosInput');
+        const previews = document.getElementById('vtPhotoPreviewsNuevas');
+        let archivos = [];
+
+        function sincronizarInput() {
+            const dt = new DataTransfer();
+            archivos.forEach(archivo => dt.items.add(archivo));
+            input.files = dt.files;
+        }
+
+        function render() {
+            previews.innerHTML = '';
+            archivos.forEach((archivo, index) => {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const thumb = document.createElement('div');
+                    thumb.className = 'vt-photo-thumb';
+                    thumb.innerHTML = '<img src="' + event.target.result + '" alt="Foto del ticket">' +
+                        '<button type="button" class="vt-photo-remove" aria-label="Quitar foto">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button>';
+                    thumb.querySelector('.vt-photo-remove').addEventListener('click', function () {
+                        archivos.splice(index, 1);
+                        sincronizarInput();
+                        render();
+                    });
+                    previews.appendChild(thumb);
+                };
+                reader.readAsDataURL(archivo);
+            });
+        }
+
+        input.addEventListener('change', function () {
+            archivos = archivos.concat(Array.from(input.files));
+            sincronizarInput();
+            render();
+        });
+    })();
 </script>
 @endsection

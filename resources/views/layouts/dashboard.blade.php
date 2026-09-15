@@ -349,7 +349,7 @@
         label { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }
         /* Controles de formulario: mismo aspecto sin repetir estilos en cada vista. */
         input[type=text], input[type=email], input[type=password], input[type=tel],
-        input[type=number], input[type=date], input[type=search], input[type=file], select, textarea {
+        input[type=number], input[type=date], input[type=time], input[type=search], input[type=file], select, textarea {
             width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:7px; font-size:14px;
             font-family:inherit; outline:none; background:var(--surface); color:var(--text);
             transition:border-color .15s ease; }
@@ -363,6 +363,16 @@
             border-radius:6px; background:var(--surface-2); color:var(--text);
             font-family:inherit; font-size:13px; cursor:pointer; }
         input[type=file]::file-selector-button:hover { border-color:var(--muted); }
+
+        /* El reloj de los campos de hora y el calendario de los de fecha los
+           dibuja el navegador en negro, así que en tema oscuro quedaban
+           invisibles sobre el fondo. Se invierten para que se vean blancos. */
+        [data-theme="dark"] input[type=time]::-webkit-calendar-picker-indicator,
+        [data-theme="dark"] input[type=date]::-webkit-calendar-picker-indicator,
+        [data-theme="dark"] input[type=datetime-local]::-webkit-calendar-picker-indicator,
+        [data-theme="dark"] input[type=month]::-webkit-calendar-picker-indicator,
+        [data-theme="dark"] input[type=week]::-webkit-calendar-picker-indicator {
+            filter:invert(1) brightness(1.6); cursor:pointer; }
 
         /* Campo del componente x-ui.form-group: etiqueta, control y error
            en un mismo bloque, para que no se separen dentro de una rejilla. */
@@ -711,10 +721,6 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Escanear</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.equipos.*') ? 'active' : '' }}" href="{{ route('inventory.equipos.index') }}" data-tip="Equipos">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Equipos</span>
-                    </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.productos.*') ? 'active' : '' }}" href="{{ route('inventory.productos.index') }}" data-tip="Productos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Productos</span>
@@ -723,9 +729,9 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Fichas técnicas</span>
                     </a>
-                    <a class="nav-item nav-sub" href="#" data-tip="Stock">
+                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.congresos.*') ? 'active' : '' }}" href="{{ route('inventory.congresos.index') }}" data-tip="Congresos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Stock</span>
+                        <span class="nav-label">Congresos</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('configuracion.catalogos.*') ? 'active' : '' }}" href="{{ route('configuracion.catalogos.index') }}" data-tip="Catálogo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>

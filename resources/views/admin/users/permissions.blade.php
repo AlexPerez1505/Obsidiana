@@ -256,7 +256,7 @@
     <div class="perm-overlay">
         <div class="perm-modal" style="position:relative;">
             <a href="{{ route('admin.users.index') }}" class="perm-close" title="Cerrar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                <x-gravityui-xmark />
             </a>
 
             <div class="perm-header">
@@ -316,13 +316,13 @@
                                                 {{ $currentLevel === null ? 'disabled' : '' }}>
                                             <span class="{{ $level === 'read_only' ? 'read-only' : ($level === 'edit' ? 'edit' : ($level === 'admin' ? 'admin' : '')) }}">
                                                 @if($level === 'enabled')
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                                                    <x-gravityui-check />
                                                 @elseif($level === 'read_only')
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                                    <x-gravityui-eye />
                                                 @elseif($level === 'edit')
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                    <x-gravityui-pencil />
                                                 @else
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                                    <x-gravityui-star />
                                                 @endif
                                                 {{ $levelLabels[$level] }}
                                             </span>
@@ -340,7 +340,7 @@
                         @endif
                         <a href="{{ route('admin.users.index') }}" class="perm-btn perm-btn-cancel">Cancelar</a>
                         <button type="submit" class="perm-btn perm-btn-save">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+                            <x-gravityui-floppy-disk width="18" height="18" />
                             Guardar Cambios
                         </button>
                     </div>
