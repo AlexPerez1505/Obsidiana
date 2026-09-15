@@ -185,7 +185,8 @@ class FirmaRegistradaTest extends TestCase
             'orden' => 0,
         ]);
 
-        $orden->actualizarEstado();
+        // El formulario de firma aparece cuando la preparación ya se cerró.
+        $orden->fresh()->confirmarPreparacion($user->id);
 
         return $orden->fresh();
     }

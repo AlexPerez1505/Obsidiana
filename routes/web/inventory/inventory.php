@@ -36,6 +36,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::middleware('can:salidas.preparar')->group(function () {
             Route::post('/{orden}/partidas/{item}', [OrdenSalidaController::class, 'item'])->name('item');
             Route::post('/{orden}/notas', [OrdenSalidaController::class, 'notas'])->name('notas');
+            // Cierra la preparación: queda lista, esperando firma.
+            Route::post('/{orden}/preparada', [OrdenSalidaController::class, 'preparada'])->name('preparada');
             Route::post('/{orden}/entregar', [OrdenSalidaController::class, 'entregar'])->name('entregar');
         });
     });

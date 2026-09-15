@@ -8,12 +8,18 @@
     @php
         // Se recorre una sola vez: los mismos datos alimentan la tabla y las tarjetas.
         $filas = collect($movements->items())->map(function ($m) {
-            $tipo = $m->movement_type;
+            /*
+            | El tipo que se muestra no siempre es el de la base: una salida
+            | que todavía no se entrega se ve como "Vendido", porque el stock
+            | ya bajó pero el equipo sigue en el almacén. Pasa a "Salida"
+            | cuando se firma su orden de salida.
+            */
+            $tipo = $m->tipoVista();
 
             return [
                 'modelo' => $m,
                 'tipo' => $tipo,
-                'tipoLabel' => ucfirst($tipo),
+                'tipoLabel' => $m->tipoVistaLabel(),
                 'condicion' => $m->condicion ?: 'nuevo',
                 'almacen' => $m->warehouse ?: 'Sin almacén',
                 'quien' => $m->creator?->name ?: 'Sin registrar',
@@ -26,8 +32,14 @@
         $almacenes = $filas->pluck('almacen')->filter()->unique()->sort()->values();
         $quienes = $filas->pluck('quien')->filter()->unique()->sort()->values();
 
-        // Cómo se pinta cada tipo de movimiento.
-        $tono = ['entrada' => 'badge--ok', 'salida' => 'badge--danger', 'transferencia' => 'badge--info'];
+        // Cómo se pinta cada tipo de movimiento. "Vendido" va en ámbar: no es
+        // una salida todavía, es un pendiente de entrega.
+        $tono = [
+            'entrada' => 'badge--ok',
+            'vendido' => 'badge--warn',
+            'salida' => 'badge--danger',
+            'transferencia' => 'badge--info',
+        ];
 
         $datos = function (array $fila) {
             return [
@@ -113,7 +125,14 @@
             <div class="flt-panel" data-flt-panel hidden>
                 <div class="flt-group">
                     <h4>Tipo de movimiento</h4>
-                    @foreach (['entrada' => 'Entradas', 'salida' => 'Salidas', 'transferencia' => 'Transferencias'] as $valor => $texto)
+                    {{-- "Vendidas sin entregar" es la lista que le sirve a
+                         almacén: ya se vendieron, pero el equipo sigue aquí. --}}
+                    @foreach ([
+                        'entrada' => 'Entradas',
+                        'vendido' => 'Vendidas sin entregar',
+                        'salida' => 'Salidas entregadas',
+                        'transferencia' => 'Transferencias',
+                    ] as $valor => $texto)
                         <label class="flt-opt">
                             <span class="flt-opt-txt">{{ $texto }}</span>
                             <input type="checkbox" data-f="tipo" value="{{ $valor }}">
@@ -203,7 +222,14 @@
                 @forelse ($filas as $fila)
                     @php $m = $fila['modelo']; @endphp
 
-                    <tr class="f-row" @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
+                    {{-- Toda la fila abre el detalle del movimiento: ahí está
+                         todo lo registrado (unidades, evidencia de cada una,
+                         firma). Antes había que buscar "Ver detalle" en el
+                         menú de tres puntos. --}}
+                    <tr class="f-row mv-clic" tabindex="0" role="link"
+                        aria-label="Ver detalle de {{ $m->folio }}"
+                        data-ver="{{ route('inventory.movimientos.show', $m) }}"
+                        @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
                         <td>
                             <div class="cell-id">
                                 <span class="mv-ico {{ $fila['tipo'] }}">
@@ -211,13 +237,21 @@
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
                                     @elseif ($fila['tipo'] === 'salida')
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+                                    @elseif ($fila['tipo'] === 'vendido')
+                                        {{-- Vendido pero sin salir: reloj, es un pendiente. --}}
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
                                     @else
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3 3 21"/></svg>
                                     @endif
                                 </span>
                                 <div style="min-width:0;">
                                     <div class="t">{{ $m->folio }}</div>
-                                    <div class="s">{{ $fila['fechaVista'] }}</div>
+                                    <div class="s">
+                                        {{ $fila['fechaVista'] }}
+                                        @if ($fila['tipo'] === 'vendido')
+                                            · <span class="mv-pendiente">pendiente de entrega</span>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </td>
@@ -255,20 +289,30 @@
         @forelse ($filas as $fila)
             @php $m = $fila['modelo']; @endphp
 
-            <article class="data-card f-row" @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
+            <article class="data-card f-row mv-clic" tabindex="0" role="link"
+                     aria-label="Ver detalle de {{ $m->folio }}"
+                     data-ver="{{ route('inventory.movimientos.show', $m) }}"
+                     @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
                 <div class="data-card-top">
                     <span class="mv-ico {{ $fila['tipo'] }}">
                         @if ($fila['tipo'] === 'entrada')
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
                         @elseif ($fila['tipo'] === 'salida')
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+                        @elseif ($fila['tipo'] === 'vendido')
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
                         @else
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3 3 21"/></svg>
                         @endif
                     </span>
                     <div style="min-width:0; flex:1;">
                         <div class="t">{{ $m->folio }}</div>
-                        <div class="s">{{ $fila['fechaVista'] }}</div>
+                        <div class="s">
+                            {{ $fila['fechaVista'] }}
+                            @if ($fila['tipo'] === 'vendido')
+                                · <span class="mv-pendiente">pendiente de entrega</span>
+                            @endif
+                        </div>
                     </div>
                     <span class="badge {{ $tono[$fila['tipo']] ?? '' }}">{{ $fila['tipoLabel'] }}</span>
                 </div>
@@ -350,12 +394,21 @@
         .mv-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-bottom:16px; }
         .mv-table { width:100%; border-collapse:collapse; }
 
+        /* La fila entera abre el detalle, así que se ve y se enfoca como algo
+           en lo que se puede hacer clic. */
+        .mv-clic { cursor:pointer; }
+        .mv-table tbody tr.mv-clic:hover { background:var(--surface-2); }
+        .mv-clic:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+
         .mv-ico { display:flex; align-items:center; justify-content:center; width:36px; height:36px;
                   border-radius:10px; flex:0 0 36px; background:var(--surface-2); color:var(--muted); }
         .mv-ico svg { width:17px; height:17px; }
         .mv-ico.entrada { background:var(--green-soft); color:var(--green); }
         .mv-ico.salida { background:var(--danger-soft); color:var(--danger); }
+        .mv-ico.vendido { background:var(--accent-soft); color:var(--accent); }
         .mv-ico.transferencia { background:var(--primary-soft); color:var(--primary); }
+        /* Ya se vendió y se descontó del stock, pero el equipo sigue aquí. */
+        .mv-pendiente { color:var(--accent); font-weight:600; }
 
         .mv-modal { width:min(420px, calc(100vw - 32px)); padding:24px; border:1px solid var(--border);
                     border-radius:16px; background:var(--surface); color:var(--text); }
@@ -421,6 +474,41 @@
                     modal.close();
                 }
             }, true);
+
+            /*
+            | Abrir el detalle al hacer clic en la fila (o en la tarjeta).
+            |
+            | Se ignora lo que ya tiene su propia acción: el menú de tres
+            | puntos, enlaces y botones. También se ignora si el usuario
+            | estaba seleccionando texto, porque copiar un folio no debe
+            | sacarte de la pantalla.
+            */
+            document.addEventListener('click', function (e) {
+                const fila = e.target.closest('[data-ver]');
+                if (! fila) return;
+
+                if (e.target.closest('a, button, input, select, textarea, [data-row-menu]')) return;
+                if ((window.getSelection()?.toString() || '').trim() !== '') return;
+
+                // Clic con la rueda o con Ctrl/Cmd: en pestaña nueva.
+                if (e.metaKey || e.ctrlKey) {
+                    window.open(fila.dataset.ver, '_blank');
+
+                    return;
+                }
+
+                window.location = fila.dataset.ver;
+            });
+
+            // Con el teclado: Enter sobre la fila enfocada hace lo mismo.
+            document.addEventListener('keydown', function (e) {
+                if (e.key !== 'Enter') return;
+
+                const fila = e.target.closest?.('[data-ver]');
+                if (! fila || e.target !== fila) return;
+
+                window.location = fila.dataset.ver;
+            });
 
             @if ($errors->has('password'))
                 // El PIN salió mal: se vuelve a abrir con el error a la vista.

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\InventoryMovement;
 use App\Models\OrdenSalida;
 use App\Models\OrdenSalidaItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -132,6 +134,33 @@ class OrdenSalidaController extends Controller
         return back();
     }
 
+    /**
+     * Cierra la preparación: la orden pasa a "Lista para salir" y se queda
+     * esperando que alguien firme la salida.
+     *
+     * Es el relevo entre almacén y quien entrega: el que prepara termina su
+     * parte aquí y queda registrado que fue él, aunque la firma la haga otra
+     * persona horas o días después.
+     */
+    public function preparada(Request $request, OrdenSalida $orden): RedirectResponse
+    {
+        if ($orden->cerrada()) {
+            return back()->withErrors(['orden' => 'Esta orden ya está cerrada.']);
+        }
+
+        if (! $orden->todoListo()) {
+            return back()->withErrors(['orden' => 'Todavía hay partidas sin preparar o sin emplayar: termina el checklist antes de dejarla lista.']);
+        }
+
+        if ($orden->preparada_en) {
+            return back()->withErrors(['orden' => 'Esta orden ya estaba lista para salir.']);
+        }
+
+        $orden->confirmarPreparacion($request->user()->id);
+
+        return back()->with('status', "Orden {$orden->folio} lista para salir. Ya solo falta que alguien firme la salida.");
+    }
+
     /** Notas generales de la orden (instrucciones para almacén, transporte...). */
     public function notas(Request $request, OrdenSalida $orden): RedirectResponse
     {
@@ -157,6 +186,12 @@ class OrdenSalidaController extends Controller
             return back()->withErrors(['orden' => 'Todavía hay partidas sin preparar o sin emplayar. Termina el checklist antes de firmar la salida.']);
         }
 
+        // La preparación se cierra primero: así queda claro quién preparó y
+        // quién entregó, aunque sea la misma persona.
+        if (! $orden->listaParaFirmar()) {
+            return back()->withErrors(['orden' => 'Primero deja la orden preparada para firma: así queda registrado quién la preparó.']);
+        }
+
         $data = $request->validate([
             'recibe_nombre' => ['required', 'string', 'max:255'],
             'firma_entrega' => ['required', 'string'],
@@ -179,17 +214,45 @@ class OrdenSalidaController extends Controller
             return back()->withInput()->withErrors(['firma_recibe' => 'Alguna firma no es válida. Vuelve a firmar e intenta de nuevo.']);
         }
 
-        $orden->update([
-            'estado' => OrdenSalida::ENTREGADA,
-            'entregada_por' => $request->user()->id,
-            'entregada_en' => now(),
-            'recibe_nombre' => $data['recibe_nombre'],
-            'firma_entrega_path' => $firmaEntrega,
-            'firma_recibe_path' => $firmaRecibe,
-        ]);
+        $entregadaEn = now();
+
+        DB::transaction(function () use ($orden, $request, $data, $firmaEntrega, $firmaRecibe, $entregadaEn) {
+            $orden->update([
+                'estado' => OrdenSalida::ENTREGADA,
+                'entregada_por' => $request->user()->id,
+                'entregada_en' => $entregadaEn,
+                'recibe_nombre' => $data['recibe_nombre'],
+                'firma_entrega_path' => $firmaEntrega,
+                'firma_recibe_path' => $firmaRecibe,
+            ]);
+
+            $this->marcarSalidasEntregadas($orden, $entregadaEn);
+        });
 
         return redirect()->route('inventory.salidas.show', $orden)
             ->with('status', "Salida {$orden->folio} firmada. El equipo ya salió.");
+    }
+
+    /**
+     * Cierra el movimiento de inventario: hasta aquí era una venta pendiente
+     * de entrega, ahora es una salida consumada.
+     *
+     * El stock ya se había descontado al vender; lo que se registra aquí es
+     * la fecha en que el equipo de verdad dejó el almacén.
+     */
+    private function marcarSalidasEntregadas(OrdenSalida $orden, $entregadaEn): void
+    {
+        $itemIds = $orden->venta?->items()->pluck('id') ?? collect();
+
+        if ($itemIds->isEmpty()) {
+            return;
+        }
+
+        // Misma liga que usa la venta para encontrar sus salidas.
+        InventoryMovement::where('movement_type', InventoryMovement::TYPE_EXIT)
+            ->whereIn('metadata->venta_item_id', $itemIds->all())
+            ->whereNull('entregado_en')
+            ->update(['entregado_en' => $entregadaEn]);
     }
 
     /** Igual que la firma de las entradas: data URL base64 a PNG en disco. */

@@ -204,6 +204,11 @@ class VentaController extends Controller
                 ->withErrors(['venta' => 'Una venta cancelada no se edita.']);
         }
 
+        if ($this->equipoYaSalio($venta)) {
+            return redirect()->route('commercial.ventas.show', $venta)
+                ->withErrors(['venta' => 'El equipo de esta venta ya salió del almacén con firma de entrega: cambiar los renglones regresaría al inventario piezas que el cliente ya tiene. Registra la devolución del equipo antes de editarla.']);
+        }
+
         $data = $this->validar($request);
 
         /*
@@ -310,6 +315,12 @@ class VentaController extends Controller
             return back()->withErrors(['venta' => 'Esta venta ya estaba cancelada.']);
         }
 
+        if ($this->equipoYaSalio($venta)) {
+            return back()->withErrors([
+                'venta' => 'El equipo ya salió del almacén con firma de entrega. Cancelar aquí regresaría al stock piezas que el cliente tiene en su poder y borraría la salida firmada del historial: primero hay que registrar la devolución física del equipo.',
+            ]);
+        }
+
         $data = $request->validate([
             'motivo' => ['required', 'string', 'max:500'],
             'password' => ['required', 'string'],
@@ -362,6 +373,11 @@ class VentaController extends Controller
         if ($venta->cobros()->exists()) {
             return redirect()->route('commercial.ventas.show', $venta)
                 ->withErrors(['venta' => 'Esta venta ya tiene cobros registrados: no se puede eliminar, solo cancelar.']);
+        }
+
+        if ($this->equipoYaSalio($venta)) {
+            return redirect()->route('commercial.ventas.show', $venta)
+                ->withErrors(['venta' => 'El equipo de esta venta ya salió del almacén con firma de entrega: no se puede borrar. Registra la devolución física del equipo.']);
         }
 
         $folio = $venta->folio;
@@ -600,6 +616,28 @@ class VentaController extends Controller
                 $this->descontarStockDePaquete($item);
             }
         }
+    }
+
+    /**
+     * ¿El equipo de esta venta ya salió físicamente del almacén?
+     *
+     * Lo dice la salida de inventario: nace como venta pendiente de entrega
+     * y solo se marca entregada cuando se firma su orden de salida. A partir
+     * de ese momento, editar o cancelar la venta regresaría al stock piezas
+     * que el cliente ya tiene, y borraría del historial una salida firmada.
+     */
+    private function equipoYaSalio(Venta $venta): bool
+    {
+        $itemIds = $venta->items()->pluck('id');
+
+        if ($itemIds->isEmpty()) {
+            return false;
+        }
+
+        return InventoryMovement::where('movement_type', InventoryMovement::TYPE_EXIT)
+            ->whereIn('metadata->venta_item_id', $itemIds->all())
+            ->whereNotNull('entregado_en')
+            ->exists();
     }
 
     /**

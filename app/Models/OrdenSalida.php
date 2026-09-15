@@ -109,6 +109,25 @@ class OrdenSalida extends Model
         return $items->isNotEmpty() && $items->every(fn (OrdenSalidaItem $i) => $i->completo());
     }
 
+    /**
+     * El checklist ya está completo pero nadie ha cerrado la preparación.
+     *
+     * Terminar de marcar y entregar son dos actos distintos: quien prepara
+     * deja la orden lista y se va, y la firma la hace quien entregue, que
+     * puede ser otra persona y otro día. Por eso hace falta el paso de
+     * "dejarla preparada" en medio.
+     */
+    public function puedeConfirmarPreparacion(): bool
+    {
+        return ! $this->cerrada() && ! $this->preparada_en && $this->todoListo();
+    }
+
+    /** Ya se cerró la preparación: solo falta que alguien firme la salida. */
+    public function listaParaFirmar(): bool
+    {
+        return $this->estado === self::LISTA && $this->preparada_en !== null;
+    }
+
     /** Cuántos pasos van hechos de cuántos, para la barra de avance. */
     public function avance(): array
     {
@@ -129,9 +148,12 @@ class OrdenSalida extends Model
     }
 
     /**
-     * Recalcula el estado a partir de los renglones: pendiente si nada se
-     * ha tocado, en preparación si algo, lista si todo. No baja de
-     * entregada ni de cancelada.
+     * Recalcula el estado a partir de los renglones.
+     *
+     * "Lista para salir" no se pone sola por terminar el checklist: hace
+     * falta que alguien cierre la preparación (ver confirmarPreparacion).
+     * Mientras eso no pase, la orden sigue en preparación aunque todo esté
+     * marcado. No baja de entregada ni de cancelada.
      */
     public function actualizarEstado(): void
     {
@@ -141,24 +163,33 @@ class OrdenSalida extends Model
 
         $this->load('items');
 
-        $nuevo = match (true) {
-            $this->todoListo() => self::LISTA,
-            $this->items->contains(fn ($i) => $i->preparado || $i->emplayado) => self::EN_PREPARACION,
-            default => self::PENDIENTE,
-        };
-
-        if ($nuevo === self::LISTA && ! $this->preparada_en) {
-            $this->preparada_en = now();
-            $this->preparada_por = auth()->id();
-        }
-
-        if ($nuevo !== self::LISTA) {
+        // Si se desmarcó algo, la preparación cerrada deja de valer: la
+        // orden regresa a la fila de trabajo.
+        if (! $this->todoListo() && $this->preparada_en) {
             $this->preparada_en = null;
             $this->preparada_por = null;
         }
 
-        $this->estado = $nuevo;
+        $this->estado = match (true) {
+            $this->todoListo() && $this->preparada_en !== null => self::LISTA,
+            $this->items->contains(fn ($i) => $i->preparado || $i->emplayado) => self::EN_PREPARACION,
+            default => self::PENDIENTE,
+        };
+
         $this->save();
+    }
+
+    /**
+     * Cierra la preparación: la orden queda lista para que alguien firme su
+     * salida, y aparece en la lista de "Listas para salir".
+     */
+    public function confirmarPreparacion(?int $usuarioId = null): void
+    {
+        $this->preparada_en = now();
+        $this->preparada_por = $usuarioId ?? auth()->id();
+        $this->save();
+
+        $this->actualizarEstado();
     }
 
     public function firmaEntregaUrl(): ?string

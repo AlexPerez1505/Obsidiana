@@ -608,9 +608,21 @@ class InventoryMovementController extends Controller
     {
         $movimiento->load(['creator', 'seriales']);
 
+        /*
+        | Una salida viene de una venta, y su entrega la controla la orden de
+        | salida: desde aquí se llega a esa hoja (checklist y firmas) sin
+        | tener que buscarla por folio.
+        */
+        $orden = $movimiento->movement_type === InventoryMovement::TYPE_EXIT && $movimiento->reference
+            ? \App\Models\OrdenSalida::whereHas('venta', fn ($q) => $q->where('folio', $movimiento->reference))
+                ->with('venta')
+                ->first()
+            : null;
+
         return view('structure.gestion_Inventario.entrada_salida.show', [
             'movimiento' => $movimiento,
             'producto' => $movimiento->producto(),
+            'ordenSalida' => $orden,
         ]);
     }
 
