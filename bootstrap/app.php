@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // y Órdenes de servicio, ni tecleando la URL directo.
         $middleware->web(append: [
             \App\Http\Middleware\RestrictMantenimientoAccess::class,
+            \App\Http\Middleware\RestrictMarketingFromServicios::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

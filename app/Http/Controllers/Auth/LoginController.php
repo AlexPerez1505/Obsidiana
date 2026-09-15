@@ -57,7 +57,17 @@ class LoginController extends Controller
             return redirect()->route('approval.pending');
         }
 
-        return redirect()->intended(route($user->homeRoute()));
+        $home = $user->homeRoute();
+
+        // Los roles con tablero propio (Mantenimiento, Marketing) siempre
+        // llegan ahí, sin importar qué URL haya quedado guardada de un
+        // intento anterior de entrar sin sesión: si no, un enlace viejo a
+        // /dashboard los mandaba de vuelta al tablero general.
+        if ($home !== 'dashboard') {
+            return redirect()->route($home);
+        }
+
+        return redirect()->intended(route($home));
     }
 
     public function destroy(Request $request): RedirectResponse

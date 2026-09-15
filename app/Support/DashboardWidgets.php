@@ -38,12 +38,17 @@ class DashboardWidgets
     /**
      * Arreglo de fabrica, para quien todavia no personaliza su tablero.
      *
+     * El rol Marketing no vende, así que no lleva "Ventas del mes"; el
+     * resto de indicadores comerciales sí le sirven de contexto.
+     *
      * @return array<int, array{id: string, w: int, h: int}>
      */
-    public static function porOmision(): array
+    public static function porOmision(?User $user = null): array
     {
-        $ids = ['clientes', 'cotizaciones', 'ventas_mes', 'inventario',
-            'ventas_grafica', 'ultimas_cotizaciones', 'ultimos_clientes', 'accesos_rapidos'];
+        $ids = ($user && ! $user->isAdmin() && $user->hasRole('marketing'))
+            ? ['clientes', 'cotizaciones', 'inventario', 'mis_tareas', 'flyers_pendientes', 'calendario_marketing']
+            : ['clientes', 'cotizaciones', 'ventas_mes', 'inventario',
+                'ventas_grafica', 'ultimas_cotizaciones', 'ultimos_clientes', 'accesos_rapidos'];
 
         return array_map(function (string $id) {
             $def = self::definicion($id);
@@ -119,6 +124,18 @@ class DashboardWidgets
             'mis_tareas' => [
                 'titulo' => 'Mis tareas',
                 'descripcion' => 'Tus pendientes de marketing sin terminar.',
+                'grupo' => 'Listas',
+                'w' => 2, 'h' => 4, 'h_min' => 3,
+            ],
+            'flyers_pendientes' => [
+                'titulo' => 'Flyers por aprobar',
+                'descripcion' => 'Piezas en revisión, listas para aprobar o devolver.',
+                'grupo' => 'Listas',
+                'w' => 2, 'h' => 4, 'h_min' => 3,
+            ],
+            'calendario_marketing' => [
+                'titulo' => 'Calendario de la semana',
+                'descripcion' => 'Qué se publica esta semana y en qué red social.',
                 'grupo' => 'Listas',
                 'w' => 2, 'h' => 4, 'h_min' => 3,
             ],
@@ -198,7 +215,7 @@ class DashboardWidgets
     {
         $guardado = self::normalizar($user->dashboard_widgets);
 
-        return $guardado ?: self::porOmision();
+        return $guardado ?: self::porOmision($user);
     }
 
     /**
@@ -253,6 +270,8 @@ class DashboardWidgets
             'ultimas_cotizaciones' => self::datosUltimasCotizaciones($user, $filas),
             'ultimos_clientes' => self::datosUltimosClientes($filas),
             'mis_tareas' => self::datosMisTareas($user, $filas),
+            'flyers_pendientes' => self::datosFlyersPendientes($filas),
+            'calendario_marketing' => self::datosCalendarioMarketing($filas),
             'catalogo_equipo' => self::datosCatalogoEquipo($nivel),
             default => [],
         };
@@ -467,6 +486,28 @@ class DashboardWidgets
             'filas' => Task::where('user_id', $user->id)
                 ->whereNotIn('status', ['completado', 'completada', 'terminado'])
                 ->latest()
+                ->limit($filas)
+                ->get(),
+        ];
+    }
+
+    /** Piezas ya enviadas a revisión, esperando que alguien las apruebe. */
+    private static function datosFlyersPendientes(int $filas): array
+    {
+        return [
+            'filas' => Task::where('status', 'revision')
+                ->latest()
+                ->limit($filas)
+                ->get(),
+        ];
+    }
+
+    /** Qué se publica esta semana, según la fecha de publicación de cada tarea. */
+    private static function datosCalendarioMarketing(int $filas): array
+    {
+        return [
+            'filas' => Task::whereBetween('due_date', [now()->startOfWeek(), now()->endOfWeek()])
+                ->orderBy('due_date')
                 ->limit($filas)
                 ->get(),
         ];

@@ -328,7 +328,8 @@ class User extends Authenticatable implements MustVerifyEmail
      * A qué pantalla de inicio llega el usuario tras iniciar sesión.
      *
      * El rol Mantenimiento tiene su propio tablero; el resto usa el
-     * tablero general.
+     * tablero general (Marketing incluido: ahí ve tarjetas de marketing
+     * en vez de las comerciales, ver DashboardWidgets::porOmision()).
      */
     public function homeRoute(): string
     {

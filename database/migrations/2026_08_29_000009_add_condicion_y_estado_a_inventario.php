@@ -17,20 +17,32 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('inventory_movements', function (Blueprint $table) {
-            $table->enum('condicion', ['nuevo', 'usado'])->default('nuevo')->after('item_name');
+            if (! Schema::hasColumn('inventory_movements', 'condicion')) {
+                $table->enum('condicion', ['nuevo', 'usado'])->default('nuevo')->after('item_name');
+            }
             // Respuestas del checklist de recepción; solo se llena en usados.
-            $table->json('checklist_recepcion')->nullable()->after('notes');
-            $table->string('estado_general', 20)->nullable()->after('checklist_recepcion');
+            if (! Schema::hasColumn('inventory_movements', 'checklist_recepcion')) {
+                $table->json('checklist_recepcion')->nullable()->after('notes');
+            }
+            if (! Schema::hasColumn('inventory_movements', 'estado_general')) {
+                $table->string('estado_general', 20)->nullable()->after('checklist_recepcion');
+            }
         });
 
         Schema::table('producto_seriales', function (Blueprint $table) {
             // Etiqueta interna: es lo que va impreso en el QR pegado a la
             // pieza. Va aparte del número de serie del fabricante, que
             // puede no existir (accesorios) o venir repetido.
-            $table->string('codigo', 30)->nullable()->unique()->after('producto_id');
-            $table->enum('condicion', ['nuevo', 'usado'])->default('nuevo')->after('no_serie');
-            $table->string('estado', 20)->default('disponible')->after('condicion');
-            $table->index('estado');
+            if (! Schema::hasColumn('producto_seriales', 'codigo')) {
+                $table->string('codigo', 30)->nullable()->unique()->after('producto_id');
+            }
+            if (! Schema::hasColumn('producto_seriales', 'condicion')) {
+                $table->enum('condicion', ['nuevo', 'usado'])->default('nuevo')->after('no_serie');
+            }
+            if (! Schema::hasColumn('producto_seriales', 'estado')) {
+                $table->string('estado', 20)->default('disponible')->after('condicion');
+                $table->index('estado');
+            }
         });
 
         // Lo que ya estaba registrado se toma como nuevo y disponible: es
