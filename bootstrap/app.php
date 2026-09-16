@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\RestrictMantenimientoAccess::class,
             \App\Http\Middleware\RestrictMarketingFromServicios::class,
+            \App\Http\Middleware\RestrictMantenimientoExternoAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

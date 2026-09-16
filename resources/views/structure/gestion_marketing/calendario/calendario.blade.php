@@ -511,7 +511,15 @@
         if (!dueInput.value) return;
         const pub = new Date(dueInput.value);
         pub.setDate(pub.getDate() - 3);
-        reviewInput.value = pub.toISOString().split('T')[0];
+
+        // Si la publicación está muy cerca (menos de 3 días), la resta cae
+        // en el pasado: revisar algo antes de hoy no tiene sentido, así que
+        // la fecha de revisión no baja de hoy.
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const fecha = pub < hoy ? hoy : pub;
+
+        reviewInput.value = fecha.toISOString().split('T')[0];
     }
 
     const viewOverlay = document.getElementById('view-task-overlay');

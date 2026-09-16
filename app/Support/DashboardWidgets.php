@@ -45,6 +45,12 @@ class DashboardWidgets
      */
     public static function porOmision(?User $user = null): array
     {
+        // Mantenimiento Externo solo entra a "Externo": su tablero no lleva
+        // ninguna tarjeta, ni comercial ni de otro tipo.
+        if ($user && ! $user->isAdmin() && $user->hasRole('mantenimiento_externo')) {
+            return [];
+        }
+
         $ids = ($user && ! $user->isAdmin() && $user->hasRole('marketing'))
             ? ['clientes', 'cotizaciones', 'inventario', 'mis_tareas', 'flyers_pendientes', 'calendario_marketing']
             : ['clientes', 'cotizaciones', 'ventas_mes', 'inventario',

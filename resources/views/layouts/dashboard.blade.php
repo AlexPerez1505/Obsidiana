@@ -642,6 +642,8 @@
                 $soloMantenimiento = auth()->user()->hasRole('mantenimiento') && ! auth()->user()->isAdmin();
                 // El rol Marketing no entra a Gestión de Servicios.
                 $esMarketing = auth()->user()->hasRole('marketing') && ! auth()->user()->isAdmin();
+                // El rol Mantenimiento Externo solo ve la pantalla de Externo.
+                $soloExterno = auth()->user()->hasRole('mantenimiento_externo') && ! auth()->user()->isAdmin();
             @endphp
             @unless ($soloMantenimiento)
                 <a class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}" data-tip="Dashboard">
@@ -655,7 +657,17 @@
                     <span class="nav-label">Mantenimiento</span>
                 </a>
             @endif
-            @unless ($soloMantenimiento)
+            @if (auth()->user()->isAdmin() || auth()->user()->hasRole('mantenimiento_externo'))
+                <a class="nav-item {{ request()->routeIs('gestion.servicios.externo') ? 'active' : '' }}" href="{{ route('gestion.servicios.externo') }}" data-tip="Externo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                    <span class="nav-label">Externo</span>
+                </a>
+                <a class="nav-item {{ request()->routeIs('gestion.servicios.historial') || request()->routeIs('gestion.servicios.historial.show') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial') }}" data-tip="Historial de Servicios">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    <span class="nav-label">Historial de Servicios</span>
+                </a>
+            @endif
+            @unless ($soloMantenimiento || $soloExterno)
             <div class="nav-section">Operación</div>
             <div class="nav-group {{ request()->routeIs('commercial.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Comercial">
@@ -740,7 +752,7 @@
                 </div>
             </div>
             @endunless
-            @unless ($esMarketing)
+            @unless ($esMarketing || $soloExterno)
             <div class="nav-group {{ request()->routeIs('gestion.servicios.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Servicios">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
@@ -785,7 +797,7 @@
                     <span class="nav-label">Configuración</span>
                 </a>
             @endif
-            @unless ($soloMantenimiento)
+            @unless ($soloMantenimiento || $soloExterno)
             <div class="nav-section">Administración</div>
             <div class="nav-group {{ request()->routeIs('admin.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Administrativa">

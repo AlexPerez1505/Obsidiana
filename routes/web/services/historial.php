@@ -12,7 +12,16 @@ use App\Models\Venta;
 
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-servicios/historial-servicios', function () {
-        $services = Service::with(['customer', 'serviceEquipment'])->latest()->get();
+        $query = Service::with(['customer', 'serviceEquipment'])->latest();
+
+        // Mantenimiento Externo solo ve lo que se le asignó como técnico
+        // responsable, no el historial completo de la empresa.
+        $usuario = auth()->user();
+        if (! $usuario->isAdmin() && $usuario->hasRole('mantenimiento_externo')) {
+            $query->where('internal_technician_id', $usuario->id);
+        }
+
+        $services = $query->get();
         return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('services'));
     })->name('gestion.servicios.historial');
     Route::get('/gestion-servicios/historial-servicios/aprobaciones', function () {
