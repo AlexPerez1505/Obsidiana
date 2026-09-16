@@ -48,10 +48,6 @@
                          font-weight:700; letter-spacing:.03em; }
         .esc-fila .eq { color:var(--muted); font-size:13px; line-height:1.35;
                         overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        /* La pieza se fue a un congreso: no está en el anaquel. */
-        .esc-fila .esc-congreso { display:inline-block; margin-top:3px; padding:2px 8px; border-radius:999px;
-                                  background:var(--warn-soft, rgba(217,119,6,.12)); color:var(--warn, #b45309);
-                                  font-size:11.5px; font-weight:700; }
         .esc-fila .veces { padding:2px 9px; border-radius:999px; background:var(--surface-2);
                            border:1px solid var(--border); font-size:12px; font-weight:700; }
         .esc-fila .quitar { width:30px; height:30px; border:0; border-radius:8px; background:transparent;
@@ -270,22 +266,11 @@
                     const detalle = [d.marca_modelo, d.no_serie ? 'Serie ' + d.no_serie : null]
                         .filter(Boolean).join(' · ');
 
-                    // Si la pieza se fue a un congreso, no está en el
-                    // almacén: es lo primero que necesita saber quien la
-                    // está buscando con la pistola en la mano.
-                    const enCongreso = d.congreso
-                        ? `<span class="esc-congreso" title="Esta pieza no está en el almacén">`
-                          + `En congreso: ${d.congreso}`
-                          + (d.congreso_desde ? ` (desde ${d.congreso_desde})` : '')
-                          + `</span>`
-                        : '';
-
                     fila.innerHTML = `
                         ${foto}
                         <span class="txt">
                             <span class="cod">${codigo}</span>
                             <span class="eq">${d.equipo}${detalle ? ' · ' + detalle : ''}</span>
-                            ${enCongreso}
                         </span>
                         <span class="badge ${d.vendible ? 'badge--ok' : ''}">${d.estado_label}</span>
                         ${item.veces > 1 ? `<span class="veces">×${item.veces}</span>` : ''}

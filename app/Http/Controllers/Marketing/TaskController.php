@@ -252,17 +252,16 @@ public function aprobacionFlyers(): View
     }
 
     /**
-     * Ruta antigua del calendario de contenido: la vista real vive en
-     * marketing.calendario.index, aquí solo se redirige por si queda algún
-     * enlace guardado a esta URL.
+     * Muestra el calendario de contenido de marketing.
      */
-    public function agenda(): RedirectResponse
+    public function agenda(): View
     {
         return view('structure.gestion_marketing.calendario.calendario', [
             'users' => User::orderBy('name')->get(['id', 'name']),
         ]);
     }
 
+    
     /**
      * Muestra la biblioteca y catálogo de áreas.
      */

@@ -41,8 +41,6 @@ class ProductoSerial extends Model
         'estado',
         'no_serie',
         'foto_path',
-        'evidence_paths',
-        'video_path',
         'vendido',
         'vendido_en',
         'venta_item_id',
@@ -59,10 +57,6 @@ class ProductoSerial extends Model
             'vendido' => 'boolean',
             'vendido_en' => 'datetime',
             'enviado_a_congreso_en' => 'datetime',
-            // Las fotos de cómo llegó esta pieza en particular (hasta 3).
-            // Sin el cast, Eloquent intentaba guardar el arreglo tal cual y
-            // tronaba con "Array to string conversion".
-            'evidence_paths' => 'array',
         ];
     }
 
@@ -72,10 +66,10 @@ class ProductoSerial extends Model
     }
 
     /**
-     * A qué congreso se llevaron esta pieza, si aplica.
+     * A qu� congreso se llevaron esta pieza, si aplica.
      *
-     * Es solo informativo: mientras está en el congreso la pieza sigue
-     * vendible (allá mismo la pueden vender), no se bloquea ni cambia de
+     * Es solo informativo: mientras est� en el congreso la pieza sigue
+     * vendible (all� mismo la pueden vender), no se bloquea ni cambia de
      * estado por esto.
      */
     public function congress(): BelongsTo
@@ -191,32 +185,6 @@ class ProductoSerial extends Model
     {
         return $this->foto_path
             ? Storage::disk(config('filesystems.fotos_disk', 'public'))->url($this->foto_path)
-            : null;
-    }
-
-    /**
-     * URLs públicas de todas las fotos de evidencia de esta unidad (hasta
-     * 3, de cómo llegó ella en particular). Si es un registro viejo que
-     * solo tiene foto_path (antes de existir evidencia por unidad), cae
-     * a esa sola foto para no dejar el listado vacío.
-     */
-    public function evidenceUrls(): array
-    {
-        $disco = config('filesystems.fotos_disk', 'public');
-        $paths = $this->evidence_paths ?: array_filter([$this->foto_path]);
-
-        return collect($paths)
-            ->filter()
-            ->map(fn (string $path) => Storage::disk($disco)->url($path))
-            ->values()
-            ->all();
-    }
-
-    /** URL pública del video de verificación de esta unidad, si tiene. */
-    public function videoUrl(): ?string
-    {
-        return $this->video_path
-            ? Storage::disk(config('filesystems.fotos_disk', 'public'))->url($this->video_path)
             : null;
     }
 }

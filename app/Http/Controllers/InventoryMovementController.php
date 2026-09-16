@@ -79,25 +79,12 @@ class InventoryMovementController extends Controller
         ]);
     }
 
-    public function create(Request $request): View
+    public function create(): View
     {
-        /*
-        | Los errores de las piezas llegan con su índice
-        | (unidades.0.evidencias, unidades.2.video_path...). Los bloques de
-        | cada pieza los dibuja el script en el navegador, así que no pueden
-        | traer su propio error: se juntan aquí para mostrarlos como lista.
-        */
-        $erroresPiezas = collect(optional($request->session()->get('errors'))->getBag('default')?->messages() ?? [])
-            ->filter(fn ($mensajes, $llave) => str_starts_with((string) $llave, 'unidades'))
-            ->flatten()
-            ->unique()
-            ->values();
-
         return view('structure.gestion_Inventario.entrada_salida.create', [
             'catalogo' => $this->catalogoEquipo(),
             'checklist' => ChecklistRecepcion::grupos(),
             'estadosGenerales' => ChecklistRecepcion::ESTADOS,
-            'erroresPiezas' => $erroresPiezas,
         ]);
     }
 
@@ -177,22 +164,24 @@ class InventoryMovementController extends Controller
     public function store(Request $request): RedirectResponse
     {
         /*
-        | La evidencia es de cada pieza, no del lote.
+        | Tres formas de identificar lo que llegó:
+        |   lote     - no se identifica pieza por pieza (llegaron 100 iguales)
+        |   series   - se pegan los números de serie del fabricante
+        |   unidades - se captura una por una, con su foto
         |
-        | Si llegaron 3 piezas son 3 juegos de fotos, uno por pieza: cada
-        | una llegó en su propio estado, y juntar todo en un solo montón
-        | hace imposible saber después cuál fue la que venía golpeada. El
-        | video de cada pieza es opcional.
-        |
-        | Cada pieza queda como su propia fila con su etiqueta interna, que
-        | es lo que después lleva el QR.
+        | En los tres casos cada pieza queda como su propia fila con su
+        | etiqueta interna, que es lo que después lleva el QR.
         */
+        $modo = in_array($request->input('modo_identificacion'), ['lote', 'series', 'unidades'], true)
+            ? $request->input('modo_identificacion')
+            : 'lote';
+
+        $serializado = $modo === 'unidades';
         $usado = $request->input('condicion') === 'usado';
         $disco = config('filesystems.fotos_disk', 'public');
 
         $reglas = [
-            // Viene del formulario; si no viene, se asume equipo nuevo.
-            'condicion' => ['nullable', 'in:nuevo,usado'],
+            'condicion' => ['required', 'in:nuevo,usado'],
             'equipment_type_id' => ['required', 'exists:equipment_types,id'],
             'subtype_id' => ['nullable', 'exists:subtypes,id'],
             'brand_id' => ['nullable', 'exists:brands,id'],
@@ -205,15 +194,25 @@ class InventoryMovementController extends Controller
             'movement_date' => ['required', 'date'],
             'notas' => ['nullable', 'string', 'max:1000'],
             'imagen' => ['nullable', 'image', 'max:5120'],
+            'modo_identificacion' => ['required', 'in:lote,series,unidades'],
             'firma' => ['required', 'string'],
+            'video_path' => ['required', 'string'],
 
-            // Una fila por pieza, cada una con su propia evidencia.
-            'unidades' => ['required', 'array', 'min:1'],
-            'unidades.*.no_serie' => ['nullable', 'string', 'max:255'],
-            'unidades.*.evidencias' => ['required', 'array', 'min:1', 'max:3'],
-            'unidades.*.evidencias.*' => ['image', 'max:5120'],
-            'unidades.*.video_path' => ['nullable', 'string'],
+            // La evidencia del lote se pide siempre: es lo que documenta
+            // cómo llegó el envío completo.
+            'evidencias' => ['required', 'array', 'min:1', 'max:3'],
+            'evidencias.*' => ['image', 'max:5120'],
         ];
+
+        if ($serializado) {
+            $reglas['unidades'] = ['required', 'array', 'min:1'];
+            $reglas['unidades.*.no_serie'] = ['nullable', 'string', 'max:255'];
+            // La foto por pieza solo se exige en usado: de un equipo usado
+            // interesa el estado de cada uno, de 100 accesorios nuevos no.
+            $reglas['unidades.*.foto'] = [$usado ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'];
+        } else {
+            $reglas['series_texto'] = ['nullable', 'string'];
+        }
 
         if ($usado) {
             $reglas['estado_general'] = ['required', Rule::in(array_keys(ChecklistRecepcion::ESTADOS))];
@@ -225,16 +224,15 @@ class InventoryMovementController extends Controller
         }
 
         $data = $request->validate($reglas, [
-            'unidades.required' => 'Registra cada pieza que llegó, con su propia evidencia.',
-            'unidades.*.evidencias.required' => 'Cada pieza necesita al menos una foto de cómo llegó ella.',
-            'unidades.*.evidencias.min' => 'Cada pieza necesita al menos una foto de cómo llegó ella.',
-            'unidades.*.evidencias.max' => 'Puedes subir máximo 3 fotos por pieza.',
+            'evidencias.required' => 'Sube al menos una foto que documente cómo llegó esta entrada.',
+            'evidencias.max' => 'Puedes subir máximo 3 fotos de evidencia.',
+            'unidades.required' => 'Captura una unidad por cada pieza que llegó.',
+            'unidades.*.foto.required' => 'En equipo usado, cada pieza capturada necesita su foto.',
             'firma.required' => 'Se necesita la firma digital de quien registró esta entrada.',
+            'video_path.required' => 'Sube un video que verifique el estado del producto.',
             'estado_general.required' => 'Di en qué estado general llegó el equipo usado.',
             'checklist.required' => 'Responde el checklist de recepción del equipo usado.',
         ]);
-
-        $data['condicion'] ??= 'nuevo';
 
         $data['checklist_recepcion'] = $usado ? ChecklistRecepcion::limpiar($request->input('checklist')) : null;
 
@@ -248,71 +246,59 @@ class InventoryMovementController extends Controller
             ? ($data['precio'] ?? null)
             : null;
 
-        // Consistencia primero: si algo no cuadra, todavía no se ha subido
+        // Validaciones de consistencia (cantidad vs. renglones, series vs.
+        // cantidad) primero: si algo no cuadra, todavía no se ha subido
         // ningún archivo nuevo en este request y no queda nada huérfano.
-        $cantidad = (int) $data['cantidad'];
-
-        if (count($data['unidades']) !== $cantidad) {
+        if ($serializado && count($data['unidades']) !== (int) $data['cantidad']) {
             return back()->withInput()->withErrors([
-                'unidades' => 'Registraste '.count($data['unidades'])." pieza(s), pero la cantidad dice {$cantidad}. Debe haber una por cada unidad que llegó.",
+                'unidades' => 'Capturaste '.count($data['unidades'])." renglón(es), pero la cantidad dice {$data['cantidad']}. Debe haber un renglón por cada unidad.",
             ]);
         }
 
-        /*
-        | Números de serie: si solo se capturó el de la primera pieza, el
-        | resto se completa como secuencia (23A00001 → 23A00002...). Si se
-        | capturaron sueltos (unas sí y otras no), se respeta cada posición
-        | tal como se capturó.
-        */
-        $capturadas = collect($data['unidades'])
-            ->values()
-            ->map(fn (array $u) => trim((string) ($u['no_serie'] ?? '')) ?: null);
+        if (! $serializado) {
+            $series = $this->parsearSeries($data['series_texto'] ?? '');
+            $series = $this->autocompletarSecuencia($series, (int) $data['cantidad']);
 
-        $secuencia = $this->autocompletarSecuencia($capturadas->filter()->values(), $cantidad);
-        $series = $secuencia->count() === $cantidad ? $secuencia->values() : $capturadas;
-
-        // Los videos ya se subieron por chunks antes de este submit: solo
-        // se verifica que cada ruta sea de un video real y exista.
-        $videos = [];
-
-        foreach (array_values($data['unidades']) as $i => $u) {
-            $ruta = trim((string) ($u['video_path'] ?? ''));
-
-            if ($ruta === '') {
-                $videos[$i] = null;
-                continue;
-            }
-
-            $videos[$i] = $this->resolverVideoPreSubido($ruta, $disco);
-
-            if ($videos[$i] === null) {
+            if ($series->isNotEmpty() && $series->count() !== (int) $data['cantidad']) {
                 return back()->withInput()->withErrors([
-                    "unidades.$i.video_path" => 'El video de la pieza #'.($i + 1).' no se subió correctamente o expiró. Vuelve a subirlo.',
+                    'series_texto' => 'Capturaste '.$series->count()." número(s) de serie, pero la cantidad dice {$data['cantidad']}. Deben coincidir, o deja el campo vacío si no vas a registrar series.",
                 ]);
             }
+
+            $unidadesBase = $series->all();
         }
 
-        /*
-        | Ya validado todo lo que no cuesta archivos, se guardan las fotos
-        | de cada pieza. Se suben antes de saber si su serial choca con uno
-        | existente: eso se depura después, dentro de la transacción, sin
-        | perder la evidencia ya subida.
-        */
-        $unidades = [];
+        // El video ya se subió por chunks antes de este submit: solo se
+        // verifica que la ruta que llegó sea la de un video real y exista.
+        $video = $this->resolverVideoPreSubido($data['video_path'], $disco);
 
-        foreach (array_keys($data['unidades']) as $posicion => $llave) {
-            $unidades[] = [
-                'no_serie' => $series->get($posicion),
-                'evidence_paths' => collect($request->file("unidades.$llave.evidencias") ?? [])
-                    ->map(fn ($archivo) => $archivo->store('productos/seriales', $disco))
-                    ->all(),
-                'video_path' => $videos[$posicion],
-            ];
+        if ($video === null) {
+            return back()->withInput()->withErrors([
+                'video_path' => 'El video no se subió correctamente o expiró. Vuelve a subirlo.',
+            ]);
         }
 
-        // El producto queda marcado como serializado si alguna pieza traía
-        // número de serie del fabricante.
-        $serializado = $series->filter()->isNotEmpty();
+        if ($serializado) {
+            // Cada renglón trae su propia foto: se sube ya, antes de saber
+            // si el serial choca con uno existente (eso se depura después,
+            // dentro de la transacción, sin perder la foto ya subida).
+            $unidades = collect($data['unidades'])
+                ->map(function (array $u, int $i) use ($request, $disco) {
+                    $foto = $request->file("unidades.$i.foto");
+
+                    return [
+                        'no_serie' => trim((string) ($u['no_serie'] ?? '')) ?: null,
+                        'foto_path' => $foto ? $foto->store('productos/seriales', $disco) : null,
+                    ];
+                })
+                ->all();
+        } else {
+            $unidades = $unidadesBase;
+        }
+
+        $evidencias = collect($request->file('evidencias') ?? [])
+            ->map(fn ($archivo) => $archivo->store('inventario/entradas', $disco))
+            ->all();
 
         $imagen = $request->hasFile('imagen')
             ? $request->file('imagen')->store('productos', $disco)
@@ -324,17 +310,15 @@ class InventoryMovementController extends Controller
         // usuario puede reintentar sin volver a subirlo).
         $firma = $this->guardarFirma($data['firma'], $disco);
 
-        // Toda la evidencia subida en este request, para poder limpiarla de
-        // un tirón si algo falla más adelante. Los videos no van aquí:
-        // quedaron de un request anterior y el usuario puede reintentar sin
-        // volver a subirlos.
-        $subidoAhora = collect($unidades)->flatMap(fn (array $u) => $u['evidence_paths'])->filter()->all();
-
         if ($firma === null) {
-            $this->borrarEvidencias($subidoAhora, $disco);
+            $this->borrarEvidencias($evidencias, $disco);
 
             if ($imagen) {
                 Storage::disk($disco)->delete($imagen);
+            }
+
+            if ($serializado) {
+                $this->borrarEvidencias(collect($unidades)->pluck('foto_path')->filter()->all(), $disco);
             }
 
             return back()->withInput()->withErrors([
@@ -344,7 +328,7 @@ class InventoryMovementController extends Controller
 
         try {
             try {
-                return $this->registrarEntrada($data, $unidades, $imagen, $firma, $serializado);
+                return $this->registrarEntrada($data, $unidades, $evidencias, $imagen, $firma, $video, $serializado);
             } catch (QueryException $e) {
                 if (! $this->esErrorDeDuplicado($e)) {
                     throw $e;
@@ -352,11 +336,11 @@ class InventoryMovementController extends Controller
 
                 // Otra entrada del mismo modelo ganó la carrera: se
                 // reintenta una vez contra la fila que ya quedó creada.
-                return $this->registrarEntrada($data, $unidades, $imagen, $firma, $serializado);
+                return $this->registrarEntrada($data, $unidades, $evidencias, $imagen, $firma, $video, $serializado);
             }
         } catch (QueryException $e) {
-            $this->borrarEvidencias($subidoAhora, $disco);
-            $this->borrarEvidencias([$firma], $disco);
+            $this->borrarEvidencias($evidencias, $disco);
+            $this->borrarEvidencias([$firma, $video], $disco);
 
             if ($imagen) {
                 Storage::disk($disco)->delete($imagen);
@@ -367,7 +351,7 @@ class InventoryMovementController extends Controller
             }
 
             return back()->withInput()->withErrors([
-                'unidades' => 'Uno de esos números de serie ya existe para este producto. Revísalos y vuelve a intentar.',
+                'series_texto' => 'Uno de esos números de serie ya existe para este producto. Revísalos y vuelve a intentar.',
             ]);
         }
     }
@@ -415,11 +399,11 @@ class InventoryMovementController extends Controller
      * movimiento de entrada, y le agrega las unidades nuevas ya ligadas a
      * ese movimiento.
      */
-    private function registrarEntrada(array $data, array $unidades, ?string $imagen, string $firma, bool $serializado): RedirectResponse
+    private function registrarEntrada(array $data, array $unidades, array $evidencias, ?string $imagen, string $firma, string $video, bool $serializado): RedirectResponse
     {
         $disco = config('filesystems.fotos_disk', 'public');
 
-        return DB::transaction(function () use ($data, $unidades, $imagen, $firma, $serializado, $disco) {
+        return DB::transaction(function () use ($data, $unidades, $evidencias, $imagen, $firma, $video, $serializado, $disco) {
             $cantidad = (int) $data['cantidad'];
 
             $productoData = [
@@ -489,8 +473,8 @@ class InventoryMovementController extends Controller
             $advertencias = [];
 
             if ($serializado) {
-                // Ninguna pieza ni su evidencia se descarta por un serial
-                // repetido: solo se limpia el serial de esa pieza (queda
+                // Ninguna unidad ni su foto se descarta por un serial
+                // repetido: solo se limpia el serial de ese renglón (queda
                 // "sin serie capturada") y se avisa, para no perder la
                 // captura de las demás.
                 $series = collect($unidades)->map(fn ($u) => $u['no_serie']);
@@ -498,11 +482,11 @@ class InventoryMovementController extends Controller
 
                 $unidades = collect($unidades)
                     ->values()
-                    ->map(fn (array $u, int $i) => ['no_serie' => $depurado['series'][$i]] + $u)
+                    ->map(fn ($u, $i) => ['no_serie' => $depurado['series'][$i], 'foto_path' => $u['foto_path']])
                     ->all();
 
                 if ($depurado['rechazadas']->isNotEmpty()) {
-                    $advertencias[] = 'Estos números de serie ya existían para este producto y se guardaron sin serie (la evidencia y la unidad sí se conservaron): '.$depurado['rechazadas']->implode(', ').'.';
+                    $advertencias[] = 'Estos números de serie ya existían para este producto y se guardaron sin serie (la foto y la unidad sí se conservaron): '.$depurado['rechazadas']->implode(', ').'.';
                 }
             }
 
@@ -523,11 +507,9 @@ class InventoryMovementController extends Controller
                 'condicion' => $data['condicion'],
                 'checklist_recepcion' => $data['checklist_recepcion'],
                 'estado_general' => $data['estado_general'] ?? null,
-                // La evidencia vive en cada pieza (producto_seriales), no
-                // aquí: el movimiento solo guarda la firma de quien recibió.
-                'evidence_paths' => null,
+                'evidence_paths' => $evidencias,
                 'signature_path' => $firma,
-                'video_path' => null,
+                'video_path' => $video,
                 'created_by' => auth()->id(),
             ]);
 
@@ -582,9 +564,7 @@ class InventoryMovementController extends Controller
         $disco ??= config('filesystems.fotos_disk', 'public');
 
         foreach ($paths as $path) {
-            if ($path) {
-                Storage::disk($disco)->delete($path);
-            }
+            Storage::disk($disco)->delete($path);
         }
     }
 
@@ -610,7 +590,7 @@ class InventoryMovementController extends Controller
 
         /*
         | Una salida viene de una venta, y su entrega la controla la orden de
-        | salida: desde aquí se llega a esa hoja (checklist y firmas) sin
+        | salida: desde aqui se llega a esa hoja (checklist y firmas) sin
         | tener que buscarla por folio.
         */
         $orden = $movimiento->movement_type === InventoryMovement::TYPE_EXIT && $movimiento->reference
@@ -656,11 +636,9 @@ class InventoryMovementController extends Controller
             $unidades = $movimiento->seriales()->get();
             $productoIds = $unidades->pluck('producto_id')->unique();
 
-            // La evidencia de cada unidad (foto individual, o hasta 3 fotos
-            // + video en registros con evidencia por unidad) también es
-            // evidencia de esta entrada: se borra junto con la del lote.
-            $this->borrarEvidencias($unidades->flatMap(fn ($u) => $u->evidence_paths ?: array_filter([$u->foto_path]))->filter()->all());
-            $this->borrarEvidencias($unidades->pluck('video_path')->filter()->all());
+            // Las fotos individuales de cada unidad también son evidencia
+            // de esta entrada: se borran junto con las del lote.
+            $this->borrarEvidencias($unidades->pluck('foto_path')->filter()->all());
 
             $movimiento->seriales()->delete();
 

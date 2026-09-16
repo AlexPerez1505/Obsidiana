@@ -68,18 +68,10 @@
                 </thead>
                 <tbody>
                     @forelse ($seriales as $serial)
-                        @php($evidencias = $serial->evidenceUrls())
                         <tr>
                             <td>
-                                @if (count($evidencias))
-                                    <div style="display:flex; gap:4px; align-items:center;">
-                                        @foreach ($evidencias as $url)
-                                            <img src="{{ $url }}" alt="Foto de la unidad" style="width:36px; height:36px; object-fit:cover; border-radius:6px; border:1px solid var(--border); cursor:pointer;" onclick="window.open('{{ $url }}', '_blank')">
-                                        @endforeach
-                                        @if ($serial->videoUrl())
-                                            <a href="{{ $serial->videoUrl() }}" target="_blank" title="Ver video" style="font-size:11px;">▶</a>
-                                        @endif
-                                    </div>
+                                @if ($serial->fotoUrl())
+                                    <img src="{{ $serial->fotoUrl() }}" alt="Foto de la unidad" style="width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid var(--border); cursor:pointer;" onclick="window.open('{{ $serial->fotoUrl() }}', '_blank')">
                                 @else
                                     <span class="muted" style="font-size:12px;">—</span>
                                 @endif
