@@ -261,7 +261,8 @@ class CobroController extends Controller
     /** Lo usa tanto el panel como la consulta pública del cliente. */
     public static function pdfRecibo(Cobro $cobro)
     {
-        $cobro->load(['venta.customer', 'venta.seller', 'parcialidad', 'registradoPor']);
+        // items: el recibo dice qué se vendió, no solo cuánto se pagó.
+        $cobro->load(['venta.customer', 'venta.seller', 'venta.items', 'parcialidad', 'registradoPor']);
 
         $pdf = Pdf::loadView('structure.commercial_management.cobros.recibo', [
             'cobro' => $cobro,

@@ -4,6 +4,7 @@ use App\Http\Controllers\CobranzaController;
 use App\Http\Controllers\CobroController;
 use App\Http\Controllers\ComisionController;
 use App\Http\Controllers\VentaController;
+use App\Http\Controllers\VentaRapidaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -45,6 +46,19 @@ Route::middleware(['auth', 'verified', 'approved'])
         Route::get('/', [VentaController::class, 'index'])->name('index');
         Route::get('/crear', [VentaController::class, 'create'])->name('create');
         Route::post('/', [VentaController::class, 'store'])->name('store');
+
+        /*
+        |------------------------------------------------------------------
+        | Venta rápida: escanear con el celular y cobrar al público en
+        | general (mostrador y congresos). Va antes de /{venta} para que
+        | "rapida" no se tome como folio.
+        |------------------------------------------------------------------
+        */
+        Route::middleware('can:ventas.crear')->prefix('/rapida')->name('rapida.')->group(function () {
+            Route::get('/', [VentaRapidaController::class, 'index'])->name('index');
+            Route::post('/pieza', [VentaRapidaController::class, 'pieza'])->name('pieza');
+            Route::post('/', [VentaRapidaController::class, 'store'])->name('store');
+        });
 
         Route::get('/{venta}', [VentaController::class, 'show'])->name('show');
         Route::get('/{venta}/editar', [VentaController::class, 'edit'])->name('edit');

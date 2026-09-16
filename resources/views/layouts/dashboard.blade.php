@@ -647,10 +647,16 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cotizaciones</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.ventas.*') ? 'active' : '' }}" href="{{ route('commercial.ventas.index') }}" data-tip="Ventas">
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.ventas.*') && ! request()->routeIs('commercial.ventas.rapida.*') ? 'active' : '' }}" href="{{ route('commercial.ventas.index') }}" data-tip="Ventas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Ventas</span>
                     </a>
+                    @can('ventas.crear')
+                        <a class="nav-item nav-sub {{ request()->routeIs('commercial.ventas.rapida.*') ? 'active' : '' }}" href="{{ route('commercial.ventas.rapida.index') }}" data-tip="Venta rápida">
+                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                            <span class="nav-label">Venta rápida</span>
+                        </a>
+                    @endcan
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.cobranza.*') ? 'active' : '' }}" href="{{ route('commercial.cobranza.index') }}" data-tip="Cobranza">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cobranza</span>

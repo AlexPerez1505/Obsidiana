@@ -6,6 +6,12 @@
 @section('erp_content')
     <div class="content-actions">
         <x-ui.view-switch key="ventas" />
+        @can('ventas.crear')
+            <a href="{{ route('commercial.ventas.rapida.index') }}" class="erp-btn ghost" title="Escanear con el celular y cobrar al público en general">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-7"/></svg>
+                Venta rápida
+            </a>
+        @endcan
         <a href="{{ route('commercial.ventas.create') }}" class="erp-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nueva venta

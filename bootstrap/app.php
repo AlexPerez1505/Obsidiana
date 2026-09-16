@@ -13,6 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Antes de abrir sesión: por IP siempre https (ver el middleware).
+        $middleware->web(prepend: \App\Http\Middleware\ForzarHttpsPorIp::class);
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'approved' => \App\Http\Middleware\EnsureAccountApproved::class,
