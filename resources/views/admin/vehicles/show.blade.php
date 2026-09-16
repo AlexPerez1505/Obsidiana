@@ -5,9 +5,9 @@
 
 @php
     $statusInfo = match($vehicle->status) {
-        'maintenance' => ['class' => 'maintenance', 'label' => 'En mantenimiento', 'dot' => 'yellow'],
-        'inactive'    => ['class' => 'inactive', 'label' => 'Inactivo', 'dot' => 'red'],
-        default       => ['class' => 'active', 'label' => 'Activo', 'dot' => 'green'],
+        'maintenance' => ['variant' => 'warn', 'label' => 'En mantenimiento'],
+        'inactive'    => ['variant' => 'danger', 'label' => 'Inactivo'],
+        default       => ['variant' => 'ok', 'label' => 'Activo'],
     };
 
     $documents = [
@@ -20,240 +20,104 @@
 
 @push('head')
 <style>
-    .vd-header-row {
-        display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-        margin-bottom: 24px;
-    }
-    .vd-back {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 9px 16px; border: 1.5px solid #94a3b8; border-radius: 10px;
-        background: var(--surface); color: var(--text);
-        font-size: 14px; font-weight: 700; text-decoration: none;
-        transition: all .15s;
-    }
-    .vd-back:hover { background: var(--surface-2); border-color: var(--primary); color: var(--primary); }
-    .vd-back svg { width: 18px; height: 18px; }
-    .vd-title-block { flex: 1; min-width: 200px; }
-    .vd-title {
-        font-size: 22px; font-weight: 800; margin: 0;
-        text-transform: uppercase; letter-spacing: -.01em;
-    }
-    .vd-plate {
-        display: inline-flex; align-items: center; gap: 8px;
-        font-size: 15px; font-weight: 700; color: var(--muted); margin-top: 4px;
-    }
-    .vd-plate-badge {
-        display: inline-block; padding: 3px 12px; border-radius: 6px;
-        background: var(--surface-2); border: 1.5px solid #94a3b8;
-        font-size: 14px; font-weight: 800; letter-spacing: .05em;
-    }
-    .vd-status-pill {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 5px 14px; border-radius: 20px;
-        font-size: 13px; font-weight: 700;
-        border: 1.5px solid transparent;
-    }
-    .vd-status-pill .dot { width: 8px; height: 8px; border-radius: 50%; }
-    .vd-status-pill.active { background: #e6ffe6; color: #15803d; border-color: #22c55e; }
-    .vd-status-pill.active .dot { background: #22c55e; }
-    .vd-status-pill.maintenance { background: #fef9c3; color: #a16207; border-color: #f59e0b; }
-    .vd-status-pill.maintenance .dot { background: #f59e0b; }
-    .vd-status-pill.inactive { background: #ffebeb; color: #ff4a4a; border-color: #ef4444; }
-    .vd-status-pill.inactive .dot { background: #ef4444; }
+    .vd-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+    @media (max-width: 900px) { .vd-layout { grid-template-columns: 1fr; } }
 
-    .vd-actions { display: flex; gap: 10px; flex: 0 0 auto; }
-    .vd-btn {
-        display: inline-flex; align-items: center; gap: 7px;
-        padding: 10px 18px; border: 1.5px solid #94a3b8; border-radius: 10px;
-        font-size: 14px; font-weight: 700; cursor: pointer;
-        font-family: inherit; transition: all .15s; text-decoration: none;
-    }
-    .vd-btn svg { width: 17px; height: 17px; }
-    .vd-btn-edit { background: var(--primary); color: #fff; border-color: rgba(255,255,255,.35); box-shadow: 0 2px 0 rgba(0,0,0,.12); }
-    .vd-btn-edit:hover { background: var(--primary-strong); }
-    .vd-btn-danger { background: #fee2e2; color: #dc2626; }
-    .vd-btn-danger:hover { background: #fecaca; }
-
-    .vd-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: flex-start; }
-
-    /* Left column */
-    .vd-photo-card {
-        background: var(--surface); border: 1.5px solid #94a3b8;
-        border-radius: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.04);
-    }
     .vd-photo-main {
-        width: 100%; aspect-ratio: 16/10; border-radius: 12px; overflow: hidden;
-        background: var(--surface-2); border: 1.5px solid #94a3b8;
+        width: 100%; aspect-ratio: 16/10; border-radius: 10px; overflow: hidden;
+        background: var(--surface-2); border: 1px solid var(--border);
         position: relative; display: flex; align-items: center; justify-content: center;
     }
-    .vd-photo-main svg { width: 64px; height: 64px; color: #cbd5e1; }
+    .vd-photo-main svg { width: 56px; height: 56px; color: var(--muted); }
     .vd-photo-zoom {
-        position: absolute; top: 12px; right: 12px;
-        width: 36px; height: 36px; border-radius: 9px;
-        background: rgba(255,255,255,.9); border: 1.5px solid #94a3b8;
+        position: absolute; top: 10px; right: 10px;
+        width: 34px; height: 34px; border-radius: 8px;
+        background: var(--surface); border: 1px solid var(--border);
         display: flex; align-items: center; justify-content: center;
-        cursor: pointer; transition: all .15s;
+        cursor: pointer; transition: all .15s; color: var(--text);
     }
     .vd-photo-zoom:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .vd-photo-zoom svg { width: 18px; height: 18px; color: inherit; }
+    .vd-photo-zoom svg { width: 17px; height: 17px; color: inherit; }
     .vd-photo-thumbs {
-        display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px;
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px;
     }
     .vd-photo-thumb {
-        aspect-ratio: 4/3; border-radius: 10px; overflow: hidden;
-        border: 2px solid #94a3b8; cursor: pointer;
+        aspect-ratio: 4/3; border-radius: 8px; overflow: hidden;
+        border: 1.5px solid var(--border); cursor: pointer;
         background: var(--surface-2); transition: border-color .15s;
-        display: flex; align-items: center; justify-content: center; position: relative;
     }
-    .vd-photo-thumb:hover { border-color: var(--primary); }
-    .vd-photo-thumb.active { border-color: var(--primary); }
-    .vd-photo-thumb svg { width: 24px; height: 24px; color: #cbd5e1; }
-    .vd-photo-thumb-label {
-        position: absolute; bottom: 4px; left: 4px;
-        font-size: 9px; font-weight: 700; color: var(--muted);
-        background: rgba(255,255,255,.85); padding: 1px 6px; border-radius: 4px;
-    }
+    .vd-photo-thumb:hover, .vd-photo-thumb.active { border-color: var(--primary); }
 
-    /* Document expediente */
-    .vd-docs-card {
-        background: var(--surface); border: 1.5px solid #94a3b8;
-        border-radius: 16px; padding: 20px; margin-top: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,.04);
-    }
-    .vd-docs-title {
-        font-size: 14px; font-weight: 800; text-transform: uppercase;
-        letter-spacing: .04em; color: var(--primary); margin: 0 0 14px;
-        padding-bottom: 8px; border-bottom: 1.5px solid #94a3b8;
-        display: flex; align-items: center; gap: 8px;
-    }
-    .vd-docs-title svg { width: 18px; height: 18px; }
     .vd-doc-item {
         display: flex; align-items: center; gap: 12px;
-        padding: 12px 14px; border: 1.5px solid #94a3b8;
+        padding: 12px 14px; border: 1px solid var(--border);
         border-radius: 10px; background: var(--surface);
-        margin-bottom: 8px; transition: border .15s;
+        margin-bottom: 8px; transition: border-color .15s;
     }
     .vd-doc-item:hover { border-color: var(--primary); }
     .vd-doc-icon {
-        width: 38px; height: 38px; border-radius: 9px;
-        background: #fee2e2; color: #dc2626;
+        width: 36px; height: 36px; border-radius: 9px;
+        background: var(--danger-soft); color: var(--danger);
         display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
-        border: 1.5px solid #94a3b8;
     }
-    .vd-doc-icon svg { width: 18px; height: 18px; }
-    .vd-doc-info { flex: 1; }
+    .vd-doc-icon svg { width: 17px; height: 17px; }
+    .vd-doc-info { flex: 1; min-width: 0; }
     .vd-doc-name { font-size: 13.5px; font-weight: 700; margin: 0; }
     .vd-doc-status { font-size: 12px; color: var(--muted); margin: 1px 0 0; }
     .vd-doc-actions { display: flex; gap: 6px; flex: 0 0 auto; }
     .vd-doc-btn {
-        width: 34px; height: 34px; border-radius: 8px;
-        border: 1.5px solid #94a3b8; background: var(--surface);
+        width: 32px; height: 32px; border-radius: 8px;
+        border: 1px solid var(--border); background: var(--surface);
         color: var(--muted); cursor: pointer;
         display: flex; align-items: center; justify-content: center;
         transition: all .15s;
     }
     .vd-doc-btn:hover { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
-    .vd-doc-btn svg { width: 16px; height: 16px; }
+    .vd-doc-btn svg { width: 15px; height: 15px; }
 
-    /* Right column */
-    .vd-info-card {
-        background: var(--surface); border: 1.5px solid #94a3b8;
-        border-radius: 16px; padding: 20px; margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,.04);
-    }
-    .vd-info-title {
-        font-size: 14px; font-weight: 800; text-transform: uppercase;
-        letter-spacing: .04em; color: var(--primary); margin: 0 0 16px;
-        padding-bottom: 8px; border-bottom: 1.5px solid #94a3b8;
-        display: flex; align-items: center; gap: 8px;
-    }
-    .vd-info-title svg { width: 18px; height: 18px; }
-    .vd-info-grid {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
-    }
+    .vd-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 900px) { .vd-info-grid { grid-template-columns: 1fr; } }
     .vd-info-item {
         display: flex; flex-direction: column; gap: 4px;
-        padding: 12px 14px; border: 1.5px solid #94a3b8;
+        padding: 12px 14px; border: 1px solid var(--border);
         border-radius: 10px; background: var(--surface-2);
     }
     .vd-info-label {
         font-size: 11px; font-weight: 700; text-transform: uppercase;
         letter-spacing: .04em; color: var(--muted);
-        display: flex; align-items: center; gap: 6px;
     }
-    .vd-info-label svg { width: 14px; height: 14px; }
     .vd-info-value { font-size: 15px; font-weight: 700; color: var(--text); }
-
-    /* Maintenance section */
-    .vd-maint-item {
-        display: flex; align-items: center; gap: 12px;
-        padding: 14px 16px; border: 1.5px solid #94a3b8;
-        border-radius: 10px; background: var(--surface);
-        margin-bottom: 8px;
-    }
-    .vd-maint-dot {
-        width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto;
-        border: 2px solid var(--surface);
-    }
-    .vd-maint-dot.green { background: #22c55e; box-shadow: 0 0 0 1px #22c55e; }
-    .vd-maint-dot.yellow { background: #f59e0b; box-shadow: 0 0 0 1px #f59e0b; }
-    .vd-maint-dot.red { background: #ef4444; box-shadow: 0 0 0 1px #ef4444; }
-    .vd-maint-info { flex: 1; }
-    .vd-maint-label { font-size: 13px; font-weight: 700; margin: 0; }
-    .vd-maint-date { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
-    .vd-maint-badge {
-        font-size: 11px; font-weight: 700; padding: 3px 10px;
-        border-radius: 20px; border: 1.5px solid transparent;
-    }
-    .vd-maint-badge.green { background: #e6ffe6; color: #15803d; border-color: #22c55e; }
-    .vd-maint-badge.yellow { background: #fef9c3; color: #a16207; border-color: #f59e0b; }
-    .vd-maint-badge.red { background: #ffebeb; color: #ff4a4a; border-color: #ef4444; }
-
-    @media (max-width: 900px) {
-        .vd-layout { grid-template-columns: 1fr; }
-        .vd-info-grid { grid-template-columns: 1fr; }
-    }
 </style>
 @endpush
 
 @section('content')
-    {{-- Header row --}}
-    <div class="vd-header-row">
-        <a href="{{ route('admin.vehicles.index') }}" class="vd-back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-            Volver
-        </a>
-        <div class="vd-title-block">
-            <h1 class="vd-title">{{ strtoupper($vehicle->brand ?? 'Vehículo') }} {{ $vehicle->model ?? '' }} {{ $vehicle->year ?? '' }}</h1>
-            <div class="vd-plate">
-                <span class="vd-plate-badge">{{ $vehicle->plate_number }}</span>
-                <span class="vd-status-pill {{ $statusInfo['class'] }}">
-                    <span class="dot"></span>
-                    {{ $statusInfo['label'] }}
-                </span>
-            </div>
-        </div>
-        <div class="vd-actions">
-            <button type="button" class="vd-btn vd-btn-edit" onclick="alert('Edición próximamente')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Editar Ficha
-            </button>
-            <button type="button" class="vd-btn vd-btn-danger" onclick="alert('Desactivar próximamente')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                Desactivar
-            </button>
-        </div>
+    <x-ui.page-header
+        :title="trim(($vehicle->brand ?? '') . ' ' . ($vehicle->model ?? '') . ' ' . ($vehicle->year ?? '')) ?: 'Vehículo'"
+        :back="route('admin.vehicles.index')"
+    >
+        <button type="button" class="btn" onclick="alert('Edición próximamente')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editar ficha
+        </button>
+        <button type="button" class="btn btn--danger" onclick="alert('Desactivar próximamente')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+            Desactivar
+        </button>
+    </x-ui.page-header>
+
+    <div style="display:flex; align-items:center; gap:10px; margin:-6px 0 18px;">
+        <span class="badge badge--plain" style="font-family:ui-monospace, Consolas, monospace; font-weight:700;">{{ $vehicle->plate_number }}</span>
+        <x-ui.badge :variant="$statusInfo['variant']">{{ $statusInfo['label'] }}</x-ui.badge>
     </div>
 
     <div class="vd-layout">
-        {{-- Left Column --}}
+        {{-- Columna izquierda --}}
         <div>
-            {{-- Photo gallery --}}
             @php($photos = $vehicle->photos ?: [])
-            <div class="vd-photo-card">
+            <x-ui.card style="margin-bottom:18px;">
                 <div class="vd-photo-main" id="vdMainPhoto">
                     @if(count($photos))
-                        <img src="{{ asset('storage/'.$photos[0]) }}" alt="Foto del vehículo" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">
+                        <img src="{{ asset('storage/'.$photos[0]) }}" alt="Foto del vehículo" style="width:100%;height:100%;object-fit:cover;">
                     @else
                         <x-gravityui-car />
                     @endif
@@ -264,21 +128,16 @@
                 @if(count($photos))
                     <div class="vd-photo-thumbs">
                         @foreach($photos as $photo)
-                            <div class="vd-photo-thumb {{ $loop->first ? 'active' : '' }}" onclick="vdSelectThumb(this, '{{ asset('storage/'.$photo) }}')" style="background-image:url('{{ asset('storage/'.$photo) }}');background-size:cover;background-position:center;">
-                            </div>
+                            <div class="vd-photo-thumb {{ $loop->first ? 'active' : '' }}" onclick="vdSelectThumb(this, '{{ asset('storage/'.$photo) }}')" style="background-image:url('{{ asset('storage/'.$photo) }}');background-size:cover;background-position:center;"></div>
                         @endforeach
                     </div>
                 @else
-                    <p style="margin:12px 0 0;color:var(--muted);font-size:13px;">Este vehículo no tiene fotos registradas.</p>
+                    <p class="muted" style="margin:12px 0 0; font-size:13px;">Este vehículo no tiene fotos registradas.</p>
                 @endif
-            </div>
+            </x-ui.card>
 
-            {{-- Expediente de Documentos --}}
-            <div class="vd-docs-card">
-                <h3 class="vd-docs-title">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-                    Expediente de Documentos
-                </h3>
+            <x-ui.card>
+                <x-ui.section-title style="margin:0 0 14px;">Expediente de documentos</x-ui.section-title>
                 @foreach($documents as $doc)
                     <div class="vd-doc-item">
                         <div class="vd-doc-icon">
@@ -307,48 +166,32 @@
                         </div>
                     </div>
                 @endforeach
-            </div>
+            </x-ui.card>
         </div>
 
-        {{-- Right Column --}}
+        {{-- Columna derecha --}}
         <div>
-            {{-- Ficha Técnica --}}
-            <div class="vd-info-card">
-                <h3 class="vd-info-title">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                    Ficha Técnica
-                </h3>
+            <x-ui.card>
+                <x-ui.section-title style="margin:0 0 14px;">Ficha técnica</x-ui.section-title>
                 <div class="vd-info-grid">
                     <div class="vd-info-item">
-                        <span class="vd-info-label">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 12h10"/></svg>
-                            VIN
-                        </span>
+                        <span class="vd-info-label">VIN</span>
                         <span class="vd-info-value">{{ $vehicle->vin ?: 'N/A' }}</span>
                     </div>
                     <div class="vd-info-item">
-                        <span class="vd-info-label">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                            Año
-                        </span>
+                        <span class="vd-info-label">Año</span>
                         <span class="vd-info-value">{{ $vehicle->year ?: 'N/A' }}</span>
                     </div>
                     <div class="vd-info-item">
-                        <span class="vd-info-label">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
-                            Color
-                        </span>
+                        <span class="vd-info-label">Color</span>
                         <span class="vd-info-value">{{ $vehicle->color ?: 'N/A' }}</span>
                     </div>
                     <div class="vd-info-item">
-                        <span class="vd-info-label">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                            Número de Póliza
-                        </span>
+                        <span class="vd-info-label">Número de póliza</span>
                         <span class="vd-info-value">{{ $vehicle->insurance_policy_number ?: 'N/A' }}</span>
                     </div>
                 </div>
-            </div>
+            </x-ui.card>
         </div>
     </div>
 
@@ -362,7 +205,7 @@
             if (!img) {
                 img = document.createElement('img');
                 img.alt = 'Foto del vehículo';
-                img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:12px;';
+                img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
                 main.insertBefore(img, main.firstChild);
             }
             img.src = url;

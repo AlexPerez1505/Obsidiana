@@ -45,6 +45,11 @@ class VehicleController extends Controller
         ]);
     }
 
+    public function create(): View
+    {
+        return view('admin.vehicles.create');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([

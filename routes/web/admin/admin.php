@@ -44,6 +44,7 @@ Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->n
 
     // Vehículos
     Route::get('/vehiculos', [VehicleController::class, 'index'])->name('vehicles.index');
+    Route::get('/vehiculos/crear', [VehicleController::class, 'create'])->name('vehicles.create');
     Route::post('/vehiculos', [VehicleController::class, 'store'])->name('vehicles.store');
     Route::get('/vehiculos/{vehicle}', [VehicleController::class, 'show'])->name('vehicles.show');
 

@@ -69,4 +69,23 @@ class VehiclesIconTest extends TestCase
 
         $response->assertOk();
     }
+
+    /**
+     * El alta pasó de un modal dentro del listado a una página propia
+     * (mismo patrón que el resto del sistema): esto cubre que la página
+     * cargue y que el alta siga funcionando desde ahí.
+     */
+    public function test_pagina_de_crear_carga_y_el_alta_sigue_funcionando(): void
+    {
+        $user = $this->usuarioAprobado();
+
+        $this->actingAs($user)->get(route('admin.vehicles.create'))->assertOk();
+
+        $response = $this->actingAs($user)->post(route('admin.vehicles.store'), [
+            'plate_number' => 'NEW-001',
+        ]);
+
+        $response->assertRedirect(route('admin.vehicles.index'));
+        $this->assertDatabaseHas('vehicles', ['plate_number' => 'NEW-001']);
+    }
 }

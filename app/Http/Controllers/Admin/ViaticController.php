@@ -76,6 +76,8 @@ class ViaticController extends Controller
             $data['vehicle_name'] = $vehicle ? "{$vehicle->brand} {$vehicle->model}" : null;
         }
 
+        $data = $this->normalizarMontos($data);
+
         $data['ticket_photos'] = collect($request->file('ticket_photos', []))
             ->map(fn ($archivo) => $archivo->store('viaticos/tickets', 'public'))
             ->all();
@@ -154,6 +156,8 @@ class ViaticController extends Controller
             'quitar_fotos.*'   => ['string'],
         ]);
 
+        $data = $this->normalizarMontos($data);
+
         if (isset($data['vehicle_id']) && $data['vehicle_id']) {
             $vehicle = Vehicle::find($data['vehicle_id']);
             $data['vehicle_name'] = $vehicle ? "{$vehicle->brand} {$vehicle->model}" : null;
@@ -190,6 +194,25 @@ class ViaticController extends Controller
         $viatic->delete();
 
         return redirect()->route('admin.viatics.index')->with('status', 'Viático eliminado correctamente.');
+    }
+
+    /**
+     * Los montos son opcionales para quien captura el viático, pero
+     * 'tolls', 'fuel', 'meals' y 'additional' son NOT NULL en la base (con
+     * default 0). Si el campo se manda vacío hay que guardar 0, no null,
+     * o el guardado truena con un error de integridad. Solo se toca el
+     * campo si de verdad vino en la petición: si no vino, no se fuerza a 0
+     * (para no pisar un valor existente en una actualización parcial).
+     */
+    private function normalizarMontos(array $data): array
+    {
+        foreach (['tolls', 'fuel', 'meals', 'lodging', 'additional'] as $campo) {
+            if (array_key_exists($campo, $data)) {
+                $data[$campo] = $data[$campo] ?? 0;
+            }
+        }
+
+        return $data;
     }
 
     private function borrarFotos(array $rutas): void

@@ -6,40 +6,40 @@
 @push('head')
 <style>
     .vl-page {
-        max-width: 100%; margin: 0; padding: 0 0 90px;
+        max-width: 100%; margin: 0; padding: 0;
     }
 
-    /* Header */
-    .vl-header {
-        display: flex; align-items: center; gap: 12px;
-        margin-bottom: 20px;
+    /* Toolbar: mismo lenguaje que el resto de listados (buscar + filtro) */
+    .vl-toolbar {
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        margin-bottom: 18px;
     }
-    .vl-back {
-        display: inline-flex; align-items: center; justify-content: center;
-        width: 42px; height: 42px; border-radius: 12px;
-        border: 1.5px solid #94a3b8; background: var(--surface);
-        color: var(--text); text-decoration: none; flex: 0 0 auto;
-        transition: all .15s;
+    .vl-search {
+        position: relative; flex: 1; min-width: 220px; max-width: 380px;
     }
-    .vl-back:hover { background: var(--surface-2); border-color: var(--primary); color: var(--primary); }
-    .vl-back svg { width: 20px; height: 20px; }
-    .vl-header-title {
-        font-size: 24px; font-weight: 800; color: var(--primary);
-        margin: 0; line-height: 1.2;
+    .vl-toolbar .vl-search input[type="text"] {
+        width: 100%; padding: 10px 12px 10px 40px;
+        border: 1px solid var(--border); border-radius: 8px;
+        font-size: 14px; font-family: inherit;
+        background: var(--surface); color: var(--text);
+        outline: none; transition: border .15s, box-shadow .15s;
+    }
+    .vl-toolbar .vl-search input[type="text"]:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+    .vl-search svg {
+        position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+        width: 17px; height: 17px; color: var(--muted); pointer-events: none;
+    }
+    .vl-toolbar select {
+        padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+        font-size: 14px; font-family: inherit; background: var(--surface);
+        color: var(--text); cursor: pointer; outline: none;
     }
 
     /* Stats */
-    .vl-stats {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-        margin-bottom: 20px;
-    }
-    .vl-stat {
-        background: var(--surface); border: 1.5px solid #94a3b8;
-        border-radius: 14px; padding: 14px 10px; text-align: center;
-        box-shadow: 0 2px 6px rgba(0,0,0,.03);
-    }
-    .vl-stat-num { font-size: 22px; font-weight: 800; color: var(--primary); line-height: 1; }
-    .vl-stat-lbl { font-size: 10px; font-weight: 700; color: var(--muted); margin-top: 5px; text-transform: uppercase; letter-spacing: .03em; }
+    .vl-stats { margin-bottom: 18px; }
 
     /* List */
     .vl-list { display: flex; flex-direction: column; gap: 10px; }
@@ -97,13 +97,6 @@
         font-size: 17px; font-weight: 800; color: var(--primary);
         line-height: 1;
     }
-    .vl-card-badge {
-        font-size: 9.5px; font-weight: 700; padding: 2px 8px;
-        border-radius: 20px; border: 1.5px solid transparent;
-    }
-    .vl-card-badge.pending { background: #fef9c3; color: #a16207; border-color: #f59e0b; }
-    .vl-card-badge.approved { background: #e6ffe6; color: #15803d; border-color: #22c55e; }
-    .vl-card-badge.rejected { background: #ffebeb; color: #ff4a4a; border-color: #ef4444; }
 
     /* Card actions */
     .vl-card-actions {
@@ -144,45 +137,9 @@
         .vl-card-total { font-size: 19px; }
         .vl-thumb { width: 56px; height: 56px; }
         .vl-thumb svg { width: 26px; height: 26px; }
-        .vl-fab { display: none; }
     }
     @media (min-width: 1200px) {
         .vl-list { grid-template-columns: repeat(3, 1fr); }
-    }
-
-    /* FAB */
-    .vl-fab {
-        position: fixed; bottom: 28px; right: 28px;
-        width: 60px; height: 60px; border-radius: 50%;
-        background: var(--primary); color: #fff;
-        border: none; cursor: pointer; z-index: 80;
-        display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 6px 24px rgba(0,122,255,.35);
-        transition: transform .2s, box-shadow .2s;
-        text-decoration: none;
-    }
-    .vl-fab:hover { transform: scale(1.08); box-shadow: 0 8px 30px rgba(0,122,255,.45); }
-    .vl-fab:active { transform: scale(.95); }
-    .vl-fab svg { width: 28px; height: 28px; }
-
-    @media (max-width: 640px) {
-        .vl-fab { bottom: 20px; right: 20px; }
-    }
-
-    /* Desktop: show add button inline instead of FAB */
-    .vl-add-desktop { display: none; }
-    @media (min-width: 768px) {
-        .vl-add-desktop {
-            display: inline-flex; align-items: center; gap: 7px;
-            padding: 10px 20px; border-radius: 12px;
-            background: var(--primary); color: #fff;
-            font-size: 15px; font-weight: 700; text-decoration: none;
-            border: 1.5px solid rgba(255,255,255,.35);
-            box-shadow: 0 2px 0 rgba(0,0,0,.12);
-            transition: background .15s;
-        }
-        .vl-add-desktop:hover { background: var(--primary-strong); }
-        .vl-add-desktop svg { width: 18px; height: 18px; }
     }
 </style>
 @endpush
@@ -190,33 +147,39 @@
 @section('content')
 <div class="vl-page">
 
-    {{-- Header --}}
-    <div class="vl-header">
-        <a href="{{ route('dashboard') }}" class="vl-back">
-            <x-gravityui-arrow-chevron-left />
+    <x-ui.page-header title="Mis Viáticos" :back="route('dashboard')">
+        <a href="{{ route('admin.viatics.create') }}" class="btn">
+            <x-gravityui-plus width="15" height="15" />
+            Nuevo viático
         </a>
-        <h1 class="vl-header-title">Mis Viáticos</h1>
-        <div style="flex:1"></div>
-        <a href="{{ route('admin.viatics.create') }}" class="vl-add-desktop">
-            <x-gravityui-plus />
-            Nuevo Viático
-        </a>
-    </div>
+    </x-ui.page-header>
+
+    {{-- Buscar y filtrar, igual que en los demás listados --}}
+    <form method="GET" action="{{ route('admin.viatics.index') }}" class="vl-toolbar">
+        <div class="vl-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por lugar, vehículo o usuario...">
+        </div>
+        <select name="status" onchange="this.form.submit()">
+            <option value="">Estado: Todos</option>
+            <option value="pending" {{ ($filters['status'] ?? '') === 'pending' ? 'selected' : '' }}>Pendientes</option>
+            <option value="approved" {{ ($filters['status'] ?? '') === 'approved' ? 'selected' : '' }}>Aprobados</option>
+            <option value="rejected" {{ ($filters['status'] ?? '') === 'rejected' ? 'selected' : '' }}>Rechazados</option>
+        </select>
+        <button type="submit" style="display:none;">Filtrar</button>
+    </form>
 
     {{-- Stats --}}
-    <div class="vl-stats">
-        <div class="vl-stat">
-            <div class="vl-stat-num">{{ $viatics->count() }}</div>
-            <div class="vl-stat-lbl">Registros</div>
-        </div>
-        <div class="vl-stat">
-            <div class="vl-stat-num">{{ $viatics->where('status', 'pending')->count() }}</div>
-            <div class="vl-stat-lbl">Pendientes</div>
-        </div>
-        <div class="vl-stat">
-            <div class="vl-stat-num">${{ number_format($viatics->sum(fn($v) => (float) $v->total_computed), 2) }}</div>
-            <div class="vl-stat-lbl">Total</div>
-        </div>
+    <div class="grid stat-row vl-stats">
+        <x-ui.stat-card :value="$viatics->count()" label="Registros" color="blue">
+            <x-slot:icon><x-gravityui-file-text width="22" height="22" /></x-slot:icon>
+        </x-ui.stat-card>
+        <x-ui.stat-card :value="$viatics->where('status', 'pending')->count()" label="Pendientes" color="orange">
+            <x-slot:icon><x-gravityui-clock width="22" height="22" /></x-slot:icon>
+        </x-ui.stat-card>
+        <x-ui.stat-card :value="'$'.number_format($viatics->sum(fn($v) => (float) $v->total_computed), 2)" label="Total" color="green">
+            <x-slot:icon><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></x-slot:icon>
+        </x-ui.stat-card>
     </div>
 
     {{-- List --}}
@@ -225,9 +188,9 @@
             @foreach($viatics as $vt)
                 @php
                     $badgeInfo = match($vt->status) {
-                        'approved' => ['class' => 'approved', 'label' => 'Aprobado'],
-                        'rejected' => ['class' => 'rejected', 'label' => 'Rechazado'],
-                        default    => ['class' => 'pending', 'label' => 'Pendiente'],
+                        'approved' => ['variant' => 'ok', 'label' => 'Aprobado'],
+                        'rejected' => ['variant' => 'danger', 'label' => 'Rechazado'],
+                        default    => ['variant' => 'warn', 'label' => 'Pendiente'],
                     };
                     $timeLabel = $vt->created_at->isToday() ? 'Hoy, ' . $vt->created_at->format('g:i A')
                         : ($vt->created_at->isYesterday() ? 'Ayer'
@@ -260,7 +223,7 @@
                     </div>
                     <div class="vl-card-right">
                         <span class="vl-card-total">${{ $vt->total }}</span>
-                        <span class="vl-card-badge {{ $badgeInfo['class'] }}">{{ $badgeInfo['label'] }}</span>
+                        <x-ui.badge :variant="$badgeInfo['variant']">{{ $badgeInfo['label'] }}</x-ui.badge>
                     </div>
                     <div class="vl-card-actions" onclick="event.stopPropagation()">
                         <a href="{{ route('admin.viatics.edit', $vt) }}" class="vl-card-btn" aria-label="Editar">
@@ -281,14 +244,9 @@
         <div class="vl-empty">
             <x-gravityui-map-pin />
             <p>No hay viáticos registrados</p>
-            <span>Toca el botón + para registrar tu primer viático</span>
+            <span>Da clic en "Nuevo viático" para registrar el primero.</span>
         </div>
     @endif
 
 </div>
-
-{{-- FAB --}}
-<a href="{{ route('admin.viatics.create') }}" class="vl-fab" aria-label="Nuevo viático">
-    <x-gravityui-plus />
-</a>
 @endsection

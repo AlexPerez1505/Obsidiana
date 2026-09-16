@@ -7,25 +7,7 @@
 <style>
     .vp-page { max-width: 100%; margin: 0; padding: 0 4px; }
 
-    .vp-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
-    .vp-back {
-        display: inline-flex; align-items: center; justify-content: center;
-        width: 42px; height: 42px; border-radius: 12px;
-        border: 1.5px solid #94a3b8; background: var(--surface);
-        color: var(--text); text-decoration: none; flex: 0 0 auto; transition: all .15s;
-    }
-    .vp-back:hover { background: var(--surface-2); border-color: var(--primary); color: var(--primary); }
-    .vp-back svg { width: 20px; height: 20px; }
-    .vp-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .vp-title { font-size: 24px; font-weight: 800; color: var(--primary); margin: 0; line-height: 1.2; }
-    .vp-badge {
-        display: inline-flex; align-items: center; gap: 5px;
-        padding: 3px 12px; border-radius: 999px;
-        font-size: 11px; font-weight: 700; border: 1.5px solid transparent;
-    }
-    .vp-badge.pending { background: #fef9c3; color: #a16207; border-color: #f59e0b; }
-    .vp-badge.approved { background: #e6ffe6; color: #15803d; border-color: #22c55e; }
-    .vp-badge.rejected { background: #ffebeb; color: #ff4a4a; border-color: #ef4444; }
+    .vp-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 6px; }
     .vp-subtitle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin: 0 0 20px; }
     .vp-subtitle svg { width: 15px; height: 15px; flex: 0 0 auto; }
 
@@ -220,7 +202,6 @@
 
     @media (min-width: 768px) {
         .vp-page { max-width: 100%; padding: 0; }
-        .vp-title { font-size: 26px; }
         .vp-total-card { padding: 32px 28px; }
         .vp-total-amount { font-size: 48px; }
         .vp-list { gap: 12px; }
@@ -233,9 +214,9 @@
 
 @php
     $badgeInfo = match($viatic->status) {
-        'approved' => ['class' => 'approved', 'label' => 'Aprobado'],
-        'rejected' => ['class' => 'rejected', 'label' => 'Rechazado'],
-        default    => ['class' => 'pending', 'label' => 'Pendiente'],
+        'approved' => ['variant' => 'ok', 'label' => 'Aprobado'],
+        'rejected' => ['variant' => 'danger', 'label' => 'Rechazado'],
+        default    => ['variant' => 'warn', 'label' => 'Pendiente'],
     };
     $initialGastos = $viatic->expenses->map(fn($e) => [
         'id' => $e->id,
@@ -259,15 +240,9 @@
 @section('content')
 <div class="vp-page" id="vpPage">
 
-    <div class="vp-header">
-        <a href="{{ route('admin.viatics.index') }}" class="vp-back">
-            <x-gravityui-arrow-chevron-left />
-        </a>
-        <div class="vp-title-row">
-            <h1 class="vp-title">{{ $viatic->place ?: 'Viático' }}</h1>
-            <span class="vp-badge {{ $badgeInfo['class'] }}">{{ $badgeInfo['label'] }}</span>
-        </div>
-    </div>
+    <x-ui.page-header :title="$viatic->place ?: 'Viático'" :back="route('admin.viatics.index')">
+        <x-ui.badge :variant="$badgeInfo['variant']">{{ $badgeInfo['label'] }}</x-ui.badge>
+    </x-ui.page-header>
     <p class="vp-subtitle">
         <x-gravityui-car />
         {{ $viatic->vehicle_name ?: 'Sin vehículo' }} · {{ $viatic->expense_date?->format('d/m/Y') ?: 'Sin fecha' }}

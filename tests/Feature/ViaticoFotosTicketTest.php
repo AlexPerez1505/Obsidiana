@@ -123,8 +123,59 @@ class ViaticoFotosTicketTest extends TestCase
             'ticket_photos' => [UploadedFile::fake()->image('t.jpg')->store('viaticos/tickets', 'public')],
         ]);
 
+        $this->actingAs($user)->get(route('admin.viatics.index'))->assertOk();
         $this->actingAs($user)->get(route('admin.viatics.create'))->assertOk();
         $this->actingAs($user)->get(route('admin.viatics.edit', $viatic))->assertOk();
         $this->actingAs($user)->get(route('admin.viatics.show', $viatic))->assertOk();
+    }
+
+    /**
+     * Ningún dato del viático es obligatorio: a veces solo se quiere dejar
+     * apartado el registro y completarlo después, o de plano no aplica
+     * algún gasto. Un lugar, un monto o una fecha vacíos no deben tronar.
+     */
+    public function test_crear_viatico_sin_ningun_dato_no_truena(): void
+    {
+        $user = $this->usuarioAprobado();
+
+        $response = $this->actingAs($user)->post(route('admin.viatics.store'), []);
+
+        $viatic = Viatic::firstOrFail();
+        $response->assertRedirect(route('admin.viatics.show', $viatic));
+        $this->assertNull($viatic->place);
+        $this->assertNull($viatic->vehicle_id);
+        $this->assertNull($viatic->expense_date);
+    }
+
+    public function test_editar_viatico_dejando_todo_en_blanco_no_truena(): void
+    {
+        $user = $this->usuarioAprobado();
+
+        $viatic = Viatic::create([
+            'user_id' => $user->id,
+            'place' => 'Puebla',
+            'tolls' => 100,
+            'expense_date' => now(),
+        ]);
+
+        // Un formulario real manda todos los campos, aunque vengan vacíos
+        // (a diferencia de no mandar la llave): así es como el navegador
+        // los entrega de verdad.
+        $response = $this->actingAs($user)->patch(route('admin.viatics.update', $viatic), [
+            'place' => '',
+            'vehicle_id' => '',
+            'tolls' => '',
+            'fuel' => '',
+            'meals' => '',
+            'lodging' => '',
+            'additional' => '',
+            'description' => '',
+            'expense_date' => '',
+        ]);
+
+        $response->assertRedirect(route('admin.viatics.index'));
+        $viatic->refresh();
+        $this->assertNull($viatic->place);
+        $this->assertNull($viatic->expense_date);
     }
 }
