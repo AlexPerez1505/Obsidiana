@@ -96,10 +96,19 @@
 
     <div class="hs-head">
         <h1>Historial de Servicios</h1>
-        <a href="{{ route('gestion.servicios.registro') }}" class="erp-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nuevo servicio
-        </a>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <a href="{{ route('gestion.servicios.historial.aprobaciones.index') }}" class="erp-btn ghost">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Aprobaciones
+                @if ($registrados > 0)
+                    <span style="background:var(--accent); color:#fff; border-radius:999px; padding:1px 8px; font-size:11px; font-weight:700;">{{ $registrados }}</span>
+                @endif
+            </a>
+            <a href="{{ route('gestion.servicios.registro') }}" class="erp-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nuevo servicio
+            </a>
+        </div>
     </div>
 
     {{-- Estadísticas --}}

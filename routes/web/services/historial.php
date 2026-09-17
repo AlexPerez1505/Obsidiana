@@ -38,6 +38,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         return view('structure.gestion_servicios.historial_servicios.aprobaciones.show', compact('service'));
     })->name('gestion.servicios.historial.aprobaciones.show');
 
+    Route::post('/gestion-servicios/historial-servicios/aprobaciones/{service}/cotizacion', [ServiceController::class, 'updateCotizacionPrecios'])
+        ->name('gestion.servicios.historial.aprobaciones.cotizacion');
+
     Route::get('/gestion-servicios/historial-servicios/aprobaciones/cliente/{service}', [ServiceController::class, 'customerShow'])
         ->name('gestion.servicios.historial.aprobaciones.cliente')
         ->middleware('signed');

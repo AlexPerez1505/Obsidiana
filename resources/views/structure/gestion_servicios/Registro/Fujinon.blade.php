@@ -462,11 +462,11 @@
     <div class="perfil-bar">
       <span class="perfil-lbl">Tipo de equipo</span>
       <select class="perfil-select" data-key="perfil" onchange="cambiarPerfil()">
-        <option value="colo_gastro_500">Colonoscopio / Gastroscopio 500-600</option>
-        <option value="bronco_500">Broncoscopio 500-600</option>
-        <option value="duodeno_500">Duodenoscopio 500-600</option>
-        <option value="colo_700">Colonoscopio 700</option>
-        <option value="gastro_700">Gastroscopio 700</option>
+        <option value="colo_gastro_500">Colonoscopio / Gastroscopio</option>
+        <option value="bronco_500">Broncoscopio</option>
+        <option value="duodeno_500">Duodenoscopio</option>
+        <option value="colo_700">Colonoscopio</option>
+        <option value="gastro_700">Gastroscopio</option>
       </select>
       <span class="perfil-hint">El checklist se ajusta automáticamente al tipo elegido</span>
     </div>
@@ -1434,27 +1434,27 @@ function fmtFecha(v){
 // Perfiles de checklist por tipo de equipo (estándar Fujinon 500/600 y 700).
 // Cada perfil define qué partes aparecen en cada sección.
 const PERFILES = {
-  "colo_gastro_500": { label:"Colonoscopio / Gastroscopio 500-600",
+  "colo_gastro_500": { label:"Colonoscopio / Gastroscopio",
     distal:["Bending Rubber","Pegamentos epóxicos","C Cover","Lente objetivo","Cristales de fibra de luz","Fibras de luz","Pipeta","Sección flexible"],
     mandos:["Body","Freno R/L","Freno D/Up","Perilla R/L","Perilla D/Up","Cónico","Entrada de válvulas"],
     insercion:["Tubo de inserción","Canal de trabajo","Cónico"],
     conector:["Tubo universal","Video cable","Tierra física","Entrada de succión","Conector eléctrico","Pines de conector","Cover de fibra de luz","Jet auxiliar","Conector de agua","Boquilla probadora","Cónico"] },
-  "bronco_500": { label:"Broncoscopio 500-600",
+  "bronco_500": { label:"Broncoscopio",
     distal:["Bending Rubber","Pegamentos epóxicos","C Cover","Lente objetivo","Cristales de fibra de luz","Fibras de luz","Sección flexible"],
     mandos:["Body","Perilla D/Up","Cónico","Entrada de válvulas"],
     insercion:["Tubo de inserción","Canal de trabajo","Cónico"],
     conector:["Tubo universal","Video cable","Tierra física","Conector eléctrico","Pines","Cover de fibra de luz","Boquilla probadora","Cónico"] },
-  "duodeno_500": { label:"Duodenoscopio 500-600",
+  "duodeno_500": { label:"Duodenoscopio",
     distal:["Bending Rubber","Pegamentos epóxicos","Capuchón","Lente objetivo","Cristales de fibra de luz","Fibras de luz","Pipeta","Uña del elevador","Sección flexible"],
     mandos:["Body","Freno R/L","Freno D/Up","Perilla R/L","Perilla D/Up","Cónico","Perilla del elevador","Entrada de válvulas"],
     insercion:["Tubo de inserción","Canal de trabajo","Cónico"],
     conector:["Tubo universal","Video cable","Tierra física","Entrada de succión","Conector eléctrico","Pines","Cover de fibra de luz","Conector de agua","Boquilla probadora","Cónico"] },
-  "colo_700": { label:"Colonoscopio 700",
+  "colo_700": { label:"Colonoscopio",
     distal:["Bending Rubber","Pegamentos epóxicos","C Cover","Lente objetivo","Cristales de fibra de luz","Fibras de luz","Pipeta","Sección flexible"],
     mandos:["Body","Freno R/L","Freno D/Up","Perilla R/L","Perilla D/Up","Cónico","Entrada de válvulas"],
     insercion:["Tubo de inserción","Canal de trabajo","Sistema inoflex","Cónico"],
     conector:["Tubo universal","Entrada de succión","Conector eléctrico","Cover de fibra de luz","Jet auxiliar","Conector de agua","Boquilla probadora"] },
-  "gastro_700": { label:"Gastroscopio 700",
+  "gastro_700": { label:"Gastroscopio",
     distal:["Bending Rubber","Pegamentos epóxicos","C Cover","Lente objetivo","Cristales de fibra de luz","Fibras de luz","Pipeta","Sección flexible"],
     mandos:["Body","Freno R/L","Freno D/Up","Perilla R/L","Perilla D/Up","Cónico","Entrada de válvulas"],
     insercion:["Tubo de inserción","Canal de trabajo","Cónico"],

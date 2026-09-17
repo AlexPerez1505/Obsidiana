@@ -21,9 +21,17 @@ class ServiceEquipment extends Model
         'serial_number',
         'description',
         'observations',
+        'transport_case',
+        'transport_case_other',
+        'accessories_included',
+        'accessories_detail',
         'evidence_1_path',
         'evidence_2_path',
         'evidence_3_path',
         'video_path',
+    ];
+
+    protected $casts = [
+        'accessories_included' => 'boolean',
     ];
 }
