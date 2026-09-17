@@ -132,6 +132,10 @@ class ServiceController extends Controller
             'serie' => 'nullable|string|max:255',
             'descripcion_equipo' => 'nullable|string',
             'observaciones' => 'nullable|string',
+            'equipo_transporte' => 'nullable|in:maletin,estuche,contenedor,otro',
+            'equipo_transporte_otro' => 'nullable|string|max:255',
+            'accesorios_incluidos' => 'nullable|boolean',
+            'accesorios_detalle' => 'nullable|string|max:255',
         ]);
 
         $service->update([
@@ -149,6 +153,16 @@ class ServiceController extends Controller
             'serial_number' => $validated['serie'] ?? $service->serviceEquipment?->serial_number,
             'description' => $validated['descripcion_equipo'] ?? $service->serviceEquipment?->description,
             'observations' => $validated['observaciones'] ?? $service->serviceEquipment?->observations,
+            'transport_case' => $validated['equipo_transporte'] ?? $service->serviceEquipment?->transport_case,
+            'transport_case_other' => ($validated['equipo_transporte'] ?? $service->serviceEquipment?->transport_case) === 'otro'
+                ? ($validated['equipo_transporte_otro'] ?? $service->serviceEquipment?->transport_case_other)
+                : null,
+            'accessories_included' => $request->filled('accesorios_incluidos')
+                ? $request->boolean('accesorios_incluidos')
+                : $service->serviceEquipment?->accessories_included,
+            'accessories_detail' => $request->boolean('accesorios_incluidos')
+                ? ($validated['accesorios_detalle'] ?? $service->serviceEquipment?->accessories_detail)
+                : null,
         ]);
 
         return redirect()->route('gestion.servicios.area_endoscopia')
@@ -182,6 +196,9 @@ class ServiceController extends Controller
             'precio' => 'nullable|array',
             'precio.*' => 'numeric|min:0',
             'mano_obra' => 'nullable|numeric|min:0',
+            'necesarias' => 'nullable|array',
+            'necesarias.*.nombre' => 'required_with:necesarias|string|max:255',
+            'necesarias.*.cantidad' => 'nullable|integer|min:1',
         ]);
 
         $service->spareParts()->delete();
@@ -212,9 +229,53 @@ class ServiceController extends Controller
             ]);
         }
 
-        $service->update(['mano_obra' => $request->input('mano_obra', 0)]);
+        foreach ($request->input('necesarias', []) as $necesaria) {
+            $nombre = trim($necesaria['nombre'] ?? '');
+            if ($nombre === '') {
+                continue;
+            }
+
+            ServiceSparePart::create([
+                'service_id' => $service->id,
+                'refaccion_id' => null,
+                'nombre' => $nombre,
+                'cantidad' => max(1, (int) ($necesaria['cantidad'] ?? 1)),
+                'precio_unitario' => 0,
+                'subtotal' => 0,
+            ]);
+        }
+
+        if ($request->has('mano_obra')) {
+            $service->update(['mano_obra' => $request->input('mano_obra', 0)]);
+        }
 
         return back()->with('success', 'Cotización guardada correctamente.');
+    }
+
+    public function updateCotizacionPrecios(Request $request, Service $service)
+    {
+        $validated = $request->validate([
+            'precio_parte' => 'nullable|array',
+            'precio_parte.*' => 'nullable|numeric|min:0',
+            'mano_obra' => 'nullable|numeric|min:0',
+        ]);
+
+        foreach ($request->input('precio_parte', []) as $partId => $precio) {
+            $part = $service->spareParts()->where('id', $partId)->first();
+            if (! $part) {
+                continue;
+            }
+
+            $precio = (float) ($precio ?? 0);
+            $part->update([
+                'precio_unitario' => $precio,
+                'subtotal' => $part->cantidad * $precio,
+            ]);
+        }
+
+        $service->update(['mano_obra' => $validated['mano_obra'] ?? 0]);
+
+        return back()->with('success', 'Precios de la cotización actualizados.');
     }
 
 
@@ -234,6 +295,10 @@ class ServiceController extends Controller
             'serie' => 'nullable|string|max:255',
             'descripcion_equipo' => 'nullable|string',
             'observaciones' => 'nullable|string',
+            'equipo_transporte' => 'nullable|in:maletin,estuche,contenedor,otro',
+            'equipo_transporte_otro' => 'nullable|string|max:255',
+            'accesorios_incluidos' => 'nullable|boolean',
+            'accesorios_detalle' => 'nullable|string|max:255',
             'evidencia_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
             'evidencia_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
             'evidencia_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
@@ -287,6 +352,10 @@ class ServiceController extends Controller
             'serial_number' => $validated['serie'] ?? null,
             'description' => $validated['descripcion_equipo'] ?? null,
             'observations' => $validated['observaciones'] ?? null,
+            'transport_case' => $validated['equipo_transporte'] ?? null,
+            'transport_case_other' => ($validated['equipo_transporte'] ?? null) === 'otro' ? ($validated['equipo_transporte_otro'] ?? null) : null,
+            'accessories_included' => $request->filled('accesorios_incluidos') ? $request->boolean('accesorios_incluidos') : null,
+            'accessories_detail' => $request->boolean('accesorios_incluidos') ? ($validated['accesorios_detalle'] ?? null) : null,
             'evidence_1_path' => $this->storeEvidence($request, 'evidencia_1'),
             'evidence_2_path' => $this->storeEvidence($request, 'evidencia_2'),
             'evidence_3_path' => $this->storeEvidence($request, 'evidencia_3'),

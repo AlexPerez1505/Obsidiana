@@ -47,6 +47,7 @@ require __DIR__.'/web/marketing/marketing.php';
 // Gestion de servicios
 require __DIR__.'/web/services/historial.php';
 require __DIR__.'/web/services/registro.php';
+require __DIR__.'/web/services/servicio_externo.php';
 require __DIR__.'/web/services/endoscopia.php';
 require __DIR__.'/web/services/refacciones.php';
 

@@ -722,9 +722,9 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cartas de Garantía</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.registro') ? 'active' : '' }}" href="{{ route('gestion.servicios.registro') }}" data-tip="Registro">
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.registro') ? 'active' : '' }}" href="{{ route('gestion.servicios.registro') }}" data-tip="Registro Externo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Registro</span>
+                        <span class="nav-label">Registro Externo</span>
                     </a>
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.area_endoscopia') ? 'active' : '' }}" href="{{ route('gestion.servicios.area_endoscopia') }}" data-tip="Área de Endoscopia">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
@@ -737,6 +737,14 @@
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.externo') ? 'active' : '' }}" href="{{ route('gestion.servicios.externo') }}" data-tip="Mantenimiento Externo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Externo</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.servicio_externo.interno') ? 'active' : '' }}" href="{{ route('gestion.servicios.servicio_externo.interno') }}" data-tip="Servicio Externo Interno">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Servicio externo interno</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.servicio_externo.externo') ? 'active' : '' }}" href="{{ route('gestion.servicios.servicio_externo.externo') }}" data-tip="Servicio Externo Externo">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Servicio externo externo</span>
                     </a>
                 </div>
             </div>

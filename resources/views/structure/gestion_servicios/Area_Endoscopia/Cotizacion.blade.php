@@ -102,9 +102,7 @@
                         <th style='text-align:center;'>FOTO</th>
                         <th>REFACCIÓN</th>
                         <th style='text-align:center;'>STOCK</th>
-                        <th style='text-align:right;'>PRECIO UNIT.</th>
                         <th style='text-align:center;'>CANTIDAD</th>
-                        <th style='text-align:right;'>SUBTOTAL</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -112,7 +110,6 @@
                         @php
                             $line = $sparePartsByRefaccion->get($refaccion->id);
                             $cantidad = $line?->cantidad ?? 0;
-                            $precio = $line?->precio_unitario ?? ($refaccion->price ?? 0);
                         @endphp
                         <tr class='refaccion-row' data-name='{{ $refaccion->name }}' data-subtype='{{ $refaccion->subtype }}'>
                             <td style='text-align:center;'>
@@ -127,14 +124,8 @@
                                 <div style='font-size:12px; color:var(--muted);'>{{ $refaccion->subtype }}</div>
                             </td>
                             <td style='text-align:center;'>{{ $refaccion->stock }}</td>
-                            <td style='text-align:right;'>
-                                <input type='number' name='precio[{{ $refaccion->id }}]' value='{{ number_format($precio, 2, '.', '') }}' min='0' step='0.01' class='input-precio' data-precio-row='{{ $refaccion->id }}'>
-                            </td>
                             <td style='text-align:center;'>
                                 <input type='number' name='cantidad[{{ $refaccion->id }}]' value='{{ $cantidad }}' min='0' max='{{ $refaccion->stock }}' class='input-cantidad' data-cantidad-row='{{ $refaccion->id }}'>
-                            </td>
-                            <td style='text-align:right;'>
-                                <span class='subtotal-row' id='subtotal-{{ $refaccion->id }}'>${{ number_format($cantidad * $precio, 2) }}</span>
                             </td>
                         </tr>
                     @endforeach
@@ -144,15 +135,24 @@
             <p class='empty-state'>No hay refacciones registradas.</p>
         @endif
 
-        <div class='total-box'>
-            <div>
-                <label for='mano_obra'>Mano de obra</label>
-                <input type='number' id='mano_obra' name='mano_obra' value='{{ number_format($service->mano_obra ?? 0, 2, '.', '') }}' min='0' step='0.01' style='padding:8px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text);'>
+        <div style='margin-top:24px; padding:18px; border:1px dashed var(--border); border-radius:12px;'>
+            <label style='font-size:13px; font-weight:700; display:block; margin-bottom:4px;'>Refacción necesaria</label>
+            <p style='font-size:12px; color:var(--muted); margin:0 0 12px;'>Si la pieza que buscas no aparece en la lista, agrégala aquí. Estas piezas no tienen stock registrado.</p>
+            <div style='display:flex; gap:10px; flex-wrap:wrap;'>
+                <input type='text' id='necesaria-nombre' placeholder='Nombre de la refacción' style='flex:1; min-width:220px; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text); font-size:14px;'>
+                <input type='number' id='necesaria-cantidad' value='1' min='1' style='width:110px; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text); font-size:14px;'>
+                <button type='button' id='btn-agregar-necesaria' class='btn' style='display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:10px; font-size:14px; font-weight:700; background:var(--surface-2); color:var(--text); border:1px solid var(--border); cursor:pointer;'>Agregar</button>
             </div>
-            <div style='text-align:right;'>
-                <div style='font-size:13px; color:var(--muted);'>Total cotización</div>
-                <div class='big' id='gran-total'>$0.00</div>
-            </div>
+            <ul id='lista-necesarias' style='margin:14px 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px;'>
+                @foreach ($service->spareParts->whereNull('refaccion_id') as $part)
+                    <li class='necesaria-item' style='display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface);'>
+                        <input type='hidden' name='necesarias[{{ $loop->index }}][nombre]' value='{{ $part->nombre }}'>
+                        <input type='hidden' name='necesarias[{{ $loop->index }}][cantidad]' value='{{ $part->cantidad }}'>
+                        <span style='font-size:13px;'>{{ $part->nombre }} <span style='color:var(--muted);'>x{{ $part->cantidad }}</span></span>
+                        <button type='button' class='necesaria-remove' style='background:none; border:none; color:var(--danger); font-size:18px; cursor:pointer; line-height:1;'>&times;</button>
+                    </li>
+                @endforeach
+            </ul>
         </div>
 
         <div style='margin-top:24px;'>
@@ -163,33 +163,6 @@
 
 @push('scripts')
 <script>
-    function formatMoney(amount) {
-        return '$' + Number(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
-    }
-
-    function calcularTotales() {
-        let total = 0;
-        document.querySelectorAll('.refaccion-row').forEach(function(row) {
-            const cantidadInput = row.querySelector('.input-cantidad');
-            const precioInput = row.querySelector('.input-precio');
-            const stock = parseFloat(cantidadInput.getAttribute('max')) || 0;
-            let cantidad = parseFloat(cantidadInput.value) || 0;
-            if (cantidad > stock) {
-                cantidadInput.value = stock;
-                cantidad = stock;
-            }
-            const precio = parseFloat(precioInput.value) || 0;
-            const subtotal = cantidad * precio;
-            row.querySelector('.subtotal-row').textContent = formatMoney(subtotal);
-            total += subtotal;
-        });
-
-        const manoObra = parseFloat(document.getElementById('mano_obra').value) || 0;
-        document.getElementById('gran-total').textContent = formatMoney(total + manoObra);
-    }
-
-    document.getElementById('mano_obra')?.addEventListener('input', calcularTotales);
-
     function normalizeText(text) {
         return String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
     }
@@ -197,7 +170,13 @@
     function filtrarRefacciones() {
         const term = normalizeText(document.getElementById('buscar-refaccion').value);
         document.querySelectorAll('.refaccion-row').forEach(function(row) {
-            const cantidad = parseFloat(row.querySelector('.input-cantidad')?.value) || 0;
+            const cantidadInput = row.querySelector('.input-cantidad');
+            const stock = parseFloat(cantidadInput.getAttribute('max')) || 0;
+            let cantidad = parseFloat(cantidadInput.value) || 0;
+            if (cantidad > stock) {
+                cantidadInput.value = stock;
+                cantidad = stock;
+            }
             if (cantidad >= 1) {
                 row.style.display = '';
                 return;
@@ -214,13 +193,54 @@
     document.getElementById('tabla-refacciones')?.addEventListener('input', function(e) {
         if (e.target.classList.contains('input-cantidad')) {
             filtrarRefacciones();
-            calcularTotales();
-        } else if (e.target.classList.contains('input-precio')) {
-            calcularTotales();
         }
     });
 
-    calcularTotales();
+    // ===== Refacciones necesarias (sin stock) =====
+    const listaNecesarias = document.getElementById('lista-necesarias');
+    const inputNombre = document.getElementById('necesaria-nombre');
+    const inputCantidad = document.getElementById('necesaria-cantidad');
+    let necesariaIdx = listaNecesarias ? listaNecesarias.querySelectorAll('.necesaria-item').length : 0;
+
+    function agregarNecesaria(nombre, cantidad) {
+        const li = document.createElement('li');
+        li.className = 'necesaria-item';
+        li.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface);';
+        li.innerHTML =
+            '<input type="hidden" name="necesarias[' + necesariaIdx + '][nombre]" value="">' +
+            '<input type="hidden" name="necesarias[' + necesariaIdx + '][cantidad]" value="' + cantidad + '">' +
+            '<span style="font-size:13px;"><span class="necesaria-nombre"></span> <span style="color:var(--muted);">x' + cantidad + '</span></span>' +
+            '<button type="button" class="necesaria-remove" style="background:none; border:none; color:var(--danger); font-size:18px; cursor:pointer; line-height:1;">&times;</button>';
+        li.querySelector('[name$="[nombre]"]').value = nombre;
+        li.querySelector('.necesaria-nombre').textContent = nombre;
+        listaNecesarias.appendChild(li);
+        necesariaIdx++;
+    }
+
+    document.getElementById('btn-agregar-necesaria')?.addEventListener('click', function() {
+        const nombre = inputNombre.value.trim();
+        const cantidad = Math.max(1, parseInt(inputCantidad.value) || 1);
+        if (!nombre) {
+            inputNombre.focus();
+            return;
+        }
+        agregarNecesaria(nombre, cantidad);
+        inputNombre.value = '';
+        inputCantidad.value = 1;
+        inputNombre.focus();
+    });
+
+    inputNombre?.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('btn-agregar-necesaria')?.click();
+        }
+    });
+
+    listaNecesarias?.addEventListener('click', function(e) {
+        const btn = e.target.closest('.necesaria-remove');
+        if (btn) btn.closest('.necesaria-item')?.remove();
+    });
 </script>
 @endpush
 @endsection

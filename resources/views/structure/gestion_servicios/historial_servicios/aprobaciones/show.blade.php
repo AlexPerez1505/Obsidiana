@@ -42,6 +42,12 @@
         <a href="{{ route('gestion.servicios.historial.aprobaciones.index') }}" class="erp-btn ghost">Volver a aprobaciones</a>
     </div>
 
+    @if (session('success'))
+        <div class="resumen-card" style="margin-bottom:18px; border-color:var(--green);">
+            <strong style="color:var(--green);">{{ session('success') }}</strong>
+        </div>
+    @endif
+
     <div class="resumen-grid">
         <!-- Resumen del servicio -->
         <div class="resumen-card">
@@ -135,15 +141,38 @@
             @if($service->spareParts->isEmpty())
                 <div class="resumen-empty">No se agregaron refacciones.</div>
             @else
-                <ul class="resumen-list">
+                <form action="{{ route('gestion.servicios.historial.aprobaciones.cotizacion', $service) }}" method="POST" id="cotizacion-precios-form">
+                    @csrf
                     @foreach($service->spareParts as $part)
-                        <li>{{ $part->nombre }} x{{ $part->cantidad }} — ${{ number_format($part->subtotal, 2) }}</li>
+                        <div class="resumen-detail resumen-detail--top" data-part-row data-cantidad="{{ $part->cantidad }}">
+                            <span class="resumen-label" style="max-width:45%;">
+                                {{ $part->nombre }} <span style="color:var(--muted);">x{{ $part->cantidad }}</span>
+                                @if (is_null($part->refaccion_id))
+                                    <span class="resumen-badge warn" style="margin-left:4px;"><span class="dot"></span>Necesaria</span>
+                                @endif
+                            </span>
+                            <span class="resumen-value" style="display:flex; align-items:center; gap:10px; justify-content:flex-end;">
+                                <input type="number" name="precio_parte[{{ $part->id }}]" value="{{ number_format((float) $part->precio_unitario, 2, '.', '') }}" min="0" step="0.01" class="precio-parte-input" aria-label="Precio unitario" style="width:100px; padding:6px 9px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:13px; text-align:right;">
+                                <span class="parte-subtotal" style="min-width:80px; font-weight:700;">${{ number_format($part->subtotal, 2) }}</span>
+                            </span>
+                        </div>
                     @endforeach
-                </ul>
-                <div class="resumen-detail resumen-total-row">
-                    <span class="resumen-label">TOTAL REFACCIONES</span>
-                    <span class="resumen-value" style="font-size:18px; font-weight:800; color:var(--primary);">${{ number_format($totalRefacciones, 2) }}</span>
-                </div>
+
+                    <div class="resumen-detail">
+                        <span class="resumen-label">MANO DE OBRA</span>
+                        <span class="resumen-value">
+                            <input type="number" name="mano_obra" id="aprob-mano-obra" value="{{ number_format((float) ($service->mano_obra ?? 0), 2, '.', '') }}" min="0" step="0.01" style="width:110px; padding:6px 9px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:13px; text-align:right;">
+                        </span>
+                    </div>
+                    <div class="resumen-detail resumen-total-row">
+                        <span class="resumen-label">TOTAL COTIZACIÓN</span>
+                        <span class="resumen-value" style="font-size:18px; font-weight:800; color:var(--primary);" id="aprob-gran-total">${{ number_format($totalRefacciones + ($service->mano_obra ?? 0), 2) }}</span>
+                    </div>
+
+                    <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+                        <button type="submit" class="erp-btn sm">Guardar precios</button>
+                    </div>
+                </form>
             @endif
         </div>
     </div>
@@ -201,4 +230,29 @@
             <button type="submit" class="erp-btn">Aprobar</button>
         </form>
     </div>
+
+    @push('scripts')
+    <script>
+    (function () {
+        function money(n) {
+            return '$' + Number(n).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        }
+        function recalc() {
+            let total = 0;
+            document.querySelectorAll('[data-part-row]').forEach(function (row) {
+                const cantidad = parseFloat(row.getAttribute('data-cantidad')) || 0;
+                const precio = parseFloat(row.querySelector('.precio-parte-input')?.value) || 0;
+                const subtotal = cantidad * precio;
+                const sub = row.querySelector('.parte-subtotal');
+                if (sub) sub.textContent = money(subtotal);
+                total += subtotal;
+            });
+            const mo = parseFloat(document.getElementById('aprob-mano-obra')?.value) || 0;
+            const gt = document.getElementById('aprob-gran-total');
+            if (gt) gt.textContent = money(total + mo);
+        }
+        document.getElementById('cotizacion-precios-form')?.addEventListener('input', recalc);
+    })();
+    </script>
+    @endpush
 @endsection

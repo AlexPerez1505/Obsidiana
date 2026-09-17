@@ -7,7 +7,7 @@
     $technicians = $technicians ?? collect([]);
 @endphp
 
-@section('title', 'Nuevo registro')
+@section('title', 'Nuevo registro externo')
 
 @push('head')
 <style>
@@ -214,15 +214,38 @@
                     <label for="serie">Número de serie</label>
                     <input type="text" name="serie" id="serie" placeholder="Ej. SN-893-832" value="{{ old('serie') }}">
                 </div>
+                <div class="form-group">
+                    <label for="equipo_transporte">Equipo de transporte recibido</label>
+                    <select name="equipo_transporte" id="equipo_transporte">
+                        <option value="">Selecciona una opción</option>
+                        <option value="maletin" {{ old('equipo_transporte') === 'maletin' ? 'selected' : '' }}>Maletín</option>
+                        <option value="estuche" {{ old('equipo_transporte') === 'estuche' ? 'selected' : '' }}>Estuche</option>
+                        <option value="contenedor" {{ old('equipo_transporte') === 'contenedor' ? 'selected' : '' }}>Contenedor</option>
+                        <option value="otro" {{ old('equipo_transporte') === 'otro' ? 'selected' : '' }}>Otro</option>
+                    </select>
+                </div>
+                <div class="form-group" id="equipo-transporte-otro-group" style="{{ old('equipo_transporte') === 'otro' ? '' : 'display:none;' }}">
+                    <label for="equipo_transporte_otro">¿Cuál?</label>
+                    <input type="text" name="equipo_transporte_otro" id="equipo_transporte_otro" placeholder="Especifica el equipo de transporte" value="{{ old('equipo_transporte_otro') }}">
+                </div>
+                <div class="form-group">
+                    <label for="accesorios_incluidos">¿Accesorios incluidos?</label>
+                    <select name="accesorios_incluidos" id="accesorios_incluidos">
+                        <option value="">Selecciona una opción</option>
+                        <option value="1" {{ old('accesorios_incluidos') === '1' ? 'selected' : '' }}>Sí</option>
+                        <option value="0" {{ old('accesorios_incluidos') === '0' ? 'selected' : '' }}>No</option>
+                    </select>
+                </div>
+                <div class="form-group" id="accesorios-detalle-group" style="{{ old('accesorios_incluidos') === '1' ? '' : 'display:none;' }}">
+                    <label for="accesorios_detalle">¿Cuáles accesorios?</label>
+                    <input type="text" name="accesorios_detalle" id="accesorios_detalle" placeholder="Ej. Cables, adaptadores, funda" value="{{ old('accesorios_detalle') }}">
+                </div>
 
                 <div class="form-group" style="grid-column:1/-1;">
                     <label for="descripcion_equipo">Descripción del equipo</label>
                     <textarea name="descripcion_equipo" id="descripcion_equipo" rows="3" placeholder="Describe el equipo y su función">{{ old('descripcion_equipo') }}</textarea>
                 </div>
-                <div class="form-group" style="grid-column:1/-1;">
-                    <label for="observaciones">Observaciones</label>
-                    <textarea name="observaciones" id="observaciones" rows="3" placeholder="Anotaciones sobre el estado del equipo">{{ old('observaciones') }}</textarea>
-                </div>
+
             </div>
 
             <div class="form-group" style="margin-top:18px;">
@@ -440,6 +463,17 @@ $techniciansData = $technicians->map(function ($t) {
     document.querySelectorAll('#tech-list .tech-row').forEach(row => {
         row.addEventListener('click', () => selectTech(parseInt(row.dataset.tech)));
     });
+
+    // Campos condicionales: "otro" transporte pide especificar y "accesorios" pide detalle
+    const transporteSelect = document.getElementById('equipo_transporte');
+    const accesoriosSelect = document.getElementById('accesorios_incluidos');
+    function syncConditionalFields() {
+        document.getElementById('equipo-transporte-otro-group').style.display = transporteSelect?.value === 'otro' ? '' : 'none';
+        document.getElementById('accesorios-detalle-group').style.display = accesoriosSelect?.value === '1' ? '' : 'none';
+    }
+    transporteSelect?.addEventListener('change', syncConditionalFields);
+    accesoriosSelect?.addEventListener('change', syncConditionalFields);
+    syncConditionalFields();
 
     if (clients.length > 0) selectClient(0);
     if (techniciansData.length > 0) selectTech(0);
