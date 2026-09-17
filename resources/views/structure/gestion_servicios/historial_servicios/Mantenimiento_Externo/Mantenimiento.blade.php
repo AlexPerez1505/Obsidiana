@@ -7,13 +7,28 @@
         $total = $services->count();
     @endphp
 
+    @php
+        $puedeEnviar = auth()->user()->isAdmin() || auth()->user()->hasRole('mantenimiento');
+    @endphp
+
     <div class="erp-head">
         <div class="erp-head-l">
             <h1 class="erp-h1">Externo</h1>
             <span class="erp-count">{{ $total }} {{ $total === 1 ? 'servicio' : 'servicios' }}</span>
         </div>
-        <a href="{{ route('gestion.servicios.historial') }}" class="erp-btn ghost">Volver al historial</a>
+        <div style="display:flex; gap:10px;">
+            @if ($puedeEnviar)
+                <a href="{{ route('gestion.servicios.externo.crear') }}" class="erp-btn">+ Enviar equipo</a>
+            @endif
+            <a href="{{ route('gestion.servicios.historial') }}" class="erp-btn ghost">Volver al historial</a>
+        </div>
     </div>
+
+    @if (session('success'))
+        <div class="erp-card" style="border-color:var(--green); padding:14px 18px; color:var(--green); font-weight:700;">
+            {{ session('success') }}
+        </div>
+    @endif
 
     <div class="erp-card">
         <div class="erp-table-wrap">
@@ -24,7 +39,7 @@
                         <th>Cliente</th>
                         <th>Equipo</th>
                         <th>Marca / Modelo / Serie</th>
-                        <th>Técnico externo</th>
+                        <th>Enviado a</th>
                         <th>Estado</th>
                         <th>Fecha</th>
                         <th style="text-align:right;">Acciones</th>
@@ -36,7 +51,7 @@
                             $equipment = $service->serviceEquipment;
                             $customerName = trim(($service->customer?->nombre ?? '') . ' ' . ($service->customer?->apellido ?? '')) ?: 'Sin cliente';
                             $badge = match($service->status) {
-                                'entregado', 'completado' => 'ok',
+                                'entregado', 'completado', 'recibido_externo' => 'ok',
                                 'en_progreso' => 'info',
                                 'aprobado' => 'warn',
                                 default => 'neutral',
@@ -51,30 +66,38 @@
                                 <div style="color:var(--muted); font-size:12px;">{{ $equipment?->model_text ?? '—' }} · {{ $equipment?->serial_number ?? '—' }}</div>
                             </td>
                             <td>
-                                <div>{{ $service->externalTechnician?->name ?? '—' }}</div>
-                                @if ($service->externalTechnician?->company)
-                                    <div style="color:var(--muted); font-size:12px;">{{ $service->externalTechnician->company }}</div>
+                                <div>{{ $service->externalRecipient?->name ?? '—' }}</div>
+                                @if ($service->externalRecipient?->email)
+                                    <div style="color:var(--muted); font-size:12px;">{{ $service->externalRecipient->email }}</div>
                                 @endif
                             </td>
                             <td><span class="erp-badge {{ $badge }}"><span class="dot"></span>{{ ucfirst(str_replace('_', ' ', $service->status ?? '—')) }}</span></td>
                             <td style="color:var(--muted);">{{ $service->created_at?->format('d/m/Y') ?? '—' }}</td>
                             <td style="text-align:right; white-space:nowrap;">
-                                <a href="{{ route('gestion.servicios.area_endoscopia.resumen', $service) }}" class="tbl-link" title="Ver resumen" style="display:inline-flex; align-items:center; gap:4px;">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    Ver
-                                </a>
-                                <a href="{{ route('gestion.servicios.mantenimiento.reporte.raw', $service) }}" class="tbl-link" title="Hoja de reporte" style="display:inline-flex; align-items:center; gap:4px; margin-left:10px; color:var(--primary);">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                                    Reporte
-                                </a>
-                                <a href="{{ route('gestion.servicios.area_endoscopia.cotizacion', $service) }}" class="tbl-link" title="Cotización" style="display:inline-flex; align-items:center; gap:4px; margin-left:10px; color:var(--accent);">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                    Cotización
-                                </a>
-                                <a href="{{ route('gestion.servicios.area_endoscopia.cotizacion.pdf', $service) }}" class="tbl-link" title="Descargar cotización PDF" style="display:inline-flex; align-items:center; gap:4px; margin-left:10px; color:var(--muted);">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                    PDF
-                                </a>
+                                @if (auth()->user()->isAdmin() || auth()->id() === $service->external_recipient_user_id)
+                                    <a href="{{ route('gestion.servicios.externo.recepcion', $service) }}" class="tbl-link" title="Registrar recepción" style="display:inline-flex; align-items:center; gap:4px; color:{{ $service->external_received_at ? 'var(--green)' : 'var(--accent)' }};">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                                        {{ $service->external_received_at ? 'Recepción' : 'Registrar recepción' }}
+                                    </a>
+                                @endif
+                                @if (! auth()->user()->hasRole('mantenimiento_externo'))
+                                    <a href="{{ route('gestion.servicios.area_endoscopia.resumen', $service) }}" class="tbl-link" title="Ver resumen" style="display:inline-flex; align-items:center; gap:4px; margin-left:10px;">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        Ver
+                                    </a>
+                                    <a href="{{ route('gestion.servicios.mantenimiento.reporte.raw', $service) }}" class="tbl-link" title="Hoja de reporte" style="display:inline-flex; align-items:center; gap:4px; margin-left:10px; color:var(--primary);">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                        Reporte
+                                    </a>
+                                    <a href="{{ route('gestion.servicios.area_endoscopia.cotizacion', $service) }}" class="tbl-link" title="Cotización" style="display:inline-flex; align-items:center; gap:4px; margin-left:10px; color:var(--accent);">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                        Cotización
+                                    </a>
+                                    <a href="{{ route('gestion.servicios.area_endoscopia.cotizacion.pdf', $service) }}" class="tbl-link" title="Descargar cotización PDF" style="display:inline-flex; align-items:center; gap:4px; margin-left:10px; color:var(--muted);">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                        PDF
+                                    </a>
+                                @endif
                             </td>
                         </tr>
                     @empty

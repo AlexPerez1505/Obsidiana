@@ -19,6 +19,8 @@ class RestrictMantenimientoExternoAccess
 {
     private const PERMITIDAS = [
         'gestion.servicios.externo',
+        'gestion.servicios.externo.recepcion',
+        'gestion.servicios.externo.recepcion.store',
         'gestion.servicios.historial',
         'gestion.servicios.historial.show',
         'qr.*',

@@ -47,14 +47,31 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->middleware('signed');
 
     Route::get('/gestion-servicios/historial-servicios/externo', function () {
-        $services = Service::with(['customer', 'serviceEquipment', 'internalTechnician', 'externalTechnician', 'currentStep'])
+        $query = Service::with(['customer', 'serviceEquipment', 'externalRecipient', 'currentStep'])
             ->where('service_type', 'externo')
-            ->whereIn('status', ['aprobado', 'en_progreso', 'completado', 'entregado'])
-            ->latest()
-            ->get();
+            ->where('status', '!=', 'cancelado');
+
+        // Cada cuenta de Mantenimiento Externo ve solo lo que le mandaron a
+        // ella; admin y Mantenimiento ven todo lo que se ha enviado.
+        $usuario = auth()->user();
+        if (! $usuario->isAdmin() && $usuario->hasRole('mantenimiento_externo')) {
+            $query->where('external_recipient_user_id', $usuario->id);
+        }
+
+        $services = $query->latest()->get();
 
         return view('structure.gestion_servicios.historial_servicios.Mantenimiento_Externo.Mantenimiento', compact('services'));
     })->name('gestion.servicios.externo');
+
+    Route::get('/gestion-servicios/historial-servicios/externo/crear', [ServiceController::class, 'crearExterno'])
+        ->name('gestion.servicios.externo.crear');
+    Route::post('/gestion-servicios/historial-servicios/externo', [ServiceController::class, 'storeExterno'])
+        ->name('gestion.servicios.externo.store');
+
+    Route::get('/gestion-servicios/historial-servicios/externo/{service}/recepcion', [ServiceController::class, 'recepcionExterna'])
+        ->name('gestion.servicios.externo.recepcion');
+    Route::post('/gestion-servicios/historial-servicios/externo/{service}/recepcion', [ServiceController::class, 'storeRecepcionExterna'])
+        ->name('gestion.servicios.externo.recepcion.store');
 
     Route::get('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'show'])
         ->name('gestion.servicios.historial.show');
