@@ -15,7 +15,10 @@ class FacturaController extends Controller
 {
     public function index(): View
     {
-        $facturas = Factura::with(['customer', 'venta'])->latest()->get();
+        $facturas = Factura::whereHas('customer', fn ($query) => $query->visiblesPara(auth()->user()))
+            ->with(['customer', 'venta'])
+            ->latest()
+            ->get();
 
         return view('structure.commercial_management.facturas.index', [
             'facturas' => $facturas,
@@ -31,10 +34,10 @@ class FacturaController extends Controller
         $cliente = null;
 
         if ($request->filled('venta')) {
-            $venta = Venta::with(['customer', 'items'])->find($request->integer('venta'));
+            $venta = Venta::visiblesPara($request->user())->with(['customer', 'items'])->find($request->integer('venta'));
             $cliente = $venta?->customer;
         } elseif ($request->filled('cliente')) {
-            $cliente = Customer::find($request->integer('cliente'));
+            $cliente = Customer::visiblesPara($request->user())->find($request->integer('cliente'));
         }
 
         return view('structure.commercial_management.facturas.form', [
@@ -47,7 +50,7 @@ class FacturaController extends Controller
     {
         $data = $request->validate([
             'venta_id' => ['nullable', 'exists:ventas,id'],
-            'customer_id' => ['required', 'exists:clientes,id'],
+            'customer_id' => ['required', Customer::reglaVisiblePara($request->user())],
             'rfc' => ['nullable', 'string', 'max:20'],
             'razon_social' => ['nullable', 'string', 'max:255'],
             'uso_cfdi' => ['nullable', 'string', 'max:100'],

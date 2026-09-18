@@ -41,6 +41,8 @@ class ProductoSerial extends Model
         'estado',
         'no_serie',
         'foto_path',
+        'evidence_paths',
+        'video_path',
         'vendido',
         'vendido_en',
         'venta_item_id',
@@ -57,6 +59,7 @@ class ProductoSerial extends Model
             'vendido' => 'boolean',
             'vendido_en' => 'datetime',
             'enviado_a_congreso_en' => 'datetime',
+            'evidence_paths' => 'array',
         ];
     }
 
@@ -66,10 +69,10 @@ class ProductoSerial extends Model
     }
 
     /**
-     * A qué congreso se llevaron esta pieza, si aplica.
+     * A quï¿½ congreso se llevaron esta pieza, si aplica.
      *
-     * Es solo informativo: mientras está en el congreso la pieza sigue
-     * vendible (allá mismo la pueden vender), no se bloquea ni cambia de
+     * Es solo informativo: mientras estï¿½ en el congreso la pieza sigue
+     * vendible (allï¿½ mismo la pueden vender), no se bloquea ni cambia de
      * estado por esto.
      */
     public function congress(): BelongsTo
@@ -186,5 +189,60 @@ class ProductoSerial extends Model
         return $this->foto_path
             ? Storage::disk(config('filesystems.fotos_disk', 'public'))->url($this->foto_path)
             : null;
+    }
+
+    /** URLs de todas las fotos de evidencia de la entrada de esta unidad. */
+    public function evidenceUrls(): array
+    {
+        $disco = config('filesystems.fotos_disk', 'public');
+
+        return collect($this->evidence_paths ?? [])
+            ->map(fn (string $path) => Storage::disk($disco)->url($path))
+            ->all();
+    }
+
+    /** URL pÃºblica del video de entrada, si lo tiene. */
+    public function videoUrl(): ?string
+    {
+        return $this->video_path
+            ? Storage::disk(config('filesystems.fotos_disk', 'public'))->url($this->video_path)
+            : null;
+    }
+
+    /** Todas las fotos + el video como lista para la galerÃ­a. */
+    public function mediosGaleria(): array
+    {
+        $medios = [];
+
+        foreach ($this->evidenceUrls() as $url) {
+            $medios[] = ['tipo' => 'foto', 'url' => $url];
+        }
+
+        if ($this->videoUrl()) {
+            $medios[] = ['tipo' => 'video', 'url' => $this->videoUrl()];
+        }
+
+        return $medios;
+    }
+
+    /** Texto corto para el botÃ³n de evidencia. */
+    public function etiquetaEvidencia(): string
+    {
+        $fotos = count($this->evidence_paths ?? []);
+        $tieneVideo = (bool) $this->video_path;
+
+        if ($fotos === 0 && ! $tieneVideo) {
+            return 'Sin evidencia';
+        }
+
+        $partes = [];
+        if ($fotos > 0) {
+            $partes[] = $fotos.' '.($fotos === 1 ? 'foto' : 'fotos');
+        }
+        if ($tieneVideo) {
+            $partes[] = 'video';
+        }
+
+        return 'Ver evidencia ('.implode(' + ', $partes).')';
     }
 }

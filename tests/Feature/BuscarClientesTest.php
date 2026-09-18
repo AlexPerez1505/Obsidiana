@@ -51,4 +51,47 @@ class BuscarClientesTest extends TestCase
         $response->assertOk();
         $response->assertJsonCount(1);
     }
+
+    public function test_cada_usuario_solo_encuentra_sus_clientes_y_admin_los_encuentra_todos(): void
+    {
+        $propietario = User::factory()->create(['status' => User::STATUS_APPROVED, 'approved_at' => now()]);
+        $otro = User::factory()->create(['status' => User::STATUS_APPROVED, 'approved_at' => now()]);
+        $admin = User::factory()->create(['is_admin' => true, 'status' => User::STATUS_APPROVED, 'approved_at' => now()]);
+
+        $propio = Customer::create(['nombre' => 'Cliente Propio', 'apellido' => 'Uno', 'asesor_id' => $propietario->id]);
+        Customer::create(['nombre' => 'Cliente Ajeno', 'apellido' => 'Dos', 'asesor_id' => $otro->id]);
+        Customer::create(['nombre' => 'Cliente Admin', 'apellido' => 'Tres', 'asesor_id' => $admin->id]);
+
+        $this->assertEquals([$propio->id], Customer::visiblesPara($propietario)->pluck('id')->all());
+        $this->assertCount(3, Customer::visiblesPara($admin)->get());
+    }
+
+    public function test_un_usuario_no_puede_abrir_el_cliente_de_otro_por_url(): void
+    {
+        $propietario = User::factory()->create(['status' => User::STATUS_APPROVED, 'approved_at' => now()]);
+        $otro = User::factory()->create(['status' => User::STATUS_APPROVED, 'approved_at' => now()]);
+        $cliente = Customer::create(['nombre' => 'Cliente Privado', 'apellido' => 'Dos', 'asesor_id' => $propietario->id]);
+
+        $this->actingAs($otro)
+            ->get(route('commercial.clientes.show', $cliente))
+            ->assertForbidden();
+    }
+
+    public function test_registro_de_servicios_solo_muestra_clientes_propios(): void
+    {
+        $usuario = User::factory()->create(['status' => User::STATUS_APPROVED, 'approved_at' => now()]);
+        $otro = User::factory()->create(['status' => User::STATUS_APPROVED, 'approved_at' => now()]);
+        $admin = User::factory()->create(['is_admin' => true, 'status' => User::STATUS_APPROVED, 'approved_at' => now()]);
+
+        Customer::create(['nombre' => 'Visible Propio', 'apellido' => 'Uno', 'asesor_id' => $usuario->id]);
+        Customer::create(['nombre' => 'Oculto Ajeno', 'apellido' => 'Dos', 'asesor_id' => $otro->id]);
+        Customer::create(['nombre' => 'Oculto Admin', 'apellido' => 'Tres', 'asesor_id' => $admin->id]);
+
+        $this->actingAs($usuario)
+            ->get(route('gestion.servicios.registro'))
+            ->assertOk()
+            ->assertSee('Visible Propio')
+            ->assertDontSee('Oculto Ajeno')
+            ->assertDontSee('Oculto Admin');
+    }
 }

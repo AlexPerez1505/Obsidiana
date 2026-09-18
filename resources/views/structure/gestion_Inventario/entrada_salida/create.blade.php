@@ -387,16 +387,28 @@
 
             <x-ui.card>
                 <x-ui.section-title style="margin:0 0 6px;">Firma de quien registró la entrada *</x-ui.section-title>
-                <p class="campo-nota" style="margin:0 0 14px;">
-                    Firma con el mouse o el dedo para confirmar quién capturó esta entrada.
-                </p>
 
-                <canvas class="signature-box" id="signature-pad"></canvas>
+                @if (auth()->user()->tieneFirma())
+                    <p class="campo-nota" style="margin:0 0 14px;">
+                        Se cargó tu firma registrada. Puedes limpiarla y trazar una nueva si quieres.
+                    </p>
+                @else
+                    <p class="campo-nota" style="margin:0 0 14px;">
+                        Firma con el mouse o el dedo para confirmar quién capturó esta entrada.
+                        También puedes <a href="{{ route('profile.edit') }}">registrar tu firma</a> para que se cargue sola.
+                    </p>
+                @endif
+
+                <canvas class="signature-box" id="signature-pad"
+                    @if (auth()->user()->tieneFirma())
+                        data-firma-registrada="{{ auth()->user()->firmaDataUri() }}"
+                    @endif></canvas>
                 <p style="margin:10px 0 0;">
                     <a href="#" id="limpiar-firma" class="link" style="font-size:13px;">Limpiar firma</a>
                 </p>
 
-                <input type="hidden" name="firma" id="firma-input">
+                <input type="hidden" name="firma" id="firma-input"
+                       value="{{ old('firma', auth()->user()->tieneFirma() ? auth()->user()->firmaDataUri() : '') }}">
                 @error('firma')<p class="err">{{ $message }}</p>@enderror
             </x-ui.card>
         </section>

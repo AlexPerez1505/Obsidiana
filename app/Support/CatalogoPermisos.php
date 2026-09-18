@@ -42,6 +42,7 @@ class CatalogoPermisos
                 'descripcion' => 'Propuestas antes de cerrar la venta.',
                 'permisos' => [
                     'cotizaciones.ver' => 'Ver cotizaciones',
+                    'cotizaciones.ver_todas' => 'Ver cotizaciones de cualquier asesor',
                     'cotizaciones.crear' => 'Crear cotizaciones',
                     'cotizaciones.editar' => 'Editar cotizaciones',
                     'cotizaciones.eliminar' => 'Eliminar cotizaciones',
@@ -53,6 +54,7 @@ class CatalogoPermisos
                 'descripcion' => 'Cierre de venta, contratos y garantías.',
                 'permisos' => [
                     'ventas.ver' => 'Ver ventas',
+                    'ventas.ver_todas' => 'Ver ventas de cualquier asesor',
                     'ventas.crear' => 'Registrar ventas',
                     'ventas.editar' => 'Editar ventas ya registradas',
                     'ventas.eliminar' => 'Eliminar ventas',

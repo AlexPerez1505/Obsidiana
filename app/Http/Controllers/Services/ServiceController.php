@@ -81,7 +81,7 @@ class ServiceController extends Controller
     {
         abort_unless(auth()->user()->isAdmin() || auth()->user()->hasRole('mantenimiento'), 403);
 
-        $customers = Customer::with('asesor')->latest()->get();
+        $customers = Customer::visiblesPara(auth()->user())->with('asesor')->latest()->get();
         $equipmentTypes = \App\Models\EquipmentType::orderBy('name')->get();
         $brands = \App\Models\Brand::orderBy('name')->get();
         $destinatarios = User::whereHas('roles', fn ($q) => $q->where('name', 'mantenimiento_externo')->where('is_active', true))
@@ -97,7 +97,7 @@ class ServiceController extends Controller
         abort_unless(auth()->user()->isAdmin() || auth()->user()->hasRole('mantenimiento'), 403);
 
         $data = $request->validate([
-            'customer_id' => ['required', 'exists:clientes,id'],
+            'customer_id' => ['required', Customer::reglaVisiblePara($request->user())],
             'external_recipient_user_id' => ['required', 'exists:users,id'],
             'tipo_equipo' => ['required', 'string', 'max:255'],
             'subtipo' => ['nullable', 'string', 'max:255'],
@@ -228,7 +228,7 @@ class ServiceController extends Controller
     public function edit(Service $service)
     {
         $service->load(['customer', 'serviceEquipment', 'internalTechnician', 'externalTechnician']);
-        $customers = Customer::with('asesor')->latest()->get();
+        $customers = Customer::visiblesPara(auth()->user())->with('asesor')->latest()->get();
         $technicians = User::where('status', User::STATUS_APPROVED)->orderBy('name')->get();
         $statuses = ['registrado', 'pendiente', 'aprobado', 'en_progreso', 'completado', 'entregado', 'cancelado', 'rechazado'];
 
@@ -238,7 +238,7 @@ class ServiceController extends Controller
     public function update(Request $request, Service $service)
     {
         $validated = $request->validate([
-            'customer_id' => 'nullable|exists:clientes,id',
+            'customer_id' => ['nullable', Customer::reglaVisiblePara($request->user())],
             'internal_technician_id' => 'nullable|exists:users,id',
             'external_technician_id' => 'nullable|exists:external_technicians,id',
             'status' => 'nullable|string',
@@ -399,7 +399,7 @@ class ServiceController extends Controller
     private function persistService(Request $request, int $registeredBy): Service
     {
         $validated = $request->validate([
-            'customer_id' => 'nullable|exists:clientes,id',
+            'customer_id' => ['nullable', Customer::reglaVisiblePara($request->user())],
             'mantenimiento_externo' => 'nullable|in:0,1',
             'mantenimiento_interno' => 'nullable|in:0,1',
             'internal_technician_id' => 'nullable|exists:users,id',

@@ -187,6 +187,8 @@ class PromocionController extends Controller
      */
     private function resolverDestinatarios(Promocion $promocion)
     {
+        // Marketing segmenta sobre todo el directorio comercial (quienes
+        // dieron su consentimiento), sin importar quién registró al cliente.
         return Customer::query()
             ->where('recibe_promocion', true)
             ->where('activo', true)

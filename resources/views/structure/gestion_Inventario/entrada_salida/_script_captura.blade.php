@@ -335,6 +335,7 @@
         ========================================================== */
         const unidadesRows = document.getElementById('unidades-rows');
         const notaUnidades = form.querySelector('[data-nota-unidades]');
+        const unidadesIniciales = @json(old('unidades', []));
         let sugeridoBase = null;
 
         function incrementarSerial(base, delta) {
@@ -371,11 +372,13 @@
             for (let i = 0; i < cantidad; i++) {
                 const row = document.createElement('div');
                 row.className = 'unidad-row';
+                const inicial = unidadesIniciales[i] || {};
                 const sugerido = sugeridoBase ? incrementarSerial(sugeridoBase, i) : '';
+                const serie = (inicial.no_serie ?? sugerido).toString().replace(/"/g, '&quot;');
 
                 row.innerHTML = `
                     <span class="unidad-num">#${i + 1}</span>
-                    <input type="text" name="unidades[${i}][no_serie]" placeholder="No. de serie (opcional)" value="${sugerido}">
+                    <input type="text" name="unidades[${i}][no_serie]" placeholder="No. de serie (opcional)" value="${serie}">
                     <div>
                         <input type="file" name="unidades[${i}][foto]" accept="image/*" data-preview="foto-preview-${i}" ${fotoObligatoria ? 'required' : ''}>
                         <img id="foto-preview-${i}" class="unidad-foto-preview" alt="Vista previa">

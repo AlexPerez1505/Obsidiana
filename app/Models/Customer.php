@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Validation\Rules\Exists;
+use Illuminate\Validation\Rule;
 
 class Customer extends Model
 {
@@ -19,7 +21,7 @@ class Customer extends Model
      */
     public function scopeVisiblesPara(Builder $query, User $user): Builder
     {
-        if ($user->can('clientes.ver_todos')) {
+        if ($user->isAdmin()) {
             return $query;
         }
 
@@ -29,7 +31,18 @@ class Customer extends Model
     /** ¿Este cliente en particular le aparece a este usuario? */
     public function visiblePara(User $user): bool
     {
-        return $user->can('clientes.ver_todos') || (int) $this->asesor_id === (int) $user->id;
+        return $user->isAdmin() || (int) $this->asesor_id === (int) $user->id;
+    }
+
+    public static function reglaVisiblePara(User $user): Exists
+    {
+        $rule = Rule::exists('clientes', 'id');
+
+        if (! $user->isAdmin()) {
+            $rule->where('asesor_id', $user->id);
+        }
+
+        return $rule;
     }
 
     /**
@@ -55,7 +68,7 @@ class Customer extends Model
      *
      * @return array{motivo: string, cliente: Customer}|null
      */
-    public static function buscarSimilar(?string $telefono, ?string $correo, ?int $ignorarId = null): ?array
+    public static function buscarSimilar(?string $telefono, ?string $correo, ?int $ignorarId = null, ?User $user = null): ?array
     {
         $digitos = static::telefonoNormalizado($telefono);
 
@@ -63,6 +76,7 @@ class Customer extends Model
             // Se compara contra el teléfono guardado ya normalizado en SQL,
             // para que también pesque los que se capturaron con otro formato.
             $porTelefono = static::query()
+                ->when($user, fn ($q) => $q->visiblesPara($user))
                 ->when($ignorarId, fn ($q) => $q->whereKeyNot($ignorarId))
                 ->whereRaw(
                     strlen($digitos) >= 10
@@ -82,6 +96,7 @@ class Customer extends Model
 
         if ($correo !== '') {
             $porCorreo = static::query()
+                ->when($user, fn ($q) => $q->visiblesPara($user))
                 ->when($ignorarId, fn ($q) => $q->whereKeyNot($ignorarId))
                 ->whereRaw('LOWER(gmail) = ?', [$correo])
                 ->with(['asesor', 'category', 'congress'])

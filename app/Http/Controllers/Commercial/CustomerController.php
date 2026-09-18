@@ -28,7 +28,7 @@ class CustomerController extends Controller
 
         return view('structure.commercial_management.customers.menu_customers', [
             'customers' => $customers,
-            'veTodos' => $request->user()->can('clientes.ver_todos'),
+            'veTodos' => $request->user()->isAdmin(),
             // Todos los congresos del sistema, no solo los que ya tienen
             // clientes: así el filtro se ve completo desde el primer día.
             'congresos' => Congress::query()->orderBy('nombre')->pluck('nombre'),
@@ -46,7 +46,7 @@ class CustomerController extends Controller
             'customer' => $cliente->load(['asesor', 'category', 'congress', 'cotizaciones', 'seguimientos.responsable', 'seguimientos.hechoPor']),
             'tiposSeguimiento' => \App\Models\ClienteSeguimiento::TIPOS,
             // Solo quien ve a todos puede asignarle el seguimiento a otro.
-            'usuarios' => auth()->user()->can('clientes.ver_todos')
+            'usuarios' => auth()->user()->isAdmin()
                 ? \App\Models\User::orderBy('name')->get(['id', 'name'])
                 : collect(),
         ]);
@@ -196,7 +196,8 @@ class CustomerController extends Controller
         $similar = Customer::buscarSimilar(
             $request->input('telefono'),
             $request->input('gmail'),
-            $request->integer('ignorar') ?: null
+            $request->integer('ignorar') ?: null,
+            $request->user()
         );
 
         return response()->json([
@@ -211,7 +212,7 @@ class CustomerController extends Controller
      */
     private function detenerSiYaExiste(Request $request, ?Customer $ignorar = null): RedirectResponse|JsonResponse|null
     {
-        $similar = Customer::buscarSimilar($request->input('telefono'), $request->input('gmail'), $ignorar?->id);
+        $similar = Customer::buscarSimilar($request->input('telefono'), $request->input('gmail'), $ignorar?->id, $request->user());
 
         if (! $similar) {
             return null;

@@ -14,6 +14,16 @@
         .unidad-item .unidad-sin-foto { width:54px; height:54px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; text-align:center; }
         .producto-row { cursor:pointer; }
         .producto-row:hover { background:var(--surface-2); }
+        .evidencia-galeria { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+        .evidencia-thumb { display:flex; flex-direction:column; align-items:center; gap:3px; }
+        .evidencia-thumb img, .evidencia-thumb video { width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid var(--border); cursor:pointer; }
+        .evidencia-thumb span { font-size:10px; color:var(--muted); }
+        .galeria-overlay { position:fixed; inset:0; background:rgba(0,0,0,.8); display:none; align-items:center; justify-content:center; z-index:2000; padding:20px; }
+        .galeria-overlay.abierta { display:flex; }
+        .galeria-contenido { background:var(--surface); border-radius:12px; max-width:800px; width:100%; max-height:90vh; overflow-y:auto; padding:20px; position:relative; }
+        .galeria-cerrar { position:absolute; top:10px; right:14px; background:none; border:none; font-size:24px; cursor:pointer; color:var(--text); }
+        .galeria-media { text-align:center; margin-bottom:16px; }
+        .galeria-media img, .galeria-media video { max-width:100%; max-height:60vh; border-radius:8px; }
     </style>
 @endpush
 
@@ -148,14 +158,47 @@
 
                 @forelse ($producto->serialesDisponibles as $serial)
                     <div class="unidad-item">
-                        @if ($serial->fotoUrl())
-                            <img src="{{ $serial->fotoUrl() }}" alt="Foto de la unidad" onclick="window.open('{{ $serial->fotoUrl() }}', '_blank')">
-                        @else
-                            <div class="unidad-sin-foto">Sin foto</div>
-                        @endif
                         <div style="flex:1;">
                             <div style="font-weight:600; font-size:13.5px;">{{ $serial->no_serie ?: '— (sin serial capturado)' }}</div>
-                            <span class="badge badge--ok" style="font-size:11px;">Disponible</span>
+                            <div class="muted" style="font-size:11.5px; margin-bottom:6px;">
+                                {{ $serial->codigo ?: '—' }} · {{ trim($producto->marca.' '.$producto->modelo) ?: $producto->tipo_equipo }}
+                            </div>
+
+                            @php
+                                $evidencePaths = $serial->evidence_paths ?? [];
+                                $evidenceCount = count($evidencePaths);
+                                $hasVideo = (bool) $serial->video_path;
+                            @endphp
+
+                            @if ($evidenceCount > 0 || $hasVideo)
+                                @php $indiceGlobal = 0; @endphp
+                                <div class="evidencia-galeria">
+                                    @foreach ($evidencePaths as $index => $path)
+                                        @php $url = \Illuminate\Support\Facades\Storage::disk(config('filesystems.fotos_disk', 'public'))->url($path); @endphp
+                                        <div class="evidencia-thumb" data-indice="{{ $indiceGlobal }}" onclick="abrirGaleriaPorIndice(this)">
+                                            <img src="{{ $url }}" alt="Foto {{ $index + 1 }} de {{ $evidenceCount }}">
+                                            <span>Foto {{ $index + 1 }} de {{ $evidenceCount }}</span>
+                                        </div>
+                                        @php $indiceGlobal++; @endphp
+                                    @endforeach
+
+                                    @if ($hasVideo)
+                                        <div class="evidencia-thumb" data-indice="{{ $indiceGlobal }}" onclick="abrirGaleriaPorIndice(this)">
+                                            <video src="{{ $serial->videoUrl() }}" controls></video>
+                                            <span>Video de entrada</span>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <button type="button" class="btn btn--ghost btn--sm"
+                                        style="margin-top:6px; padding:4px 10px; font-size:12px;"
+                                        data-medios="{{ json_encode($serial->mediosGaleria()) }}"
+                                        onclick="abrirGaleria(this)">
+                                    {{ $serial->etiquetaEvidencia() }}
+                                </button>
+                            @else
+                                <p class="muted" style="margin:0; font-size:12px;">se registró sin evidencia de entrada</p>
+                            @endif
                         </div>
                     </div>
                 @empty
@@ -190,6 +233,66 @@
 
             const params = marcados.map(id => 'productos[]=' + encodeURIComponent(id)).join('&');
             window.location.href = @json(route('inventory.paquetes.create')) + '?' + params;
+        }
+    </script>
+
+    {{-- Modal de galería para ver todas las fotos y el video de una unidad --}}
+    <div id="galeria-overlay" class="galeria-overlay" onclick="if(event.target === this) cerrarGaleria()">
+        <div class="galeria-contenido">
+            <button type="button" class="galeria-cerrar" onclick="cerrarGaleria()">&times;</button>
+            <div id="galeria-body"></div>
+        </div>
+    </div>
+
+    <script>
+        function abrirGaleria(boton) {
+            const medios = JSON.parse(boton.dataset.medios || '[]');
+            mostrarMedios(medios, 0);
+        }
+
+        function abrirGaleriaPorIndice(thumb) {
+            const item = thumb.closest('.unidad-item');
+            const boton = item ? item.querySelector('[data-medios]') : null;
+            if (! boton) return;
+
+            const medios = JSON.parse(boton.dataset.medios || '[]');
+            const indice = parseInt(thumb.dataset.indice || '0', 10);
+            mostrarMedios(medios, indice);
+        }
+
+        function mostrarMedios(medios, indiceInicial) {
+            const body = document.getElementById('galeria-body');
+            body.innerHTML = '';
+
+            if (medios.length === 0) {
+                body.innerHTML = '<p class="muted">No hay evidencia para mostrar.</p>';
+            } else {
+                medios.forEach(function (medio, i) {
+                    const item = document.createElement('div');
+                    item.className = 'galeria-media';
+                    if (i === indiceInicial) item.id = 'galeria-activo';
+
+                    if (medio.tipo === 'video') {
+                        item.innerHTML = '<video src="' + medio.url + '" controls style="max-width:100%; max-height:60vh;"></video><div class="muted" style="margin-top:6px;">Video de entrada</div>';
+                    } else {
+                        const num = i + 1;
+                        item.innerHTML = '<img src="' + medio.url + '" alt="Foto ' + num + '"><div class="muted" style="margin-top:6px;">Foto ' + num + '</div>';
+                    }
+
+                    body.appendChild(item);
+                });
+
+                setTimeout(function () {
+                    const activo = document.getElementById('galeria-activo');
+                    if (activo) activo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 0);
+            }
+
+            document.getElementById('galeria-overlay').classList.add('abierta');
+        }
+
+        function cerrarGaleria() {
+            document.getElementById('galeria-overlay').classList.remove('abierta');
         }
     </script>
 

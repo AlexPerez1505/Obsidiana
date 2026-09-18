@@ -265,7 +265,7 @@ class DashboardWidgets
         $filas = self::filasQueCaben($h);
 
         $datos = match ($id) {
-            'clientes' => self::datosClientes($nivel, $filas),
+            'clientes' => self::datosClientes($user, $nivel, $filas),
             // Cotizaciones y ventas respetan el permiso de "ver todas": quien
             // no lo tiene ve en el tablero solo sus propios números.
             'cotizaciones' => self::datosCotizaciones($user, $nivel, $filas),
@@ -274,7 +274,7 @@ class DashboardWidgets
             'facturas' => self::datosFacturas($nivel, $filas),
             'ventas_grafica' => self::datosVentasGrafica($user, $nivel),
             'ultimas_cotizaciones' => self::datosUltimasCotizaciones($user, $filas),
-            'ultimos_clientes' => self::datosUltimosClientes($filas),
+            'ultimos_clientes' => self::datosUltimosClientes($user, $filas),
             'mis_tareas' => self::datosMisTareas($user, $filas),
             'flyers_pendientes' => self::datosFlyersPendientes($filas),
             'calendario_marketing' => self::datosCalendarioMarketing($filas),
@@ -287,22 +287,23 @@ class DashboardWidgets
 
     // ===================== Cálculos =====================
 
-    private static function datosClientes(int $nivel, int $filas): array
+    private static function datosClientes(User $user, int $nivel, int $filas): array
     {
+        $query = Customer::visiblesPara($user);
         $datos = [
-            'total' => Customer::count(),
-            'nuevos' => Customer::where('created_at', '>=', now()->startOfMonth())->count(),
-            'inactivos' => Customer::where('activo', false)->count(),
+            'total' => (clone $query)->count(),
+            'nuevos' => (clone $query)->where('created_at', '>=', now()->startOfMonth())->count(),
+            'inactivos' => (clone $query)->where('activo', false)->count(),
         ];
 
         if ($nivel >= 2) {
-            $datos['activos'] = Customer::where('activo', true)->count();
-            $datos['con_promocion'] = Customer::where('recibe_promocion', true)->count();
+            $datos['activos'] = (clone $query)->where('activo', true)->count();
+            $datos['con_promocion'] = (clone $query)->where('recibe_promocion', true)->count();
         }
 
         if ($nivel >= 3) {
             // Desglose por categoria, para que la tarjeta amplia diga algo mas.
-            $datos['tabla'] = Customer::selectRaw('categoria_id, COUNT(*) as total')
+            $datos['tabla'] = (clone $query)->selectRaw('categoria_id, COUNT(*) as total')
                 ->groupBy('categoria_id')
                 ->orderByDesc('total')
                 ->limit($filas)
@@ -479,10 +480,10 @@ class DashboardWidgets
         ];
     }
 
-    private static function datosUltimosClientes(int $filas): array
+    private static function datosUltimosClientes(User $user, int $filas): array
     {
         return [
-            'filas' => Customer::with('asesor')->latest()->limit($filas)->get(),
+            'filas' => Customer::visiblesPara($user)->with('asesor')->latest()->limit($filas)->get(),
         ];
     }
 

@@ -66,7 +66,7 @@ class VentaController extends Controller
                 ->find($request->integer('cotizacion'));
             $clientePre = $origen?->customer;
         } elseif ($request->filled('cliente')) {
-            $clientePre = Customer::find($request->integer('cliente'));
+            $clientePre = Customer::visiblesPara($request->user())->find($request->integer('cliente'));
         }
 
         $initial = DocumentoInitial::build($origen, $clientePre);
@@ -514,7 +514,7 @@ class VentaController extends Controller
     private function validar(Request $request): array
     {
         return $request->validate([
-            'customer_id' => ['required', 'exists:clientes,id'],
+            'customer_id' => ['required', Customer::reglaVisiblePara($request->user())],
             'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
             'nota_cliente' => ['nullable', 'string'],
             'modalidad' => ['required', 'in:contado,financiamiento'],

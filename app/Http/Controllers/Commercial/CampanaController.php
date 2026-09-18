@@ -37,7 +37,8 @@ class CampanaController extends Controller
         return view('structure.commercial_management.promociones.campanas.crear', [
             'categorias' => Category::query()->orderBy('nombre')->get(),
             'congresos' => Congress::query()->latest()->get(),
-            'totalConfirmados' => Customer::whereNotNull('promocion_confirmada_en')->whereNull('promocion_revocada_en')->count(),
+            // Marketing segmenta sobre todo el directorio comercial.
+            'totalConfirmados' => Customer::query()->whereNotNull('promocion_confirmada_en')->whereNull('promocion_revocada_en')->count(),
         ]);
     }
 
@@ -73,7 +74,11 @@ class CampanaController extends Controller
             'campana' => $campana,
             'resumen' => $campana->resumenEnvios(),
             'audienciaCalculada' => $campana->puedeLanzarse() ? $this->audienciaDe($campana)->count() : null,
-            'destinatarios' => $campana->destinatarios()->with('cliente')->latest()->paginate(30),
+            // Marketing revisa envíos sobre todo el directorio comercial.
+            'destinatarios' => $campana->destinatarios()
+                ->with('cliente')
+                ->latest()
+                ->paginate(30),
         ]);
     }
 
@@ -132,6 +137,7 @@ class CampanaController extends Controller
     {
         $filtros = $campana->filtros ?? [];
 
+        // Marketing segmenta sobre todo el directorio comercial.
         return Customer::query()
             ->whereNotNull('promocion_confirmada_en')
             ->whereNull('promocion_revocada_en')

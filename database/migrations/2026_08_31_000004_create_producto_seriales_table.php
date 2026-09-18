@@ -37,14 +37,9 @@ return new class extends Migration
 
         $this->migrarDatosExistentes();
 
-        // pieza_procesos (2026_08_29_000012) se crea antes que esta tabla:
-        // su FK no pudo declararse allá, se agrega aquí.
-        if (Schema::hasTable('pieza_procesos')) {
-            Schema::table('pieza_procesos', function (Blueprint $table) {
-                $table->foreign('producto_serial_id')
-                    ->references('id')->on('producto_seriales')->cascadeOnDelete();
-            });
-        }
+        // pieza_procesos ahora se crea en 2026_08_31_000011 con su FK ya
+        // declarada, después de que esta tabla existe. No hace falta
+        // agregarla condicionalmente aquí.
 
         // Mismo criterio que 2026_08_29_000009 para las piezas migradas.
         \Illuminate\Support\Facades\DB::table('producto_seriales')->whereNull('codigo')->orderBy('id')->each(function ($fila) {

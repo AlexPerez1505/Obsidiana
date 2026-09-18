@@ -96,7 +96,7 @@ class AgendaController extends Controller
             'calendar' => $calendar,
             'upcoming' => $upcoming,
             'month' => $month,
-            'monthLabel' => ucfirst($month->translatedFormat('F Y')),
+            'monthLabel' => ucfirst($month->locale('es')->translatedFormat('F Y')),
             'prevMonth' => $month->copy()->subMonth()->format('Y-m'),
             'nextMonth' => $month->copy()->addMonth()->format('Y-m'),
             'currentMonth' => now()->format('Y-m'),

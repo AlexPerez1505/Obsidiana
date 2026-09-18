@@ -31,7 +31,7 @@ class SeguimientoController extends Controller
 
         // Solo quien ve a todos los clientes puede asignarle el seguimiento
         // a otra persona; los demás se lo programan a sí mismos.
-        $responsable = $request->user()->can('clientes.ver_todos') && ! empty($data['user_id'])
+        $responsable = $request->user()->isAdmin() && ! empty($data['user_id'])
             ? (int) $data['user_id']
             : $request->user()->id;
 

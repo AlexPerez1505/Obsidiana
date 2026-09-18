@@ -51,7 +51,7 @@ class CotizacionController extends Controller
             'cotizacion' => null,
             'congresos' => Congress::orderBy('nombre')->get(),
             'clientePre' => $request->filled('cliente')
-                ? Customer::find($request->integer('cliente'))
+                ? Customer::visiblesPara($request->user())->find($request->integer('cliente'))
                 : null,
         ]);
     }
@@ -290,7 +290,7 @@ class CotizacionController extends Controller
     private function validar(Request $request): array
     {
         return $request->validate([
-            'customer_id' => ['required', 'exists:clientes,id'],
+            'customer_id' => ['required', Customer::reglaVisiblePara($request->user())],
             'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
             'nota_cliente' => ['nullable', 'string'],
             'modalidad' => ['required', 'in:contado,financiamiento'],
