@@ -13,11 +13,24 @@
     if (request()->query('date')) {
         $refDate = Carbon::parse(request()->query('date'));
     } elseif (request()->query('month') || request()->query('year')) {
-        $refDate = Carbon::createFromDate(
-            (int) request()->query('year', now()->year),
-            (int) request()->query('month', now()->month),
-            1
-        );
+        $mesParam = (string) request()->query('month', '');
+
+        /*
+        | El calendario navega con ?date=…, pero los redirects del
+        | controlador (crear/editar/borrar cita) llegan con ?month=AAAA-MM.
+        | Antes se tomaba como número de mes y "2026-09" tronaba la página.
+        */
+        try {
+            $refDate = str_contains($mesParam, '-')
+                ? Carbon::parse($mesParam.'-01')->startOfMonth()
+                : Carbon::createFromDate(
+                    (int) request()->query('year', now()->year),
+                    (int) ($mesParam !== '' ? $mesParam : now()->month),
+                    1
+                );
+        } catch (\Throwable) {
+            $refDate = now();
+        }
     } else {
         $refDate = now();
     }

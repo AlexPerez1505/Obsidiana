@@ -235,9 +235,9 @@
                             <div class="cgx-detalle-meta">
                                 <span>
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                                    {{ $congress->fecha_inicio->format('d \d\e F \d\e Y') }}
+                                    {{ $congress->fecha_inicio->locale('es')->translatedFormat('d \d\e F \d\e Y') }}
                                     @if (! $congress->fecha_inicio->isSameDay($congress->fecha_finalizacion))
-                                        – {{ $congress->fecha_finalizacion->format('d \d\e F \d\e Y') }}
+                                        – {{ $congress->fecha_finalizacion->locale('es')->translatedFormat('d \d\e F \d\e Y') }}
                                     @endif
                                 </span>
                                 @if ($congress->lugar)
