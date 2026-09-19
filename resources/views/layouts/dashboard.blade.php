@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @auth<meta name="acceso-firma" content="{{ auth()->user()->firmaAcceso() }}">@endauth
     <title>@yield('title', 'Panel') · {{ config('app.name') }}</title>
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
 
@@ -1207,5 +1208,39 @@
 </script>
 
 @stack('scripts')
+    {{-- Auto-refresco de permisos: si cambia el acceso del usuario (permisos,
+         rol admin o estatus), la pagina se recarga sola sin dar refresh. --}}
+    @auth
+    <script>
+    (function () {
+        var meta = document.querySelector('meta[name="acceso-firma"]');
+        if (!meta) return;
+        var firmaInicial = meta.getAttribute('content');
+        var url = @json(route('api.mi_acceso'));
+        var recargando = false;
+        function recargar() {
+            if (recargando) return;
+            recargando = true;
+            window.location.reload();
+        }
+        function revisar() {
+            fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                .then(function (r) {
+                    if (r.status === 401 || r.status === 419) { recargar(); return null; }
+                    if (!r.ok) return null;
+                    return r.json();
+                })
+                .then(function (d) {
+                    if (d && d.firma && d.firma !== firmaInicial) { recargar(); }
+                })
+                .catch(function () { /* red intermitente: se reintenta en el proximo ciclo */ });
+        }
+        setInterval(revisar, 15000);
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') revisar();
+        });
+    })();
+    </script>
+    @endauth
 </body>
 </html>

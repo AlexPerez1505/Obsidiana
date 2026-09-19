@@ -35,3 +35,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/perfil/firma', [ProfileController::class, 'updateFirma'])->name('profile.firma.store');
     Route::delete('/perfil/firma', [ProfileController::class, 'destroyFirma'])->name('profile.firma.destroy');
 });
+
+// Firma de acceso para el auto-refresco de permisos. Va solo con 'auth'
+// (sin 'approved') para que tambien detecte baneos/cambios de estatus y el
+// navegador recargue solo, sin que el usuario tenga que dar refresh.
+Route::middleware('auth')->get('/api/mi-acceso', function () {
+    return response()->json(['firma' => auth()->user()->firmaAcceso()]);
+})->name('api.mi_acceso');

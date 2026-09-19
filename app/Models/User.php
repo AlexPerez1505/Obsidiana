@@ -450,6 +450,21 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->memoEsAdmin = null;
     }
 
+    /**
+     * Firma del acceso del usuario. Cambia cuando cambian sus permisos,
+     * su rol de administrador o su estatus (aprobado/baneado). El navegador
+     * la compara cada pocos segundos y recarga solo cuando de verdad cambió
+     * algo, para que no tenga que dar refresh a mano.
+     */
+    public function firmaAcceso(): string
+    {
+        return md5(json_encode([
+            'admin'  => $this->isAdmin(),
+            'status' => $this->status,
+            'perms'  => $this->permisosEfectivos()->sort()->values()->all(),
+        ]));
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Firma registrada
