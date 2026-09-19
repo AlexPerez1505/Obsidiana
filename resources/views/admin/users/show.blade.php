@@ -344,6 +344,7 @@
             </div>
 
             <div class="emp-sidebar-actions">
+                @can('usuarios.aprobar')
                 @if ($user->isPending())
                     <form method="POST" action="{{ route('admin.users.approve', $user) }}">
                         @csrf
@@ -371,12 +372,16 @@
                         </button>
                     </form>
                 @endif
+                @endcan
 
+                @can('usuarios.editar')
                 <a href="{{ route('admin.users.permissions', $user) }}" class="btn-ghost">
                     <x-gravityui-star width="16" height="16" />
                     Administrar permisos
                 </a>
+                @endcan
 
+                @if(auth()->user()?->isAdmin())
                 <form method="POST" action="{{ route('admin.users.toggleAdmin', $user) }}">
                     @csrf
                     <button type="submit" class="btn-ghost">
@@ -384,6 +389,7 @@
                         {{ $user->is_admin ? 'Quitar admin' : 'Hacer admin' }}
                     </button>
                 </form>
+                @endif
             </div>
         </aside>
 

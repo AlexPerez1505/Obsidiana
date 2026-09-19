@@ -802,6 +802,7 @@
                         <span class="nav-label">Usuarios</span>
                     </a>
                     @endcan
+                    @if(auth()->user()?->isAdmin())
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.vehicles.*') ? 'active' : '' }}" href="{{ route('admin.vehicles.index') }}" data-tip="Vehículos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Vehículos</span>
@@ -810,6 +811,7 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Viáticos</span>
                     </a>
+                    @endif
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.materials.*') ? 'active' : '' }}" href="{{ route('admin.materials.index') }}" data-tip="Materiales">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Materiales</span>
@@ -1220,11 +1222,20 @@
         var recargando = false;
         function recargar() {
             if (recargando) return;
+            // Candado anti-bucle: nunca recargar dos veces en menos de 8s.
+            try {
+                var ultimo = parseInt(sessionStorage.getItem('acceso_reload_at') || '0', 10);
+                if (Date.now() - ultimo < 8000) return;
+                sessionStorage.setItem('acceso_reload_at', String(Date.now()));
+            } catch (e) {}
             recargando = true;
             window.location.reload();
         }
+        var enVuelo = false;
         function revisar() {
-            fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+            if (enVuelo || recargando) return;      // no encimar peticiones
+            enVuelo = true;
+            fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin', cache: 'no-store' })
                 .then(function (r) {
                     if (r.status === 401 || r.status === 419) { recargar(); return null; }
                     if (!r.ok) return null;
@@ -1233,9 +1244,12 @@
                 .then(function (d) {
                     if (d && d.firma && d.firma !== firmaInicial) { recargar(); }
                 })
-                .catch(function () { /* red intermitente: se reintenta en el proximo ciclo */ });
+                .catch(function () { /* red intermitente: se reintenta en el proximo ciclo */ })
+                .finally(function () { enVuelo = false; });
         }
-        setInterval(revisar, 15000);
+        // Sondeo frecuente (casi al instante) pero silencioso: solo recarga
+        // cuando la firma cambia de verdad, no en cada ciclo.
+        setInterval(revisar, 3000);
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState === 'visible') revisar();
         });

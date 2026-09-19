@@ -24,10 +24,12 @@
         </a>
 
         {{-- Abre el mismo modal, ya con este usuario seleccionado. --}}
+        @can('usuarios.editar')
         <button type="button" role="menuitem" data-abrir-rh data-usuario="{{ $u->id }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
             Editar datos y roles
         </button>
+        @endcan
 
         {{--
             Aquí iba un enlace a la pantalla vieja de permisos por usuario
@@ -37,6 +39,7 @@
             asignan en el modal de arriba.
         --}}
 
+        @can('usuarios.aprobar')
         @if ($u->isPending())
             <form method="POST" action="{{ route('admin.users.approve', $u) }}">
                 @csrf
@@ -65,5 +68,6 @@
                 </button>
             </form>
         @endif
+        @endcan
     </div>
 </div>
