@@ -16,13 +16,13 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             'totalSubtypes' => \App\Models\Refaccion::distinct('subtype')->count('subtype'),
             'totalCompatible' => \App\Models\Refaccion::whereNotNull('compatible_with')->where('compatible_with', '!=', '')->count(),
         ]);
-    })->name('configuracion.refaciones.index');
+    })->middleware('can:inventario.ver')->name('configuracion.refaciones.index');
 
     Route::get('/configuracion/refaciones/crear', function () {
         return view('structure.Configuracion.refaciones.c_refaciones', [
             'subtypes' => \App\Models\Subtype::orderBy('name')->pluck('name'),
         ]);
-    })->name('configuracion.refaciones.create');
+    })->middleware('can:inventario.registrar')->name('configuracion.refaciones.create');
 
     Route::post('/configuracion/refaciones', function (\Illuminate\Http\Request $request) {
         $data = $request->validate([
@@ -43,12 +43,12 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
         return redirect()->route('configuracion.refaciones.index')
             ->with('status', 'Refacción guardada correctamente.');
-    })->name('configuracion.refaciones.store');
+    })->middleware('can:inventario.registrar')->name('configuracion.refaciones.store');
 
     Route::delete('/configuracion/refaciones/{refaccion}', function (\App\Models\Refaccion $refaccion) {
         $refaccion->delete();
 
         return redirect()->route('configuracion.refaciones.index')
             ->with('status', 'Refacción eliminada correctamente.');
-    })->name('configuracion.refaciones.destroy');
+    })->middleware('can:inventario.eliminar')->name('configuracion.refaciones.destroy');
 });

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 | Panorama de cobranza (todas las ventas)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'verified', 'approved'])
+Route::middleware(['auth', 'verified', 'approved', 'can:cobranza.ver'])
     ->get('/gestion-comercial/cobranza', [CobranzaController::class, 'index'])
     ->name('commercial.cobranza.index');
 
@@ -43,9 +43,9 @@ Route::middleware(['auth', 'verified', 'approved'])
     ->prefix('gestion-comercial/ventas')
     ->name('commercial.ventas.')
     ->group(function () {
-        Route::get('/', [VentaController::class, 'index'])->name('index');
-        Route::get('/crear', [VentaController::class, 'create'])->name('create');
-        Route::post('/', [VentaController::class, 'store'])->name('store');
+        Route::get('/', [VentaController::class, 'index'])->middleware('can:ventas.ver')->name('index');
+        Route::get('/crear', [VentaController::class, 'create'])->middleware('can:ventas.crear')->name('create');
+        Route::post('/', [VentaController::class, 'store'])->middleware('can:ventas.crear')->name('store');
 
         /*
         |------------------------------------------------------------------
@@ -60,17 +60,17 @@ Route::middleware(['auth', 'verified', 'approved'])
             Route::post('/', [VentaRapidaController::class, 'store'])->name('store');
         });
 
-        Route::get('/{venta}', [VentaController::class, 'show'])->name('show');
-        Route::get('/{venta}/editar', [VentaController::class, 'edit'])->name('edit');
-        Route::put('/{venta}', [VentaController::class, 'update'])->name('update');
-        Route::delete('/{venta}', [VentaController::class, 'destroy'])->name('destroy');
+        Route::get('/{venta}', [VentaController::class, 'show'])->middleware('can:ventas.ver')->name('show');
+        Route::get('/{venta}/editar', [VentaController::class, 'edit'])->middleware('can:ventas.editar')->name('edit');
+        Route::put('/{venta}', [VentaController::class, 'update'])->middleware('can:ventas.editar')->name('update');
+        Route::delete('/{venta}', [VentaController::class, 'destroy'])->middleware('can:ventas.eliminar')->name('destroy');
         // Cancelar no borra: la venta queda como cancelada con su historial.
-        Route::post('/{venta}/cancelar', [VentaController::class, 'cancelar'])->name('cancelar');
-        Route::get('/{venta}/pdf', [VentaController::class, 'pdf'])->name('pdf');
+        Route::post('/{venta}/cancelar', [VentaController::class, 'cancelar'])->middleware('can:ventas.editar')->name('cancelar');
+        Route::get('/{venta}/pdf', [VentaController::class, 'pdf'])->middleware('can:ventas.ver')->name('pdf');
 
         // Documentos que se entregan junto con el equipo
-        Route::get('/{venta}/contrato', [VentaController::class, 'contrato'])->name('contrato');
-        Route::get('/{venta}/carta-garantia', [VentaController::class, 'garantia'])->name('garantia');
+        Route::get('/{venta}/contrato', [VentaController::class, 'contrato'])->middleware('can:ventas.ver')->name('contrato');
+        Route::get('/{venta}/carta-garantia', [VentaController::class, 'garantia'])->middleware('can:ventas.ver')->name('garantia');
 
         /*
         |------------------------------------------------------------------
@@ -78,17 +78,17 @@ Route::middleware(['auth', 'verified', 'approved'])
         |------------------------------------------------------------------
         */
         Route::prefix('/{venta}/cobranza')->name('cobros.')->group(function () {
-            Route::get('/', [CobroController::class, 'index'])->name('index');
-            Route::post('/', [CobroController::class, 'store'])->name('store');
-            Route::delete('/{cobro}', [CobroController::class, 'destroy'])->name('destroy');
-            Route::get('/{cobro}/recibo', [CobroController::class, 'recibo'])->name('recibo');
+            Route::get('/', [CobroController::class, 'index'])->middleware('can:cobranza.ver')->name('index');
+            Route::post('/', [CobroController::class, 'store'])->middleware('can:cobranza.registrar')->name('store');
+            Route::delete('/{cobro}', [CobroController::class, 'destroy'])->middleware('can:cobranza.registrar')->name('destroy');
+            Route::get('/{cobro}/recibo', [CobroController::class, 'recibo'])->middleware('can:cobranza.ver')->name('recibo');
 
             // Ajustes al plan
-            Route::post('/recorrer', [CobroController::class, 'recorrer'])->name('recorrer');
-            Route::post('/rebalancear', [CobroController::class, 'rebalancear'])->name('rebalancear');
-            Route::post('/absorber-excedente', [CobroController::class, 'absorberExcedente'])->name('absorber-excedente');
-            Route::post('/parcialidad', [CobroController::class, 'agregarParcialidad'])->name('parcialidad.agregar');
-            Route::put('/parcialidad/{pago}', [CobroController::class, 'actualizarParcialidad'])->name('parcialidad.actualizar');
-            Route::delete('/parcialidad/{pago}', [CobroController::class, 'eliminarParcialidad'])->name('parcialidad.eliminar');
+            Route::post('/recorrer', [CobroController::class, 'recorrer'])->middleware('can:cobranza.ajustar')->name('recorrer');
+            Route::post('/rebalancear', [CobroController::class, 'rebalancear'])->middleware('can:cobranza.ajustar')->name('rebalancear');
+            Route::post('/absorber-excedente', [CobroController::class, 'absorberExcedente'])->middleware('can:cobranza.ajustar')->name('absorber-excedente');
+            Route::post('/parcialidad', [CobroController::class, 'agregarParcialidad'])->middleware('can:cobranza.ajustar')->name('parcialidad.agregar');
+            Route::put('/parcialidad/{pago}', [CobroController::class, 'actualizarParcialidad'])->middleware('can:cobranza.ajustar')->name('parcialidad.actualizar');
+            Route::delete('/parcialidad/{pago}', [CobroController::class, 'eliminarParcialidad'])->middleware('can:cobranza.ajustar')->name('parcialidad.eliminar');
         });
     });

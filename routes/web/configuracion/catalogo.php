@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 | Catálogo (categorías, tipos de equipo, etc.)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'verified', 'approved'])->group(function () {
+Route::middleware(['auth', 'verified', 'approved', 'can:inventario.catalogo'])->group(function () {
     Route::get('/configuracion/catalogos', [CategoryController::class, 'index'])
         ->name('configuracion.catalogos.index');
 

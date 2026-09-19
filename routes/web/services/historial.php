@@ -16,7 +16,7 @@ use App\Models\GarantiaDocumento;
 use App\Models\User;
 use App\Models\Venta;
 
-Route::middleware(['auth', 'verified', 'approved'])->group(function () {
+Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(function () {
     Route::get('/gestion-servicios/historial-servicios', function () {
         $services = Service::with(['customer', 'currentStep'])->latest()->get();
         return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('services'));
@@ -42,12 +42,12 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         })->orderBy('name')->get();
 
         return view('structure.gestion_servicios.historial_servicios.registro_servicio.c_registro_serv', compact('customers', 'equipmentTypes', 'brands', 'equipos', 'externalTechnicians', 'internalTechnicians'));
-    })->name('gestion.servicios.historial.nueva_orden');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.historial.nueva_orden');
 
     Route::post('/gestion-servicios/historial-servicios/nueva-orden', [ServiceController::class, 'store'])
-        ->name('gestion.servicios.historial.nueva_orden.store');
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.nueva_orden.store');
     Route::get('/gestion-servicios/historial-servicios/invitar', [ServiceController::class, 'invite'])
-        ->name('gestion.servicios.historial.invite');
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.invite');
     Route::get('/gestion-servicios/historial-servicios/aprobaciones', function () {
         $services = Service::where('status', 'registrado')
             ->with(['customer', 'currentStep'])
@@ -64,11 +64,11 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'show'])
         ->name('gestion.servicios.historial.show');
     Route::post('/gestion-servicios/historial-servicios/{service}/aprobar', [ServiceController::class, 'approve'])
-        ->name('gestion.servicios.historial.approve');
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.approve');
     Route::post('/gestion-servicios/historial-servicios/{service}/denegar', [ServiceController::class, 'deny'])
-        ->name('gestion.servicios.historial.deny');
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.deny');
     Route::post('/gestion-servicios/historial-servicios/{service}/renovar-qr', [QrController::class, 'renew'])
-        ->name('qr.renew');
+        ->middleware('can:servicios.crear')->name('qr.renew');
 
     Route::post('/gestion-servicios/historial-servicios/nueva-orden/external-technicians', function (Request $request) {
         $data = $request->validate([
@@ -100,7 +100,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         }
 
         return back();
-    })->name('gestion.servicios.historial.external_technicians.store');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.historial.external_technicians.store');
 
     Route::get('/gestion-servicios/garantia', function () {
         $documentos = GarantiaDocumento::latest()->get();
@@ -110,7 +110,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-servicios/garantia/agregar-carta', function () {
         $equipmentTypes = EquipmentType::orderBy('name')->get();
         return view('structure.gestion_servicios.garantia.create', compact('equipmentTypes'));
-    })->name('gestion.servicios.garantia.agregar_carta');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.agregar_carta');
 
     Route::post('/gestion-servicios/garantia/agregar-carta', function (Request $request) {
         $data = $request->validate([
@@ -140,7 +140,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ]);
 
         return redirect()->route('gestion.servicios.garantia.index')->with('success', 'Carta agregada correctamente.');
-    })->name('gestion.servicios.garantia.guardar_carta');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.guardar_carta');
 
     Route::get('/gestion-servicios/mantenimiento', function () {
         $internalTechnicians = User::where('status', User::STATUS_APPROVED)
@@ -365,7 +365,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ])->save();
 
         return response()->json(['ok' => true]);
-    })->name('gestion.servicios.mantenimiento.reporte.guardar');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.mantenimiento.reporte.guardar');
 });
 
 Route::get('/nueva-orden/{invitation}', [ServiceController::class, 'createFromInvitation'])

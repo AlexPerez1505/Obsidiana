@@ -639,40 +639,48 @@
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
+                    @can('clientes.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.clientes.index') ? 'active' : '' }}" href="{{ route('commercial.clientes.index') }}" data-tip="Clientes">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Clientes</span>
                     </a>
+                    @endcan
                     @can('cotizaciones.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.cotizaciones.*') ? 'active' : '' }}" href="{{ route('commercial.cotizaciones.index') }}" data-tip="Cotizaciones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cotizaciones</span>
                     </a>
                     @endcan
+                    @can('ventas.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.ventas.*') && ! request()->routeIs('commercial.ventas.rapida.*') ? 'active' : '' }}" href="{{ route('commercial.ventas.index') }}" data-tip="Ventas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Ventas</span>
                     </a>
+                    @endcan
                     @can('ventas.crear')
                         <a class="nav-item nav-sub {{ request()->routeIs('commercial.ventas.rapida.*') ? 'active' : '' }}" href="{{ route('commercial.ventas.rapida.index') }}" data-tip="Venta rápida">
                             <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                             <span class="nav-label">Venta rápida</span>
                         </a>
                     @endcan
+                    @can('cobranza.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.cobranza.*') ? 'active' : '' }}" href="{{ route('commercial.cobranza.index') }}" data-tip="Cobranza">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cobranza</span>
                     </a>
+                    @endcan
                     @can('comisiones.ver')
                         <a class="nav-item nav-sub {{ request()->routeIs('commercial.comisiones.*') ? 'active' : '' }}" href="{{ route('commercial.comisiones.index') }}" data-tip="Comisiones">
                             <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                             <span class="nav-label">Comisiones</span>
                         </a>
                     @endcan
+                    @can('facturacion.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.facturas.*') ? 'active' : '' }}" href="{{ route('commercial.facturas.index') }}" data-tip="Facturación">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Facturación</span>
                     </a>
+                    @endcan
                     <a class="nav-item nav-sub" href="#" data-tip="Promociones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Promociones</span>
@@ -686,40 +694,54 @@
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
+                    @can('inventario.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.movimientos.*') ? 'active' : '' }}" href="{{ route('inventory.movimientos.index') }}" data-tip="Entrada / Salida">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Entrada / Salida</span>
                     </a>
+                    @endcan
                     @can('salidas.ver')
                         <a class="nav-item nav-sub {{ request()->routeIs('inventory.salidas.*') ? 'active' : '' }}" href="{{ route('inventory.salidas.index') }}" data-tip="Órdenes de salida">
                             <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                             <span class="nav-label">Órdenes de salida</span>
                         </a>
                     @endcan
+                    @can('procesos.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.procesos.*') ? 'active' : '' }}" href="{{ route('inventory.procesos.index') }}" data-tip="Procesos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Procesos</span>
                     </a>
+                    @endcan
+                    @can('inventario.escanear')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.escaneo.*') ? 'active' : '' }}" href="{{ route('inventory.escaneo.index') }}" data-tip="Escanear">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Escanear</span>
                     </a>
+                    @endcan
+                    @can('inventario.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.productos.*') ? 'active' : '' }}" href="{{ route('inventory.productos.index') }}" data-tip="Productos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Productos</span>
                     </a>
+                    @endcan
+                    @can('inventario.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.fichas.*') ? 'active' : '' }}" href="{{ route('inventory.fichas.index') }}" data-tip="Fichas técnicas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Fichas técnicas</span>
                     </a>
+                    @endcan
+                    @can('congresos.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.congresos.*') ? 'active' : '' }}" href="{{ route('inventory.congresos.index') }}" data-tip="Congresos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Congresos</span>
                     </a>
+                    @endcan
+                    @can('inventario.catalogo')
                     <a class="nav-item nav-sub {{ request()->routeIs('configuracion.catalogos.*') ? 'active' : '' }}" href="{{ route('configuracion.catalogos.index') }}" data-tip="Catálogo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Catálogo</span>
                     </a>
+                    @endcan
                 </div>
             </div>
             <div class="nav-group {{ request()->routeIs('gestion.servicios.*') ? 'open' : '' }}">
@@ -729,22 +751,30 @@
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
+                    @can('servicios.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.historial') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial') }}" data-tip="Historial de Servicios">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Historial de Servicios</span>
                     </a>
+                    @endcan
+                    @can('servicios.crear')
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.historial.nueva_orden') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial.nueva_orden') }}" data-tip="Nueva Orden">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Nueva Orden</span>
                     </a>
+                    @endcan
+                    @can('servicios.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.garantia.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.garantia.index') }}" data-tip="Cartas de Garantía">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cartas de Garantía</span>
                     </a>
+                    @endcan
+                    @can('servicios.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.mantenimiento.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.mantenimiento.index') }}" data-tip="Mantenimiento">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Mantenimiento</span>
                     </a>
+                    @endcan
                 </div>
             </div>
             <div class="nav-section">Administración</div>
@@ -765,10 +795,12 @@
                             <span class="nav-label">Actividad</span>
                         </a>
                     @endcan
+                    @can('usuarios.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}" data-tip="Usuarios">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Usuarios</span>
                     </a>
+                    @endcan
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.vehicles.*') ? 'active' : '' }}" href="{{ route('admin.vehicles.index') }}" data-tip="Vehículos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Vehículos</span>
@@ -804,28 +836,38 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Inicio</span>
                     </a>
+                    @can('marketing.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.guia_de_marca.index') ? 'active' : '' }}" href="{{ route('marketing.guia_de_marca.index') }}" data-tip="Guía de marca">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Guía de marca</span>
                     </a>
+                    @endcan
+                    @can('marketing.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.calendario.index') ? 'active' : '' }}" href="{{ route('marketing.calendario.index') }}" data-tip="Calendario">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Calendario</span>
                     </a>
+                    @endcan
+                    @can('marketing.aprobar')
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.aprobacion_flyers.index') ? 'active' : '' }}" href="{{ route('marketing.aprobacion_flyers.index') }}" data-tip="Aprobación de flyers">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Aprobación de flyers</span>
                     </a>
+                    @endcan
+                    @can('marketing.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.biblioteca_catalogo.index') ? 'active' : '' }}" href="{{ route('marketing.biblioteca_catalogo.index') }}" data-tip="Biblioteca & catálogo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Biblioteca & catálogo</span>
                     </a>
+                    @endcan
                     <div class="submenu-label">Datos</div>
+                    @can('marketing.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.tareas.index') ? 'active' : '' }}" href="{{ route('marketing.tareas.index') }}" data-tip="Tareas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Tareas</span>
                         <span class="nav-count">6</span>
                     </a>
+                    @endcan
                 </div>
             </div>
             <div class="nav-section">Sistema</div>
