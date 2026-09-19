@@ -118,10 +118,12 @@
 
 @section('content')
     <div class="cgx-actions">
+        @can('congresos.editar')
         <a href="{{ route('inventory.congresos.create') }}" class="btn">
             <x-gravityui-plus width="15" height="15" />
             Crear congreso
         </a>
+        @endcan
     </div>
 
     @if (session('status'))

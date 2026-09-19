@@ -5,10 +5,12 @@
 
 @section('content')
     <div style="display:flex; justify-content:flex-end; margin-bottom:18px;">
+        @can('inventario.registrar')
         <a href="{{ route('inventory.paquetes.create') }}" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
             <x-gravityui-plus width="16" height="16" />
             Agregar paquete
         </a>
+        @endcan
     </div>
 
     <x-ui.card>
