@@ -41,7 +41,7 @@
                             <td>
                                 <div style="display:flex; gap:8px;">
                                     <a href="{{ route('inventory.paquetes.edit', $paquete) }}" class="btn btn--ghost" style="padding:6px 12px; font-size:13px; text-decoration:none;">Editar</a>
-                                    <form method="POST" action="{{ route('inventory.paquetes.destroy', $paquete) }}" onsubmit="return confirm('¿Eliminar este paquete?');">
+                                    <form method="POST" action="{{ route('inventory.paquetes.destroy', $paquete) }}" data-confirm="¿Eliminar este paquete?">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn--danger" style="padding:6px 12px; font-size:13px;">Eliminar</button>

@@ -564,8 +564,8 @@
 
             $('[data-iva]').addEventListener('change', totalizar);
 
-            $('[data-vaciar]').addEventListener('click', function () {
-                if (lineas.size && !confirm('¿Vaciar la lista?')) return;
+            $('[data-vaciar]').addEventListener('click', async function () {
+                if (lineas.size && !(await window.confirmModal({ message: '¿Vaciar la lista?', danger: true }))) return;
                 lineas.clear();
                 pintar();
             });
@@ -682,7 +682,7 @@
                 const piezas = items.reduce((s, i) => s + i.cantidad, 0);
                 const etiquetaMetodo = $('[data-metodos] .on')?.textContent.trim().toLowerCase() || metodo;
 
-                if (!confirm(`Cobrar ${$('[data-total]').textContent} en ${etiquetaMetodo} por ${piezas} pieza${piezas === 1 ? '' : 's'}.\n\nLa venta queda registrada y entregada. ¿Confirmar?`)) return;
+                if (!(await window.confirmModal({ message: `Cobrar ${$('[data-total]').textContent} en ${etiquetaMetodo} por ${piezas} pieza${piezas === 1 ? '' : 's'}.\n\nLa venta queda registrada y entregada. ¿Confirmar?`, confirmText: 'Sí, cobrar' }))) return;
 
                 enviando = true;
                 totalizar();

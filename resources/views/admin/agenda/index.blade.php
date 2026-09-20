@@ -1830,7 +1830,7 @@
                                     {{ $event->title }}
                                 </span>
                                 @if ((int) $event->created_by === (int) auth()->id() || auth()->user()->isAdmin())
-                                    <form class="upcoming-delete-form" method="POST" action="{{ route('admin.agenda.destroy', $event) }}" onsubmit="return confirm('¿Eliminar la cita \'{{ addslashes($event->title) }}\'?');">
+                                    <form class="upcoming-delete-form" method="POST" action="{{ route('admin.agenda.destroy', $event) }}" data-confirm="¿Eliminar la cita '{{ $event->title }}'?">
                                         @csrf
                                         @method('DELETE')
                                         <button class="upcoming-delete" type="submit" aria-label="Eliminar cita {{ $event->title }}" title="Eliminar cita">
@@ -1982,12 +1982,12 @@
         eventPopover.addEventListener('mouseenter', cancelPopoverHide);
         eventPopover.addEventListener('mouseleave', schedulePopoverHide);
 
-        popDelete.addEventListener('click', () => {
+        popDelete.addEventListener('click', async () => {
             if (! popDelete.dataset.deleteUrl) {
                 return;
             }
 
-            if (confirm('¿Eliminar la cita "' + popDelete.dataset.deleteTitle + '"?')) {
+            if (await window.confirmModal({ message: '¿Eliminar la cita "' + popDelete.dataset.deleteTitle + '"?', danger: true })) {
                 popoverDeleteForm.action = popDelete.dataset.deleteUrl;
                 popoverDeleteForm.submit();
             }

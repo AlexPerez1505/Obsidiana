@@ -291,7 +291,7 @@
                         <a href="{{ asset('storage/' . $ruta) }}" target="_blank" rel="noopener">
                             <img src="{{ asset('storage/' . $ruta) }}" alt="Foto del ticket">
                         </a>
-                        <form method="POST" action="{{ route('admin.viatics.update', $viatic) }}" onsubmit="return confirm('¿Quitar esta foto?');">
+                        <form method="POST" action="{{ route('admin.viatics.update', $viatic) }}" data-confirm="¿Quitar esta foto?">
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="redirect_to" value="show">
@@ -707,7 +707,7 @@
             },
             deleteExpense: async function() {
                 const id = Number(document.getElementById('vpEditId').value);
-                if (!id || !confirm('¿Eliminar este gasto?')) return;
+                if (!id || !(await window.confirmModal({ message: '¿Eliminar este gasto?', danger: true }))) return;
                 try {
                     const res = await fetch(urls.destroy.replace('__ID__', id), {
                         method: 'DELETE',

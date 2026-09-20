@@ -60,7 +60,7 @@
             </form>
         @elseif (! $u->is_admin)
             <form method="POST" action="{{ route('admin.users.ban', $u) }}"
-                  onsubmit="return confirm('¿Quitarle el acceso a {{ $u->name }}?');">
+                  data-confirm="¿Quitarle el acceso a {{ $u->name }}?">
                 @csrf
                 <button type="submit" role="menuitem" class="danger">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/></svg>

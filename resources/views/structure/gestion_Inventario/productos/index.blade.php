@@ -175,7 +175,7 @@
                                             Editar
                                         </a>
                                         <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}"
-                                              onsubmit="return confirm('¿Eliminar este producto?');" style="margin:0;">
+                                              data-confirm="¿Eliminar este producto?" style="margin:0;">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="es-danger" role="menuitem">

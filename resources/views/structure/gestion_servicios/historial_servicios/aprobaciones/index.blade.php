@@ -42,7 +42,7 @@
                                     @csrf
                                     <button type="submit" class="tbl-link" style="border:none; background:none; color:var(--green); cursor:pointer;">Aprobar</button>
                                 </form>
-                                <form action="{{ route('gestion.servicios.historial.deny', $service) }}" method="POST" style="display:inline; margin-left:10px;" onsubmit="return confirm('¿Denegar esta orden?')">
+                                <form action="{{ route('gestion.servicios.historial.deny', $service) }}" method="POST" style="display:inline; margin-left:10px;" data-confirm="¿Denegar esta orden?">
                                     @csrf
                                     <button type="submit" class="tbl-link" style="border:none; background:none; color:var(--danger); cursor:pointer;">Denegar</button>
                                 </form>

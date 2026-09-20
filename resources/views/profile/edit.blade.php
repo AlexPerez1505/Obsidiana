@@ -87,7 +87,7 @@
                         <img src="{{ $user->firmaUrl() }}" alt="Tu firma registrada">
                     </div>
                     <form method="POST" action="{{ route('profile.firma.destroy') }}"
-                          onsubmit="return confirm('¿Quitar tu firma registrada? Tendrás que firmar a mano cada vez.');">
+                          data-confirm="¿Quitar tu firma registrada? Tendrás que firmar a mano cada vez.">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn--ghost" style="color:var(--danger);">Quitar</button>

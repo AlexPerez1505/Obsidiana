@@ -69,7 +69,7 @@
                                     @endcan
                                     @can('cotizaciones.eliminar')
                                     <div class="erp-menu-sep"></div>
-                                    <form method="POST" action="{{ route('commercial.cotizaciones.destroy', $cot) }}" onsubmit="return confirm('¿Eliminar la cotización {{ $cot->folio }}?');">
+                                    <form method="POST" action="{{ route('commercial.cotizaciones.destroy', $cot) }}" data-confirm="¿Eliminar la cotización {{ $cot->folio }}?">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="erp-menu-item danger">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Eliminar

@@ -712,7 +712,7 @@
 
             async deleteExpense() {
                 if (this.loading || !this.editForm.id) return;
-                if (!confirm('¿Eliminar este gasto?')) return;
+                if (!(await window.confirmModal({ message: '¿Eliminar este gasto?', danger: true }))) return;
                 this.loading = true;
                 try {
                     const url = data.urls.destroy.replace('__ID__', this.editForm.id);

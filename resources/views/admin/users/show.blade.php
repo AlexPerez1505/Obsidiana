@@ -364,9 +364,9 @@
                         </button>
                     </form>
                 @else
-                    <form method="POST" action="{{ route('admin.users.ban', $user) }}">
+                    <form method="POST" action="{{ route('admin.users.ban', $user) }}" data-confirm="¿Banear a este usuario?">
                         @csrf
-                        <button type="submit" class="btn-danger" onclick="return confirm('¿Banear a este usuario?')">
+                        <button type="submit" class="btn-danger">
                             <x-gravityui-ban width="16" height="16" />
                             Banear
                         </button>

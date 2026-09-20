@@ -152,7 +152,7 @@
     </div>
 
     <div class="resumen-actions">
-        <form action="{{ route('gestion.servicios.historial.deny', $service) }}" method="POST" onsubmit="return confirm('¿Denegar esta orden?')">
+        <form action="{{ route('gestion.servicios.historial.deny', $service) }}" method="POST" data-confirm="¿Denegar esta orden?">
             @csrf
             <button type="submit" class="erp-btn danger">Denegar</button>
         </form>

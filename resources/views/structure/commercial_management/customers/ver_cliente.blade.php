@@ -45,7 +45,7 @@
             <div class="vc-actions">
                 <a href="{{ route('commercial.clientes.index') }}" class="btn btn--ghost">Regresar</a>
                 @if ($customer->esProspecto())
-                    <form method="POST" action="{{ route('commercial.clientes.convertir', $customer) }}" onsubmit="return confirm('¿Convertir a {{ $nombreCompleto }} en cliente?');">
+                    <form method="POST" action="{{ route('commercial.clientes.convertir', $customer) }}" data-confirm="¿Convertir a {{ $nombreCompleto }} en cliente?">
                         @csrf
                         <button type="submit" class="btn btn--ghost" title="Ya compró o ya se decidió: pasa a cliente">Convertir en cliente</button>
                     </form>
@@ -200,7 +200,7 @@
                                 <input type="date" name="fecha" required min="{{ now()->toDateString() }}" value="{{ $s->fecha?->toDateString() }}" aria-label="Nueva fecha">
                                 <button type="submit" class="btn btn--ghost" style="padding:6px 10px;">Mover</button>
                             </form>
-                            <form method="POST" action="{{ route('commercial.clientes.seguimientos.destroy', [$customer, $s]) }}" onsubmit="return confirm('¿Eliminar este seguimiento?');">
+                            <form method="POST" action="{{ route('commercial.clientes.seguimientos.destroy', [$customer, $s]) }}" data-confirm="¿Eliminar este seguimiento?">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="sg-x" title="Eliminar">×</button>
                             </form>

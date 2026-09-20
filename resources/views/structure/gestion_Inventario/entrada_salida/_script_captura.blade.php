@@ -643,7 +643,7 @@
                 const cuantas = Math.max(1, inputsSerie.length);
 
                 // Lo capturado no se pisa sin avisar.
-                if (inputsSerie.some(i => i.value.trim()) && !confirm('Ya hay series capturadas. ¿Reemplazarlas por las generadas?')) {
+                if (inputsSerie.some(i => i.value.trim()) && !(await window.confirmModal({ message: 'Ya hay series capturadas. ¿Reemplazarlas por las generadas?' }))) {
                     return;
                 }
 

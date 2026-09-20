@@ -266,7 +266,7 @@
                         <a href="{{ route('admin.viatics.edit', $vt) }}" class="vl-card-btn" aria-label="Editar">
                             <x-gravityui-pencil />
                         </a>
-                        <form method="POST" action="{{ route('admin.viatics.destroy', $vt) }}" onsubmit="return confirm('¿Eliminar este viático?')" style="display:inline">
+                        <form method="POST" action="{{ route('admin.viatics.destroy', $vt) }}" data-confirm="¿Eliminar este viático?" style="display:inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="vl-card-btn vl-btn-danger" aria-label="Eliminar">

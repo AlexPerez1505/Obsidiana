@@ -336,8 +336,8 @@
             function ocultarError() { error.style.display = 'none'; }
 
             /* ===================== Acciones de la lista ===================== */
-            document.querySelector('[data-limpiar]').addEventListener('click', function () {
-                if (escaneado.size && !confirm('¿Vaciar lo escaneado?')) return;
+            document.querySelector('[data-limpiar]').addEventListener('click', async function () {
+                if (escaneado.size && !(await window.confirmModal({ message: '¿Vaciar lo escaneado?', danger: true }))) return;
                 escaneado.clear();
                 pintar();
             });

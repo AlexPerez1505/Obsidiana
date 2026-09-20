@@ -481,6 +481,28 @@
         .toast b{ font-weight:800; }
         @media (max-width:640px){ .toast{ top:14px; right:14px; left:14px; max-width:none; } }
 
+        /* ===== Modal de confirmacion (reemplaza confirm() nativo) ===== */
+        .cm-overlay{ position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px;
+            background:rgba(6,12,23,.55); opacity:0; transition:opacity .18s ease; }
+        .cm-overlay[hidden]{ display:none; }
+        .cm-overlay.show{ opacity:1; }
+        .cm-box{ width:100%; max-width:420px; background:var(--card,#fff); color:var(--text,#1f2733); border-radius:16px;
+            box-shadow:0 24px 60px rgba(0,0,0,.28); padding:26px 24px 20px; text-align:center;
+            transform:translateY(8px) scale(.98); transition:transform .18s ease; }
+        .cm-overlay.show .cm-box{ transform:none; }
+        .cm-ico{ width:52px; height:52px; border-radius:14px; margin:0 auto 14px; display:flex; align-items:center; justify-content:center;
+            background:var(--indigo-soft,#eef2ff); color:var(--indigo,#4f46e5); }
+        .cm-ico svg{ width:26px; height:26px; }
+        .cm-box.danger .cm-ico{ background:var(--danger-soft,#fee2e2); color:var(--danger,#ef4444); }
+        .cm-title{ font-size:18px; font-weight:800; margin:0 0 6px; }
+        .cm-msg{ font-size:14px; color:var(--muted,#6b7280); margin:0 0 20px; line-height:1.45; white-space:pre-line; }
+        .cm-actions{ display:flex; gap:10px; justify-content:center; }
+        .cm-btn{ flex:1; max-width:180px; padding:11px 16px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; border:1px solid transparent; }
+        .cm-cancel{ background:transparent; border-color:var(--border,#e5e7eb); color:var(--text,#374151); }
+        .cm-ok{ background:var(--indigo,#4f46e5); color:#fff; }
+        .cm-box.danger .cm-ok{ background:var(--danger,#ef4444); }
+        .cm-btn:active{ transform:translateY(1px); }
+
         .nav-group { display:flex; flex-direction:column; gap:4px; }
         .nav-toggle { cursor:pointer; }
         .nav-chev { width:16px; height:16px; margin-left:auto; transition:transform .2s ease; flex:0 0 auto; pointer-events:none; }
@@ -1013,6 +1035,18 @@
     <span class="toast-ico" id="appToastIco"></span>
     <span id="appToastMsg"></span>
 </div>
+
+<div class="cm-overlay" id="cmOverlay" hidden>
+    <div class="cm-box" role="dialog" aria-modal="true" aria-labelledby="cmTitle" aria-describedby="cmMsg">
+        <div class="cm-ico" id="cmIco"></div>
+        <h3 class="cm-title" id="cmTitle">¿Estás seguro?</h3>
+        <p class="cm-msg" id="cmMsg"></p>
+        <div class="cm-actions">
+            <button type="button" class="cm-btn cm-cancel" id="cmCancel">Cancelar</button>
+            <button type="button" class="cm-btn cm-ok" id="cmOk">Confirmar</button>
+        </div>
+    </div>
+</div>
 @if (session('status'))
     <span id="appFlash" data-msg="{{ session('status') }}" data-type="ok" hidden></span>
 @endif
@@ -1035,6 +1069,88 @@
         clearTimeout(window._toastTimer);
         window._toastTimer = setTimeout(function () { t.classList.remove('show'); }, 3600);
     };
+    window.toast = window.showToast;
+
+    // ===== Modal de confirmacion (reemplaza confirm() nativo) =====
+    var CM_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+    var CM_DANGER_RE = /elimin|borrar|quitar|banear|desactiv|cancelar|denegar|rechaz/i;
+    window.confirmModal = function (opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+            var ov = document.getElementById('cmOverlay');
+            if (!ov) { resolve(window.confirm(opts.message || '¿Confirmar?')); return; }
+            var box = ov.querySelector('.cm-box');
+            var esDanger = (opts.danger !== undefined) ? !!opts.danger
+                : CM_DANGER_RE.test(String(opts.message || '') + ' ' + String(opts.title || ''));
+            document.getElementById('cmTitle').textContent = opts.title || '¿Estás seguro?';
+            document.getElementById('cmMsg').textContent = opts.message || '';
+            document.getElementById('cmIco').innerHTML = CM_ICON;
+            var ok = document.getElementById('cmOk'), cancel = document.getElementById('cmCancel');
+            ok.textContent = opts.confirmText || (esDanger ? 'Sí, continuar' : 'Confirmar');
+            cancel.textContent = opts.cancelText || 'Cancelar';
+            box.classList.toggle('danger', esDanger);
+            ov.hidden = false;
+            requestAnimationFrame(function () { ov.classList.add('show'); });
+            setTimeout(function () { ok.focus(); }, 30);
+            function cerrar(val) {
+                ov.classList.remove('show');
+                setTimeout(function () { ov.hidden = true; }, 180);
+                ok.removeEventListener('click', onOk);
+                cancel.removeEventListener('click', onCancel);
+                ov.removeEventListener('mousedown', onBackdrop);
+                document.removeEventListener('keydown', onKey);
+                resolve(val);
+            }
+            function onOk() { cerrar(true); }
+            function onCancel() { cerrar(false); }
+            function onBackdrop(e) { if (e.target === ov) cerrar(false); }
+            function onKey(e) {
+                if (e.key === 'Escape') cerrar(false);
+                else if (e.key === 'Enter') { e.preventDefault(); cerrar(true); }
+            }
+            ok.addEventListener('click', onOk);
+            cancel.addEventListener('click', onCancel);
+            ov.addEventListener('mousedown', onBackdrop);
+            document.addEventListener('keydown', onKey);
+        });
+    };
+
+    // Redirige los alert() nativos al toast (no bloqueante).
+    var _nativeAlert = window.alert.bind(window);
+    window.alert = function (msg) {
+        try { window.showToast(String(msg), 'warn'); }
+        catch (e) { _nativeAlert(msg); }
+    };
+
+    // Interceptor declarativo: cualquier <form data-confirm="..."> abre el modal
+    // antes de enviarse. Reemplaza onsubmit="return confirm(...)".
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm')) return;
+        if (form.dataset.cmDone === '1') { form.dataset.cmDone = ''; return; }
+        e.preventDefault();
+        window.confirmModal({
+            message: form.getAttribute('data-confirm') || '¿Confirmar esta acción?',
+            title: form.getAttribute('data-confirm-title') || undefined,
+            confirmText: form.getAttribute('data-confirm-ok') || undefined,
+            danger: form.hasAttribute('data-confirm-danger') ? true : undefined
+        }).then(function (ok) {
+            if (!ok) return;
+            form.dataset.cmDone = '1';
+            if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
+        });
+    }, true);
+
+    // Enlaces <a data-confirm="..."> tambien pasan por el modal.
+    document.addEventListener('click', function (e) {
+        var el = e.target.closest('a[data-confirm]');
+        if (!el || !el.getAttribute('href')) return;
+        e.preventDefault();
+        var href = el.getAttribute('href');
+        window.confirmModal({ message: el.getAttribute('data-confirm') }).then(function (ok) {
+            if (ok) window.location.href = href;
+        });
+    }, true);
 
     document.addEventListener('DOMContentLoaded', function () {
         // Saludo según la hora real del navegador (evita desfase de zona horaria del servidor)
