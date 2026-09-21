@@ -265,10 +265,14 @@
         });
     }
 
-    // Confirmación antes de cancelar un cobro
+    // Confirmación antes de cancelar un cobro (modal en vez de confirm nativo)
     document.querySelectorAll('[data-confirmar]').forEach(function (f) {
         f.addEventListener('submit', function (e) {
-            if (! window.confirm(f.dataset.confirmar + '\n\n¿Continuar?')) e.preventDefault();
+            if (f.dataset.cmDone === '1') { f.dataset.cmDone = ''; return; }
+            e.preventDefault();
+            window.confirmModal({ message: f.dataset.confirmar }).then(function (ok) {
+                if (ok) { f.dataset.cmDone = '1'; f.requestSubmit ? f.requestSubmit() : f.submit(); }
+            });
         });
     });
 })();

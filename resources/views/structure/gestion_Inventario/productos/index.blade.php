@@ -44,10 +44,12 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             Agrupar en paquete (<span id="contador-seleccionados">0</span>)
         </button>
+        @can('inventario.registrar')
         <a href="{{ route('inventory.movimientos.create') }}" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             Registrar entrada
         </a>
+        @endcan
     </div>
 
     <x-ui.card>
@@ -119,7 +121,7 @@
                                             Editar
                                         </a>
                                         <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}"
-                                              onsubmit="return confirm('¿Eliminar este producto?');" style="margin:0;">
+                                              data-confirm="¿Eliminar este producto?" style="margin:0;">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="es-danger" role="menuitem">

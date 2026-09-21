@@ -39,11 +39,11 @@
                 Al lanzarla, el mensaje se encola y se manda respetando el ritmo (1 por segundo), no de golpe.
             </p>
             <div style="display:flex; gap:10px;">
-                <form method="POST" action="{{ route('commercial.promociones.campanas.lanzar', $campana) }}" onsubmit="return confirm('¿Lanzar esta campaña a {{ $audienciaCalculada }} cliente(s)? No se puede deshacer.');">
+                <form method="POST" action="{{ route('commercial.promociones.campanas.lanzar', $campana) }}" data-confirm="¿Lanzar esta campaña a {{ $audienciaCalculada }} cliente(s)? No se puede deshacer.">
                     @csrf
                     <x-ui.button type="submit">Lanzar campaña</x-ui.button>
                 </form>
-                <form method="POST" action="{{ route('commercial.promociones.campanas.cancelar', $campana) }}" onsubmit="return confirm('¿Cancelar esta campaña?');">
+                <form method="POST" action="{{ route('commercial.promociones.campanas.cancelar', $campana) }}" data-confirm="¿Cancelar esta campaña?">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="btn btn--ghost" style="color:var(--danger);">Cancelar campaña</button>

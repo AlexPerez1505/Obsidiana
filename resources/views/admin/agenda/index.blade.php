@@ -1103,6 +1103,18 @@
                                     <b>{{ \Carbon\Carbon::parse($event['start_date'])->translatedFormat('d M') }} · {{ $event['time'] }}</b>
                                     <span>{{ $event['title'] }}</span>
                                 </span>
+<<<<<<< HEAD
+=======
+                                @if ((int) $event->created_by === (int) auth()->id() || auth()->user()->isAdmin())
+                                    <form class="upcoming-delete-form" method="POST" action="{{ route('admin.agenda.destroy', $event) }}" data-confirm="¿Eliminar la cita '{{ $event->title }}'?">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="upcoming-delete" type="submit" aria-label="Eliminar cita {{ $event->title }}" title="Eliminar cita">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6"></path></svg>
+                                        </button>
+                                    </form>
+                                @endif
+>>>>>>> 748c4e1ad51103d8ab70a724731e58ea1f9a4912
                             </div>
                         @empty
                             <p class="upcoming-empty">No hay eventos ni congresos próximos.</p>
@@ -1279,6 +1291,7 @@
                     return;
                 }
 
+<<<<<<< HEAD
                 openAgendaModal(item.dataset.agendaDate, {
                     modelId: item.dataset.agendaModelId,
                     startDate: item.dataset.agendaStartDate,
@@ -1288,6 +1301,24 @@
                     type: item.dataset.agendaType,
                     notes: item.dataset.agendaNotes,
                     participants: item.dataset.agendaParticipants,
+=======
+        popDelete.addEventListener('click', async () => {
+            if (! popDelete.dataset.deleteUrl) {
+                return;
+            }
+
+            if (await window.confirmModal({ message: '¿Eliminar la cita "' + popDelete.dataset.deleteTitle + '"?', danger: true })) {
+                popoverDeleteForm.action = popDelete.dataset.deleteUrl;
+                popoverDeleteForm.submit();
+            }
+        });
+
+        document.querySelectorAll('[data-agenda-filter]').forEach((checkbox) => {
+            checkbox.addEventListener('change', () => {
+                const status = checkbox.dataset.agendaFilter;
+                document.querySelectorAll('[data-agenda-status="' + status + '"]').forEach((item) => {
+                    item.style.display = checkbox.checked ? '' : 'none';
+>>>>>>> 748c4e1ad51103d8ab70a724731e58ea1f9a4912
                 });
             });
         });

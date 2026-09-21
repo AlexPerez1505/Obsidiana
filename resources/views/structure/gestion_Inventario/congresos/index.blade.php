@@ -118,10 +118,12 @@
 
 @section('content')
     <div class="cgx-actions">
+        @can('congresos.editar')
         <a href="{{ route('inventory.congresos.create') }}" class="btn">
             <x-gravityui-plus width="15" height="15" />
             Crear congreso
         </a>
+        @endcan
     </div>
 
     @if (session('status'))
@@ -252,7 +254,7 @@
                             <a href="{{ route('inventory.congresos.edit', $congress) }}" class="btn btn--ghost" style="padding:6px 10px;" title="Editar">
                                 <x-gravityui-pencil width="14" height="14" />
                             </a>
-                            <form method="POST" action="{{ route('inventory.congresos.destroy', $congress) }}" onsubmit="return confirm('¿Eliminar este congreso? Esta acción no se puede deshacer.');">
+                            <form method="POST" action="{{ route('inventory.congresos.destroy', $congress) }}" data-confirm="¿Eliminar este congreso? Esta acción no se puede deshacer.">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn--ghost" style="padding:6px 10px; color:var(--danger);" title="Eliminar">
@@ -278,7 +280,7 @@
                                 <span>Si ya volvieron al almacén, regrésalas aquí para que el inventario diga la verdad.</span>
                             </div>
                             <form method="POST" action="{{ route('inventory.congresos.productos.regresarTodas', $congress) }}"
-                                  onsubmit="return confirm('¿Regresar al almacén todas las piezas que no se vendieron?');">
+                                  data-confirm="¿Regresar al almacén todas las piezas que no se vendieron?">
                                 @csrf
                                 <button type="submit" class="btn">Regresar todas</button>
                             </form>
@@ -339,7 +341,7 @@
                                             @foreach ($fila['unidades'] as $unidad)
                                                 <div class="cgx-mini-serie">
                                                     {{ $unidad->codigo }}
-                                                    <form method="POST" action="{{ route('inventory.congresos.productos.destroy', ['congress' => $congress, 'serial' => $unidad]) }}" style="display:inline;" onsubmit="return confirm('¿Regresar esta unidad del congreso?');">
+                                                    <form method="POST" action="{{ route('inventory.congresos.productos.destroy', ['congress' => $congress, 'serial' => $unidad]) }}" style="display:inline;" data-confirm="¿Regresar esta unidad del congreso?">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="cgx-quitar" title="Quitar" style="font-size:12px;">×</button>
@@ -384,7 +386,7 @@
                                     <p class="cgx-user-nombre">{{ $u->name }}</p>
                                     <p class="cgx-user-rol">{{ $u->email }}</p>
                                 </div>
-                                <form method="POST" action="{{ route('inventory.congresos.usuarios.destroy', ['congress' => $congress, 'user' => $u]) }}" onsubmit="return confirm('¿Quitar a este usuario del congreso?');">
+                                <form method="POST" action="{{ route('inventory.congresos.usuarios.destroy', ['congress' => $congress, 'user' => $u]) }}" data-confirm="¿Quitar a este usuario del congreso?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="cgx-quitar" title="Quitar">×</button>
@@ -421,7 +423,7 @@
                                     <p class="cgx-user-nombre">{{ $participante->nombre }}</p>
                                     <p class="cgx-user-rol">{{ $participante->rol ?: 'Sin rol' }} @if($participante->empresa) · <span class="cgx-user-empresa">{{ $participante->empresa }}</span> @endif</p>
                                 </div>
-                                <form method="POST" action="{{ route('inventory.congresos.participantes.destroy', ['congress' => $congress, 'participante' => $participante]) }}" onsubmit="return confirm('¿Quitar a este participante?');">
+                                <form method="POST" action="{{ route('inventory.congresos.participantes.destroy', ['congress' => $congress, 'participante' => $participante]) }}" data-confirm="¿Quitar a este participante?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="cgx-quitar" title="Quitar">×</button>

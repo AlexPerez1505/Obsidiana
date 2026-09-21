@@ -86,7 +86,7 @@
                                 <button type="button" class="btn btn--ghost" style="padding:5px 10px; font-size:12.5px;"
                                         onclick="document.getElementById('editar-serial-{{ $serial->id }}').style.display='flex'">Editar</button>
                                 @unless ($serial->vendido)
-                                    <form method="POST" action="{{ route('inventory.productos.seriales.destroy', $serial) }}" onsubmit="return confirm('¿Quitar esta unidad del inventario?');" style="margin:0;">
+                                    <form method="POST" action="{{ route('inventory.productos.seriales.destroy', $serial) }}" data-confirm="¿Quitar esta unidad del inventario?" style="margin:0;">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn--ghost" style="padding:5px 10px; font-size:12.5px; color:var(--danger);">Eliminar</button>

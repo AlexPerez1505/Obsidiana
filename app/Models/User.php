@@ -494,4 +494,60 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->memoPermisos = null;
         $this->memoEsAdmin = null;
     }
+
+    /**
+     * Firma del acceso del usuario. Cambia cuando cambian sus permisos,
+     * su rol de administrador o su estatus (aprobado/baneado). El navegador
+     * la compara cada pocos segundos y recarga solo cuando de verdad cambió
+     * algo, para que no tenga que dar refresh a mano.
+     */
+    public function firmaAcceso(): string
+    {
+        return md5(json_encode([
+            'admin'  => $this->isAdmin(),
+            'status' => $this->status,
+            'perms'  => $this->permisosEfectivos()->sort()->values()->all(),
+        ]));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Firma registrada
+    |--------------------------------------------------------------------------
+    | Se traza una sola vez en el perfil y de ahí se carga cada que hay que
+    | firmar una entrada o una salida, en vez de volver a dibujarla con el
+    | mouse cada vez.
+    */
+
+    public function tieneFirma(): bool
+    {
+        return (bool) $this->firma_path
+            && Storage::disk(config('filesystems.fotos_disk', 'public'))->exists($this->firma_path);
+    }
+
+    /** URL pública de la firma, para mostrarla como imagen. */
+    public function firmaUrl(): ?string
+    {
+        return $this->tieneFirma()
+            ? Storage::disk(config('filesystems.fotos_disk', 'public'))->url($this->firma_path)
+            : null;
+    }
+
+    /**
+     * La firma como data URL base64.
+     *
+     * Es el formato que mandan los formularios (lo que produce el lienzo),
+     * así que se puede cargar directo en el campo oculto sin que el
+     * navegador tenga que volver a leerla del disco.
+     */
+    public function firmaDataUri(): ?string
+    {
+        if (! $this->tieneFirma()) {
+            return null;
+        }
+
+        $contenido = Storage::disk(config('filesystems.fotos_disk', 'public'))->get($this->firma_path);
+
+        return $contenido ? 'data:image/png;base64,'.base64_encode($contenido) : null;
+    }
 }

@@ -50,6 +50,22 @@
         .monto .n { margin-top: 2px; color: #1a1d23; font-size: 26px; font-weight: bold; letter-spacing: -.8px; }
         .monto .letra { margin-top: 2px; color: #6b7280; font-size: 9px; }
 
+        /* Qué se vendió: el recibo no es solo un monto. */
+        .concepto { margin-top: 24px; }
+        .concepto th { padding: 0 0 6px; border-bottom: 1px solid #1a1d23; color: #a8aeb8; font-size: 7.5px;
+                       font-weight: bold; letter-spacing: 1.6px; text-transform: uppercase; text-align: left; }
+        .concepto td { padding: 7px 0; border-bottom: 1px solid #ededf0; font-size: 9.5px; color: #4b5563; }
+        .concepto .nom { color: #1a1d23; font-weight: bold; }
+        .concepto .det { color: #a8aeb8; font-size: 8.5px; }
+        .concepto .f { width: 44px; padding-right: 10px; }
+        .concepto .f img { width: 40px; height: 40px; object-fit: contain; }
+        .concepto .f .sinfoto { display: block; width: 40px; height: 40px; background: #f3f4f6; }
+        .concepto .c { width: 40px; text-align: center; }
+        .concepto .p { width: 84px; text-align: right; }
+        .concepto .regalo { color: #a8aeb8; font-style: italic; }
+        .desglose td { padding: 3px 0; font-size: 9px; color: #a8aeb8; border: 0; }
+        .desglose .v { text-align: right; color: #6b7280; }
+
         .estado { margin-top: 26px; }
         .estado td { padding: 5px 0; font-size: 9.5px; color: #6b7280; }
         .estado .v { text-align: right; color: #1a1d23; font-weight: bold; }
@@ -139,6 +155,75 @@
     <div class="n">${{ number_format((float) $cobro->monto, 2) }}</div>
     <div class="letra">Pesos mexicanos</div>
 </div>
+
+@if ($venta->items->isNotEmpty())
+    <div class="concepto">
+        <p class="rot">Concepto · lo que ampara la venta {{ $venta->folio }}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th class="f"></th>
+                    <th>Producto</th>
+                    <th class="c">Cant.</th>
+                    <th class="p">P. unitario</th>
+                    <th class="p">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($venta->items as $item)
+                    @php
+                        $marcaModelo = trim(($item->marca ?? '') . ' ' . ($item->modelo ?? ''));
+                        $detalle = collect([
+                            $marcaModelo && $marcaModelo !== $item->nombre ? $marcaModelo : null,
+                            $item->no_series ? 'Serie: ' . $item->no_series : null,
+                        ])->filter()->implode(' · ');
+                        // Misma foto que en la cotización: se incrusta desde disco.
+                        $foto = \App\Support\ImagenPdf::dataUri($item->imagen);
+                    @endphp
+                    <tr>
+                        <td class="f">
+                            @if ($foto)
+                                <img src="{{ $foto }}" alt="">
+                            @else
+                                <span class="sinfoto"></span>
+                            @endif
+                        </td>
+                        <td>
+                            <div class="nom">{{ $item->nombre }}</div>
+                            @if ($detalle)
+                                <div class="det">{{ $detalle }}</div>
+                            @endif
+                        </td>
+                        <td class="c">{{ (int) $item->cantidad }}</td>
+                        @if ($item->es_regalo)
+                            <td class="p regalo">Regalo</td>
+                            <td class="p regalo">$0.00</td>
+                        @else
+                            <td class="p">${{ number_format((float) $item->precio_unitario + (float) $item->sobreprecio, 2) }}</td>
+                            <td class="p">${{ number_format($item->importe(), 2) }}</td>
+                        @endif
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        {{-- Solo si hay algo más que la suma de renglones: descuento, envío o IVA. --}}
+        @if ((float) $venta->descuento_monto > 0 || (float) $venta->envio > 0 || (float) $venta->iva_monto > 0)
+            <table class="desglose" style="width:44%; margin-left:56%; margin-top:6px;">
+                <tr><td>Subtotal</td><td class="v">${{ number_format((float) $venta->subtotal, 2) }}</td></tr>
+                @if ((float) $venta->descuento_monto > 0)
+                    <tr><td>Descuento</td><td class="v">-${{ number_format((float) $venta->descuento_monto, 2) }}</td></tr>
+                @endif
+                @if ((float) $venta->envio > 0)
+                    <tr><td>Envío</td><td class="v">${{ number_format((float) $venta->envio, 2) }}</td></tr>
+                @endif
+                @if ((float) $venta->iva_monto > 0)
+                    <tr><td>IVA</td><td class="v">${{ number_format((float) $venta->iva_monto, 2) }}</td></tr>
+                @endif
+            </table>
+        @endif
+    </div>
+@endif
 
 <table class="estado" style="width:44%; margin-left:56%;">
     <tr><td>Total de la venta</td><td class="v">${{ number_format($venta->montoExigible(), 2) }}</td></tr>

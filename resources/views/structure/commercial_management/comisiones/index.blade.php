@@ -216,7 +216,7 @@
                                 @if ($puedeGestionar)
                                     <td class="r">
                                         <form method="POST" action="{{ route('commercial.comisiones.pagos.destroy', $p) }}"
-                                              onsubmit="return confirm('¿Eliminar este pago de ${{ number_format((float) $p->monto, 2) }}? Se vuelve a contar como pendiente.');">
+                                              data-confirm="¿Eliminar este pago de ${{ number_format((float) $p->monto, 2) }}? Se vuelve a contar como pendiente.">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="cg-link" style="background:none; border:none; cursor:pointer; color:var(--danger);">Eliminar</button>

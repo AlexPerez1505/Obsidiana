@@ -817,9 +817,9 @@
         });
     }
 
-    function eliminarTarea() {
+    async function eliminarTarea() {
         if (!currentTaskId) return;
-        if (!confirm('¿Estás seguro de que deseas eliminar esta tarea?')) return;
+        if (!(await window.confirmModal({ message: '¿Estás seguro de que deseas eliminar esta tarea?', danger: true }))) return;
 
         var token = document.querySelector('#taskEditForm input[name="_token"]').value;
         var formData = new FormData();

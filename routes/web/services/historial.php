@@ -10,7 +10,7 @@ use App\Models\Service;
 use App\Models\GarantiaDocumento;
 use App\Models\Venta;
 
-Route::middleware(['auth', 'verified', 'approved'])->group(function () {
+Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(function () {
     Route::get('/gestion-servicios/historial-servicios', function () {
         $query = Service::with(['customer', 'serviceEquipment'])->latest();
 
@@ -21,9 +21,29 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             $query->where('internal_technician_id', $usuario->id);
         }
 
+<<<<<<< HEAD
         $services = $query->get();
         return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('services'));
     })->name('gestion.servicios.historial');
+=======
+        $equipmentTypes = EquipmentType::orderBy('name')->get();
+        $brands = Brand::orderBy('name')->get();
+        $equipos = Equipo::all();
+        $externalTechnicians = ExternalTechnician::where('is_active', true)->orderBy('name')->get();
+        $internalTechnicians = User::where(function ($q) {
+            $q->where('status', User::STATUS_APPROVED)
+              ->orWhereRaw('LOWER(name) LIKE ?', ['%joel%'])
+              ->orWhereRaw('LOWER(name) LIKE ?', ['%icelda%']);
+        })->orderBy('name')->get();
+
+        return view('structure.gestion_servicios.historial_servicios.registro_servicio.c_registro_serv', compact('customers', 'equipmentTypes', 'brands', 'equipos', 'externalTechnicians', 'internalTechnicians'));
+    })->middleware('can:servicios.crear')->name('gestion.servicios.historial.nueva_orden');
+
+    Route::post('/gestion-servicios/historial-servicios/nueva-orden', [ServiceController::class, 'store'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.nueva_orden.store');
+    Route::get('/gestion-servicios/historial-servicios/invitar', [ServiceController::class, 'invite'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.invite');
+>>>>>>> 748c4e1ad51103d8ab70a724731e58ea1f9a4912
     Route::get('/gestion-servicios/historial-servicios/aprobaciones', function () {
         $services = Service::where('status', 'registrado')
             ->with(['customer', 'currentStep'])
@@ -79,12 +99,47 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'show'])
         ->name('gestion.servicios.historial.show');
     Route::post('/gestion-servicios/historial-servicios/{service}/aprobar', [ServiceController::class, 'approve'])
-        ->name('gestion.servicios.historial.approve');
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.approve');
     Route::post('/gestion-servicios/historial-servicios/{service}/denegar', [ServiceController::class, 'deny'])
-        ->name('gestion.servicios.historial.deny');
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.deny');
     Route::post('/gestion-servicios/historial-servicios/{service}/renovar-qr', [QrController::class, 'renew'])
-        ->name('qr.renew');
+        ->middleware('can:servicios.crear')->name('qr.renew');
 
+<<<<<<< HEAD
+=======
+    Route::post('/gestion-servicios/historial-servicios/nueva-orden/external-technicians', function (Request $request) {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|regex:/^[0-9\s+\-()]{7,30}$/|max:255',
+            'email' => 'nullable|email:filter|max:255',
+            'company' => 'nullable|string|max:255',
+            'specialty' => 'nullable|string|max:255',
+            'address' => 'nullable|string',
+            'location' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'photo' => 'nullable|mimetypes:image/*|max:2048',
+        ], [
+            'name.required' => 'El nombre del técnico es obligatorio.',
+            'phone.regex' => 'El teléfono solo puede contener números, espacios y los caracteres + - ( ).',
+            'email.email' => 'El correo electrónico no tiene un formato válido.',
+            'photo.mimetypes' => 'La foto debe ser una imagen válida.',
+            'photo.max' => 'La foto no debe pesar más de 2 MB.',
+        ]);
+
+        if ($request->hasFile('photo')) {
+            $data['photo'] = Storage::disk('public')->putFile('external_technicians', $request->file('photo'));
+        }
+
+        $technician = ExternalTechnician::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json($technician);
+        }
+
+        return back();
+    })->middleware('can:servicios.crear')->name('gestion.servicios.historial.external_technicians.store');
+
+>>>>>>> 748c4e1ad51103d8ab70a724731e58ea1f9a4912
     Route::get('/gestion-servicios/garantia', function () {
         $documentos = GarantiaDocumento::latest()->get();
         return view('structure.gestion_servicios.garantia.index', compact('documentos'));
@@ -93,7 +148,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-servicios/garantia/agregar-carta', function () {
         $equipmentTypes = EquipmentType::orderBy('name')->get();
         return view('structure.gestion_servicios.garantia.create', compact('equipmentTypes'));
-    })->name('gestion.servicios.garantia.agregar_carta');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.agregar_carta');
 
     Route::post('/gestion-servicios/garantia/agregar-carta', function (Request $request) {
         $data = $request->validate([
@@ -123,7 +178,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ]);
 
         return redirect()->route('gestion.servicios.garantia.index')->with('success', 'Carta agregada correctamente.');
-    })->name('gestion.servicios.garantia.guardar_carta');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.guardar_carta');
 
 
 
@@ -277,7 +332,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ])->save();
 
         return response()->json(['ok' => true]);
-    })->name('gestion.servicios.mantenimiento.reporte.guardar');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.mantenimiento.reporte.guardar');
 });
 
 Route::get('/qr/{token}', [QrController::class, 'show'])

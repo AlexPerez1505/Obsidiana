@@ -157,6 +157,34 @@ class Customer extends Model
         'prospecto' => 'Prospecto',
     ];
 
+    /** Nombre con el que se registra el cliente genérico de mostrador. */
+    public const PUBLICO_EN_GENERAL = 'Público en general';
+
+    /**
+     * El cliente de las ventas rápidas (mostrador y congresos).
+     *
+     * Una venta necesita cliente, pero en un congreso nadie se detiene a
+     * capturar a quien compra un capuchón. Todas esas ventas cuelgan de
+     * este único registro; se crea la primera vez que hace falta.
+     */
+    public static function publicoEnGeneral(): self
+    {
+        return static::firstOrCreate(
+            ['nombre' => self::PUBLICO_EN_GENERAL, 'apellido' => null],
+            [
+                'etapa' => 'cliente',
+                'activo' => true,
+                'recibe_promocion' => false,
+                'comentarios' => 'Cliente genérico de las ventas rápidas (mostrador y congresos). No borrar.',
+            ]
+        );
+    }
+
+    public function esPublicoEnGeneral(): bool
+    {
+        return $this->nombre === self::PUBLICO_EN_GENERAL && ! $this->apellido;
+    }
+
     public function esProspecto(): bool
     {
         return $this->etapa === 'prospecto';

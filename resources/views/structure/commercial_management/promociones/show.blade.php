@@ -45,7 +45,7 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('commercial.promociones.send', $promocion) }}" onsubmit="return confirm('¿Enviar esta promoción a los destinatarios pendientes?');">
+            <form method="POST" action="{{ route('commercial.promociones.send', $promocion) }}" data-confirm="¿Enviar esta promoción a los destinatarios pendientes?">
                 @csrf
                 <button type="submit" class="btn" @disabled(!$whatsappConfigurado || $destinatarios->isEmpty())>
                     Enviar promoción ({{ $destinatarios->count() - $idsYaEnviados->count() }} pendientes)

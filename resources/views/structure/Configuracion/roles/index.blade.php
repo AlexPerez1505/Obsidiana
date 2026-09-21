@@ -103,7 +103,7 @@
                         <a href="{{ route('configuracion.roles.edit', $role) }}" class="btn btn--ghost">Configurar</a>
 
                         <form method="POST" action="{{ route('configuracion.roles.destroy', $role) }}"
-                              onsubmit="return confirm('¿Eliminar el rol {{ $role->label }}?');" style="margin:0;">
+                              data-confirm="¿Eliminar el rol {{ $role->label }}?" style="margin:0;">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn-icono" title="Eliminar rol" aria-label="Eliminar rol">

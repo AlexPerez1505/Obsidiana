@@ -344,6 +344,7 @@
             </div>
 
             <div class="emp-sidebar-actions">
+                @can('usuarios.aprobar')
                 @if ($user->isPending())
                     <form method="POST" action="{{ route('admin.users.approve', $user) }}">
                         @csrf
@@ -363,20 +364,24 @@
                         </button>
                     </form>
                 @else
-                    <form method="POST" action="{{ route('admin.users.ban', $user) }}">
+                    <form method="POST" action="{{ route('admin.users.ban', $user) }}" data-confirm="¿Banear a este usuario?">
                         @csrf
-                        <button type="submit" class="btn-danger" onclick="return confirm('¿Banear a este usuario?')">
+                        <button type="submit" class="btn-danger">
                             <x-gravityui-ban width="16" height="16" />
                             Banear
                         </button>
                     </form>
                 @endif
+                @endcan
 
+                @can('usuarios.editar')
                 <a href="{{ route('admin.users.permissions', $user) }}" class="btn-ghost">
                     <x-gravityui-star width="16" height="16" />
                     Administrar permisos
                 </a>
+                @endcan
 
+                @if(auth()->user()?->isAdmin())
                 <form method="POST" action="{{ route('admin.users.toggleAdmin', $user) }}">
                     @csrf
                     <button type="submit" class="btn-ghost">
@@ -384,6 +389,7 @@
                         {{ $user->is_admin ? 'Quitar admin' : 'Hacer admin' }}
                     </button>
                 </form>
+                @endif
             </div>
         </aside>
 

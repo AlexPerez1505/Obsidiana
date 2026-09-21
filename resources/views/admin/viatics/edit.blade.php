@@ -329,7 +329,7 @@
     </form>
 
     {{-- Delete --}}
-    <form method="POST" action="{{ route('admin.viatics.destroy', $viatic) }}" onsubmit="return confirm('¿Eliminar este viático? Esta acción no se puede deshacer.')">
+    <form method="POST" action="{{ route('admin.viatics.destroy', $viatic) }}" data-confirm="¿Eliminar este viático? Esta acción no se puede deshacer.">
         @csrf
         @method('DELETE')
         <button type="submit" class="vt-delete-btn">

@@ -37,14 +37,21 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admi
         ->name('actividad.index');
 });
 
+// Gestión de usuarios por permiso (no solo admin). Dar/quitar admin sigue siendo solo-admin (más abajo).
+Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/usuarios', [UserController::class, 'index'])->middleware('can:usuarios.ver')->name('users.index');
+    Route::post('/usuarios/perfil-rh', [UserController::class, 'updateHrProfile'])->middleware('can:usuarios.editar')->name('users.hrProfile.update');
+    Route::post('/usuarios/{user}/aprobar', [UserController::class, 'approve'])->middleware('can:usuarios.aprobar')->name('users.approve');
+    Route::post('/usuarios/{user}/banear', [UserController::class, 'ban'])->middleware('can:usuarios.aprobar')->name('users.ban');
+    Route::post('/usuarios/{user}/desbanear', [UserController::class, 'unban'])->middleware('can:usuarios.aprobar')->name('users.unban');
+    Route::get('/usuarios/{user}/permisos', [PermissionController::class, 'userPermissions'])->middleware('can:usuarios.editar')->name('users.permissions');
+    Route::post('/usuarios/{user}/permisos', [PermissionController::class, 'updateUserPermissions'])->middleware('can:usuarios.editar')->name('users.permissions.update');
+    Route::get('/usuarios/{user}', [UserController::class, 'show'])->middleware('can:usuarios.ver')->name('users.show');
+});
+
 Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/usuarios', [UserController::class, 'index'])->name('users.index');
-    Route::post('/usuarios/perfil-rh', [UserController::class, 'updateHrProfile'])->name('users.hrProfile.update');
-    Route::get('/usuarios/{user}', [UserController::class, 'show'])->name('users.show');
+    // Otorgar o quitar el rol de administrador: acción crítica, solo admins.
     Route::post('/usuarios/{user}/admin', [UserController::class, 'toggleAdmin'])->name('users.toggleAdmin');
-    Route::post('/usuarios/{user}/aprobar', [UserController::class, 'approve'])->name('users.approve');
-    Route::post('/usuarios/{user}/banear', [UserController::class, 'ban'])->name('users.ban');
-    Route::post('/usuarios/{user}/desbanear', [UserController::class, 'unban'])->name('users.unban');
     Route::post('/reportes', [ReportController::class, 'store'])->name('reports.store');
     Route::patch('/materiales/{materialRequest}/revision', [MaterialRequestController::class, 'review'])->name('materials.review');
 
@@ -78,7 +85,4 @@ Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->n
     Route::get('/permisos/{permission}/editar', [PermissionController::class, 'edit'])->name('permissions.edit');
     Route::patch('/permisos/{permission}', [PermissionController::class, 'update'])->name('permissions.update');
     Route::delete('/permisos/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
-
-    Route::get('/usuarios/{user}/permisos', [PermissionController::class, 'userPermissions'])->name('users.permissions');
-    Route::post('/usuarios/{user}/permisos', [PermissionController::class, 'updateUserPermissions'])->name('users.permissions.update');
 });

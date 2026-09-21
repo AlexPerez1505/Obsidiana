@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @auth<meta name="acceso-firma" content="{{ auth()->user()->firmaAcceso() }}">@endauth
     <title>@yield('title', 'Panel') · {{ config('app.name') }}</title>
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
 
@@ -490,6 +491,28 @@
         .toast b{ font-weight:800; }
         @media (max-width:640px){ .toast{ top:14px; right:14px; left:14px; max-width:none; } }
 
+        /* ===== Modal de confirmacion (reemplaza confirm() nativo) ===== */
+        .cm-overlay{ position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px;
+            background:rgba(6,12,23,.55); opacity:0; transition:opacity .18s ease; }
+        .cm-overlay[hidden]{ display:none; }
+        .cm-overlay.show{ opacity:1; }
+        .cm-box{ width:100%; max-width:420px; background:var(--card,#fff); color:var(--text,#1f2733); border-radius:16px;
+            box-shadow:0 24px 60px rgba(0,0,0,.28); padding:26px 24px 20px; text-align:center;
+            transform:translateY(8px) scale(.98); transition:transform .18s ease; }
+        .cm-overlay.show .cm-box{ transform:none; }
+        .cm-ico{ width:52px; height:52px; border-radius:14px; margin:0 auto 14px; display:flex; align-items:center; justify-content:center;
+            background:var(--indigo-soft,#eef2ff); color:var(--indigo,#4f46e5); }
+        .cm-ico svg{ width:26px; height:26px; }
+        .cm-box.danger .cm-ico{ background:var(--danger-soft,#fee2e2); color:var(--danger,#ef4444); }
+        .cm-title{ font-size:18px; font-weight:800; margin:0 0 6px; }
+        .cm-msg{ font-size:14px; color:var(--muted,#6b7280); margin:0 0 20px; line-height:1.45; white-space:pre-line; }
+        .cm-actions{ display:flex; gap:10px; justify-content:center; }
+        .cm-btn{ flex:1; max-width:180px; padding:11px 16px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; border:1px solid transparent; }
+        .cm-cancel{ background:transparent; border-color:var(--border,#e5e7eb); color:var(--text,#374151); }
+        .cm-ok{ background:var(--indigo,#4f46e5); color:#fff; }
+        .cm-box.danger .cm-ok{ background:var(--danger,#ef4444); }
+        .cm-btn:active{ transform:translateY(1px); }
+
         .nav-group { display:flex; flex-direction:column; gap:4px; }
         .nav-toggle { cursor:pointer; }
         .nav-chev { width:16px; height:16px; margin-left:auto; transition:transform .2s ease; flex:0 0 auto; pointer-events:none; }
@@ -676,32 +699,48 @@
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
+                    @can('clientes.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.clientes.index') ? 'active' : '' }}" href="{{ route('commercial.clientes.index') }}" data-tip="Clientes">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Clientes</span>
                     </a>
+                    @endcan
+                    @can('cotizaciones.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.cotizaciones.*') ? 'active' : '' }}" href="{{ route('commercial.cotizaciones.index') }}" data-tip="Cotizaciones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cotizaciones</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.ventas.*') ? 'active' : '' }}" href="{{ route('commercial.ventas.index') }}" data-tip="Ventas">
+                    @endcan
+                    @can('ventas.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.ventas.*') && ! request()->routeIs('commercial.ventas.rapida.*') ? 'active' : '' }}" href="{{ route('commercial.ventas.index') }}" data-tip="Ventas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Ventas</span>
                     </a>
+                    @endcan
+                    @can('ventas.crear')
+                        <a class="nav-item nav-sub {{ request()->routeIs('commercial.ventas.rapida.*') ? 'active' : '' }}" href="{{ route('commercial.ventas.rapida.index') }}" data-tip="Venta rápida">
+                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                            <span class="nav-label">Venta rápida</span>
+                        </a>
+                    @endcan
+                    @can('cobranza.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.cobranza.*') ? 'active' : '' }}" href="{{ route('commercial.cobranza.index') }}" data-tip="Cobranza">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cobranza</span>
                     </a>
+                    @endcan
                     @can('comisiones.ver')
                         <a class="nav-item nav-sub {{ request()->routeIs('commercial.comisiones.*') ? 'active' : '' }}" href="{{ route('commercial.comisiones.index') }}" data-tip="Comisiones">
                             <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                             <span class="nav-label">Comisiones</span>
                         </a>
                     @endcan
+                    @can('facturacion.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.facturas.*') ? 'active' : '' }}" href="{{ route('commercial.facturas.index') }}" data-tip="Facturación">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Facturación</span>
                     </a>
+                    @endcan
                     <a class="nav-item nav-sub" href="#" data-tip="Promociones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Promociones</span>
@@ -715,44 +754,61 @@
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
+                    @can('inventario.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.movimientos.*') ? 'active' : '' }}" href="{{ route('inventory.movimientos.index') }}" data-tip="Entrada / Salida">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Entrada / Salida</span>
                     </a>
+                    @endcan
                     @can('salidas.ver')
                         <a class="nav-item nav-sub {{ request()->routeIs('inventory.salidas.*') ? 'active' : '' }}" href="{{ route('inventory.salidas.index') }}" data-tip="Órdenes de salida">
                             <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                             <span class="nav-label">Órdenes de salida</span>
                         </a>
                     @endcan
+                    @can('procesos.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.procesos.*') ? 'active' : '' }}" href="{{ route('inventory.procesos.index') }}" data-tip="Procesos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Procesos</span>
                     </a>
+                    @endcan
+                    @can('inventario.escanear')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.escaneo.*') ? 'active' : '' }}" href="{{ route('inventory.escaneo.index') }}" data-tip="Escanear">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Escanear</span>
                     </a>
+                    @endcan
+                    @can('inventario.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.productos.*') ? 'active' : '' }}" href="{{ route('inventory.productos.index') }}" data-tip="Productos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Productos</span>
                     </a>
+                    @endcan
+                    @can('inventario.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.fichas.*') ? 'active' : '' }}" href="{{ route('inventory.fichas.index') }}" data-tip="Fichas técnicas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Fichas técnicas</span>
                     </a>
+                    @endcan
+                    @can('congresos.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.congresos.*') ? 'active' : '' }}" href="{{ route('inventory.congresos.index') }}" data-tip="Congresos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Congresos</span>
                     </a>
+                    @endcan
+                    @can('inventario.catalogo')
                     <a class="nav-item nav-sub {{ request()->routeIs('configuracion.catalogos.*') ? 'active' : '' }}" href="{{ route('configuracion.catalogos.index') }}" data-tip="Catálogo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Catálogo</span>
                     </a>
+<<<<<<< HEAD
                     <a class="nav-item nav-sub {{ request()->routeIs('configuracion.catalogos.*') ? 'active' : '' }}" href="{{ route('configuracion.catalogos.index') }}" data-tip="Catálogo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Catálogo</span>
                     </a>
+=======
+                    @endcan
+>>>>>>> 748c4e1ad51103d8ab70a724731e58ea1f9a4912
                 </div>
             </div>
             @endunless
@@ -764,19 +820,34 @@
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
+                    @can('servicios.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.historial') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial') }}" data-tip="Historial de Servicios">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Historial de Servicios</span>
                     </a>
+<<<<<<< HEAD
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.refacciones.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.refacciones.index') }}" data-tip="Refacciones">
+=======
+                    @endcan
+                    @can('servicios.crear')
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.historial.nueva_orden') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial.nueva_orden') }}" data-tip="Nueva Orden">
+>>>>>>> 748c4e1ad51103d8ab70a724731e58ea1f9a4912
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Refacciones</span>
                     </a>
+                    @endcan
+                    @can('servicios.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.garantia.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.garantia.index') }}" data-tip="Cartas de Garantía">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cartas de Garantía</span>
                     </a>
+<<<<<<< HEAD
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.registro') ? 'active' : '' }}" href="{{ route('gestion.servicios.registro') }}" data-tip="Registro Externo">
+=======
+                    @endcan
+                    @can('servicios.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.mantenimiento.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.mantenimiento.index') }}" data-tip="Mantenimiento">
+>>>>>>> 748c4e1ad51103d8ab70a724731e58ea1f9a4912
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Registro Externo</span>
                     </a>
@@ -800,6 +871,7 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Servicio externo externo</span>
                     </a>
+                    @endcan
                 </div>
             </div>
             @endunless
@@ -828,10 +900,13 @@
                             <span class="nav-label">Actividad</span>
                         </a>
                     @endcan
+                    @can('usuarios.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}" data-tip="Usuarios">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Usuarios</span>
                     </a>
+                    @endcan
+                    @if(auth()->user()?->isAdmin())
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.vehicles.*') ? 'active' : '' }}" href="{{ route('admin.vehicles.index') }}" data-tip="Vehículos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Vehículos</span>
@@ -840,6 +915,7 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Viáticos</span>
                     </a>
+                    @endif
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.materials.*') ? 'active' : '' }}" href="{{ route('admin.materials.index') }}" data-tip="Materiales">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Materiales</span>
@@ -867,28 +943,38 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Inicio</span>
                     </a>
+                    @can('marketing.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.guia_de_marca.index') ? 'active' : '' }}" href="{{ route('marketing.guia_de_marca.index') }}" data-tip="Guía de marca">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Guía de marca</span>
                     </a>
+                    @endcan
+                    @can('marketing.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.calendario.index') ? 'active' : '' }}" href="{{ route('marketing.calendario.index') }}" data-tip="Calendario">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Calendario</span>
                     </a>
+                    @endcan
+                    @can('marketing.aprobar')
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.aprobacion_flyers.index') ? 'active' : '' }}" href="{{ route('marketing.aprobacion_flyers.index') }}" data-tip="Aprobación de flyers">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Aprobación de flyers</span>
                     </a>
+                    @endcan
+                    @can('marketing.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.biblioteca_catalogo.index') ? 'active' : '' }}" href="{{ route('marketing.biblioteca_catalogo.index') }}" data-tip="Biblioteca & catálogo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Biblioteca & catálogo</span>
                     </a>
+                    @endcan
                     <div class="submenu-label">Datos</div>
+                    @can('marketing.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.tareas.index') ? 'active' : '' }}" href="{{ route('marketing.tareas.index') }}" data-tip="Tareas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Tareas</span>
                         <span class="nav-count">6</span>
                     </a>
+                    @endcan
                 </div>
             </div>
             <div class="nav-section">Sistema</div>
@@ -1032,6 +1118,18 @@
     <span class="toast-ico" id="appToastIco"></span>
     <span id="appToastMsg"></span>
 </div>
+
+<div class="cm-overlay" id="cmOverlay" hidden>
+    <div class="cm-box" role="dialog" aria-modal="true" aria-labelledby="cmTitle" aria-describedby="cmMsg">
+        <div class="cm-ico" id="cmIco"></div>
+        <h3 class="cm-title" id="cmTitle">¿Estás seguro?</h3>
+        <p class="cm-msg" id="cmMsg"></p>
+        <div class="cm-actions">
+            <button type="button" class="cm-btn cm-cancel" id="cmCancel">Cancelar</button>
+            <button type="button" class="cm-btn cm-ok" id="cmOk">Confirmar</button>
+        </div>
+    </div>
+</div>
 @if (session('status'))
     <span id="appFlash" data-msg="{{ session('status') }}" data-type="ok" hidden></span>
 @endif
@@ -1054,6 +1152,88 @@
         clearTimeout(window._toastTimer);
         window._toastTimer = setTimeout(function () { t.classList.remove('show'); }, 3600);
     };
+    window.toast = window.showToast;
+
+    // ===== Modal de confirmacion (reemplaza confirm() nativo) =====
+    var CM_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+    var CM_DANGER_RE = /elimin|borrar|quitar|banear|desactiv|cancelar|denegar|rechaz/i;
+    window.confirmModal = function (opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+            var ov = document.getElementById('cmOverlay');
+            if (!ov) { resolve(window.confirm(opts.message || '¿Confirmar?')); return; }
+            var box = ov.querySelector('.cm-box');
+            var esDanger = (opts.danger !== undefined) ? !!opts.danger
+                : CM_DANGER_RE.test(String(opts.message || '') + ' ' + String(opts.title || ''));
+            document.getElementById('cmTitle').textContent = opts.title || '¿Estás seguro?';
+            document.getElementById('cmMsg').textContent = opts.message || '';
+            document.getElementById('cmIco').innerHTML = CM_ICON;
+            var ok = document.getElementById('cmOk'), cancel = document.getElementById('cmCancel');
+            ok.textContent = opts.confirmText || (esDanger ? 'Sí, continuar' : 'Confirmar');
+            cancel.textContent = opts.cancelText || 'Cancelar';
+            box.classList.toggle('danger', esDanger);
+            ov.hidden = false;
+            requestAnimationFrame(function () { ov.classList.add('show'); });
+            setTimeout(function () { ok.focus(); }, 30);
+            function cerrar(val) {
+                ov.classList.remove('show');
+                setTimeout(function () { ov.hidden = true; }, 180);
+                ok.removeEventListener('click', onOk);
+                cancel.removeEventListener('click', onCancel);
+                ov.removeEventListener('mousedown', onBackdrop);
+                document.removeEventListener('keydown', onKey);
+                resolve(val);
+            }
+            function onOk() { cerrar(true); }
+            function onCancel() { cerrar(false); }
+            function onBackdrop(e) { if (e.target === ov) cerrar(false); }
+            function onKey(e) {
+                if (e.key === 'Escape') cerrar(false);
+                else if (e.key === 'Enter') { e.preventDefault(); cerrar(true); }
+            }
+            ok.addEventListener('click', onOk);
+            cancel.addEventListener('click', onCancel);
+            ov.addEventListener('mousedown', onBackdrop);
+            document.addEventListener('keydown', onKey);
+        });
+    };
+
+    // Redirige los alert() nativos al toast (no bloqueante).
+    var _nativeAlert = window.alert.bind(window);
+    window.alert = function (msg) {
+        try { window.showToast(String(msg), 'warn'); }
+        catch (e) { _nativeAlert(msg); }
+    };
+
+    // Interceptor declarativo: cualquier <form data-confirm="..."> abre el modal
+    // antes de enviarse. Reemplaza onsubmit="return confirm(...)".
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm')) return;
+        if (form.dataset.cmDone === '1') { form.dataset.cmDone = ''; return; }
+        e.preventDefault();
+        window.confirmModal({
+            message: form.getAttribute('data-confirm') || '¿Confirmar esta acción?',
+            title: form.getAttribute('data-confirm-title') || undefined,
+            confirmText: form.getAttribute('data-confirm-ok') || undefined,
+            danger: form.hasAttribute('data-confirm-danger') ? true : undefined
+        }).then(function (ok) {
+            if (!ok) return;
+            form.dataset.cmDone = '1';
+            if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
+        });
+    }, true);
+
+    // Enlaces <a data-confirm="..."> tambien pasan por el modal.
+    document.addEventListener('click', function (e) {
+        var el = e.target.closest('a[data-confirm]');
+        if (!el || !el.getAttribute('href')) return;
+        e.preventDefault();
+        var href = el.getAttribute('href');
+        window.confirmModal({ message: el.getAttribute('data-confirm') }).then(function (ok) {
+            if (ok) window.location.href = href;
+        });
+    }, true);
 
     document.addEventListener('DOMContentLoaded', function () {
         // Saludo según la hora real del navegador (evita desfase de zona horaria del servidor)
@@ -1229,5 +1409,51 @@
 </script>
 
 @stack('scripts')
+    {{-- Auto-refresco de permisos: si cambia el acceso del usuario (permisos,
+         rol admin o estatus), la pagina se recarga sola sin dar refresh. --}}
+    @auth
+    <script>
+    (function () {
+        var meta = document.querySelector('meta[name="acceso-firma"]');
+        if (!meta) return;
+        var firmaInicial = meta.getAttribute('content');
+        var url = @json(route('api.mi_acceso'));
+        var recargando = false;
+        function recargar() {
+            if (recargando) return;
+            // Candado anti-bucle: nunca recargar dos veces en menos de 8s.
+            try {
+                var ultimo = parseInt(sessionStorage.getItem('acceso_reload_at') || '0', 10);
+                if (Date.now() - ultimo < 8000) return;
+                sessionStorage.setItem('acceso_reload_at', String(Date.now()));
+            } catch (e) {}
+            recargando = true;
+            window.location.reload();
+        }
+        var enVuelo = false;
+        function revisar() {
+            if (enVuelo || recargando) return;      // no encimar peticiones
+            enVuelo = true;
+            fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin', cache: 'no-store' })
+                .then(function (r) {
+                    if (r.status === 401 || r.status === 419) { recargar(); return null; }
+                    if (!r.ok) return null;
+                    return r.json();
+                })
+                .then(function (d) {
+                    if (d && d.firma && d.firma !== firmaInicial) { recargar(); }
+                })
+                .catch(function () { /* red intermitente: se reintenta en el proximo ciclo */ })
+                .finally(function () { enVuelo = false; });
+        }
+        // Sondeo frecuente (casi al instante) pero silencioso: solo recarga
+        // cuando la firma cambia de verdad, no en cada ciclo.
+        setInterval(revisar, 3000);
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') revisar();
+        });
+    })();
+    </script>
+    @endauth
 </body>
 </html>

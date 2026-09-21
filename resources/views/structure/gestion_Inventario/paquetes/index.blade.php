@@ -5,10 +5,12 @@
 
 @section('content')
     <div style="display:flex; justify-content:flex-end; margin-bottom:18px;">
+        @can('inventario.registrar')
         <a href="{{ route('inventory.paquetes.create') }}" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
             <x-gravityui-plus width="16" height="16" />
             Agregar paquete
         </a>
+        @endcan
     </div>
 
     <x-ui.card>
@@ -39,7 +41,7 @@
                             <td>
                                 <div style="display:flex; gap:8px;">
                                     <a href="{{ route('inventory.paquetes.edit', $paquete) }}" class="btn btn--ghost" style="padding:6px 12px; font-size:13px; text-decoration:none;">Editar</a>
-                                    <form method="POST" action="{{ route('inventory.paquetes.destroy', $paquete) }}" onsubmit="return confirm('¿Eliminar este paquete?');">
+                                    <form method="POST" action="{{ route('inventory.paquetes.destroy', $paquete) }}" data-confirm="¿Eliminar este paquete?">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn--danger" style="padding:6px 12px; font-size:13px;">Eliminar</button>

@@ -54,7 +54,11 @@
                                         Aprobar
                                     </button>
                                 </form>
+<<<<<<< HEAD
                                 <form action="{{ route('gestion.servicios.historial.deny', $service) }}" method="POST" style="display:inline; margin-left:10px;" onsubmit="return confirm('¿Cancelar esta orden?')">
+=======
+                                <form action="{{ route('gestion.servicios.historial.deny', $service) }}" method="POST" style="display:inline; margin-left:10px;" data-confirm="¿Denegar esta orden?">
+>>>>>>> 748c4e1ad51103d8ab70a724731e58ea1f9a4912
                                     @csrf
                                     <button type="submit" class="tbl-link" style="display:inline-flex; align-items:center; gap:4px; border:none; background:none; color:var(--danger); cursor:pointer; padding:0;">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>

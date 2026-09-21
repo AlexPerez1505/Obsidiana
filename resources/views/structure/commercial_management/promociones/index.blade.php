@@ -53,7 +53,7 @@
                             <td>
                                 <div style="display:flex; gap:8px;">
                                     <a href="{{ route('commercial.promociones.show', $promocion) }}" class="btn btn--ghost" style="padding:6px 12px; font-size:13px; text-decoration:none;">Ver</a>
-                                    <form method="POST" action="{{ route('commercial.promociones.destroy', $promocion) }}" onsubmit="return confirm('¿Eliminar esta promoción?');">
+                                    <form method="POST" action="{{ route('commercial.promociones.destroy', $promocion) }}" data-confirm="¿Eliminar esta promoción?">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn--danger" style="padding:6px 12px; font-size:13px;">Eliminar</button>
