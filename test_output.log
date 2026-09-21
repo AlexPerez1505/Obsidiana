@@ -1,0 +1,2423 @@
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SmokeIconosTest::test_la_pagina_carga_sin_error_500(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   PASS  Tests\Unit\CalculadoraCotizacionTest
+  ✓ conserva pagos agregados a mano que superan los meses del plazo                                              0.78s  
+  ✓ sin pagos extra sigue generando inicial mas meses                                                            0.15s  
+
+   PASS  Tests\Unit\ExampleTest
+  ✓ that true is true                                                                                            0.08s  
+
+   PASS  Tests\Feature\AbsorberExcedenteTest
+  ✓ un abono mayor a la parcialidad deja un excedente detectable                                                30.85s  
+  ✓ absorber excedente reasigna el sobrante a la siguiente parcialidad sin tocar montos                          0.29s  
+  ✓ un abono suelto sin parcialidad se reasigna a la primera pendiente                                           0.22s  
+  ✓ un abono suelto que cubre una parcialidad completa la marca pagada no en cero                                0.23s  
+  ✓ registrar un cobro por la ruta real reasigna el excedente solo                                               0.55s  
+  ✓ absorber excedente no baja una parcialidad por debajo de lo ya cobrado                                       0.29s  
+
+   PASS  Tests\Feature\AgendaCongresoTest
+  ✓ congreso de varios dias muestra montaje desmontaje y nombre en medio                                         0.48s  
+  ✓ congreso de un solo dia combina montaje y desmontaje                                                         0.34s  
+
+   PASS  Tests\Feature\AvisoRegresoCongresoTest
+  ✓ avisa a los usuarios asignados al congreso                                                                   0.24s  
+  ✓ si nadie esta asignado el pendiente se va a los administradores                                              0.21s  
+  ✓ no avisa dos veces seguidas pero insiste a la semana                                                         0.23s  
+  ✓ un congreso que aun no termina no se avisa                                                                   0.20s  
+  ✓ si ya no queda nada alla deja de insistir                                                                    0.22s  
+  ✓ una pieza vendida en el congreso ya no es pendiente                                                          0.32s  
+  ✓ el respaldo solo corre una vez por intervalo                                                                 0.21s  
+  ✓ el comando programado corre sin errores                                                                      0.23s  
+
+   PASS  Tests\Feature\BuscarClientesTest
+  ✓ buscar clientes escribiendo algo no truena y encuentra por nombre                                            0.37s  
+  ✓ buscar clientes por correo gmail                                                                             0.31s  
+  ✓ buscar clientes sin texto regresa los primeros                                                               0.34s  
+  ✓ cada usuario solo encuentra sus clientes y admin los encuentra todos                                         0.20s  
+  ✓ un usuario no puede abrir el cliente de otro por url                                                         0.35s  
+  ✓ registro de servicios solo muestra clientes propios                                                          0.41s  
+
+   PASS  Tests\Feature\ComoConocioClienteTest
+  ✓ guarda como conocio cuando no hay congreso                                                                   0.34s  
+  ✓ ignora como conocio cuando si hay congreso                                                                   0.30s  
+  ✓ sin congreso ni texto libre comoconocio regresa null                                                         0.15s  
+  ✓ buscar clientes incluye como lo conocimos                                                                    0.31s  
+
+   PASS  Tests\Feature\CongresosInventarioTest
+  ✓ el indice carga sin congresos                                                                                0.39s  
+  ✓ el indice muestra el congreso seleccionado                                                                   0.44s  
+  ✓ crear congreso desde inventario                                                                              0.29s  
+  ✓ crear congreso con productos y usuarios desde la misma pantalla                                              0.35s  
+  ✓ agregar producto marca las unidades disponibles sin afectar su estado                                        0.35s  
+  ✓ quitar una unidad del congreso la regresa                                                                    0.32s  
+  ✓ agregar y quitar participante                                                                                0.31s  
+  ✓ ya no existen las rutas viejas de configuracion                                                              0.15s  
+  ✓ unidades disponibles incluye la foto para elegir a mano                                                      0.30s  
+  ✓ unidades disponibles no incluye las que ya estan en un congreso                                              0.32s  
+  ✓ agregar y quitar usuario del sistema en el congreso                                                          0.34s  
+
+   PASS  Tests\Feature\CotizacionProductoSearchTest
+  ✓ busqueda de productos responde con productos y paquetes                                                      0.42s  
+  ✓ guardar cotizacion sincroniza cliente id heredado si existe                                                  0.41s  
+
+   PASS  Tests\Feature\EntradaConservaDatosTest
+  ✓ un registro rechazado regresa con los datos la firma y el video                                             28.95s  
+  ✓ la condicion elegida sigue marcada                                                                           0.47s  
+
+   PASS  Tests\Feature\ExampleTest
+  ✓ the application redirects guests to login                                                                    0.27s  
+
+   PASS  Tests\Feature\FirmaRegistradaTest
+  ✓ el usuario registra su firma desde el perfil                                                                 0.33s  
+  ✓ una firma invalida no se guarda                                                                              0.31s  
+  ✓ registrar una nueva reemplaza la anterior y borra el archivo viejo                                           0.36s  
+  ✓ se puede quitar la firma registrada                                                                          0.36s  
+  ✓ la entrada carga sola la firma registrada                                                                    0.48s  
+  ✓ sin firma registrada la entrada invita a registrarla                                                         0.41s  
+  ✓ en la salida solo se precarga la de quien entrega                                                            0.51s  
+  ✓ un congreso no tiene nada que ver con la firma                                                               0.36s  
+
+   PASS  Tests\Feature\GaleriaEvidenciaProductoTest
+  ✓ unidad con 3 fotos y video expone los 4 medios en el data atributo                                           0.43s  
+  ✓ la ventana muestra las fotos y el video sin abrir la galeria                                                 0.35s  
+  ✓ una unidad sin evidencia lo dice en la ventana                                                               0.34s  
+  ✓ unidad sin video no ofrece video en el texto                                                                 0.35s  
+
+   FAIL  Tests\Feature\InventoryEntradaTest
+  ⨯ registrar entrada crea el producto sus unidades y guarda la evidencia                                        0.49s  
+  ✓ entrada sin evidencia no se guarda                                                                           0.42s  
+  ✓ entrada con mas de 3 fotos de evidencia regresa error                                                        0.43s  
+  ✓ entrada sin firma no se guarda                                                                               0.46s  
+  ✓ entrada sin video no se guarda                                                                               0.43s  
+  ⨯ entrada con video path inventado no se guarda                                                                0.43s  
+  ⨯ series que no coinciden con la cantidad regresan error                                                       0.37s  
+  ⨯ eliminar entrada borra las unidades y la evidencia del disco                                                 0.45s  
+  ⨯ no se puede eliminar una entrada con unidades ya vendidas                                                    0.46s  
+
+   FAIL  Tests\Feature\InventorySerializadoTest
+  ✓ la pagina de crear entrada carga                                                                             0.46s  
+  ⨯ entrada serializada guarda foto y serie por unidad                                                           0.37s  
+  ⨯ serial duplicado no pierde la unidad ni la foto                                                              0.40s  
+  ✓ actualizar serial pide pin o password                                                                        0.42s  
+
+   PASS  Tests\Feature\InventoryVideoChunkTest
+  ✓ subir un video en varios pedazos lo ensambla correctamente                                                   0.42s  
+  ✓ extension no permitida regresa error                                                                         0.34s  
+
+   PASS  Tests\Feature\LinkPreviewTest
+  ✓ link de youtube devuelve embed                                                                               0.32s  
+  ✓ link corto de youtube devuelve embed                                                                         0.29s  
+  ✓ youtube shorts devuelve embed                                                                                0.28s  
+  ✓ link de vimeo devuelve embed                                                                                 0.28s  
+  ✓ link de google drive devuelve preview                                                                        0.28s  
+  ✓ imagen directa devuelve type image                                                                           0.27s  
+  ✓ imagen webp tambien se detecta                                                                               0.28s  
+  ✓ link generico devuelve tarjeta opengraph                                                                     0.40s  
+  ✓ link generico sin opengraph usa title tag                                                                    0.26s  
+  ✓ link que no responde caen a link simple                                                                      0.30s  
+  ✓ url invalida devuelve 422                                                                                    0.29s  
+  ✓ el resultado se cachea                                                                                       0.29s  
+  ✓ usuario no autenticado no puede acceder                                                                      0.24s  
+
+   PASS  Tests\Feature\MarketingAgendaTest
+  ✓ marketing agenda route renders existing calendar view                                                        0.43s  
+  ✓ marketing inicio route renders dashboard                                                                     0.38s  
+
+   PASS  Tests\Feature\MaterialRequestControllerTest
+  ✓ materiales muestra solicitudes y productos reales                                                            0.41s  
+  ✓ enviar solicitud crea registro pendiente en base                                                             0.30s  
+  ✓ guardar borrador crea registro borrador en base                                                              0.29s  
+  ✓ admin puede aprobar solicitud pendiente                                                                      0.28s  
+
+   FAIL  Tests\Feature\MovimientoDetalleTest
+  ⨯ cada fila del listado lleva a su detalle                                                                     0.44s  
+  ⨯ el detalle de una entrada lista todas sus piezas                                                             0.38s  
+  ⨯ el detalle de una salida tambien muestra las piezas que salieron                                             0.49s  
+
+   PASS  Tests\Feature\OrdenSalidaListaParaSalirTest
+  ✓ terminar el checklist no la deja lista sola                                                                  0.35s  
+  ✓ el boton aparece cuando se cumplen las dos condiciones                                                       0.48s  
+  ✓ dejarla lista registra quien la preparo y la pone en esa lista                                               0.45s  
+  ✓ no se puede dejar lista con el checklist incompleto                                                          0.35s  
+  ✓ no se puede firmar sin dejarla lista primero                                                                 0.33s  
+  ✓ una vez lista ya se puede firmar                                                                             0.41s  
+  ✓ desmarcar una partida anula la preparacion cerrada                                                           0.38s  
+
+   PASS  Tests\Feature\PaqueteSelectorTest
+  ✓ crear paquete precarga los productos seleccionados desde productos                                           0.42s  
+  ✓ guardar paquete sigue funcionando con los mismos campos                                                      0.31s  
+  ✓ editar paquete precarga las cantidades ya guardadas                                                          0.35s  
+
+   FAIL  Tests\Feature\PiezaEnCongresoTest
+  ✓ al escanear una pieza en congreso se avisa donde esta                                                        0.37s  
+  ✓ una pieza en el almacen no reporta congreso                                                                  0.30s  
+  ⨯ el listado de productos marca la unidad que esta en congreso                                                 0.42s  
+  ✓ el filtro deja solo los productos con piezas en congreso                                                     0.37s  
+  ✓ vender una pieza la saca de lo que esta alla pero conserva el rastro                                         0.26s  
+  ✓ un congreso terminado con piezas avisa y se pueden regresar todas                                            0.52s  
+  ✓ no se puede regresar todas si no hay nada alla                                                               0.28s  
+
+   FAIL  Tests\Feature\PromocionesTest
+  ⨯ autorizar registra quien y cuando sin confirmar todavia                                                      0.21s  
+  ⨯ enviar confirmaciones encola un job por cliente pendiente y no a los demas                                   0.16s  
+  ⨯ no reenvia confirmacion si ya se mando hace menos de 3 dias                                                  0.17s  
+  ⨯ job de confirmacion manda por whatsapp y registra el intento                                                 0.19s  
+  ⨯ registrar respuesta si confirma al cliente                                                                   0.17s  
+  ⨯ registrar respuesta no revoca al cliente                                                                     0.16s  
+  ⨯ revocar manualmente saca al cliente de futuras campanas                                                      0.15s  
+  ⨯ webhook interpreta si y confirma sin sesion                                                                  0.17s  
+  ⨯ crear campana la deja como borrador                                                                          0.16s  
+  ⨯ lanzar campana solo manda a clientes confirmados y encola por cada uno                                       0.16s  
+  ⨯ no se puede lanzar una campana sin destinatarios calificados                                                 0.15s  
+  ⨯ job de campana excluye a un cliente que se dio de baja despues de encolarse                                  0.17s  
+  ⨯ job de campana marca enviado cuando el whatsapp sender tiene exito                                           0.18s  
+
+   FAIL  Tests\Feature\SalidaHastaEntregarTest
+  ✓ al vender el stock baja pero el movimiento queda como vendido                                                0.46s  
+  ⨯ el listado lo muestra como vendido pendiente de entrega                                                      0.48s  
+  ✓ firmar la orden de salida lo convierte en salida                                                             0.57s  
+  ⨯ el detalle dice si ya salio o sigue pendiente                                                                0.55s  
+  ✓ mientras no se entregue la venta se puede cancelar                                                           0.49s  
+  ✓ una venta con equipo ya entregado no se cancela ni se borra                                                  0.50s  
+
+   FAIL  Tests\Feature\SmokeIconosTest
+  ✓ la pagina carga sin error 500 with data set #0                                                               0.38s  
+  ✓ la pagina carga sin error 500 with data set #1                                                               0.29s  
+  ⨯ la pagina carga sin error 500 with data set #2                                                               0.15s  
+  ⨯ la pagina carga sin error 500 with data set #3                                                               0.14s  
+  ✓ la pagina carga sin error 500 with data set #4                                                               0.34s  
+  ✓ la pagina carga sin error 500 with data set #5                                                               0.35s  
+  ✓ la pagina carga sin error 500 with data set #6                                                               0.71s  
+  ✓ la pagina carga sin error 500 with data set #7                                                               0.37s  
+  ✓ la pagina carga sin error 500 with data set #8                                                               0.32s  
+  ✓ la pagina carga sin error 500 with data set #9                                                               0.32s  
+  ✓ la pagina carga sin error 500 with data set #10                                                              0.34s  
+  ✓ la pagina carga sin error 500 with data set #11                                                              0.33s  
+  ✓ la pagina carga sin error 500 with data set #12                                                              0.35s  
+  ✓ la pagina carga sin error 500 with data set #13                                                              0.34s  
+  ✓ la pagina carga sin error 500 with data set #14                                                              0.40s  
+  ✓ la pagina carga sin error 500 with data set #15                                                              0.32s  
+  ✓ la pagina carga sin error 500 with data set #16                                                              0.35s  
+  ✓ la pagina carga sin error 500 with data set #17                                                              0.34s  
+  ✓ la pagina carga sin error 500 with data set #18                                                              0.33s  
+  ✓ la pagina carga sin error 500 with data set #19                                                              0.33s  
+  ✓ la pagina carga sin error 500 with data set #20                                                              0.34s  
+  ✓ la pagina carga sin error 500 with data set #21                                                              0.32s  
+  ✓ la pagina carga sin error 500 with data set #22                                                              0.34s  
+  ✓ la pagina carga sin error 500 with data set #23                                                              0.39s  
+  ✓ la pagina carga sin error 500 with data set #24                                                              0.35s  
+  ✓ la pagina carga sin error 500 with data set #25                                                              0.34s  
+  ✓ la pagina carga sin error 500 with data set #26                                                              0.32s  
+  ✓ la pagina carga sin error 500 with data set #27                                                              0.32s  
+  ✓ la pagina carga sin error 500 with data set #28                                                              0.38s  
+  ✓ la pagina carga sin error 500 with data set #29                                                              0.44s  
+  ✓ la pagina carga sin error 500 with data set #30                                                              0.35s  
+  ✓ la pagina carga sin error 500 with data set #31                                                              0.33s  
+  ✓ la pagina carga sin error 500 with data set #32                                                              0.36s  
+  ✓ la pagina carga sin error 500 with data set #33                                                              0.38s  
+  ✓ la pagina carga sin error 500 with data set #34                                                              0.38s  
+  ✓ la pagina carga sin error 500 with data set #35                                                              0.32s  
+  ✓ la pagina carga sin error 500 with data set #36                                                              0.32s  
+  ✓ la pagina carga sin error 500 with data set #37                                                              0.34s  
+  ✓ la pagina carga sin error 500 with data set #38                                                              0.32s  
+  ✓ la pagina carga sin error 500 with data set #39                                                              0.34s  
+  ✓ la pagina carga sin error 500 with data set #40                                                              0.32s  
+  ✓ la pagina carga sin error 500 with data set #41                                                              0.35s  
+  ✓ ficha de usuario carga sin error 500                                                                         0.39s  
+  ✓ permisos carga sin error 500                                                                                 0.36s  
+
+   PASS  Tests\Feature\VehiclesIconTest
+  ✓ index sin vehiculos renderiza el icono gravityui                                                             0.52s  
+  ✓ index con vehiculo renderiza el icono gravityui                                                              0.35s  
+  ✓ show sin fotos renderiza el icono gravityui                                                                  0.34s  
+
+   PASS  Tests\Feature\VentaPagoVencidoTest
+  ✓ una parcialidad que vence hoy no esta vencida                                                                0.19s  
+  ✓ una parcialidad de ayer sin cobrar si esta vencida                                                           0.16s  
+  ✓ un abono reduce el saldo pendiente de la parcialidad                                                         0.17s  
+
+   PASS  Tests\Feature\VentaPaqueteStockTest
+  ✓ vender un paquete descuenta el stock de sus productos                                                        0.53s  
+  ✓ cancelar venta de paquete libera el stock de todos sus productos                                             0.55s  
+
+   PASS  Tests\Feature\VentaStockTest
+  ✓ vender descuenta el stock y registra la salida                                                               0.42s  
+  ✓ editar la venta libera las unidades y borra la salida                                                        0.55s  
+  ✓ cancelar la venta libera las unidades                                                                        0.42s  
+  ✓ al completar solo se prefieren las piezas del almacen                                                        0.39s  
+  ✓ se puede vender a proposito la pieza que esta en el congreso                                                 0.41s  
+
+   PASS  Tests\Feature\ViaticoFotosTicketTest
+  ✓ crear viatico con varias fotos de ticket                                                                     0.38s  
+  ✓ agregar una foto mas conserva las que ya habia                                                               0.38s  
+  ✓ quitar una foto borra el archivo y deja las demas                                                            0.38s  
+  ✓ eliminar el viatico borra sus fotos del disco                                                                0.41s  
+  ✓ paginas de crear editar y ver cargan sin error 500                                                           0.63s  
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\InventoryEntradaTest > registrar entrada crea el producto sus unidades y guarda la evidenci…   
+  Failed asserting that two strings are equal.
+
+The following errors occurred during the last request:
+
+The condicion field is required.
+The modo identificacion field is required.
+
+--- Expected
++++ Actual
+@@ @@
+-'http://localhost/gestion-inventario/entrada-salida'
++'http://localhost'
+
+  at tests\Feature\InventoryEntradaTest.php:83
+     79▕             $this->datosBase($user, ['cantidad' => 3, 'series_texto' => '23A00001']),
+     80▕             ['evidencias' => [UploadedFile::fake()->create('evidencia.jpg', 50, 'image/jpeg')]]
+     81▕         ));
+     82▕ 
+  ➜  83▕         $response->assertRedirect(route('inventory.movimientos.index'));
+     84▕ 
+     85▕         $producto = Producto::first();
+     86▕         $this->assertNotNull($producto);
+     87▕         $this->assertSame(3, $producto->stock);
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\InventoryEntradaTest > entrada con video path inventado no se guarda                           
+  Session missing error: video_path
+Failed asserting that false is true.
+
+The following errors occurred during the last request:
+
+The condicion field is required.
+The modo identificacion field is required.
+
+  at tests\Feature\InventoryEntradaTest.php:179
+    175▕             $this->datosBase($user, ['video_path' => 'inventario/entradas/video_no-existe.mp4']),
+    176▕             ['evidencias' => [UploadedFile::fake()->create('evidencia.jpg', 50, 'image/jpeg')]]
+    177▕         ));
+    178▕ 
+  ➜ 179▕         $response->assertSessionHasErrors('video_path');
+    180▕         $this->assertDatabaseCount('inventory_movements', 0);
+    181▕     }
+    182▕ 
+    183▕     public function test_series_que_no_coinciden_con_la_cantidad_regresan_error(): void
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\InventoryEntradaTest > series que no coinciden con la cantidad regresan error                  
+  Session missing error: series_texto
+Failed asserting that false is true.
+
+The following errors occurred during the last request:
+
+The condicion field is required.
+The modo identificacion field is required.
+
+  at tests\Feature\InventoryEntradaTest.php:193
+    189▕             $this->datosBase($user, ['cantidad' => 3, 'series_texto' => "SN1\nSN2"]),
+    190▕             ['evidencias' => [UploadedFile::fake()->create('evidencia.jpg', 50, 'image/jpeg')]]
+    191▕         ));
+    192▕ 
+  ➜ 193▕         $response->assertSessionHasErrors('series_texto');
+    194▕         $this->assertDatabaseCount('inventory_movements', 0);
+    195▕     }
+    196▕ 
+    197▕     public function test_eliminar_entrada_borra_las_unidades_y_la_evidencia_del_disco(): void
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\InventoryEntradaTest > eliminar entrada borra las unidades y la evidencia d…  ErrorException   
+  Attempt to read property "evidence_paths" on null
+
+  at tests\Feature\InventoryEntradaTest.php:208
+    204▕             ['evidencias' => [UploadedFile::fake()->create('evidencia.jpg', 50, 'image/jpeg')]]
+    205▕         ));
+    206▕ 
+    207▕         $movimiento = InventoryMovement::first();
+  ➜ 208▕         $evidencia = $movimiento->evidence_paths[0];
+    209▕         $firma = $movimiento->signature_path;
+    210▕         $video = $movimiento->video_path;
+    211▕ 
+    212▕         $this->actingAs($user)
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\InventoryEntradaTest > no se puede eliminar una entrada con unidade…  UrlGenerationException   
+  Missing required parameter for [Route: inventory.movimientos.destroy] [URI: gestion-inventario/entrada-salida/{movimiento}] [Missing parameter: movimiento].
+
+  at vendor\laravel\framework\src\Illuminate\Routing\Exceptions\UrlGenerationException.php:35
+     31▕         }
+     32▕ 
+     33▕         $message .= '.';
+     34▕ 
+  ➜  35▕         return new static($message);
+     36▕     }
+     37▕ }
+     38▕
+
+  1   vendor\laravel\framework\src\Illuminate\Routing\Exceptions\UrlGenerationException.php:35
+  2   vendor\laravel\framework\src\Illuminate\Routing\RouteUrlGenerator.php:94
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\InventorySerializadoTest > entrada serializada guarda foto y serie por unidad                  
+  Failed asserting that two strings are equal.
+
+The following errors occurred during the last request:
+
+The condicion field is required.
+The modo identificacion field is required.
+Sube al menos una foto que documente cómo llegó esta entrada.
+
+--- Expected
++++ Actual
+@@ @@
+-'http://localhost/gestion-inventario/entrada-salida'
++'http://localhost'
+
+  at tests\Feature\InventorySerializadoTest.php:87
+     83▕                 ['no_serie' => 'SNU002', 'foto' => UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')],
+     84▕             ],
+     85▕         ]);
+     86▕ 
+  ➜  87▕         $response->assertRedirect(route('inventory.movimientos.index'));
+     88▕ 
+     89▕         $producto = Producto::first();
+     90▕         $this->assertNotNull($producto);
+     91▕         $this->assertTrue((bool) $producto->es_serializado);
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\InventorySerializadoTest > serial duplicado no pierde la unidad ni la foto                     
+  Failed asserting that two strings are equal.
+
+The following errors occurred during the last request:
+
+The condicion field is required.
+The modo identificacion field is required.
+Sube al menos una foto que documente cómo llegó esta entrada.
+
+--- Expected
++++ Actual
+@@ @@
+-'http://localhost/gestion-inventario/entrada-salida'
++'http://localhost'
+
+  at tests\Feature\InventorySerializadoTest.php:142
+    138▕                 ['no_serie' => 'SN-NUEVA', 'foto' => UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')],
+    139▕             ],
+    140▕         ]);
+    141▕ 
+  ➜ 142▕         $response->assertRedirect(route('inventory.movimientos.index'));
+    143▕ 
+    144▕         $producto->refresh();
+    145▕         // La unidad vieja (1) + las 2 nuevas que llegaron = 3, aunque una
+    146▕         // de las nuevas se quedó sin serial por el choque.
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\MovimientoDetalleTest > cada fila del listado lleva a su detalle                               
+  Expected: <!DOCTYPE html>\n
+<html lang="es">\n
+<head>\n
+    <meta charset="utf-8">\n
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n
+    <meta name="csrf-token" content="g8wugPC3cWPVXsH6bGWTWbmFRqX9ppPqqdZWhUsT">\n
+    <title>Entrada / Salida · Laravel</title>\n
+    <link rel="icon" type="image/png" href="http://localhost/images/favicon.png">\n
+\n
+    \n
+    <link rel="preconnect" href="https://fonts.googleapis.com">\n
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&display=swap" rel="stylesheet">\n
+\n
+    \n
+    <script>\n
+        (function () {\n
+            try {\n
+                var t = localStorage.getItem('theme');\n
+                if (!t) { t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }\n
+                document.documentElement.setAttribute('data-theme', t);\n
+            } catch (e) {}\n
+        })();\n
+    </script>\n
+\n
+    <style>\n
+        :root {\n
+            --bg:#ffffff; --surface:#ffffff; --surface-2:#f7f8fa;\n
+            --text:#333333; --muted:#888888; --border:#ebebeb;\n
+            --primary:#007aff; --primary-strong:#0062cc; --primary-soft:#e6f0ff;\n
+            --accent:#f97316; --accent-soft:#fff3e8;\n
+            --danger:#ff4a4a; --danger-soft:#ffebeb; --green:#15803d; --green-soft:#e6ffe6;\n
+            --shadow:0 4px 20px rgba(17,24,39,.05);\n
+            --sidebar-bg:#ffffff; --topbar-bg:#ffffff;\n
+            --sidebar-w:252px; --sidebar-w-collapsed:78px;\n
+        }\n
+        :root[data-theme="dark"] {\n
+            --bg:#070c17; --surface:#0f1a30; --surface-2:#0c1526;\n
+            --text:#e8eef8; --muted:#93a4bd; --border:rgba(90,140,230,.18);\n
+            --primary:#0a84ff; --primary-strong:#007aff; --primary-soft:rgba(10,132,255,.18);\n
+            --accent:#fb923c; --accent-soft:rgba(249,115,22,.12);\n
+            --danger:#f87171; --danger-soft:rgba(220,38,38,.12); --green:#4ade80; --green-soft:rgba(22,163,74,.14);\n
+            --shadow:0 6px 26px rgba(0,0,0,.45);\n
+            --sidebar-bg:#0a1223; --topbar-bg:#0a1223;\n
+        }\n
+        * { box-sizing:border-box; }\n
+        html, body { margin:0; padding:0; }\n
+        body { font-family:'Quicksand',system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;\n
+               background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; }\n
+\n
+        /* ===== Estructura ===== */\n
+        .app { display:grid; grid-template-columns:var(--sidebar-w) 1fr; min-height:100vh;\n
+               transition:grid-template-columns .34s cubic-bezier(.4,0,.2,1); }\n
+        .app.no-anim, .app.no-anim .brand-text, .app.no-anim .nav-label,\n
+        .app.no-anim .help-text, .app.no-anim .collapse-btn svg { transition:none !important; }\n
+        .app.collapsed { grid-template-columns:var(--sidebar-w-collapsed) 1fr; }\n
+\n
+        /* ===== Sidebar ===== */\n
+        .sidebar { background:var(--sidebar-bg);\n
+                   box-shadow:1px 0 3px rgba(17,24,39,.05), 1px 0 1px rgba(17,24,39,.03);\n
+                   display:flex; flex-direction:column; padding:20px 16px; position:sticky; top:0; height:100vh;\n
+                   z-index:40; }\n
+        .app.collapsed .sidebar { padding-left:12px; padding-right:12px; }\n
+\n
+        .brand { display:flex; align-items:center; gap:11px; padding:4px 6px 20px; min-height:56px;\n
+                 transition:justify-content .3s, padding .3s; }\n
+        .brand-logo { width:44px; height:44px; flex:0 0 auto;\n
+                      display:flex; align-items:center; justify-content:center; color:var(--primary); }\n
+        .brand-logo img { width:100%; height:100%; object-fit:contain; display:block; }\n
+        .brand-text { min-width:0; overflow:hidden; opacity:1; transform:translateX(0);\n
+                      transition:opacity .22s ease .06s, transform .28s cubic-bezier(.4,0,.2,1); }\n
+        .brand-name { font-weight:700; letter-spacing:-.01em; font-size:19px; line-height:1.1; white-space:nowrap; }\n
+        .brand-sub { font-size:8.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);\n
+                     margin-top:3px; white-space:nowrap; }\n
+        .app.collapsed .brand { justify-content:center; gap:0; padding-left:0; padding-right:0; }\n
+        .app.collapsed .brand-logo { width:50px; height:50px; margin:0 auto; }\n
+        .app.collapsed .brand-text { opacity:0; transform:translateX(-8px); width:0;\n
+                                     margin:0; padding:0; pointer-events:none; }\n
+\n
+        /* Botón contraer: flotante, minimalista, gira según el estado */\n
+        .collapse-btn { position:absolute; top:30px; right:-13px; width:26px; height:26px; border-radius:50%;\n
+            display:flex; align-items:center; justify-content:center; z-index:60;\n
+            border:1px solid var(--border); background:var(--surface); color:var(--muted);\n
+            cursor:pointer; box-shadow:0 2px 8px rgba(17,24,39,.10);\n
+            transition:transform .2s ease, color .2s ease, background .2s ease, box-shadow .2s ease; }\n
+        .collapse-btn:hover { color:var(--text); background:var(--surface-2); transform:scale(1.08); }\n
+        .collapse-btn:active { transform:scale(.94); }\n
+        .collapse-btn svg { width:15px; height:15px; transition:transform .34s cubic-bezier(.4,0,.2,1); }\n
+        .app.collapsed .collapse-btn svg { transform:rotate(180deg); }\n
+        .app.collapsed .collapse-btn span { display:none; }\n
+\n
+        .nav { display:flex; flex-direction:column; gap:4px; margin-top:6px;\n
+               flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden;\n
+               scrollbar-width:thin; scrollbar-color:var(--border) transparent; }\n
+        .nav::-webkit-scrollbar { width:6px; }\n
+        .nav::-webkit-scrollbar-track { background:transparent; }\n
+        .nav::-webkit-scrollbar-thumb { background:var(--border); border-radius:999px; }\n
+        .nav::-webkit-scrollbar-thumb:hover { background:var(--muted); }\n
+        /* El menú contraído muestra tooltips fuera de su propio contenedor;\n
+           con overflow:auto se recortarían, así que ahí se deja sin scroll\n
+           (los íconos solos ya caben sin desbordar). */\n
+        .app.collapsed .nav { overflow:visible; }\n
+        .nav-item { position:relative; display:flex; align-items:center; gap:13px; padding:11px 13px; border-radius:12px;\n
+                    color:var(--muted); text-decoration:none; font-weight:600; font-size:14.5px; white-space:nowrap;\n
+                    transition:background .16s ease, color .16s ease; }\n
+        .nav-item:hover { background:var(--surface-2); color:var(--text); }\n
+        .nav-item.active { background:linear-gradient(135deg,var(--primary-strong),var(--primary));\n
+                           color:#fff; box-shadow:0 8px 18px rgba(0,122,255,.28); }\n
+        .nav-item svg { width:20px; height:20px; flex:0 0 auto; }\n
+        .nav-label { display:inline-block; overflow:hidden; white-space:nowrap; transition:opacity .2s ease .05s; }\n
+        .app.collapsed .nav-item { justify-content:center; gap:0; }\n
+        .app.collapsed .nav-label { opacity:0; width:0; }\n
+\n
+        /* Tooltip elegante al pasar el mouse con el menú contraído */\n
+        .app.collapsed .nav-item::after { content:attr(data-tip); position:absolute; left:calc(100% + 16px); top:50%;\n
+            transform:translateY(-50%) translateX(-4px); white-space:nowrap; background:var(--surface); color:var(--text);\n
+            border:1px solid var(--border); padding:7px 11px; border-radius:10px; font-size:13px; font-weight:600;\n
+            box-shadow:0 10px 28px rgba(17,24,39,.16); opacity:0; pointer-events:none; z-index:70;\n
+            transition:opacity .16s ease, transform .18s cubic-bezier(.4,0,.2,1); }\n
+        .app.collapsed .nav-item::before { content:""; position:absolute; left:calc(100% + 10px); top:50%;\n
+            transform:translateY(-50%) rotate(45deg); width:9px; height:9px; background:var(--surface);\n
+            border-left:1px solid var(--border); border-bottom:1px solid var(--border);\n
+            opacity:0; pointer-events:none; z-index:70; transition:opacity .16s ease; }\n
+        .app.collapsed .nav-item:hover::after { opacity:1; transform:translateY(-50%) translateX(0); }\n
+        .app.collapsed .nav-item:hover::before { opacity:1; }\n
+\n
+        .sidebar-foot { margin-top:auto; }\n
+        .help-box { background:var(--surface-2); border:1px solid var(--border); border-radius:14px;\n
+                    padding:16px; text-align:center; transition:padding .3s ease; }\n
+        .help-ico { width:44px; height:44px; border-radius:50%; background:var(--primary-soft); color:var(--primary);\n
+                    display:flex; align-items:center; justify-content:center; margin:0 auto 8px;\n
+                    transition:margin .3s ease; }\n
+        .help-box b { display:block; font-size:14px; }\n
+        .help-box small { color:var(--muted); font-size:12px; }\n
+        .help-text { overflow:hidden; transition:opacity .2s ease; }\n
+        .app.collapsed .help-text { opacity:0; height:0; margin:0; }\n
+        .app.collapsed .help-box { padding:11px; }\n
+        .app.collapsed .help-ico { margin-bottom:0; }\n
+\n
+        /* ===== Área principal ===== */\n
+        .main { display:flex; flex-direction:column; min-width:0; }\n
+        /* Sin borde: la separacion con el contenido la da una sombra muy\n
+           tenue, que ademas solo tiene sentido hacia abajo. */\n
+        .topbar { position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:16px;\n
+                  padding:16px 26px; background:var(--topbar-bg);\n
+                  box-shadow:0 1px 3px rgba(17,24,39,.05), 0 1px 1px rgba(17,24,39,.03); }\n
+        .page-title { font-size:25px; font-weight:700; margin:0; line-height:1.15; letter-spacing:-.01em; }\n
+        .page-sub { color:var(--muted); font-size:14px; margin:2px 0 0; }\n
+        .topbar-spacer { flex:1; }\n
+        /* Fila de acciones de la pantalla, dentro del contenido y a la derecha. */\n
+        .content-actions { display:flex; align-items:center; justify-content:flex-end;\n
+                           gap:8px; flex-wrap:wrap; margin-bottom:16px; }\n
+        .content-actions .btn { display:inline-flex; align-items:center; gap:6px; }\n
+        /* Hamburguesa: solo en móvil (en escritorio ya existe el botón "Contraer" del sidebar) */\n
+        .hamburger { display:none; align-items:center; justify-content:center; width:42px; height:42px;\n
+                     border:1px solid var(--border); background:var(--surface); color:var(--text);\n
+                     border-radius:11px; cursor:pointer; flex:0 0 auto; }\n
+        .hamburger:hover { background:var(--surface-2); }\n
+\n
+        .icon-btn { position:relative; width:42px; height:42px; border:none; background:transparent;\n
+                    color:var(--muted); border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;\n
+                    transition:background .18s ease, color .18s ease; }\n
+        .icon-btn:hover { background:var(--surface-2); color:var(--text); }\n
+        .icon-btn svg { width:19px; height:19px; }\n
+        .badge-dot { position:absolute; top:-5px; right:-5px; min-width:18px; height:18px; padding:0 5px;\n
+                     background:var(--danger); color:#fff; border-radius:999px; font-size:11px; font-weight:700;\n
+                     display:flex; align-items:center; justify-content:center; }\n
+\n
+        /* Toggle de tema: luna en claro, sol en oscuro */\n
+        #theme-toggle .ico-sun { display:none; }\n
+        :root[data-theme="dark"] #theme-toggle .ico-sun { display:block; }\n
+        :root[data-theme="dark"] #theme-toggle .ico-moon { display:none; }\n
+\n
+        .user-btn { display:flex; align-items:center; gap:10px; border:1px solid var(--border); background:var(--surface);\n
+                    padding:6px 10px 6px 6px; border-radius:999px; cursor:pointer; color:var(--text);\n
+                    transition:background .18s ease, border-color .18s ease, box-shadow .18s ease; }\n
+        .user-btn:hover { background:var(--surface-2); box-shadow:0 2px 10px rgba(17,24,39,.06); }\n
+        .dd.open .user-btn { background:var(--surface-2); border-color:var(--primary); }\n
+        .user-btn .chev { color:var(--muted); transition:transform .24s cubic-bezier(.4,0,.2,1); }\n
+        .dd.open .user-btn .chev { transform:rotate(180deg); }\n
+        .avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#4da3ff,var(--primary));\n
+                  color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;\n
+                  flex:0 0 auto; }\n
+        .user-name { font-weight:600; font-size:14px; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }\n
+\n
+        /* ===== Dropdowns ===== */\n
+        .dd { position:relative; }\n
+        .dd-panel { position:absolute; right:0; top:calc(100% + 10px); width:290px; background:var(--surface);\n
+                    border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow); padding:8px;\n
+                    z-index:50; opacity:0; visibility:hidden; transform:translateY(-8px) scale(.97);\n
+                    transform-origin:top right; pointer-events:none;\n
+                    transition:opacity .18s ease, transform .22s cubic-bezier(.4,0,.2,1), visibility .18s; }\n
+        .dd.open .dd-panel { opacity:1; visibility:visible; transform:translateY(0) scale(1); pointer-events:auto; }\n
+        .dd-head { padding:12px 12px 10px; }\n
+        .dd-head b { font-size:15px; }\n
+        .dd-head small { display:block; color:var(--muted); font-size:12.5px; margin-top:2px; }\n
+        .dd-sep { height:1px; background:var(--border); margin:4px 6px 6px; }\n
+        .dd-item { display:flex; gap:12px; align-items:center; padding:10px 12px; border-radius:12px;\n
+                   text-decoration:none; color:var(--text); width:100%; border:none; background:none; cursor:pointer;\n
+                   text-align:left; font-family:inherit; transition:background .14s ease; }\n
+        .dd-item:hover { background:var(--surface-2); }\n
+        .dd-item .di-ico { width:36px; height:36px; border-radius:10px; background:var(--primary-soft); color:var(--primary);\n
+                           display:flex; align-items:center; justify-content:center; flex:0 0 auto; }\n
+        .dd-item.danger .di-ico { background:var(--danger-soft); color:var(--danger); }\n
+        .dd-item.danger b { color:var(--danger); }\n
+        .dd-item b { font-size:14.5px; }\n
+        .dd-item small { display:block; color:var(--muted); font-size:12.5px; }\n
+        .dd-notif { max-height:340px; overflow-y:auto; }\n
+        .dd-empty { padding:26px 12px; text-align:center; color:var(--muted); font-size:14px; }\n
+\n
+        /* ===== Contenido ===== */\n
+        .content { padding:26px; }\n
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:10px;\n
+                padding:18px; }\n
+        .grid { display:grid; gap:18px; }\n
+        .stat-row { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }\n
+        .stat { display:flex; align-items:center; gap:14px; }\n
+        .stat-ico { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }\n
+        .stat-ico svg { width:20px; height:20px; }\n
+        .stat-ico.blue { background:var(--primary-soft); color:var(--primary); }\n
+        .stat-ico.orange { background:var(--accent-soft); color:var(--accent); }\n
+        .stat-ico.green { background:var(--green-soft); color:var(--green); }\n
+        .stat-num { font-size:26px; font-weight:600; line-height:1.1; letter-spacing:-.02em; }\n
+        .stat-lbl { color:var(--muted); font-size:13px; margin-top:2px; }\n
+\n
+        /* Tarjeta con acento superior: da color sin invadir el fondo */\n
+        .card--accent { position:relative; overflow:hidden; }\n
+        .card--accent::before { content:""; position:absolute; top:0; left:0; right:0; height:2px; background:var(--primary); }\n
+        .card--accent.is-green::before { background:var(--green); }\n
+        .card--accent.is-amber::before { background:var(--accent); }\n
+        .card--accent.is-danger::before { background:var(--danger); }\n
+\n
+        /* Encabezado de una tarjeta con titulo y accion */\n
+        .card-head { display:flex; align-items:center; gap:10px; padding:14px 18px;\n
+                     border-bottom:1px solid var(--border); }\n
+        .card-head h3 { margin:0; font-size:14px; font-weight:600; letter-spacing:-.01em; }\n
+        .card-head .right { margin-left:auto; display:flex; align-items:center; gap:8px; }\n
+\n
+        /* ===== Cambio de vista: lista o tarjetas ===== */\n
+        .view-switch { display:inline-flex; border:1px solid var(--border); border-radius:7px; overflow:hidden; }\n
+        .view-switch button { width:34px; height:34px; border:none; background:var(--surface); color:var(--muted);\n
+                              cursor:pointer; display:inline-flex; align-items:center; justify-content:center;\n
+                              transition:background .15s ease, color .15s ease; }\n
+        .view-switch button + button { border-left:1px solid var(--border); }\n
+        .view-switch button:hover { color:var(--text); }\n
+        .view-switch button.active { background:var(--surface-2); color:var(--primary); }\n
+        .view-switch svg { width:16px; height:16px; }\n
+\n
+        /* Rejilla de tarjetas equivalente a una tabla */\n
+        .data-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; }\n
+        .data-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px;\n
+                     transition:border-color .15s ease, box-shadow .15s ease, transform .15s ease; }\n
+        .data-card:hover { border-color:var(--primary); transform:translateY(-2px);\n
+                           box-shadow:0 6px 16px rgba(17,24,39,.07); }\n
+        .data-card-top { display:flex; align-items:center; gap:11px; padding-bottom:14px;\n
+                         border-bottom:1px solid var(--border); }\n
+        .data-card-top .t { font-weight:600; line-height:1.3; }\n
+        .data-card-top .s { color:var(--muted); font-size:12.5px; margin-top:1px; }\n
+        .data-card-top .right { margin-left:auto; }\n
+        .data-card dl { margin:14px 0 0; display:grid; gap:9px; }\n
+        .data-card dl > div { display:flex; justify-content:space-between; gap:12px; align-items:baseline; }\n
+        .data-card dt { color:var(--muted); font-size:13px; }\n
+        .data-card dd { margin:0; font-size:13px; font-weight:500; text-align:right; overflow-wrap:anywhere; }\n
+        .data-card-foot { margin-top:16px; padding-top:13px; border-top:1px solid var(--border); text-align:right; }\n
+        [data-theme="dark"] .data-card:hover { box-shadow:0 6px 18px rgba(0,0,0,.4); }\n
+\n
+        .tbl-link { color:var(--primary); text-decoration:none; font-size:13px; font-weight:500; }\n
+        .tbl-link:hover { text-decoration:underline; }\n
+        .tbl-link + .tbl-link { margin-left:14px; }\n
+\n
+        @media (prefers-reduced-motion:reduce) {\n
+            .view-switch button, .data-card { transition:none; }\n
+        }\n
+\n
+        /* Estado vacio con caracter */\n
+        .empty-state { text-align:center; padding:44px 20px; }\n
+        .empty-state .ico { width:46px; height:46px; margin:0 auto 14px; border-radius:12px;\n
+                            display:flex; align-items:center; justify-content:center;\n
+                            background:var(--surface-2); color:var(--muted); }\n
+        .empty-state .ico svg { width:22px; height:22px; }\n
+        .empty-state h3 { margin:0 0 5px; font-size:15px; font-weight:600; }\n
+        .empty-state p { margin:0 0 18px; color:var(--muted); font-size:14px; }\n
+\n
+        h2.section-title { font-size:17px; margin:0 0 4px; }\n
+\n
+        /* ===== Cabecera de pagina (componente x-ui.page-header) =====\n
+           Minimalista: sin tarjeta, sin icono, sin subtitulo. */\n
+        .page-header { margin-bottom:22px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }\n
+        .page-header-title { margin:0; font-size:18px; font-weight:600; letter-spacing:-.01em;\n
+                             line-height:1.2; color:var(--text); min-width:0; }\n
+        .page-header-count { font-size:12px; font-weight:500; color:var(--muted);\n
+                             background:var(--surface-2); border:1px solid var(--border);\n
+                             padding:1px 7px; border-radius:5px; }\n
+        .page-header-back { width:34px; height:34px; border-radius:9px; flex:0 0 auto; display:inline-flex;\n
+                            align-items:center; justify-content:center; color:var(--muted); text-decoration:none;\n
+                            transition:background .15s ease, color .15s ease, transform .1s ease; }\n
+        .page-header-back:hover { background:var(--surface-2); color:var(--text); }\n
+        .page-header-back:active { transform:scale(.92); }\n
+        .page-header-back svg { width:18px; height:18px; }\n
+        .page-header-actions { margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }\n
+        .page-header-actions .btn { display:inline-flex; align-items:center; gap:6px; }\n
+\n
+        /* Accion secundaria sin peso visual: mismo lenguaje que la flecha\n
+           de regresar, para que no compita con la accion principal. */\n
+        .btn-icono { width:34px; height:34px; border-radius:9px; flex:0 0 auto; display:inline-flex;\n
+                     align-items:center; justify-content:center; border:1px solid transparent;\n
+                     background:transparent; color:var(--muted); text-decoration:none; cursor:pointer;\n
+                     transition:background .15s ease, color .15s ease, transform .1s ease; }\n
+        .btn-icono:hover { background:var(--surface-2); color:var(--text); }\n
+        .btn-icono:active { transform:scale(.92); }\n
+        .btn-icono svg { width:17px; height:17px; }\n
+\n
+        /* Dato accionable (un saldo, un contador): se lee como informacion,\n
+           no como boton, pero lleva a su propia pantalla. */\n
+        .pill-dato { display:inline-flex; align-items:center; gap:8px; padding:7px 13px 7px 11px;\n
+                     border:1px solid var(--border); border-radius:8px; background:var(--surface);\n
+                     color:var(--text); font-size:13.5px; line-height:1.5; text-decoration:none;\n
+                     transition:background .16s ease, border-color .16s ease; }\n
+        .pill-dato:hover { background:var(--surface-2); border-color:var(--muted); }\n
+        .pill-dato .punto { width:7px; height:7px; border-radius:50%; background:var(--muted); flex:0 0 7px; }\n
+        .pill-dato .et { color:var(--muted); }\n
+        .pill-dato .val { font-weight:600; font-variant-numeric:tabular-nums; }\n
+        .pill-dato.es-pagado .punto { background:var(--green); }\n
+        .pill-dato.es-vencido .punto { background:var(--danger); }\n
+        .pill-dato.es-parcial .punto { background:var(--accent, #f59e0b); }\n
+\n
+        /* Pie de acciones pegado al fondo, para formularios largos */\n
+        .page-foot { position:sticky; bottom:0; z-index:20; display:flex; justify-content:flex-end;\n
+                     align-items:center; gap:10px; margin-top:22px; padding:14px 0;\n
+                     border-top:1px solid var(--border);\n
+                     background:color-mix(in srgb, var(--bg) 88%, transparent);\n
+                     backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }\n
+        .page-foot .btn { display:inline-flex; align-items:center; gap:6px; }\n
+        /* Si el formulario esta en rejilla, el pie ocupa todo el ancho. */\n
+        .rgrid-sidebar > .page-foot, .rgrid-2 > .page-foot { grid-column:1 / -1; }\n
+\n
+        @media (max-width:640px) {\n
+            .page-header { align-items:flex-start; }\n
+            .page-header-actions { width:100%; }\n
+            .page-header-actions .btn { flex:1; justify-content:center; }\n
+            /* El icono conserva su tamaño; solo se estiran los que llevan texto. */\n
+            .page-header-actions .btn-icono { flex:0 0 34px; }\n
+            .page-header-actions .pill-dato { flex:1; justify-content:center; }\n
+        }\n
+        @media (prefers-reduced-motion: reduce) { .page-header-back { transition:none; } }\n
+\n
+        /* ===== Utilidades (compatibles con las vistas existentes) ===== */\n
+        label { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }\n
+        /* Controles de formulario: mismo aspecto sin repetir estilos en cada vista. */\n
+        input[type=text], input[type=email], input[type=password], input[type=tel],\n
+        input[type=number], input[type=date], input[type=time], input[type=search], input[type=file], select, textarea {\n
+            width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:7px; font-size:14px;\n
+            font-family:inherit; outline:none; background:var(--surface); color:var(--text);\n
+            transition:border-color .15s ease; }\n
+        select { cursor:pointer; }\n
+        textarea { resize:vertical; }\n
+        /* El selector de archivo traia su propio estilo pegado en cada vista;\n
+           ahora se ve igual que los demas controles del sistema. */\n
+        input[type=file] { cursor:pointer; }\n
+        input[type=file]::file-selector-button {\n
+            margin:-3px 10px -3px -4px; padding:6px 11px; border:1px solid var(--border);\n
+            border-radius:6px; background:var(--surface-2); color:var(--text);\n
+            font-family:inherit; font-size:13px; cursor:pointer; }\n
+        input[type=file]::file-selector-button:hover { border-color:var(--muted); }\n
+\n
+        /* El reloj de los campos de hora y el calendario de los de fecha los\n
+           dibuja el navegador en negro, así que en tema oscuro quedaban\n
+           invisibles sobre el fondo. Se invierten para que se vean blancos. */\n
+        [data-theme="dark"] input[type=time]::-webkit-calendar-picker-indicator,\n
+        [data-theme="dark"] input[type=date]::-webkit-calendar-picker-indicator,\n
+        [data-theme="dark"] input[type=datetime-local]::-webkit-calendar-picker-indicator,\n
+        [data-theme="dark"] input[type=month]::-webkit-calendar-picker-indicator,\n
+        [data-theme="dark"] input[type=week]::-webkit-calendar-picker-indicator {\n
+            filter:invert(1) brightness(1.6); cursor:pointer; }\n
+\n
+        /* Campo del componente x-ui.form-group: etiqueta, control y error\n
+           en un mismo bloque, para que no se separen dentro de una rejilla. */\n
+        .form-group { min-width:0; }\n
+        /* Nota corta debajo de un control. */\n
+        .campo-nota { color:var(--muted); font-size:13px; line-height:1.5; }\n
+        small.campo-nota { display:block; margin-top:6px; }\n
+        /* Casilla con su texto, alineadas y ambas clicables. */\n
+        .ui-check { display:flex; align-items:center; gap:9px; margin:4px 0 16px;\n
+                    font-size:14px; font-weight:500; cursor:pointer; }\n
+        .ui-check input[type=checkbox] { width:17px; height:17px; margin:0; flex:0 0 17px; cursor:pointer; }\n
+        input:hover, select:hover, textarea:hover { border-color:var(--muted); }\n
+        input:focus, select:focus, textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft); }\n
+        input::placeholder, textarea::placeholder { color:var(--muted); }\n
+        .btn { display:inline-block; padding:8px 14px; border:1px solid var(--primary); border-radius:7px; background:var(--primary);\n
+               color:#fff; font-size:13.5px; font-weight:500; line-height:1.5; cursor:pointer; text-decoration:none; text-align:center;\n
+               transition:background .16s ease, border-color .16s ease; }\n
+        .btn:hover { background:var(--primary-strong); border-color:var(--primary-strong); }\n
+        .btn--ghost { background:var(--surface); color:var(--text); border:1px solid var(--border); }\n
+        .btn--ghost:hover { background:var(--surface-2); }\n
+\n
+        /* En oscuro el azul saturado vibra sobre el fondo casi negro:\n
+           se apaga un poco y el texto pasa a blanco puro para mantener contraste. */\n
+        [data-theme="dark"] .btn, [data-theme="dark"] .erp-btn {\n
+            background:#2563eb; border-color:#2563eb; color:#f8fafc; }\n
+        [data-theme="dark"] .btn:hover, [data-theme="dark"] .erp-btn:hover {\n
+            background:#1d4ed8; border-color:#1d4ed8; }\n
+        [data-theme="dark"] .btn--ghost, [data-theme="dark"] .erp-btn.ghost {\n
+            background:var(--surface-2); color:var(--text); border-color:var(--border); }\n
+        [data-theme="dark"] .btn--ghost:hover, [data-theme="dark"] .erp-btn.ghost:hover {\n
+            background:var(--surface); border-color:var(--muted); }\n
+        [data-theme="dark"] .btn--danger, [data-theme="dark"] .erp-btn.danger {\n
+            background:#dc2626; border-color:#dc2626; color:#fff; }\n
+\n
+        /* En oscuro una sombra negra no se ve: la separacion se logra\n
+           oscureciendo el borde de la sombra en vez de aclararlo. */\n
+        [data-theme="dark"] .topbar { box-shadow:0 1px 0 rgba(255,255,255,.06), 0 2px 8px rgba(0,0,0,.4); }\n
+        [data-theme="dark"] .sidebar { box-shadow:1px 0 0 rgba(255,255,255,.06), 2px 0 8px rgba(0,0,0,.4); }\n
+        .btn--danger { background:var(--danger); }\n
+        .btn--danger:hover { filter:brightness(.92); }\n
+        .btn--block { display:block; width:100%; }\n
+        .link { color:var(--primary); text-decoration:none; font-weight:600; }\n
+        .link:hover { text-decoration:underline; }\n
+        .muted { color:var(--muted); font-size:14px; }\n
+        .err { color:var(--danger); font-size:13px; margin:6px 0 0; }\n
+        .alert { padding:11px 14px; border-radius:10px; font-size:14px; margin-bottom:16px; }\n
+        .alert--ok { background:var(--green-soft); color:var(--green); border:1px solid var(--border); }\n
+        .alert--err { background:var(--danger-soft); color:var(--danger); border:1px solid var(--border); }\n
+        .section { border-top:1px solid var(--border); margin-top:26px; padding-top:20px; }\n
+        .badge { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:6px;\n
+                 font-size:12px; font-weight:500; background:var(--surface-2); color:var(--muted);\n
+                 border:1px solid var(--border); }\n
+        .badge::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; flex:0 0 6px; }\n
+        .badge--plain::before { display:none; }\n
+        .badge--ok { background:var(--green-soft); color:var(--green); border-color:transparent; }\n
+        .badge--warn { background:var(--accent-soft); color:var(--accent); border-color:transparent; }\n
+        .badge--info { background:var(--primary-soft); color:var(--primary); border-color:transparent; }\n
+        .badge--danger { background:var(--danger-soft); color:var(--danger); border-color:transparent; }\n
+        .danger-box { border:1px solid var(--border); background:var(--danger-soft); border-radius:14px; padding:18px; margin-top:12px; }\n
+        /* ===== Tablas ===== */\n
+        table { width:100%; border-collapse:collapse; font-size:14px; }\n
+        thead th { background:var(--surface-2); }\n
+        th, td { text-align:left; padding:13px 16px; border-bottom:1px solid var(--border); }\n
+        th { color:var(--muted); font-weight:500; font-size:12px; letter-spacing:.02em;\n
+             white-space:nowrap; border-bottom:1px solid var(--border); }\n
+        thead th:first-child { border-top-left-radius:9px; }\n
+        thead th:last-child { border-top-right-radius:9px; }\n
+        tbody tr { transition:background .15s ease; }\n
+        tbody tr:hover td { background:var(--surface-2); }\n
+        tbody tr:last-child td { border-bottom:none; }\n
+        td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }\n
+\n
+        /* Celda de identidad: avatar + nombre + dato secundario */\n
+        .cell-id { display:flex; align-items:center; gap:11px; min-width:0; }\n
+        .cell-id .t { font-weight:600; color:var(--text); line-height:1.3; }\n
+        .cell-id .s { color:var(--muted); font-size:12.5px; margin-top:1px; }\n
+\n
+        /* Avatar con tinte suave; el color lo pone la vista con .a1 .. .a5 */\n
+        .avatar { width:36px; height:36px; flex:0 0 36px; border-radius:9px; display:inline-flex;\n
+                  align-items:center; justify-content:center; font-size:12.5px; font-weight:600;\n
+                  background:var(--primary-soft); color:var(--primary); }\n
+        .avatar.a1 { background:var(--primary-soft); color:var(--primary); }\n
+        .avatar.a2 { background:var(--green-soft); color:var(--green); }\n
+        .avatar.a3 { background:var(--accent-soft); color:var(--accent); }\n
+        .avatar.a4 { background:var(--danger-soft); color:var(--danger); }\n
+        .avatar.a5 { background:var(--surface-2); color:var(--muted); }\n
+\n
+        /* Botón ojo para contraseñas */\n
+        .pw-wrap { position:relative; display:block; }\n
+        .pw-wrap input { padding-right:44px; }\n
+        .pw-toggle { position:absolute; right:6px; top:50%; transform:translateY(-50%); background:none; border:none;\n
+                     cursor:pointer; padding:6px; line-height:0; color:var(--muted); border-radius:6px; }\n
+        .pw-toggle:hover { color:var(--text); background:var(--surface-2); }\n
+        .pw-toggle svg { width:20px; height:20px; display:block; }\n
+        .pw-toggle .icon-off { display:none; }\n
+        .pw-toggle.is-visible .icon-on { display:none; }\n
+        .pw-toggle.is-visible .icon-off { display:block; }\n
+\n
+        .overlay { display:none; position:fixed; inset:0; background:rgba(2,6,23,.5); z-index:40; }\n
+\n
+        /* ===== Toast moderno (arriba a la derecha) ===== */\n
+        .toast{ position:fixed; top:22px; right:22px; left:auto; bottom:auto; z-index:9999;\n
+                display:flex; align-items:center; gap:12px; padding:13px 16px 13px 13px; border-radius:15px;\n
+                background:var(--surface); color:var(--text); border:1px solid var(--border);\n
+                box-shadow:0 16px 44px rgba(17,24,39,.16); opacity:0; pointer-events:none;\n
+                transform:translateX(120%); transition:opacity .3s ease, transform .34s cubic-bezier(.22,1,.36,1);\n
+                font-size:14px; font-weight:600; max-width:min(360px, calc(100% - 44px)); }\n
+        .toast.show{ opacity:1; transform:translateX(0); }\n
+        .toast .toast-ico{ width:34px; height:34px; border-radius:10px; flex:0 0 auto;\n
+                display:flex; align-items:center; justify-content:center;\n
+                background:var(--green-soft); color:var(--green); }\n
+        .toast .toast-ico.warn{ background:var(--danger-soft); color:var(--danger); }\n
+        .toast .toast-ico svg{ width:19px; height:19px; }\n
+        .toast #appToastMsg{ line-height:1.35; }\n
+        .toast b{ font-weight:800; }\n
+        @media (max-width:640px){ .toast{ top:14px; right:14px; left:14px; max-width:none; } }\n
+\n
+        .nav-group { display:flex; flex-direction:column; gap:4px; }\n
+        .nav-toggle { cursor:pointer; }\n
+        .nav-chev { width:16px; height:16px; margin-left:auto; transition:transform .2s ease; flex:0 0 auto; pointer-events:none; }\n
+        .nav-group.open .nav-chev { transform:rotate(180deg); }\n
+        .submenu { display:none; flex-direction:column; gap:4px; padding-left:14px; margin-left:20px; border-left:2px solid var(--border); }\n
+        .nav-group.open .submenu { display:flex; }\n
+        .submenu .nav-item { padding:9px 12px; font-size:13.5px; }\n
+        .nav-sub { gap:10px; position:relative; }\n
+        .submenu .nav-bullet { width:6px; height:6px; color:var(--muted); flex:0 0 auto; }\n
+        .submenu-label { font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:8px 12px 2px; }\n
+        .nav-count { margin-left:auto; background:var(--primary); color:#fff; font-size:11px; font-weight:800; min-width:20px; height:20px; padding:0 6px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; }\n
+        /* Bloques del menu: parten la lista en secciones para que no se lea\n
+           como una sola columna larga de ocho apartados. */\n
+        .nav-section { padding:15px 13px 5px; font-size:10.5px; font-weight:800; letter-spacing:.07em;\n
+                       text-transform:uppercase; color:var(--muted); white-space:nowrap; }\n
+        .nav-section:first-child { padding-top:4px; }\n
+        /* Contraido el texto no cabe: el bloque se marca con una linea fina. */\n
+        .app.collapsed .nav-section { padding:0; height:1px; margin:10px 12px; overflow:hidden;\n
+                                      color:transparent; background:var(--border); }\n
+\n
+        /* ===== Menu contraido: los grupos abren en un panel flotante =====\n
+           Antes el submenu se ocultaba a la fuerza, asi que al hacer clic en\n
+           un icono no pasaba absolutamente nada. */\n
+        .app.collapsed .nav-chev { display:none; }\n
+        /* El panel ya lleva el nombre del apartado: el tooltip sobraria. */\n
+        .app.collapsed .nav-toggle::after, .app.collapsed .nav-toggle::before { display:none; }\n
+\n
+        .app.collapsed .nav-group .submenu {\n
+            display:flex; position:fixed; z-index:80; min-width:214px; padding:6px;\n
+            margin:0; border:1px solid var(--border); border-radius:12px; background:var(--surface);\n
+            box-shadow:0 14px 40px rgba(17,24,39,.16);\n
+            opacity:0; transform:translateX(-6px); pointer-events:none;\n
+            transition:opacity .14s ease, transform .16s cubic-bezier(.4,0,.2,1); }\n
+        .app.collapsed .nav-group[data-flotante] .submenu {\n
+            opacity:1; transform:translateX(0); pointer-events:auto; }\n
+        .app.collapsed .submenu::before {\n
+            content:attr(data-nombre); display:block; padding:7px 11px 8px; margin-bottom:5px;\n
+            font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;\n
+            color:var(--muted); border-bottom:1px solid var(--border); }\n
+        .app.collapsed .submenu .nav-item { justify-content:flex-start; gap:10px; padding:8px 11px; }\n
+        .app.collapsed .submenu .nav-label { opacity:1; width:auto; }\n
+        /* Dentro del panel cada opcion ya se lee: no hacen falta tooltips. */\n
+        .app.collapsed .submenu .nav-item::after, .app.collapsed .submenu .nav-item::before { display:none; }\n
+\n
+        /* ===== Responsive ===== */\n
+        @media (max-width:1024px) {\n
+            .hamburger { display:flex; }\n
+            .app { grid-template-columns:1fr; }\n
+            .sidebar { position:fixed; left:0; top:0; z-index:60; width:var(--sidebar-w);\n
+                       transform:translateX(-100%); transition:transform .25s; }\n
+            .app.sidebar-open .sidebar { transform:translateX(0); }\n
+            .app.sidebar-open .overlay { display:block; }\n
+            .app.collapsed { grid-template-columns:1fr; }\n
+            .app.collapsed .brand-text, .app.collapsed .nav-label, .app.collapsed .help-text {\n
+                opacity:1; width:auto; height:auto; transform:none; margin:initial; }\n
+            .app.collapsed .nav-item { justify-content:flex-start; gap:13px; }\n
+            .app.collapsed .brand { justify-content:flex-start; padding:4px 6px 20px; }\n
+            /* El cajón móvil se ve completo: se deshace todo lo de contraído.\n
+               Sin esto, quien dejó el menú contraído en escritorio abría el\n
+               cajón en el teléfono y los submenús no respondían. */\n
+            .app.collapsed .nav-group .submenu {\n
+                display:none; position:static; min-width:0; padding:0 0 0 14px; margin-left:20px;\n
+                border:0; border-left:2px solid var(--border); border-radius:0; background:none;\n
+                box-shadow:none; opacity:1; transform:none; pointer-events:auto; }\n
+            .app.collapsed .nav-group.open .submenu { display:flex; }\n
+            .app.collapsed .submenu::before { display:none; }\n
+            .app.collapsed .nav-chev { display:block; }\n
+            .app.collapsed .nav-section { padding:15px 13px 5px; height:auto; margin:0;\n
+                                          color:var(--muted); background:none; }\n
+            /* En móvil el sidebar se abre/cierra con la hamburguesa; ocultamos el botón flotante */\n
+            .collapse-btn { display:none; }\n
+        }\n
+        @media (max-width:640px) {\n
+            .content { padding:16px; }\n
+            .user-name { display:none; }\n
+\n
+            /* ===== Cabecera en una sola línea =====\n
+               El título competía por el ancho con los cuatro controles y\n
+               terminaba partido en cinco renglones. Ahora ocupa lo que sobra\n
+               y lo que no cabe se corta con puntos suspensivos. */\n
+            .topbar { padding:10px 14px; gap:8px; }\n
+            .topbar-titulo { flex:1; min-width:0; }\n
+            .page-title { font-size:17px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }\n
+            .page-sub { display:none; }\n
+            .topbar-spacer { display:none; }\n
+            .icon-btn { width:36px; height:36px; }\n
+            .icon-btn svg { width:18px; height:18px; }\n
+            .hamburger { width:38px; height:38px; }\n
+            .user-btn { padding:0; }\n
+            .user-btn .chev { display:none; }\n
+\n
+            /* Acciones de pantalla: a lo ancho, no apretadas en una esquina. */\n
+            .content-actions { gap:8px; }\n
+            .content-actions .btn { flex:1; justify-content:center; }\n
+\n
+            /* Pie de formulario: el botón principal arriba y al alcance del pulgar. */\n
+            .page-foot { flex-direction:column-reverse; align-items:stretch;\n
+                         gap:8px; padding:12px 0 14px; }\n
+            .page-foot .btn { width:100%; justify-content:center; }\n
+        }\n
+\n
+        /* Variantes de un mismo texto segun el ancho de la pantalla. */\n
+        .solo-angosto { display:none; }\n
+        @media (max-width:640px) {\n
+            .solo-ancho { display:none; }\n
+            .solo-angosto { display:inline; }\n
+        }\n
+    </style>\n
+</head>\n
+<body>\n
+<div class="app" id="app">\n
+    <div class="overlay" id="overlay"></div>\n
+\n
+    \n
+    <aside class="sidebar">\n
+        <div class="brand">\n
+            <div class="brand-logo">\n
+                \n
+                <img src="http://localhost/images/logo-icon.png" alt="Laravel"\n
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">\n
+                <svg style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/></svg>\n
+            </div>\n
+            <div class="brand-text">\n
+                <div class="brand-name">Laravel</div>\n
+                <div class="brand-sub">Plataforma empresarial</div>\n
+            </div>\n
+        </div>\n
+\n
+        <button class="collapse-btn" id="collapse-btn" type="button" aria-label="Contraer menú" title="Contraer menú">\n
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>\n
+        </button>\n
+\n
+        <nav class="nav">\n
+                                        <a class="nav-item " href="http://localhost/dashboard" data-tip="Dashboard">\n
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>\n
+                    <span class="nav-label">Dashboard</span>\n
+                </a>\n
+                                                            <div class="nav-section">Operación</div>\n
+            <div class="nav-group ">\n
+                <a class="nav-item nav-toggle" href="#" data-tip="Gestión Comercial">\n
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 5a3 3 0 0 1 0 6"/><path d="M20 20c0-2.5-1.3-4.2-3.5-5"/></svg>\n
+                    <span class="nav-label">Gestión Comercial</span>\n
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>\n
+                </a>\n
+                <div class="submenu">\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-comercial/clientes" data-tip="Clientes">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Clientes</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-comercial/cotizaciones" data-tip="Cotizaciones">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Cotizaciones</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-comercial/ventas" data-tip="Ventas">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Ventas</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-comercial/cobranza" data-tip="Cobranza">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Cobranza</span>\n
+                    </a>\n
+                                            <a class="nav-item nav-sub " href="http://localhost/gestion-comercial/comisiones" data-tip="Comisiones">\n
+                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                            <span class="nav-label">Comisiones</span>\n
+                        </a>\n
+                                        <a class="nav-item nav-sub " href="http://localhost/gestion-comercial/facturas" data-tip="Facturación">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Facturación</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub" href="#" data-tip="Promociones">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Promociones</span>\n
+                    </a>\n
+                </div>\n
+            </div>\n
+            <div class="nav-group open">\n
+                <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Inventario">\n
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>\n
+                    <span class="nav-label">Gestión de Inventario</span>\n
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>\n
+                </a>\n
+                <div class="submenu">\n
+                    <a class="nav-item nav-sub active" href="http://localhost/gestion-inventario/entrada-salida" data-tip="Entrada / Salida">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Entrada / Salida</span>\n
+                    </a>\n
+                                            <a class="nav-item nav-sub " href="http://localhost/gestion-inventario/ordenes-salida" data-tip="Órdenes de salida">\n
+                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                            <span class="nav-label">Órdenes de salida</span>\n
+                        </a>\n
+                                        <a class="nav-item nav-sub " href="http://localhost/gestion-inventario/procesos" data-tip="Procesos">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Procesos</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-inventario/escanear" data-tip="Escanear">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Escanear</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-inventario/productos" data-tip="Productos">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Productos</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-inventario/fichas-tecnicas" data-tip="Fichas técnicas">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Fichas técnicas</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-inventario/congresos" data-tip="Congresos">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Congresos</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/configuracion/catalogos" data-tip="Catálogo">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Catálogo</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/configuracion/catalogos" data-tip="Catálogo">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Catálogo</span>\n
+                    </a>\n
+                </div>\n
+            </div>\n
+                                    <div class="nav-group ">\n
+                <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Servicios">\n
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>\n
+                    <span class="nav-label">Gestión de Servicios</span>\n
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>\n
+                </a>\n
+                <div class="submenu">\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-servicios/historial-servicios" data-tip="Historial de Servicios">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Historial de Servicios</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-servicios/refacciones" data-tip="Refacciones">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Refacciones</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-servicios/garantia" data-tip="Cartas de Garantía">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Cartas de Garantía</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-servicios/registro" data-tip="Registro Externo">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Registro Externo</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-servicios/area-endoscopia" data-tip="Área de Endoscopia">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Área de Endoscopia</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-servicios/area" data-tip="Área General">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Área</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-servicios/historial-servicios/externo" data-tip="Mantenimiento Externo">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Externo</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-servicios/servicio-externo/interno" data-tip="Servicio Externo Interno">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Servicio externo interno</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-servicios/servicio-externo/externo" data-tip="Servicio Externo Externo">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Servicio externo externo</span>\n
+                    </a>\n
+                </div>\n
+            </div>\n
+                                        <a class="nav-item " href="http://localhost/mantenimiento/configuracion" data-tip="Configuración">\n
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09A1.65 1.65 0 0 0 19.4 15z"/></svg>\n
+                    <span class="nav-label">Configuración</span>\n
+                </a>\n
+                                    <div class="nav-section">Administración</div>\n
+            <div class="nav-group ">\n
+                <a class="nav-item nav-toggle" href="#" data-tip="Gestión Administrativa">\n
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>\n
+                    <span class="nav-label">Gestión Administrativa</span>\n
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>\n
+                </a>\n
+                <div class="submenu">\n
+                    <a class="nav-item nav-sub " href="http://localhost/admin/agenda" data-tip="Agenda">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Agenda</span>\n
+                    </a>\n
+                                            <a class="nav-item nav-sub " href="http://localhost/admin/actividad" data-tip="Actividad">\n
+                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                            <span class="nav-label">Actividad</span>\n
+                        </a>\n
+                                        <a class="nav-item nav-sub " href="http://localhost/admin/usuarios" data-tip="Usuarios">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Usuarios</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/admin/vehiculos" data-tip="Vehículos">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Vehículos</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/admin/viaticos" data-tip="Viáticos">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Viáticos</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/admin/materiales" data-tip="Materiales">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Materiales</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/admin/reportes" data-tip="Reportes">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Reportes</span>\n
+                    </a>\n
+                    \n
+                </div>\n
+            </div>\n
+            <div class="nav-group ">\n
+                <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Marketing">\n
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>\n
+                    <span class="nav-label">Gestión de Marketing</span>\n
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>\n
+                </a>\n
+                <div class="submenu">\n
+                    <a class="nav-item nav-sub " href="http://localhost/gestion-marketing/inicio" data-tip="Inicio">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Inicio</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/marketing/guia-de-marca" data-tip="Guía de marca">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Guía de marca</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/marketing/calendario" data-tip="Calendario">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Calendario</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/marketing/aprobacion-flyers" data-tip="Aprobación de flyers">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Aprobación de flyers</span>\n
+                    </a>\n
+                    <a class="nav-item nav-sub " href="http://localhost/marketing/biblioteca-catalogo" data-tip="Biblioteca & catálogo">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Biblioteca & catálogo</span>\n
+                    </a>\n
+                    <div class="submenu-label">Datos</div>\n
+                    <a class="nav-item nav-sub " href="http://localhost/marketing/tareas" data-tip="Tareas">\n
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                        <span class="nav-label">Tareas</span>\n
+                        <span class="nav-count">6</span>\n
+                    </a>\n
+                </div>\n
+            </div>\n
+            <div class="nav-section">Sistema</div>\n
+            <div class="nav-group ">\n
+                <a class="nav-item nav-toggle" href="#" data-tip="Configuración">\n
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>\n
+                    <span class="nav-label">Configuración</span>\n
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>\n
+                </a>\n
+                <div class="submenu">\n
+                                            <a class="nav-item nav-sub " href="http://localhost/configuracion/roles" data-tip="Roles y permisos">\n
+                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>\n
+                            <span class="nav-label">Roles y permisos</span>\n
+                        </a>\n
+                                    </div>\n
+            </div>\n
+                    </nav>\n
+\n
+    </aside>\n
+\n
+    \n
+    <div class="main">\n
+        <header class="topbar">\n
+            <button class="hamburger" id="hamburger" type="button" aria-label="Menú">\n
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>\n
+            </button>\n
+            <div class="topbar-titulo">\n
+                \n
+                <h1 class="page-title">Entrada / Salida</h1>\n
+                                    <p class="page-sub">Lo que llega con su evidencia; las salidas las genera Ventas</p>                            </div>\n
+            <div class="topbar-spacer"></div>\n
+\n
+            \n
+            <button class="icon-btn" id="theme-toggle" type="button" aria-label="Cambiar tema">\n
+                <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>\n
+                <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>\n
+            </button>\n
+\n
+            \n
+            <div class="dd" id="dd-notif">\n
+                <button class="icon-btn" type="button" aria-label="Notificaciones" data-dd="dd-notif">\n
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>\n
+                                    </button>\n
+                <div class="dd-panel">\n
+                    <div class="dd-head" style="display:flex; align-items:center; gap:8px;">\n
+                        <b style="flex:1;">Notificaciones</b>\n
+                                            </div>\n
+                                            <div class="dd-empty">No tienes notificaciones nuevas.</div>\n
+                                    </div>\n
+            </div>\n
+            <style>\n
+                .notif-num { position:absolute; top:6px; right:6px; min-width:17px; height:17px; padding:0 4px; border-radius:9px; background:var(--danger); color:#fff; font-size:10.5px; font-weight:800; display:flex; align-items:center; justify-content:center; line-height:1; }\n
+                .notif-todas { border:none; background:transparent; color:var(--primary); font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; padding:0; }\n
+                .notif-todas:hover { text-decoration:underline; }\n
+            </style>\n
+\n
+            \n
+            <div class="dd" id="dd-user">\n
+                <button class="user-btn" type="button" data-dd="dd-user">\n
+                    <span class="avatar">MT</span>\n
+                    <span class="user-name">Mr. Theodore Harber IV</span>\n
+                    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>\n
+                </button>\n
+                <div class="dd-panel">\n
+                    <div class="dd-head"><b>Acciones rápidas</b><small>Tu cuenta y herramientas</small></div>\n
+                    <a class="dd-item" href="http://localhost/perfil">\n
+                        <span class="di-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M11 4H4v16h16v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></span>\n
+                        <span><b>Editar perfil</b><small>Actualiza tu información personal</small></span>\n
+                    </a>\n
+                    \n
+                    <a class="dd-item" href="http://localhost/cuenta">\n
+                        <span class="di-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3z"/></svg></span>\n
+                        <span><b>Mi cuenta</b><small>Sesiones activas e historial de accesos</small></span>\n
+                    </a>\n
+                                            <a class="dd-item" href="http://localhost/admin/usuarios">\n
+                            <span class="di-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg></span>\n
+                            <span><b>Panel de usuarios</b><small>Administra las cuentas</small></span>\n
+                        </a>\n
+                                        <div class="dd-sep"></div>\n
+                    <form method="POST" action="http://localhost/logout">\n
+                        <input type="hidden" name="_token" value="g8wugPC3cWPVXsH6bGWTWbmFRqX9ppPqqdZWhUsT" autocomplete="off">                        <button class="dd-item danger" type="submit">\n
+                            <span class="di-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>\n
+                            <span><b>Cerrar sesión</b><small>Cerrar sesión en tu cuenta actual</small></span>\n
+                        </button>\n
+                    </form>\n
+                </div>\n
+            </div>\n
+        </header>\n
+\n
+        <main class="content">\n
+                \n
+    <div class="content-actions">\n
+        <a href="http://localhost/gestion-inventario/entrada-salida/crear" class="btn">\n
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>\n
+            Nueva entrada\n
+        </a>\n
+    </div>\n
+\n
+    \n
+    <div class="mv-stats">\n
+        <div class="card card--accent stat">\n
+            <span class="stat-ico blue">\n
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>\n
+            </span>\n
+            <div>\n
+                <div class="stat-num">1</div>\n
+                <div class="stat-lbl">Movimientos registrados</div>\n
+            </div>\n
+        </div>\n
+\n
+        <div class="card card--accent is-green stat">\n
+            <span class="stat-ico green">\n
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>\n
+            </span>\n
+            <div>\n
+                <div class="stat-num">1</div>\n
+                <div class="stat-lbl">Entradas este mes</div>\n
+            </div>\n
+        </div>\n
+\n
+        <div class="card card--accent stat">\n
+            <span class="stat-ico blue">\n
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>\n
+            </span>\n
+            <div>\n
+                <div class="stat-num">2</div>\n
+                <div class="stat-lbl">Piezas en inventario</div>\n
+            </div>\n
+        </div>\n
+\n
+        <div class="card card--accent is-amber stat">\n
+            <span class="stat-ico orange">\n
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>\n
+            </span>\n
+            <div>\n
+                <div class="stat-num">0</div>\n
+                <div class="stat-lbl">\n
+                    En proceso, sin poder venderse\n
+                                    </div>\n
+            </div>\n
+        </div>\n
+    </div>\n
+\n
+    \n
+    <div class="f-toolbar">\n
+        <div class="f-search">\n
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>\n
+            <input type="text" id="fBuscar" placeholder="Buscar por folio, equipo, almacén o quien registró" autocomplete="off">\n
+        </div>\n
+\n
+        <div class="flt" data-flt>\n
+            <button type="button" class="flt-btn" data-flt-toggle aria-expanded="false">\n
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>\n
+                Filtros\n
+                <span class="flt-count" data-flt-count hidden>0</span>\n
+            </button>\n
+\n
+            <div class="flt-panel" data-flt-panel hidden>\n
+                <div class="flt-group">\n
+                    <h4>Tipo de movimiento</h4>\n
+                                            <label class="flt-opt">\n
+                            <span class="flt-opt-txt">Entradas</span>\n
+                            <input type="checkbox" data-f="tipo" value="entrada">\n
+                        </label>\n
+                                            <label class="flt-opt">\n
+                            <span class="flt-opt-txt">Salidas</span>\n
+                            <input type="checkbox" data-f="tipo" value="salida">\n
+                        </label>\n
+                                            <label class="flt-opt">\n
+                            <span class="flt-opt-txt">Transferencias</span>\n
+                            <input type="checkbox" data-f="tipo" value="transferencia">\n
+                        </label>\n
+                                    </div>\n
+\n
+                <div class="flt-group">\n
+                    <h4>Condición</h4>\n
+                    <label class="flt-opt">\n
+                        <span class="flt-opt-txt">Equipo nuevo</span>\n
+                        <input type="checkbox" data-f="condicion" value="nuevo">\n
+                    </label>\n
+                    <label class="flt-opt">\n
+                        <span class="flt-opt-txt">Equipo usado</span>\n
+                        <input type="checkbox" data-f="condicion" value="usado">\n
+                    </label>\n
+                </div>\n
+\n
+                \n
+                \n
+                <div class="flt-group">\n
+                    <h4>Fecha del movimiento</h4>\n
+                    <div class="flt-fechas">\n
+                        <input type="date" data-f="desde" aria-label="Movimiento desde">\n
+                        <input type="date" data-f="hasta" aria-label="Movimiento hasta">\n
+                    </div>\n
+                </div>\n
+            </div>\n
+        </div>\n
+\n
+        \n
+        <div class="flt-toggles" role="group" aria-label="Tipo de movimiento">\n
+            <button type="button" class="flt-tgl" data-f="estado" data-valor="entrada" title="Ver solo entradas" aria-pressed="false">\n
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>\n
+            </button>\n
+            <button type="button" class="flt-tgl" data-f="estado" data-valor="salida" title="Ver solo salidas" aria-pressed="false">\n
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>\n
+            </button>\n
+        </div>\n
+\n
+        <button type="button" class="flt-btn flt-btn--icon" id="fLimpiar" title="Limpiar todos los filtros" aria-label="Limpiar filtros">\n
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 3H2l8 9.46V19l4 2v-8.54"/><line x1="16" y1="5" x2="22" y2="11"/><line x1="22" y1="5" x2="16" y2="11"/></svg>\n
+        </button>\n
+\n
+        <div class="view-switch" role="group" aria-label="Cambiar vista" data-view-switch="movimientos">\n
+    <button type="button" data-view="lista" class="active" title="Ver como lista" aria-label="Ver como lista">\n
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>\n
+    </button>\n
+    <button type="button" data-view="tarjetas" title="Ver como tarjetas" aria-label="Ver como tarjetas">\n
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>\n
+    </button>\n
+</div>\n
+\n
+        </div>\n
+\n
+    <div class="flt-chips" id="fChips" hidden></div>\n
+\n
+    \n
+    <div class="card" data-view-list style="overflow-x:auto; padding:0;">\n
+        <table class="mv-table">\n
+            <thead>\n
+                <tr>\n
+                    <th>Movimiento</th>\n
+                    <th>Equipo</th>\n
+                    <th>Cantidad</th>\n
+                    <th>Almacén</th>\n
+                    <th>Registró</th>\n
+                    <th></th>\n
+                </tr>\n
+            </thead>\n
+            <tbody>\n
+                                    \n
+                    <tr class="f-row"  data-buscar="ent-test-1 olympus hd-900 almacen central mr. theodore harber iv"  data-tipo="entrada"  data-almacen="Almacen Central"  data-condicion="nuevo"  data-quien="Mr. Theodore Harber IV"  data-fecha="2026-09-18" >\n
+                        <td>\n
+                            <div class="cell-id">\n
+                                <span class="mv-ico entrada">\n
+                                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>\n
+                                                                    </span>\n
+                                <div style="min-width:0;">\n
+                                    <div class="t">ENT-TEST-1</div>\n
+                                    <div class="s">18/09/2026</div>\n
+                                </div>\n
+                            </div>\n
+                        </td>\n
+                        <td>\n
+                            <div class="t">Olympus HD-900</div>\n
+                            <div class="s">Producto · Nuevo</div>\n
+                        </td>\n
+                        <td style="white-space:nowrap;">2 Pza</td>\n
+                        <td>Almacen Central</td>\n
+                        <td>Mr. Theodore Harber IV</td>\n
+                        <td style="text-align:right; white-space:nowrap;">\n
+                            <div class="row-menu" data-row-menu>\n
+    <button type="button" class="row-menu-btn" data-row-menu-toggle\n
+            aria-haspopup="true" aria-expanded="false"\n
+            aria-label="Acciones de ENT-TEST-1">\n
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>\n
+    </button>\n
+\n
+    <div class="row-menu-pop" data-row-menu-pop role="menu" hidden>\n
+        <a href="http://localhost/gestion-inventario/entrada-salida/1" role="menuitem">\n
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>\n
+            Ver detalle\n
+        </a>\n
+\n
+        \n
+        \n
+        \n
+                    <button type="button" role="menuitem" class="es-danger"\n
+                    data-eliminar-movimiento\n
+                    data-url="http://localhost/gestion-inventario/entrada-salida/1"\n
+                    data-folio="ENT-TEST-1">\n
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>\n
+                Eliminar\n
+            </button>\n
+            </div>\n
+</div>\n
+                        </td>\n
+                    </tr>\n
+                            </tbody>\n
+        </table>\n
+    </div>\n
+\n
+    \n
+    <div class="data-cards" data-view-cards style="display:none;">\n
+                    \n
+            <article class="data-card f-row"  data-buscar="ent-test-1 olympus hd-900 almacen central mr. theodore harber iv"  data-tipo="entrada"  data-almacen="Almacen Central"  data-condicion="nuevo"  data-quien="Mr. Theodore Harber IV"  data-fecha="2026-09-18" >\n
+                <div class="data-card-top">\n
+                    <span class="mv-ico entrada">\n
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>\n
+                                            </span>\n
+                    <div style="min-width:0; flex:1;">\n
+                        <div class="t">ENT-TEST-1</div>\n
+                        <div class="s">18/09/2026</div>\n
+                    </div>\n
+                    <span class="badge badge--ok">Entrada</span>\n
+                </div>\n
+\n
+                <dl>\n
+                    <div><dt>Equipo</dt><dd>Olympus HD-900</dd></div>\n
+                    <div><dt>Cantidad</dt><dd>2 Pza</dd></div>\n
+                    <div><dt>Condición</dt><dd>Nuevo</dd></div>\n
+                    <div><dt>Almacén</dt><dd>Almacen Central</dd></div>\n
+                    <div><dt>Registró</dt><dd>Mr. Theodore Harber IV</dd></div>\n
+                </dl>\n
+\n
+                <div class="data-card-foot">\n
+                    <div class="row-menu" data-row-menu>\n
+    <button type="button" class="row-menu-btn" data-row-menu-toggle\n
+            aria-haspopup="true" aria-expanded="false"\n
+            aria-label="Acciones de ENT-TEST-1">\n
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>\n
+    </button>\n
+\n
+    <div class="row-menu-pop" data-row-menu-pop role="menu" hidden>\n
+        <a href="http://localhost/gestion-inventario/entrada-salida/1" role="menuitem">\n
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>\n
+            Ver detalle\n
+        </a>\n
+\n
+        \n
+        \n
+        \n
+                    <button type="button" role="menuitem" class="es-danger"\n
+                    data-eliminar-movimiento\n
+                    data-url="http://localhost/gestion-inventario/entrada-salida/1"\n
+                    data-folio="ENT-TEST-1">\n
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>\n
+                Eliminar\n
+            </button>\n
+            </div>\n
+</div>\n
+                </div>\n
+            </article>\n
+            </div>\n
+\n
+    \n
+    <div class="card" id="fVacio" hidden>\n
+        <div class="empty-state">\n
+            <span class="ico">\n
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>\n
+            </span>\n
+            <h3>Ningún movimiento coincide</h3>\n
+            <p>Prueba a quitar algún filtro o a cambiar la búsqueda.</p>\n
+            <button type="button" class="btn" data-limpiar-filtros>Limpiar filtros</button>\n
+        </div>\n
+    </div>\n
+\n
+    <p class="f-conteo" id="fConteo"></p>\n
+\n
+    \n
+    \n
+    <dialog id="modalEliminar" class="mv-modal">\n
+        <form method="POST" action="" id="formEliminar">\n
+            <input type="hidden" name="_token" value="g8wugPC3cWPVXsH6bGWTWbmFRqX9ppPqqdZWhUsT" autocomplete="off">            <input type="hidden" name="_method" value="DELETE">\n
+            <div class="mv-modal-ico">\n
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>\n
+            </div>\n
+\n
+            <h3>Eliminar movimiento</h3>\n
+            <p class="campo-nota">\n
+                Se va a eliminar <b data-folio-eliminar></b> y las piezas que dio de alta.\n
+                Escribe tu PIN para confirmarlo.\n
+            </p>\n
+\n
+            <div class="form-group">\n
+            <label for="pinEliminar">PIN</label>\n
+        <input id="pinEliminar" name="password" type="password" inputmode="numeric" required\n
+                       placeholder="Tu PIN de aprobación" autocomplete="off">\n
+    \n
+    </div>\n
+\n
+            \n
+            <div class="mv-modal-pie">\n
+                <button type="button" class="btn btn--ghost" data-cerrar-modal>Cancelar</button>\n
+                <button type="submit" class="btn btn--danger">Eliminar</button>\n
+            </div>\n
+        </form>\n
+    </dialog>\n
+\n
+    <style>\n
+        /* Solo lo propio de esta pantalla: lo demás vive en los partials. */\n
+        .mv-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-bottom:16px; }\n
+        .mv-table { width:100%; border-collapse:collapse; }\n
+\n
+        .mv-ico { display:flex; align-items:center; justify-content:center; width:36px; height:36px;\n
+                  border-radius:10px; flex:0 0 36px; background:var(--surface-2); color:var(--muted); }\n
+        .mv-ico svg { width:17px; height:17px; }\n
+        .mv-ico.entrada { background:var(--green-soft); color:var(--green); }\n
+        .mv-ico.salida { background:var(--danger-soft); color:var(--danger); }\n
+        .mv-ico.transferencia { background:var(--primary-soft); color:var(--primary); }\n
+\n
+        .mv-modal { width:min(420px, calc(100vw - 32px)); padding:24px; border:1px solid var(--border);\n
+                    border-radius:16px; background:var(--surface); color:var(--text); }\n
+        .mv-modal::backdrop { background:rgba(15,23,42,.45); }\n
+        .mv-modal h3 { margin:0 0 6px; font-size:17px; text-align:center; }\n
+        .mv-modal .campo-nota { margin:0 0 4px; text-align:center; }\n
+        .mv-modal-ico { width:52px; height:52px; margin:0 auto 12px; border-radius:50%;\n
+                        display:flex; align-items:center; justify-content:center;\n
+                        background:var(--danger-soft); color:var(--danger); }\n
+        .mv-modal-ico svg { width:24px; height:24px; }\n
+        .mv-modal-pie { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }\n
+        @media (max-width:520px) { .mv-modal-pie .btn { flex:1; justify-content:center; } }\n
+    </style>\n
+\n
+    <style>\n
+        /* ===================== Barra de herramientas ===================== */\n
+        .f-toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px; }\n
+        .f-search { position:relative; flex:1; min-width:220px; }\n
+        .f-search svg { position:absolute; left:11px; top:50%; transform:translateY(-50%);\n
+                        width:16px; height:16px; color:var(--muted); pointer-events:none; }\n
+        .f-toolbar .f-search input[type] { width:100%; padding:9px 12px 9px 34px; border:1px solid var(--border); border-radius:9px;\n
+                          background:var(--surface); color:var(--text); font-family:inherit; font-size:13.5px; outline:none; }\n
+        .f-search input:focus { border-color:var(--primary); }\n
+\n
+        /* ===================== Botones de filtro ===================== */\n
+        .flt { position:relative; }\n
+        .flt-btn { display:inline-flex; align-items:center; gap:8px; padding:9px 14px;\n
+                   border:1px solid var(--border); border-radius:10px; background:var(--surface);\n
+                   color:var(--text); font-family:inherit; font-size:13.5px; font-weight:600;\n
+                   line-height:1; cursor:pointer; transition:background .15s, border-color .15s; }\n
+        .flt-btn:hover { background:var(--surface-2); }\n
+        .flt-btn svg { width:16px; height:16px; }\n
+        .flt-btn[aria-expanded="true"] { border-color:var(--primary); color:var(--primary); }\n
+        .flt-btn--icon { padding:9px 11px; color:var(--muted); }\n
+        .flt-btn--icon:hover { color:var(--danger); border-color:var(--danger); }\n
+\n
+        .flt-count { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px;\n
+                     padding:0 5px; border-radius:9px; background:var(--primary); color:#fff;\n
+                     font-size:11px; font-weight:700; }\n
+        /* Sin esta regla el "display" de arriba gana sobre el [hidden] del\n
+           navegador y el contador se quedaba pintado en 0 aunque no hubiera\n
+           ningún filtro puesto. */\n
+        .flt-count[hidden] { display:none; }\n
+\n
+        /* Accesos rápidos de estado */\n
+        .flt-toggles { display:inline-flex; gap:6px; }\n
+        .flt-tgl { display:inline-flex; align-items:center; justify-content:center; width:38px; height:36px;\n
+                   border:1px solid var(--border); border-radius:10px; background:var(--surface);\n
+                   color:var(--muted); cursor:pointer; transition:background .15s, color .15s, border-color .15s; }\n
+        .flt-tgl svg { width:17px; height:17px; }\n
+        .flt-tgl:hover { background:var(--surface-2); color:var(--text); }\n
+        .flt-tgl.is-on { background:var(--primary); border-color:var(--primary); color:#fff; }\n
+\n
+        /* ===================== Panel desplegable ===================== */\n
+        /*\n
+        | El panel se ancla por la DERECHA del botón: la barra de filtros\n
+        | vive del lado derecho de la pantalla, así que abriéndolo hacia la\n
+        | izquierda siempre cabe. Con left:0 se salía del viewport.\n
+        |\n
+        | Y va en dos columnas cuando hay espacio: con cinco grupos de\n
+        | opciones, una sola columna se volvía una tira larguísima que no\n
+        | cabía a lo alto.\n
+        */\n
+        .flt-panel { position:absolute; top:calc(100% + 8px); right:0; left:auto; z-index:60;\n
+                     width:min(460px, 92vw); max-height:min(70vh, 520px); overflow-y:auto;\n
+                     padding:14px 16px; background:var(--surface); border:1px solid var(--border);\n
+                     border-radius:14px; box-shadow:var(--shadow);\n
+                     columns:2; column-gap:22px; }\n
+        .flt-panel[hidden] { display:none; }\n
+\n
+        @media (max-width:640px) {\n
+            /* En el teléfono la barra se acomoda a la izquierda, así que el\n
+               panel se ancla por ese lado: al revés se salía de pantalla. */\n
+            .flt-panel { columns:1; left:0; right:auto; width:min(320px, calc(100vw - 32px)); }\n
+        }\n
+\n
+        /* Un grupo no se parte entre columnas. */\n
+        .flt-group { break-inside:avoid; page-break-inside:avoid; display:inline-block; width:100%; }\n
+        .flt-group + .flt-group { margin-top:14px; }\n
+        .flt-group h4 { margin:0 0 2px; font-size:10.5px; font-weight:800; letter-spacing:.06em;\n
+                        text-transform:uppercase; color:var(--muted); }\n
+\n
+        /* Sin línea entre opciones: con pocas se veía bien, con muchas la\n
+           lista se volvía una reja. El aire alcanza para separarlas. */\n
+        .flt-opt { display:flex; align-items:center; gap:9px; padding:6px 0; cursor:pointer;\n
+                   border-radius:6px; }\n
+        .flt-opt:hover { background:var(--surface-2); }\n
+        .flt-opt-txt { flex:1; min-width:0; font-size:13px; line-height:1.35; color:var(--text); }\n
+        .flt-opt input[type="checkbox"] { flex:none; width:16px; height:16px; margin:0; cursor:pointer;\n
+                                          accent-color:var(--primary); }\n
+\n
+        .flt-dot { flex:none; width:9px; height:9px; border-radius:50%; }\n
+        .flt-dot.c1 { background:#ef4444; }\n
+        .flt-dot.c2 { background:#f59e0b; }\n
+        .flt-dot.c3 { background:#10b981; }\n
+        .flt-dot.c4 { background:#6366f1; }\n
+        .flt-dot.c5 { background:#8b8f9a; }\n
+\n
+        .flt-fechas { display:grid; gap:7px; margin-top:6px; }\n
+        .flt-fechas input { width:100%; padding:7px 9px; border:1px solid var(--border); border-radius:8px;\n
+                            background:var(--surface); color:var(--text); font-family:inherit; font-size:12.5px; outline:none; }\n
+        .flt-fechas input:focus { border-color:var(--primary); }\n
+\n
+        /* ===================== Chips de filtros activos ===================== */\n
+        .flt-chips { display:flex; flex-wrap:wrap; gap:6px; margin:-6px 0 16px; }\n
+        .flt-chips[hidden] { display:none; }\n
+        .flt-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 8px 5px 10px;\n
+                    border:1px solid var(--border); border-radius:999px; background:var(--surface-2);\n
+                    color:var(--text); font-size:12.5px; }\n
+        .flt-chip button { display:inline-flex; padding:0; border:0; background:none; color:var(--muted);\n
+                           font-size:14px; line-height:1; cursor:pointer; }\n
+        .flt-chip button:hover { color:var(--danger); }\n
+\n
+\n
+        .f-oculto { display:none !important; }\n
+        .f-conteo { margin:14px 0 0; color:var(--muted); font-size:13px; }\n
+\n
+        @media (prefers-reduced-motion:reduce) {\n
+            .flt-btn, .flt-tgl, .row-menu-btn { transition:none; }\n
+        }\n
+    </style>\n
+\n
+    <script>\n
+(function () {\n
+    var CFG = {"singular":"movimiento","plural":"movimientos","estadoCampo":"tipo","etiquetas":{"tipo":"Tipo","condicion":"Condici\u00f3n","almacen":"Almac\u00e9n","quien":"Registr\u00f3","estado:entrada":"Solo entradas","estado:salida":"Solo salidas"},"toggleInicial":null};\n
+\n
+    var buscar = document.getElementById('fBuscar');\n
+    var conteo = document.getElementById('fConteo');\n
+    var chips = document.getElementById('fChips');\n
+    var vacio = document.getElementById('fVacio');\n
+    var lista = document.querySelector('[data-view-list]');\n
+    var tarjetas = document.querySelector('[data-view-cards]');\n
+\n
+    var checks = Array.prototype.slice.call(document.querySelectorAll('.flt-panel input[type="checkbox"]'));\n
+    var desde = document.querySelector('[data-f="desde"]');\n
+    var hasta = document.querySelector('[data-f="hasta"]');\n
+    var toggles = Array.prototype.slice.call(document.querySelectorAll('.flt-tgl'));\n
+    var textos = Array.prototype.slice.call(document.querySelectorAll('.flt-panel [data-f-texto]'));\n
+\n
+    function etiqueta(valor) {\n
+        return CFG.etiquetas[valor] || valor;\n
+    }\n
+\n
+    function marcados(grupo) {\n
+        return checks.filter(function (c) { return c.dataset.f === grupo && c.checked; })\n
+                     .map(function (c) { return c.value; });\n
+    }\n
+\n
+    /** Todos los grupos de checkbox que hay, menos las preferencias. */\n
+    function grupos() {\n
+        var vistos = {};\n
+        checks.forEach(function (c) {\n
+            if (c.dataset.f && c.dataset.f !== 'pref') vistos[c.dataset.f] = true;\n
+        });\n
+        return Object.keys(vistos);\n
+    }\n
+\n
+    // Los dos accesos rápidos funcionan como par: si ambos están encendidos\n
+    // (o ambos apagados) no se filtra por estado.\n
+    function estadosActivos() {\n
+        var on = toggles.filter(function (t) { return t.classList.contains('is-on'); })\n
+                        .map(function (t) { return t.dataset.valor; });\n
+        return on.length === 1 ? on : [];\n
+    }\n
+\n
+    /** Cajas de texto por campo con algo escrito: { campo: "texto" }. */\n
+    function textosEscritos() {\n
+        var escritos = {};\n
+        textos.forEach(function (t) {\n
+            var v = (t.value || '').toLowerCase().trim();\n
+            if (v) escritos[t.dataset.fTexto] = v;\n
+        });\n
+        return escritos;\n
+    }\n
+\n
+    function filtrar() {\n
+        var texto = buscar ? (buscar.value || '').toLowerCase().trim() : '';\n
+        var prefs = marcados('pref');\n
+        var estados = estadosActivos();\n
+        var fDesde = desde ? desde.value : '';\n
+        var fHasta = hasta ? hasta.value : '';\n
+        var porTexto = textosEscritos();\n
+\n
+        var seleccion = {};\n
+        grupos().forEach(function (g) { seleccion[g] = marcados(g); });\n
+\n
+        var visibles = 0;\n
+\n
+        document.querySelectorAll('.f-row').forEach(function (fila) {\n
+            var d = fila.dataset;\n
+            var ok = true;\n
+\n
+            if (texto && (d.buscar || '').indexOf(texto) === -1) ok = false;\n
+\n
+            if (ok) {\n
+                for (var g in seleccion) {\n
+                    if (seleccion[g].length && seleccion[g].indexOf(d[g]) === -1) { ok = false; break; }\n
+                }\n
+            }\n
+\n
+            // Un campo de texto exige que la fila lo contenga.\n
+            if (ok) {\n
+                for (var campo in porTexto) {\n
+                    if ((d[campo] || '').indexOf(porTexto[campo]) === -1) { ok = false; break; }\n
+                }\n
+            }\n
+\n
+            // Una preferencia exige que su bandera esté encendida en la fila.\n
+            if (ok) {\n
+                for (var i = 0; i < prefs.length; i++) {\n
+                    if (d[prefs[i]] !== '1') { ok = false; break; }\n
+                }\n
+            }\n
+\n
+            if (ok && estados.length && estados.indexOf(d[CFG.estadoCampo]) === -1) ok = false;\n
+            if (ok && fDesde && !(d.fecha && d.fecha >= fDesde)) ok = false;\n
+            if (ok && fHasta && !(d.fecha && d.fecha <= fHasta)) ok = false;\n
+\n
+            fila.style.display = ok ? '' : 'none';\n
+\n
+            // Cada registro aparece dos veces (lista y tarjetas): se cuenta una.\n
+            if (ok && (!lista || fila.closest('[data-view-list]'))) visibles++;\n
+        });\n
+\n
+        if (conteo) {\n
+            conteo.textContent = 'Mostrando ' + visibles + ' ' + (visibles === 1 ? CFG.singular : CFG.plural);\n
+        }\n
+\n
+        // Se oculta con una clase, no con 'display': ese lo gobierna el cambio de vista.\n
+        var hayFilas = document.querySelectorAll('.f-row').length > 0;\n
+        var sinResultados = hayFilas && visibles === 0;\n
+\n
+        if (vacio) vacio.hidden = !sinResultados;\n
+        if (lista) lista.classList.toggle('f-oculto', sinResultados);\n
+        if (tarjetas) tarjetas.classList.toggle('f-oculto', sinResultados);\n
+\n
+        pintarContadores(fDesde, fHasta);\n
+        pintarChips(seleccion, prefs, estados, fDesde, fHasta, texto, porTexto);\n
+    }\n
+\n
+    function pintarContadores(fDesde, fHasta) {\n
+        document.querySelectorAll('[data-flt]').forEach(function (bloque) {\n
+            var badge = bloque.querySelector('[data-flt-count]');\n
+            if (!badge) return;\n
+\n
+            var n = bloque.querySelectorAll('.flt-panel input[type="checkbox"]:checked').length;\n
+\n
+            if (bloque.querySelector('[data-f="desde"]')) {\n
+                if (fDesde) n++;\n
+                if (fHasta) n++;\n
+            }\n
+\n
+            bloque.querySelectorAll('[data-f-texto]').forEach(function (t) {\n
+                if ((t.value || '').trim()) n++;\n
+            });\n
+\n
+            badge.textContent = n;\n
+            badge.hidden = n === 0;\n
+        });\n
+    }\n
+\n
+    function chip(texto, alQuitar) {\n
+        if (!chips) return;\n
+\n
+        var el = document.createElement('span');\n
+        el.className = 'flt-chip';\n
+        el.appendChild(document.createTextNode(texto));\n
+\n
+        var x = document.createElement('button');\n
+        x.type = 'button';\n
+        x.setAttribute('aria-label', 'Quitar filtro ' + texto);\n
+        x.textContent = '×';\n
+        x.addEventListener('click', function () { alQuitar(); filtrar(); });\n
+\n
+        el.appendChild(x);\n
+        chips.appendChild(el);\n
+    }\n
+\n
+    function quitarCheck(grupo, valor) {\n
+        return function () {\n
+            checks.forEach(function (c) {\n
+                if (c.dataset.f === grupo && c.value === valor) c.checked = false;\n
+            });\n
+        };\n
+    }\n
+\n
+    function quitarTexto(campo) {\n
+        return function () {\n
+            textos.forEach(function (t) {\n
+                if (t.dataset.fTexto === campo) t.value = '';\n
+            });\n
+        };\n
+    }\n
+\n
+    function pintarChips(seleccion, prefs, estados, fDesde, fHasta, texto, porTexto) {\n
+        if (!chips) return;\n
+\n
+        chips.textContent = '';\n
+\n
+        if (texto) chip('Búsqueda: ' + texto, function () { buscar.value = ''; });\n
+\n
+        for (var g in seleccion) {\n
+            seleccion[g].forEach(function (v) {\n
+                // Un valor vacío es la opción "sin …": su texto viene de las\n
+                // etiquetas con la llave "<campo>:" (ej. "congreso:").\n
+                chip(v === '' ? etiqueta(g + ':') : etiqueta(g) + ': ' + v, quitarCheck(g, v));\n
+            });\n
+        }\n
+\n
+        for (var campo in porTexto) {\n
+            chip(etiqueta(campo) + ': ' + porTexto[campo], quitarTexto(campo));\n
+        }\n
+\n
+        prefs.forEach(function (v) { chip(etiqueta(v), quitarCheck('pref', v)); });\n
+\n
+        estados.forEach(function (v) {\n
+            chip(etiqueta('estado:' + v), function () {\n
+                toggles.forEach(function (t) { t.classList.add('is-on'); t.setAttribute('aria-pressed', 'true'); });\n
+            });\n
+        });\n
+\n
+        if (fDesde) chip('Desde ' + fDesde, function () { desde.value = ''; });\n
+        if (fHasta) chip('Hasta ' + fHasta, function () { hasta.value = ''; });\n
+\n
+        chips.hidden = chips.children.length === 0;\n
+    }\n
+\n
+    // ---------- Apertura y cierre de los paneles ----------\n
+    function cerrarPaneles(excepto) {\n
+        document.querySelectorAll('[data-flt]').forEach(function (bloque) {\n
+            if (bloque === excepto) return;\n
+            bloque.querySelector('[data-flt-panel]').hidden = true;\n
+            bloque.querySelector('[data-flt-toggle]').setAttribute('aria-expanded', 'false');\n
+        });\n
+    }\n
+\n
+    document.querySelectorAll('[data-flt]').forEach(function (bloque) {\n
+        var boton = bloque.querySelector('[data-flt-toggle]');\n
+        var panel = bloque.querySelector('[data-flt-panel]');\n
+\n
+        boton.addEventListener('click', function (e) {\n
+            e.stopPropagation();\n
+            var abrir = panel.hidden;\n
+            cerrarPaneles(bloque);\n
+            panel.hidden = !abrir;\n
+            boton.setAttribute('aria-expanded', abrir ? 'true' : 'false');\n
+        });\n
+\n
+        panel.addEventListener('click', function (e) { e.stopPropagation(); });\n
+    });\n
+\n
+    document.addEventListener('click', function () { cerrarPaneles(null); });\n
+    document.addEventListener('keydown', function (e) {\n
+        if (e.key === 'Escape') cerrarPaneles(null);\n
+    });\n
+\n
+    // ---------- Eventos de los controles ----------\n
+    if (buscar) buscar.addEventListener('input', filtrar);\n
+    checks.forEach(function (c) { c.addEventListener('change', filtrar); });\n
+    [desde, hasta].forEach(function (c) { if (c) c.addEventListener('change', filtrar); });\n
+    textos.forEach(function (t) { t.addEventListener('input', filtrar); });\n
+\n
+    toggles.forEach(function (t) {\n
+        t.addEventListener('click', function () {\n
+            var on = !t.classList.contains('is-on');\n
+            t.classList.toggle('is-on', on);\n
+            t.setAttribute('aria-pressed', on ? 'true' : 'false');\n
+            filtrar();\n
+        });\n
+    });\n
+\n
+    function limpiar() {\n
+        if (buscar) buscar.value = '';\n
+        checks.forEach(function (c) { c.checked = false; });\n
+        if (desde) desde.value = '';\n
+        if (hasta) hasta.value = '';\n
+        textos.forEach(function (t) { t.value = ''; });\n
+        toggles.forEach(function (t, i) {\n
+            // Cuál queda encendido lo decide cada pantalla; con null, ninguno.\n
+            var on = CFG.toggleInicial !== null && i === CFG.toggleInicial;\n
+            t.classList.toggle('is-on', on);\n
+            t.setAttribute('aria-pressed', on ? 'true' : 'false');\n
+        });\n
+        filtrar();\n
+    }\n
+\n
+    document.querySelectorAll('#fLimpiar, [data-limpiar-filtros]').forEach(function (b) {\n
+        b.addEventListener('click', limpiar);\n
+    });\n
+\n
+    filtrar();\n
+})();\n
+</script>\n
+\n
+\n
+\n
+<style>\n
+        /* ===================== Menú de tres puntos por fila ===================== */\n
+        .row-menu { position:relative; display:inline-block; }\n
+        .row-menu-btn { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px;\n
+                        padding:0; border:1px solid transparent; border-radius:8px; background:none;\n
+                        color:var(--muted); cursor:pointer; transition:background .15s, color .15s, border-color .15s; }\n
+        .row-menu-btn svg { width:18px; height:18px; }\n
+        .row-menu-btn:hover { background:var(--surface-2); color:var(--text); }\n
+        .row-menu-btn:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }\n
+        .row-menu-btn[aria-expanded="true"] { background:var(--surface-2); border-color:var(--border); color:var(--primary); }\n
+\n
+        /* Se posiciona con 'fixed' desde JS para que no lo recorte el scroll de la tabla. */\n
+        .row-menu-pop { position:fixed; z-index:80; display:flex; flex-direction:column; gap:2px;\n
+                        min-width:176px; padding:6px; background:var(--surface);\n
+                        border:1px solid var(--border); border-radius:11px; box-shadow:var(--shadow); }\n
+        .row-menu-pop[hidden] { display:none; }\n
+        .row-menu-pop a, .row-menu-pop button { display:flex; align-items:center; gap:10px; padding:9px 10px;\n
+                          width:100%; border:0; background:none; border-radius:8px; color:var(--text);\n
+                          font-family:inherit; font-size:13.5px; text-align:left; text-decoration:none;\n
+                          white-space:nowrap; cursor:pointer; }\n
+        .row-menu-pop svg { flex:none; width:16px; height:16px; color:var(--muted); }\n
+        .row-menu-pop a:hover, .row-menu-pop button:hover { background:var(--surface-2); }\n
+        .row-menu-pop a:hover svg, .row-menu-pop button:hover svg { color:var(--primary); }\n
+        .row-menu-pop .es-danger { color:var(--danger); }\n
+        .row-menu-pop .es-danger svg { color:var(--danger); }\n
+        .row-menu-pop .es-danger:hover { background:var(--danger-soft); }\n
+        .row-menu-pop .es-danger:hover svg { color:var(--danger); }\n
+        .row-menu-pop a:focus-visible, .row-menu-pop button:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }\n
+    </style>\n
+    <script>\n
+    (function () {\n
+        var abierto = null;\n
+\n
+        function cerrar() {\n
+            if (!abierto) return;\n
+            abierto.pop.hidden = true;\n
+            abierto.boton.setAttribute('aria-expanded', 'false');\n
+            abierto = null;\n
+        }\n
+\n
+        // El popup va con position:fixed, así que se coloca a mano.\n
+        function colocar(boton, pop) {\n
+            var r = boton.getBoundingClientRect();\n
+            var alto = pop.offsetHeight;\n
+            var ancho = pop.offsetWidth;\n
+\n
+            var top = r.bottom + 6;\n
+            if (top + alto > window.innerHeight - 8) {\n
+                top = Math.max(8, r.top - alto - 6); // no cabe abajo: se abre hacia arriba\n
+            }\n
+\n
+            var left = r.right - ancho;\n
+            if (left < 8) left = 8;\n
+            if (left + ancho > window.innerWidth - 8) left = window.innerWidth - ancho - 8;\n
+\n
+            pop.style.top = top + 'px';\n
+            pop.style.left = left + 'px';\n
+        }\n
+\n
+        document.querySelectorAll('[data-row-menu]').forEach(function (menu) {\n
+            var boton = menu.querySelector('[data-row-menu-toggle]');\n
+            var pop = menu.querySelector('[data-row-menu-pop]');\n
+\n
+            boton.addEventListener('click', function (e) {\n
+                e.stopPropagation();\n
+                var estabaAbierto = abierto && abierto.pop === pop;\n
+                cerrar();\n
+                if (estabaAbierto) return;\n
+\n
+                pop.hidden = false;\n
+                colocar(boton, pop);\n
+                boton.setAttribute('aria-expanded', 'true');\n
+                abierto = { boton: boton, pop: pop };\n
+            });\n
+\n
+            pop.addEventListener('click', function (e) { e.stopPropagation(); });\n
+        });\n
+\n
+        document.addEventListener('click', cerrar);\n
+\n
+        // Esos botones frenan la propagación del clic, así que se avisan aparte.\n
+        document.querySelectorAll('[data-flt-toggle], [data-view-switch] button').forEach(function (b) {\n
+            b.addEventListener('click', cerrar);\n
+        });\n
+\n
+        document.addEventListener('keydown', function (e) {\n
+            if (e.key !== 'Escape' || !abierto) return;\n
+            var boton = abierto.boton;\n
+            cerrar();\n
+            boton.focus();\n
+        });\n
+\n
+        // Al filtrar o buscar puede desaparecer la fila del menú abierto.\n
+        document.addEventListener('input', cerrar, true);\n
+        document.addEventListener('change', cerrar, true);\n
+\n
+        window.addEventListener('scroll', function () {\n
+            if (abierto) colocar(abierto.boton, abierto.pop);\n
+        }, true);\n
+        window.addEventListener('resize', cerrar);\n
+    })();\n
+    </script>\n
+\n
+            </main>\n
+    </div>\n
+</div>\n
+\n
+\n
+<div class="toast" id="appToast" role="status" aria-live="polite">\n
+    <span class="toast-ico" id="appToastIco"></span>\n
+    <span id="appToastMsg"></span>\n
+</div>\n
+\n
+<script>\n
+    // ===== Toast global =====\n
+    var TOAST_ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';\n
+    var TOAST_ICON_WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>';\n
+    window.showToast = function (msg, type) {\n
+        var t = document.getElementById('appToast');\n
+        if (!t) return;\n
+        document.getElementById('appToastMsg').textContent = msg;\n
+        var ico = document.getElementById('appToastIco');\n
+        ico.classList.toggle('warn', type === 'warn');\n
+        ico.innerHTML = type === 'warn' ? TOAST_ICON_WARN : TOAST_ICON_OK;\n
+        t.classList.add('show');\n
+        clearTimeout(window._toastTimer);\n
+        window._toastTimer = setTimeout(function () { t.classList.remove('show'); }, 3600);\n
+    };\n
+\n
+    document.addEventListener('DOMContentLoaded', function () {\n
+        // Saludo según la hora real del navegador (evita desfase de zona horaria del servidor)\n
+        var greetWord = document.getElementById('greet-word');\n
+        if (greetWord) {\n
+            var hh = new Date().getHours();\n
+            greetWord.textContent = hh < 12 ? 'Buenos días' : (hh < 19 ? 'Buenas tardes' : 'Buenas noches');\n
+        }\n
+\n
+        // Mostrar mensajes flash como toast\n
+        var flash = document.getElementById('appFlash');\n
+        var flashErr = document.getElementById('appFlashErr');\n
+        if (flash && flash.dataset.msg) { window.showToast(flash.dataset.msg, 'ok'); }\n
+        else if (flashErr && flashErr.dataset.msg) { window.showToast(flashErr.dataset.msg, 'warn'); }\n
+\n
+        var app = document.getElementById('app');\n
+        var isMobile = function () { return window.matchMedia('(max-width:1024px)').matches; };\n
+\n
+        // Etiqueta accesible del botón según el estado\n
+        var collapseBtn = document.getElementById('collapse-btn');\n
+        function syncCollapseLabel() {\n
+            var collapsed = app.classList.contains('collapsed');\n
+            var label = collapsed ? 'Expandir menú' : 'Contraer menú';\n
+            collapseBtn.setAttribute('aria-label', label);\n
+            collapseBtn.setAttribute('title', label);\n
+        }\n
+\n
+        // Colapsar sidebar (escritorio) / abrir-cerrar (móvil)\n
+        function toggleSidebar() {\n
+            if (isMobile()) {\n
+                app.classList.toggle('sidebar-open');\n
+            } else {\n
+                app.classList.toggle('collapsed');\n
+                try { localStorage.setItem('sidebar-collapsed', app.classList.contains('collapsed') ? '1' : '0'); } catch (e) {}\n
+                syncCollapseLabel();\n
+            }\n
+        }\n
+        if (!isMobile()) {\n
+            app.classList.add('no-anim');\n
+            try { if (localStorage.getItem('sidebar-collapsed') === '1') app.classList.add('collapsed'); } catch (e) {}\n
+            // Forzar reflow y reactivar animaciones tras aplicar el estado inicial\n
+            void app.offsetWidth;\n
+            requestAnimationFrame(function () { app.classList.remove('no-anim'); });\n
+        }\n
+        syncCollapseLabel();\n
+        document.getElementById('hamburger').addEventListener('click', toggleSidebar);\n
+        document.getElementById('collapse-btn').addEventListener('click', toggleSidebar);\n
+        document.getElementById('overlay').addEventListener('click', function () { app.classList.remove('sidebar-open'); });\n
+\n
+        // Tema claro / oscuro\n
+        document.getElementById('theme-toggle').addEventListener('click', function () {\n
+            var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';\n
+            document.documentElement.setAttribute('data-theme', cur);\n
+            try { localStorage.setItem('theme', cur); } catch (e) {}\n
+        });\n
+\n
+        // Dropdowns (notificaciones / usuario)\n
+        document.querySelectorAll('[data-dd]').forEach(function (btn) {\n
+            btn.addEventListener('click', function (e) {\n
+                e.stopPropagation();\n
+                var dd = document.getElementById(btn.getAttribute('data-dd'));\n
+                var wasOpen = dd.classList.contains('open');\n
+                document.querySelectorAll('.dd.open').forEach(function (o) { o.classList.remove('open'); });\n
+                if (!wasOpen) dd.classList.add('open');\n
+            });\n
+        });\n
+        document.addEventListener('click', function () {\n
+            document.querySelectorAll('.dd.open').forEach(function (o) { o.classList.remove('open'); });\n
+        });\n
+        document.querySelectorAll('.dd-panel').forEach(function (p) {\n
+            p.addEventListener('click', function (e) { e.stopPropagation(); });\n
+        });\n
+\n
+        // Ojo para contraseñas\n
+        var eyeOn = '<svg class="icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';\n
+        var eyeOff = '<svg class="icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-6.5 0-10-7-10-7a18.4 18.4 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';\n
+        document.querySelectorAll('input[type="password"]').forEach(function (input) {\n
+            var wrap = document.createElement('span');\n
+            wrap.className = 'pw-wrap';\n
+            input.parentNode.insertBefore(wrap, input);\n
+            wrap.appendChild(input);\n
+            var b = document.createElement('button');\n
+            b.type = 'button'; b.className = 'pw-toggle'; b.setAttribute('aria-label', 'Mostrar u ocultar contraseña');\n
+            b.innerHTML = eyeOn + eyeOff;\n
+            wrap.appendChild(b);\n
+            b.addEventListener('click', function () {\n
+                var show = input.type === 'password';\n
+                input.type = show ? 'text' : 'password';\n
+                b.classList.toggle('is-visible', show);\n
+            });\n
+        });\n
+    });\n
+\n
+        // Submenús del sidebar\n
+        (function () {\n
+            var app = document.getElementById('app');\n
+            var grupos = Array.prototype.slice.call(document.querySelectorAll('.nav-group'));\n
+            var flotante = null;\n
+            var temporizador = null;\n
+\n
+            // El panel flotante toma su título del apartado al que pertenece.\n
+            grupos.forEach(function (g) {\n
+                var sub = g.querySelector('.submenu');\n
+                var toggle = g.querySelector('.nav-toggle');\n
+                if (sub && toggle) sub.dataset.nombre = toggle.dataset.tip || '';\n
+            });\n
+\n
+            // En móvil el menú se ve completo aunque quedara marcado contraído.\n
+            function contraido() {\n
+                return app.classList.contains('collapsed') && window.innerWidth > 1024;\n
+            }\n
+\n
+            function ocultar() {\n
+                if (!flotante) return;\n
+                flotante.removeAttribute('data-flotante');\n
+                flotante = null;\n
+            }\n
+\n
+            function mostrar(g) {\n
+                clearTimeout(temporizador);\n
+                if (flotante === g) return;\n
+                ocultar();\n
+\n
+                var sub = g.querySelector('.submenu');\n
+                var r = g.getBoundingClientRect();\n
+\n
+                // El panel se ancla al ancho final de la barra, no a su medida\n
+                // en pantalla: durante la animación de contraer esa medida\n
+                // todavía está cambiando y el panel quedaría descuadrado.\n
+                var barra = parseInt(getComputedStyle(document.documentElement)\n
+                    .getPropertyValue('--sidebar-w-collapsed'), 10) || 78;\n
+\n
+                sub.style.left = (barra + 8) + 'px';\n
+                // Si el panel no cabe hacia abajo, sube lo necesario.\n
+                sub.style.top = Math.max(10, Math.min(r.top, window.innerHeight - sub.offsetHeight - 10)) + 'px';\n
+\n
+                g.setAttribute('data-flotante', '');\n
+                flotante = g;\n
+            }\n
+\n
+            grupos.forEach(function (g) {\n
+                var toggle = g.querySelector('.nav-toggle');\n
+                if (!toggle) return;\n
+\n
+                toggle.addEventListener('click', function (e) {\n
+                    e.preventDefault();\n
+\n
+                    if (contraido()) {\n
+                        flotante === g ? ocultar() : mostrar(g);\n
+                        return;\n
+                    }\n
+\n
+                    var abierto = g.classList.contains('open');\n
+                    // Acordeón: un solo apartado abierto a la vez, para que el\n
+                    // menú no se convierta en una lista interminable.\n
+                    grupos.forEach(function (o) { o.classList.remove('open'); });\n
+                    if (!abierto) g.classList.add('open');\n
+                });\n
+\n
+                g.addEventListener('mouseenter', function () { if (contraido()) mostrar(g); });\n
+                g.addEventListener('mouseleave', function () {\n
+                    // Margen para que el mouse alcance el panel sin que se cierre.\n
+                    if (contraido()) temporizador = setTimeout(ocultar, 200);\n
+                });\n
+            });\n
+\n
+            document.addEventListener('click', function (e) {\n
+                if (!e.target.closest('.nav-group')) ocultar();\n
+            });\n
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape') ocultar(); });\n
+            window.addEventListener('resize', ocultar);\n
+        })();\n
+</script>\n
+\n
+    <script>\n
+    (function () {\n
+        document.querySelectorAll('[data-view-switch]').forEach(function (grupo) {\n
+            var clave    = 'vista:' + grupo.dataset.viewSwitch;\n
+            var lista    = document.querySelector('[data-view-list]');\n
+            var tarjetas = document.querySelector('[data-view-cards]');\n
+            if (!lista || !tarjetas) return;\n
+\n
+            function aplicar(vista) {\n
+                var esLista = vista !== 'tarjetas';\n
+                lista.style.display    = esLista ? '' : 'none';\n
+                tarjetas.style.display = esLista ? 'none' : 'grid';\n
+                grupo.querySelectorAll('button').forEach(function (b) {\n
+                    b.classList.toggle('active', b.dataset.view === (esLista ? 'lista' : 'tarjetas'));\n
+                });\n
+                try { localStorage.setItem(clave, esLista ? 'lista' : 'tarjetas'); } catch (e) {}\n
+            }\n
+\n
+            grupo.querySelectorAll('button').forEach(function (b) {\n
+                b.addEventListener('click', function () { aplicar(b.dataset.view); });\n
+            });\n
+\n
+            var guardada = 'lista';\n
+            try { guardada = localStorage.getItem(clave) || 'lista'; } catch (e) {}\n
+            aplicar(guardada);\n
+        });\n
+    })();\n
+    </script>\n
+            <script>\n
+        (function () {\n
+            /*\n
+            | Se escucha en document y en fase de CAPTURA, por dos razones:\n
+            |\n
+            |  - Engancharse de inmediato, sin esperar DOMContentLoaded: para\n
+            |    cuando este script corre, ese evento puede haber pasado ya.\n
+            |  - El menú de tres puntos corta la propagación de los clics que\n
+            |    ocurren dentro de él (para no cerrarse solo), así que en\n
+            |    fase de burbuja el clic en "Eliminar" nunca llegaba aquí.\n
+            */\n
+            document.addEventListener('click', function (e) {\n
+                const modal = document.getElementById('modalEliminar');\n
+                if (!modal) return;\n
+\n
+                const boton = e.target.closest('[data-eliminar-movimiento]');\n
+\n
+                if (boton) {\n
+                    const form = document.getElementById('formEliminar');\n
+                    form.action = boton.dataset.url;\n
+                    modal.querySelector('[data-folio-eliminar]').textContent = boton.dataset.folio;\n
+                    modal.querySelector('#pinEliminar').value = '';\n
+                    modal.showModal();\n
+\n
+                    return;\n
+                }\n
+\n
+                // Clic en el fondo: el objetivo es el propio <dialog>.\n
+                if (e.target === modal || e.target.closest('[data-cerrar-modal]')) {\n
+                    modal.close();\n
+                }\n
+            }, true);\n
+\n
+                    })();\n
+        </script>\n
+    </body>\n
+</html>\n
+
+
+  To contain: data-ver="http://localhost/gestion-inventario/entrada-salida/1"
+
+  at tests\Feature\MovimientoDetalleTest.php:76
+     72▕         $pagina = $this->actingAs($user)->get(route('inventory.movimientos.index'));
+     73▕ 
+     74▕         $pagina->assertOk();
+     75▕         // La fila entera es clickeable, no solo el menú de tres puntos.
+  ➜  76▕         $pagina->assertSee('data-ver="'.route('inventory.movimientos.show', $movimiento).'"', false);
+     77▕         $pagina->assertSee('mv-clic', false);
+     78▕     }
+     79▕ 
+     80▕     public function test_el_detalle_de_una_entrada_lista_todas_sus_piezas(): void
+
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\MovimientoDetalleTest > el detalle de una entrada lista todas sus piezas                       
