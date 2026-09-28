@@ -49,27 +49,29 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admi
     Route::get('/usuarios/{user}', [UserController::class, 'show'])->middleware('can:usuarios.ver')->name('users.show');
 });
 
+// Vehículos y viáticos por permiso (ej. Marketing los usa para los viajes).
+Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/vehiculos', [VehicleController::class, 'index'])->middleware('can:vehiculos.ver')->name('vehicles.index');
+    Route::post('/vehiculos', [VehicleController::class, 'store'])->middleware('can:vehiculos.editar')->name('vehicles.store');
+    Route::get('/vehiculos/{vehicle}', [VehicleController::class, 'show'])->middleware('can:vehiculos.ver')->name('vehicles.show');
+
+    Route::get('/viaticos', [ViaticController::class, 'index'])->middleware('can:viaticos.ver')->name('viatics.index');
+    Route::get('/viaticos/crear', [ViaticController::class, 'create'])->middleware('can:viaticos.editar')->name('viatics.create');
+    Route::post('/viaticos', [ViaticController::class, 'store'])->middleware('can:viaticos.editar')->name('viatics.store');
+    Route::get('/viaticos/{viatic}/editar', [ViaticController::class, 'edit'])->middleware('can:viaticos.editar')->name('viatics.edit');
+    Route::patch('/viaticos/{viatic}', [ViaticController::class, 'update'])->middleware('can:viaticos.editar')->name('viatics.update');
+    Route::delete('/viaticos/{viatic}', [ViaticController::class, 'destroy'])->middleware('can:viaticos.editar')->name('viatics.destroy');
+    Route::get('/viaticos/{viatic}', [ViaticController::class, 'show'])->middleware('can:viaticos.ver')->name('viatics.show');
+    Route::post('/viaticos/{viatic}/gastos', [ViaticController::class, 'addExpense'])->middleware('can:viaticos.editar')->name('viatics.expense');
+    Route::patch('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'updateExpense'])->middleware('can:viaticos.editar')->name('viatics.expense.update');
+    Route::delete('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'destroyExpense'])->middleware('can:viaticos.editar')->name('viatics.expense.destroy');
+});
+
 Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     // Otorgar o quitar el rol de administrador: acción crítica, solo admins.
     Route::post('/usuarios/{user}/admin', [UserController::class, 'toggleAdmin'])->name('users.toggleAdmin');
     Route::post('/reportes', [ReportController::class, 'store'])->name('reports.store');
     Route::patch('/materiales/{materialRequest}/revision', [MaterialRequestController::class, 'review'])->name('materials.review');
-
-    // Vehículos
-    Route::get('/vehiculos', [VehicleController::class, 'index'])->name('vehicles.index');
-    Route::post('/vehiculos', [VehicleController::class, 'store'])->name('vehicles.store');
-    Route::get('/vehiculos/{vehicle}', [VehicleController::class, 'show'])->name('vehicles.show');
-
-    Route::get('/viaticos', [ViaticController::class, 'index'])->name('viatics.index');
-    Route::get('/viaticos/crear', [ViaticController::class, 'create'])->name('viatics.create');
-    Route::post('/viaticos', [ViaticController::class, 'store'])->name('viatics.store');
-    Route::get('/viaticos/{viatic}/editar', [ViaticController::class, 'edit'])->name('viatics.edit');
-    Route::patch('/viaticos/{viatic}', [ViaticController::class, 'update'])->name('viatics.update');
-    Route::delete('/viaticos/{viatic}', [ViaticController::class, 'destroy'])->name('viatics.destroy');
-    Route::get('/viaticos/{viatic}', [ViaticController::class, 'show'])->name('viatics.show');
-    Route::post('/viaticos/{viatic}/gastos', [ViaticController::class, 'addExpense'])->name('viatics.expense');
-    Route::patch('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'updateExpense'])->name('viatics.expense.update');
-    Route::delete('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'destroyExpense'])->name('viatics.expense.destroy');
 
     Route::post('/viajes', [TripController::class, 'store'])->name('trips.store');
     Route::get('/viajes/{trip}', [TripController::class, 'show'])->name('trips.show');

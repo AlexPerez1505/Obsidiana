@@ -142,35 +142,6 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * ¿El usuario ya registró una firma digital?
-     */
-    public function tieneFirma(): bool
-    {
-        return (bool) $this->firma_path;
-    }
-
-    /**
-     * La firma como data URI para precargar el lienzo. Devuelve null si
-     * no hay firma registrada o no se puede leer el archivo.
-     */
-    public function firmaDataUri(): ?string
-    {
-        if (! $this->firma_path) {
-            return null;
-        }
-
-        $disco = config('filesystems.fotos_disk', 'public');
-        if (! Storage::disk($disco)->exists($this->firma_path)) {
-            return null;
-        }
-
-        $contenido = Storage::disk($disco)->get($this->firma_path);
-        $mime = 'image/png';
-
-        return 'data:'.$mime.';base64,'.base64_encode($contenido);
-    }
-
-    /**
      * Historial de inicios de sesión del usuario.
      */
     public function loginLogs(): HasMany

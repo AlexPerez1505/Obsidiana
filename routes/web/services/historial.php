@@ -1,13 +1,19 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Services\EquipmentReportController;
 use App\Http\Controllers\Services\QrController;
 use App\Http\Controllers\Services\ServiceController;
+use App\Models\Brand;
+use App\Models\Customer;
 use App\Models\EquipmentType;
+use App\Models\ExternalTechnician;
 use App\Models\Service;
+use App\Models\Equipo;
 use App\Models\GarantiaDocumento;
+use App\Models\User;
 use App\Models\Venta;
 
 Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(function () {
@@ -21,11 +27,20 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
             $query->where('internal_technician_id', $usuario->id);
         }
 
-<<<<<<< HEAD
         $services = $query->get();
         return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('services'));
     })->name('gestion.servicios.historial');
-=======
+
+    Route::get('/gestion-servicios/historial-servicios/nueva-orden', function () {
+        $customers = Customer::visiblesPara(auth()->user())->with('asesor')->latest()->get();
+
+        if ($clienteId = request('cliente_id')) {
+            $selected = $customers->firstWhere('id', $clienteId);
+            if ($selected) {
+                $customers = $customers->filter(fn ($customer) => $customer->id != $clienteId)->prepend($selected)->values();
+            }
+        }
+
         $equipmentTypes = EquipmentType::orderBy('name')->get();
         $brands = Brand::orderBy('name')->get();
         $equipos = Equipo::all();
@@ -43,7 +58,6 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
         ->middleware('can:servicios.crear')->name('gestion.servicios.historial.nueva_orden.store');
     Route::get('/gestion-servicios/historial-servicios/invitar', [ServiceController::class, 'invite'])
         ->middleware('can:servicios.crear')->name('gestion.servicios.historial.invite');
->>>>>>> 748c4e1ad51103d8ab70a724731e58ea1f9a4912
     Route::get('/gestion-servicios/historial-servicios/aprobaciones', function () {
         $services = Service::where('status', 'registrado')
             ->with(['customer', 'currentStep'])
@@ -105,8 +119,6 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
     Route::post('/gestion-servicios/historial-servicios/{service}/renovar-qr', [QrController::class, 'renew'])
         ->middleware('can:servicios.crear')->name('qr.renew');
 
-<<<<<<< HEAD
-=======
     Route::post('/gestion-servicios/historial-servicios/nueva-orden/external-technicians', function (Request $request) {
         $data = $request->validate([
             'name' => 'required|string|max:255',
@@ -139,7 +151,6 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
         return back();
     })->middleware('can:servicios.crear')->name('gestion.servicios.historial.external_technicians.store');
 
->>>>>>> 748c4e1ad51103d8ab70a724731e58ea1f9a4912
     Route::get('/gestion-servicios/garantia', function () {
         $documentos = GarantiaDocumento::latest()->get();
         return view('structure.gestion_servicios.garantia.index', compact('documentos'));
@@ -181,6 +192,85 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
     })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.guardar_carta');
 
 
+
+    Route::get('/gestion-servicios/mantenimiento', function () {
+        $internalTechnicians = User::where('status', User::STATUS_APPROVED)
+            ->where(function ($q) {
+                $q->whereRaw('LOWER(name) LIKE ?', ['%joel%'])
+                  ->orWhereRaw('LOWER(name) LIKE ?', ['%icelda%']);
+            })
+            ->orderBy('name')
+            ->get()
+            ->map(function (User $technician) {
+                $activeCount = Service::where('internal_technician_id', $technician->id)
+                    ->where('status', 'en_progreso')
+                    ->count();
+
+                return (object) [
+                    'id' => $technician->id,
+                    'name' => $technician->name,
+                    'email' => $technician->email,
+                    'initials' => collect(explode(' ', $technician->name))->map(fn ($w) => strtoupper(substr($w, 0, 1)))->take(2)->join(''),
+                    'count' => $activeCount,
+                    'count_label' => 'activo',
+                    'is_external' => false,
+                ];
+            });
+
+        $externalTotal = Service::where('service_type', 'externo')->count();
+        $externalActive = Service::where('service_type', 'externo')
+            ->whereNotIn('status', ['entregado', 'cancelado'])
+            ->count();
+
+        $externalOption = (object) [
+            'id' => 'externo',
+            'name' => 'Mantenimientos externos',
+            'email' => 'Todos los servicios externos',
+            'initials' => 'EXT',
+            'count' => $externalTotal,
+            'count_label' => 'servicio',
+            'is_external' => true,
+        ];
+
+        $technicians = $internalTechnicians->push($externalOption)->values();
+
+        if (request('tipo') === 'externo') {
+            $selected = $externalOption;
+        } else {
+            $selectedId = request('tecnico');
+            $selected = $technicians->firstWhere('id', (int) $selectedId) ?? $technicians->first();
+        }
+
+        $services = collect();
+        if ($selected) {
+            if ($selected->is_external) {
+                $services = Service::where('service_type', 'externo')
+                    ->with(['customer', 'currentStep'])
+                    ->latest()
+                    ->get();
+            } else {
+                $services = Service::where('internal_technician_id', $selected->id)
+                    ->where('status', 'en_progreso')
+                    ->with(['customer', 'currentStep'])
+                    ->latest()
+                    ->get();
+            }
+        }
+
+        return view('structure.gestion_servicios.mantenimiento.index', compact('technicians', 'selected', 'services'));
+    })->name('gestion.servicios.mantenimiento.index');
+
+    Route::get('/gestion-servicios/mantenimiento/{service}', function (Service $service) {
+        $service->load(['customer', 'currentStep', 'serviceEquipment', 'internalTechnician', 'externalTechnician', 'spareParts']);
+
+        return view('structure.gestion_servicios.mantenimiento.Servicio', compact('service'));
+    })->name('gestion.servicios.mantenimiento.show');
+
+    Route::get('/gestion-servicios/mantenimiento/{service}/reporte', function (Service $service) {
+        $service->load(['customer', 'currentStep']);
+
+        return view('structure.gestion_servicios.mantenimiento.Reporte', compact('service'));
+    })->name('gestion.servicios.mantenimiento.reporte');
 
     Route::get('/gestion-servicios/mantenimiento/{service}/reporte/raw', function (Service $service) {
         $service->load(['customer', 'serviceEquipment', 'internalTechnician', 'externalTechnician']);
@@ -334,6 +424,11 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
         return response()->json(['ok' => true]);
     })->middleware('can:servicios.crear')->name('gestion.servicios.mantenimiento.reporte.guardar');
 });
+
+Route::get('/nueva-orden/{invitation}', [ServiceController::class, 'createFromInvitation'])
+    ->name('public.nueva_orden');
+Route::post('/nueva-orden/{invitation}', [ServiceController::class, 'publicStore'])
+    ->name('public.nueva_orden.store');
 
 Route::get('/qr/{token}', [QrController::class, 'show'])
     ->name('qr.show');

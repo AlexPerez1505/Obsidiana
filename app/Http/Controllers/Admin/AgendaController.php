@@ -176,6 +176,7 @@ class AgendaController extends Controller
             'id' => 'evt-'.$event->id,
             'source' => 'agenda_event',
             'model_id' => $event->id,
+            'created_by' => $event->created_by,
             'start_date' => $event->start_date->format('Y-m-d'),
             'end_date' => $event->end_date->format('Y-m-d'),
             'time' => $time ? $time->format('h:i a') : 'Todo el dia',

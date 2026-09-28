@@ -93,6 +93,15 @@ class CatalogoPermisos
                 ],
             ],
 
+            'salidas' => [
+                'titulo' => 'Órdenes de salida',
+                'descripcion' => 'Equipos que salen del almacén.',
+                'permisos' => [
+                    'salidas.ver' => 'Ver las órdenes de salida',
+                    'salidas.preparar' => 'Preparar y cerrar órdenes de salida',
+                ],
+            ],
+
             'procesos' => [
                 'titulo' => 'Procesos',
                 'descripcion' => 'Hojalatería, mantenimiento y limpieza.',
@@ -128,6 +137,17 @@ class CatalogoPermisos
                 'permisos' => [
                     'servicios.ver' => 'Ver historial de servicios',
                     'servicios.crear' => 'Crear órdenes de servicio',
+                ],
+            ],
+
+            'vehiculos_viaticos' => [
+                'titulo' => 'Vehículos y viáticos',
+                'descripcion' => 'Unidades de la empresa y los viáticos de cada viaje.',
+                'permisos' => [
+                    'vehiculos.ver' => 'Ver vehículos',
+                    'vehiculos.editar' => 'Registrar y editar vehículos',
+                    'viaticos.ver' => 'Ver viáticos y sus gastos',
+                    'viaticos.editar' => 'Crear, editar y eliminar viáticos y gastos',
                 ],
             ],
 

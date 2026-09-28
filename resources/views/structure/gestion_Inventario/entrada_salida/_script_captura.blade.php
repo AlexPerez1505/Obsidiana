@@ -566,11 +566,10 @@
                 const cuantas = Math.max(1, parseInt(cantidadInput?.value || '1', 10) || 1);
 
                 // Lo capturado no se pisa sin avisar.
-<<<<<<< HEAD
-                if (seriesTextoInput?.value.trim() && !confirm('Ya hay series capturadas. ¿Reemplazarlas por las generadas?')) {
-=======
-                if (inputsSerie.some(i => i.value.trim()) && !(await window.confirmModal({ message: 'Ya hay series capturadas. ¿Reemplazarlas por las generadas?' }))) {
->>>>>>> 748c4e1ad51103d8ab70a724731e58ea1f9a4912
+                const reemplazarSeries = window.confirmModal
+                    ? await window.confirmModal({ message: 'Ya hay series capturadas. ¿Reemplazarlas por las generadas?' })
+                    : confirm('Ya hay series capturadas. ¿Reemplazarlas por las generadas?');
+                if (seriesTextoInput?.value.trim() && !reemplazarSeries) {
                     return;
                 }
 
