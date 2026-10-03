@@ -366,8 +366,12 @@ class CongresoController extends Controller
             'categoria_id' => ['required', 'exists:categorias,id'],
             'fecha_inicio' => ['required', 'date'],
             'fecha_finalizacion' => ['required', 'date', 'after_or_equal:fecha_inicio'],
+            'fecha_montaje' => ['nullable', 'date', 'before_or_equal:fecha_inicio'],
             'hora_montaje' => ['required', 'date_format:H:i'],
             'hora_desmontaje' => ['required', 'date_format:H:i'],
+            'num_stand' => ['nullable', 'string', 'max:50'],
+            'costo' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'pagado' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'lte:costo'],
             'descarga_acceso' => ['nullable', 'boolean'],
             'descarga_texto' => ['nullable', 'string', 'max:255'],
             'acceso_subir' => ['nullable', 'boolean'],
@@ -380,10 +384,15 @@ class CongresoController extends Controller
         ], [
             'archivos.max' => 'Puedes subir hasta 10 archivos a la vez.',
             'archivos.*.mimes' => 'Solo se aceptan imágenes, PDF o documentos de Office.',
+            'fecha_montaje.before_or_equal' => 'La fecha de montaje debe ser el mismo día en que inicia el congreso o antes (el stand se arma antes de que arranque).',
+            'pagado.lte' => 'Lo pagado no puede ser mayor que el costo del congreso.',
         ]);
 
         $data['descarga_acceso'] = $request->boolean('descarga_acceso');
         $data['acceso_subir'] = $request->boolean('acceso_subir');
+
+        // Sin monto capturado, lo pagado es 0 (la columna no admite null).
+        $data['pagado'] = $data['pagado'] ?? 0;
 
         unset($data['archivos'], $data['quitar_archivos']);
 

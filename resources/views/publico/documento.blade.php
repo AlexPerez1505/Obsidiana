@@ -175,7 +175,7 @@
                             <td>
                                 <div style="font-weight:600;">{{ $it->nombre }}</div>
                                 @if ($it->modelo)
-                                    <div style="color:var(--muted); font-size:12.5px;">Modelo {{ $it->modelo }}</div>
+                                    <div style="color:var(--muted); font-size:12.5px;">{{ $it->marca ? $it->marca.' · ' : '' }}Modelo {{ $it->modelo }}</div>
                                 @endif
                             </td>
                             <td>{{ $it->marca ?: '—' }}</td>

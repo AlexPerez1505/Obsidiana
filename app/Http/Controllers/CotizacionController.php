@@ -222,7 +222,7 @@ class CotizacionController extends Controller
             ->map(fn (Producto $p) => [
                 'id' => $p->id,
                 'tipo_item' => 'producto',
-                'nombre' => $p->tipo_equipo ?: $p->subtipo,
+                'nombre' => $p->nombreVisible(),
                 'modelo' => $p->modelo,
                 'marca' => $p->marca,
                 'precio' => (float) $p->precio,

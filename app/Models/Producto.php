@@ -42,6 +42,16 @@ class Producto extends Model
     // La sincronización con el catálogo vive en el trait, compartida con
     // Equipo. El mapa por omisión ya usa los nombres de esta tabla.
 
+    /**
+     * Cómo se nombra el producto en cotizaciones, ventas y recibos: por su
+     * subtipo (más específico). El tipo solo se usa si el producto no tiene
+     * subtipo. Un solo lugar para cambiar esta regla.
+     */
+    public function nombreVisible(): string
+    {
+        return trim((string) ($this->subtipo ?: $this->tipo_equipo));
+    }
+
     public function equipmentType(): BelongsTo
     {
         return $this->belongsTo(EquipmentType::class);

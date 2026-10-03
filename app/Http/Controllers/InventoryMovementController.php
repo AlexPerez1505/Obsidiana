@@ -606,7 +606,7 @@ class InventoryMovementController extends Controller
 
     public function show(InventoryMovement $movimiento): View
     {
-        $movimiento->load(['creator', 'seriales']);
+        $movimiento->load(['creator', 'seriales.procesos']);
 
         /*
         | Una salida viene de una venta, y su entrega la controla la orden de

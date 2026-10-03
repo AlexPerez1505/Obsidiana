@@ -36,12 +36,42 @@ return [
         'whatsapp' => env('MB_COMPROBANTES_WHATSAPP', ''),
     ],
 
-    'banco' => [
-        'nombre' => env('MB_BANCO', ''),
-        'beneficiario' => env('MB_BANCO_BENEFICIARIO', ''),
-        'cuenta' => env('MB_BANCO_CUENTA', ''),
-        'clabe' => env('MB_BANCO_CLABE', ''),
-        'tarjeta' => env('MB_BANCO_TARJETA', ''),
+    /*
+    | Cuentas para transferencia. Se elige el bloque según el IVA del documento:
+    | con IVA (requiere factura) va la cuenta de Anahí Téllez; sin IVA van las
+    | cuentas de Gabriela Díaz García. El bloque sin IVA admite varias cuentas.
+    | Ver App\Support\DatosBancarios, que resuelve cuál imprimir.
+    */
+    'bancos' => [
+
+        // Con IVA → Anahí Téllez (una sola cuenta).
+        'con_iva' => [
+            [
+                'nombre' => env('MB_BANCO_IVA', ''),
+                'beneficiario' => env('MB_BANCO_IVA_BENEFICIARIO', ''),
+                'cuenta' => env('MB_BANCO_IVA_CUENTA', ''),
+                'clabe' => env('MB_BANCO_IVA_CLABE', ''),
+                'tarjeta' => env('MB_BANCO_IVA_TARJETA', ''),
+            ],
+        ],
+
+        // Sin IVA → Gabriela Díaz García (puede llevar varias cuentas).
+        'sin_iva' => [
+            [
+                'nombre' => env('MB_BANCO_SIVA_A', ''),
+                'beneficiario' => env('MB_BANCO_SIVA_A_BENEFICIARIO', ''),
+                'cuenta' => env('MB_BANCO_SIVA_A_CUENTA', ''),
+                'clabe' => env('MB_BANCO_SIVA_A_CLABE', ''),
+                'tarjeta' => env('MB_BANCO_SIVA_A_TARJETA', ''),
+            ],
+            [
+                'nombre' => env('MB_BANCO_SIVA_B', ''),
+                'beneficiario' => env('MB_BANCO_SIVA_B_BENEFICIARIO', ''),
+                'cuenta' => env('MB_BANCO_SIVA_B_CUENTA', ''),
+                'clabe' => env('MB_BANCO_SIVA_B_CLABE', ''),
+                'tarjeta' => env('MB_BANCO_SIVA_B_TARJETA', ''),
+            ],
+        ],
     ],
 
     /*

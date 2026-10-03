@@ -152,7 +152,14 @@
                             <div class="t">{{ $c->folio }} · {{ $c->metodoLabel() }}</div>
                             <div class="s">
                                 {{ $c->fecha->format('d/m/Y') }}
-                                @if ($c->parcialidad) · {{ $c->parcialidad->nombre }} @endif
+                                @if ($c->aplicaciones->count() > 1)
+                                    · aplicado a {{ $c->aplicaciones->count() }} pagos:
+                                    {{ $c->aplicaciones->map(fn ($a) => ($a->pago?->nombre ?? 'Pago') . ' $' . number_format((float) $a->monto, 2))->implode(' + ') }}
+                                @elseif ($c->aplicaciones->count() === 1)
+                                    · {{ $c->aplicaciones->first()->pago?->nombre }}
+                                @elseif ($c->parcialidad)
+                                    · {{ $c->parcialidad->nombre }}
+                                @endif
                                 @if ($c->referencia) · ref. {{ $c->referencia }} @endif
                                 @if ($c->evidencias->count()) · {{ $c->evidencias->count() }} evidencia(s) @endif
                             </div>

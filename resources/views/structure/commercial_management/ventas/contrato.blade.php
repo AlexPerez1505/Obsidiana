@@ -7,11 +7,12 @@
 @php
     $emp = config('medibuy.empresa');
     $con = config('medibuy.contacto');
-    $ban = config('medibuy.banco');
 
     $c = $venta->customer;
     $comprador = trim(($c->nombre ?? '') . ' ' . ($c->apellido ?? '')) ?: '—';
-    $vendedor = $ban['beneficiario'] ?: $emp['nombre'];
+    // El vendedor es el titular de la cuenta que recibe el pago: con IVA es
+    // Anahí Téllez; sin IVA, Gabriela Díaz García.
+    $vendedor = \App\Support\DatosBancarios::beneficiario((bool) $venta->aplica_iva) ?: $emp['nombre'];
 
     $logoUri = \App\Support\LogoPdf::dataUri();
 

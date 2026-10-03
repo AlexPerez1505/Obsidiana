@@ -389,7 +389,7 @@
         $productosData = [];
         foreach ($productos as $producto) {
             $productosData[$producto->id] = [
-                'tipo_equipo' => $producto->tipo_equipo,
+                'tipo_equipo' => $producto->nombreVisible(),
                 'marca' => $producto->marca,
                 'modelo' => $producto->modelo,
                 'imagen' => $producto->imagen_path ? asset('storage/'.$producto->imagen_path) : null,
@@ -409,11 +409,11 @@
             foreach ($paquete->productos as $prod) {
                 if ($prod->pivot->cantidad > $prod->stock) {
                     $disponible = false;
-                    $stockInfo[] = "{$prod->tipo_equipo} (req: {$prod->pivot->cantidad}, stock: {$prod->stock})";
+                    $stockInfo[] = "{$prod->nombreVisible()} (req: {$prod->pivot->cantidad}, stock: {$prod->stock})";
                 }
                 $lista[] = [
                     'producto_id' => $prod->id,
-                    'tipo_equipo' => $prod->tipo_equipo,
+                    'tipo_equipo' => $prod->nombreVisible(),
                     'marca' => $prod->marca,
                     'modelo' => $prod->modelo,
                     'imagen' => $prod->imagen_path ? asset('storage/'.$prod->imagen_path) : null,
@@ -435,7 +435,7 @@
         foreach ($cotizacion->items as $item) {
             $itemsExistentes[] = [
                 'id' => $item->producto_id,
-                'tipo_equipo' => $item->producto?->tipo_equipo,
+                'tipo_equipo' => $item->producto?->nombreVisible(),
                 'marca' => $item->producto?->marca,
                 'modelo' => $item->producto?->modelo,
                 'imagen' => $item->producto?->imagen_path ? asset('storage/'.$item->producto->imagen_path) : null,

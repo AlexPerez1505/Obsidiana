@@ -51,6 +51,9 @@
         'en_espera' => ['label' => 'En espera', 'color' => '#f59e0b'],
         'cancelado' => ['label' => 'Cancelado', 'color' => '#ef4444'],
         'programado' => ['label' => 'Próximamente', 'color' => '#3b82f6'],
+        // Vienen de Asistencia (RH): solo lectura, se administran allá
+        'festivo' => ['label' => 'Día festivo', 'color' => '#a855f7'],
+        'equipo' => ['label' => 'Evento de la empresa', 'color' => '#14b8a6'],
     ];
 
     $typeLabels = [
@@ -136,6 +139,28 @@
         }
     }
 
+    /*
+    | Festivos y eventos de la empresa (vacaciones del equipo, comidas, horarios
+    | especiales) salen de Asistencia y se pintan como entradas de solo lectura.
+    | Van primero en cada día y a las 7:00 para quedar arriba en semana y día.
+    */
+    $calendarioEmpresa = \App\Support\CalendarioEmpresa::eventos($rangeStart, $rangeEnd, auth()->user());
+
+    foreach ($calendarioEmpresa as $virtual) {
+        $eventList[] = $virtual;
+
+        $vStart = Carbon::parse($virtual['start_date'])->max($rangeStart->copy()->startOfDay());
+        $vEnd = Carbon::parse($virtual['end_date'])->min($rangeEnd->copy()->startOfDay());
+
+        for ($cursor = $vStart->copy(); $cursor->lte($vEnd); $cursor->addDay()) {
+            $dia = $cursor->toDateString();
+            $events[$dia] = array_merge([array_merge($virtual, [
+                'is_start' => $dia === $virtual['start_date'],
+                'is_end' => $dia === $virtual['end_date'],
+            ])], $events[$dia] ?? []);
+        }
+    }
+
     if ($view === 'semana') {
         $gridStart = $rangeStart->copy();
         $gridEnd = $rangeEnd->copy();
@@ -163,6 +188,11 @@
         ->orderBy('start_time')
         ->limit(6)
         ->get();
+
+    // Próximos festivos y eventos de la empresa (los siguientes 90 días)
+    $proximosEmpresa = collect(\App\Support\CalendarioEmpresa::eventos(now()->startOfDay(), now()->addDays(90), auth()->user()))
+        ->filter(fn ($e) => $e['end_date'] >= $today)
+        ->sortBy('start_date')->take(6)->values();
 
 @endphp
 
@@ -1844,6 +1874,26 @@
                         @endforelse
                     </div>
                 </div>
+
+                <div class="side-card">
+                    <h3>Festivos y eventos de la empresa</h3>
+                    <div class="upcoming-list">
+                        @forelse ($proximosEmpresa as $e)
+                            <div class="upcoming-item">
+                                <span class="upcoming-line" style="background: {{ $e['status_color'] }};"></span>
+                                <span>
+                                    <b>{{ Carbon::parse($e['start_date'])->format('d/m/Y') }}{{ $e['end_date'] !== $e['start_date'] ? ' – '.Carbon::parse($e['end_date'])->format('d/m/Y') : '' }}</b>
+                                    {{ $e['title'] }}
+                                </span>
+                            </div>
+                        @empty
+                            <p class="upcoming-empty">Sin festivos ni eventos próximos</p>
+                        @endforelse
+                    </div>
+                    @can('asistencia.gestionar')
+                        <p style="margin:10px 0 0; font-size:12px;"><a href="{{ route('asistencia.horarios') }}">Administrar festivos</a> · <a href="{{ route('asistencia.eventos') }}">eventos</a></p>
+                    @endcan
+                </div>
             </aside>
         </div>
     </section>
@@ -1919,7 +1969,7 @@
             popAvatar.textContent = (data.title || 'A').charAt(0);
             popAvatar.style.background = (data.status_color || '#3b82f6');
             popTitle.textContent = data.title || 'Cita';
-            popCreator.textContent = 'Creada por ' + (data.creator || '—');
+            popCreator.textContent = data.creator_label || ('Creada por ' + (data.creator || '—'));
             popDate.textContent = formatDateEs(data.start_date) + (data.end_date !== data.start_date ? ' al ' + formatDateEs(data.end_date) : '');
             popReason.textContent = data.reason || data.type_label || '—';
             popTime.textContent = data.time
@@ -1930,6 +1980,7 @@
             popStatus.textContent = data.status_label || '—';
             popStatus.style.color = data.status_color || '#3b82f6';
             popReprogram.href = agendaCreateUrl + '?event=' + (data.id || '');
+            popReprogram.style.display = data.readonly ? 'none' : '';
             popDelete.hidden = ! data.can_delete;
             popDelete.dataset.deleteUrl = data.delete_url || '';
             popDelete.dataset.deleteTitle = data.title || '';

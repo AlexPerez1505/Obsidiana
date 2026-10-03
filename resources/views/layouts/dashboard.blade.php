@@ -7,6 +7,9 @@
     @auth<meta name="acceso-firma" content="{{ auth()->user()->firmaAcceso() }}">@endauth
     <title>@yield('title', 'Panel') · {{ config('app.name') }}</title>
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <meta name="theme-color" content="#007aff">
+    <link rel="apple-touch-icon" href="{{ asset('images/pwa-192.png') }}">
 
     @stack('head')
 
@@ -767,6 +770,100 @@
                     @endcan
                 </div>
             </div>
+            @canany(['rutas.ver', 'rutas.mapa', 'rutas.chofer', 'rutas.incidencias', 'rutas.flota', 'rutas.analytics'])
+            <div class="nav-group {{ request()->routeIs('logistica.*') ? 'open' : '' }}">
+                <a class="nav-item nav-toggle" href="#" data-tip="Logística">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    <span class="nav-label">Logística</span>
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+                </a>
+                <div class="submenu">
+                    @can('rutas.mapa')
+                    <a class="nav-item nav-sub {{ request()->routeIs('logistica.mapa') ? 'active' : '' }}" href="{{ route('logistica.mapa') }}" data-tip="Mapa en vivo">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Mapa en vivo</span>
+                    </a>
+                    @endcan
+                    @can('rutas.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('logistica.rutas.*') ? 'active' : '' }}" href="{{ route('logistica.rutas.index') }}" data-tip="Rutas">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Rutas</span>
+                    </a>
+                    @endcan
+                    @can('rutas.incidencias')
+                    <a class="nav-item nav-sub {{ request()->routeIs('logistica.incidencias.*') ? 'active' : '' }}" href="{{ route('logistica.incidencias.index') }}" data-tip="Incidencias">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Incidencias</span>
+                    </a>
+                    @endcan
+                    @can('rutas.flota')
+                    <a class="nav-item nav-sub {{ request()->routeIs('logistica.flota.*') ? 'active' : '' }}" href="{{ route('logistica.flota.index') }}" data-tip="Flota">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Flota y mantenimiento</span>
+                    </a>
+                    @endcan
+                    @can('rutas.analytics')
+                    <a class="nav-item nav-sub {{ request()->routeIs('logistica.analytics') ? 'active' : '' }}" href="{{ route('logistica.analytics') }}" data-tip="Indicadores">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Indicadores</span>
+                    </a>
+                    @endcan
+                    @can('rutas.chofer')
+                    <a class="nav-item nav-sub {{ request()->routeIs('logistica.chofer.*') ? 'active' : '' }}" href="{{ route('logistica.chofer.index') }}" data-tip="Mis rutas">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Mis rutas (chofer)</span>
+                    </a>
+                    @endcan
+                </div>
+            </div>
+            @endcanany
+            @canany(['asistencia.ver', 'asistencia.biometria', 'asistencia.nomina'])
+            <div class="nav-group {{ request()->routeIs('asistencia.*') ? 'open' : '' }}">
+                <a class="nav-item nav-toggle" href="#" data-tip="Recursos Humanos">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 11c0-1.1.9-2 2-2m-6 4a6 6 0 0 1 12 0M6 9a8 8 0 0 1 16 0M4 14c0-4.4 3.6-8 8-8"/><path d="M9 20c1 .6 2 1 3 1M12 17v1"/></svg>
+                    <span class="nav-label">Asistencia (RH)</span>
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+                </a>
+                <div class="submenu">
+                    @can('asistencia.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('asistencia.panel', 'asistencia.empleado') ? 'active' : '' }}" href="{{ route('asistencia.panel') }}" data-tip="Panel">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Panel de asistencia</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('asistencia.checadas') ? 'active' : '' }}" href="{{ route('asistencia.checadas') }}" data-tip="Checadas">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Checadas</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('asistencia.modalidades') ? 'active' : '' }}" href="{{ route('asistencia.modalidades') }}" data-tip="Incidencias del día">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Incidencias del día</span>
+                    </a>
+                    @endcan
+                    @can('asistencia.gestionar')
+                    <a class="nav-item nav-sub {{ request()->routeIs('asistencia.horarios') ? 'active' : '' }}" href="{{ route('asistencia.horarios') }}" data-tip="Horarios">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Horarios y festivos</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('asistencia.eventos') ? 'active' : '' }}" href="{{ route('asistencia.eventos') }}" data-tip="Eventos de empresa">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Eventos de empresa</span>
+                    </a>
+                    @endcan
+                    @can('asistencia.nomina')
+                    <a class="nav-item nav-sub {{ request()->routeIs('nomina.*') ? 'active' : '' }}" href="{{ route('nomina.index') }}" data-tip="Nómina">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Nómina</span>
+                    </a>
+                    @endcan
+                    @can('asistencia.biometria')
+                    <a class="nav-item nav-sub {{ request()->routeIs('asistencia.biometria.*') ? 'active' : '' }}" href="{{ route('asistencia.biometria.index') }}" data-tip="Lectores y huellas">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Lectores y huellas</span>
+                    </a>
+                    @endcan
+                </div>
+            </div>
+            @endcanany
             <div class="nav-group {{ request()->routeIs('gestion.servicios.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Servicios">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
@@ -1325,6 +1422,12 @@
         })();
 </script>
 
+<script>
+    // Registro del service worker (instalación como app y página sin conexión)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });
+    }
+</script>
 @stack('scripts')
     {{-- Auto-refresco de permisos: si cambia el acceso del usuario (permisos,
          rol admin o estatus), la pagina se recarga sola sin dar refresh. --}}

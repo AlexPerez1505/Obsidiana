@@ -64,7 +64,7 @@
                     <select id="producto_id" name="producto_id" class="qinput">
                         <option value="">Ninguno</option>
                         @foreach($productos as $producto)
-                            <option value="{{ $producto->id }}" @selected(old('producto_id') == $producto->id)>{{ $producto->tipo_equipo }} {{ $producto->marca }} {{ $producto->modelo }}</option>
+                            <option value="{{ $producto->id }}" @selected(old('producto_id') == $producto->id)>{{ $producto->nombreVisible() }} {{ $producto->marca }} {{ $producto->modelo }}</option>
                         @endforeach
                     </select>
                 </div>

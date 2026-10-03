@@ -1,3 +1,7 @@
+@php
+    // Pagos del calendario con su saldo actual: la vista previa de "cómo se reparte" los usa
+    $planPagos = $venta->pagos->map(fn ($p) => ['id' => $p->id, 'nombre' => $p->nombre, 'saldo' => round($p->saldo(), 2)])->values();
+@endphp
 {{-- Modales de la pantalla de cobranza. --}}
 
 {{-- ===================== Registrar un pago ===================== --}}
@@ -16,7 +20,7 @@
         <div class="cb-modal-body">
             <label for="cbParcialidad">Aplicar a</label>
             <select id="cbParcialidad" name="venta_pago_id">
-                <option value="">Sin parcialidad (abono suelto)</option>
+                <option value="">Automático: empieza por el primer pago pendiente</option>
                 @foreach ($venta->pagos as $p)
                     <option value="{{ $p->id }}" @disabled($p->saldo() <= 0)>
                         {{ $p->nombre }} — saldo ${{ number_format($p->saldo(), 2) }}
@@ -32,8 +36,10 @@
                 <div>
                     <label for="cbMonto" class="cb-mt">Monto</label>
                     <input type="number" id="cbMonto" name="monto" step="0.01" min="0.01"
-                           max="{{ $venta->saldo() }}" value="{{ old('monto') }}" required>
+                           max="{{ $venta->saldo() }}" value="{{ old('monto') }}" required
+                           data-plan='@json($planPagos)'>
                     <p class="cb-nota">Saldo disponible ${{ number_format($venta->saldo(), 2) }}</p>
+                    <div class="cb-nota" data-reparto hidden style="color:var(--text); line-height:1.6;"></div>
                 </div>
             </div>
 
@@ -204,8 +210,52 @@
                 document.getElementById('cbMonto').value = b.dataset.monto;
             }
             abrir(mCobro);
+            mostrarReparto();
         });
     });
+
+    // Vista previa de cómo se reparte el monto entre los pagos del calendario.
+    // El cobro sigue siendo UN solo recibo; esto solo muestra a qué pagos cae.
+    var cbMonto = document.getElementById('cbMonto');
+    var cbParcialidad = document.getElementById('cbParcialidad');
+    var cajaReparto = document.querySelector('[data-reparto]');
+    var plan = [];
+    try { plan = JSON.parse(cbMonto.getAttribute('data-plan') || '[]'); } catch (e) { plan = []; }
+
+    function dinero(n) { return '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function esc(t) { return String(t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+    function mostrarReparto() {
+        if (!cbMonto || !cajaReparto) return;
+        var restante = Math.round((parseFloat(cbMonto.value) || 0) * 100) / 100;
+        if (restante <= 0) { cajaReparto.hidden = true; return; }
+
+        // Orden: desde el pago elegido hacia adelante y, si sobra, los anteriores pendientes
+        var orden = plan.slice();
+        var inicio = cbParcialidad ? parseInt(cbParcialidad.value, 10) : NaN;
+        var pos = orden.findIndex(function (p) { return p.id === inicio; });
+        if (pos > 0) orden = orden.slice(pos).concat(orden.slice(0, pos));
+
+        var lineas = [];
+        orden.forEach(function (p) {
+            if (restante <= 0.009 || p.saldo <= 0.009) return;
+            var toma = Math.min(p.saldo, restante);
+            restante = Math.round((restante - toma) * 100) / 100;
+            var resta = Math.round((p.saldo - toma) * 100) / 100;
+            lineas.push('<div>' + esc(p.nombre) + ': <b>' + dinero(toma) + '</b> '
+                + (resta <= 0.009 ? '<span style="color:var(--green)">(queda liquidado)</span>' : '<span style="color:var(--accent)">(le restan ' + dinero(resta) + ')</span>') + '</div>');
+        });
+
+        if (!lineas.length) { cajaReparto.hidden = true; return; }
+        cajaReparto.innerHTML = '<div style="font-weight:600; margin-top:6px;">' + (lineas.length > 1 ? 'El recibo será por ' + dinero(parseFloat(cbMonto.value)) + ' y se aplica a ' + lineas.length + ' pagos:' : 'Se aplica a:') + '</div>' + lineas.join('')
+            + (restante > 0.009 ? '<div style="color:var(--danger)">Sobran ' + dinero(restante) + ' sin pago al cual aplicar.</div>' : '');
+        cajaReparto.hidden = false;
+    }
+
+    if (cbMonto) {
+        cbMonto.addEventListener('input', mostrarReparto);
+        if (cbParcialidad) cbParcialidad.addEventListener('change', mostrarReparto);
+    }
 
     // Editar parcialidad
     var mEditar = document.getElementById('modalEditarParcialidad');

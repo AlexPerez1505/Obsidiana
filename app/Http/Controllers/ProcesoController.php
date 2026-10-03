@@ -180,4 +180,44 @@ class ProcesoController extends Controller
 
         return back()->with('status', "{$pieza->codigo} se mandó a {$nombre}.");
     }
+
+    /**
+     * Corrige de un jalón toda la ruta de procesos de una pieza.
+     *
+     * Es para el caso típico: al dar la entrada se marcaron mal los procesos
+     * (p. ej. solo mantenimiento y limpieza) y después se ve que también
+     * faltaba hojalatería. Aquí se deja exactamente la lista correcta: se
+     * agregan los que faltaban y se quitan los pendientes que sobran. Los
+     * pasos que ya se hicieron NO se borran: son historia, se conservan.
+     */
+    public function definir(Request $request, ProductoSerial $pieza): RedirectResponse
+    {
+        $data = $request->validate([
+            'procesos' => ['nullable', 'array'],
+            'procesos.*' => [Rule::in(array_keys(PiezaProceso::PROCESOS))],
+        ]);
+
+        // Una pieza vendida o dada de baja ya no la manda la ruta.
+        if ($pieza->vendido || $pieza->estado === 'baja') {
+            return back()->withErrors([
+                'procesos' => 'No se pueden cambiar los procesos: la pieza ya se vendió o se dio de baja.',
+            ]);
+        }
+
+        $procesos = $data['procesos'] ?? [];
+
+        $motivos = collect($procesos)
+            ->mapWithKeys(fn ($p) => [$p => 'Corrección de la ruta tras la entrada'])
+            ->all();
+
+        $this->ruta->definir($pieza, $procesos, $motivos);
+
+        $pieza->refresh()->load('procesos');
+        $falta = $pieza->faltaTexto();
+
+        $mensaje = "{$pieza->codigo}: procesos actualizados.";
+        $mensaje .= $falta ? " Ahora falta: {$falta}." : ' Queda disponible para venta.';
+
+        return back()->with('status', $mensaje);
+    }
 }

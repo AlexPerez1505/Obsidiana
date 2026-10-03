@@ -385,6 +385,6 @@ class VentaRapidaController extends Controller
 
     private function nombreDe(Producto $producto): string
     {
-        return trim(collect([$producto->tipo_equipo, $producto->subtipo])->filter()->implode(' · ')) ?: 'Producto';
+        return $producto->nombreVisible() ?: 'Producto';
     }
 }

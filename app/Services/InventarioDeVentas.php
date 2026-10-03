@@ -207,7 +207,7 @@ class InventarioDeVentas
             'item_type' => InventoryMovement::ITEM_PRODUCT,
             'item_id' => $producto->id,
             'item_code' => (string) $producto->id,
-            'item_name' => trim($producto->marca.' '.$producto->modelo) ?: $producto->tipo_equipo,
+            'item_name' => trim($producto->nombreVisible().' '.$producto->marca.' '.$producto->modelo),
             'warehouse' => 'Almacen Central',
             'quantity' => $cantidad,
             'unit' => 'Pza',

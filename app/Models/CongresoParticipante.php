@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Concerns\GuardaEnMayusculas;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class CongresoParticipante extends Model
 {
+    use GuardaEnMayusculas;
+
     protected $table = 'congreso_participantes';
 
     protected $fillable = [
@@ -21,6 +24,9 @@ class CongresoParticipante extends Model
         'rol',
         'empresa',
     ];
+
+    /** Nombre, rol y empresa se guardan en mayúsculas para verse parejo. */
+    protected array $mayusculas = ['nombre', 'rol', 'empresa'];
 
     public function congress(): BelongsTo
     {

@@ -119,7 +119,7 @@ class VentaController extends Controller
 
                 foreach ($paquete?->productos ?? [] as $producto) {
                     $necesaria = (int) $item->cantidad * (int) $producto->pivot->cantidad;
-                    $nombreProducto = trim($producto->marca.' '.$producto->modelo) ?: $producto->tipo_equipo;
+                    $nombreProducto = trim($producto->nombreVisible().' '.$producto->marca.' '.$producto->modelo);
                     $this->avisoSiFalta($avisos, $producto, $necesaria, "{$item->nombre} → {$nombreProducto}");
                 }
             }

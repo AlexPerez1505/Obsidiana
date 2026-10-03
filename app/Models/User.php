@@ -82,6 +82,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'fecha_ingreso' => 'date',
             'vacaciones_disponibles' => 'integer',
+            'sueldo_quincenal' => 'decimal:2',
             'dashboard_widgets' => 'array',
         ];
     }
@@ -170,6 +171,26 @@ class User extends Authenticatable implements MustVerifyEmail
     public function attendances(): HasMany
     {
         return $this->hasMany(EmployeeAttendance::class)->latest('attendance_date');
+    }
+
+    public function horario(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(EmployeeSchedule::class);
+    }
+
+    public function huellas(): HasMany
+    {
+        return $this->hasMany(EmployeeBiometric::class);
+    }
+
+    public function checadas(): HasMany
+    {
+        return $this->hasMany(AttendancePunch::class)->latest('punched_at');
+    }
+
+    public function modalidades(): HasMany
+    {
+        return $this->hasMany(AttendanceModality::class)->latest('date_from');
     }
 
     /**

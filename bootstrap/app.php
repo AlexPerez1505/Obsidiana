@@ -6,9 +6,10 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\PostTooLargeException;
 use Sentry\Laravel\Integration;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'approved' => \App\Http\Middleware\EnsureAccountApproved::class,
+            'dispositivo' => \App\Http\Middleware\AutenticarDispositivo::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -40,3 +42,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // está configurado en .env; si no, esto no hace nada).
         Integration::handles($exceptions);
     })->create();
+
+// Si el .env no se alcanza a leer en una petición, se reintenta (ver la clase).
+\App\Support\RespaldoDeEnv::registrar($app);
+
+return $app;

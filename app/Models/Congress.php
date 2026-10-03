@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Concerns\GuardaEnMayusculas;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,8 +13,16 @@ class Congress extends Model
 {
     /** @use HasFactory<\Database\Factories\CongressFactory> */
     use HasFactory;
+    use GuardaEnMayusculas;
 
     protected $table = 'congresos_eventos';
+
+    /**
+     * El nombre se guarda en mayúsculas para que se vea igual en calendario
+     * y listados. La descripción y los comentarios NO: son texto largo y en
+     * mayúsculas se leen mal.
+     */
+    protected array $mayusculas = ['nombre', 'num_stand'];
 
     protected $fillable = [
         'nombre',
@@ -22,8 +31,12 @@ class Congress extends Model
         'categoria_id',
         'fecha_inicio',
         'fecha_finalizacion',
+        'fecha_montaje',
         'hora_montaje',
         'hora_desmontaje',
+        'num_stand',
+        'costo',
+        'pagado',
         'descarga_acceso',
         'descarga_texto',
         'acceso_subir',
@@ -41,6 +54,9 @@ class Congress extends Model
     protected $casts = [
         'fecha_inicio' => 'date',
         'fecha_finalizacion' => 'date',
+        'fecha_montaje' => 'date',
+        'costo' => 'decimal:2',
+        'pagado' => 'decimal:2',
         'hora_montaje' => 'datetime:H:i',
         'hora_desmontaje' => 'datetime:H:i',
         'path_archivo' => 'array',
@@ -166,5 +182,26 @@ class Congress extends Model
     public function getLugarAttribute(): ?string
     {
         return $this->direccion;
+    }
+
+    /**
+     * Lo que falta por pagar del congreso: costo menos lo ya pagado/apartado.
+     * No se guarda en la base, siempre se calcula para que no se desfase.
+     */
+    public function saldoPendiente(): float
+    {
+        return round((float) $this->costo - (float) $this->pagado, 2);
+    }
+
+    /** Ya no se debe nada (hay costo capturado y el pendiente es 0 o menos). */
+    public function estaLiquidado(): bool
+    {
+        return $this->costo !== null && $this->saldoPendiente() <= 0;
+    }
+
+    /** ¿Se capturó algún dato de costos? Para decidir si mostrar el bloque. */
+    public function tieneCostos(): bool
+    {
+        return $this->costo !== null || (float) $this->pagado > 0;
     }
 }

@@ -31,7 +31,7 @@ class CobroController extends Controller
     /** Pantalla de cobranza de una venta. */
     public function index(Venta $venta): View
     {
-        $venta->load(['customer', 'seller', 'pagos.cobros', 'cobros.evidencias', 'cobros.parcialidad', 'bitacora.user']);
+        $venta->load(['customer', 'seller', 'pagos.cobros', 'cobros.evidencias', 'cobros.parcialidad', 'cobros.aplicaciones.pago', 'bitacora.user']);
 
         return view('structure.commercial_management.cobros.index', [
             'venta' => $venta,
@@ -67,7 +67,7 @@ class CobroController extends Controller
             ]);
         }
 
-        $excedente = DB::transaction(function () use ($request, $venta, $data) {
+        $aplicacion = DB::transaction(function () use ($request, $venta, $data) {
             $cobro = Cobro::create([
                 'venta_id' => $venta->id,
                 'venta_pago_id' => $data['venta_pago_id'] ?? null,
@@ -94,17 +94,30 @@ class CobroController extends Controller
                 ['cobro_id' => $cobro->id, 'monto' => (float) $cobro->monto]
             );
 
-            // Si este cobro fue un abono suelto o se pasó de lo que le tocaba
-            // a su parcialidad, ese excedente se reparte solo hacia lo que
-            // sigue pendiente: no hace falta un paso aparte para "cuadrar".
             $venta->load(['pagos.cobros', 'cobros']);
 
-            return $this->calendario->absorberExcedente($venta);
+            /*
+            | El cobro se queda como UN solo recibo por lo que el cliente pagó.
+            | Se aplica en orden a los pagos pendientes (empezando por el que
+            | se eligió, si se eligió uno) sin partir el cobro ni cambiar los
+            | montos del calendario: $1,000 sobre tres pagos de $533 deja el
+            | primero liquidado, el segundo con $467 abonados (restan $66) y
+            | el tercero intacto. El recibo lo detalla.
+            */
+            return $this->calendario->aplicar($venta, $cobro, $data['venta_pago_id'] ?? null);
         });
 
-        $aviso = $excedente['excedente'] > 0
-            ? ' Se aplicaron $' . number_format($excedente['excedente'], 2) . ' a lo que sigue pendiente.'
-            : '';
+        $aviso = '';
+        if (count($aplicacion['lineas']) > 1) {
+            $aviso = ' Se aplicó a ' . count($aplicacion['lineas']) . ' pagos: ' . collect($aplicacion['lineas'])
+                ->map(fn ($l) => $l['pago']->nombre . ' $' . number_format($l['monto'], 2) . ($l['liquida'] ? ' (liquidado)' : ' (restan $' . number_format($l['resta'], 2) . ')'))
+                ->implode(', ') . '.';
+        } elseif (count($aplicacion['lineas']) === 1 && ! $aplicacion['lineas'][0]['liquida']) {
+            $aviso = ' Pago parcial: a ' . $aplicacion['lineas'][0]['pago']->nombre . ' le restan $' . number_format($aplicacion['lineas'][0]['resta'], 2) . '.';
+        }
+        if ($aplicacion['sin_aplicar'] > 0.009) {
+            $aviso .= ' Quedaron $' . number_format($aplicacion['sin_aplicar'], 2) . ' sin aplicar a ningún pago del calendario.';
+        }
 
         return redirect()->route('commercial.ventas.cobros.index', $venta)
             ->with('status', 'Cobro registrado correctamente.' . $aviso);
@@ -262,7 +275,7 @@ class CobroController extends Controller
     public static function pdfRecibo(Cobro $cobro)
     {
         // items: el recibo dice qué se vendió, no solo cuánto se pagó.
-        $cobro->load(['venta.customer', 'venta.seller', 'venta.items', 'parcialidad', 'registradoPor']);
+        $cobro->load(['venta.customer', 'venta.seller', 'venta.items', 'venta.pagos', 'parcialidad', 'aplicaciones.pago', 'registradoPor']);
 
         $pdf = Pdf::loadView('structure.commercial_management.cobros.recibo', [
             'cobro' => $cobro,
