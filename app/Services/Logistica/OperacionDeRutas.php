@@ -7,6 +7,7 @@ use App\Models\RutaEvidencia;
 use App\Models\RutaIncidencia;
 use App\Models\RutaParada;
 use App\Models\RutaUbicacion;
+use App\Models\VehiculoCombustible;
 use App\Support\Geo;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -102,6 +103,39 @@ class OperacionDeRutas
         return $avisos;
     }
 
+    /**
+     * Varias lecturas juntas: las que el teléfono guardó mientras no tenía
+     * señal. Se procesan en el orden en que se tomaron, una por una con la
+     * misma lógica que una lectura suelta, y todas o ninguna (si algo falla
+     * la app puede reenviar el lote completo sin duplicar puntos).
+     *
+     * @param  array<int, array>  $lecturas
+     * @return array{procesadas: int, avisos: array<int, string>}
+     */
+    public function registrarUbicaciones(Ruta $ruta, array $lecturas): array
+    {
+        if (! $ruta->activa()) {
+            return ['procesadas' => 0, 'avisos' => []];
+        }
+
+        // Sin hora se toman como de este momento: van al final
+        $cuando = array_map(fn (array $d) => isset($d['registrada_en'])
+            ? \Illuminate\Support\Carbon::parse($d['registrada_en'])->getTimestampMs()
+            : PHP_INT_MAX, $lecturas);
+        asort($cuando, SORT_NUMERIC);
+        $lecturas = array_map(fn ($i) => $lecturas[$i], array_keys($cuando));
+
+        return DB::transaction(function () use ($ruta, $lecturas) {
+            $avisos = [];
+
+            foreach ($lecturas as $d) {
+                array_push($avisos, ...$this->registrarUbicacion($ruta, $d));
+            }
+
+            return ['procesadas' => count($lecturas), 'avisos' => array_values(array_unique($avisos))];
+        });
+    }
+
     /** Llegada marcada a mano (cuando el GPS no alcanzó a detectarla). */
     public function marcarLlegada(RutaParada $parada, int $userId, ?float $lat = null, ?float $lng = null): void
     {
@@ -145,7 +179,7 @@ class OperacionDeRutas
                 $faltan[] = 'la firma';
             }
             if ($faltan) {
-                throw new \DomainException('Para cerrar la entrega falta: '.implode(', ', $faltan).'.');
+                throw new EvidenciaIncompleta('Para cerrar la entrega falta: '.implode(', ', $faltan).'.');
             }
         }
 
@@ -273,6 +307,34 @@ class OperacionDeRutas
         $ruta->registrarEvento('incidencia', 'Incidencia: '.$incidencia->tipoLabel().($incidencia->descripcion ? ' — '.$incidencia->descripcion : ''), $parada, $userId, $d['lat'] ?? null, $d['lng'] ?? null);
 
         return $incidencia;
+    }
+
+    /** La oficina da por atendida una incidencia; queda en la bitácora de la ruta. */
+    public function resolverIncidencia(RutaIncidencia $incidencia, ?string $resolucion, int $userId): void
+    {
+        $incidencia->update([
+            'resuelta_en' => now(),
+            'resuelta_por' => $userId,
+            'resolucion' => $resolucion,
+        ]);
+
+        $incidencia->ruta->registrarEvento('incidencia_resuelta', 'Incidencia resuelta: '.$incidencia->tipoLabel(), $incidencia->parada, $userId);
+    }
+
+    /**
+     * Carga de combustible hecha en el camino: se liga al vehículo y a la
+     * ruta, con fecha de hoy.
+     */
+    public function registrarCombustible(Ruta $ruta, array $d, ?UploadedFile $ticket, int $userId): VehiculoCombustible
+    {
+        if (! $ruta->vehicle) {
+            throw new \DomainException('La ruta no tiene vehículo asignado.');
+        }
+
+        $carga = VehiculoCombustible::registrar($ruta->vehicle, $d + ['fecha' => today()->toDateString()], $ticket, $userId, $ruta->id);
+        $ruta->registrarEvento('combustible', 'Carga de combustible: '.$d['litros'].' L · $'.number_format($d['monto'], 2), null, $userId);
+
+        return $carga;
     }
 
     // ------------------------------------------------------------------

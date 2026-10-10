@@ -10,19 +10,21 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\Logistica\Geocodificador;
 use App\Services\Logistica\OperacionDeRutas;
-use App\Services\Logistica\OptimizadorDeRutas;
+use App\Services\Logistica\PlaneacionDeRutas;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
  * Rutas de reparto: alta, edición, optimización del orden y control de
  * la ruta desde la oficina. Lo que hace el chofer vive en ChoferController.
+ * Las reglas de alta y edición viven en PlaneacionDeRutas (las comparte la API).
  */
 class RutaController extends Controller
 {
+    public function __construct(private PlaneacionDeRutas $planeacion) {}
+
     public function index(Request $request): View
     {
         $estado = array_key_exists($request->get('estado'), Ruta::ESTADOS) ? $request->get('estado') : 'abiertas';
@@ -70,21 +72,9 @@ class RutaController extends Controller
         // "Armar desde órdenes listas": una parada por cada orden de salida lista
         // para firma que todavía no va en una ruta abierta.
         if ($request->boolean('listas') && ! old('paradas')) {
-            $enRuta = RutaParada::whereNotNull('orden_salida_id')
-                ->whereHas('ruta', fn ($q) => $q->whereNotIn('estado', [Ruta::FINALIZADA, Ruta::CANCELADA]))
-                ->pluck('orden_salida_id');
-
-            $datos['paradasIniciales'] = OrdenSalida::with(['venta.customer', 'items'])
-                ->where('estado', OrdenSalida::LISTA)->whereNotIn('id', $enRuta)
-                ->oldest()->limit(30)->get()
-                ->map(fn (OrdenSalida $o) => [
-                    'nombre' => trim(($o->venta?->customer?->nombre ?? '').' '.($o->venta?->customer?->apellido ?? '')) ?: $o->folio,
-                    'direccion' => $o->venta?->customer?->direccion,
-                    'contacto_telefono' => $o->venta?->customer?->telefono,
-                    'orden_salida_id' => $o->id,
-                    'radio_m' => 100,
-                    'mercancia' => $o->items->map(fn ($i) => max(1, (int) $i->cantidad).' '.$i->nombre)->implode("\n"),
-                ])->values()->all();
+            $datos['paradasIniciales'] = $this->planeacion->ordenesListas()
+                ->map(fn (OrdenSalida $o) => $this->planeacion->paradaDesdeOrden($o))
+                ->values()->all();
         }
 
         return view('structure.logistica.rutas.form', $datos);
@@ -94,18 +84,7 @@ class RutaController extends Controller
     {
         $data = $this->validar($request);
 
-        $ruta = DB::transaction(function () use ($data, $request) {
-            $ruta = Ruta::create($this->camposRuta($data) + [
-                'folio' => Ruta::siguienteFolio(),
-                'estado' => ! empty($data['vehicle_id']) && ! empty($data['chofer_id']) ? Ruta::PROGRAMADA : Ruta::BORRADOR,
-                'created_by' => $request->user()->id,
-            ]);
-
-            $this->guardarParadas($ruta, $data['paradas']);
-            $ruta->registrarEvento('creada', 'Ruta creada');
-
-            return $ruta;
-        });
+        $ruta = $this->planeacion->crear($data, $request->user()->id);
 
         return redirect()->route('logistica.rutas.show', $ruta)->with('status', "Ruta {$ruta->folio} creada. Optimízala para definir el mejor orden.");
     }
@@ -139,18 +118,7 @@ class RutaController extends Controller
 
         $data = $this->validar($request);
 
-        DB::transaction(function () use ($ruta, $data) {
-            $ruta->update($this->camposRuta($data) + [
-                'estado' => ! empty($data['vehicle_id']) && ! empty($data['chofer_id']) ? Ruta::PROGRAMADA : Ruta::BORRADOR,
-                // Cambió el recorrido: el cálculo anterior ya no vale
-                'distancia_m' => null, 'duracion_s' => null, 'trazo_planeado' => null,
-                'optimizada_con' => null, 'optimizada_en' => null,
-            ]);
-
-            $ruta->paradas()->delete();
-            $this->guardarParadas($ruta, $data['paradas']);
-            $ruta->registrarEvento('editada', 'Ruta editada');
-        });
+        $this->planeacion->actualizar($ruta, $data, $request->user()->id);
 
         return redirect()->route('logistica.rutas.show', $ruta)->with('status', 'Ruta actualizada.');
     }
@@ -167,33 +135,15 @@ class RutaController extends Controller
     }
 
     /** Calcula el mejor orden de las paradas (o lo reoptimiza desde la posición actual). */
-    public function optimizar(Request $request, Ruta $ruta, OptimizadorDeRutas $optimizador): RedirectResponse
+    public function optimizar(Ruta $ruta): RedirectResponse
     {
-        if ($ruta->cerrada()) {
-            return back()->withErrors(['ruta' => 'La ruta ya está cerrada.']);
-        }
-
-        $desde = null;
-
-        // En curso: se reordena lo pendiente desde donde va el vehículo
-        if ($ruta->activa()) {
-            $u = $ruta->ultimaUbicacion;
-            if (! $u) {
-                return back()->withErrors(['ruta' => 'Todavía no hay posición del vehículo para reoptimizar.']);
-            }
-            $desde = ['lat' => $u->lat, 'lng' => $u->lng];
-        }
-
         try {
-            $optimizador->optimizar($ruta, true, $desde);
+            $reoptimizada = $this->planeacion->optimizar($ruta);
         } catch (\DomainException $e) {
             return back()->withErrors(['ruta' => $e->getMessage()]);
         }
 
-        $ruta->refresh();
-        $ruta->registrarEvento($desde ? 'reoptimizada' : 'optimizada', 'Orden calculado con '.($ruta->optimizada_con === 'google' ? 'Google' : 'cálculo local'));
-
-        return back()->with('status', 'Orden de paradas '.($desde ? 'reoptimizado' : 'optimizado').' ('.$ruta->distanciaKm().' km, '.$ruta->duracionTexto().').');
+        return back()->with('status', 'Orden de paradas '.($reoptimizada ? 'reoptimizado' : 'optimizado').' ('.$ruta->distanciaKm().' km, '.$ruta->duracionTexto().').');
     }
 
     public function iniciar(Request $request, Ruta $ruta, OperacionDeRutas $op): RedirectResponse
@@ -247,126 +197,13 @@ class RutaController extends Controller
 
     private function validar(Request $request): array
     {
-        $data = $request->validate([
-            'fecha_programada' => ['nullable', 'date'],
-            'hora_salida' => ['nullable', 'date_format:H:i'],
-            'vehicle_id' => ['nullable', 'exists:vehicles,id'],
-            'chofer_id' => ['nullable', 'exists:users,id'],
-            'origen_nombre' => ['nullable', 'string', 'max:150'],
-            'origen_direccion' => ['nullable', 'string', 'max:255'],
-            'origen_lat' => ['nullable', 'numeric', 'between:-90,90'],
-            'origen_lng' => ['nullable', 'numeric', 'between:-180,180'],
-            'regresa_a_origen' => ['nullable', 'boolean'],
-            'exigir_evidencia' => ['nullable', 'boolean'],
-            'notas' => ['nullable', 'string', 'max:2000'],
+        $data = $request->validate($this->planeacion->reglas(), $this->planeacion->mensajes());
 
-            'paradas' => ['required', 'array', 'min:1', 'max:60'],
-            'paradas.*.nombre' => ['required', 'string', 'max:150'],
-            'paradas.*.direccion' => ['nullable', 'string', 'max:255'],
-            'paradas.*.lat' => ['nullable', 'numeric', 'between:-90,90'],
-            'paradas.*.lng' => ['nullable', 'numeric', 'between:-180,180'],
-            'paradas.*.radio_m' => ['nullable', 'integer', 'between:30,2000'],
-            'paradas.*.contacto_nombre' => ['nullable', 'string', 'max:120'],
-            'paradas.*.contacto_telefono' => ['nullable', 'string', 'max:30'],
-            'paradas.*.ventana_desde' => ['nullable', 'date_format:H:i'],
-            'paradas.*.ventana_hasta' => ['nullable', 'date_format:H:i'],
-            'paradas.*.urgente' => ['nullable', 'boolean'],
-            'paradas.*.instrucciones' => ['nullable', 'string', 'max:1000'],
-            'paradas.*.mercancia' => ['nullable', 'string', 'max:4000'],
-            'paradas.*.orden_salida_id' => ['nullable', 'exists:ordenes_salida,id'],
-        ], [
-            'paradas.required' => 'Agrega al menos una parada.',
-            'paradas.*.nombre.required' => 'Cada parada necesita un nombre.',
-        ]);
-
-        // Un vehículo y un chofer no pueden estar en dos rutas en curso a la vez
-        foreach (['vehicle_id' => 'vehículo', 'chofer_id' => 'chofer'] as $campo => $texto) {
-            if (! empty($data[$campo]) && Ruta::where('estado', Ruta::EN_RUTA)
-                ->where($campo, $data[$campo])
-                ->when($request->route('ruta'), fn ($q, $r) => $q->where('id', '!=', $r->id))
-                ->exists()) {
-                abort(back()->withInput()->withErrors([$campo => "Ese {$texto} ya va en una ruta en curso."]));
-            }
+        if ($choque = $this->planeacion->choque($data, $request->route('ruta'))) {
+            abort(back()->withInput()->withErrors([$choque[0] => $choque[1]]));
         }
 
         return $data;
-    }
-
-    private function camposRuta(array $d): array
-    {
-        return [
-            'fecha_programada' => $d['fecha_programada'] ?? null,
-            'hora_salida' => $d['hora_salida'] ?? null,
-            'vehicle_id' => $d['vehicle_id'] ?? null,
-            'chofer_id' => $d['chofer_id'] ?? null,
-            'origen_nombre' => $d['origen_nombre'] ?? null,
-            'origen_direccion' => $d['origen_direccion'] ?? null,
-            'origen_lat' => $d['origen_lat'] ?? null,
-            'origen_lng' => $d['origen_lng'] ?? null,
-            'regresa_a_origen' => (bool) ($d['regresa_a_origen'] ?? false),
-            'exigir_evidencia' => (bool) ($d['exigir_evidencia'] ?? false),
-            'notas' => $d['notas'] ?? null,
-        ];
-    }
-
-    private function guardarParadas(Ruta $ruta, array $paradas): void
-    {
-        foreach (array_values($paradas) as $i => $p) {
-            $orden = ! empty($p['orden_salida_id'])
-                ? OrdenSalida::with(['venta', 'items'])->find($p['orden_salida_id'])
-                : null;
-
-            $parada = $ruta->paradas()->create([
-                'orden' => $i + 1,
-                'nombre' => $p['nombre'],
-                'direccion' => $p['direccion'] ?? null,
-                'lat' => $p['lat'] ?? null,
-                'lng' => $p['lng'] ?? null,
-                'radio_m' => $p['radio_m'] ?? 100,
-                'customer_id' => $orden?->venta?->customer_id,
-                'orden_salida_id' => $orden?->id,
-                'contacto_nombre' => $p['contacto_nombre'] ?? null,
-                'contacto_telefono' => $p['contacto_telefono'] ?? null,
-                'ventana_desde' => $p['ventana_desde'] ?? null,
-                'ventana_hasta' => $p['ventana_hasta'] ?? null,
-                'urgente' => (bool) ($p['urgente'] ?? false),
-                'instrucciones' => $p['instrucciones'] ?? null,
-            ]);
-
-            $items = $this->interpretarMercancia((string) ($p['mercancia'] ?? ''));
-
-            // Si no escribieron mercancía pero ligaron una orden de salida, se trae de ahí
-            if (! $items && $orden) {
-                $items = $orden->items->map(fn ($it) => ['descripcion' => $it->nombre, 'cantidad' => max(1, (int) $it->cantidad)])->all();
-            }
-
-            foreach ($items as $n => $item) {
-                $parada->items()->create($item + ['orden' => $n + 1]);
-            }
-        }
-    }
-
-    /** "2 Monitor Philips" / "Ventilador x3" / "Consumibles" → renglones. */
-    private function interpretarMercancia(string $texto): array
-    {
-        $items = [];
-
-        foreach (preg_split('/\R/u', $texto) as $linea) {
-            $linea = trim($linea);
-            if ($linea === '') {
-                continue;
-            }
-
-            if (preg_match('/^(\d{1,5})\s*(?:x|×|pz|pza|pzas)?\s+(.+)$/iu', $linea, $m)) {
-                $items[] = ['cantidad' => (int) $m[1], 'descripcion' => trim($m[2])];
-            } elseif (preg_match('/^(.+?)\s*(?:x|×)\s*(\d{1,5})$/iu', $linea, $m)) {
-                $items[] = ['cantidad' => (int) $m[2], 'descripcion' => trim($m[1])];
-            } else {
-                $items[] = ['cantidad' => 1, 'descripcion' => $linea];
-            }
-        }
-
-        return $items;
     }
 
     private function datosFormulario(Ruta $ruta): array
@@ -383,24 +220,12 @@ class RutaController extends Controller
             ])->values()->all()
             : [];
 
-        $ordenes = OrdenSalida::with(['venta.customer', 'items'])
-            ->whereIn('estado', [OrdenSalida::LISTA, OrdenSalida::PENDIENTE, OrdenSalida::EN_PREPARACION])
-            ->latest()->limit(100)->get()
-            ->map(fn (OrdenSalida $o) => [
-                'id' => $o->id,
-                'folio' => $o->folio,
-                'cliente' => trim(($o->venta?->customer?->nombre ?? '').' '.($o->venta?->customer?->apellido ?? '')),
-                'direccion' => $o->venta?->customer?->direccion,
-                'telefono' => $o->venta?->customer?->telefono,
-                'mercancia' => $o->items->map(fn ($i) => max(1, (int) $i->cantidad).' '.$i->nombre)->implode("\n"),
-            ])->values()->all();
-
         return [
             'ruta' => $ruta,
             'paradasIniciales' => old('paradas', $paradas),
             'vehiculos' => Vehicle::where('status', Vehicle::STATUS_ACTIVE)->orderBy('plate_number')->get(),
             'choferes' => User::orderBy('name')->get()->filter(fn (User $u) => $u->isApproved())->values(),
-            'ordenes' => $ordenes,
+            'ordenes' => $this->planeacion->ordenesDisponibles(),
             'googleActivo' => (bool) config('logistica.google_key'),
         ];
     }

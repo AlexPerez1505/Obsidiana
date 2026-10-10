@@ -169,6 +169,21 @@ class Congress extends Model
         return 'active';
     }
 
+    /**
+     * Filtro por la misma regla de estado(): upcoming | active | finished.
+     * Vive junto a estado() para que la lista y la etiqueta no se desfasen.
+     */
+    public function scopeEnEstado($query, string $estado)
+    {
+        $hoy = now()->toDateString();
+
+        return match ($estado) {
+            'upcoming' => $query->whereDate('fecha_inicio', '>', $hoy),
+            'finished' => $query->whereDate('fecha_finalizacion', '<', $hoy),
+            default => $query->whereDate('fecha_inicio', '<=', $hoy)->whereDate('fecha_finalizacion', '>=', $hoy),
+        };
+    }
+
     public function estadoLabel(): string
     {
         return match ($this->estado()) {

@@ -46,6 +46,7 @@ require __DIR__.'/web/configuracion/catalogo.php';
 require __DIR__.'/web/configuracion/roles.php';
 require __DIR__.'/web/configuracion/refaciones.php';
 require __DIR__.'/web/configuracion/tipo_equipo.php';
+require __DIR__.'/web/configuracion/api.php';
 
 // Marketing
 require __DIR__.'/web/marketing/marketing.php';

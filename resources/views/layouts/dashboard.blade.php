@@ -993,7 +993,7 @@
                 </div>
             </div>
             <div class="nav-section">Sistema</div>
-            <div class="nav-group {{ request()->routeIs('configuracion.roles.*') ? 'open' : '' }}">
+            <div class="nav-group {{ request()->routeIs('configuracion.roles.*', 'configuracion.api.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Configuración">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     <span class="nav-label">Configuración</span>
@@ -1004,6 +1004,12 @@
                         <a class="nav-item nav-sub {{ request()->routeIs('configuracion.roles.*') ? 'active' : '' }}" href="{{ route('configuracion.roles.index') }}" data-tip="Roles y permisos">
                             <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                             <span class="nav-label">Roles y permisos</span>
+                        </a>
+                    @endcan
+                    @can('api.llaves')
+                        <a class="nav-item nav-sub {{ request()->routeIs('configuracion.api.*') ? 'active' : '' }}" href="{{ route('configuracion.api.index') }}" data-tip="API e integraciones">
+                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                            <span class="nav-label">API e integraciones</span>
                         </a>
                     @endcan
                 </div>

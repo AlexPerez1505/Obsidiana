@@ -108,6 +108,47 @@ class ServicioDeAsistencia
         return ['ok' => true, 'duplicada' => false, 'punch' => $punch, 'resultado' => $this->resultado($punch, false)];
     }
 
+    public static function reglasChecadaManual(): array
+    {
+        return [
+            'user_id' => ['required', 'exists:users,id'],
+            'fecha' => ['required', 'date', 'before_or_equal:today'],
+            'hora' => ['required', 'date_format:H:i'],
+            'motivo' => ['required', 'string', 'max:255'],
+        ];
+    }
+
+    public static function mensajesChecadaManual(): array
+    {
+        return ['motivo.required' => 'Escribe el motivo de la checada manual: queda como evidencia.'];
+    }
+
+    /**
+     * Checada manual (olvidó checar, falló el lector): queda marcada como
+     * manual, con su motivo y quién la hizo. La fecha y la hora son locales.
+     */
+    public function registrarManual(User $user, string $fecha, string $hora, string $motivo, int $creadoPor): AttendancePunch
+    {
+        $cuando = Carbon::parse($fecha.' '.$hora, self::tz())->utc();
+
+        if ($cuando->isFuture()) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['hora' => 'No se puede registrar una checada en el futuro.']);
+        }
+
+        $r = $this->registrarChecada($user, null, [
+            'punched_at' => $cuando->toDateTimeString(),
+            'method' => 'manual',
+            'note' => $motivo,
+            'created_by' => $creadoPor,
+        ]);
+
+        // Una checada hecha a mano fuera de orden cambia entrada/salida del día
+        $this->renumerar($user->id, Carbon::parse($fecha));
+        $this->recalcularDia($user, Carbon::parse($fecha));
+
+        return $r['punch']->refresh();
+    }
+
     /** Lo que se le muestra al empleado (y devuelve la API al agente). */
     public function resultado(AttendancePunch $punch, bool $duplicada): array
     {
@@ -369,9 +410,14 @@ class ServicioDeAsistencia
     /** Empleados que deben checar: cuentas aprobadas con horario activo. */
     public function empleados()
     {
+        return $this->consultaEmpleados()->orderBy('name')->get();
+    }
+
+    /** La misma lista sin ejecutar, para paginarla o filtrarla (API). */
+    public function consultaEmpleados(): \Illuminate\Database\Eloquent\Builder
+    {
         return User::with('horario')->where('status', User::STATUS_APPROVED)
-            ->whereHas('horario', fn ($q) => $q->where('active', true))
-            ->orderBy('name')->get();
+            ->whereHas('horario', fn ($q) => $q->where('active', true));
     }
 
     /**

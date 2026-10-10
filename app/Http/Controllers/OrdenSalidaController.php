@@ -2,42 +2,39 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\InventoryMovement;
 use App\Models\OrdenSalida;
 use App\Models\OrdenSalidaItem;
+use App\Services\Almacen\PreparacionDeSalida;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
  * Órdenes de salida: la lista de lo que almacén tiene que preparar y la
  * hoja de cada orden con su checklist y la firma de salida.
+ *
+ * Lo que se le hace a la orden vive en PreparacionDeSalida, que comparte
+ * con la API; aquí solo se decide qué pantalla y qué mensaje enseñar.
  */
 class OrdenSalidaController extends Controller
 {
+    public function __construct(private readonly PreparacionDeSalida $salidas)
+    {
+    }
+
     public function index(Request $request): View
     {
-        $estado = array_key_exists($request->get('estado'), OrdenSalida::ESTADOS) ? $request->get('estado') : 'abiertas';
+        $estado = array_key_exists($request->get('estado'), OrdenSalida::ESTADOS) ? $request->get('estado') : PreparacionDeSalida::ABIERTAS;
 
-        $ordenes = OrdenSalida::with(['venta.customer', 'venta.seller', 'items'])
-            ->when($estado === 'abiertas', fn ($q) => $q->whereNotIn('estado', [OrdenSalida::ENTREGADA, OrdenSalida::CANCELADA]))
-            ->when($estado !== 'abiertas', fn ($q) => $q->where('estado', $estado))
+        $ordenes = $this->salidas->filtrarPorEstado(OrdenSalida::with(['venta.customer', 'venta.seller', 'items']), $estado)
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
-        $conteos = OrdenSalida::selectRaw('estado, COUNT(*) as n')->groupBy('estado')->pluck('n', 'estado');
-
         return view('structure.gestion_Inventario.ordenes_salida.index', [
             'ordenes' => $ordenes,
             'estado' => $estado,
-            'conteos' => [
-                'abiertas' => (int) ($conteos[OrdenSalida::PENDIENTE] ?? 0) + (int) ($conteos[OrdenSalida::EN_PREPARACION] ?? 0) + (int) ($conteos[OrdenSalida::LISTA] ?? 0),
-                OrdenSalida::LISTA => (int) ($conteos[OrdenSalida::LISTA] ?? 0),
-                OrdenSalida::ENTREGADA => (int) ($conteos[OrdenSalida::ENTREGADA] ?? 0),
-            ],
+            'conteos' => $this->salidas->conteos(),
         ]);
     }
 
@@ -63,27 +60,7 @@ class OrdenSalidaController extends Controller
      */
     public function pdf(OrdenSalida $orden)
     {
-        $orden->load(['venta.customer', 'venta.seller', 'items', 'preparadaPor', 'entregadaPor', 'creator']);
-
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('structure.gestion_Inventario.ordenes_salida.pdf', [
-            'orden' => $orden,
-            'firmaEntrega' => $this->firmaDataUri($orden->firma_entrega_path),
-            'firmaRecibe' => $this->firmaDataUri($orden->firma_recibe_path),
-        ])->setPaper('letter');
-
-        return $pdf->stream("{$orden->folio}.pdf");
-    }
-
-    /** La firma guardada en disco, embebida para que dompdf la pinte. */
-    private function firmaDataUri(?string $path): ?string
-    {
-        $disco = config('filesystems.fotos_disk', 'public');
-
-        if (! $path || ! Storage::disk($disco)->exists($path)) {
-            return null;
-        }
-
-        return 'data:image/png;base64,'.base64_encode(Storage::disk($disco)->get($path));
+        return $this->salidas->pdf($orden)->stream("{$orden->folio}.pdf");
     }
 
     /**
@@ -94,42 +71,13 @@ class OrdenSalidaController extends Controller
     {
         abort_if($item->orden_salida_id !== $orden->id, 404);
 
-        if ($orden->cerrada()) {
-            return back()->withErrors(['orden' => 'Esta orden ya salió: no se puede modificar.']);
+        if ($razon = $this->salidas->razonParaNoMarcar($orden)) {
+            return back()->withErrors(['orden' => $razon]);
         }
 
-        $data = $request->validate([
-            'preparado' => ['nullable', 'boolean'],
-            'emplayado' => ['nullable', 'boolean'],
-            'requiere_emplayado' => ['nullable', 'boolean'],
-            'observaciones' => ['nullable', 'string', 'max:500'],
-        ]);
+        $data = $request->validate(PreparacionDeSalida::REGLAS_PARTIDA);
 
-        if ($request->has('preparado')) {
-            $item->preparado = $request->boolean('preparado');
-            $item->preparado_en = $item->preparado ? now() : null;
-        }
-
-        if ($request->has('requiere_emplayado')) {
-            $item->requiere_emplayado = $request->boolean('requiere_emplayado');
-            // Si ya no se emplaya, lo marcado de emplayado deja de contar.
-            if (! $item->requiere_emplayado) {
-                $item->emplayado = false;
-                $item->emplayado_en = null;
-            }
-        }
-
-        if ($request->has('emplayado') && $item->requiere_emplayado) {
-            $item->emplayado = $request->boolean('emplayado');
-            $item->emplayado_en = $item->emplayado ? now() : null;
-        }
-
-        if ($request->has('observaciones')) {
-            $item->observaciones = trim((string) $data['observaciones']) ?: null;
-        }
-
-        $item->save();
-        $orden->actualizarEstado();
+        $this->salidas->marcarPartida($orden, $item, $this->salidas->cambiosDePartida($request, $data));
 
         return back();
     }
@@ -144,16 +92,8 @@ class OrdenSalidaController extends Controller
      */
     public function preparada(Request $request, OrdenSalida $orden): RedirectResponse
     {
-        if ($orden->cerrada()) {
-            return back()->withErrors(['orden' => 'Esta orden ya está cerrada.']);
-        }
-
-        if (! $orden->todoListo()) {
-            return back()->withErrors(['orden' => 'Todavía hay partidas sin preparar o sin emplayar: termina el checklist antes de dejarla lista.']);
-        }
-
-        if ($orden->preparada_en) {
-            return back()->withErrors(['orden' => 'Esta orden ya estaba lista para salir.']);
+        if ($razon = $this->salidas->razonParaNoConfirmar($orden)) {
+            return back()->withErrors(['orden' => $razon]);
         }
 
         $orden->confirmarPreparacion($request->user()->id);
@@ -164,10 +104,9 @@ class OrdenSalidaController extends Controller
     /** Notas generales de la orden (instrucciones para almacén, transporte...). */
     public function notas(Request $request, OrdenSalida $orden): RedirectResponse
     {
-        $data = $request->validate(['notas' => ['nullable', 'string', 'max:2000']]);
+        $data = $request->validate(PreparacionDeSalida::REGLAS_NOTAS);
 
-        $orden->notas = trim((string) $data['notas']) ?: null;
-        $orden->save();
+        $this->salidas->guardarNotas($orden, $data['notas'] ?? null);
 
         return back()->with('status', 'Notas guardadas.');
     }
@@ -178,99 +117,19 @@ class OrdenSalidaController extends Controller
      */
     public function entregar(Request $request, OrdenSalida $orden): RedirectResponse
     {
-        if ($orden->cerrada()) {
-            return back()->withErrors(['orden' => 'Esta orden ya está cerrada.']);
+        if ($razon = $this->salidas->razonParaNoEntregar($orden)) {
+            return back()->withErrors(['orden' => $razon]);
         }
 
-        if (! $orden->todoListo()) {
-            return back()->withErrors(['orden' => 'Todavía hay partidas sin preparar o sin emplayar. Termina el checklist antes de firmar la salida.']);
+        $data = $request->validate(PreparacionDeSalida::REGLAS_ENTREGA, PreparacionDeSalida::MENSAJES_ENTREGA);
+
+        $firmado = $this->salidas->entregar($orden, $request->user()->id, $data['recibe_nombre'], $data['firma_entrega'], $data['firma_recibe']);
+
+        if (! $firmado) {
+            return back()->withInput()->withErrors(['firma_recibe' => PreparacionDeSalida::FIRMA_INVALIDA]);
         }
-
-        // La preparación se cierra primero: así queda claro quién preparó y
-        // quién entregó, aunque sea la misma persona.
-        if (! $orden->listaParaFirmar()) {
-            return back()->withErrors(['orden' => 'Primero deja la orden preparada para firma: así queda registrado quién la preparó.']);
-        }
-
-        $data = $request->validate([
-            'recibe_nombre' => ['required', 'string', 'max:255'],
-            'firma_entrega' => ['required', 'string'],
-            'firma_recibe' => ['required', 'string'],
-        ], [
-            'recibe_nombre.required' => 'Escribe el nombre de quien se lleva el equipo.',
-            'firma_entrega.required' => 'Falta la firma de quien entrega.',
-            'firma_recibe.required' => 'Falta la firma de quien recibe.',
-        ]);
-
-        $disco = config('filesystems.fotos_disk', 'public');
-        $firmaEntrega = $this->guardarFirma($data['firma_entrega'], $disco);
-        $firmaRecibe = $this->guardarFirma($data['firma_recibe'], $disco);
-
-        if (! $firmaEntrega || ! $firmaRecibe) {
-            foreach (array_filter([$firmaEntrega, $firmaRecibe]) as $p) {
-                Storage::disk($disco)->delete($p);
-            }
-
-            return back()->withInput()->withErrors(['firma_recibe' => 'Alguna firma no es válida. Vuelve a firmar e intenta de nuevo.']);
-        }
-
-        $entregadaEn = now();
-
-        DB::transaction(function () use ($orden, $request, $data, $firmaEntrega, $firmaRecibe, $entregadaEn) {
-            $orden->update([
-                'estado' => OrdenSalida::ENTREGADA,
-                'entregada_por' => $request->user()->id,
-                'entregada_en' => $entregadaEn,
-                'recibe_nombre' => $data['recibe_nombre'],
-                'firma_entrega_path' => $firmaEntrega,
-                'firma_recibe_path' => $firmaRecibe,
-            ]);
-
-            $this->marcarSalidasEntregadas($orden, $entregadaEn);
-        });
 
         return redirect()->route('inventory.salidas.show', $orden)
             ->with('status', "Salida {$orden->folio} firmada. El equipo ya salió.");
-    }
-
-    /**
-     * Cierra el movimiento de inventario: hasta aquí era una venta pendiente
-     * de entrega, ahora es una salida consumada.
-     *
-     * El stock ya se había descontado al vender; lo que se registra aquí es
-     * la fecha en que el equipo de verdad dejó el almacén.
-     */
-    private function marcarSalidasEntregadas(OrdenSalida $orden, $entregadaEn): void
-    {
-        $itemIds = $orden->venta?->items()->pluck('id') ?? collect();
-
-        if ($itemIds->isEmpty()) {
-            return;
-        }
-
-        // Misma liga que usa la venta para encontrar sus salidas.
-        InventoryMovement::where('movement_type', InventoryMovement::TYPE_EXIT)
-            ->whereIn('metadata->venta_item_id', $itemIds->all())
-            ->whereNull('entregado_en')
-            ->update(['entregado_en' => $entregadaEn]);
-    }
-
-    /** Igual que la firma de las entradas: data URL base64 a PNG en disco. */
-    private function guardarFirma(string $firmaDataUrl, string $disco): ?string
-    {
-        if (! preg_match('/^data:image\/(png|jpe?g);base64,(.+)$/', $firmaDataUrl, $match)) {
-            return null;
-        }
-
-        $contenido = base64_decode($match[2], true);
-
-        if ($contenido === false || $contenido === '') {
-            return null;
-        }
-
-        $path = 'inventario/salidas/'.uniqid('firma_').'.png';
-        Storage::disk($disco)->put($path, $contenido);
-
-        return $path;
     }
 }

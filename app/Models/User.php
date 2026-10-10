@@ -11,15 +11,22 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     public const STATUS_PENDING = 'pending';
     public const STATUS_APPROVED = 'approved';
     public const STATUS_BANNED = 'banned';
+
+    protected static function booted(): void
+    {
+        // Sus tokens de la API (apps e integraciones) mueren con la cuenta.
+        static::deleting(fn (User $user) => $user->tokens()->delete());
+    }
 
     /**
      * The attributes that are mass assignable.

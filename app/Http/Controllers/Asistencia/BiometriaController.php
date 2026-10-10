@@ -7,6 +7,7 @@ use App\Models\BiometricDevice;
 use App\Models\BiometricEnrollment;
 use App\Models\EmployeeBiometric;
 use App\Models\User;
+use App\Services\Asistencia\RegistroDeHuellas;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,10 @@ use Illuminate\View\View;
 /** Lectores de huella y registro de huellas de los empleados. */
 class BiometriaController extends Controller
 {
+    public function __construct(private RegistroDeHuellas $huellas)
+    {
+    }
+
     public function index(): View
     {
         $dispositivos = BiometricDevice::withCount(['punches as checadas_hoy' => fn ($q) => $q->whereDate('work_date', today())])->orderBy('name')->get();
@@ -34,12 +39,7 @@ class BiometriaController extends Controller
 
     public function guardarDispositivo(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'code' => ['required', 'string', 'max:40', 'alpha_dash', 'unique:biometric_devices,code'],
-            'serial_number' => ['nullable', 'string', 'max:120'],
-            'location' => ['nullable', 'string', 'max:150'],
-        ]);
+        $data = $request->validate(RegistroDeHuellas::reglasDispositivo());
 
         [$d, $llave] = BiometricDevice::crear($data + ['status' => 'active']);
 
@@ -65,33 +65,16 @@ class BiometriaController extends Controller
     /** RH pide registrar una huella: el agente del lector elegido la recoge y guía al empleado. */
     public function solicitarRegistro(Request $request, User $user): RedirectResponse
     {
-        $data = $request->validate([
-            'device_id' => ['required', 'exists:biometric_devices,id'],
-            'finger_index' => ['required', 'integer', 'between:0,9'],
-        ]);
+        $data = $request->validate(RegistroDeHuellas::reglasSolicitud());
 
-        // Una solicitud nueva reemplaza a las pendientes de esa persona
-        BiometricEnrollment::where('user_id', $user->id)->whereIn('status', ['pending', 'capturing'])
-            ->update(['status' => 'cancelled', 'message' => 'Reemplazada por una solicitud nueva.']);
-
-        BiometricEnrollment::create([
-            'user_id' => $user->id,
-            'device_id' => $data['device_id'],
-            'finger_index' => $data['finger_index'],
-            'status' => 'pending',
-            'message' => 'Esperando al lector',
-            'requested_by' => $request->user()->id,
-            'expires_at' => now()->addMinutes(config('asistencia.enrolamiento_minutos', 15)),
-        ]);
+        $this->huellas->solicitar($user, (int) $data['device_id'], (int) $data['finger_index'], $request->user()->id);
 
         return back()->with('status', "Solicitud enviada al lector. {$user->name} ya puede colocar el dedo.");
     }
 
     public function cancelarRegistro(BiometricEnrollment $inscripcion): RedirectResponse
     {
-        if ($inscripcion->vigente()) {
-            $inscripcion->update(['status' => 'cancelled', 'message' => 'Cancelada por RH.']);
-        }
+        $this->huellas->cancelar($inscripcion);
 
         return back()->with('status', 'Solicitud cancelada.');
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Logistica;
 use App\Http\Controllers\Controller;
 use App\Models\Ruta;
 use App\Models\RutaParada;
+use App\Services\Logistica\MapaEnVivo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
@@ -19,16 +20,10 @@ class MapaController extends Controller
         ]);
     }
 
-    public function feed(): JsonResponse
+    public function feed(MapaEnVivo $mapa): JsonResponse
     {
-        $rutas = Ruta::with(['vehicle', 'chofer', 'paradas', 'ultimaUbicacion'])
-            ->where('estado', Ruta::EN_RUTA)
-            ->get();
-
-        // Los vehículos disponibles también aparecen en el tablero
-        $enRuta = $rutas->pluck('vehicle_id')->filter()->all();
-        $libres = \App\Models\Vehicle::where('status', \App\Models\Vehicle::STATUS_ACTIVE)
-            ->whereNotIn('id', $enRuta)->orderBy('plate_number')->get();
+        $rutas = $mapa->rutasEnCurso();
+        $libres = $mapa->vehiculosLibres($rutas);
 
         return response()->json([
             'rutas' => $rutas->map(function (Ruta $r) {

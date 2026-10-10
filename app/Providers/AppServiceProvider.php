@@ -3,12 +3,22 @@
 namespace App\Providers;
 
 use App\Models\Cotizacion;
+use App\Models\TokenApi;
 use App\Models\User;
 use App\Models\Venta;
 use App\Support\CatalogoPermisos;
+use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\SecurityScheme;
+use Dedoc\Scramble\Support\RouteInfo;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +34,43 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->registrarPermisos();
         $this->limitarDocumentosPorAsesor();
+        $this->configurarApi();
+    }
+
+    /**
+     * Tokens, límites de peticiones y documentación de /api/v1.
+     */
+    private function configurarApi(): void
+    {
+        Sanctum::usePersonalAccessTokenModel(TokenApi::class);
+
+        // Por token (cada app o integración tiene su propio cupo); sin
+        // token, por IP.
+        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(config('api.limite_por_minuto'))
+            ->by('api:'.($request->user()?->currentAccessToken()?->getKey() ?? $request->ip())));
+
+        RateLimiter::for('api-login', fn (Request $request) => Limit::perMinute(config('api.limite_login_por_minuto'))
+            ->by('api-login:'.Str::lower((string) $request->input('email')).'|'.$request->ip()));
+
+        // La documentación (/docs/api) la ve cualquier usuario con acceso.
+        Gate::define('viewApiDocs', fn (?User $user = null) => (bool) $user?->isApproved());
+
+        Scramble::configure()
+            ->withDocumentTransformers(function (OpenApi $openApi) {
+                $openApi->secure(SecurityScheme::http('bearer'));
+            });
+
+        // Un solo grupo por endpoint: el `@tags` del controlador si lo trae
+        // (Scramble, por su cuenta, le sumaría además el nombre de la clase).
+        Scramble::resolveTagsUsing(function (RouteInfo $ruta) {
+            $doc = $ruta->isClassBased() ? (string) $ruta->reflectionMethod()?->getDeclaringClass()->getDocComment() : '';
+
+            if (preg_match('/@tags\s+(.+)/', $doc, $m)) {
+                return array_map('trim', explode(',', trim($m[1])));
+            }
+
+            return [Str::of(class_basename((string) $ruta->className()))->replaceLast('Controller', '')->headline()->toString() ?: 'API'];
+        });
     }
 
     /**
@@ -66,6 +113,22 @@ class AppServiceProvider extends ServiceProvider
         | su curso normal. Ojo: NO devolver false aquí, eso negaría todo
         | permiso a los demás usuarios sin llegar a revisarlos.
         */
+        /*
+        | Por la API, el token recorta: una llave de integración solo puede
+        | los permisos que se le marcaron, aunque su dueño pueda más (incluso
+        | si el dueño es administrador). Va antes que la regla del admin.
+        | En la web no hay token y esto no hace nada.
+        */
+        Gate::before(function (User $user, string $permiso) {
+            $token = $user->currentAccessToken();
+
+            if ($token && CatalogoPermisos::existe($permiso) && ! $token->can($permiso)) {
+                return false;
+            }
+
+            return null;
+        });
+
         Gate::before(fn (User $user) => $user->isAdmin() ? true : null);
 
         foreach (CatalogoPermisos::llaves() as $permiso) {

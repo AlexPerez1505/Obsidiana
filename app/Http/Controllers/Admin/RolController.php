@@ -3,24 +3,25 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Permission;
 use App\Models\Role;
+use App\Services\Administracion\RolesYPermisos;
 use App\Support\CatalogoPermisos;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
  * Roles y lo que puede hacer cada uno.
  *
  * El catálogo de permisos vive en código (CatalogoPermisos); aquí solo se
- * decide cuáles tiene cada rol.
+ * decide cuáles tiene cada rol. Las reglas viven en RolesYPermisos, que
+ * comparte con la API.
  */
 class RolController extends Controller
 {
-    /** El rol de administrador no se toca: siempre puede todo. */
-    private const INTOCABLE = 'admin';
+    public function __construct(private RolesYPermisos $roles)
+    {
+    }
 
     public function index(): View
     {
@@ -35,7 +36,7 @@ class RolController extends Controller
 
     public function edit(Role $role): View
     {
-        abort_if($role->name === self::INTOCABLE, 403, 'El administrador siempre puede todo.');
+        abort_if($this->roles->esIntocable($role), 403, RolesYPermisos::MENSAJE_INTOCABLE);
 
         $role->load(['permissions', 'users']);
 
@@ -49,30 +50,12 @@ class RolController extends Controller
     /** Guarda exactamente los permisos marcados. */
     public function update(Request $request, Role $role): RedirectResponse
     {
-        abort_if($role->name === self::INTOCABLE, 403, 'El administrador siempre puede todo.');
+        abort_if($this->roles->esIntocable($role), 403, RolesYPermisos::MENSAJE_INTOCABLE);
 
-        $data = $request->validate([
-            'label' => ['required', 'string', 'max:120'],
-            'description' => ['nullable', 'string', 'max:255'],
-            'is_active' => ['nullable', 'boolean'],
-            'permisos' => ['nullable', 'array'],
-            'permisos.*' => ['string'],
-        ]);
+        $data = $request->validate(RolesYPermisos::REGLAS_EDICION);
 
         // Se filtra contra el catálogo: una llave inventada no se guarda.
-        $validos = collect($data['permisos'] ?? [])
-            ->filter(fn (string $p) => CatalogoPermisos::existe($p))
-            ->values();
-
-        $ids = Permission::whereIn('name', $validos)->pluck('id');
-
-        $role->update([
-            'label' => $data['label'],
-            'description' => $data['description'] ?? null,
-            'is_active' => $request->boolean('is_active', true),
-        ]);
-
-        $role->permissions()->sync($ids);
+        $validos = $this->roles->actualizar($role, $data, $request->boolean('is_active', true));
 
         return redirect()->route('configuracion.roles.index')
             ->with('status', "Se guardó lo que puede hacer «{$role->label}»: {$validos->count()} permiso(s).");
@@ -80,20 +63,9 @@ class RolController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => [
-                'required', 'string', 'max:60',
-                'regex:/^[a-z][a-z0-9_]*$/',
-                Rule::unique('roles', 'name'),
-            ],
-            'label' => ['required', 'string', 'max:120'],
-            'description' => ['nullable', 'string', 'max:255'],
-        ], [
-            'name.regex' => 'La clave va en minúsculas, sin espacios ni acentos (ej. jefe_almacen).',
-            'name.unique' => 'Ya existe un rol con esa clave.',
-        ]);
+        $data = $request->validate(RolesYPermisos::reglasAlta(), RolesYPermisos::MENSAJES_ALTA);
 
-        $role = Role::create($data + ['is_active' => true]);
+        $role = $this->roles->crear($data);
 
         return redirect()->route('configuracion.roles.edit', $role)
             ->with('status', "Rol «{$role->label}» creado. Ahora elige qué puede hacer.");
@@ -105,19 +77,14 @@ class RolController extends Controller
      */
     public function destroy(Role $role): RedirectResponse
     {
-        abort_if($role->name === self::INTOCABLE, 403, 'El administrador no se puede eliminar.');
+        abort_if($this->roles->esIntocable($role), 403, RolesYPermisos::MENSAJE_NO_SE_ELIMINA);
 
-        $cuantos = $role->users()->count();
-
-        if ($cuantos > 0) {
-            return back()->withErrors([
-                'rol' => "«{$role->label}» lo tienen {$cuantos} usuario(s). Cámbialos de rol antes de eliminarlo.",
-            ]);
+        if ($rechazo = $this->roles->rechazoAlEliminar($role)) {
+            return back()->withErrors(['rol' => $rechazo]);
         }
 
         $etiqueta = $role->label;
-        $role->permissions()->detach();
-        $role->delete();
+        $this->roles->eliminar($role);
 
         return redirect()->route('configuracion.roles.index')
             ->with('status', "Rol «{$etiqueta}» eliminado.");

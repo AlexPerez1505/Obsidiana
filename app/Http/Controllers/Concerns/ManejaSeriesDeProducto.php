@@ -11,9 +11,9 @@ use Illuminate\Support\Collection;
  * de un producto: separar el textarea, autocompletar la secuencia cuando
  * solo se da un serial base, y reconocer errores de serial duplicado.
  *
- * La usan ProductoController (alta directa/rápida) e
- * InventoryMovementController (alta vía entrada con evidencia), para que las
- * dos capturen exactamente igual.
+ * La usan ProductosDeInventario (alta directa/rápida) y EntradasDeInventario
+ * (alta vía entrada con evidencia), que comparten la web y la API, para que
+ * las dos capturen exactamente igual.
  */
 trait ManejaSeriesDeProducto
 {

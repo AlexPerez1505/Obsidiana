@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ProductoSerial;
+use App\Services\Inventario\EscaneoDePiezas;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -16,13 +16,11 @@ use Illuminate\View\View;
  * o el puro código) se saca la etiqueta.
  *
  * Sirve para conteo físico, para armar un préstamo y para revisar un lote
- * sin ir buscando pieza por pieza en el listado.
+ * sin ir buscando pieza por pieza en el listado. Cómo se reconoce la
+ * etiqueta vive en EscaneoDePiezas, compartido con la API.
  */
 class EscaneoController extends Controller
 {
-    /** Patrón de una etiqueta interna: MB-000147. */
-    private const PATRON = '/([A-Za-z]{2,6}-\d{4,10})/';
-
     public function index(): View
     {
         return view('structure.gestion_Inventario.escaneo.index');
@@ -34,30 +32,28 @@ class EscaneoController extends Controller
      * Acepta tanto el código pelón como la liga completa: la pistola
      * teclea lo que trae el QR, que es la URL pública.
      */
-    public function buscar(Request $request): JsonResponse
+    public function buscar(Request $request, EscaneoDePiezas $escaneo): JsonResponse
     {
         $data = $request->validate([
             'codigo' => ['required', 'string', 'max:255'],
         ]);
 
-        if (! preg_match(self::PATRON, $data['codigo'], $m)) {
+        $codigo = EscaneoDePiezas::codigo($data['codigo']);
+
+        if ($codigo === null) {
             return response()->json([
                 'encontrado' => false,
-                'mensaje' => 'Eso no parece una etiqueta del sistema.',
+                'mensaje' => EscaneoDePiezas::NO_ES_ETIQUETA,
             ], 200);
         }
 
-        $codigo = strtoupper($m[1]);
-
-        $pieza = ProductoSerial::where('codigo', $codigo)
-            ->with(['producto', 'congress'])
-            ->first();
+        $pieza = $escaneo->pieza($codigo);
 
         if (! $pieza) {
             return response()->json([
                 'encontrado' => false,
                 'codigo' => $codigo,
-                'mensaje' => "La etiqueta {$codigo} no está registrada.",
+                'mensaje' => EscaneoDePiezas::noRegistrada($codigo),
             ], 200);
         }
 

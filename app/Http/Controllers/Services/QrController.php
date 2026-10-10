@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\ServiceStep;
 use App\Models\ServiceTracking;
+use App\Services\Servicios\OrdenesDeServicio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -118,39 +119,10 @@ class QrController extends Controller
         return view('structure.gestion_servicios.historial_servicios.qr.print', compact('service'));
     }
 
-    public function renew(Service $service)
+    public function renew(Service $service, OrdenesDeServicio $ordenes)
     {
-        if ($service->service_type !== 'externo') {
+        if (! $ordenes->renovarQr($service)) {
             return back()->with('error', 'Solo se pueden renovar QR de mantenimientos externos.');
-        }
-
-        $oldToken = $service->qr_token;
-        $newToken = $this->generateQrToken();
-        $expires = now()->addDay();
-
-        $service->update([
-            'qr_token' => $newToken,
-            'qr_expires_at' => $expires,
-        ]);
-
-        $tracking = ServiceTracking::where('service_id', $service->id)
-            ->where('status', 'pendiente')
-            ->where('qr_token', $oldToken)
-            ->first();
-
-        if (!$tracking && $service->current_step_id) {
-            $tracking = ServiceTracking::where('service_id', $service->id)
-                ->where('status', 'pendiente')
-                ->where('service_step_id', $service->current_step_id)
-                ->first();
-        }
-
-        if ($tracking) {
-            $tracking->update([
-                'qr_token' => $newToken,
-                'qr_expires_at' => $expires,
-                'started_at' => now(),
-            ]);
         }
 
         return redirect()->route('gestion.servicios.historial')

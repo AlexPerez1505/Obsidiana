@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Ruta;
 use App\Models\RutaIncidencia;
 use App\Models\RutaParada;
-use App\Models\VehiculoCombustible;
 use App\Services\Logistica\OperacionDeRutas;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -149,7 +148,7 @@ class ChoferController extends Controller
     }
 
     /** Carga de combustible hecha en el camino: se liga al vehículo y a la ruta. */
-    public function combustible(Request $request, Ruta $ruta): RedirectResponse
+    public function combustible(Request $request, Ruta $ruta, OperacionDeRutas $op): RedirectResponse
     {
         $this->propia($request, $ruta);
 
@@ -164,8 +163,7 @@ class ChoferController extends Controller
             'ticket' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:8192'],
         ]);
 
-        VehiculoCombustible::registrar($ruta->vehicle, $d + ['fecha' => today()->toDateString()], $request->file('ticket'), $request->user()->id, $ruta->id);
-        $ruta->registrarEvento('combustible', 'Carga de combustible: '.$d['litros'].' L · $'.number_format($d['monto'], 2));
+        $op->registrarCombustible($ruta, $d, $request->file('ticket'), $request->user()->id);
 
         return back()->with('status', 'Carga de combustible registrada.');
     }

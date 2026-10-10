@@ -21,9 +21,16 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'approved' => \App\Http\Middleware\EnsureAccountApproved::class,
             'dispositivo' => \App\Http\Middleware\AutenticarDispositivo::class,
+            'api.cuenta' => \App\Http\Middleware\CuentaActivaApi::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        // En /api todo error sale como JSON en español (ver la clase).
+        // Va primero: el de abajo regresa a la pantalla anterior, que en
+        // una API no existe.
+        $exceptions->shouldRenderJsonWhen(fn ($request) => $request->is('api/*') || $request->expectsJson());
+        $exceptions->render(fn (\Throwable $e, $request) => \App\Support\ErroresApi::render($e, $request));
+
         // Cuando el archivo pasa el limite de PHP, el servidor descarta el
         // envio completo antes de que llegue a la validacion. Sin esto el
         // usuario veria un 413 en crudo, o peor, un "falta el archivo" que

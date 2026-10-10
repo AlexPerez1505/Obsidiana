@@ -66,14 +66,8 @@
     ];
 
     $currentUserId = (int) auth()->id();
-    $visibilityScope = function ($query) use ($currentUserId) {
-        $query->where('visibility', 'publico')
-            ->orWhere('created_by', $currentUserId)
-            ->orWhere(function ($q) use ($currentUserId) {
-                $q->where('visibility', 'participantes')
-                    ->whereJsonContains('participants', $currentUserId);
-            });
-    };
+    // Misma regla que la API: público, lo propio y donde participa.
+    $visibilityScope = \App\Services\Administracion\AgendaAdministrativa::alcanceVisible($currentUserId);
 
     $dbEvents = AgendaEvent::with('creator')
         ->whereDate('start_date', '<=', $rangeEnd->toDateString())

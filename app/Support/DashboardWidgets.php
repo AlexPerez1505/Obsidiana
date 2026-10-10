@@ -36,6 +36,34 @@ class DashboardWidgets
     private const LIMITES = ['w_min' => 1, 'w_max' => self::ANCHO_MAX, 'h_min' => 2, 'h_max' => self::ALTO_MAX];
 
     /**
+     * Permiso que hace falta para ver los datos de cada tarjeta (las que
+     * no aparecen son del propio usuario o no traen datos).
+     *
+     * La API lo revisa para que una llave recortada no lea por el tablero
+     * lo que no puede abrir en su módulo. La web todavía pinta lo que cada
+     * quien eligió, sin revisarlo.
+     */
+    public const PERMISOS = [
+        'clientes' => 'clientes.ver',
+        'cotizaciones' => 'cotizaciones.ver',
+        'ventas_mes' => 'ventas.ver',
+        'inventario' => 'inventario.ver',
+        'facturas' => 'facturacion.ver',
+        'ventas_grafica' => 'ventas.ver',
+        'ultimas_cotizaciones' => 'cotizaciones.ver',
+        'ultimos_clientes' => 'clientes.ver',
+        'catalogo_equipo' => 'inventario.ver',
+    ];
+
+    /** ¿El usuario (con su token, si lo hay) puede ver los datos de la tarjeta? */
+    public static function puedeVer(string $id, User $user): bool
+    {
+        $permiso = self::PERMISOS[$id] ?? null;
+
+        return $permiso === null || $user->can($permiso);
+    }
+
+    /**
      * Arreglo de fabrica, para quien todavia no personaliza su tablero.
      *
      * @return array<int, array{id: string, w: int, h: int}>

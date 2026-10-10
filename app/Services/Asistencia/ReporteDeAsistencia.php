@@ -4,6 +4,7 @@ namespace App\Services\Asistencia;
 
 use App\Models\AttendancePunch;
 use App\Models\EmployeeAttendance;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 
 /** Números para el panel de RH: el día de hoy y los indicadores del mes. */
@@ -64,6 +65,48 @@ class ReporteDeAsistencia
         }
 
         return ['resumen' => $r, 'empleados' => $lista];
+    }
+
+    /**
+     * Un empleado en un mes: cada día con lo que se esperaba, su resumen y
+     * sus checadas crudas (incluidas las anuladas), más los totales del mes.
+     *
+     * @return array{dias: list<array>, resumen: array}
+     */
+    public function mesDeEmpleado(User $user, Carbon $mes): array
+    {
+        $mes = $mes->copy()->startOfMonth();
+        $filas = EmployeeAttendance::where('user_id', $user->id)
+            ->whereBetween('attendance_date', [$mes->toDateString(), $mes->copy()->endOfMonth()->toDateString()])
+            ->get()->keyBy(fn ($f) => $f->attendance_date->toDateString());
+
+        $checadas = AttendancePunch::with('device')->where('user_id', $user->id)
+            ->whereBetween('work_date', [$mes->toDateString(), $mes->copy()->endOfMonth()->toDateString()])
+            ->orderBy('punched_at')->get()->groupBy(fn ($p) => $p->work_date->toDateString());
+
+        $dias = [];
+        for ($d = $mes->copy(); $d->month === $mes->month; $d->addDay()) {
+            $k = $d->toDateString();
+            $dias[] = [
+                'fecha' => $d->copy(),
+                'esperado' => $this->asistencia->esperado($user, $d),
+                'festivo' => $this->asistencia->esFestivo($d),
+                'fila' => $filas->get($k),
+                'checadas' => $checadas->get($k, collect()),
+                'modalidad' => $this->asistencia->modalidadDe($user, $d),
+            ];
+        }
+
+        return [
+            'dias' => $dias,
+            'resumen' => [
+                'puntuales' => $filas->where('status', EmployeeAttendance::PUNTUAL)->count(),
+                'retardos' => $filas->where('status', EmployeeAttendance::RETARDO)->count(),
+                'faltas' => $filas->where('status', EmployeeAttendance::FALTA)->count(),
+                'justificadas' => $filas->where('status', EmployeeAttendance::JUSTIFICADA)->count(),
+                'horas' => round($filas->sum('worked_minutes') / 60, 1),
+            ],
+        ];
     }
 
     public function ultimasChecadas(int $limite = 12)

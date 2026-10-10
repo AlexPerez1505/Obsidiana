@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Logistica;
 
 use App\Http\Controllers\Controller;
 use App\Models\RutaIncidencia;
+use App\Services\Logistica\OperacionDeRutas;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,17 +28,11 @@ class IncidenciaController extends Controller
         ]);
     }
 
-    public function resolver(Request $request, RutaIncidencia $incidencia): RedirectResponse
+    public function resolver(Request $request, RutaIncidencia $incidencia, OperacionDeRutas $op): RedirectResponse
     {
         $data = $request->validate(['resolucion' => ['nullable', 'string', 'max:500']]);
 
-        $incidencia->update([
-            'resuelta_en' => now(),
-            'resuelta_por' => $request->user()->id,
-            'resolucion' => $data['resolucion'] ?? null,
-        ]);
-
-        $incidencia->ruta->registrarEvento('incidencia_resuelta', 'Incidencia resuelta: '.$incidencia->tipoLabel(), $incidencia->parada);
+        $op->resolverIncidencia($incidencia, $data['resolucion'] ?? null, $request->user()->id);
 
         return back()->with('status', 'Incidencia marcada como resuelta.');
     }

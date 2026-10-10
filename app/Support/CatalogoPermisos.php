@@ -198,6 +198,16 @@ class CatalogoPermisos
                     'actividad.ver' => 'Ver la línea de tiempo de actividad de todos los usuarios',
                 ],
             ],
+
+            'api' => [
+                'titulo' => 'API e integraciones',
+                'descripcion' => 'Llaves para que otros sistemas se conecten a Obsidiana.',
+                'permisos' => [
+                    // Una llave nunca puede más que su dueño; sin ser admin
+                    // solo se emiten llaves a nombre propio.
+                    'api.llaves' => 'Crear y revocar llaves de integración de la API',
+                ],
+            ],
         ];
     }
 

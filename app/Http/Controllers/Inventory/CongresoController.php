@@ -9,12 +9,12 @@ use App\Models\CongresoParticipante;
 use App\Models\Producto;
 use App\Models\ProductoSerial;
 use App\Models\User;
+use App\Services\Almacen\GestionDeCongresos;
 use App\Services\RegresoDeCongresos;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
@@ -27,7 +27,9 @@ use Illuminate\View\View;
  */
 class CongresoController extends Controller
 {
-    private const CARPETA = 'congresos';
+    public function __construct(private readonly GestionDeCongresos $congresos)
+    {
+    }
 
     /**
      * Calendario + detalle del congreso seleccionado.
@@ -130,19 +132,7 @@ class CongresoController extends Controller
             'producto_id' => ['required', 'exists:productos,id'],
         ]);
 
-        $producto = Producto::findOrFail($data['producto_id']);
-
-        $unidades = $producto->serialesDisponibles()
-            ->whereNull('congress_id')
-            ->with('entrada')
-            ->oldest('id')
-            ->get()
-            ->map(fn (ProductoSerial $u) => [
-                'id' => $u->id,
-                'codigo' => $u->codigo,
-                'no_serie' => $u->no_serie,
-                'foto' => $u->fotoUrl() ?: ($u->entrada?->evidenceUrls()[0] ?? null),
-            ]);
+        $unidades = $this->congresos->unidadesDisponibles(Producto::findOrFail($data['producto_id']));
 
         return response()->json(['unidades' => $unidades]);
     }
@@ -158,54 +148,21 @@ class CongresoController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $this->validado($request);
+        $data = $this->congresos->normalizar($request, $request->validate(GestionDeCongresos::REGLAS, GestionDeCongresos::MENSAJES));
 
-        $request->validate([
-            'serial_ids' => ['nullable', 'array'],
-            'serial_ids.*' => ['integer', 'exists:producto_seriales,id'],
-            'user_ids' => ['nullable', 'array'],
-            'user_ids.*' => ['integer', 'exists:users,id'],
-        ]);
+        $request->validate(GestionDeCongresos::REGLAS_ALTA_INICIAL);
 
-        $data['path_archivo'] = $this->subirArchivos($request);
-
-        $congress = Congress::create($data);
-
-        $this->asignarProductosYUsuariosIniciales($request, $congress);
+        // Desde la propia pantalla de "Nuevo congreso" ya se pueden elegir
+        // las unidades (viendo su foto) y los usuarios que van.
+        $congress = $this->congresos->crear(
+            $data,
+            (array) $request->file('archivos', []),
+            (array) $request->input('serial_ids', []),
+            (array) $request->input('user_ids', []),
+        );
 
         return redirect()->route('inventory.congresos.index', ['congreso' => $congress->id])
             ->with('status', 'Congreso guardado correctamente.');
-    }
-
-    /**
-     * Desde la propia pantalla de "Nuevo congreso" ya se pueden elegir las
-     * unidades (viendo su foto) y los usuarios que van, sin tener que
-     * guardar el congreso primero y entrar luego a agregarlos.
-     */
-    private function asignarProductosYUsuariosIniciales(Request $request, Congress $congress): void
-    {
-        $serialIds = array_filter((array) $request->input('serial_ids', []));
-
-        if ($serialIds) {
-            $validos = ProductoSerial::whereIn('id', $serialIds)
-                ->where('vendido', false)
-                ->whereNotIn('estado', ProductoSerial::NO_VENDIBLES)
-                ->whereNull('congress_id')
-                ->pluck('id');
-
-            ProductoSerial::whereIn('id', $validos)->update([
-                'congress_id' => $congress->id,
-                'enviado_a_congreso_en' => now(),
-            ]);
-        }
-
-        $userIds = array_filter((array) $request->input('user_ids', []));
-
-        if ($userIds) {
-            $congress->notifiedUsers()->syncWithoutDetaching(
-                User::whereIn('id', $userIds)->pluck('id')
-            );
-        }
     }
 
     public function edit(Congress $congress): View
@@ -218,11 +175,9 @@ class CongresoController extends Controller
 
     public function update(Request $request, Congress $congress): RedirectResponse
     {
-        $data = $this->validado($request);
+        $data = $this->congresos->normalizar($request, $request->validate(GestionDeCongresos::REGLAS, GestionDeCongresos::MENSAJES));
 
-        $data['path_archivo'] = $this->subirArchivos($request, (array) ($congress->path_archivo ?? []));
-
-        $congress->update($data);
+        $this->congresos->actualizar($congress, $data, (array) $request->file('archivos', []), (array) $request->input('quitar_archivos', []));
 
         return redirect()->route('inventory.congresos.index', ['congreso' => $congress->id])
             ->with('status', 'Congreso actualizado correctamente.');
@@ -254,25 +209,16 @@ class CongresoController extends Controller
 
         // Filtro de seguridad: solo unidades que de verdad siguen disponibles
         // y sin congreso, aunque el checkbox venga marcado desde antes.
-        $unidades = ProductoSerial::whereIn('id', $data['serial_ids'])
-            ->where('vendido', false)
-            ->whereNotIn('estado', ProductoSerial::NO_VENDIBLES)
-            ->whereNull('congress_id')
-            ->get();
+        $cuantas = $this->congresos->agregarUnidades($congress, $data['serial_ids']);
 
-        if ($unidades->isEmpty()) {
+        if ($cuantas === 0) {
             return back()->withErrors([
                 'serial_ids' => 'Esas unidades ya no están disponibles.',
             ]);
         }
 
-        ProductoSerial::whereIn('id', $unidades->pluck('id'))->update([
-            'congress_id' => $congress->id,
-            'enviado_a_congreso_en' => now(),
-        ]);
-
         return redirect()->route('inventory.congresos.index', ['congreso' => $congress->id])
-            ->with('status', $unidades->count().' unidad(es) agregadas al congreso.');
+            ->with('status', $cuantas.' unidad(es) agregadas al congreso.');
     }
 
     public function agregarUsuario(Request $request, Congress $congress): RedirectResponse
@@ -300,7 +246,7 @@ class CongresoController extends Controller
     {
         abort_unless((int) $serial->congress_id === (int) $congress->id, 404);
 
-        $serial->update(['congress_id' => null, 'enviado_a_congreso_en' => null]);
+        $this->congresos->quitarUnidad($serial);
 
         return redirect()->route('inventory.congresos.index', ['congreso' => $congress->id])
             ->with('status', 'Unidad regresada del congreso.');
@@ -315,17 +261,12 @@ class CongresoController extends Controller
      */
     public function regresarTodas(Congress $congress): RedirectResponse
     {
-        $cuantas = $congress->unidadesPresentes()->count();
+        // Las vendidas no se tocan: su marca es el rastro de dónde se vendieron.
+        $cuantas = $this->congresos->regresarTodas($congress);
 
         if ($cuantas === 0) {
             return back()->withErrors(['unidades' => 'Este congreso no tiene piezas por regresar.']);
         }
-
-        // Las vendidas no se tocan: su marca es el rastro de dónde se
-        // vendieron.
-        ProductoSerial::where('congress_id', $congress->id)
-            ->where('vendido', false)
-            ->update(['congress_id' => null, 'enviado_a_congreso_en' => null]);
 
         return redirect()->route('inventory.congresos.index', ['congreso' => $congress->id])
             ->with('status', "Se regresaron {$cuantas} pieza(s) al almacén.");
@@ -353,71 +294,5 @@ class CongresoController extends Controller
 
         return redirect()->route('inventory.congresos.index', ['congreso' => $congress->id])
             ->with('status', 'Participante eliminado.');
-    }
-
-    /**
-     * Reglas comunes de alta y edición.
-     */
-    private function validado(Request $request): array
-    {
-        $data = $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
-            'descripcion' => ['nullable', 'string', 'max:5000'],
-            'categoria_id' => ['required', 'exists:categorias,id'],
-            'fecha_inicio' => ['required', 'date'],
-            'fecha_finalizacion' => ['required', 'date', 'after_or_equal:fecha_inicio'],
-            'fecha_montaje' => ['nullable', 'date', 'before_or_equal:fecha_inicio'],
-            'hora_montaje' => ['required', 'date_format:H:i'],
-            'hora_desmontaje' => ['required', 'date_format:H:i'],
-            'num_stand' => ['nullable', 'string', 'max:50'],
-            'costo' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            'pagado' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'lte:costo'],
-            'descarga_acceso' => ['nullable', 'boolean'],
-            'descarga_texto' => ['nullable', 'string', 'max:255'],
-            'acceso_subir' => ['nullable', 'boolean'],
-            'subir_texto' => ['nullable', 'string', 'max:255'],
-            'direccion' => ['nullable', 'string', 'max:255'],
-            'comments' => ['nullable', 'string', 'max:5000'],
-            'archivos' => ['nullable', 'array', 'max:10'],
-            'archivos.*' => ['file', 'mimes:jpg,jpeg,png,webp,gif,pdf,doc,docx,xls,xlsx,ppt,pptx'],
-            'quitar_archivos' => ['nullable', 'array'],
-        ], [
-            'archivos.max' => 'Puedes subir hasta 10 archivos a la vez.',
-            'archivos.*.mimes' => 'Solo se aceptan imágenes, PDF o documentos de Office.',
-            'fecha_montaje.before_or_equal' => 'La fecha de montaje debe ser el mismo día en que inicia el congreso o antes (el stand se arma antes de que arranque).',
-            'pagado.lte' => 'Lo pagado no puede ser mayor que el costo del congreso.',
-        ]);
-
-        $data['descarga_acceso'] = $request->boolean('descarga_acceso');
-        $data['acceso_subir'] = $request->boolean('acceso_subir');
-
-        // Sin monto capturado, lo pagado es 0 (la columna no admite null).
-        $data['pagado'] = $data['pagado'] ?? 0;
-
-        unset($data['archivos'], $data['quitar_archivos']);
-
-        return $data;
-    }
-
-    /**
-     * Guarda los archivos nuevos y devuelve la lista completa.
-     *
-     * @return array<int, string>
-     */
-    private function subirArchivos(Request $request, array $previos = []): array
-    {
-        foreach ((array) $request->input('quitar_archivos', []) as $ruta) {
-            if (Storage::disk('public')->exists($ruta)) {
-                Storage::disk('public')->delete($ruta);
-            }
-
-            $previos = array_values(array_diff($previos, [$ruta]));
-        }
-
-        foreach ((array) $request->file('archivos', []) as $archivo) {
-            $previos[] = $archivo->store(self::CARPETA, 'public');
-        }
-
-        return array_values(array_unique($previos));
     }
 }

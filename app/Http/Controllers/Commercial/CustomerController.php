@@ -7,14 +7,19 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Congress;
 use App\Models\Customer;
+use App\Services\Clientes\RegistroClientes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
 {
+    // Las reglas de alta y edición viven en el servicio: la API usa las mismas.
+    public function __construct(private readonly RegistroClientes $registro)
+    {
+    }
+
     /**
      * Lista los clientes registrados.
      */
@@ -68,56 +73,15 @@ class CustomerController extends Controller
      */
     public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $this->normalizeCustomerInput($request);
+        $this->registro->normalizar($request);
 
         if ($alto = $this->detenerSiYaExiste($request)) {
             return $alto;
         }
 
-        $data = $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
-            'apellido' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')],
-            'rfc' => ['nullable', 'string', 'max:13', Rule::unique('clientes', 'rfc')],
-            'gmail' => ['nullable', 'email', 'max:255'],
-            'direccion' => ['required', 'string', 'max:255'],
-            'comentarios' => ['nullable', 'string'],
-            'categoria_id' => ['nullable', 'exists:categorias,id'],
-            'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
-            'como_conocio' => ['nullable', 'string', 'max:255'],
-            'recibe_promocion' => ['nullable', 'boolean'],
-            'etapa' => ['nullable', Rule::in(array_keys(Customer::ETAPAS))],
-            // Primer seguimiento, opcional: "cotizarle en un mes", etc.
-            'seguimiento_tipo' => ['nullable', Rule::in(array_keys(\App\Models\ClienteSeguimiento::TIPOS))],
-            'seguimiento_fecha' => ['nullable', 'date', 'after_or_equal:today', 'required_with:seguimiento_tipo'],
-            'seguimiento_nota' => ['nullable', 'string', 'max:500'],
-        ], [
-            'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
-            'rfc.unique' => 'Este RFC ya está registrado en otro cliente.',
-            'seguimiento_fecha.after_or_equal' => 'La fecha del seguimiento no puede ser anterior a hoy.',
-            'seguimiento_fecha.required_with' => 'Indica la fecha del seguimiento.',
-        ]);
+        $data = $request->validate($this->registro->reglasAlta(), $this->registro->mensajesAlta());
 
-        $data['recibe_promocion'] = $request->boolean('recibe_promocion');
-        $data['activo'] = true;
-        $data['asesor_id'] = auth()->id();
-        $data['etapa'] = $data['etapa'] ?? 'cliente';
-
-        $seguimiento = $request->filled('seguimiento_fecha') ? [
-            'user_id' => auth()->id(),
-            'tipo' => $data['seguimiento_tipo'] ?? 'llamada',
-            'fecha' => $data['seguimiento_fecha'],
-            'nota' => $data['seguimiento_nota'] ?? null,
-            'created_by' => auth()->id(),
-        ] : null;
-
-        unset($data['seguimiento_tipo'], $data['seguimiento_fecha'], $data['seguimiento_nota']);
-
-        $customer = Customer::create($data);
-
-        if ($seguimiento) {
-            $customer->seguimientos()->create($seguimiento);
-        }
+        $customer = $this->registro->registrar($data, $request->user());
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -152,36 +116,15 @@ class CustomerController extends Controller
     {
         $this->asegurarVisible($cliente);
 
-        $this->normalizeCustomerInput($request);
+        $this->registro->normalizar($request);
 
         if ($alto = $this->detenerSiYaExiste($request, $cliente)) {
             return $alto;
         }
 
-        $data = $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
-            'apellido' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')->ignore($cliente->id)],
-            'rfc' => ['nullable', 'string', 'max:13', Rule::unique('clientes', 'rfc')->ignore($cliente->id)],
-            'gmail' => ['nullable', 'email', 'max:255'],
-            'direccion' => ['required', 'string', 'max:255'],
-            'comentarios' => ['nullable', 'string'],
-            'categoria_id' => ['nullable', 'exists:categorias,id'],
-            'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
-            'como_conocio' => ['nullable', 'string', 'max:255'],
-            'recibe_promocion' => ['nullable', 'boolean'],
-            'activo' => ['nullable', 'boolean'],
-            'etapa' => ['nullable', Rule::in(array_keys(Customer::ETAPAS))],
-        ], [
-            'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
-            'rfc.unique' => 'Este RFC ya está registrado en otro cliente.',
-        ]);
+        $data = $request->validate($this->registro->reglasEdicion($cliente), $this->registro->mensajesEdicion());
 
-        $data['recibe_promocion'] = $request->boolean('recibe_promocion');
-        $data['activo'] = $request->boolean('activo', true);
-        $data['etapa'] = $data['etapa'] ?? $cliente->etapa;
-
-        $cliente->update($data);
+        $this->registro->actualizar($cliente, $data);
 
         return redirect()->route('commercial.clientes.index')->with('status', 'Cliente actualizado correctamente.');
     }
@@ -193,7 +136,7 @@ class CustomerController extends Controller
      */
     public function similar(Request $request): JsonResponse
     {
-        $similar = Customer::buscarSimilar(
+        $similar = $this->registro->similar(
             $request->input('telefono'),
             $request->input('gmail'),
             $request->integer('ignorar') ?: null
@@ -211,7 +154,7 @@ class CustomerController extends Controller
      */
     private function detenerSiYaExiste(Request $request, ?Customer $ignorar = null): RedirectResponse|JsonResponse|null
     {
-        $similar = Customer::buscarSimilar($request->input('telefono'), $request->input('gmail'), $ignorar?->id);
+        $similar = $this->registro->similar($request->input('telefono'), $request->input('gmail'), $ignorar?->id);
 
         if (! $similar) {
             return null;
@@ -225,20 +168,16 @@ class CustomerController extends Controller
 
         return back()
             ->withInput()
-            ->withErrors([$similar['motivo'] === 'correo' ? 'gmail' : 'telefono' => $aviso['mensaje']])
+            ->withErrors([$this->registro->campoDelChoque($similar) => $aviso['mensaje']])
             ->with('cliente_similar', $aviso);
     }
 
     /** Arma lo que ve el usuario: el motivo en palabras y el cliente que ya existe. */
     private function avisoDeSimilar(array $similar, Request $request): array
     {
-        $mensaje = $similar['motivo'] === 'correo'
-            ? 'Ya hay un cliente registrado con ese correo electrónico.'
-            : 'Ya hay un cliente registrado con ese número de teléfono.';
-
         return [
             'motivo' => $similar['motivo'],
-            'mensaje' => $mensaje,
+            'mensaje' => $similar['mensaje'],
             'cliente' => $similar['cliente']->resumenParaAviso($request->user()),
         ];
     }
@@ -253,38 +192,13 @@ class CustomerController extends Controller
     }
 
     /**
-     * Normaliza la entrada antes de validar.
-     *
-     * RFC, categoria y congreso son opcionales: cuando llegan vacios se guardan
-     * como NULL para no chocar con el indice unico del RFC ni con las llaves foraneas.
-     */
-    private function normalizeCustomerInput(Request $request): void
-    {
-        $rfc = strtoupper(trim((string) $request->input('rfc')));
-
-        $congresoId = $request->filled('congreso_id') ? $request->input('congreso_id') : null;
-
-        $request->merge([
-            'telefono' => trim((string) $request->input('telefono')),
-            'rfc' => $rfc !== '' ? $rfc : null,
-            'categoria_id' => $request->filled('categoria_id') ? $request->input('categoria_id') : null,
-            'congreso_id' => $congresoId,
-            // El congreso ya responde "cómo lo conocimos"; el texto libre
-            // solo aplica cuando no se levantó en uno.
-            'como_conocio' => $congresoId ? null : (trim((string) $request->input('como_conocio')) ?: null),
-        ]);
-    }
-
-    /**
      * Guarda una nueva categoría vía AJAX.
      */
     public function storeCategory(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'nombre' => ['required', 'string', 'max:255', 'unique:categorias,nombre'],
-        ]);
+        $data = $request->validate($this->registro->reglasCategoria());
 
-        $category = Category::create($data);
+        $category = $this->registro->registrarCategoria($data);
 
         return response()->json([
             'id' => $category->id,

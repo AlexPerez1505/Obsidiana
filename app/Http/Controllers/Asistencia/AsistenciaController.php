@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Asistencia;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendancePunch;
-use App\Models\EmployeeAttendance;
 use App\Models\User;
 use App\Services\Asistencia\ReporteDeAsistencia;
 use App\Services\Asistencia\ServicioDeAsistencia;
@@ -47,38 +46,13 @@ class AsistenciaController extends Controller
     public function empleado(Request $request, User $user): View
     {
         $mes = $this->fecha($request->get('mes') ? $request->get('mes').'-01' : null)->startOfMonth();
-        $filas = EmployeeAttendance::where('user_id', $user->id)
-            ->whereBetween('attendance_date', [$mes->toDateString(), $mes->copy()->endOfMonth()->toDateString()])
-            ->get()->keyBy(fn ($f) => $f->attendance_date->toDateString());
-
-        $checadas = AttendancePunch::with('device')->where('user_id', $user->id)
-            ->whereBetween('work_date', [$mes->toDateString(), $mes->copy()->endOfMonth()->toDateString()])
-            ->orderBy('punched_at')->get()->groupBy(fn ($p) => $p->work_date->toDateString());
-
-        $dias = [];
-        for ($d = $mes->copy(); $d->month === $mes->month; $d->addDay()) {
-            $k = $d->toDateString();
-            $dias[] = [
-                'fecha' => $d->copy(),
-                'esperado' => $this->asistencia->esperado($user, $d),
-                'festivo' => $this->asistencia->esFestivo($d),
-                'fila' => $filas->get($k),
-                'checadas' => $checadas->get($k, collect()),
-                'modalidad' => $this->asistencia->modalidadDe($user, $d),
-            ];
-        }
+        $datos = $this->reporte->mesDeEmpleado($user, $mes);
 
         return view('asistencia.empleado', [
             'empleado' => $user->load(['horario', 'huellas']),
             'mes' => $mes,
-            'dias' => $dias,
-            'resumen' => [
-                'puntuales' => $filas->where('status', EmployeeAttendance::PUNTUAL)->count(),
-                'retardos' => $filas->where('status', EmployeeAttendance::RETARDO)->count(),
-                'faltas' => $filas->where('status', EmployeeAttendance::FALTA)->count(),
-                'justificadas' => $filas->where('status', EmployeeAttendance::JUSTIFICADA)->count(),
-                'horas' => round($filas->sum('worked_minutes') / 60, 1),
-            ],
+            'dias' => $datos['dias'],
+            'resumen' => $datos['resumen'],
             'puedeGestionar' => $request->user()->can('asistencia.gestionar'),
         ]);
     }
@@ -105,30 +79,12 @@ class AsistenciaController extends Controller
     /** Checada manual (olvidó checar, falló el lector): queda marcada como manual con su motivo. */
     public function checadaManual(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
-            'fecha' => ['required', 'date', 'before_or_equal:today'],
-            'hora' => ['required', 'date_format:H:i'],
-            'motivo' => ['required', 'string', 'max:255'],
-        ], ['motivo.required' => 'Escribe el motivo de la checada manual: queda como evidencia.']);
-
-        $cuando = Carbon::parse($data['fecha'].' '.$data['hora'], ServicioDeAsistencia::tz())->utc();
-
-        if ($cuando->isFuture()) {
-            return back()->withInput()->withErrors(['hora' => 'No se puede registrar una checada en el futuro.']);
-        }
+        $data = $request->validate(ServicioDeAsistencia::reglasChecadaManual(), ServicioDeAsistencia::mensajesChecadaManual());
 
         $user = User::findOrFail($data['user_id']);
-        $this->asistencia->registrarChecada($user, null, [
-            'punched_at' => $cuando->toDateTimeString(),
-            'method' => 'manual',
-            'note' => $data['motivo'],
-            'created_by' => $request->user()->id,
-        ]);
 
-        // Una checada hecha a mano fuera de orden cambia entrada/salida del día
-        $this->asistencia->renumerar($user->id, Carbon::parse($data['fecha']));
-        $this->asistencia->recalcularDia($user, Carbon::parse($data['fecha']));
+        // Una hora en el futuro regresa al formulario con el error en "hora"
+        $this->asistencia->registrarManual($user, $data['fecha'], $data['hora'], $data['motivo'], $request->user()->id);
 
         return back()->with('status', 'Checada manual registrada para '.$user->name.'.');
     }
