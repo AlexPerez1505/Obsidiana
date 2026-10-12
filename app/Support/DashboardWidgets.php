@@ -36,6 +36,34 @@ class DashboardWidgets
     private const LIMITES = ['w_min' => 1, 'w_max' => self::ANCHO_MAX, 'h_min' => 2, 'h_max' => self::ALTO_MAX];
 
     /**
+     * Permiso que hace falta para ver los datos de cada tarjeta (las que
+     * no aparecen son del propio usuario o no traen datos).
+     *
+     * La API lo revisa para que una llave recortada no lea por el tablero
+     * lo que no puede abrir en su módulo. La web todavía pinta lo que cada
+     * quien eligió, sin revisarlo.
+     */
+    public const PERMISOS = [
+        'clientes' => 'clientes.ver',
+        'cotizaciones' => 'cotizaciones.ver',
+        'ventas_mes' => 'ventas.ver',
+        'inventario' => 'inventario.ver',
+        'facturas' => 'facturacion.ver',
+        'ventas_grafica' => 'ventas.ver',
+        'ultimas_cotizaciones' => 'cotizaciones.ver',
+        'ultimos_clientes' => 'clientes.ver',
+        'catalogo_equipo' => 'inventario.ver',
+    ];
+
+    /** ¿El usuario (con su token, si lo hay) puede ver los datos de la tarjeta? */
+    public static function puedeVer(string $id, User $user): bool
+    {
+        $permiso = self::PERMISOS[$id] ?? null;
+
+        return $permiso === null || $user->can($permiso);
+    }
+
+    /**
      * Arreglo de fabrica, para quien todavia no personaliza su tablero.
      *
      * @return array<int, array{id: string, w: int, h: int}>
@@ -243,12 +271,14 @@ class DashboardWidgets
 
         $datos = match ($id) {
             'clientes' => self::datosClientes($nivel, $filas),
-            'cotizaciones' => self::datosCotizaciones($nivel, $filas),
-            'ventas_mes' => self::datosVentasMes($nivel, $filas),
+            // Cotizaciones y ventas respetan el permiso de "ver todas": quien
+            // no lo tiene ve en el tablero solo sus propios números.
+            'cotizaciones' => self::datosCotizaciones($user, $nivel, $filas),
+            'ventas_mes' => self::datosVentasMes($user, $nivel, $filas),
             'inventario' => self::datosInventario($nivel, $filas),
             'facturas' => self::datosFacturas($nivel, $filas),
-            'ventas_grafica' => self::datosVentasGrafica($nivel),
-            'ultimas_cotizaciones' => self::datosUltimasCotizaciones($filas),
+            'ventas_grafica' => self::datosVentasGrafica($user, $nivel),
+            'ultimas_cotizaciones' => self::datosUltimasCotizaciones($user, $filas),
             'ultimos_clientes' => self::datosUltimosClientes($filas),
             'mis_tareas' => self::datosMisTareas($user, $filas),
             'catalogo_equipo' => self::datosCatalogoEquipo($nivel),
@@ -290,12 +320,12 @@ class DashboardWidgets
         return $datos;
     }
 
-    private static function datosCotizaciones(int $nivel, int $filas): array
+    private static function datosCotizaciones(User $user, int $nivel, int $filas): array
     {
         $datos = [
-            'total' => Cotizacion::count(),
-            'monto' => (float) Cotizacion::sum('total'),
-            'mes' => Cotizacion::where('created_at', '>=', now()->startOfMonth())->count(),
+            'total' => Cotizacion::visiblesPara($user)->count(),
+            'monto' => (float) Cotizacion::visiblesPara($user)->sum('total'),
+            'mes' => Cotizacion::visiblesPara($user)->where('created_at', '>=', now()->startOfMonth())->count(),
         ];
 
         if ($nivel >= 2) {
@@ -303,7 +333,7 @@ class DashboardWidgets
         }
 
         if ($nivel >= 3) {
-            $datos['tabla'] = Cotizacion::selectRaw('estado, COUNT(*) as total, SUM(total) as monto')
+            $datos['tabla'] = Cotizacion::visiblesPara($user)->selectRaw('estado, COUNT(*) as total, SUM(total) as monto')
                 ->groupBy('estado')
                 ->orderByDesc('total')
                 ->limit($filas)
@@ -319,32 +349,35 @@ class DashboardWidgets
         return $datos;
     }
 
-    private static function datosVentasMes(int $nivel, int $filas): array
+    private static function datosVentasMes(User $user, int $nivel, int $filas): array
     {
         $desde = now()->startOfMonth();
 
         $datos = [
-            'monto' => (float) Venta::where('created_at', '>=', $desde)->sum('total'),
-            'cantidad' => Venta::where('created_at', '>=', $desde)->count(),
-            'monto_total' => (float) Venta::sum('total'),
+            'monto' => (float) Venta::activas()->visiblesPara($user)->where('created_at', '>=', $desde)->sum('total'),
+            'cantidad' => Venta::activas()->visiblesPara($user)->where('created_at', '>=', $desde)->count(),
+            'monto_total' => (float) Venta::activas()->visiblesPara($user)->sum('total'),
         ];
 
         if ($nivel >= 2) {
             $inicioAnterior = (clone $desde)->subMonth();
-            $anterior = (float) Venta::whereBetween('created_at', [$inicioAnterior, (clone $inicioAnterior)->endOfMonth()])->sum('total');
+            $anterior = (float) Venta::activas()->visiblesPara($user)->whereBetween('created_at', [$inicioAnterior, (clone $inicioAnterior)->endOfMonth()])->sum('total');
 
             $datos['mes_anterior'] = $anterior;
             $datos['variacion'] = $anterior > 0 ? (($datos['monto'] - $anterior) / $anterior) * 100 : null;
         }
 
         if ($nivel >= 3) {
-            $datos['tabla'] = Venta::with('customer')
+            $datos['tabla'] = Venta::activas()->visiblesPara($user)
+                ->with(['customer', 'items'])
                 ->where('created_at', '>=', $desde)
                 ->orderByDesc('total')
                 ->limit($filas)
                 ->get()
                 ->map(fn ($venta) => [
                     'etiqueta' => trim(($venta->customer->nombre ?? '') . ' ' . ($venta->customer->apellido ?? '')) ?: ($venta->folio ?: 'Venta #' . $venta->id),
+                    // Qué se vendió, para reconocer la venta sin abrirla.
+                    'extra' => $venta->resumenProductos() ?? '',
                     'valor' => '$' . number_format((float) $venta->total, 2),
                 ])
                 ->all();
@@ -412,15 +445,15 @@ class DashboardWidgets
         return $datos;
     }
 
-    private static function datosVentasGrafica(int $nivel): array
+    private static function datosVentasGrafica(User $user, int $nivel): array
     {
-        $meses = collect(range(5, 0))->map(function (int $atras) {
+        $meses = collect(range(5, 0))->map(function (int $atras) use ($user) {
             $inicio = now()->startOfMonth()->subMonths($atras);
             $fin = (clone $inicio)->endOfMonth();
 
             return [
                 'etiqueta' => ucfirst($inicio->locale('es')->isoFormat('MMM')),
-                'monto' => (float) Venta::whereBetween('created_at', [$inicio, $fin])->sum('total'),
+                'monto' => (float) Venta::activas()->visiblesPara($user)->whereBetween('created_at', [$inicio, $fin])->sum('total'),
             ];
         })->all();
 
@@ -442,10 +475,10 @@ class DashboardWidgets
 
     // En las listas, cuantas filas se traen depende del alto de la tarjeta.
 
-    private static function datosUltimasCotizaciones(int $filas): array
+    private static function datosUltimasCotizaciones(User $user, int $filas): array
     {
         return [
-            'filas' => Cotizacion::with('customer')->latest()->limit($filas)->get(),
+            'filas' => Cotizacion::visiblesPara($user)->with(['customer', 'items'])->latest()->limit($filas)->get(),
         ];
     }
 

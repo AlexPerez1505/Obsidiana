@@ -7,11 +7,12 @@
 @php
     $emp = config('medibuy.empresa');
     $con = config('medibuy.contacto');
-    $ban = config('medibuy.banco');
 
     $c = $venta->customer;
     $comprador = trim(($c->nombre ?? '') . ' ' . ($c->apellido ?? '')) ?: '—';
-    $vendedor = $ban['beneficiario'] ?: $emp['nombre'];
+    // El vendedor es el titular de la cuenta que recibe el pago: con IVA es
+    // Anahí Téllez; sin IVA, Gabriela Díaz García.
+    $vendedor = \App\Support\DatosBancarios::beneficiario((bool) $venta->aplica_iva) ?: $emp['nombre'];
 
     $logoUri = \App\Support\LogoPdf::dataUri();
 
@@ -194,10 +195,16 @@
     </li>
 
     <li>
-        <b>Séptima. Garantía.</b> El equipo cuenta con una garantía de
-        <b>{{ $venta->garantia_meses }} meses</b> a partir de la fecha de entrega, en los
-        términos de la carta garantía que se entrega por separado y forma parte integrante
-        de este contrato.
+        @if ($venta->tieneGarantia())
+            <b>Séptima. Garantía.</b> El equipo cuenta con una garantía de
+            <b>{{ $venta->garantia_meses }} meses</b> a partir de la fecha de entrega, en los
+            términos de la carta garantía que se entrega por separado y forma parte integrante
+            de este contrato.
+        @else
+            <b>Séptima. Garantía.</b> El equipo objeto de este contrato se vende
+            <b>sin garantía</b>, en el estado en que se encuentra y que "EL COMPRADOR"
+            declara haber revisado y aceptado, por lo que no se entrega carta garantía.
+        @endif
     </li>
 
     <li>

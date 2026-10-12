@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Paquete;
 use App\Models\Producto;
+use App\Services\Inventario\Paquetes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -44,22 +45,11 @@ class PaqueteController extends Controller
     /**
      * Guarda un nuevo paquete.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, Paquetes $paquetes): RedirectResponse
     {
-        $data = $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
-            'productos' => ['required', 'array'],
-            'productos.*.id' => ['required', 'exists:productos,id'],
-            'productos.*.cantidad' => ['required', 'integer', 'min:1'],
-        ]);
+        $data = $request->validate(Paquetes::REGLAS);
 
-        $paquete = Paquete::create(['nombre' => $data['nombre']]);
-
-        $syncData = [];
-        foreach ($data['productos'] as $producto) {
-            $syncData[$producto['id']] = ['cantidad' => $producto['cantidad']];
-        }
-        $paquete->productos()->sync($syncData);
+        $paquetes->guardar($data);
 
         return redirect()->route('inventory.paquetes.index')->with('status', 'Paquete guardado correctamente.');
     }
@@ -82,22 +72,11 @@ class PaqueteController extends Controller
     /**
      * Actualiza un paquete existente.
      */
-    public function update(Request $request, Paquete $paquete): RedirectResponse
+    public function update(Request $request, Paquete $paquete, Paquetes $paquetes): RedirectResponse
     {
-        $data = $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
-            'productos' => ['required', 'array'],
-            'productos.*.id' => ['required', 'exists:productos,id'],
-            'productos.*.cantidad' => ['required', 'integer', 'min:1'],
-        ]);
+        $data = $request->validate(Paquetes::REGLAS);
 
-        $paquete->update(['nombre' => $data['nombre']]);
-
-        $syncData = [];
-        foreach ($data['productos'] as $producto) {
-            $syncData[$producto['id']] = ['cantidad' => $producto['cantidad']];
-        }
-        $paquete->productos()->sync($syncData);
+        $paquetes->guardar($data, $paquete);
 
         return redirect()->route('inventory.paquetes.index')->with('status', 'Paquete actualizado correctamente.');
     }

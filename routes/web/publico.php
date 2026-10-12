@@ -42,3 +42,20 @@ Route::prefix('consulta')->name('publico.')->group(function () {
 Route::get('/equipo/{codigo}', FichaEquipoPublicaController::class)
     ->name('publico.equipo')
     ->where('codigo', '[A-Za-z]{2,6}-[0-9]{4,10}');
+
+/*
+|--------------------------------------------------------------------------
+| Certificado de la CA local (solo en desarrollo)
+|--------------------------------------------------------------------------
+| Los celulares lo instalan una vez para confiar en https://<ip-del-servidor>
+| y así poder usar la cámara en la venta rápida. Se sirve con el tipo MIME
+| que iOS necesita para ofrecer instalarlo como perfil.
+*/
+if (app()->environment('local')) {
+    Route::get('/certificado-local', function () {
+        $ruta = public_path('medibuy-ca.crt');
+        abort_unless(is_file($ruta), 404);
+
+        return response()->file($ruta, ['Content-Type' => 'application/x-x509-ca-cert']);
+    })->name('publico.certificado');
+}

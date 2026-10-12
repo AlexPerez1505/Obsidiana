@@ -10,6 +10,12 @@ use Illuminate\Support\Str;
 
 class Cotizacion extends Model
 {
+    use \App\Models\Concerns\ResumeProductos;
+    use \App\Models\Concerns\VisiblePorAsesor;
+
+    /** Quien no lo tiene, solo ve las cotizaciones que él mismo hizo. */
+    public const PERMISO_VER_TODAS = 'cotizaciones.ver_todas';
+
     protected $table = 'cotizaciones';
 
     protected $fillable = [

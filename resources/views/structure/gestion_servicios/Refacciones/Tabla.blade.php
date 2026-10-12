@@ -116,6 +116,14 @@
                                     <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
                                 </button>
                                 <div class="row-menu-pop" data-row-menu-pop role="menu" hidden>
+                                    <button type="button" role="menuitem" data-ref-ver="{{ $refaccion->id }}">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        Ver
+                                    </button>
+                                    <a href="{{ route('gestion.servicios.refacciones.edit', $refaccion) }}" role="menuitem">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+                                        Editar
+                                    </a>
                                     <form action="{{ route('gestion.servicios.refacciones.destroy', $refaccion) }}" method="POST" onsubmit="return confirm('¿Eliminar esta refacción?')" style="margin:0;">
                                         @csrf
                                         @method('DELETE')
@@ -164,6 +172,58 @@
     @endif
 
     <p class="f-conteo" id="fConteo"></p>
+
+    {{-- Modales Ver --}}
+    @foreach ($refacciones as $refaccion)
+        <div class="ref-modal" id="ref-modal-{{ $refaccion->id }}" hidden>
+            <div class="ref-modal-box">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+                    <h3 style="margin:0; font-size:17px;">{{ $refaccion->name }}</h3>
+                    <button type="button" class="ref-close" data-ref-close>&times;</button>
+                </div>
+                @if ($refaccion->photo_path)
+                    <img src="{{ asset('storage/' . $refaccion->photo_path) }}" alt="{{ $refaccion->name }}" style="width:100%; max-height:220px; object-fit:cover; border-radius:10px; margin-bottom:14px;">
+                @endif
+                <div class="ref-field"><span>Subtipo</span><strong>{{ $refaccion->subtype ?: '—' }}</strong></div>
+                <div class="ref-field" style="align-items:flex-start;"><span>Descripción</span><strong style="text-align:right; font-weight:500;">{{ $refaccion->description ?: '—' }}</strong></div>
+                <div class="ref-field"><span>Stock</span><strong>{{ number_format($refaccion->stock) }}</strong></div>
+                <div class="ref-field"><span>Precio</span><strong>${{ number_format($refaccion->price ?? 0, 2) }}</strong></div>
+                <div class="ref-field"><span>Compatible con</span><strong>{{ $refaccion->compatible_with ?: '—' }}</strong></div>
+            </div>
+        </div>
+    @endforeach
+
+    <style>
+        .ref-modal { position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; background:rgba(15,23,42,.45); padding:20px; }
+        .ref-modal[hidden] { display:none; }
+        .ref-modal-box { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px; width:100%; max-width:460px; box-shadow:0 24px 60px rgba(0,0,0,.25); }
+        .ref-close { background:none; border:none; font-size:22px; color:var(--muted); cursor:pointer; line-height:1; padding:0 4px; }
+        .ref-close:hover { color:var(--text); }
+        .ref-field { display:flex; justify-content:space-between; gap:14px; padding:10px 0; border-bottom:1px solid var(--border); font-size:13.5px; }
+        .ref-field:last-child { border-bottom:none; }
+        .ref-field span { color:var(--muted); }
+    </style>
+
+    <script>
+        document.querySelectorAll('[data-ref-ver]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var modal = document.getElementById('ref-modal-' + btn.getAttribute('data-ref-ver'));
+                if (modal) modal.hidden = false;
+            });
+        });
+        document.querySelectorAll('.ref-modal').forEach(function (modal) {
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal || e.target.closest('[data-ref-close]')) {
+                    modal.hidden = true;
+                }
+            });
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.ref-modal').forEach(function (m) { m.hidden = true; });
+            }
+        });
+    </script>
 
     @include('partials.tabla-filtrable.script', [
         'singular' => 'refacción',

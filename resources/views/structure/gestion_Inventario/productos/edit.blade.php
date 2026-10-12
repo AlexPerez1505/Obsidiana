@@ -68,10 +68,18 @@
                 </thead>
                 <tbody>
                     @forelse ($seriales as $serial)
+                        @php($evidencias = $serial->evidenceUrls())
                         <tr>
                             <td>
-                                @if ($serial->fotoUrl())
-                                    <img src="{{ $serial->fotoUrl() }}" alt="Foto de la unidad" style="width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid var(--border); cursor:pointer;" onclick="window.open('{{ $serial->fotoUrl() }}', '_blank')">
+                                @if (count($evidencias))
+                                    <div style="display:flex; gap:4px; align-items:center;">
+                                        @foreach ($evidencias as $url)
+                                            <img src="{{ $url }}" alt="Foto de la unidad" style="width:36px; height:36px; object-fit:cover; border-radius:6px; border:1px solid var(--border); cursor:pointer;" onclick="window.open('{{ $url }}', '_blank')">
+                                        @endforeach
+                                        @if ($serial->videoUrl())
+                                            <a href="{{ $serial->videoUrl() }}" target="_blank" title="Ver video" style="font-size:11px;">▶</a>
+                                        @endif
+                                    </div>
                                 @else
                                     <span class="muted" style="font-size:12px;">—</span>
                                 @endif
@@ -86,7 +94,7 @@
                                 <button type="button" class="btn btn--ghost" style="padding:5px 10px; font-size:12.5px;"
                                         onclick="document.getElementById('editar-serial-{{ $serial->id }}').style.display='flex'">Editar</button>
                                 @unless ($serial->vendido)
-                                    <form method="POST" action="{{ route('inventory.productos.seriales.destroy', $serial) }}" onsubmit="return confirm('¿Quitar esta unidad del inventario?');" style="margin:0;">
+                                    <form method="POST" action="{{ route('inventory.productos.seriales.destroy', $serial) }}" data-confirm="¿Quitar esta unidad del inventario?" style="margin:0;">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn--ghost" style="padding:5px 10px; font-size:12.5px; color:var(--danger);">Eliminar</button>

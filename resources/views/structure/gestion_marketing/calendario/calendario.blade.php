@@ -16,16 +16,7 @@
     $startOffset = ($firstOfMonth->dayOfWeek + 6) % 7;
     $today = now()->toDateString();
 
-    $categories = [
-        ['name' => 'Educación', 'color' => '#facc15'],
-        ['name' => 'Equipos', 'color' => '#fb923c'],
-        ['name' => 'Carruseles', 'color' => '#f43f5e'],
-        ['name' => 'Antes/después congreso', 'color' => '#ef4444'],
-        ['name' => 'Congreso', 'color' => '#22c55e'],
-        ['name' => 'Cumpleaños', 'color' => '#a855f7'],
-        ['name' => 'Días conmemorativos', 'color' => '#3b82f6'],
-        ['name' => 'Promociones', 'color' => '#06b6d4'],
-    ];
+    $categories = App\Services\Marketing\TareasDeMarketing::CATEGORIAS;
 
     $responsables = App\Models\User::orderBy('name')->get(['id', 'name']);
 
@@ -39,11 +30,7 @@
     $prioridades = ['baja' => 'Baja', 'media' => 'Media', 'alta' => 'Alta'];
     $statusColors = ['pendiente' => '#f59e0b', 'en_proceso' => '#3b82f6', 'revision' => '#a855f7', 'completada' => '#22c55e'];
 
-    $tasks = App\Models\Task::with('user')
-        ->whereMonth('due_date', $month)
-        ->whereYear('due_date', $year)
-        ->orderBy('due_date')
-        ->get();
+    $tasks = app(App\Services\Marketing\TareasDeMarketing::class)->delMes($month, $year)->get();
 
     $allTasks = App\Models\Task::with(['user','reviewer'])->orderBy('due_date','desc')->get();
 

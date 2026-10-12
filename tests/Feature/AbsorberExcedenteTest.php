@@ -181,14 +181,15 @@ class AbsorberExcedenteTest extends TestCase
         $this->assertSame('pendiente', $pagos[2]->estado());
     }
 
-    public function test_registrar_un_cobro_por_la_ruta_real_reasigna_el_excedente_solo(): void
+    public function test_pagar_de_mas_en_una_parcialidad_deja_un_solo_recibo_y_baja_el_siguiente_pago(): void
     {
+        // Lo pedido: dos pagos de $1,000 y el cliente da $1,500 en el primero.
+        // El recibo debe ser UNO por $1,500 (no $1,000 + otro de $500) y el
+        // siguiente pago debe bajar a $500.
         $user = User::factory()->create(['is_admin' => true, 'status' => User::STATUS_APPROVED, 'approved_at' => now()]);
         $venta = $this->ventaConTresPagos();
         $pagos = $venta->pagos()->orderBy('orden')->get();
 
-        // Se registra el cobro por la ruta real (como lo haría el usuario
-        // desde Cobranza), abonando de más a la primera parcialidad.
         $this->actingAs($user)->post(route('commercial.ventas.cobros.store', $venta), [
             'venta_pago_id' => $pagos[0]->id,
             'fecha' => now()->format('Y-m-d'),
@@ -196,14 +197,51 @@ class AbsorberExcedenteTest extends TestCase
             'metodo' => 'efectivo',
         ])->assertRedirect(route('commercial.ventas.cobros.index', $venta));
 
-        $venta->refresh()->load('pagos.cobros');
+        $venta->refresh()->load('pagos.cobros', 'cobros');
         $pagos = $venta->pagos()->orderBy('orden')->get();
 
-        // No hizo falta darle a "Descontar de lo pendiente": ya quedó solo,
-        // y ninguna parcialidad quedó en monto 0.
-        $this->assertEqualsWithDelta(1000.0, (float) $pagos[0]->monto, 0.01);
-        $this->assertEqualsWithDelta(1000.0, (float) $pagos[1]->monto, 0.01);
-        $this->assertEqualsWithDelta(500.0, $pagos[1]->cobrado(), 0.01);
+        // Un solo recibo, por el monto real que dio el cliente.
+        $this->assertSame(1, $venta->cobros()->count(), 'Debe haber un solo recibo, no partido en dos.');
+        $this->assertEqualsWithDelta(1500.0, (float) $venta->cobros()->first()->monto, 0.01);
+
+        // El primer pago crece a lo que se le abonó y queda saldado.
+        $this->assertEqualsWithDelta(1500.0, (float) $pagos[0]->monto, 0.01);
+        $this->assertEqualsWithDelta(1500.0, $pagos[0]->cobrado(), 0.01);
+        $this->assertSame('pagado', $pagos[0]->estado());
+
+        // El siguiente pago baja $500 (de 1000 a 500) y sigue sin cobros.
+        $this->assertEqualsWithDelta(500.0, (float) $pagos[1]->monto, 0.01);
+        $this->assertEqualsWithDelta(0.0, $pagos[1]->cobrado(), 0.01);
+
+        // El tercero no se toca y el total del plan no cambia.
+        $this->assertEqualsWithDelta(1000.0, (float) $pagos[2]->monto, 0.01);
+        $this->assertEqualsWithDelta(3000.0, (float) $venta->pagos->sum('monto'), 0.01);
+        $this->assertEqualsWithDelta(1500.0, $venta->saldo(), 0.01);
+    }
+
+    public function test_pagar_de_mas_cuando_el_exceso_cubre_mas_de_un_pago_los_baja_en_cascada(): void
+    {
+        // El cliente da $2,500 en el primer pago (de $1,000): el exceso de
+        // $1,500 baja el segundo a $0 y el tercero a $500.
+        $user = User::factory()->create(['is_admin' => true, 'status' => User::STATUS_APPROVED, 'approved_at' => now()]);
+        $venta = $this->ventaConTresPagos();
+        $pagos = $venta->pagos()->orderBy('orden')->get();
+
+        $this->actingAs($user)->post(route('commercial.ventas.cobros.store', $venta), [
+            'venta_pago_id' => $pagos[0]->id,
+            'fecha' => now()->format('Y-m-d'),
+            'monto' => 2500,
+            'metodo' => 'efectivo',
+        ])->assertRedirect(route('commercial.ventas.cobros.index', $venta));
+
+        $venta->refresh()->load('pagos.cobros', 'cobros');
+        $pagos = $venta->pagos()->orderBy('orden')->get();
+
+        $this->assertSame(1, $venta->cobros()->count());
+        $this->assertEqualsWithDelta(2500.0, (float) $pagos[0]->monto, 0.01);
+        $this->assertEqualsWithDelta(0.0, (float) $pagos[1]->monto, 0.01);
+        $this->assertEqualsWithDelta(500.0, (float) $pagos[2]->monto, 0.01);
+        $this->assertEqualsWithDelta(3000.0, (float) $venta->pagos->sum('monto'), 0.01);
     }
 
     public function test_absorber_excedente_no_baja_una_parcialidad_por_debajo_de_lo_ya_cobrado(): void

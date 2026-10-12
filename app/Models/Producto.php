@@ -42,6 +42,16 @@ class Producto extends Model
     // La sincronización con el catálogo vive en el trait, compartida con
     // Equipo. El mapa por omisión ya usa los nombres de esta tabla.
 
+    /**
+     * Cómo se nombra el producto en cotizaciones, ventas y recibos: por su
+     * subtipo (más específico). El tipo solo se usa si el producto no tiene
+     * subtipo. Un solo lugar para cambiar esta regla.
+     */
+    public function nombreVisible(): string
+    {
+        return trim((string) ($this->subtipo ?: $this->tipo_equipo));
+    }
+
     public function equipmentType(): BelongsTo
     {
         return $this->belongsTo(EquipmentType::class);
@@ -116,12 +126,13 @@ class Producto extends Model
      *
      * $unidades acepta dos formatos, y se pueden mezclar: un string suelto
      * (solo el número de serie, como se ha hecho siempre) o un arreglo
-     * ['no_serie' => ..., 'foto_path' => ...] cuando además se capturó la
-     * foto individual de esa unidad (entradas de productos serializados).
+     * ['no_serie' => ..., 'evidence_paths' => [...], 'video_path' => ...]
+     * cuando además se capturó la evidencia individual de esa unidad (hasta
+     * 3 fotos y 1 video, de cómo llegó ella en particular). 'foto_path'
+     * suelto también se acepta por compatibilidad con datos viejos.
      *
      * Si vienen de una entrada registrada en Entrada/Salida, se le pasa su
-     * id para poder rastrear después con qué evidencia (fotos del lote)
-     * llegó cada unidad.
+     * id para poder rastrear después con qué evidencia llegó cada unidad.
      *
      * Bloquea la fila de este producto mientras dura la operación: si dos
      * altas llegan casi al mismo tiempo para el mismo producto (dos
@@ -141,13 +152,17 @@ class Producto extends Model
             $unidades = collect($unidades)
                 ->map(function ($unidad) {
                     if (is_array($unidad)) {
+                        $evidencias = array_values(array_filter($unidad['evidence_paths'] ?? []));
+
                         return [
                             'no_serie' => trim((string) ($unidad['no_serie'] ?? '')) ?: null,
-                            'foto_path' => $unidad['foto_path'] ?? null,
+                            'foto_path' => $evidencias[0] ?? ($unidad['foto_path'] ?? null),
+                            'evidence_paths' => $evidencias ?: null,
+                            'video_path' => $unidad['video_path'] ?? null,
                         ];
                     }
 
-                    return ['no_serie' => trim((string) $unidad) ?: null, 'foto_path' => null];
+                    return ['no_serie' => trim((string) $unidad) ?: null, 'foto_path' => null, 'evidence_paths' => null, 'video_path' => null];
                 })
                 ->filter(fn (array $u) => $u['no_serie'] !== null || $u['foto_path'] !== null)
                 ->values();
@@ -174,6 +189,8 @@ class Producto extends Model
                     'codigo' => $codigos[$n++],
                     'no_serie' => $unidad['no_serie'],
                     'foto_path' => $unidad['foto_path'],
+                    'evidence_paths' => $unidad['evidence_paths'],
+                    'video_path' => $unidad['video_path'],
                 ]);
             }
 

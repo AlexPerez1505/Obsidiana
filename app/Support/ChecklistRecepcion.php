@@ -181,11 +181,32 @@ class ChecklistRecepcion
                 continue;
             }
 
-            $porProceso[$proceso][] = static::titulo($llave);
+            $porProceso[$proceso][] = static::motivoDe($llave, $punto);
         }
 
         return collect($porProceso)
             ->map(fn (array $motivos) => mb_substr(implode('; ', $motivos), 0, 255))
             ->all();
+    }
+
+    /**
+     * Texto con el que un punto en "No" justifica un proceso.
+     *
+     * Es la nota que escribió quien recibió la pieza ("parte trasera
+     * rayada"), no el título del punto: el título está en positivo
+     * ("Carcasa sin golpes") y leído como motivo dice lo contrario de lo
+     * que pasó. Si no dejaron nota, se avisa qué punto salió en "No".
+     *
+     * @param  array{r: string, nota?: string}  $punto
+     */
+    public static function motivoDe(string $llave, array $punto): string
+    {
+        $nota = trim((string) ($punto['nota'] ?? ''));
+
+        if ($nota !== '') {
+            return mb_strtoupper(mb_substr($nota, 0, 1)).mb_substr($nota, 1);
+        }
+
+        return 'No cumple: '.mb_strtolower(static::titulo($llave));
     }
 }

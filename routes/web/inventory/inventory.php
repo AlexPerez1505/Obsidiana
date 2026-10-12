@@ -3,6 +3,7 @@
 use App\Http\Controllers\EscaneoController;
 use App\Http\Controllers\Inventory\FichaTecnicaController;
 use App\Http\Controllers\InventoryMovementController;
+use App\Http\Controllers\OrdenSalidaController;
 use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\ProcesoController;
 use App\Http\Controllers\ProductoController;
@@ -14,194 +15,124 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
-    $equipmentCatalog = static function (): array {
-        return [
-            'PRO-0001' => [
-                'code' => 'PRO-0001',
-                'name' => 'Torre de endoscopia',
-                'category' => 'Endoscopia',
-                'serial_number' => 'TE-2026-001',
-                'brand' => 'Olimpus',
-                'model' => 'EVIS EXERA III',
-                'description' => 'Torre de endoscopia para procedimientos diagnosticos y terapeuticos',
-                'stock_current' => 1,
-                'stock_max' => 2,
-                'stock_min' => 1,
-                'warehouse' => 'Quirofano 1',
-                'assigned_to' => 'Ing. Joel Diaz',
-                'department' => 'Endoscopia',
-                'service_date' => '2026-07-27',
-                'next_maintenance' => '2026-10-27',
-                'notes' => 'Equipo activo en quirofano 1.',
-                'voltage' => '127 V',
-                'frequency' => '60 Hz',
-                'power' => '800 W',
-                'weight' => '38',
-                'dimensions' => '70 x 60 x 140',
-                'color' => 'Blanco',
-                'technical_specs' => 'Monitor, procesador, fuente de luz y carro movil.',
-                'supplier' => 'Olimpus Mexico S.A. de C.V',
-                'contact' => 'Soporte tecnico',
-                'phone' => '555-0101',
-                'email' => 'soporte@olimpus.mx',
-                'invoice_number' => 'FAC-000125',
-                'invoice_date' => '2026-07-27',
-                'thumb' => 'tower',
-            ],
-            'PRO-0002' => [
-                'code' => 'PRO-0002',
-                'name' => 'Torre de endoscopia',
-                'category' => 'Endoscopia',
-                'serial_number' => 'TE-2026-002',
-                'brand' => 'Olimpus',
-                'model' => 'EVIS LUCERA',
-                'description' => 'Equipo programado para mantenimiento preventivo',
-                'stock_current' => 1,
-                'stock_max' => 2,
-                'stock_min' => 1,
-                'warehouse' => 'Quirofano 1',
-                'assigned_to' => 'Ing. Joel Diaz',
-                'department' => 'Endoscopia',
-                'service_date' => '2026-06-18',
-                'next_maintenance' => '2026-09-18',
-                'notes' => 'Requiere revision de monitor.',
-                'voltage' => '127 V',
-                'frequency' => '60 Hz',
-                'power' => '750 W',
-                'weight' => '35',
-                'dimensions' => '68 x 58 x 138',
-                'color' => 'Blanco',
-                'technical_specs' => 'Monitor y procesador con accesorios principales.',
-                'supplier' => 'Olimpus Mexico S.A. de C.V',
-                'contact' => 'Mesa de ayuda',
-                'phone' => '555-0102',
-                'email' => 'servicio@olimpus.mx',
-                'invoice_number' => 'FAC-000126',
-                'invoice_date' => '2026-06-18',
-                'thumb' => 'monitor',
-            ],
-        ];
-    };
-
-    $findEquipment = static function (string $equipo) use ($equipmentCatalog): array {
-        $equipmentRows = $equipmentCatalog();
-
-        return $equipmentRows[$equipo] ?? array_merge($equipmentRows['PRO-0001'], [
-            'code' => $equipo,
-        ]);
-    };
-
     Route::get('/gestion-inventario/entrada-salida', [InventoryMovementController::class, 'index'])
-        ->name('inventory.movimientos.index');
+        ->middleware('can:inventario.ver')->name('inventory.movimientos.index');
     Route::get('/gestion-inventario/entrada-salida/crear', [InventoryMovementController::class, 'create'])
-        ->name('inventory.movimientos.create');
+        ->middleware('can:inventario.registrar')->name('inventory.movimientos.create');
     Route::post('/gestion-inventario/entrada-salida', [InventoryMovementController::class, 'store'])
-        ->name('inventory.movimientos.store');
+        ->middleware('can:inventario.registrar')->name('inventory.movimientos.store');
     Route::post('/gestion-inventario/entrada-salida/video-chunk', [InventoryMovementController::class, 'subirVideoChunk'])
-        ->name('inventory.movimientos.videoChunk');
+        ->middleware('can:inventario.registrar')->name('inventory.movimientos.videoChunk');
+
+    /*
+    | Órdenes de salida: lo que almacén prepara, emplaya y firma cuando
+    | se vende. Nacen solas al registrar la venta.
+    */
+    Route::middleware('can:salidas.ver')->prefix('/gestion-inventario/ordenes-salida')->name('inventory.salidas.')->group(function () {
+        Route::get('/', [OrdenSalidaController::class, 'index'])->name('index');
+        Route::get('/{orden}', [OrdenSalidaController::class, 'show'])->name('show');
+        Route::get('/{orden}/pdf', [OrdenSalidaController::class, 'pdf'])->name('pdf');
+
+        Route::middleware('can:salidas.preparar')->group(function () {
+            Route::post('/{orden}/partidas/{item}', [OrdenSalidaController::class, 'item'])->name('item');
+            Route::post('/{orden}/notas', [OrdenSalidaController::class, 'notas'])->name('notas');
+            // Cierra la preparación: queda lista, esperando firma.
+            Route::post('/{orden}/preparada', [OrdenSalidaController::class, 'preparada'])->name('preparada');
+            Route::post('/{orden}/entregar', [OrdenSalidaController::class, 'entregar'])->name('entregar');
+        });
+    });
     /*
     | Procesos: las colas de hojalatería, mantenimiento y limpieza.
     */
     Route::get('/gestion-inventario/procesos', [ProcesoController::class, 'index'])
-        ->name('inventory.procesos.index');
+        ->middleware('can:procesos.ver')->name('inventory.procesos.index');
     Route::get('/gestion-inventario/procesos/{paso}', [ProcesoController::class, 'show'])
-        ->name('inventory.procesos.show');
+        ->middleware('can:procesos.ver')->name('inventory.procesos.show');
     Route::post('/gestion-inventario/procesos/{paso}/iniciar', [ProcesoController::class, 'iniciar'])
-        ->name('inventory.procesos.iniciar');
+        ->middleware('can:procesos.trabajar')->name('inventory.procesos.iniciar');
     Route::post('/gestion-inventario/procesos/{paso}/terminar', [ProcesoController::class, 'terminar'])
-        ->name('inventory.procesos.terminar');
+        ->middleware('can:procesos.trabajar')->name('inventory.procesos.terminar');
     Route::post('/gestion-inventario/procesos/{paso}/omitir', [ProcesoController::class, 'omitir'])
-        ->name('inventory.procesos.omitir');
+        ->middleware('can:procesos.descartar')->name('inventory.procesos.omitir');
     Route::post('/gestion-inventario/procesos/pieza/{pieza}/agregar', [ProcesoController::class, 'agregar'])
-        ->name('inventory.procesos.agregar');
+        ->middleware('can:procesos.trabajar')->name('inventory.procesos.agregar');
+
+    // Corregir la ruta completa de una pieza (p. ej. desde la entrada, cuando
+    // se asignaron mal los procesos). Mismo permiso que registrar la entrada.
+    Route::put('/gestion-inventario/procesos/pieza/{pieza}/definir', [ProcesoController::class, 'definir'])
+        ->middleware('can:inventario.registrar')->name('inventory.procesos.definir');
 
     /*
     | Escaneo con pistola lectora: conteo, préstamos, revisión de un lote.
     */
     Route::get('/gestion-inventario/escanear', [EscaneoController::class, 'index'])
-        ->name('inventory.escaneo.index');
+        ->middleware('can:inventario.escanear')->name('inventory.escaneo.index');
     Route::post('/gestion-inventario/escanear/buscar', [EscaneoController::class, 'buscar'])
-        ->name('inventory.escaneo.buscar');
+        ->middleware('can:inventario.escanear')->name('inventory.escaneo.buscar');
 
     // Antes que /{movimiento}: si no, "etiquetas" se leería como un id.
     Route::get('/gestion-inventario/entrada-salida/{movimiento}/etiquetas', [InventoryMovementController::class, 'etiquetas'])
-        ->name('inventory.movimientos.etiquetas');
+        ->middleware('can:inventario.ver')->name('inventory.movimientos.etiquetas');
     Route::get('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'show'])
-        ->name('inventory.movimientos.show');
+        ->middleware('can:inventario.ver')->name('inventory.movimientos.show');
     Route::delete('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'destroy'])
-        ->name('inventory.movimientos.destroy');
-
-    // NOTA: el listado y el alta de equipos viven en routes/web/inventory.php
-    // (EquipoController). Aqui solo quedan el detalle y la edicion.
-
-    Route::get('/gestion-inventario/equipos/{equipo}/editar', function (string $equipo) use ($findEquipment) {
-        return view('structure.gestion_Inventario.equipos.c_equipos', [
-            'mode' => 'edit',
-            'equipment' => $findEquipment($equipo),
-        ]);
-    })->name('inventory.equipos.edit');
-
-    Route::get('/gestion-inventario/equipos/{equipo}/detalle', function (string $equipo) use ($findEquipment) {
-        return view('structure.gestion_Inventario.equipos.detalle_equipo', [
-            'equipment' => $findEquipment($equipo),
-        ]);
-    })->name('inventory.equipos.show');
+        ->middleware('can:inventario.eliminar')->name('inventory.movimientos.destroy');
 
     // Productos (stock real, contra base de datos)
     Route::get('/gestion-inventario/productos', [ProductoController::class, 'index'])
-        ->name('inventory.productos.index');
+        ->middleware('can:inventario.ver')->name('inventory.productos.index');
     Route::get('/gestion-inventario/productos/crear', [ProductoController::class, 'create'])
-        ->name('inventory.productos.create');
+        ->middleware('can:inventario.registrar')->name('inventory.productos.create');
     Route::get('/gestion-inventario/productos/buscar-por-modelo', [ProductoController::class, 'buscarPorModelo'])
-        ->name('inventory.productos.buscarPorModelo');
+        ->middleware('can:inventario.ver')->name('inventory.productos.buscarPorModelo');
     // Series propias para equipo que no trae serial de fábrica.
     Route::post('/gestion-inventario/productos/generar-series', [ProductoController::class, 'generarSeries'])
-        ->name('inventory.productos.generarSeries');
+        ->middleware('can:inventario.registrar')->name('inventory.productos.generarSeries');
     Route::post('/gestion-inventario/productos', [ProductoController::class, 'store'])
-        ->name('inventory.productos.store');
+        ->middleware('can:inventario.registrar')->name('inventory.productos.store');
     // La ficha del producto: qué entró, cuándo y cuánto hay.
     Route::get('/gestion-inventario/productos/{producto}', [ProductoController::class, 'show'])
-        ->name('inventory.productos.show');
+        ->middleware('can:inventario.ver')->name('inventory.productos.show');
     Route::get('/gestion-inventario/productos/{producto}/editar', [ProductoController::class, 'edit'])
-        ->name('inventory.productos.edit');
+        ->middleware('can:inventario.editar')->name('inventory.productos.edit');
     Route::put('/gestion-inventario/productos/{producto}', [ProductoController::class, 'update'])
-        ->name('inventory.productos.update');
+        ->middleware('can:inventario.editar')->name('inventory.productos.update');
     Route::delete('/gestion-inventario/productos/{producto}', [ProductoController::class, 'destroy'])
-        ->name('inventory.productos.destroy');
+        ->middleware('can:inventario.eliminar')->name('inventory.productos.destroy');
     Route::post('/gestion-inventario/productos/{producto}/seriales', [ProductoController::class, 'agregarSeriales'])
-        ->name('inventory.productos.seriales.store');
+        ->middleware('can:inventario.editar')->name('inventory.productos.seriales.store');
     Route::put('/gestion-inventario/productos/seriales/{serial}', [ProductoController::class, 'actualizarSerial'])
-        ->name('inventory.productos.seriales.update');
+        ->middleware('can:inventario.editar')->name('inventory.productos.seriales.update');
     Route::delete('/gestion-inventario/productos/seriales/{serial}', [ProductoController::class, 'eliminarSerial'])
-        ->name('inventory.productos.seriales.destroy');
+        ->middleware('can:inventario.eliminar')->name('inventory.productos.seriales.destroy');
 
     // Fichas técnicas (nombre + PDF)
     Route::get('/gestion-inventario/fichas-tecnicas', [FichaTecnicaController::class, 'index'])
-        ->name('inventory.fichas.index');
+        ->middleware('can:inventario.ver')->name('inventory.fichas.index');
     Route::get('/gestion-inventario/fichas-tecnicas/crear', [FichaTecnicaController::class, 'create'])
-        ->name('inventory.fichas.create');
+        ->middleware('can:inventario.registrar')->name('inventory.fichas.create');
     Route::post('/gestion-inventario/fichas-tecnicas', [FichaTecnicaController::class, 'store'])
-        ->name('inventory.fichas.store');
+        ->middleware('can:inventario.registrar')->name('inventory.fichas.store');
     Route::get('/gestion-inventario/fichas-tecnicas/{ficha}/editar', [FichaTecnicaController::class, 'edit'])
-        ->name('inventory.fichas.edit');
+        ->middleware('can:inventario.editar')->name('inventory.fichas.edit');
     Route::put('/gestion-inventario/fichas-tecnicas/{ficha}', [FichaTecnicaController::class, 'update'])
-        ->name('inventory.fichas.update');
+        ->middleware('can:inventario.editar')->name('inventory.fichas.update');
     Route::delete('/gestion-inventario/fichas-tecnicas/{ficha}', [FichaTecnicaController::class, 'destroy'])
-        ->name('inventory.fichas.destroy');
+        ->middleware('can:inventario.eliminar')->name('inventory.fichas.destroy');
     Route::get('/gestion-inventario/fichas-tecnicas/{ficha}/descargar', [FichaTecnicaController::class, 'download'])
-        ->name('inventory.fichas.download');
+        ->middleware('can:inventario.ver')->name('inventory.fichas.download');
 
     // Paquetes (armados desde productos)
     Route::get('/gestion-inventario/paquetes', [PaqueteController::class, 'index'])
-        ->name('inventory.paquetes.index');
+        ->middleware('can:inventario.ver')->name('inventory.paquetes.index');
     Route::get('/gestion-inventario/paquetes/crear', [PaqueteController::class, 'create'])
-        ->name('inventory.paquetes.create');
+        ->middleware('can:inventario.registrar')->name('inventory.paquetes.create');
     Route::post('/gestion-inventario/paquetes', [PaqueteController::class, 'store'])
-        ->name('inventory.paquetes.store');
+        ->middleware('can:inventario.registrar')->name('inventory.paquetes.store');
     Route::get('/gestion-inventario/paquetes/{paquete}/editar', [PaqueteController::class, 'edit'])
-        ->name('inventory.paquetes.edit');
+        ->middleware('can:inventario.editar')->name('inventory.paquetes.edit');
     Route::put('/gestion-inventario/paquetes/{paquete}', [PaqueteController::class, 'update'])
-        ->name('inventory.paquetes.update');
+        ->middleware('can:inventario.editar')->name('inventory.paquetes.update');
     Route::delete('/gestion-inventario/paquetes/{paquete}', [PaqueteController::class, 'destroy'])
-        ->name('inventory.paquetes.destroy');
+        ->middleware('can:inventario.eliminar')->name('inventory.paquetes.destroy');
 });

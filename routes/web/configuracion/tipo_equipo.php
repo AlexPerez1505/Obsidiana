@@ -10,13 +10,13 @@ use Illuminate\Support\Facades\Route;
 */
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/configuracion/tipos-equipo', [EquipmentController::class, 'index'])
-        ->name('configuracion.tipos_equipo.index');
+        ->middleware('can:inventario.catalogo')->name('configuracion.tipos_equipo.index');
 
     Route::get('/configuracion/tipos-equipo/crear', [EquipmentController::class, 'create'])
-        ->name('configuracion.tipos_equipo.create');
+        ->middleware('can:inventario.catalogo')->name('configuracion.tipos_equipo.create');
 
     Route::post('/configuracion/tipos-equipo', [EquipmentController::class, 'store'])
-        ->name('configuracion.tipos_equipo.store');
+        ->middleware('can:inventario.catalogo')->name('configuracion.tipos_equipo.store');
 
     Route::get('/configuracion/tipos-equipo/subtipos', [EquipmentController::class, 'subtypes'])
         ->name('configuracion.tipos_equipo.subtypes');

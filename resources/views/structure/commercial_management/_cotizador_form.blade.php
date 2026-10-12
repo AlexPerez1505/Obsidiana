@@ -76,10 +76,10 @@
                     <label class="cot-lbl" style="margin-top:14px;">Garantía del equipo</label>
                     <select id="garantia_meses" class="cot-input">
                         @foreach (\App\Models\Venta::GARANTIAS as $meses)
-                            <option value="{{ $meses }}">{{ $meses }} meses</option>
+                            <option value="{{ $meses }}">{{ $meses > 0 ? $meses.' meses' : 'Sin garantía' }}</option>
                         @endforeach
                     </select>
-                    <p class="cot-hint">Se imprime en la carta garantía que se entrega con el equipo.</p>
+                    <p class="cot-hint">Se imprime en la carta garantía que se entrega con el equipo. Con «Sin garantía» no se genera la carta y el contrato lo indica.</p>
 
                     <label class="cot-lbl" style="margin-top:14px;">Nota al cliente</label>
                     <textarea id="nota_cliente" class="cot-input" rows="3" placeholder="Opcional..." style="resize:vertical;"></textarea>
@@ -259,6 +259,11 @@
     .cot-pieza input { flex:none; width:15px; height:15px; margin:0; cursor:pointer; accent-color:var(--primary); }
     .cot-pieza .cod { font-family:ui-monospace, Consolas, monospace; font-size:12.5px; font-weight:700; }
     .cot-pieza .det { color:var(--muted); font-size:11.5px; }
+    /* Vendible, pero fuera del almacén: se ve distinta para no elegirla sin darse cuenta. */
+    .cot-pieza.fuera { border-style:dashed; }
+    .cot-pieza-fuera { margin-left:auto; padding:1px 7px; border-radius:999px;
+                       background:var(--warn-soft, rgba(217,119,6,.12));
+                       color:var(--warn, #b45309) !important; font-weight:700; }
     .cot-totes label { font-weight:600; }
     .cot-tote-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:8px 0; }
     .cot-line { display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:14px; color:var(--text); border-top:1px dashed var(--border); }
@@ -357,6 +362,8 @@
 (function () {
     const ROUTES = { clientes: @json($rClientes), productos: @json($rProductos), fichas: @json($rFichas) };
     const INITIAL = @json($initial);
+    // Con cobros aplicados a alguna parcialidad, el plan no se toca desde aquí.
+    const PLAN_BLOQUEADO = @json((bool) ($planBloqueado ?? false));
     const IVA = 0.16;
 
     const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
@@ -420,10 +427,18 @@
             const puesta = elegidas.includes(p.id);
             const detalle = [p.no_serie, p.condicion === 'usado' ? 'usado' : null].filter(Boolean).join(' · ');
 
-            return `<label class="cot-pieza ${puesta ? 'puesta' : ''}">
+            // La pieza que está en un congreso se puede vender (allá mismo
+            // la venden), pero no está en el almacén: se avisa para que se
+            // elija a propósito y no por descuido.
+            const fuera = p.congreso
+                ? `<span class="det cot-pieza-fuera">En ${p.congreso}</span>`
+                : '';
+
+            return `<label class="cot-pieza ${puesta ? 'puesta' : ''} ${p.congreso ? 'fuera' : ''}">
                         <input type="checkbox" data-pieza="${idx}" value="${p.id}" ${puesta ? 'checked' : ''}>
                         <span class="cod">${p.codigo || 'sin etiqueta'}</span>
                         ${detalle ? `<span class="det">${detalle}</span>` : ''}
+                        ${fuera}
                     </label>`;
         }).join('');
 
@@ -894,7 +909,8 @@
 
     // Init
     $('congreso_id').value = INITIAL.congreso_id || '';
-    $('garantia_meses').value = INITIAL.garantia_meses || 6;
+    // 0 es un valor válido ("sin garantía"): solo se cae a 6 si no viene nada.
+    $('garantia_meses').value = (INITIAL.garantia_meses === null || INITIAL.garantia_meses === undefined || INITIAL.garantia_meses === '') ? 6 : INITIAL.garantia_meses;
     $('nota_cliente').value = INITIAL.nota_cliente || '';
     $('modalidad').value = INITIAL.modalidad || 'contado';
     $('aplica_iva').checked = !!INITIAL.aplica_iva;
@@ -903,5 +919,18 @@
     $('descuento_valor').value = INITIAL.descuento_valor || 0;
     $('valor_a_cuenta').value = INITIAL.valor_a_cuenta || 0;
     renderCliente(); renderItems(); renderFichas(); toggleModalidad();
+
+    if (PLAN_BLOQUEADO) {
+        // Se ve el plan, pero no se edita: modalidad, meses y montos quedan
+        // como están. El servidor de todas formas ignora lo que se mande.
+        document.querySelectorAll('.cot-seg-btn[data-mod]').forEach(b => { b.disabled = true; b.style.opacity = '.55'; b.style.cursor = 'not-allowed'; });
+        const bloque = $('pagosBlock');
+        const aviso = document.createElement('div');
+        aviso.style.cssText = 'margin-top:16px; padding:10px 12px; border:1px solid var(--border); border-radius:9px; background:var(--surface-2); color:var(--muted); font-size:12.5px;';
+        aviso.textContent = 'El plan de pagos ya tiene cobros aplicados y se conserva tal cual. Si cambias montos, la diferencia se reparte entre las parcialidades que aún no se cobran. Para mover fechas o agregar parcialidades usa Cobranza.';
+        bloque.parentNode.insertBefore(aviso, bloque);
+        bloque.style.pointerEvents = 'none';
+        bloque.style.opacity = '.6';
+    }
 })();
 </script>

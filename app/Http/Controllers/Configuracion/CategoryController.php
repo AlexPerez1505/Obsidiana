@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 
 use App\Models\Brand;
 use App\Models\Category;
-use App\Models\Congress;
 use App\Models\EquipmentModel;
 use App\Models\EquipmentType;
 use App\Models\Subtype;
@@ -34,7 +33,6 @@ class CategoryController extends Controller
 
         return view('structure.Configuracion.Catalogos.menu_catalogos', [
             'categories' => Category::query()->latest()->get(),
-            'congresses' => Congress::query()->with('category')->latest()->get(),
 
             'equipmentTypes' => EquipmentType::withCount('subtypes')->orderBy('name')->get(),
             'subtypes' => $subtypes,

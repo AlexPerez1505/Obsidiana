@@ -64,7 +64,7 @@
                     @php
                         // Ojo: @json parte su argumento por comas, asi que el
                         // arreglo se arma aqui y se le pasa una sola variable.
-                        $valEditar = ['name' => $tipo->name];
+                        $valEditar = ['name' => $tipo->name, 'requiere_emplayado' => (bool) $tipo->requiere_emplayado];
                         $valBorrar = [
                             '__nombre' => $tipo->name,
                             '__aviso' => 'Se eliminarán también sus subtipos, marcas y modelos.',
@@ -73,7 +73,7 @@
                     <div class="eq-item">
                         <div class="eq-item-txt">
                             <span class="eq-item-name">{{ $tipo->name }}</span>
-                            <span class="eq-item-meta">{{ $tipo->subtypes_count }} {{ $tipo->subtypes_count === 1 ? 'subtipo' : 'subtipos' }}</span>
+                            <span class="eq-item-meta">{{ $tipo->subtypes_count }} {{ $tipo->subtypes_count === 1 ? 'subtipo' : 'subtipos' }}{{ $tipo->requiere_emplayado ? '' : ' · no se emplaya' }}</span>
                         </div>
                         <x-catalogo.acciones
                             etiqueta="Acciones del tipo de equipo"
@@ -245,11 +245,22 @@
     <label for="tipoCrearNombre">Nombre</label>
     <input id="tipoCrearNombre" type="text" name="name" required maxlength="255" autocomplete="off"
            placeholder="Ej. Endoscopia">
+    {{-- Al vender, la orden de salida pide emplayar solo lo de tipos marcados aquí. --}}
+    <label class="eq-mt" style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-weight:400;">
+        <input type="hidden" name="requiere_emplayado" value="0">
+        <input type="checkbox" name="requiere_emplayado" value="1" checked style="margin-top:3px;">
+        <span>Se emplaya antes de salir. Desmárcalo para accesorios o consumibles que salen tal cual.</span>
+    </label>
 </x-catalogo.modal>
 
 <x-catalogo.modal id="modalTipoEditar" titulo="Editar tipo de equipo" metodo="PUT" boton="Guardar cambios">
     <label for="tipoEditarNombre">Nombre</label>
     <input id="tipoEditarNombre" type="text" name="name" required maxlength="255" autocomplete="off">
+    <label class="eq-mt" style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; font-weight:400;">
+        <input type="hidden" name="requiere_emplayado" value="0">
+        <input type="checkbox" name="requiere_emplayado" value="1" style="margin-top:3px;">
+        <span>Se emplaya antes de salir. Desmárcalo para accesorios o consumibles que salen tal cual.</span>
+    </label>
 </x-catalogo.modal>
 
 <x-catalogo.modal id="modalSubtipoCrear" titulo="Nuevo subtipo"

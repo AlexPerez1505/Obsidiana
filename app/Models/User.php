@@ -10,15 +10,23 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     public const STATUS_PENDING = 'pending';
     public const STATUS_APPROVED = 'approved';
     public const STATUS_BANNED = 'banned';
+
+    protected static function booted(): void
+    {
+        // Sus tokens de la API (apps e integraciones) mueren con la cuenta.
+        static::deleting(fn (User $user) => $user->tokens()->delete());
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -33,6 +41,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'position',
         'cargo',
         'payroll_number',
+        'porcentaje_comision',
         'checador_id',
         'avatar',
 
@@ -80,6 +89,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'fecha_ingreso' => 'date',
             'vacaciones_disponibles' => 'integer',
+            'sueldo_quincenal' => 'decimal:2',
             'dashboard_widgets' => 'array',
         ];
     }
@@ -168,6 +178,26 @@ class User extends Authenticatable implements MustVerifyEmail
     public function attendances(): HasMany
     {
         return $this->hasMany(EmployeeAttendance::class)->latest('attendance_date');
+    }
+
+    public function horario(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(EmployeeSchedule::class);
+    }
+
+    public function huellas(): HasMany
+    {
+        return $this->hasMany(EmployeeBiometric::class);
+    }
+
+    public function checadas(): HasMany
+    {
+        return $this->hasMany(AttendancePunch::class)->latest('punched_at');
+    }
+
+    public function modalidades(): HasMany
+    {
+        return $this->hasMany(AttendanceModality::class)->latest('date_from');
     }
 
     /**
@@ -461,5 +491,61 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $this->memoPermisos = null;
         $this->memoEsAdmin = null;
+    }
+
+    /**
+     * Firma del acceso del usuario. Cambia cuando cambian sus permisos,
+     * su rol de administrador o su estatus (aprobado/baneado). El navegador
+     * la compara cada pocos segundos y recarga solo cuando de verdad cambió
+     * algo, para que no tenga que dar refresh a mano.
+     */
+    public function firmaAcceso(): string
+    {
+        return md5(json_encode([
+            'admin'  => $this->isAdmin(),
+            'status' => $this->status,
+            'perms'  => $this->permisosEfectivos()->sort()->values()->all(),
+        ]));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Firma registrada
+    |--------------------------------------------------------------------------
+    | Se traza una sola vez en el perfil y de ahí se carga cada que hay que
+    | firmar una entrada o una salida, en vez de volver a dibujarla con el
+    | mouse cada vez.
+    */
+
+    public function tieneFirma(): bool
+    {
+        return (bool) $this->firma_path
+            && Storage::disk(config('filesystems.fotos_disk', 'public'))->exists($this->firma_path);
+    }
+
+    /** URL pública de la firma, para mostrarla como imagen. */
+    public function firmaUrl(): ?string
+    {
+        return $this->tieneFirma()
+            ? Storage::disk(config('filesystems.fotos_disk', 'public'))->url($this->firma_path)
+            : null;
+    }
+
+    /**
+     * La firma como data URL base64.
+     *
+     * Es el formato que mandan los formularios (lo que produce el lienzo),
+     * así que se puede cargar directo en el campo oculto sin que el
+     * navegador tenga que volver a leerla del disco.
+     */
+    public function firmaDataUri(): ?string
+    {
+        if (! $this->tieneFirma()) {
+            return null;
+        }
+
+        $contenido = Storage::disk(config('filesystems.fotos_disk', 'public'))->get($this->firma_path);
+
+        return $contenido ? 'data:image/png;base64,'.base64_encode($contenido) : null;
     }
 }

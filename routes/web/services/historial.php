@@ -1,20 +1,52 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Services\EquipmentReportController;
 use App\Http\Controllers\Services\QrController;
 use App\Http\Controllers\Services\ServiceController;
+use App\Http\Controllers\Services\ServicioExternoController;
 use App\Models\EquipmentType;
 use App\Models\Service;
 use App\Models\GarantiaDocumento;
 use App\Models\Venta;
+use App\Models\Customer;
+use App\Models\Brand;
+use App\Models\Equipo;
+use App\Models\ExternalTechnician;
+use App\Services\Servicios\CartasDeGarantia;
+use App\Services\Servicios\Mantenimientos;
+use App\Services\Servicios\OrdenesDeServicio;
 
-Route::middleware(['auth', 'verified', 'approved'])->group(function () {
+Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(function () {
     Route::get('/gestion-servicios/historial-servicios', function () {
         $services = Service::with(['customer', 'serviceEquipment'])->latest()->get();
         return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('services'));
     })->name('gestion.servicios.historial');
+    Route::get('/gestion-servicios/historial-servicios/nueva-orden', function () {
+        $customers = Customer::with('asesor')->latest()->get();
+
+        if ($clienteId = request('cliente_id')) {
+            $selected = $customers->firstWhere('id', $clienteId);
+            if ($selected) {
+                $customers = $customers->filter(fn ($customer) => $customer->id != $clienteId)->prepend($selected)->values();
+            }
+        }
+
+        $equipmentTypes = EquipmentType::orderBy('name')->get();
+        $brands = Brand::orderBy('name')->get();
+        $equipos = Equipo::all();
+        $externalTechnicians = ExternalTechnician::where('is_active', true)->orderBy('name')->get();
+        $internalTechnicians = app(OrdenesDeServicio::class)->candidatosATecnicoInterno();
+
+        return view('structure.gestion_servicios.historial_servicios.registro_servicio.c_registro_serv', compact('customers', 'equipmentTypes', 'brands', 'equipos', 'externalTechnicians', 'internalTechnicians'));
+    })->middleware('can:servicios.crear')->name('gestion.servicios.historial.nueva_orden');
+
+    Route::post('/gestion-servicios/historial-servicios/nueva-orden', [ServiceController::class, 'store'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.nueva_orden.store');
+    Route::get('/gestion-servicios/historial-servicios/invitar', [ServiceController::class, 'invite'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.invite');
     Route::get('/gestion-servicios/historial-servicios/aprobaciones', function () {
         $services = Service::where('status', 'registrado')
             ->with(['customer', 'currentStep'])
@@ -53,11 +85,31 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'show'])
         ->name('gestion.servicios.historial.show');
     Route::post('/gestion-servicios/historial-servicios/{service}/aprobar', [ServiceController::class, 'approve'])
-        ->name('gestion.servicios.historial.approve');
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.approve');
     Route::post('/gestion-servicios/historial-servicios/{service}/denegar', [ServiceController::class, 'deny'])
-        ->name('gestion.servicios.historial.deny');
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.deny');
     Route::post('/gestion-servicios/historial-servicios/{service}/renovar-qr', [QrController::class, 'renew'])
-        ->name('qr.renew');
+        ->middleware('can:servicios.crear')->name('qr.renew');
+    Route::get('/gestion-servicios/historial-servicios/{service}/editar', [ServiceController::class, 'edit'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.edit');
+    Route::put('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'update'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.update');
+    Route::delete('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'destroy'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.destroy');
+    Route::post('/gestion-servicios/historial-servicios/{service}/validar-os', [ServicioExternoController::class, 'validarOs'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.validar_os');
+    Route::post('/gestion-servicios/historial-servicios/{service}/enviar-cliente', [ServicioExternoController::class, 'enviarCliente'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.enviar_cliente');
+
+    Route::post('/gestion-servicios/historial-servicios/nueva-orden/external-technicians', function (Request $request, OrdenesDeServicio $ordenes) {
+        $technician = $ordenes->registrarTecnicoExterno($request);
+
+        if ($request->expectsJson()) {
+            return response()->json($technician);
+        }
+
+        return back();
+    })->middleware('can:servicios.crear')->name('gestion.servicios.historial.external_technicians.store');
 
     Route::get('/gestion-servicios/garantia', function () {
         $documentos = GarantiaDocumento::latest()->get();
@@ -67,59 +119,79 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-servicios/garantia/agregar-carta', function () {
         $equipmentTypes = EquipmentType::orderBy('name')->get();
         return view('structure.gestion_servicios.garantia.create', compact('equipmentTypes'));
-    })->name('gestion.servicios.garantia.agregar_carta');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.agregar_carta');
 
-    Route::post('/gestion-servicios/garantia/agregar-carta', function (Request $request) {
+    Route::post('/gestion-servicios/garantia/agregar-carta', function (Request $request, CartasDeGarantia $cartas) {
+        $cartas->registrar($request);
+
+        return redirect()->route('gestion.servicios.garantia.index')->with('success', 'Carta agregada correctamente.');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.guardar_carta');
+
+    Route::get('/gestion-servicios/garantia/{documento}/editar', function (GarantiaDocumento $documento) {
+        $equipmentTypes = EquipmentType::orderBy('name')->get();
+        return view('structure.gestion_servicios.garantia.create', compact('equipmentTypes', 'documento'));
+    })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.editar');
+
+    Route::put('/gestion-servicios/garantia/{documento}', function (Request $request, GarantiaDocumento $documento) {
         $data = $request->validate([
             'nombre' => 'required|string|max:255',
             'tipo_equipo' => 'required|string|max:255',
-            'archivos' => 'nullable|array|max:20',
-            'archivos.*' => 'file|max:20480',
-        ], [
-            'nombre.required' => 'El nombre de la carta es obligatorio.',
-            'tipo_equipo.required' => 'El tipo de equipo es obligatorio.',
-            'archivos.*.file' => 'Cada archivo debe ser un archivo válido.',
-            'archivos.*.max' => 'Cada archivo no debe superar los 20 MB.',
+            'archivos.*' => 'nullable|file|max:20480',
         ]);
 
-        $paths = [];
-        if ($request->hasFile('archivos')) {
-            foreach ($request->file('archivos') as $archivo) {
-                $paths[] = $archivo->store('garantias', 'public');
-            }
+        $archivos = $documento->archivos ?? [];
+        foreach ($request->file('archivos', []) as $archivo) {
+            $archivos[] = $archivo->store('garantias', 'public');
         }
 
-        GarantiaDocumento::create([
-            'folio' => GarantiaDocumento::siguienteFolio(),
+        $documento->update([
             'nombre' => $data['nombre'],
             'tipo_equipo' => $data['tipo_equipo'],
-            'archivos' => $paths,
+            'archivos' => $archivos,
         ]);
 
-        return redirect()->route('gestion.servicios.garantia.index')->with('success', 'Carta agregada correctamente.');
-    })->name('gestion.servicios.garantia.guardar_carta');
+        return redirect()->route('gestion.servicios.garantia.index')->with('success', 'Carta actualizada correctamente.');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.actualizar');
 
+    Route::delete('/gestion-servicios/garantia/{documento}', function (GarantiaDocumento $documento) {
+        foreach ($documento->archivos ?? [] as $path) {
+            Storage::disk('public')->delete($path);
+        }
+        $documento->delete();
 
+        return redirect()->route('gestion.servicios.garantia.index')->with('success', 'Carta eliminada correctamente.');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.eliminar');
 
-    Route::get('/gestion-servicios/mantenimiento/{service}/reporte/raw', function (Service $service) {
-        $service->load(['customer', 'serviceEquipment', 'internalTechnician', 'externalTechnician']);
+    Route::get('/gestion-servicios/garantia/{documento}/descargar/{index?}', function (GarantiaDocumento $documento, int $index = 0) {
+        $path = $documento->archivos[$index] ?? null;
+        abort_unless($path && Storage::disk('public')->exists($path), 404);
 
-        $equipo = $service->serviceEquipment;
-        $tecnico = $service->service_type === 'interno'
-            ? $service->internalTechnician?->name
-            : $service->externalTechnician?->name;
+        return Storage::disk('public')->download($path);
+    })->name('gestion.servicios.garantia.descargar');
 
-        $datos = [
-            'cliente' => trim(($service->customer?->nombre ?? '').' '.($service->customer?->apellido ?? '')),
-            'folio' => $service->service_number ?? '',
-            'equipo' => $equipo?->type_text ?? '',
-            'marca' => $equipo?->brand_text ?: 'Fujinon',
-            'modelo' => $equipo?->model_text ?? '',
-            'ns' => $equipo?->serial_number ?? '',
-            'diagnostico' => $equipo?->description ?? '',
-            'fecha' => $service->created_at?->format('d/m/Y') ?? '',
-            'tecnico' => $tecnico ?? '',
-        ];
+    Route::get('/gestion-servicios/mantenimiento', function (Mantenimientos $mantenimientos) {
+        $technicians = $mantenimientos->tecnicos();
+        $selected = $mantenimientos->seleccionar($technicians, request('tipo'), request('tecnico'));
+
+        $services = $selected ? $mantenimientos->servicios($selected)->get() : collect();
+
+        return view('structure.gestion_servicios.mantenimiento.index', compact('technicians', 'selected', 'services'));
+    })->name('gestion.servicios.mantenimiento.index');
+
+    Route::get('/gestion-servicios/mantenimiento/{service}', function (Service $service) {
+        $service->load(['customer', 'currentStep', 'serviceEquipment', 'internalTechnician', 'externalTechnician', 'spareParts']);
+
+        return view('structure.gestion_servicios.mantenimiento.Servicio', compact('service'));
+    })->name('gestion.servicios.mantenimiento.show');
+
+    Route::get('/gestion-servicios/mantenimiento/{service}/reporte', function (Service $service) {
+        $service->load(['customer', 'currentStep']);
+
+        return view('structure.gestion_servicios.mantenimiento.Reporte', compact('service'));
+    })->name('gestion.servicios.mantenimiento.reporte');
+
+    Route::get('/gestion-servicios/mantenimiento/{service}/reporte/raw', function (Service $service, Mantenimientos $mantenimientos) {
+        $datos = $mantenimientos->datosDelReporte($service);
 
         $html = file_get_contents(
             resource_path('views/structure/gestion_servicios/Registro/Fujinon.blade.php')
@@ -196,7 +268,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             .'el.dispatchEvent(new Event("change",{bubbles:true}));'
             .'}})();</script>';
 
-        $saved = $service->reporte_data ? json_decode($service->reporte_data, true) : null;
+        $saved = $mantenimientos->reporteGuardado($service);
         $saveUrl = route('gestion.servicios.mantenimiento.reporte.guardar', $service);
         $token = csrf_token();
 
@@ -243,21 +315,26 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         return response($html)->header('Content-Type', 'text/html; charset=UTF-8');
     })->name('gestion.servicios.mantenimiento.reporte.raw');
 
-    Route::post('/gestion-servicios/mantenimiento/{service}/reporte', function (Request $request, Service $service) {
-        $data = $request->input('reporte');
-
-        $service->forceFill([
-            'reporte_data' => is_array($data) ? json_encode($data, JSON_UNESCAPED_UNICODE) : null,
-        ])->save();
+    Route::post('/gestion-servicios/mantenimiento/{service}/reporte', function (Request $request, Service $service, Mantenimientos $mantenimientos) {
+        $mantenimientos->guardarReporte($service, $request->input('reporte'));
 
         return response()->json(['ok' => true]);
-    })->name('gestion.servicios.mantenimiento.reporte.guardar');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.mantenimiento.reporte.guardar');
 });
+
+Route::get('/nueva-orden/{invitation}', [ServiceController::class, 'createFromInvitation'])
+    ->name('public.nueva_orden');
+Route::post('/nueva-orden/{invitation}', [ServiceController::class, 'publicStore'])
+    ->name('public.nueva_orden.store');
 
 Route::get('/qr/{token}', [QrController::class, 'show'])
     ->name('qr.show');
 Route::post('/qr/{token}', [QrController::class, 'update'])
     ->name('qr.update');
+Route::get('/qr/{token}/registro', [QrController::class, 'registro'])
+    ->name('qr.registro');
+Route::post('/qr/{token}/registro', [QrController::class, 'guardarRegistro'])
+    ->name('qr.registro.guardar');
 Route::get('/qr/{token}/imprimir', [QrController::class, 'print'])
     ->name('qr.print');
 Route::get('/qr-completado', function () {

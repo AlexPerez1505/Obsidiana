@@ -15,10 +15,12 @@
     @endphp
 
     <div class="content-actions">
+        @can('inventario.registrar')
         <a href="{{ route('inventory.fichas.create') }}" class="btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>
             Nueva ficha técnica
         </a>
+        @endcan
     </div>
 
     {{-- Metricas --}}

@@ -3,7 +3,7 @@
         <!-- Acción Requerida -->
     <div class="resumen-card" id="resumen-qr-card">
         <h3 class="resumen-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <x-gravityui-thunderbolt width="18" height="18" />
             Acción Requerida
         </h3>
 
@@ -128,13 +128,13 @@
     <!-- Ruta de Trabajo -->
     <div class="resumen-card" id="resumen-ruta-card">
         <h3 class="resumen-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            <x-gravityui-paper-plane width="18" height="18" />
             Ruta de Trabajo
         </h3>
 
         <div class="resumen-step resumen-step--active">
             <div class="resumen-step-icon resumen-step-icon--active">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                <x-gravityui-briefcase width="18" height="18" />
             </div>
             <div class="resumen-step-body">
                 <div class="resumen-step-name">Paso 1: Salida a mantenimiento foráneo</div>
@@ -144,7 +144,7 @@
 
         <div class="resumen-step resumen-step--pending">
             <div class="resumen-step-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <x-gravityui-file-check width="18" height="18" />
             </div>
             <div class="resumen-step-body">
                 <div class="resumen-step-name">Paso 2: Regreso de mantenimiento foráneo</div>
@@ -154,7 +154,7 @@
 
         <div class="resumen-step resumen-step--pending">
             <div class="resumen-step-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <x-gravityui-file-text width="18" height="18" />
             </div>
             <div class="resumen-step-body">
                 <div class="resumen-step-name">Paso 3: Validar Orden de Servicio</div>
@@ -177,14 +177,14 @@
     <div class="resumen-card" id="resumen-auditoria-card">
         <h3 class="resumen-title resumen-title--between">
             <span style="display:inline-flex; align-items:center; gap:8px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <x-gravityui-clock width="18" height="18" />
                 Auditoría de Movimientos
             </span>
             <span class="resumen-count">0 Eventos</span>
         </h3>
 
         <div class="resumen-empty">
-            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="M8 17l4-4 4 4"/><path d="M8 12l4-4 4 4"/></svg>
+            <x-gravityui-cloud-arrow-up-in width="42" height="42" />
             <p>Aún no se ha iniciado la bitácora de eventos para esta orden.</p>
         </div>
     </div>

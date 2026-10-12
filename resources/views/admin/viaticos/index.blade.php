@@ -470,13 +470,7 @@
 
         <div class="viatics-header">
             <div class="viatics-heading">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 6h18"></path>
-                    <path d="M3 12h18"></path>
-                    <path d="M3 18h18"></path>
-                    <path d="M7 3v18"></path>
-                    <path d="M17 3v18"></path>
-                </svg>
+                <x-gravityui-layout-rows-3 />
                 <div>
                     <h2>Solicitud de viaticos</h2>
                     <p>El cliente envia la solicitud y el administrador la revisa para aprobarla.</p>
@@ -484,7 +478,7 @@
             </div>
 
             <button class="viatics-primary" type="button" onclick="document.getElementById('viatics-reason').focus();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                <x-gravityui-plus />
                 Nueva solicitud
             </button>
         </div>
@@ -492,25 +486,25 @@
         <div class="viatics-flow" aria-label="Flujo de viaticos">
             <div class="viatics-step is-current">
                 <span class="viatics-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <x-gravityui-person />
                 </span>
                 <span><strong>Cliente</strong><span>Captura motivo e importe</span></span>
             </div>
             <div class="viatics-step">
                 <span class="viatics-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4 20-7z"></path></svg>
+                    <x-gravityui-paper-plane />
                 </span>
                 <span><strong>Envio</strong><span>Llega al administrador</span></span>
             </div>
             <div class="viatics-step">
                 <span class="viatics-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                    <x-gravityui-shield-check />
                 </span>
                 <span><strong>Revision</strong><span>Admin valida datos</span></span>
             </div>
             <div class="viatics-step">
                 <span class="viatics-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+                    <x-gravityui-check />
                 </span>
                 <span><strong>Aprobacion</strong><span>Se libera el viatico</span></span>
             </div>
@@ -592,7 +586,7 @@
                                 <input type="text" value="$1,200.00">
                             </div>
                             <button class="expense-remove" type="button" aria-label="Quitar concepto" onclick="removeExpenseRow(this)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+                                <x-gravityui-xmark />
                             </button>
                         </div>
 
@@ -612,19 +606,19 @@
                                 <input type="text" value="$650.00">
                             </div>
                             <button class="expense-remove" type="button" aria-label="Quitar concepto" onclick="removeExpenseRow(this)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+                                <x-gravityui-xmark />
                             </button>
                         </div>
                     </div>
 
                     <div class="viatics-actions">
                         <button class="viatics-secondary" type="button" onclick="addExpenseRow()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                            <x-gravityui-plus />
                             Agregar concepto
                         </button>
 
                         <button class="viatics-primary" type="submit">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"></path><path d="M22 2 15 22l-4-9-9-4 20-7z"></path></svg>
+                            <x-gravityui-paper-plane />
                             Enviar al administrador
                         </button>
                     </div>
@@ -642,19 +636,19 @@
                     <div class="admin-review">
                         <div class="review-item is-ready">
                             <span class="review-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+                                <x-gravityui-check />
                             </span>
                             <span><strong>Solicitud recibida</strong><span>El administrador revisa destino, motivo y fechas.</span></span>
                         </div>
                         <div class="review-item is-ready">
                             <span class="review-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h18v18H3z"></path><path d="M8 12h8M8 16h5M8 8h8"></path></svg>
+                                <x-gravityui-layout-rows-3 />
                             </span>
                             <span><strong>Validacion de presupuesto</strong><span>Se compara el monto estimado con el gasto permitido.</span></span>
                         </div>
                         <div class="review-item">
                             <span class="review-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+                                <x-gravityui-check />
                             </span>
                             <span><strong>Decision final</strong><span>El administrador aprueba o rechaza la solicitud.</span></span>
                         </div>

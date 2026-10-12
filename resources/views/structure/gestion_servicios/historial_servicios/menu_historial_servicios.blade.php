@@ -185,7 +185,7 @@
     <div class="hs-chips" id="hsChips" hidden></div>
 
     {{-- Tabla --}}
-    <div class="erp-card" style="overflow:hidden;">
+    <div class="erp-card" style="overflow:visible;">
         <table class="hs-table">
             <thead>
                 <tr>
@@ -195,18 +195,26 @@
                     <th>Equipo</th>
                     <th>Estado</th>
                     <th>Fecha</th>
+                    <th style="text-align:right;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($filas as $fila)
                     @php
                         $badge = match($fila['estado']) {
-                            'entregado' => 'ok',
-                            'en_progreso' => 'info',
+                            'entregado', 'finalizado' => 'ok',
+                            'en_progreso', 'salida_retorno' => 'info',
                             'cancelado' => 'danger',
                             'registrado' => 'warn',
                             default => 'neutral',
                         };
+                        $estadoLabel = match($fila['estado']) {
+                            'salida_retorno' => 'Salida de retorno',
+                            'finalizado' => 'Finalizado',
+                            default => ucfirst(str_replace('_', ' ', $fila['estado'])),
+                        };
+                        $service = $fila['modelo'];
+                        $documentos = $service->documentos ?? [];
                     @endphp
                     <tr class="hs-row"
                         data-hs-buscar="{{ mb_strtolower($fila['os'] . ' ' . $fila['cliente'] . ' ' . $fila['equipo'] . ' ' . $fila['marca'] . ' ' . $fila['modeloEquipo']) }}"
@@ -217,8 +225,65 @@
                         <td>{{ $fila['cliente'] }}</td>
                         <td style="text-transform:capitalize;">{{ $fila['tipo'] }}</td>
                         <td>{{ $fila['equipo'] }}</td>
-                        <td><span class="hs-badge {{ $badge }}"><span class="dot"></span>{{ ucfirst(str_replace('_', ' ', $fila['estado'])) }}</span></td>
+                        <td><span class="hs-badge {{ $badge }}"><span class="dot"></span>{{ $estadoLabel }}</span></td>
                         <td style="color:var(--muted);">{{ $fila['fechaH'] }}</td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            <div class="row-menu" data-row-menu>
+                                <button type="button" class="row-menu-btn" data-row-menu-toggle
+                                        aria-haspopup="true" aria-expanded="false"
+                                        aria-label="Acciones de {{ $fila['os'] }}">
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
+                                </button>
+                                <div class="row-menu-pop" data-row-menu-pop role="menu" hidden>
+                                    <a href="{{ route('gestion.servicios.historial.show', $service) }}" role="menuitem">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        Ver
+                                    </a>
+                                    <a href="{{ route('gestion.servicios.historial.edit', $service) }}" role="menuitem">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+                                        Editar
+                                    </a>
+                                    @if (!empty($documentos['remision']))
+                                        <a href="{{ asset('storage/' . $documentos['remision']) }}" target="_blank" role="menuitem">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                            Descargar remisión
+                                        </a>
+                                    @endif
+                                    @if (!empty($documentos['orden_servicio']))
+                                        <a href="{{ asset('storage/' . $documentos['orden_servicio']) }}" target="_blank" role="menuitem">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                            Descargar orden de servicio
+                                        </a>
+                                    @endif
+                                    @if ($fila['estado'] === 'entregado')
+                                        <form action="{{ route('gestion.servicios.historial.validar_os', $service) }}" method="POST" style="margin:0;" data-confirm="¿Validar la orden de servicio?">
+                                            @csrf
+                                            <button type="submit" role="menuitem" style="color:var(--primary);">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--primary);"><polyline points="20 6 9 17 4 12"/></svg>
+                                                Validar OS
+                                            </button>
+                                        </form>
+                                    @endif
+                                    @if ($fila['estado'] === 'salida_retorno')
+                                        <form action="{{ route('gestion.servicios.historial.enviar_cliente', $service) }}" method="POST" style="margin:0;" data-confirm="¿Enviar el equipo al cliente?">
+                                            @csrf
+                                            <button type="submit" role="menuitem" style="color:var(--green);">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--green);"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+                                                Enviar a cliente
+                                            </button>
+                                        </form>
+                                    @endif
+                                    <form action="{{ route('gestion.servicios.historial.destroy', $service) }}" method="POST" style="margin:0;" data-confirm="¿Eliminar este servicio? Esta acción no se puede deshacer.">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="es-danger" role="menuitem">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                            Eliminar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                 @empty
                     <tr>
@@ -236,6 +301,8 @@
             <span id="hsTotalText"></span>
         </div>
     </div>
+
+    @include('partials.row-menu')
 
     @push('scripts')
     <script>

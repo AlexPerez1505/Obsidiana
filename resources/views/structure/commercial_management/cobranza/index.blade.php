@@ -144,6 +144,9 @@
                             <div class="cg-id">
                                 <div class="t">{{ $f['venta']->folio }}</div>
                                 <div class="s">{{ $f['cliente'] }}</div>
+                                @if (! empty($f['productos']))
+                                    <div class="s">{{ $f['productos'] }}</div>
+                                @endif
                             </div>
                         </td>
                         <td>{{ $f['asesor'] }}</td>

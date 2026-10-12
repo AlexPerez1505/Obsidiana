@@ -7,23 +7,36 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Congress;
 use App\Models\Customer;
+use App\Services\Clientes\RegistroClientes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
 {
+    // Las reglas de alta y edición viven en el servicio: la API usa las mismas.
+    public function __construct(private readonly RegistroClientes $registro)
+    {
+    }
+
     /**
      * Lista los clientes registrados.
      */
     public function index(Request $request): View
     {
-        $customers = Customer::with(['asesor', 'category', 'congress'])->latest()->get();
+        // Cada quien ve lo suyo, salvo que tenga permiso de ver todos.
+        $customers = Customer::visiblesPara($request->user())
+            ->with(['asesor', 'category', 'congress', 'seguimientos'])
+            ->latest()
+            ->get();
 
         return view('structure.commercial_management.customers.menu_customers', [
             'customers' => $customers,
+            'veTodos' => $request->user()->can('clientes.ver_todos'),
+            // Todos los congresos del sistema, no solo los que ya tienen
+            // clientes: así el filtro se ve completo desde el primer día.
+            'congresos' => Congress::query()->orderBy('nombre')->pluck('nombre'),
         ]);
     }
 
@@ -32,8 +45,15 @@ class CustomerController extends Controller
      */
     public function show(Customer $cliente): View
     {
+        $this->asegurarVisible($cliente);
+
         return view('structure.commercial_management.customers.ver_cliente', [
-            'customer' => $cliente->load(['asesor', 'category', 'congress', 'cotizaciones']),
+            'customer' => $cliente->load(['asesor', 'category', 'congress', 'cotizaciones', 'seguimientos.responsable', 'seguimientos.hechoPor']),
+            'tiposSeguimiento' => \App\Models\ClienteSeguimiento::TIPOS,
+            // Solo quien ve a todos puede asignarle el seguimiento a otro.
+            'usuarios' => auth()->user()->can('clientes.ver_todos')
+                ? \App\Models\User::orderBy('name')->get(['id', 'name'])
+                : collect(),
         ]);
     }
 
@@ -53,30 +73,15 @@ class CustomerController extends Controller
      */
     public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $this->normalizeCustomerInput($request);
+        $this->registro->normalizar($request);
 
-        $data = $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
-            'apellido' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')],
-            'rfc' => ['nullable', 'string', 'max:13', Rule::unique('clientes', 'rfc')],
-            'gmail' => ['nullable', 'email', 'max:255'],
-            'direccion' => ['required', 'string', 'max:255'],
-            'comentarios' => ['nullable', 'string'],
-            'categoria_id' => ['nullable', 'exists:categorias,id'],
-            'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
-            'como_conocio' => ['nullable', 'string', 'max:255'],
-            'recibe_promocion' => ['nullable', 'boolean'],
-        ], [
-            'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
-            'rfc.unique' => 'Este RFC ya está registrado en otro cliente.',
-        ]);
+        if ($alto = $this->detenerSiYaExiste($request)) {
+            return $alto;
+        }
 
-        $data['recibe_promocion'] = $request->boolean('recibe_promocion');
-        $data['activo'] = true;
-        $data['asesor_id'] = auth()->id();
+        $data = $request->validate($this->registro->reglasAlta(), $this->registro->mensajesAlta());
 
-        $customer = Customer::create($data);
+        $customer = $this->registro->registrar($data, $request->user());
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -95,6 +100,8 @@ class CustomerController extends Controller
      */
     public function edit(Customer $cliente): View
     {
+        $this->asegurarVisible($cliente);
+
         return view('structure.commercial_management.customers.actulizar_cliente', [
             'customer' => $cliente,
             'categories' => Category::query()->orderBy('nombre')->get(),
@@ -107,55 +114,81 @@ class CustomerController extends Controller
      */
     public function update(Request $request, Customer $cliente): RedirectResponse
     {
-        $this->normalizeCustomerInput($request);
+        $this->asegurarVisible($cliente);
 
-        $data = $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
-            'apellido' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')->ignore($cliente->id)],
-            'rfc' => ['nullable', 'string', 'max:13', Rule::unique('clientes', 'rfc')->ignore($cliente->id)],
-            'gmail' => ['nullable', 'email', 'max:255'],
-            'direccion' => ['required', 'string', 'max:255'],
-            'comentarios' => ['nullable', 'string'],
-            'categoria_id' => ['nullable', 'exists:categorias,id'],
-            'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
-            'como_conocio' => ['nullable', 'string', 'max:255'],
-            'recibe_promocion' => ['nullable', 'boolean'],
-            'activo' => ['nullable', 'boolean'],
-        ], [
-            'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
-            'rfc.unique' => 'Este RFC ya está registrado en otro cliente.',
-        ]);
+        $this->registro->normalizar($request);
 
-        $data['recibe_promocion'] = $request->boolean('recibe_promocion');
-        $data['activo'] = $request->boolean('activo', true);
+        if ($alto = $this->detenerSiYaExiste($request, $cliente)) {
+            return $alto;
+        }
 
-        $cliente->update($data);
+        $data = $request->validate($this->registro->reglasEdicion($cliente), $this->registro->mensajesEdicion());
+
+        $this->registro->actualizar($cliente, $data);
 
         return redirect()->route('commercial.clientes.index')->with('status', 'Cliente actualizado correctamente.');
     }
 
     /**
-     * Normaliza la entrada antes de validar.
-     *
-     * RFC, categoria y congreso son opcionales: cuando llegan vacios se guardan
-     * como NULL para no chocar con el indice unico del RFC ni con las llaves foraneas.
+     * Consulta en vivo desde el formulario: ¿ya existe un cliente con este
+     * teléfono o correo? Se llama al salir del campo, para avisar antes
+     * de que el usuario llene todo lo demás.
      */
-    private function normalizeCustomerInput(Request $request): void
+    public function similar(Request $request): JsonResponse
     {
-        $rfc = strtoupper(trim((string) $request->input('rfc')));
+        $similar = $this->registro->similar(
+            $request->input('telefono'),
+            $request->input('gmail'),
+            $request->integer('ignorar') ?: null
+        );
 
-        $congresoId = $request->filled('congreso_id') ? $request->input('congreso_id') : null;
-
-        $request->merge([
-            'telefono' => trim((string) $request->input('telefono')),
-            'rfc' => $rfc !== '' ? $rfc : null,
-            'categoria_id' => $request->filled('categoria_id') ? $request->input('categoria_id') : null,
-            'congreso_id' => $congresoId,
-            // El congreso ya responde "cómo lo conocimos"; el texto libre
-            // solo aplica cuando no se levantó en uno.
-            'como_conocio' => $congresoId ? null : (trim((string) $request->input('como_conocio')) ?: null),
+        return response()->json([
+            'similar' => $similar ? $this->avisoDeSimilar($similar, $request) : null,
         ]);
+    }
+
+    /**
+     * Si el teléfono o el correo ya son de otro cliente, no se guarda: se
+     * regresa al formulario con los datos de ese cliente para mostrarlos
+     * en el modal. En AJAX responde 422 con lo mismo.
+     */
+    private function detenerSiYaExiste(Request $request, ?Customer $ignorar = null): RedirectResponse|JsonResponse|null
+    {
+        $similar = $this->registro->similar($request->input('telefono'), $request->input('gmail'), $ignorar?->id);
+
+        if (! $similar) {
+            return null;
+        }
+
+        $aviso = $this->avisoDeSimilar($similar, $request);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['message' => $aviso['mensaje'], 'cliente_similar' => $aviso], 422);
+        }
+
+        return back()
+            ->withInput()
+            ->withErrors([$this->registro->campoDelChoque($similar) => $aviso['mensaje']])
+            ->with('cliente_similar', $aviso);
+    }
+
+    /** Arma lo que ve el usuario: el motivo en palabras y el cliente que ya existe. */
+    private function avisoDeSimilar(array $similar, Request $request): array
+    {
+        return [
+            'motivo' => $similar['motivo'],
+            'mensaje' => $similar['mensaje'],
+            'cliente' => $similar['cliente']->resumenParaAviso($request->user()),
+        ];
+    }
+
+    /**
+     * Un cliente de otro asesor no se abre ni se edita tecleando su id en
+     * la URL: si no le aparece en la lista, tampoco existe para él.
+     */
+    private function asegurarVisible(Customer $cliente): void
+    {
+        abort_unless($cliente->visiblePara(auth()->user()), 403, 'Este cliente lo registró otro asesor.');
     }
 
     /**
@@ -163,11 +196,9 @@ class CustomerController extends Controller
      */
     public function storeCategory(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'nombre' => ['required', 'string', 'max:255', 'unique:categorias,nombre'],
-        ]);
+        $data = $request->validate($this->registro->reglasCategoria());
 
-        $category = Category::create($data);
+        $category = $this->registro->registrarCategoria($data);
 
         return response()->json([
             'id' => $category->id,

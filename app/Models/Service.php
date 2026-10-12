@@ -23,6 +23,9 @@ class Service extends Model
         'mano_obra',
         'started_at',
         'finished_at',
+        'garantia_documento_id',
+        'documentos',
+        'reporte_data',
     ];
 
     protected function casts(): array
@@ -33,7 +36,14 @@ class Service extends Model
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
             'mano_obra' => 'decimal:2',
+            'documentos' => 'array',
+            'reporte_data' => 'array',
         ];
+    }
+
+    public function garantiaDocumento()
+    {
+        return $this->belongsTo(GarantiaDocumento::class);
     }
 
     public function serviceEquipment()
@@ -59,6 +69,12 @@ class Service extends Model
     public function internalTechnician()
     {
         return $this->belongsTo(User::class, 'internal_technician_id');
+    }
+
+    /** Quien registró la orden (o quien mandó la invitación, si llegó por enlace). */
+    public function registeredBy()
+    {
+        return $this->belongsTo(User::class, 'registered_by');
     }
 
     public function externalTechnician()

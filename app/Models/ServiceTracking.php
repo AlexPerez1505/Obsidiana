@@ -19,6 +19,7 @@ class ServiceTracking extends Model
         'evidence_3_path',
         'video_path',
         'signature',
+        'registro_data',
         'started_at',
         'finished_at',
     ];
@@ -44,6 +45,7 @@ class ServiceTracking extends Model
             'qr_expires_at' => 'datetime',
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
+            'registro_data' => 'array',
         ];
     }
 }

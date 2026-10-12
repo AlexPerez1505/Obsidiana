@@ -46,30 +46,27 @@
                         <label class="fac-lbl">Uso de CFDI</label>
                         <select name="uso_cfdi" class="fac-input">
                             <option value="">— Selecciona —</option>
-                            <option value="G01">G01 · Adquisición de mercancías</option>
-                            <option value="G03">G03 · Gastos en general</option>
-                            <option value="I04">I04 · Equipo de cómputo</option>
-                            <option value="I08">I08 · Otra maquinaria y equipo</option>
-                            <option value="P01">P01 · Por definir</option>
+                            @foreach (\App\Services\Ventas\BorradoresDeFactura::USOS_CFDI as $clave => $texto)
+                                <option value="{{ $clave }}">{{ $clave }} · {{ $texto }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div>
                         <label class="fac-lbl">Forma de pago</label>
                         <select name="forma_pago" class="fac-input">
                             <option value="">— Selecciona —</option>
-                            <option value="01">01 · Efectivo</option>
-                            <option value="03">03 · Transferencia electrónica</option>
-                            <option value="04">04 · Tarjeta de crédito</option>
-                            <option value="28">28 · Tarjeta de débito</option>
-                            <option value="99">99 · Por definir</option>
+                            @foreach (\App\Services\Ventas\BorradoresDeFactura::FORMAS_PAGO as $clave => $texto)
+                                <option value="{{ $clave }}">{{ $clave }} · {{ $texto }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div>
                         <label class="fac-lbl">Método de pago</label>
                         <select name="metodo_pago" class="fac-input">
                             <option value="">— Selecciona —</option>
-                            <option value="PUE">PUE · Pago en una exhibición</option>
-                            <option value="PPD">PPD · Pago en parcialidades o diferido</option>
+                            @foreach (\App\Services\Ventas\BorradoresDeFactura::METODOS_PAGO as $clave => $texto)
+                                <option value="{{ $clave }}">{{ $clave }} · {{ $texto }}</option>
+                            @endforeach
                         </select>
                     </div>
                 </div>

@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Configuracion;
 use App\Http\Controllers\Controller;
 
 use App\Models\Brand;
-use App\Models\Equipment;
 use App\Models\EquipmentModel;
 use App\Models\EquipmentType;
 use App\Models\Subtype;
+use App\Services\Almacen\CatalogoDeEquipo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,49 +53,11 @@ class EquipmentController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, CatalogoDeEquipo $catalogo): RedirectResponse
     {
-        $data = $request->validate([
-            'equipment_type_name' => ['required', 'string', 'max:255'],
-            'subtype_name' => ['required', 'string', 'max:255'],
-            'brand_name' => ['required', 'string', 'max:255'],
-            'equipment_model_name' => ['required', 'string', 'max:255'],
-            'type_description' => ['nullable', 'string', 'max:120'],
-            'subtype_description' => ['nullable', 'string', 'max:120'],
-            'brand_description' => ['nullable', 'string', 'max:120'],
-            'model_description' => ['nullable', 'string', 'max:120'],
-        ]);
+        $data = $request->validate(CatalogoDeEquipo::REGLAS_ALTA_RAPIDA);
 
-        $equipmentType = EquipmentType::firstOrCreate(
-            ['name' => $data['equipment_type_name']],
-            ['description' => $data['type_description'] ?? null]
-        );
-
-        $subtype = Subtype::firstOrCreate(
-            ['equipment_type_id' => $equipmentType->id, 'name' => $data['subtype_name']],
-            ['description' => $data['subtype_description'] ?? null]
-        );
-
-        $brand = Brand::firstOrCreate(
-            ['name' => $data['brand_name']],
-            ['description' => $data['brand_description'] ?? null]
-        );
-
-        $model = EquipmentModel::firstOrCreate(
-            ['brand_id' => $brand->id, 'name' => $data['equipment_model_name']],
-            ['description' => $data['model_description'] ?? null]
-        );
-
-        Equipment::create([
-            'equipment_type_id' => $equipmentType->id,
-            'subtype_id' => $subtype->id,
-            'brand_id' => $brand->id,
-            'equipment_model_id' => $model->id,
-            'type_description' => $data['type_description'] ?? null,
-            'subtype_description' => $data['subtype_description'] ?? null,
-            'brand_description' => $data['brand_description'] ?? null,
-            'model_description' => $data['model_description'] ?? null,
-        ]);
+        $catalogo->altaRapida($data);
 
         return redirect()->route('configuracion.tipos_equipo.index')
             ->with('status', 'Equipo guardado correctamente.');

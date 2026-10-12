@@ -2,11 +2,10 @@
 @php
     $emp = config('medibuy.empresa');
     $con = config('medibuy.contacto');
-    $ban = config('medibuy.banco');
 
     $c = $venta->customer;
     $cliente = trim(($c->nombre ?? '') . ' ' . ($c->apellido ?? '')) ?: '—';
-    $firmante = $con['nombre'] ?: ($ban['beneficiario'] ?: $emp['nombre']);
+    $firmante = $con['nombre'] ?: (\App\Support\DatosBancarios::beneficiario((bool) $venta->aplica_iva) ?: $emp['nombre']);
 
     $meses = $venta->garantia_meses ?: 6;
     $hasta = $venta->garantiaHasta();

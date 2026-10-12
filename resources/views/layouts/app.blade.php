@@ -114,8 +114,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Toast de mensajes flash / errores
-            var TOAST_ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-            var TOAST_ICON_WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>';
+            var TOAST_ICON_OK = '<x-gravityui-check />';
+            var TOAST_ICON_WARN = '<x-gravityui-triangle-exclamation />';
             function showToast(msg, type) {
                 var t = document.getElementById('appToast');
                 if (!t) return;
@@ -132,8 +132,8 @@
             else if (flashErr && flashErr.dataset.msg) { showToast(flashErr.dataset.msg, 'warn'); }
 
             // Botón de "ojo" para cada campo de contraseña
-            var eyeOn = '<svg class="icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
-            var eyeOff = '<svg class="icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-6.5 0-10-7-10-7a18.4 18.4 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+            var eyeOn = '<x-gravityui-eye class="icon-on" />';
+            var eyeOff = '<x-gravityui-eye-slash class="icon-off" />';
 
             document.querySelectorAll('input[type="password"]').forEach(function (input) {
                 var wrap = document.createElement('span');

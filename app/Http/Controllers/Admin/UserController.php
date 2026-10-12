@@ -3,21 +3,25 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Mail\AccountStatusMail;
-use App\Models\EmployeeDocument;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Administracion\CuentasDeUsuario;
 use App\Services\SessionManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
+/**
+ * Panel de usuarios. Lo que cambia una cuenta (aprobar, desactivar, admin,
+ * datos de RH) vive en CuentasDeUsuario, que comparte con la API.
+ */
 class UserController extends Controller
 {
+    public function __construct(private CuentasDeUsuario $cuentas)
+    {
+    }
+
     /**
      * Lista de todos los usuarios con métricas.
      */
@@ -70,98 +74,36 @@ class UserController extends Controller
      */
     public function updateHrProfile(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
-            'position' => ['nullable', 'string', 'max:255'],
-            'cargo' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
-            'payroll_number' => ['nullable', 'string', 'max:100'],
-            'checador_id' => ['nullable', 'string', 'max:100'],
-            'curp' => ['nullable', 'string', 'max:18'],
-            'ine' => ['nullable', 'string', 'max:255'],
-            'acta_nacimiento' => ['nullable', 'string', 'max:255'],
-            'licencia' => ['nullable', 'string', 'max:255'],
-            'domicilio' => ['nullable', 'string'],
-            'fecha_ingreso' => ['nullable', 'date'],
-            'vacaciones_disponibles' => ['nullable', 'integer', 'min:0'],
-            'nombre_contacto_emergencia' => ['nullable', 'string', 'max:255'],
-            'numero_contacto_emergencia' => ['nullable', 'string', 'max:50'],
-            'domicilio_contacto_emergencia' => ['nullable', 'string'],
-            'nombre_contacto_emergencia_secundario' => ['nullable', 'string', 'max:255'],
-            'numero_contacto_emergencia_secundario' => ['nullable', 'string', 'max:50'],
-            'domicilio_contacto_emergencia_secundario' => ['nullable', 'string'],
-            'roles' => ['nullable', 'array'],
-            'roles.*' => ['exists:roles,id'],
-            'ine_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'acta_nacimiento_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'licencia_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'curp_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-        ]);
+        $data = $request->validate(
+            ['user_id' => ['required', 'exists:users,id']]
+            + CuentasDeUsuario::REGLAS_RH
+            + CuentasDeUsuario::REGLAS_ROLES
+            + CuentasDeUsuario::REGLAS_DOCUMENTOS
+        );
 
         $user = User::findOrFail($data['user_id']);
 
-        $user->forceFill([
-            'position' => $data['position'] ?? null,
-            'cargo' => $data['cargo'] ?? null,
-            'phone' => $data['phone'] ?? null,
-            'payroll_number' => $data['payroll_number'] ?? null,
-            'checador_id' => $data['checador_id'] ?? null,
-            'curp' => $data['curp'] ?? null,
-            'ine' => $data['ine'] ?? null,
-            'acta_nacimiento' => $data['acta_nacimiento'] ?? null,
-            'licencia' => $data['licencia'] ?? null,
-            'domicilio' => $data['domicilio'] ?? null,
-            'fecha_ingreso' => $data['fecha_ingreso'] ?? null,
-            'vacaciones_disponibles' => $data['vacaciones_disponibles'] ?? 0,
-            'nombre_contacto_emergencia' => $data['nombre_contacto_emergencia'] ?? null,
-            'numero_contacto_emergencia' => $data['numero_contacto_emergencia'] ?? null,
-            'domicilio_contacto_emergencia' => $data['domicilio_contacto_emergencia'] ?? null,
-            'nombre_contacto_emergencia_secundario' => $data['nombre_contacto_emergencia_secundario'] ?? null,
-            'numero_contacto_emergencia_secundario' => $data['numero_contacto_emergencia_secundario'] ?? null,
-            'domicilio_contacto_emergencia_secundario' => $data['domicilio_contacto_emergencia_secundario'] ?? null,
-        ])->save();
+        // El formulario es completo: lo que no viene se limpia.
+        $rh = [];
+        foreach (CuentasDeUsuario::CAMPOS_RH as $campo) {
+            $rh[$campo] = $data[$campo] ?? null;
+        }
+        $rh['vacaciones_disponibles'] = $data['vacaciones_disponibles'] ?? 0;
 
-        $user->roles()->sync($data['roles'] ?? []);
+        // Con quién hace el cambio: sin eso, cualquiera con usuarios.editar
+        // podía darse a sí mismo (u otorgar) el rol de administrador.
+        DB::transaction(function () use ($user, $rh, $data, $request) {
+            $this->cuentas->actualizarPerfilRh($user, $rh);
+            $this->cuentas->sincronizarRoles($user, $data['roles'] ?? [], $request->user());
+        });
 
-        foreach ([
-            'curp_file' => 'CURP',
-            'ine_file' => 'INE',
-            'acta_nacimiento_file' => 'Acta de nacimiento',
-            'licencia_file' => 'Licencia de manejo',
-        ] as $field => $documentName) {
+        foreach (CuentasDeUsuario::DOCUMENTOS as $field => $documentName) {
             if ($request->hasFile($field)) {
-                $this->storeEmployeeDocument($user, $documentName, $request->file($field));
+                $this->cuentas->guardarDocumento($user, $documentName, $request->file($field));
             }
         }
 
         return back()->with('status', "Datos de RH actualizados para {$user->name}.");
-    }
-
-    /**
-     * Guarda o reemplaza el archivo de un documento del empleado (INE, CURP,
-     * acta de nacimiento, licencia, etc.). Si ya existe un documento con el
-     * mismo nombre para el usuario, se reemplaza el archivo anterior.
-     */
-    protected function storeEmployeeDocument(User $user, string $documentName, \Illuminate\Http\UploadedFile $file): void
-    {
-        $document = EmployeeDocument::where('user_id', $user->id)
-            ->where('name', $documentName)
-            ->first();
-
-        if ($document && $document->file_path) {
-            Storage::disk('public')->delete($document->file_path);
-        }
-
-        $path = $file->store("employee_documents/{$user->id}", 'public');
-
-        EmployeeDocument::updateOrCreate(
-            ['user_id' => $user->id, 'name' => $documentName],
-            [
-                'file_path' => $path,
-                'file_type' => $file->getClientMimeType(),
-                'file_size' => $file->getSize(),
-            ]
-        );
     }
 
     /**
@@ -191,12 +133,11 @@ class UserController extends Controller
      */
     public function toggleAdmin(User $user, Request $request): RedirectResponse
     {
-        // No permitir que un admin se quite el rol a sí mismo (evita quedarse sin admins por error).
-        if ($user->id === $request->user()->id) {
-            return back()->with('status', 'No puedes cambiar tu propio rol de administrador.');
+        if ($rechazo = $this->cuentas->rechazoAlCambiarAdmin($user, $request->user())) {
+            return back()->with('status', $rechazo);
         }
 
-        $user->forceFill(['is_admin' => ! $user->is_admin])->save();
+        $this->cuentas->alternarAdmin($user);
 
         return back()->with('status', 'Rol actualizado para '.$user->name.'.');
     }
@@ -206,39 +147,26 @@ class UserController extends Controller
      */
     public function approve(User $user): RedirectResponse
     {
-        $user->forceFill([
-            'status'        => User::STATUS_APPROVED,
-            'banned_reason' => null,
-            'approved_at'   => now(),
-        ])->save();
-
-        $this->notify($user, 'approved');
+        $this->cuentas->aprobar($user);
 
         return back()->with('status', "Aprobaste el acceso de {$user->name}. Se le notificó por correo.");
     }
 
     /**
-     * Banea / desactiva una cuenta y cierra sus sesiones activas.
+     * Banea / desactiva una cuenta y cierra sus sesiones activas (también
+     * los tokens de la API).
      */
     public function ban(User $user, Request $request): RedirectResponse
     {
-        if ($user->id === $request->user()->id) {
-            return back()->with('status', 'No puedes desactivar tu propia cuenta.');
+        if ($rechazo = $this->cuentas->rechazoAlBanear($user, $request->user())) {
+            return back()->with('status', $rechazo);
         }
 
         $data = $request->validate([
             'banned_reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $user->forceFill([
-            'status'        => User::STATUS_BANNED,
-            'banned_reason' => $data['banned_reason'] ?? null,
-        ])->save();
-
-        // Expulsar de todos sus dispositivos.
-        DB::table('sessions')->where('user_id', $user->id)->delete();
-
-        $this->notify($user, 'banned', $data['banned_reason'] ?? null);
+        $this->cuentas->banear($user, $data['banned_reason'] ?? null);
 
         return back()->with('status', "Desactivaste la cuenta de {$user->name}. Se le notificó por correo.");
     }
@@ -248,26 +176,8 @@ class UserController extends Controller
      */
     public function unban(User $user): RedirectResponse
     {
-        $user->forceFill([
-            'status'        => User::STATUS_APPROVED,
-            'banned_reason' => null,
-            'approved_at'   => $user->approved_at ?? now(),
-        ])->save();
-
-        $this->notify($user, 'reactivated');
+        $this->cuentas->desbanear($user);
 
         return back()->with('status', "Reactivaste la cuenta de {$user->name}. Se le notificó por correo.");
-    }
-
-    /**
-     * Envía el correo de notificación de estado (sin romper si el SMTP falla).
-     */
-    protected function notify(User $user, string $type, ?string $reason = null): void
-    {
-        try {
-            Mail::to($user->email)->send(new AccountStatusMail($type, $user->name, $reason));
-        } catch (\Throwable $e) {
-            Log::error("No se pudo enviar el correo de estado ({$type}) a {$user->email}: ".$e->getMessage());
-        }
     }
 }

@@ -32,8 +32,8 @@
                     </td>
                     <td>
                         <div class="doc-nom">{{ $it->nombre }}</div>
-                        @if ($it->modelo)
-                            <div class="doc-det">Modelo {{ $it->modelo }}</div>
+                        @if ($it->marca || $it->modelo)
+                            <div class="doc-det">{{ collect([$it->marca, $it->modelo ? 'Modelo '.$it->modelo : null])->filter()->implode(' · ') }}</div>
                         @endif
                         @if (! empty($it->no_series))
                             <div class="doc-det">No. Serie: {{ $it->no_series }}</div>

@@ -31,6 +31,9 @@ class CatalogoPermisos
                 'descripcion' => 'El directorio comercial.',
                 'permisos' => [
                     'clientes.ver' => 'Ver clientes y su detalle',
+                    // Sin este permiso el usuario solo ve los clientes que
+                    // él mismo registró (los que tienen su nombre de asesor).
+                    'clientes.ver_todos' => 'Ver los clientes de todos los asesores',
                     'clientes.crear' => 'Registrar clientes nuevos',
                     'clientes.editar' => 'Editar datos de un cliente',
                     'clientes.eliminar' => 'Eliminar clientes',
@@ -42,6 +45,8 @@ class CatalogoPermisos
                 'descripcion' => 'Propuestas antes de cerrar la venta.',
                 'permisos' => [
                     'cotizaciones.ver' => 'Ver cotizaciones',
+                    // Sin este permiso solo ve las cotizaciones que él mismo hizo.
+                    'cotizaciones.ver_todas' => 'Ver las cotizaciones de todos los asesores',
                     'cotizaciones.crear' => 'Crear cotizaciones',
                     'cotizaciones.editar' => 'Editar cotizaciones',
                     'cotizaciones.eliminar' => 'Eliminar cotizaciones',
@@ -53,6 +58,9 @@ class CatalogoPermisos
                 'descripcion' => 'Cierre de venta, contratos y garantías.',
                 'permisos' => [
                     'ventas.ver' => 'Ver ventas',
+                    // Sin este permiso solo ve sus propias ventas, también
+                    // en Cobranza y en las tarjetas del tablero.
+                    'ventas.ver_todas' => 'Ver las ventas y la cobranza de todos los asesores',
                     'ventas.crear' => 'Registrar ventas',
                     'ventas.editar' => 'Editar ventas ya registradas',
                     'ventas.eliminar' => 'Eliminar ventas',
@@ -66,6 +74,15 @@ class CatalogoPermisos
                     'cobranza.ver' => 'Ver saldos y quién debe',
                     'cobranza.registrar' => 'Registrar pagos y emitir recibos',
                     'cobranza.ajustar' => 'Mover fechas y montos del plan de pagos',
+                ],
+            ],
+
+            'comisiones' => [
+                'titulo' => 'Comisiones',
+                'descripcion' => 'Quién vendió más y cuánto le toca.',
+                'permisos' => [
+                    'comisiones.ver' => 'Ver el ranking de asesores y sus comisiones',
+                    'comisiones.gestionar' => 'Definir porcentajes y registrar pagos de comisión',
                 ],
             ],
 
@@ -88,6 +105,45 @@ class CatalogoPermisos
                     'inventario.eliminar' => 'Eliminar entradas y productos',
                     'inventario.escanear' => 'Usar la pistola lectora',
                     'inventario.catalogo' => 'Administrar el catálogo (tipos, marcas, modelos)',
+                ],
+            ],
+
+            'salidas' => [
+                'titulo' => 'Órdenes de salida',
+                'descripcion' => 'Preparar, emplayar y firmar lo que sale por una venta.',
+                'permisos' => [
+                    'salidas.ver' => 'Ver las órdenes de salida',
+                    'salidas.preparar' => 'Marcar preparado / emplayado y firmar la salida',
+                ],
+            ],
+
+            'rutas' => [
+                'titulo' => 'Logística y rutas',
+                'descripcion' => 'Rutas de reparto, rastreo del vehículo y evidencias de entrega.',
+                'permisos' => [
+                    'rutas.ver' => 'Ver las rutas y su historial',
+                    'rutas.crear' => 'Crear rutas y optimizar el orden de las paradas',
+                    'rutas.editar' => 'Editar rutas antes de salir y reoptimizar en curso',
+                    'rutas.operar' => 'Iniciar, finalizar o cancelar rutas',
+                    'rutas.mapa' => 'Ver el mapa en vivo de la flota',
+                    'rutas.eliminar' => 'Eliminar rutas',
+                    'rutas.incidencias' => 'Ver y resolver las incidencias reportadas en ruta',
+                    'rutas.flota' => 'Gestionar combustible, kilometraje y mantenimiento de los vehículos',
+                    'rutas.analytics' => 'Ver los indicadores de logística',
+                    // Quien lo tiene recibe rutas y reporta su GPS y entregas
+                    'rutas.chofer' => 'Ser chofer: ver sus rutas, reportar GPS y cerrar entregas',
+                ],
+            ],
+
+            'asistencia' => [
+                'titulo' => 'Asistencia (RH)',
+                'descripcion' => 'Checador con huella, horarios, incidencias del día y prenómina.',
+                'permisos' => [
+                    'asistencia.ver' => 'Ver el panel de asistencia, las checadas y los indicadores',
+                    'asistencia.gestionar' => 'Horarios, festivos, incidencias del día, checadas manuales y anulaciones',
+                    'asistencia.biometria' => 'Administrar lectores y registrar o borrar huellas',
+                    // Aparte: incluye sueldos
+                    'asistencia.nomina' => 'Ver la prenómina y editar sueldos',
                 ],
             ],
 
@@ -139,6 +195,17 @@ class CatalogoPermisos
                     'roles.gestionar' => 'Crear roles y definir qué puede cada uno',
                     'congresos.ver' => 'Ver congresos',
                     'congresos.editar' => 'Crear y editar congresos',
+                    'actividad.ver' => 'Ver la línea de tiempo de actividad de todos los usuarios',
+                ],
+            ],
+
+            'api' => [
+                'titulo' => 'API e integraciones',
+                'descripcion' => 'Llaves para que otros sistemas se conecten a Obsidiana.',
+                'permisos' => [
+                    // Una llave nunca puede más que su dueño; sin ser admin
+                    // solo se emiten llaves a nombre propio.
+                    'api.llaves' => 'Crear y revocar llaves de integración de la API',
                 ],
             ],
         ];

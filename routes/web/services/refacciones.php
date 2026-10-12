@@ -47,6 +47,40 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             ->with('success', 'Refacción guardada correctamente.');
     })->name('gestion.servicios.refacciones.store');
 
+    Route::get('/gestion-servicios/refacciones/{refaccion}/editar', function (Refaccion $refaccion) {
+        return view('structure.gestion_servicios.Refacciones.Formulario', [
+            'subtypes' => Subtype::orderBy('name')->pluck('name'),
+            'refaccion' => $refaccion,
+        ]);
+    })->name('gestion.servicios.refacciones.edit');
+
+    Route::put('/gestion-servicios/refacciones/{refaccion}', function (Request $request, Refaccion $refaccion) {
+        $data = $request->validate([
+            'subtype_name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'stock' => ['nullable', 'integer', 'min:0'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'compatible_with' => ['nullable', 'string', 'max:255'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+        ]);
+
+        if ($request->hasFile('photo')) {
+            if ($refaccion->photo_path) {
+                Storage::disk('public')->delete($refaccion->photo_path);
+            }
+            $data['photo_path'] = Storage::disk('public')->putFile('refacciones', $request->file('photo'));
+        }
+
+        $data['subtype'] = $data['subtype_name'];
+        unset($data['subtype_name']);
+
+        $refaccion->update($data);
+
+        return redirect()->route('gestion.servicios.refacciones.index')
+            ->with('success', 'Refacción actualizada correctamente.');
+    })->name('gestion.servicios.refacciones.update');
+
     Route::delete('/gestion-servicios/refacciones/{refaccion}', function (Refaccion $refaccion) {
         if ($refaccion->photo_path) {
             Storage::disk('public')->delete($refaccion->photo_path);

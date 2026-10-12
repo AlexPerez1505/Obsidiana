@@ -106,7 +106,7 @@
         <div class="tone-grid">
             <div class="tone-card do">
                 <div class="tone-title" style="color:var(--green);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg>
+                    <x-gravityui-check width="20" height="20" />
                     Sí hacer
                 </div>
                 <ul>
@@ -119,7 +119,7 @@
             </div>
             <div class="tone-card dont">
                 <div class="tone-title" style="color:var(--danger);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <x-gravityui-xmark width="20" height="20" />
                     No hacer
                 </div>
                 <ul>

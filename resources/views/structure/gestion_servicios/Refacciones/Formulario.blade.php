@@ -1,6 +1,6 @@
 @extends('structure.gestion_servicios.layout')
 
-@section('title', 'Nueva refacción')
+@section('title', isset($refaccion) ? 'Editar refacción' : 'Nueva refacción')
 
 @push('head')
 <style>
@@ -16,11 +16,12 @@
 @endpush
 
 @section('service_content')
+@php $editando = isset($refaccion); @endphp
 <x-ui.card>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px;">
         <div>
-            <h1 style="font-size:22px; margin:0;">Nueva refacción</h1>
-            <p style="font-size:13px; color:var(--muted); margin:4px 0 0;">Registra una refacción con fotografía</p>
+            <h1 style="font-size:22px; margin:0;">{{ $editando ? 'Editar refacción' : 'Nueva refacción' }}</h1>
+            <p style="font-size:13px; color:var(--muted); margin:4px 0 0;">{{ $editando ? 'Actualiza los datos de la refacción' : 'Registra una refacción con fotografía' }}</p>
         </div>
         <a href="{{ route('gestion.servicios.refacciones.index') }}" class="btn" style="background:transparent; color:var(--primary);">Volver</a>
     </div>
@@ -36,13 +37,16 @@
         </x-ui.card>
     @endif
 
-    <form method="POST" action="{{ route('gestion.servicios.refacciones.store') }}" enctype="multipart/form-data" autocomplete="off">
+    <form method="POST" action="{{ $editando ? route('gestion.servicios.refacciones.update', $refaccion) : route('gestion.servicios.refacciones.store') }}" enctype="multipart/form-data" autocomplete="off">
         @csrf
+        @if ($editando)
+            @method('PUT')
+        @endif
 
         <div class="form-grid">
             <div class="form-group">
                 <label for="subtype_name">Subtipo *</label>
-                <input type="text" id="subtype_name" name="subtype_name" list="subtype_list" value="{{ old('subtype_name') }}" placeholder="Ej. Monitor de signos vitales" required>
+                <input type="text" id="subtype_name" name="subtype_name" list="subtype_list" value="{{ old('subtype_name', $refaccion->subtype ?? '') }}" placeholder="Ej. Monitor de signos vitales" required>
                 <datalist id="subtype_list">
                     @foreach ($subtypes as $subtype)
                         <option value="{{ $subtype }}"></option>
@@ -52,40 +56,44 @@
 
             <div class="form-group">
                 <label for="name">Nombre *</label>
-                <input type="text" id="name" name="name" value="{{ old('name') }}" placeholder="Ej. Fusible principal" required>
+                <input type="text" id="name" name="name" value="{{ old('name', $refaccion->name ?? '') }}" placeholder="Ej. Fusible principal" required>
             </div>
 
             <div class="form-group">
                 <label for="stock">Stock</label>
-                <input type="number" id="stock" name="stock" value="{{ old('stock', 0) }}" min="0" placeholder="0">
+                <input type="number" id="stock" name="stock" value="{{ old('stock', $refaccion->stock ?? 0) }}" min="0" placeholder="0">
             </div>
 
             <div class="form-group">
                 <label for="price">Precio unitario</label>
-                <input type="number" id="price" name="price" value="{{ old('price', 0) }}" min="0" step="0.01" placeholder="0.00">
+                <input type="number" id="price" name="price" value="{{ old('price', $refaccion->price ?? 0) }}" min="0" step="0.01" placeholder="0.00">
             </div>
 
             <div class="form-group">
                 <label for="compatible_with">Compatible con</label>
-                <input type="text" id="compatible_with" name="compatible_with" value="{{ old('compatible_with') }}" placeholder="Ej. Modelo X, Serie Y">
+                <input type="text" id="compatible_with" name="compatible_with" value="{{ old('compatible_with', $refaccion->compatible_with ?? '') }}" placeholder="Ej. Modelo X, Serie Y">
             </div>
         </div>
 
         <div class="form-group" style="margin-top:18px;">
             <label for="description">Descripción</label>
-            <textarea id="description" name="description" rows="3" placeholder="Detalles de la refacción">{{ old('description') }}</textarea>
+            <textarea id="description" name="description" rows="3" placeholder="Detalles de la refacción">{{ old('description', $refaccion->description ?? '') }}</textarea>
         </div>
 
         <div class="form-group" style="margin-top:18px;">
-            <label for="photo">Fotografía</label>
+            <label for="photo">Fotografía{{ $editando ? ' (dejar vacío para conservar la actual)' : '' }}</label>
             <input type="file" id="photo" name="photo" accept="image/*" onchange="previewPhoto(this)">
             <div class="photo-preview" id="photo-preview">
-                <span style="font-size:13px;">Vista previa</span>
+                @if ($editando && $refaccion->photo_path)
+                    <img src="{{ asset('storage/' . $refaccion->photo_path) }}" alt="Foto actual">
+                @else
+                    <span style="font-size:13px;">Vista previa</span>
+                @endif
             </div>
         </div>
 
         <div style="margin-top:24px;">
-            <button type="submit" class="btn">Guardar refacción</button>
+            <button type="submit" class="btn">{{ $editando ? 'Actualizar refacción' : 'Guardar refacción' }}</button>
         </div>
     </form>
 </x-ui.card>
