@@ -14,16 +14,6 @@
         .unidad-item .unidad-sin-foto { width:54px; height:54px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; text-align:center; }
         .producto-row { cursor:pointer; }
         .producto-row:hover { background:var(--surface-2); }
-        .evidencia-galeria { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
-        .evidencia-thumb { display:flex; flex-direction:column; align-items:center; gap:3px; }
-        .evidencia-thumb img, .evidencia-thumb video { width:64px; height:64px; object-fit:cover; border-radius:6px; border:1px solid var(--border); cursor:pointer; }
-        .evidencia-thumb span { font-size:10px; color:var(--muted); }
-        .galeria-overlay { position:fixed; inset:0; background:rgba(0,0,0,.8); display:none; align-items:center; justify-content:center; z-index:2000; padding:20px; }
-        .galeria-overlay.abierta { display:flex; }
-        .galeria-contenido { background:var(--surface); border-radius:12px; max-width:800px; width:100%; max-height:90vh; overflow-y:auto; padding:20px; position:relative; }
-        .galeria-cerrar { position:absolute; top:10px; right:14px; background:none; border:none; font-size:24px; cursor:pointer; color:var(--text); }
-        .galeria-media { text-align:center; margin-bottom:16px; }
-        .galeria-media img, .galeria-media video { max-width:100%; max-height:60vh; border-radius:8px; }
     </style>
 @endpush
 
@@ -32,7 +22,30 @@
         <form method="GET" style="flex:1; min-width:220px; max-width:380px;">
             <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por tipo, marca, modelo o serie..."
                    style="width:100%; padding:11px 14px; border:1px solid var(--border); border-radius:9px; font-size:14.5px; background:var(--surface); color:var(--text);">
+            @if (($filters['ubicacion'] ?? '') === 'congreso')
+                <input type="hidden" name="ubicacion" value="congreso">
+            @endif
         </form>
+
+        {{-- Lo que está fuera del almacén, de un jalón: sigue siendo stock
+             (allá se puede vender) pero no está en el anaquel. --}}
+        {{--
+            Sin la directiva php de una línea a propósito: se empareja con
+            el cierre del bloque que hay más abajo en este mismo archivo y
+            se traga todo el HTML de en medio.
+        --}}
+        @if ($enCongreso > 0)
+            <a href="{{ ($filters['ubicacion'] ?? '') === 'congreso'
+                    ? route('inventory.productos.index', array_filter(['search' => $filters['search'] ?? null]))
+                    : route('inventory.productos.index', array_filter(['search' => $filters['search'] ?? null, 'ubicacion' => 'congreso'])) }}"
+               class="btn {{ ($filters['ubicacion'] ?? '') === 'congreso' ? '' : 'btn--ghost' }}"
+               style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;"
+               title="{{ ($filters['ubicacion'] ?? '') === 'congreso' ? 'Quitar el filtro' : 'Ver solo lo que está en congresos' }}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                En congreso ({{ $enCongreso }})
+            </a>
+        @endif
+
         <div style="flex:1;"></div>
         <a href="{{ route('inventory.paquetes.index') }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"/></svg>
@@ -44,12 +57,10 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             Agrupar en paquete (<span id="contador-seleccionados">0</span>)
         </button>
-        @can('inventario.registrar')
         <a href="{{ route('inventory.movimientos.create') }}" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             Registrar entrada
         </a>
-        @endcan
     </div>
 
     <x-ui.card>
@@ -121,7 +132,7 @@
                                             Editar
                                         </a>
                                         <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}"
-                                              data-confirm="¿Eliminar este producto?" style="margin:0;">
+                                              onsubmit="return confirm('¿Eliminar este producto?');" style="margin:0;">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="es-danger" role="menuitem">
@@ -160,47 +171,14 @@
 
                 @forelse ($producto->serialesDisponibles as $serial)
                     <div class="unidad-item">
+                        @if ($serial->fotoUrl())
+                            <img src="{{ $serial->fotoUrl() }}" alt="Foto de la unidad" onclick="window.open('{{ $serial->fotoUrl() }}', '_blank')">
+                        @else
+                            <div class="unidad-sin-foto">Sin foto</div>
+                        @endif
                         <div style="flex:1;">
                             <div style="font-weight:600; font-size:13.5px;">{{ $serial->no_serie ?: '— (sin serial capturado)' }}</div>
-                            <div class="muted" style="font-size:11.5px; margin-bottom:6px;">
-                                {{ $serial->codigo ?: '—' }} · {{ trim($producto->marca.' '.$producto->modelo) ?: $producto->tipo_equipo }}
-                            </div>
-
-                            @php
-                                $evidencePaths = $serial->evidence_paths ?? [];
-                                $evidenceCount = count($evidencePaths);
-                                $hasVideo = (bool) $serial->video_path;
-                            @endphp
-
-                            @if ($evidenceCount > 0 || $hasVideo)
-                                @php $indiceGlobal = 0; @endphp
-                                <div class="evidencia-galeria">
-                                    @foreach ($evidencePaths as $index => $path)
-                                        @php $url = \Illuminate\Support\Facades\Storage::disk(config('filesystems.fotos_disk', 'public'))->url($path); @endphp
-                                        <div class="evidencia-thumb" data-indice="{{ $indiceGlobal }}" onclick="abrirGaleriaPorIndice(this)">
-                                            <img src="{{ $url }}" alt="Foto {{ $index + 1 }} de {{ $evidenceCount }}">
-                                            <span>Foto {{ $index + 1 }} de {{ $evidenceCount }}</span>
-                                        </div>
-                                        @php $indiceGlobal++; @endphp
-                                    @endforeach
-
-                                    @if ($hasVideo)
-                                        <div class="evidencia-thumb" data-indice="{{ $indiceGlobal }}" onclick="abrirGaleriaPorIndice(this)">
-                                            <video src="{{ $serial->videoUrl() }}" controls></video>
-                                            <span>Video de entrada</span>
-                                        </div>
-                                    @endif
-                                </div>
-
-                                <button type="button" class="btn btn--ghost btn--sm"
-                                        style="margin-top:6px; padding:4px 10px; font-size:12px;"
-                                        data-medios="{{ json_encode($serial->mediosGaleria()) }}"
-                                        onclick="abrirGaleria(this)">
-                                    {{ $serial->etiquetaEvidencia() }}
-                                </button>
-                            @else
-                                <p class="muted" style="margin:0; font-size:12px;">se registró sin evidencia de entrada</p>
-                            @endif
+                            <span class="badge badge--ok" style="font-size:11px;">Disponible</span>
                         </div>
                     </div>
                 @empty
@@ -235,66 +213,6 @@
 
             const params = marcados.map(id => 'productos[]=' + encodeURIComponent(id)).join('&');
             window.location.href = @json(route('inventory.paquetes.create')) + '?' + params;
-        }
-    </script>
-
-    {{-- Modal de galería para ver todas las fotos y el video de una unidad --}}
-    <div id="galeria-overlay" class="galeria-overlay" onclick="if(event.target === this) cerrarGaleria()">
-        <div class="galeria-contenido">
-            <button type="button" class="galeria-cerrar" onclick="cerrarGaleria()">&times;</button>
-            <div id="galeria-body"></div>
-        </div>
-    </div>
-
-    <script>
-        function abrirGaleria(boton) {
-            const medios = JSON.parse(boton.dataset.medios || '[]');
-            mostrarMedios(medios, 0);
-        }
-
-        function abrirGaleriaPorIndice(thumb) {
-            const item = thumb.closest('.unidad-item');
-            const boton = item ? item.querySelector('[data-medios]') : null;
-            if (! boton) return;
-
-            const medios = JSON.parse(boton.dataset.medios || '[]');
-            const indice = parseInt(thumb.dataset.indice || '0', 10);
-            mostrarMedios(medios, indice);
-        }
-
-        function mostrarMedios(medios, indiceInicial) {
-            const body = document.getElementById('galeria-body');
-            body.innerHTML = '';
-
-            if (medios.length === 0) {
-                body.innerHTML = '<p class="muted">No hay evidencia para mostrar.</p>';
-            } else {
-                medios.forEach(function (medio, i) {
-                    const item = document.createElement('div');
-                    item.className = 'galeria-media';
-                    if (i === indiceInicial) item.id = 'galeria-activo';
-
-                    if (medio.tipo === 'video') {
-                        item.innerHTML = '<video src="' + medio.url + '" controls style="max-width:100%; max-height:60vh;"></video><div class="muted" style="margin-top:6px;">Video de entrada</div>';
-                    } else {
-                        const num = i + 1;
-                        item.innerHTML = '<img src="' + medio.url + '" alt="Foto ' + num + '"><div class="muted" style="margin-top:6px;">Foto ' + num + '</div>';
-                    }
-
-                    body.appendChild(item);
-                });
-
-                setTimeout(function () {
-                    const activo = document.getElementById('galeria-activo');
-                    if (activo) activo.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 0);
-            }
-
-            document.getElementById('galeria-overlay').classList.add('abierta');
-        }
-
-        function cerrarGaleria() {
-            document.getElementById('galeria-overlay').classList.remove('abierta');
         }
     </script>
 

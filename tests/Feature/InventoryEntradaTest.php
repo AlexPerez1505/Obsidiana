@@ -14,8 +14,8 @@ use Tests\TestCase;
 
 /**
  * Cubre el alta de inventario vía Entrada: debe crear el producto, sus
- * unidades/seriales, guardar la evidencia del envío, y exigir que la
- * cantidad y los seriales capturados coincidan.
+ * unidades/seriales, y exigir evidencia (1 a 3 fotos, video opcional) por
+ * cada unidad que llega, no una evidencia general del lote.
  */
 class InventoryEntradaTest extends TestCase
 {
@@ -75,10 +75,28 @@ class InventoryEntradaTest extends TestCase
 
         $user = $this->usuarioAprobado();
 
+<<<<<<< HEAD
+        $response = $this->actingAs($user)->post(route('inventory.movimientos.store'), $this->datosBase([
+            'cantidad' => 3,
+            'unidades' => [
+                $this->unidad([
+                    'no_serie' => '23A00001',
+                    'evidencias' => [
+                        UploadedFile::fake()->create('u1a.jpg', 50, 'image/jpeg'),
+                        UploadedFile::fake()->create('u1b.jpg', 50, 'image/jpeg'),
+                    ],
+                    'video_path' => $this->subirVideoDePrueba($user),
+                ]),
+                $this->unidad(),
+                $this->unidad(),
+            ],
+        ]));
+=======
         $response = $this->actingAs($user)->post(route('inventory.movimientos.store'), array_merge(
             $this->datosBase($user, ['cantidad' => 3, 'series_texto' => '23A00001']),
             ['evidencias' => [UploadedFile::fake()->create('evidencia.jpg', 50, 'image/jpeg')]]
         ));
+>>>>>>> a6da10efa5f1fd2e593ad652606fa3b18deb036f
 
         $response->assertRedirect(route('inventory.movimientos.index'));
 
@@ -89,6 +107,18 @@ class InventoryEntradaTest extends TestCase
         // Un solo serial base con cantidad 3: la secuencia se completa sola.
         $series = ProductoSerial::where('producto_id', $producto->id)->pluck('no_serie')->sort()->values();
         $this->assertSame(['23A00001', '23A00002', '23A00003'], $series->all());
+
+        $primera = ProductoSerial::where('no_serie', '23A00001')->first();
+        $this->assertCount(2, $primera->evidence_paths);
+        foreach ($primera->evidence_paths as $path) {
+            Storage::disk('public')->assertExists($path);
+        }
+        $this->assertNotNull($primera->video_path);
+        Storage::disk('public')->assertExists($primera->video_path);
+
+        $segunda = ProductoSerial::where('no_serie', '23A00002')->first();
+        $this->assertCount(1, $segunda->evidence_paths);
+        $this->assertNull($segunda->video_path);
 
         $movimiento = InventoryMovement::where('movement_type', InventoryMovement::TYPE_ENTRY)->first();
         $this->assertNotNull($movimiento);
@@ -102,7 +132,7 @@ class InventoryEntradaTest extends TestCase
         $this->assertSame($user->id, $movimiento->created_by);
     }
 
-    public function test_entrada_sin_evidencia_no_se_guarda(): void
+    public function test_entrada_sin_unidades_no_se_guarda(): void
     {
         Storage::fake('public');
         $user = $this->usuarioAprobado();
@@ -112,7 +142,9 @@ class InventoryEntradaTest extends TestCase
             $this->datosBase($user)
         );
 
-        $response->assertSessionHasErrors('evidencias');
+        $response = $this->actingAs($user)->post(route('inventory.movimientos.store'), $data);
+
+        $response->assertSessionHasErrors('unidades');
         $this->assertDatabaseCount('inventory_movements', 0);
     }
 
@@ -190,11 +222,11 @@ class InventoryEntradaTest extends TestCase
             ['evidencias' => [UploadedFile::fake()->create('evidencia.jpg', 50, 'image/jpeg')]]
         ));
 
-        $response->assertSessionHasErrors('series_texto');
+        $response->assertSessionHasErrors('unidades.0.evidencias');
         $this->assertDatabaseCount('inventory_movements', 0);
     }
 
-    public function test_eliminar_entrada_borra_las_unidades_y_la_evidencia_del_disco(): void
+    public function test_una_unidad_con_mas_de_3_fotos_regresa_error(): void
     {
         Storage::fake('public');
         $user = $this->usuarioAprobado();

@@ -787,11 +787,17 @@
 
                     <div class="materials-actions">
                         <button class="materials-btn ghost" type="submit" name="intent" value="draft">
-                            <x-gravityui-floppy-disk />
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                <path d="M17 21v-8H7v8M7 3v5h8"></path>
+                            </svg>
                             Guardar borrador
                         </button>
                         <button class="materials-btn primary" type="submit" name="intent" value="submit">
-                            <x-gravityui-paper-plane />
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M22 2 11 13"></path>
+                                <path d="M22 2 15 22l-4-9-9-4 20-7z"></path>
+                            </svg>
                             Enviar Solicitud
                         </button>
                     </div>
