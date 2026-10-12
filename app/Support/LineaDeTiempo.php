@@ -48,6 +48,46 @@ class LineaDeTiempo
         $this->nombres = User::pluck('name', 'id');
     }
 
+    /** Días máximos que se piden de una vez: la lista se arma en memoria. */
+    public const DIAS_MAX = 92;
+
+    /**
+     * El rango que se va a consultar a partir de lo que se pidió: por
+     * omisión la última semana; si vienen al revés se voltean y nunca pasa
+     * de DIAS_MAX. Lo comparten la pantalla de Actividad y la API.
+     *
+     * @return array{0: Carbon, 1: Carbon}  [desde, hasta]
+     */
+    public static function rango(?string $desde, ?string $hasta): array
+    {
+        $leer = function (?string $valor): ?Carbon {
+            try {
+                return $valor ? Carbon::parse($valor) : null;
+            } catch (\Throwable) {
+                return null;
+            }
+        };
+
+        $hasta = $leer($hasta) ?? now();
+        $desde = $leer($desde) ?? $hasta->copy()->subDays(6);
+
+        if ($desde->gt($hasta)) {
+            [$desde, $hasta] = [$hasta, $desde];
+        }
+
+        if ($desde->diffInDays($hasta) > self::DIAS_MAX) {
+            $desde = $hasta->copy()->subDays(self::DIAS_MAX);
+        }
+
+        return [$desde, $hasta];
+    }
+
+    /** El módulo pedido, si existe; si no, todos (null). */
+    public static function modulo(?string $modulo): ?string
+    {
+        return $modulo !== null && array_key_exists($modulo, self::MODULOS) ? $modulo : null;
+    }
+
     /**
      * @return Collection<int, array> Eventos del rango, del más reciente al más viejo.
      */

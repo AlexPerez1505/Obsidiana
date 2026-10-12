@@ -27,3 +27,7 @@ Schedule::command('seguimientos:recordar')->dailyAt('08:00');
 // Respaldo: App\Services\RegresoDeCongresos::avisarSiToca, que se dispara
 // al abrir la pantalla de Congresos.
 Schedule::command('congresos:avisar-regresos')->dailyAt('09:30');
+
+// Asistencia: cierra el día anterior y genera las faltas automáticas (hora local de la empresa).
+// Respaldo: ServicioDeAsistencia::cerrarPendientes al abrir el panel de asistencia.
+Schedule::command('asistencia:cerrar')->dailyAt('00:30')->timezone(config('asistencia.timezone'));

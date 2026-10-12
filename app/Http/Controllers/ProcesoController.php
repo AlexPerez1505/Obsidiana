@@ -4,12 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\PiezaProceso;
 use App\Models\ProductoSerial;
+use App\Services\Almacen\ColasDeProcesos;
 use App\Services\RutaDeProcesos;
 use App\Support\ChecklistProceso;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -25,39 +24,25 @@ use Illuminate\View\View;
  */
 class ProcesoController extends Controller
 {
-    public function __construct(private readonly RutaDeProcesos $ruta)
-    {
+    public function __construct(
+        private readonly RutaDeProcesos $ruta,
+        private readonly ColasDeProcesos $colas,
+    ) {
     }
 
     public function index(): View
     {
-        $pasos = PiezaProceso::query()
-            ->whereIn('estado', ['pendiente', 'en_curso'])
-            ->whereHas('pieza', fn ($q) => $q->whereColumn('producto_seriales.estado', 'pieza_procesos.proceso'))
+        $pasos = $this->colas->pasosEnCola()
             ->with(['pieza.producto', 'pieza.procesos', 'responsable'])
-            ->orderBy('estado')          // en_curso primero
-            ->orderBy('created_at')
             ->get();
 
         // Lo que ya salió y espera a que alguien lo note.
-        $listas = ProductoSerial::query()
-            ->where('estado', 'disponible')
-            ->where('vendido', false)
-            ->whereHas('procesos', fn ($q) => $q->where('estado', 'terminado'))
-            ->with('producto')
-            ->latest('updated_at')
-            ->limit(12)
-            ->get();
+        $listas = $this->colas->listas();
 
         return view('structure.gestion_Inventario.procesos.index', [
             'pasos' => $pasos,
             'listas' => $listas,
-            'resumen' => [
-                'en_cola' => $pasos->where('estado', 'pendiente')->count(),
-                'en_curso' => $pasos->where('estado', 'en_curso')->count(),
-                'atoradas' => $pasos->filter(fn ($p) => $p->diasDetenida() >= 7)->count(),
-                'listas' => $listas->count(),
-            ],
+            'resumen' => $this->colas->resumen($pasos, $listas),
         ]);
     }
 
@@ -92,47 +77,17 @@ class ProcesoController extends Controller
      */
     public function terminar(Request $request, PiezaProceso $paso): RedirectResponse
     {
-        $data = $request->validate([
-            // Nullable a propósito: si no viene nada, el mensaje lo da la
-            // verificación de abajo, que dice exactamente qué falta, y no
-            // un "el campo checklist es obligatorio" que no ayuda.
-            'checklist' => ['nullable', 'array'],
-            'trabajo_realizado' => ['nullable', 'string', 'max:1000'],
-            'evidencias' => ['nullable', 'array', 'max:5'],
-            'evidencias.*' => ['image', 'max:5120'],
-        ], [
-            'evidencias.*.image' => 'La evidencia tiene que ser una foto.',
-            'evidencias.max' => 'Puedes subir máximo 5 fotos.',
-        ]);
+        $data = $request->validate(ColasDeProcesos::REGLAS_CIERRE, ColasDeProcesos::MENSAJES_CIERRE);
 
-        $checklist = ChecklistProceso::limpiar($paso, $data['checklist'] ?? []);
-        $yaTenia = count($paso->evidencias ?? []);
-
-        // Se revisa ANTES de subir nada: si no va a cerrar, no se dejan
-        // archivos huérfanos en el disco.
-        $razones = ChecklistProceso::razonesParaNoCerrar(
+        $razones = $this->colas->cerrar(
             $paso,
-            $checklist,
-            $yaTenia + count($request->file('evidencias') ?? [])
+            $data['checklist'] ?? [],
+            $request->file('evidencias') ?? [],
+            $data['trabajo_realizado'] ?? null
         );
 
         if ($razones) {
             return back()->withInput()->withErrors(['cierre' => implode(' ', $razones)]);
-        }
-
-        $disco = config('filesystems.fotos_disk', 'public');
-
-        $subidas = collect($request->file('evidencias') ?? [])
-            ->map(fn ($archivo) => $archivo->store('inventario/procesos', $disco))
-            ->all();
-
-        try {
-            $this->ruta->terminar($paso, $checklist, $subidas, $data['trabajo_realizado'] ?? null);
-        } catch (\RuntimeException $e) {
-            // Algo cambió entre la revisión y el guardado: se limpia lo subido.
-            Storage::disk($disco)->delete($subidas);
-
-            return back()->withInput()->withErrors(['cierre' => $e->getMessage()]);
         }
 
         $pieza = $paso->pieza->refresh()->load('procesos');
@@ -147,12 +102,7 @@ class ProcesoController extends Controller
     /** Descarta un paso que al verlo de cerca no hacía falta. */
     public function omitir(Request $request, PiezaProceso $paso): RedirectResponse
     {
-        $data = $request->validate([
-            'motivo' => ['required', 'string', 'min:10', 'max:1000'],
-        ], [
-            'motivo.required' => 'Escribe por qué no hacía falta este proceso.',
-            'motivo.min' => 'Explica un poco más: esto queda como constancia de la decisión.',
-        ]);
+        $data = $request->validate(ColasDeProcesos::REGLAS_OMITIR, ColasDeProcesos::MENSAJES_OMITIR);
 
         $this->ruta->omitir($paso, $data['motivo']);
 
@@ -169,15 +119,40 @@ class ProcesoController extends Controller
     /** Manda una pieza a un proceso que no traía en su ruta. */
     public function agregar(Request $request, ProductoSerial $pieza): RedirectResponse
     {
-        $data = $request->validate([
-            'proceso' => ['required', Rule::in(array_keys(PiezaProceso::PROCESOS))],
-            'motivo' => ['nullable', 'string', 'max:255'],
-        ]);
+        $data = $request->validate(ColasDeProcesos::reglasAgregar());
 
-        $this->ruta->agregar($pieza, $data['proceso'], $data['motivo'] ?: 'Agregado a mano');
+        $this->colas->agregar($pieza, $data['proceso'], $data['motivo'] ?? null);
 
         $nombre = PiezaProceso::PROCESOS[$data['proceso']];
 
         return back()->with('status', "{$pieza->codigo} se mandó a {$nombre}.");
+    }
+
+    /**
+     * Corrige de un jalón toda la ruta de procesos de una pieza.
+     *
+     * Es para el caso típico: al dar la entrada se marcaron mal los procesos
+     * (p. ej. solo mantenimiento y limpieza) y después se ve que también
+     * faltaba hojalatería. Aquí se deja exactamente la lista correcta: se
+     * agregan los que faltaban y se quitan los pendientes que sobran. Los
+     * pasos que ya se hicieron NO se borran: son historia, se conservan.
+     */
+    public function definir(Request $request, ProductoSerial $pieza): RedirectResponse
+    {
+        $data = $request->validate(ColasDeProcesos::reglasDefinir());
+
+        if ($razon = $this->colas->razonParaNoRedefinir($pieza)) {
+            return back()->withErrors(['procesos' => $razon]);
+        }
+
+        $this->colas->redefinir($pieza, $data['procesos'] ?? []);
+
+        $pieza->refresh()->load('procesos');
+        $falta = $pieza->faltaTexto();
+
+        $mensaje = "{$pieza->codigo}: procesos actualizados.";
+        $mensaje .= $falta ? " Ahora falta: {$falta}." : ' Queda disponible para venta.';
+
+        return back()->with('status', $mensaje);
     }
 }

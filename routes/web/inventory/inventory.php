@@ -57,6 +57,11 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/gestion-inventario/procesos/pieza/{pieza}/agregar', [ProcesoController::class, 'agregar'])
         ->middleware('can:procesos.trabajar')->name('inventory.procesos.agregar');
 
+    // Corregir la ruta completa de una pieza (p. ej. desde la entrada, cuando
+    // se asignaron mal los procesos). Mismo permiso que registrar la entrada.
+    Route::put('/gestion-inventario/procesos/pieza/{pieza}/definir', [ProcesoController::class, 'definir'])
+        ->middleware('can:inventario.registrar')->name('inventory.procesos.definir');
+
     /*
     | Escaneo con pistola lectora: conteo, préstamos, revisión de un lote.
     */

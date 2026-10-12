@@ -5,14 +5,25 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Trip;
 use App\Models\TripExpense;
-use App\Models\Vehicle;
+use App\Services\Administracion\GastosDeViaje;
+use App\Services\Administracion\Viajes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
+/**
+ * Viajes en curso y sus gastos. La lógica vive en Viajes y GastosDeViaje,
+ * que comparten con la API.
+ */
 class TripController extends Controller
 {
+    public function __construct(
+        private Viajes $viajes,
+        private GastosDeViaje $gastos,
+    ) {
+    }
+
     public function show(Trip $trip): View
     {
         $this->authorizeTrip($trip);
@@ -26,21 +37,9 @@ class TripController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'vehicle_id' => ['nullable', 'exists:vehicles,id'],
-            'place'      => ['nullable', 'string', 'max:255'],
-        ]);
+        $data = $request->validate(Viajes::REGLAS_INICIO);
 
-        $data['user_id'] = $request->user()->id;
-        $data['status'] = Trip::STATUS_IN_PROGRESS;
-        $data['started_at'] = now();
-
-        if (isset($data['vehicle_id']) && $data['vehicle_id']) {
-            $vehicle = Vehicle::find($data['vehicle_id']);
-            $data['vehicle_name'] = $vehicle ? "{$vehicle->brand} {$vehicle->model}" : null;
-        }
-
-        $trip = Trip::create($data);
+        $trip = $this->viajes->iniciar($data, $request->user());
 
         return redirect()->route('admin.trips.show', $trip)->with('status', 'Viaje iniciado correctamente.');
     }
@@ -49,41 +48,13 @@ class TripController extends Controller
     {
         $this->authorizeTrip($trip);
 
-        $data = $request->validate([
-            'type'   => ['required', 'string', 'in:toll,fuel,meal,lodging,other'],
-            'label'  => ['nullable', 'string', 'max:255'],
-            'amount' => ['required', 'numeric', 'min:0'],
-        ]);
+        $data = $request->validate(GastosDeViaje::REGLAS);
 
-        $iconMap = [
-            'toll'    => 'toll',
-            'fuel'    => 'fuel',
-            'meal'    => 'receipt',
-            'lodging' => 'lodging',
-            'other'   => 'receipt',
-        ];
-
-        $expense = $trip->expenses()->create([
-            'type'   => $data['type'],
-            'label'  => $data['label'] ?: 'Sin descripción',
-            'amount' => $data['amount'],
-            'icon'   => $iconMap[$data['type']] ?? 'receipt',
-        ]);
-
-        $total = $trip->fresh()->total_computed;
+        $expense = $this->gastos->agregar($trip, $data);
 
         return response()->json([
-            'gasto' => [
-                'id'         => $expense->id,
-                'type'       => $expense->type,
-                'label'      => $expense->label,
-                'amount'     => (float) $expense->amount,
-                'created_at' => $expense->created_at->toISOString(),
-                'time_label' => $expense->created_at->isToday()
-                    ? 'Hoy, ' . $expense->created_at->format('g:i A')
-                    : $expense->created_at->format('d/m/Y, g:i A'),
-            ],
-            'total'   => $total,
+            'gasto' => GastosDeViaje::paraPantalla($expense),
+            'total'   => $trip->fresh()->total_computed,
             'count'   => $trip->expenses()->count(),
         ]);
     }
@@ -92,41 +63,13 @@ class TripController extends Controller
     {
         $this->authorizeExpense($trip, $expense);
 
-        $data = $request->validate([
-            'type'   => ['required', 'string', 'in:toll,fuel,meal,lodging,other'],
-            'label'  => ['nullable', 'string', 'max:255'],
-            'amount' => ['required', 'numeric', 'min:0'],
-        ]);
+        $data = $request->validate(GastosDeViaje::REGLAS);
 
-        $iconMap = [
-            'toll'    => 'toll',
-            'fuel'    => 'fuel',
-            'meal'    => 'receipt',
-            'lodging' => 'lodging',
-            'other'   => 'receipt',
-        ];
-
-        $expense->update([
-            'type'   => $data['type'],
-            'label'  => $data['label'] ?: 'Sin descripción',
-            'amount' => $data['amount'],
-            'icon'   => $iconMap[$data['type']] ?? 'receipt',
-        ]);
-
-        $total = $trip->fresh()->total_computed;
+        $this->gastos->actualizar($expense, $data);
 
         return response()->json([
-            'gasto' => [
-                'id'         => $expense->id,
-                'type'       => $expense->type,
-                'label'      => $expense->label,
-                'amount'     => (float) $expense->amount,
-                'created_at' => $expense->created_at->toISOString(),
-                'time_label' => $expense->created_at->isToday()
-                    ? 'Hoy, ' . $expense->created_at->format('g:i A')
-                    : $expense->created_at->format('d/m/Y, g:i A'),
-            ],
-            'total' => $total,
+            'gasto' => GastosDeViaje::paraPantalla($expense),
+            'total' => $trip->fresh()->total_computed,
         ]);
     }
 
@@ -136,10 +79,8 @@ class TripController extends Controller
 
         $expense->delete();
 
-        $total = $trip->fresh()->total_computed;
-
         return response()->json([
-            'total' => $total,
+            'total' => $trip->fresh()->total_computed,
             'count' => $trip->expenses()->count(),
         ]);
     }
@@ -148,28 +89,20 @@ class TripController extends Controller
     {
         $this->authorizeTrip($trip);
 
-        $trip->update([
-            'status'    => Trip::STATUS_COMPLETED,
-            'ended_at'  => now(),
-        ]);
+        $this->viajes->finalizar($trip);
 
         return redirect()->route('admin.viatics.index')->with('status', 'Viaje finalizado. Total: $' . number_format($trip->total, 2));
     }
 
     private function authorizeTrip(Trip $trip): void
     {
-        $user = request()->user();
-
-        abort_unless(
-            $user && ($user->isAdmin() || (int) $trip->user_id === (int) $user->id),
-            403
-        );
+        abort_unless($this->viajes->puedeVer($trip, request()->user()), 403);
     }
 
     private function authorizeExpense(Trip $trip, TripExpense $expense): void
     {
         $this->authorizeTrip($trip);
 
-        abort_unless((int) $expense->trip_id === (int) $trip->id, 404);
+        abort_unless(GastosDeViaje::pertenece($trip, $expense), 404);
     }
 }

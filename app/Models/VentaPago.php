@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class VentaPago extends Model
@@ -30,15 +31,25 @@ class VentaPago extends Model
         return $this->belongsTo(Venta::class);
     }
 
-    /** Cobros aplicados a esta parcialidad. */
-    public function cobros(): HasMany
+    /**
+     * Cobros que se aplicaron (total o parcialmente) a esta parcialidad.
+     * El pivote trae cuánto de cada cobro cayó aquí: un cobro de $1,000
+     * puede cubrir un pago completo y parte del siguiente.
+     */
+    public function cobros(): BelongsToMany
     {
-        return $this->hasMany(Cobro::class);
+        return $this->belongsToMany(Cobro::class, 'cobro_aplicaciones', 'venta_pago_id', 'cobro_id')->withPivot('monto');
     }
 
+    public function aplicaciones(): HasMany
+    {
+        return $this->hasMany(CobroAplicacion::class);
+    }
+
+    /** Lo que de verdad se le ha aplicado (suma del pivote, no de los cobros completos). */
     public function cobrado(): float
     {
-        return (float) $this->cobros->sum('monto');
+        return round((float) $this->cobros->sum(fn ($c) => (float) $c->pivot->monto), 2);
     }
 
     public function saldo(): float

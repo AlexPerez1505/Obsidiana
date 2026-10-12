@@ -192,14 +192,38 @@
         @endif
     </x-ui.card>
 
+    @php
+        $esEntrada = $movimiento->movement_type === \App\Models\InventoryMovement::TYPE_ENTRY;
+        $tonoProceso = [
+            'pendiente' => 'badge--warn',
+            'en_curso' => 'badge--info',
+            'terminado' => 'badge--ok',
+            'omitido' => 'badge--muted',
+        ];
+        $etiquetaEstadoProceso = [
+            'pendiente' => 'pendiente',
+            'en_curso' => 'en curso',
+            'terminado' => 'hecho',
+            'omitido' => 'omitido',
+        ];
+    @endphp
+
     <x-ui.card>
-        <x-ui.section-title style="margin:0 0 16px;">Unidades de este movimiento</x-ui.section-title>
+        <x-ui.section-title style="margin:0 0 4px;">Unidades de este movimiento</x-ui.section-title>
+        @if ($esEntrada)
+            <p class="muted" style="font-size:12.5px; margin:0 0 16px;">
+                ¿Se asignaron mal los procesos al dar la entrada? Puedes corregir la ruta
+                de cada pieza aquí mismo. Lo que ya se hizo se conserva.
+            </p>
+        @endif
+
         <div style="overflow-x:auto;">
             <table>
                 <thead>
                     <tr>
                         <th>No. Serie</th>
                         <th>Estado</th>
+                        <th>Procesos</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -208,12 +232,57 @@
                             <td>{{ $serial->no_serie ?: '— (sin serial capturado)' }}</td>
                             <td>
                                 <span class="badge {{ $serial->vendido ? 'badge--danger' : 'badge--ok' }}">
-                                    {{ $serial->vendido ? 'Vendida' : 'Disponible' }}
+                                    {{ $serial->vendido ? 'Vendida' : $serial->estadoLabel() }}
                                 </span>
+                            </td>
+                            <td>
+                                @if ($serial->procesos->isEmpty())
+                                    <span class="muted" style="font-size:12.5px;">Sin procesos (directo a stock)</span>
+                                @else
+                                    <div class="proc-chips">
+                                        @foreach ($serial->procesos as $paso)
+                                            <span class="badge {{ $tonoProceso[$paso->estado] ?? 'badge--muted' }}">
+                                                {{ $paso->nombre() }}
+                                                <small>· {{ $etiquetaEstadoProceso[$paso->estado] ?? $paso->estado }}</small>
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
+
+                                @if ($esEntrada && ! $serial->vendido && $serial->estado !== 'baja')
+                                    @can('inventario.registrar')
+                                        <details class="proc-edit">
+                                            <summary>Editar procesos</summary>
+                                            <form method="POST" action="{{ route('inventory.procesos.definir', $serial) }}" class="proc-form">
+                                                @csrf
+                                                @method('PUT')
+                                                @foreach (\App\Models\PiezaProceso::PROCESOS as $clave => $nombre)
+                                                    @php
+                                                        $actual = $serial->procesos->firstWhere('proceso', $clave);
+                                                        $resuelto = $actual && in_array($actual->estado, ['terminado', 'omitido'], true);
+                                                    @endphp
+                                                    <label class="proc-op">
+                                                        <input type="checkbox" name="procesos[]" value="{{ $clave }}"
+                                                               @checked($actual) @disabled($resuelto)>
+                                                        <span>{{ $nombre }}</span>
+                                                        @if ($resuelto)
+                                                            <small>({{ $actual->estado === 'terminado' ? 'ya hecho' : 'omitido' }} — se conserva)</small>
+                                                        @endif
+                                                    </label>
+                                                @endforeach
+                                                <p class="muted" style="font-size:11.5px; margin:4px 0 10px;">
+                                                    Marca todos los procesos por los que debe pasar. Los ya terminados
+                                                    se conservan aunque los desmarques.
+                                                </p>
+                                                <button type="submit" class="btn" style="padding:7px 14px;">Guardar procesos</button>
+                                            </form>
+                                        </details>
+                                    @endcan
+                                @endif
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="2" style="text-align:center; padding:20px; color:var(--muted);">Sin unidades registradas.</td></tr>
+                        <tr><td colspan="3" style="text-align:center; padding:20px; color:var(--muted);">Sin unidades registradas.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -225,4 +294,21 @@
             </p>
         @endif
     </x-ui.card>
+
+    <style>
+        .proc-chips { display:flex; flex-wrap:wrap; gap:6px; }
+        .proc-chips .badge small { font-weight:400; opacity:.85; }
+
+        .proc-edit { margin-top:10px; }
+        .proc-edit > summary { display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+            font-size:12.5px; font-weight:600; color:var(--primary); list-style:none; user-select:none; }
+        .proc-edit > summary::-webkit-details-marker { display:none; }
+        .proc-edit > summary::before { content:'✎'; font-size:12px; }
+        .proc-edit[open] > summary::before { content:'▾'; }
+        .proc-form { margin-top:10px; padding:12px; border:1px solid var(--border);
+            border-radius:10px; background:var(--surface-2); max-width:340px; }
+        .proc-op { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13.5px; }
+        .proc-op input { width:16px; height:16px; margin:0; accent-color:var(--primary); }
+        .proc-op small { color:var(--muted); font-size:11.5px; }
+    </style>
 @endsection

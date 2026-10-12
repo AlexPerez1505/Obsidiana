@@ -102,6 +102,36 @@ class CatalogoPermisos
                 ],
             ],
 
+            'rutas' => [
+                'titulo' => 'Logística y rutas',
+                'descripcion' => 'Rutas de reparto, rastreo del vehículo y evidencias de entrega.',
+                'permisos' => [
+                    'rutas.ver' => 'Ver las rutas y su historial',
+                    'rutas.crear' => 'Crear rutas y optimizar el orden de las paradas',
+                    'rutas.editar' => 'Editar rutas antes de salir y reoptimizar en curso',
+                    'rutas.operar' => 'Iniciar, finalizar o cancelar rutas',
+                    'rutas.mapa' => 'Ver el mapa en vivo de la flota',
+                    'rutas.eliminar' => 'Eliminar rutas',
+                    'rutas.incidencias' => 'Ver y resolver las incidencias reportadas en ruta',
+                    'rutas.flota' => 'Gestionar combustible, kilometraje y mantenimiento de los vehículos',
+                    'rutas.analytics' => 'Ver los indicadores de logística',
+                    // Quien lo tiene recibe rutas y reporta su GPS y entregas
+                    'rutas.chofer' => 'Ser chofer: ver sus rutas, reportar GPS y cerrar entregas',
+                ],
+            ],
+
+            'asistencia' => [
+                'titulo' => 'Asistencia (RH)',
+                'descripcion' => 'Checador con huella, horarios, incidencias del día y prenómina.',
+                'permisos' => [
+                    'asistencia.ver' => 'Ver el panel de asistencia, las checadas y los indicadores',
+                    'asistencia.gestionar' => 'Horarios, festivos, incidencias del día, checadas manuales y anulaciones',
+                    'asistencia.biometria' => 'Administrar lectores y registrar o borrar huellas',
+                    // Aparte: incluye sueldos
+                    'asistencia.nomina' => 'Ver la prenómina y editar sueldos',
+                ],
+            ],
+
             'procesos' => [
                 'titulo' => 'Procesos',
                 'descripcion' => 'Hojalatería, mantenimiento y limpieza.',
@@ -161,6 +191,16 @@ class CatalogoPermisos
                     'roles.gestionar' => 'Crear roles y definir qué puede cada uno',
                     'congresos.ver' => 'Ver congresos',
                     'congresos.editar' => 'Crear y editar congresos',
+                ],
+            ],
+
+            'api' => [
+                'titulo' => 'API e integraciones',
+                'descripcion' => 'Llaves para que otros sistemas se conecten a Obsidiana.',
+                'permisos' => [
+                    // Una llave nunca puede más que su dueño; sin ser admin
+                    // solo se emiten llaves a nombre propio.
+                    'api.llaves' => 'Crear y revocar llaves de integración de la API',
                 ],
             ],
         ];

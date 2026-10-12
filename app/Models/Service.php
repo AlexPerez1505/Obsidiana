@@ -79,6 +79,12 @@ class Service extends Model
         return $this->belongsTo(User::class, 'internal_technician_id');
     }
 
+    /** Quien registró la orden (o quien mandó la invitación, si llegó por enlace). */
+    public function registeredBy()
+    {
+        return $this->belongsTo(User::class, 'registered_by');
+    }
+
     public function externalTechnician()
     {
         return $this->belongsTo(ExternalTechnician::class, 'external_technician_id');

@@ -40,10 +40,28 @@ class Cobro extends Model
         return $this->belongsTo(Venta::class);
     }
 
-    /** Parcialidad del plan a la que se aplicó, si aplica a alguna. */
+    /** Primera parcialidad del plan a la que se aplicó (la de partida), si aplica a alguna. */
     public function parcialidad(): BelongsTo
     {
         return $this->belongsTo(VentaPago::class, 'venta_pago_id');
+    }
+
+    /** Cómo se repartió este cobro entre los pagos del calendario. */
+    public function aplicaciones(): HasMany
+    {
+        return $this->hasMany(CobroAplicacion::class)->orderBy('id');
+    }
+
+    /** Cuánto de este cobro ya cayó en pagos del calendario. */
+    public function aplicado(): float
+    {
+        return round((float) $this->aplicaciones->sum('monto'), 2);
+    }
+
+    /** Lo cobrado que ningún pago del calendario ha recibido todavía. */
+    public function sinAplicar(): float
+    {
+        return max(0, round((float) $this->monto - $this->aplicado(), 2));
     }
 
     public function evidencias(): HasMany

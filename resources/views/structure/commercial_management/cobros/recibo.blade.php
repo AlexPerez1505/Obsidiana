@@ -7,6 +7,18 @@
     $cliente = trim(($venta->customer->nombre ?? '') . ' ' . ($venta->customer->apellido ?? ''));
 
     $logoUri = \App\Support\LogoPdf::dataUri();
+
+    // El recibo muestra la foto de ESE momento: lo pagado y lo pendiente hasta este cobro,
+    // aunque se vuelva a imprimir meses después.
+    $pagadoHasta = round((float) $venta->cobros()->where('id', '<=', $cobro->id)->sum('monto'), 2);
+    $saldoHasta = max(0, round($venta->montoExigible() - $pagadoHasta, 2));
+    $aplicadoHasta = \App\Models\CobroAplicacion::whereIn('venta_pago_id', $venta->pagos->pluck('id'))
+        ->where('cobro_id', '<=', $cobro->id)
+        ->selectRaw('venta_pago_id, SUM(monto) as t')->groupBy('venta_pago_id')->pluck('t', 'venta_pago_id');
+    $enEste = $cobro->aplicaciones->keyBy('venta_pago_id');
+    $sinAplicar = $cobro->sinAplicar();
+    $pendienteDe = fn ($pago) => max(0, round((float) $pago->monto - (float) ($aplicadoHasta[$pago->id] ?? 0), 2));
+    $siguen = $venta->pagos->filter(fn ($pg) => ! $enEste->has($pg->id) && $pendienteDe($pg) > 0.009);
 @endphp
 <!DOCTYPE html>
 <html lang="es">
@@ -65,6 +77,16 @@
         .concepto .regalo { color: #a8aeb8; font-style: italic; }
         .desglose td { padding: 3px 0; font-size: 9px; color: #a8aeb8; border: 0; }
         .desglose .v { text-align: right; color: #6b7280; }
+
+        /* Cómo se repartió el pago entre los pagos del calendario */
+        .aplic { margin-top: 24px; }
+        .aplic .intro { margin: 0 0 8px; font-size: 9.5px; color: #4b5563; }
+        .aplic th { padding: 0 0 6px; border-bottom: 1px solid #1a1d23; color: #a8aeb8; font-size: 7.5px;
+                    font-weight: bold; letter-spacing: 1.6px; text-transform: uppercase; text-align: left; }
+        .aplic td { padding: 6px 0; border-bottom: 1px solid #ededf0; font-size: 9.5px; color: #4b5563; }
+        .aplic .nom { color: #1a1d23; font-weight: bold; }
+        .aplic .det { color: #a8aeb8; font-size: 8.5px; }
+        .aplic .p { width: 96px; text-align: right; }
 
         .estado { margin-top: 26px; }
         .estado td { padding: 5px 0; font-size: 9.5px; color: #6b7280; }
@@ -141,7 +163,11 @@
                 @if ($cobro->referencia)
                     <tr><td class="k">Referencia</td><td class="v">{{ $cobro->referencia }}</td></tr>
                 @endif
-                @if ($cobro->parcialidad)
+                @if ($enEste->count() > 1)
+                    <tr><td class="k">Aplicado a</td><td class="v">{{ $enEste->count() }} pagos (ver detalle)</td></tr>
+                @elseif ($enEste->count() === 1)
+                    <tr><td class="k">Aplicado a</td><td class="v">{{ $enEste->first()->pago?->nombre }}</td></tr>
+                @elseif ($cobro->parcialidad)
                     <tr><td class="k">Aplicado a</td><td class="v">{{ $cobro->parcialidad->nombre }}</td></tr>
                 @endif
                 <tr><td class="k">Registró</td><td class="v">{{ $cobro->registradoPor?->name ?: '—' }}</td></tr>
@@ -155,6 +181,57 @@
     <div class="n">${{ number_format((float) $cobro->monto, 2) }}</div>
     <div class="letra">Pesos mexicanos</div>
 </div>
+
+@if ($enEste->isNotEmpty())
+    <div class="aplic">
+        <p class="rot">Cómo se aplicó este pago</p>
+        <p class="intro">
+            Los ${{ number_format((float) $cobro->monto, 2) }} de este recibo se
+            {{ $enEste->count() > 1 ? 'aplican a ' . $enEste->count() . ' pagos del calendario' : 'aplican al pago del calendario indicado' }}:
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Pago</th>
+                    <th class="p">Monto del pago</th>
+                    <th class="p">Aplicado hoy</th>
+                    <th class="p">Le resta</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($enEste as $ap)
+                    @php $pg = $ap->pago; $resta = $pg ? $pendienteDe($pg) : 0; @endphp
+                    <tr>
+                        <td><span class="nom">{{ $pg?->nombre ?? 'Pago' }}</span>
+                            @if ($pg?->fecha)<span class="det"> · vence {{ $pg->fecha->format('d/m/Y') }}</span>@endif</td>
+                        <td class="p">${{ number_format((float) ($pg?->monto ?? 0), 2) }}</td>
+                        <td class="p nom">${{ number_format((float) $ap->monto, 2) }}</td>
+                        <td class="p">{{ $resta <= 0.009 ? 'Liquidado' : '$' . number_format($resta, 2) }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        @if ($siguen->isNotEmpty())
+            <p class="rot" style="margin-top:16px;">Pagos que siguen pendientes</p>
+            <table>
+                <tbody>
+                    @foreach ($siguen as $pg)
+                        <tr>
+                            <td><span class="nom">{{ $pg->nombre }}</span>
+                                @if ($pg->fecha)<span class="det"> · vence {{ $pg->fecha->format('d/m/Y') }}</span>@endif</td>
+                            <td class="p">${{ number_format($pendienteDe($pg), 2) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+
+        @if ($sinAplicar > 0.009)
+            <p class="intro" style="margin-top:8px;">Quedan ${{ number_format($sinAplicar, 2) }} de este recibo sin aplicar a un pago del calendario.</p>
+        @endif
+    </div>
+@endif
 
 @if ($venta->items->isNotEmpty())
     <div class="concepto">
@@ -227,10 +304,10 @@
 
 <table class="estado" style="width:44%; margin-left:56%;">
     <tr><td>Total de la venta</td><td class="v">${{ number_format($venta->montoExigible(), 2) }}</td></tr>
-    <tr><td>Pagado a la fecha</td><td class="v">${{ number_format($venta->totalCobrado(), 2) }}</td></tr>
+    <tr><td>Pagado a la fecha de este recibo</td><td class="v">${{ number_format($pagadoHasta, 2) }}</td></tr>
     <tr class="saldo">
-        <td>{{ $venta->saldo() > 0 ? 'Saldo pendiente' : 'Saldo' }}</td>
-        <td class="v">${{ number_format($venta->saldo(), 2) }}</td>
+        <td>{{ $saldoHasta > 0 ? 'Saldo pendiente' : 'Saldo' }}</td>
+        <td class="v">${{ number_format($saldoHasta, 2) }}</td>
     </tr>
 </table>
 
@@ -240,7 +317,7 @@
 
 <p class="parrafo">
     Este recibo ampara únicamente el importe señalado.
-    @if ($venta->saldo() > 0)
+    @if ($saldoHasta > 0)
         El saldo pendiente se rige por el calendario de pagos acordado.
     @else
         Con este pago la venta {{ $venta->folio }} queda liquidada.

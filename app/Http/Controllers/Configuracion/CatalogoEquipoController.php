@@ -7,46 +7,42 @@ use App\Models\Brand;
 use App\Models\EquipmentModel;
 use App\Models\EquipmentType;
 use App\Models\Subtype;
+use App\Services\Almacen\CatalogoDeEquipo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 /**
  * Catalogo de equipo: tipo -> subtipo -> marca -> modelo.
  *
  * Todo se administra desde Configuracion > Catalogos, sin tocar codigo.
  * Cada accion regresa al listado con un mensaje que el layout muestra
- * como toast.
+ * como toast. Las reglas (repetidos, marcas por subtipo) viven en
+ * CatalogoDeEquipo, que comparte con la API: si algo choca lanza un error
+ * de validacion y se regresa al formulario con lo capturado.
  */
 class CatalogoEquipoController extends Controller
 {
+    public function __construct(private readonly CatalogoDeEquipo $catalogo)
+    {
+    }
+
     // ===================== Tipos de equipo =====================
 
     public function storeType(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', Rule::unique('equipment_types', 'name')],
-            'requiere_emplayado' => ['nullable', 'boolean'],
-        ], ['name.unique' => 'Ya existe un tipo de equipo con ese nombre.']);
+        $data = $request->validate(CatalogoDeEquipo::reglasTipo(), CatalogoDeEquipo::MENSAJES_TIPO);
 
-        $data['requiere_emplayado'] = $request->boolean('requiere_emplayado');
-
-        EquipmentType::create($data);
+        $this->catalogo->crearTipo($data['name'], $request->boolean('requiere_emplayado'));
 
         return $this->volver('Tipo de equipo guardado correctamente.');
     }
 
     public function updateType(Request $request, EquipmentType $type): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', Rule::unique('equipment_types', 'name')->ignore($type->id)],
-            'requiere_emplayado' => ['nullable', 'boolean'],
-        ], ['name.unique' => 'Ya existe un tipo de equipo con ese nombre.']);
+        $data = $request->validate(CatalogoDeEquipo::reglasTipo($type), CatalogoDeEquipo::MENSAJES_TIPO);
 
-        $data['requiere_emplayado'] = $request->boolean('requiere_emplayado');
-
-        $type->update($data);
+        $this->catalogo->actualizarTipo($type, $data['name'], $request->boolean('requiere_emplayado'));
 
         return $this->volver('Tipo de equipo actualizado correctamente.');
     }
@@ -63,32 +59,18 @@ class CatalogoEquipoController extends Controller
 
     public function storeSubtype(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'equipment_type_id' => ['required', 'exists:equipment_types,id'],
-            'name' => ['required', 'string', 'max:255'],
-        ]);
+        $data = $request->validate(CatalogoDeEquipo::REGLAS_SUBTIPO);
 
-        if ($this->subtipoRepetido($data['equipment_type_id'], $data['name'])) {
-            return back()->withInput()->withErrors(['name' => 'Ese subtipo ya existe dentro del tipo elegido.']);
-        }
-
-        Subtype::create($data);
+        $this->catalogo->crearSubtipo($data);
 
         return $this->volver('Subtipo guardado correctamente.');
     }
 
     public function updateSubtype(Request $request, Subtype $subtype): RedirectResponse
     {
-        $data = $request->validate([
-            'equipment_type_id' => ['required', 'exists:equipment_types,id'],
-            'name' => ['required', 'string', 'max:255'],
-        ]);
+        $data = $request->validate(CatalogoDeEquipo::REGLAS_SUBTIPO);
 
-        if ($this->subtipoRepetido($data['equipment_type_id'], $data['name'], $subtype->id)) {
-            return back()->withInput()->withErrors(['name' => 'Ese subtipo ya existe dentro del tipo elegido.']);
-        }
-
-        $subtype->update($data);
+        $this->catalogo->actualizarSubtipo($subtype, $data);
 
         return $this->volver('Subtipo actualizado correctamente.');
     }
@@ -100,32 +82,14 @@ class CatalogoEquipoController extends Controller
         return $this->volver('Subtipo eliminado correctamente.');
     }
 
-    private function subtipoRepetido(int|string $typeId, string $name, ?int $ignorar = null): bool
-    {
-        return Subtype::where('equipment_type_id', $typeId)
-            ->where('name', $name)
-            ->when($ignorar, fn ($q) => $q->where('id', '!=', $ignorar))
-            ->exists();
-    }
-
     // ===================== Marcas =====================
     // Una marca es global, pero se declara en que subtipo se ofrece.
 
     public function storeBrand(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'subtype_id' => ['required', 'exists:subtypes,id'],
-            'name' => ['required', 'string', 'max:255'],
-        ]);
+        $data = $request->validate(CatalogoDeEquipo::REGLAS_MARCA);
 
-        $brand = Brand::firstOrCreate(['name' => $data['name']]);
-        $subtype = Subtype::findOrFail($data['subtype_id']);
-
-        if ($subtype->brands()->where('brands.id', $brand->id)->exists()) {
-            return back()->withInput()->withErrors(['name' => 'Esa marca ya está dada de alta en ese subtipo.']);
-        }
-
-        $subtype->brands()->attach($brand->id);
+        $this->catalogo->crearMarca($data['subtype_id'], $data['name']);
 
         return $this->volver('Marca guardada correctamente.');
     }
@@ -133,23 +97,9 @@ class CatalogoEquipoController extends Controller
     /** Renombra la marca en todo el sistema, o la mueve de subtipo. */
     public function updateBrand(Request $request, Brand $brand): RedirectResponse
     {
-        $data = $request->validate([
-            'subtype_id' => ['required', 'exists:subtypes,id'],
-            'subtype_anterior' => ['required', 'exists:subtypes,id'],
-            'name' => ['required', 'string', 'max:255', Rule::unique('brands', 'name')->ignore($brand->id)],
-        ], ['name.unique' => 'Ya existe otra marca con ese nombre.']);
+        $data = $request->validate(CatalogoDeEquipo::reglasActualizarMarca($brand), CatalogoDeEquipo::MENSAJES_ACTUALIZAR_MARCA);
 
-        $brand->update(['name' => $data['name']]);
-
-        if ((int) $data['subtype_id'] !== (int) $data['subtype_anterior']) {
-            $brand->subtypes()->detach($data['subtype_anterior']);
-            $brand->subtypes()->syncWithoutDetaching([$data['subtype_id']]);
-
-            // Sus modelos se mudan con ella.
-            EquipmentModel::where('brand_id', $brand->id)
-                ->where('subtype_id', $data['subtype_anterior'])
-                ->update(['subtype_id' => $data['subtype_id']]);
-        }
+        $this->catalogo->actualizarMarca($brand, $data['name'], $data['subtype_id'], $data['subtype_anterior']);
 
         return $this->volver('Marca actualizada correctamente.');
     }
@@ -157,20 +107,9 @@ class CatalogoEquipoController extends Controller
     /** Quita la marca de un subtipo; sigue existiendo en los demas. */
     public function destroyBrand(Request $request, Brand $brand): RedirectResponse
     {
-        $data = $request->validate([
-            'subtype_id' => ['required', 'exists:subtypes,id'],
-        ]);
+        $data = $request->validate(CatalogoDeEquipo::REGLAS_QUITAR_MARCA);
 
-        $brand->subtypes()->detach($data['subtype_id']);
-
-        EquipmentModel::where('brand_id', $brand->id)
-            ->where('subtype_id', $data['subtype_id'])
-            ->delete();
-
-        // Si ya no se ofrece en ningun subtipo ni tiene modelos, se retira del catalogo.
-        if ($brand->subtypes()->count() === 0 && $brand->equipmentModels()->count() === 0) {
-            $brand->delete();
-        }
+        $this->catalogo->quitarMarca($brand, $data['subtype_id']);
 
         return $this->volver('Marca eliminada correctamente.');
     }
@@ -179,39 +118,18 @@ class CatalogoEquipoController extends Controller
 
     public function storeModel(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'subtype_id' => ['required', 'exists:subtypes,id'],
-            'brand_id' => ['required', 'exists:brands,id'],
-            'name' => ['required', 'string', 'max:255'],
-        ]);
+        $data = $request->validate(CatalogoDeEquipo::REGLAS_MODELO);
 
-        if ($this->modeloRepetido($data)) {
-            return back()->withInput()->withErrors(['name' => 'Ese modelo ya existe para esa marca y subtipo.']);
-        }
-
-        // Alta del modelo implica que la marca se ofrece en ese subtipo.
-        Subtype::find($data['subtype_id'])?->brands()->syncWithoutDetaching([$data['brand_id']]);
-
-        EquipmentModel::create($data);
+        $this->catalogo->crearModelo($data);
 
         return $this->volver('Modelo guardado correctamente.');
     }
 
     public function updateModel(Request $request, EquipmentModel $model): RedirectResponse
     {
-        $data = $request->validate([
-            'subtype_id' => ['required', 'exists:subtypes,id'],
-            'brand_id' => ['required', 'exists:brands,id'],
-            'name' => ['required', 'string', 'max:255'],
-        ]);
+        $data = $request->validate(CatalogoDeEquipo::REGLAS_MODELO);
 
-        if ($this->modeloRepetido($data, $model->id)) {
-            return back()->withInput()->withErrors(['name' => 'Ese modelo ya existe para esa marca y subtipo.']);
-        }
-
-        Subtype::find($data['subtype_id'])?->brands()->syncWithoutDetaching([$data['brand_id']]);
-
-        $model->update($data);
+        $this->catalogo->actualizarModelo($model, $data);
 
         return $this->volver('Modelo actualizado correctamente.');
     }
@@ -221,15 +139,6 @@ class CatalogoEquipoController extends Controller
         $model->delete();
 
         return $this->volver('Modelo eliminado correctamente.');
-    }
-
-    private function modeloRepetido(array $data, ?int $ignorar = null): bool
-    {
-        return EquipmentModel::where('brand_id', $data['brand_id'])
-            ->where('subtype_id', $data['subtype_id'])
-            ->where('name', $data['name'])
-            ->when($ignorar, fn ($q) => $q->where('id', '!=', $ignorar))
-            ->exists();
     }
 
     // ===================== Cascada para los formularios =====================

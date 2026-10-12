@@ -35,11 +35,19 @@ require __DIR__.'/web/facturas.php';
 require __DIR__.'/web/inventory/inventory.php';
 require __DIR__.'/web/inventory/congresos.php';
 
+// Logistica y rutas
+require __DIR__.'/web/logistica.php';
+
+// Recursos humanos: asistencia con lector de huella
+require __DIR__.'/web/asistencia.php';
+require __DIR__.'/web/nomina.php';
+
 // Configuracion
 require __DIR__.'/web/configuracion/catalogo.php';
 require __DIR__.'/web/configuracion/roles.php';
 require __DIR__.'/web/configuracion/refaciones.php';
 require __DIR__.'/web/configuracion/tipo_equipo.php';
+require __DIR__.'/web/configuracion/api.php';
 
 // Marketing
 require __DIR__.'/web/marketing/marketing.php';

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\LineaDeTiempo;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 /**
@@ -16,20 +15,11 @@ class ActividadController extends Controller
 {
     public function index(Request $request, LineaDeTiempo $linea): View
     {
-        $hasta = $this->fecha($request->get('hasta')) ?? now();
-        $desde = $this->fecha($request->get('desde')) ?? $hasta->copy()->subDays(6);
-
-        if ($desde->gt($hasta)) {
-            [$desde, $hasta] = [$hasta, $desde];
-        }
-
-        // Tope de 92 días: la lista se arma en memoria.
-        if ($desde->diffInDays($hasta) > 92) {
-            $desde = $hasta->copy()->subDays(92);
-        }
+        // Por omisión la última semana, con tope de días (ver la clase).
+        [$desde, $hasta] = LineaDeTiempo::rango($request->get('desde'), $request->get('hasta'));
 
         $usuarioId = $request->integer('usuario') ?: null;
-        $modulo = array_key_exists($request->get('modulo'), LineaDeTiempo::MODULOS) ? $request->get('modulo') : null;
+        $modulo = LineaDeTiempo::modulo($request->get('modulo'));
 
         $eventos = $linea->eventos($desde, $hasta, $usuarioId, $modulo);
 
@@ -46,14 +36,5 @@ class ActividadController extends Controller
             'porModulo' => $eventos->countBy('modulo'),
             'porUsuario' => $eventos->countBy('usuario')->sortDesc(),
         ]);
-    }
-
-    private function fecha(?string $valor): ?Carbon
-    {
-        try {
-            return $valor ? Carbon::parse($valor) : null;
-        } catch (\Throwable) {
-            return null;
-        }
     }
 }

@@ -139,161 +139,125 @@ class CalendarioPagos
     }
 
     /**
-     * Dinero que ya entró pero que ninguna parcialidad tiene ligado
-     * todavía: cobros sueltos (sin parcialidad asignada) más la parte de
-     * un cobro que se pasó de lo que le tocaba a la parcialidad a la que
-     * se ligó. Es justo lo que falta por repartir.
+     * Dinero que ya entró pero que ningún pago del calendario ha recibido:
+     * lo que falta aplicar de cada cobro. Es 0 mientras el calendario tenga
+     * dónde recibirlo; solo queda algo si no había pagos pendientes (o en
+     * cobros viejos registrados "sueltos").
      */
     public function excedentePendiente(Venta $venta): float
     {
-        $porParcialidad = round($venta->pagos->sum(function (VentaPago $pago) {
-            $acumulado = 0.0;
-            $exceso = 0.0;
+        $venta->loadMissing('cobros.aplicaciones');
 
-            foreach ($pago->cobros->sortBy('id') as $cobro) {
-                $disponible = round((float) $pago->monto - $acumulado, 2);
-                $exceso += max(0, round((float) $cobro->monto - max(0, $disponible), 2));
-                $acumulado += (float) $cobro->monto;
-            }
-
-            return $exceso;
-        }), 2);
-
-        $sueltos = round((float) $venta->cobros->whereNull('venta_pago_id')->sum('monto'), 2);
-
-        return round($porParcialidad + $sueltos, 2);
+        return round((float) $venta->cobros->sum(fn (Cobro $c) => $c->sinAplicar()), 2);
     }
 
     /**
-     * Dinero cobrado que ninguna parcialidad refleja todavía —un abono
-     * suelto, o la parte de un cobro que se pasó de lo que le tocaba a su
-     * parcialidad— no se "borra" de las parcialidades siguientes: se
-     * REASIGNA a ellas, empezando por la más próxima que siga pendiente.
+     * Aplica un cobro a los pagos del calendario SIN partirlo ni cambiar los
+     * montos de los pagos: el cobro sigue siendo un solo recibo por lo que el
+     * cliente pagó, y se reparte en orden entre los pagos que siguen pendientes.
      *
-     * Es la diferencia importante: reducir el monto de una parcialidad que
-     * nunca recibió ese dinero la deja en $0 sin cobrar (parece que no
-     * debe nada, cuando en realidad nadie le abonó). Reasignar el cobro
-     * hace que esa parcialidad quede correctamente marcada como pagada.
+     * Ejemplo: tres pagos de $533 y un cobro de $1,000 → $533 al pago 1
+     * (queda liquidado), $467 al pago 2 (le restan $66) y el pago 3 queda
+     * igual. El recibo dice exactamente eso.
+     *
+     * Si se eligió un pago de partida se empieza por ése, luego los que le
+     * siguen y, si aún sobra, los anteriores que sigan pendientes.
+     *
+     * @return array{aplicado: float, sin_aplicar: float, lineas: array<int, array{pago: VentaPago, monto: float, liquida: bool, resta: float}>}
      */
-    public function absorberExcedente(Venta $venta): array
+    public function aplicar(Venta $venta, Cobro $cobro, ?int $desdePagoId = null): array
     {
-        $resultado = DB::transaction(function () use ($venta) {
-            $repartido = 0.0;
-            $tocadas = 0;
+        $resultado = DB::transaction(function () use ($venta, $cobro, $desdePagoId) {
+            $cobro->load('aplicaciones');
+            $restante = $cobro->sinAplicar();
+            $lineas = [];
 
-            // 1) Cobros ligados a una parcialidad que, ellos solos, superan
-            //    lo que le tocaba: se recortan a lo justo y el resto se
-            //    desliga, para repartirse en el paso 2 como un suelto más.
             $pagos = $venta->pagos()->orderBy('orden')->orderBy('id')->get();
+
+            if ($desdePagoId && $pagos->contains('id', $desdePagoId)) {
+                $ancla = $pagos->firstWhere('id', $desdePagoId);
+                $pagos = $pagos->filter(fn (VentaPago $p) => $p->orden > $ancla->orden || ($p->orden === $ancla->orden && $p->id >= $ancla->id))
+                    ->concat($pagos->filter(fn (VentaPago $p) => $p->orden < $ancla->orden || ($p->orden === $ancla->orden && $p->id < $ancla->id)))
+                    ->values();
+            }
 
             foreach ($pagos as $pago) {
-                $acumulado = 0.0;
-
-                foreach ($pago->cobros()->orderBy('id')->get() as $cobro) {
-                    $disponible = round((float) $pago->monto - $acumulado, 2);
-
-                    if ($disponible <= 0.009) {
-                        // La parcialidad ya quedó cubierta por cobros
-                        // anteriores: este cobro completo sobra.
-                        $cobro->venta_pago_id = null;
-                        $cobro->save();
-
-                        continue;
-                    }
-
-                    if ((float) $cobro->monto > $disponible + 0.009) {
-                        $exceso = round((float) $cobro->monto - $disponible, 2);
-
-                        Cobro::create([
-                            'venta_id' => $venta->id,
-                            'venta_pago_id' => null,
-                            'folio' => $cobro->folio.'-B',
-                            'fecha' => $cobro->fecha,
-                            'monto' => $exceso,
-                            'metodo' => $cobro->metodo,
-                            'referencia' => $cobro->referencia,
-                            'nota' => trim(($cobro->nota ? $cobro->nota.' · ' : '').'Excedente de '.$cobro->folio),
-                            'registrado_por' => $cobro->registrado_por,
-                        ]);
-
-                        $cobro->monto = $disponible;
-                        $cobro->save();
-                    }
-
-                    $acumulado = round($acumulado + (float) $cobro->monto, 2);
+                if ($restante <= 0.009) {
+                    break;
                 }
+
+                $pago->unsetRelation('cobros');   // saldo fresco: ya incluye lo aplicado en esta misma transacción
+                $saldo = $pago->saldo();
+
+                if ($saldo <= 0.009) {
+                    continue;
+                }
+
+                $toma = round(min($saldo, $restante), 2);
+
+                $cobro->aplicaciones()->create(['venta_pago_id' => $pago->id, 'monto' => $toma]);
+
+                $restante = round($restante - $toma, 2);
+                $lineas[] = [
+                    'pago' => $pago,
+                    'monto' => $toma,
+                    'liquida' => round($saldo - $toma, 2) <= 0.009,
+                    'resta' => max(0, round($saldo - $toma, 2)),
+                ];
             }
 
-            // 2) Cobros sueltos (sin parcialidad, incluyendo los que se
-            //    acaban de desligar arriba): se asignan a la parcialidad
-            //    pendiente más próxima, completos o partidos, en orden.
-            $pagos = $venta->pagos()->orderBy('orden')->orderBy('id')->get();
-            $sueltos = $venta->cobros()->whereNull('venta_pago_id')->orderBy('fecha')->orderBy('id')->get();
-
-            foreach ($sueltos as $suelto) {
-                $restante = (float) $suelto->monto;
-                $sufijo = 1;
-
-                foreach ($pagos as $pago) {
-                    if ($restante <= 0.009) {
-                        break;
-                    }
-
-                    $saldoPago = $pago->saldo();
-
-                    if ($saldoPago <= 0.009) {
-                        continue;
-                    }
-
-                    if ($restante <= $saldoPago + 0.009) {
-                        // Cabe completo: se liga sin partirlo.
-                        $suelto->venta_pago_id = $pago->id;
-                        $suelto->save();
-
-                        $repartido = round($repartido + $restante, 2);
-                        $tocadas++;
-                        $restante = 0.0;
-
-                        break;
-                    }
-
-                    // No cabe completo: la porción que sí cabe se liga
-                    // aparte, y el resto sigue probando con la siguiente
-                    // parcialidad pendiente.
-                    Cobro::create([
-                        'venta_id' => $venta->id,
-                        'venta_pago_id' => $pago->id,
-                        'folio' => $suelto->folio.'-'.$sufijo++,
-                        'fecha' => $suelto->fecha,
-                        'monto' => $saldoPago,
-                        'metodo' => $suelto->metodo,
-                        'referencia' => $suelto->referencia,
-                        'nota' => $suelto->nota,
-                        'registrado_por' => $suelto->registrado_por,
-                    ]);
-
-                    $repartido = round($repartido + $saldoPago, 2);
-                    $tocadas++;
-                    $restante = round($restante - $saldoPago, 2);
-                    $suelto->monto = $restante;
-                    $suelto->save();
-                }
+            // El cobro "apunta" al primer pago que cubrió (para listados y recibos viejos)
+            if ($lineas && $cobro->venta_pago_id !== $lineas[0]['pago']->id) {
+                $cobro->venta_pago_id = $lineas[0]['pago']->id;
+                $cobro->save();
             }
 
-            return ['excedente' => round($repartido, 2), 'ajustadas' => $tocadas];
+            return [
+                'aplicado' => round(array_sum(array_column($lineas, 'monto')), 2),
+                'sin_aplicar' => max(0, $restante),
+                'lineas' => $lineas,
+            ];
         });
 
-        if ($resultado['excedente'] > 0.009) {
+        if ($resultado['lineas']) {
+            $detalle = collect($resultado['lineas'])->map(fn ($l) => '«'.$l['pago']->nombre.'» $'.number_format($l['monto'], 2)
+                .($l['liquida'] ? ' (liquidado)' : ' (restan $'.number_format($l['resta'], 2).')'))->implode(', ');
+
             VentaBitacora::registrar(
                 $venta,
-                'excedente_absorbido',
-                'Dinero cobrado que no estaba ligado a ninguna parcialidad: se asignaron $'
-                    .number_format($resultado['excedente'], 2).' a '.$resultado['ajustadas'].' parcialidad(es)',
-                $resultado
+                'cobro_aplicado',
+                "El cobro {$cobro->folio} por \$".number_format((float) $cobro->monto, 2).' se aplicó a '.count($resultado['lineas']).' pago(s): '.$detalle,
+                ['cobro_id' => $cobro->id, 'aplicado' => $resultado['aplicado'], 'sin_aplicar' => $resultado['sin_aplicar']]
             );
         }
 
         return $resultado;
+    }
+
+    /**
+     * Aplica a los pagos pendientes el dinero cobrado que ningún pago ha
+     * recibido (cobros viejos "sueltos"), en orden y sin partir los cobros.
+     *
+     * @return array{excedente: float, ajustadas: int}
+     */
+    public function absorberExcedente(Venta $venta): array
+    {
+        $venta->load(['cobros.aplicaciones']);
+
+        $aplicado = 0.0;
+        $tocadas = 0;
+
+        foreach ($venta->cobros->sortBy([['fecha', 'asc'], ['id', 'asc']]) as $cobro) {
+            if ($cobro->sinAplicar() <= 0.009) {
+                continue;
+            }
+
+            $r = $this->aplicar($venta, $cobro);
+            $aplicado = round($aplicado + $r['aplicado'], 2);
+            $tocadas += count($r['lineas']);
+        }
+
+        return ['excedente' => $aplicado, 'ajustadas' => $tocadas];
     }
 
     /**

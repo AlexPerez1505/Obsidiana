@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 
+use App\Services\Cuenta\MiPerfil;
 use App\Services\SessionManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class AccountController extends Controller
@@ -59,12 +59,8 @@ class AccountController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-            'confirm'  => ['required', Rule::in(['ELIMINAR'])],
-        ], [
-            'confirm.in' => 'Debes escribir ELIMINAR para confirmar.',
-        ]);
+        // Mismo requisito que por la API.
+        $request->validate(MiPerfil::reglasEliminarCuenta(), MiPerfil::MENSAJES_ELIMINAR_CUENTA);
 
         $user = $request->user();
 

@@ -11,15 +11,22 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     public const STATUS_PENDING = 'pending';
     public const STATUS_APPROVED = 'approved';
     public const STATUS_BANNED = 'banned';
+
+    protected static function booted(): void
+    {
+        // Sus tokens de la API (apps e integraciones) mueren con la cuenta.
+        static::deleting(fn (User $user) => $user->tokens()->delete());
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -83,6 +90,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'fecha_ingreso' => 'date',
             'vacaciones_disponibles' => 'integer',
+            'sueldo_quincenal' => 'decimal:2',
             'dashboard_widgets' => 'array',
         ];
     }
@@ -171,6 +179,26 @@ class User extends Authenticatable implements MustVerifyEmail
     public function attendances(): HasMany
     {
         return $this->hasMany(EmployeeAttendance::class)->latest('attendance_date');
+    }
+
+    public function horario(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(EmployeeSchedule::class);
+    }
+
+    public function huellas(): HasMany
+    {
+        return $this->hasMany(EmployeeBiometric::class);
+    }
+
+    public function checadas(): HasMany
+    {
+        return $this->hasMany(AttendancePunch::class)->latest('punched_at');
+    }
+
+    public function modalidades(): HasMany
+    {
+        return $this->hasMany(AttendanceModality::class)->latest('date_from');
     }
 
     /**

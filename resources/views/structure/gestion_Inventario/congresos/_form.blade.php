@@ -119,12 +119,14 @@
                 <div class="cg-head"><x-ui.section-title style="margin:0;">Programación</x-ui.section-title></div>
 
                 <div class="cg-2">
-                    <x-ui.form-group label="Inicio *" name="fecha_inicio" type="date"
+                    <x-ui.form-group label="Inicio del congreso *" name="fecha_inicio" type="date"
                                      :value="$esEdicion ? optional($congress->fecha_inicio)->format('Y-m-d') : old('fecha_inicio')"
                                      :required="true" />
-                    <x-ui.form-group label="Fin *" name="fecha_finalizacion" type="date"
+                    <x-ui.form-group label="Fin del congreso *" name="fecha_finalizacion" type="date"
                                      :value="$esEdicion ? optional($congress->fecha_finalizacion)->format('Y-m-d') : old('fecha_finalizacion')"
                                      :required="true" />
+                    <x-ui.form-group label="Fecha de montaje" name="fecha_montaje" type="date"
+                                     :value="$esEdicion ? optional($congress->fecha_montaje)->format('Y-m-d') : old('fecha_montaje')" />
                     <x-ui.form-group label="Hora de montaje *" name="hora_montaje" type="time"
                                      :value="$esEdicion ? optional($congress->hora_montaje)->format('H:i') : old('hora_montaje')"
                                      :required="true" />
@@ -132,6 +134,37 @@
                                      :value="$esEdicion ? optional($congress->hora_desmontaje)->format('H:i') : old('hora_desmontaje')"
                                      :required="true" />
                 </div>
+                <p class="cg-hint">
+                    El montaje suele ser antes de que arranque el congreso: por eso la
+                    <b>fecha de montaje</b> es aparte de la <b>fecha de inicio</b>.
+                </p>
+            </x-ui.card>
+
+            <x-ui.card>
+                <div class="cg-head"><x-ui.section-title style="margin:0;">Costos</x-ui.section-title></div>
+
+                <div class="cg-2">
+                    <x-ui.form-group label="Costo del congreso" for="costo">
+                        <div class="cg-money">
+                            <span>$</span>
+                            <input id="costo" name="costo" type="number" step="0.01" min="0" inputmode="decimal"
+                                   placeholder="0.00" data-money="costo"
+                                   value="{{ old('costo', $esEdicion ? optional($congress->costo)->__toString() : '') }}">
+                        </div>
+                    </x-ui.form-group>
+                    <x-ui.form-group label="Pagado / apartado" for="pagado">
+                        <div class="cg-money">
+                            <span>$</span>
+                            <input id="pagado" name="pagado" type="number" step="0.01" min="0" inputmode="decimal"
+                                   placeholder="0.00" data-money="pagado"
+                                   value="{{ old('pagado', $esEdicion ? optional($congress->pagado)->__toString() : '') }}">
+                        </div>
+                    </x-ui.form-group>
+                </div>
+
+                <p class="cg-hint" data-pendiente-wrap hidden>
+                    Pendiente por pagar: <b data-pendiente>$0.00</b>
+                </p>
             </x-ui.card>
 
             <x-ui.card>
@@ -180,6 +213,12 @@
                 <x-ui.form-group label="Dirección / Lugar" name="direccion"
                                  placeholder="Ej. Hotel Hilton, Ciudad de México"
                                  :value="$v('direccion')" />
+
+                <div style="margin-top:16px;">
+                    <x-ui.form-group label="Número de stand" name="num_stand"
+                                     placeholder="Ej. A-14"
+                                     :value="$v('num_stand')" />
+                </div>
 
                 <p class="cg-hint" data-mapa hidden>
                     <a href="#" target="_blank" rel="noopener" data-mapa-link>Ver en Google Maps</a>
@@ -251,6 +290,14 @@
     .cg-form textarea { resize:vertical; }
     .cg-hint { margin:8px 0 0; color:var(--muted); font-size:12.5px; line-height:1.45; }
     .cg-hint a { color:var(--primary); }
+
+    /* Campo de dinero: prefijo $ pegado al input, sin doble borde. */
+    .cg-form .cg-money { display:flex; align-items:center; gap:6px; padding:0 12px;
+                         border:1px solid var(--border); border-radius:9px; background:var(--surface); }
+    .cg-form .cg-money:focus-within { border-color:var(--primary); }
+    .cg-form .cg-money span { color:var(--muted); font-size:14px; }
+    .cg-form .cg-money input { flex:1; min-width:0; border:0; background:transparent; padding:11px 0;
+                               color:var(--text); font-family:inherit; font-size:15px; outline:none; }
 
     .cg-hr { margin:18px 0; border:0; border-top:1px solid var(--border); }
 
@@ -400,6 +447,39 @@
         pintarMapa();
     }
 
+    // Pendiente por pagar, en vivo: costo - pagado.
+    var costoEl = document.getElementById('costo');
+    var pagadoEl = document.getElementById('pagado');
+    var pendWrap = document.querySelector('[data-pendiente-wrap]');
+    var pendOut = document.querySelector('[data-pendiente]');
+
+    function pintarPendiente() {
+        var costo = parseFloat(costoEl.value) || 0;
+        var pagado = parseFloat(pagadoEl.value) || 0;
+
+        if (costoEl.value === '' && pagadoEl.value === '') {
+            pendWrap.hidden = true;
+            return;
+        }
+
+        var pend = Math.max(0, costo - pagado);
+        pendWrap.hidden = false;
+
+        if (costo > 0 && pend <= 0) {
+            pendOut.textContent = 'Liquidado';
+            pendOut.style.color = 'var(--green)';
+        } else {
+            pendOut.textContent = '$' + pend.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            pendOut.style.color = pend > 0 ? 'var(--danger)' : 'var(--text)';
+        }
+    }
+
+    if (costoEl && pagadoEl && pendWrap && pendOut) {
+        costoEl.addEventListener('input', pintarPendiente);
+        pagadoEl.addEventListener('input', pintarPendiente);
+        pintarPendiente();
+    }
+
     /* =====================================================================
        Buscador con checklist ("picker"): escribes, filtra, click agrega
        como chip, la × lo quita. Se usa igual para productos y usuarios.
@@ -486,7 +566,7 @@
         dropdownId: 'cgxUsuariosDropdown',
         chipsId: 'cgxUsuariosChips',
         name: 'user_ids[]',
-        datos: @json($usuarios->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email])->values()),
+        datos: @json(($usuarios ?? collect())->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email])->values()),
         texto: function (u) { return u.name + ' ' + u.email; },
         render: function (u) { return '<span>' + u.name + '</span><small>' + u.email + '</small>'; },
         chip: function (u) { return u.name; },
@@ -502,7 +582,7 @@
         dropdownId: 'cgxProductosDropdown',
         chipsId: 'cgxProductosChips',
         name: 'producto_ids_elegidos[]',
-        datos: @json($productosDisponibles->map(fn ($p) => [
+        datos: @json(($productosDisponibles ?? collect())->map(fn ($p) => [
             'id' => $p->id,
             'nombre' => trim(($p->marca ?? '').' '.($p->modelo ?? '')) ?: $p->tipo_equipo,
         ])->values()),

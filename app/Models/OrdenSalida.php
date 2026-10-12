@@ -192,6 +192,38 @@ class OrdenSalida extends Model
         $this->actualizarEstado();
     }
 
+    /**
+     * La orden sale en una ruta de reparto: la entrega del chofer, con la
+     * firma y el nombre de quien recibió, cierra la orden y registra la
+     * fecha real de salida en el inventario. Solo si ya estaba lista para
+     * firmar; si no, no se toca y la ruta lo avisa en su bitácora.
+     */
+    public function entregarPorRuta(int $choferId, ?string $recibeNombre, ?string $firmaPath, \Illuminate\Support\Carbon $cuando): bool
+    {
+        if (! $this->listaParaFirmar()) {
+            return false;
+        }
+
+        $this->update([
+            'estado' => self::ENTREGADA,
+            'entregada_por' => $choferId,
+            'entregada_en' => $cuando,
+            'recibe_nombre' => $recibeNombre ?: 'Recibido en ruta',
+            'firma_recibe_path' => $firmaPath,
+        ]);
+
+        $itemIds = $this->venta?->items()->pluck('id') ?? collect();
+
+        if ($itemIds->isNotEmpty()) {
+            InventoryMovement::where('movement_type', InventoryMovement::TYPE_EXIT)
+                ->whereIn('metadata->venta_item_id', $itemIds->all())
+                ->whereNull('entregado_en')
+                ->update(['entregado_en' => $cuando]);
+        }
+
+        return true;
+    }
+
     public function firmaEntregaUrl(): ?string
     {
         return $this->urlDe($this->firma_entrega_path);

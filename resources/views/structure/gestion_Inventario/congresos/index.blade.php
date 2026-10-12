@@ -65,6 +65,14 @@
     .cgx-stat b { display:block; font-size:18px; font-weight:800; }
     .cgx-stat span { font-size:11px; color:var(--muted); }
 
+    .cgx-costos { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin:0 0 16px; }
+    .cgx-costo { border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+    .cgx-costo span { display:block; font-size:11px; color:var(--muted); margin-bottom:2px; }
+    .cgx-costo b { font-size:17px; font-weight:800; }
+    .cgx-costo b.ok { color:var(--green); }
+    .cgx-costo b.due { color:var(--danger); }
+    @media (max-width:640px) { .cgx-costos { grid-template-columns:1fr; } }
+
     .cgx-sub-title { display:flex; align-items:center; justify-content:space-between; margin:18px 0 8px; }
     .cgx-sub-title h4 { margin:0; font-size:13.5px; font-weight:700; }
     .cgx-sub-title a { font-size:12px; color:var(--primary); text-decoration:none; }
@@ -248,6 +256,19 @@
                                         {{ $congress->lugar }}
                                     </span>
                                 @endif
+                                @if ($congress->num_stand)
+                                    <span>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>
+                                        Stand {{ $congress->num_stand }}
+                                    </span>
+                                @endif
+                                @if ($congress->fecha_montaje)
+                                    <span>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                                        Montaje: {{ $congress->fecha_montaje->format('d/m/Y') }}
+                                        @if ($congress->hora_montaje) · {{ $congress->hora_montaje->format('H:i') }} h @endif
+                                    </span>
+                                @endif
                             </div>
                         </div>
                         <div style="display:flex; gap:6px;">
@@ -305,6 +326,28 @@
                             <span>Estado</span>
                         </div>
                     </div>
+
+                    {{-- ---------- Costos del congreso ---------- --}}
+                    @if ($congress->tieneCostos())
+                        <div class="cgx-costos">
+                            <div class="cgx-costo">
+                                <span>Costo</span>
+                                <b>${{ number_format((float) $congress->costo, 2) }}</b>
+                            </div>
+                            <div class="cgx-costo">
+                                <span>Pagado / apartado</span>
+                                <b class="ok">${{ number_format((float) $congress->pagado, 2) }}</b>
+                            </div>
+                            <div class="cgx-costo">
+                                <span>Pendiente por pagar</span>
+                                @if ($congress->estaLiquidado())
+                                    <b class="ok">Liquidado</b>
+                                @else
+                                    <b class="due">${{ number_format($congress->saldoPendiente(), 2) }}</b>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
 
                     {{-- ---------- Productos del congreso ---------- --}}
                     <div class="cgx-sub-title">

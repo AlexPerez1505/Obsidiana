@@ -38,7 +38,7 @@
                     <div style="font-weight:700; font-size:16px; margin-bottom:4px;">{{ $promocion->mensaje }}</div>
                     <div class="muted" style="font-size:13px;">
                         Segmento: {{ $promocion->categoria?->nombre ?? 'Todos los clientes con recibe_promocion = Sí' }}
-                        @if($promocion->producto) · Producto: {{ $promocion->producto->tipo_equipo }} @endif
+                        @if($promocion->producto) · Producto: {{ $promocion->producto->nombreVisible() }} @endif
                         @if($promocion->paquete) · Paquete: {{ $promocion->paquete->nombre }} @endif
                     </div>
                     <span class="badge badge--info" style="margin-top:8px; display:inline-block;">Estado: {{ ucfirst($promocion->estado) }}</span>

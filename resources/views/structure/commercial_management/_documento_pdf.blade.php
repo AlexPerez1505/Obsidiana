@@ -15,7 +15,7 @@
 @php
     $emp = config('medibuy.empresa');
     $con = config('medibuy.contacto');
-    $ban = config('medibuy.banco');
+    $cuentasBanco = \App\Support\DatosBancarios::cuentas((bool) $doc->aplica_iva);
     $comp = config('medibuy.comprobantes');
     /*
     | La línea de garantía de los términos se arma con lo que dice el
@@ -42,7 +42,7 @@
     $conArchivo = isset($doc->fichas) ? $doc->fichas->filter(fn ($f) => (bool) $f->archivo) : collect();
     $soloTexto = isset($doc->fichas) ? $doc->fichas->filter(fn ($f) => ! $f->archivo && $f->contenido) : collect();
 
-    $hayBanco = array_filter($ban);
+    $hayBanco = count($cuentasBanco) > 0;
 @endphp
 <!DOCTYPE html>
 <html lang="es">
@@ -355,14 +355,16 @@
         @if ($hayBanco)
             <div class="bloque">
                 <p class="rot">Transferencia</p>
-                <table class="banco">
-                    @if ($ban['nombre'])<tr><td class="k">Banco</td><td class="v">{{ $ban['nombre'] }}</td></tr>@endif
-                    @if ($ban['beneficiario'])<tr><td class="k">Beneficiario</td><td class="v">{{ $ban['beneficiario'] }}</td></tr>@endif
-                    @if ($ban['clabe'])<tr><td class="k">CLABE</td><td class="v">{{ $ban['clabe'] }}</td></tr>@endif
-                    @if ($ban['cuenta'])<tr><td class="k">Cuenta</td><td class="v">{{ $ban['cuenta'] }}</td></tr>@endif
-                    @if ($ban['tarjeta'])<tr><td class="k">Tarjeta</td><td class="v">{{ $ban['tarjeta'] }}</td></tr>@endif
-                    <tr><td class="k">Concepto</td><td class="v">{{ $doc->folio }}</td></tr>
-                </table>
+                @foreach ($cuentasBanco as $ban)
+                    <table class="banco" @unless ($loop->last) style="margin-bottom:14px;" @endunless>
+                        @if ($ban['nombre'])<tr><td class="k">Banco</td><td class="v">{{ $ban['nombre'] }}</td></tr>@endif
+                        @if ($ban['beneficiario'])<tr><td class="k">Beneficiario</td><td class="v">{{ $ban['beneficiario'] }}</td></tr>@endif
+                        @if ($ban['clabe'])<tr><td class="k">CLABE</td><td class="v">{{ $ban['clabe'] }}</td></tr>@endif
+                        @if ($ban['cuenta'])<tr><td class="k">Cuenta</td><td class="v">{{ $ban['cuenta'] }}</td></tr>@endif
+                        @if ($ban['tarjeta'])<tr><td class="k">Tarjeta</td><td class="v">{{ $ban['tarjeta'] }}</td></tr>@endif
+                        <tr><td class="k">Concepto</td><td class="v">{{ $doc->folio }}</td></tr>
+                    </table>
+                @endforeach
 
                 @if ($comp['correo'] || $comp['whatsapp'])
                     <p class="parrafo" style="margin-top:14px;">
