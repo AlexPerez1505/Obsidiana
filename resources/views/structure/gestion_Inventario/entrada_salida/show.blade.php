@@ -52,19 +52,6 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
                 </a>
             </div>
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                {{-- Las etiquetas con QR se imprimen y se pegan en cada pieza. --}}
-                @if ($movimiento->seriales()->exists())
-                    <a href="{{ route('inventory.movimientos.etiquetas', $movimiento) }}" target="_blank" class="btn">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 19h2v2h-2z"/></svg>
-                        Etiquetas QR
-                    </a>
-                @endif
-
-                <a href="{{ route('inventory.movimientos.index') }}" class="btn-icono" title="Regresar" aria-label="Regresar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-                </a>
-            </div>
         </div>
     </div>
 
@@ -116,20 +103,6 @@
                 <div style="margin-top:16px;">
                     <div class="muted" style="font-size:12.5px; margin-bottom:6px;">Video de verificación</div>
                     <video src="{{ $movimiento->videoUrl() }}" controls style="max-width:320px; border-radius:10px; border:1px solid var(--border);"></video>
-                </div>
-            @endif
-
-            @if ($movimiento->videoUrl())
-                <div style="margin-top:16px;">
-                    <div class="muted" style="font-size:12.5px; margin-bottom:6px;">Video de verificación</div>
-                    <video src="{{ $movimiento->videoUrl() }}" controls style="max-width:320px; border-radius:10px; border:1px solid var(--border);"></video>
-                </div>
-            @endif
-
-            @if ($movimiento->signatureUrl())
-                <div style="margin-top:16px;">
-                    <div class="muted" style="font-size:12.5px; margin-bottom:6px;">Firma de {{ $movimiento->creator?->name ?: 'quien registró' }}</div>
-                    <img src="{{ $movimiento->signatureUrl() }}" alt="Firma digital" style="max-width:260px; border-radius:10px; border:1px solid var(--border); background:#fff;">
                 </div>
             @endif
         </x-ui.card>

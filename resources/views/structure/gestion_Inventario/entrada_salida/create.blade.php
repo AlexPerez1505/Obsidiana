@@ -11,9 +11,25 @@
           enctype="multipart/form-data" id="form-entrada" novalidate>
         @csrf
 
-        {{-- Los pasos también sirven para saltar: se puede regresar a
-             cualquiera ya visto sin perder lo capturado. --}}
+        {{-- Los pasos también sirven para saltar: se puede ir directo al
+             apartado que quieras, sin pasar por "Continuar". --}}
         <nav class="pasos" id="pasos" aria-label="Pasos del registro"></nav>
+
+        {{--
+            Cuando el servidor rechaza el registro se conserva todo lo que
+            se puede: textos, selecciones, checklist, la firma y el video
+            (que ya está en el servidor). Los archivos elegidos no: el
+            navegador no permite volver a llenar un input de archivo, así
+            que se dice claro en vez de dejar la duda.
+        --}}
+        @if ($errors->any())
+            <div class="aviso-archivos">
+                <b>Se conservó lo que ya habías llenado</b> (datos, checklist, firma
+                @if (old('video_path')) y el video ya subido @endif).
+                Lo único que hay que volver a adjuntar son las <b>fotos</b>: por seguridad
+                el navegador no permite que el sistema las vuelva a poner solo.
+            </div>
+        @endif
 
         {{-- ============================================================
              1. Qué llegó
@@ -104,95 +120,6 @@
             </x-ui.card>
         </section>
 
-        {{-- ============================================================
-             2. Identificación de cada pieza
-        ============================================================ --}}
-        <section class="paso" data-paso="identificacion" data-titulo="Identificación">
-            <x-ui.card style="margin-bottom:18px;">
-                <x-ui.section-title style="margin:0 0 6px;">¿Cómo identificamos cada pieza?</x-ui.section-title>
-                <p class="campo-nota" style="margin:0 0 14px;">
-                    Pase lo que pase, cada pieza recibe su propia etiqueta interna con código QR.
-                    Esto es solo para decidir si además capturas datos de cada una.
-                </p>
-
-                <div class="opciones">
-                    <label class="opcion">
-                        <input type="radio" name="modo_identificacion" value="lote" data-modo
-                               {{ old('modo_identificacion', 'lote') === 'lote' ? 'checked' : '' }}>
-                        <span class="ico">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
-                        </span>
-                        <span>
-                            <span class="t">Solo la cantidad</span>
-                            <span class="d">Llegaron piezas iguales. Para accesorios y consumibles.</span>
-                        </span>
-                    </label>
-
-                    <label class="opcion">
-                        <input type="radio" name="modo_identificacion" value="series" data-modo
-                               {{ old('modo_identificacion') === 'series' ? 'checked' : '' }}>
-                        <span class="ico">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
-                        </span>
-                        <span>
-                            <span class="t">Con número de serie</span>
-                            <span class="d">Pegas las series del fabricante, una por línea.</span>
-                        </span>
-                    </label>
-
-                    <label class="opcion">
-                        <input type="radio" name="modo_identificacion" value="unidades" data-modo
-                               {{ old('modo_identificacion') === 'unidades' ? 'checked' : '' }}>
-                        <span class="ico">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        </span>
-                        <span>
-                            <span class="t">Una por una, con foto</span>
-                            <span class="d">Para equipo mayor. Serie y foto de cada pieza.</span>
-                        </span>
-                    </label>
-                </div>
-            </x-ui.card>
-
-            {{-- Modo lote: no pide nada, solo confirma qué va a pasar --}}
-            <x-ui.card data-panel="lote">
-                <x-ui.section-title style="margin:0 0 8px;">Etiquetas que se van a generar</x-ui.section-title>
-                <p class="campo-nota" style="margin:0;">
-                    Se van a crear <b data-eco-cantidad>1</b> etiqueta(s) con su código QR, una por pieza.
-                    Después las imprimes desde la ficha de la entrada y las pegas en cada producto.
-                </p>
-            </x-ui.card>
-
-            {{-- Modo series --}}
-            <x-ui.card data-panel="series" style="display:none;">
-                <x-ui.form-group label="Números de serie (uno por línea)" for="series_texto">
-                    <textarea id="series_texto" name="series_texto" rows="5"
-                              placeholder="23A12345&#10;23A12346&#10;23A12347">{{ old('series_texto') }}</textarea>
-                    <small class="campo-nota">
-                        Deben ser tantas líneas como la cantidad de arriba. Si pones solo la primera,
-                        el resto de la secuencia se completa solo (23A12345 &rarr; 23A12346, 23A12347...).
-                    </small>
-                </x-ui.form-group>
-
-                {{-- Mucho equipo llega sin serial de fábrica. Aquí se le
-                     arma uno propio con el catálogo que ya se eligió. --}}
-                <div class="generar-series">
-                    <div class="txt">
-                        <b>¿No traen número de serie?</b>
-                        <span data-generar-nota>Se les puede armar uno con el tipo, subtipo, marca y modelo.</span>
-                    </div>
-                    <button type="button" class="btn btn--ghost" data-generar-series>Generar series</button>
-                </div>
-            </x-ui.card>
-
-            {{-- Modo una por una --}}
-            <x-ui.card data-panel="unidades" style="display:none;">
-                <x-ui.section-title style="margin:0 0 6px;">Una por una</x-ui.section-title>
-                <p class="campo-nota" style="margin:0 0 12px;" data-nota-unidades></p>
-                <div id="unidades-rows"></div>
-                @error('unidades')<p class="err">{{ $message }}</p>@enderror
-            </x-ui.card>
-        </section>
 
         {{-- ============================================================
              3. Checklist de recepción (solo usado)
@@ -204,7 +131,11 @@
 
                 <div class="opciones">
                     @foreach ($estadosGenerales as $valor => $texto)
-                        @php ([$titulo, $detalle] = array_pad(explode(' · ', $texto, 2), 2, ''))
+                        {{-- Ojo: la directiva de una línea va pegada al
+                             paréntesis. Con un espacio en medio, Blade la toma
+                             como apertura de bloque y se traga el HTML que
+                             sigue hasta el cierre del siguiente bloque. --}}
+                        @php([$titulo, $detalle] = array_pad(explode(' · ', $texto, 2), 2, ''))
                         <label class="opcion">
                             <input type="radio" name="estado_general" value="{{ $valor }}"
                                    {{ old('estado_general') === $valor ? 'checked' : '' }}>
@@ -299,63 +230,52 @@
         </section>
 
         {{-- ============================================================
-             4. Evidencia
+             3. Una pieza, una evidencia
+
+             Si llegaron 3 piezas son 3 juegos de evidencia, no un montón
+             general: cada pieza llegó en su propio estado y así se puede
+             saber después cuál venía golpeada.
         ============================================================ --}}
-        <section class="paso" data-paso="evidencia" data-titulo="Evidencia">
+        <section class="paso" data-paso="piezas" data-titulo="Piezas y evidencia">
             <x-ui.card style="margin-bottom:18px;">
-                <x-ui.section-title id="evidencias-title" style="margin:0 0 6px;">Fotos de cómo llegó *</x-ui.section-title>
-                <p id="evidencias-help" class="campo-nota" style="margin:0 0 14px;">
-                    Hasta 3 fotos del envío completo: la caja, la factura, el estado del equipo.
-                    Arrástralas aquí, o toma la foto directo si estás en el teléfono.
+                <x-ui.section-title style="margin:0 0 6px;">Evidencia de cada pieza *</x-ui.section-title>
+                <p class="campo-nota" style="margin:0 0 12px;">
+                    Abajo hay un bloque por cada una de las <b data-eco-cantidad>1</b> pieza(s) que
+                    pusiste en el paso anterior. Cada una necesita <b>al menos una foto propia</b>
+                    (hasta 3) y, si quieres, su video. Cada pieza recibe además su etiqueta interna
+                    con código QR, que imprimes después desde la ficha de la entrada.
                 </p>
 
-                <label class="soltar" data-soltar="fotos">
-                    <span class="ico">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    </span>
-                    <span class="t">Arrastra las fotos o toca para elegir</span>
-                    <span class="d" data-cuenta-fotos>Ninguna todavía · máximo 3 · JPG, PNG o GIF de hasta 5 MB</span>
-                    <input type="file" id="evidencias" name="evidencias[]" accept="image/*" multiple required>
-                </label>
-
-                <div class="miniaturas" data-miniaturas="fotos"></div>
-                <p id="evidencias-error" class="err" style="display:none;">Solo puedes subir hasta 3 fotos.</p>
-                @error('evidencias')<p class="err">{{ $message }}</p>@enderror
-            </x-ui.card>
-
-            <x-ui.card style="margin-bottom:18px;">
-                <x-ui.section-title style="margin:0 0 6px;">Video de verificación *</x-ui.section-title>
-                <p class="campo-nota" style="margin:0 0 14px;">
-                    Un video corto mostrando el equipo encendido y funcionando. Se sube en pedazos,
-                    así que un archivo pesado no truena la carga.
-                </p>
-
-                <label class="soltar" data-soltar="video">
-                    <span class="ico">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-                    </span>
-                    <span class="t">Arrastra el video o toca para elegir</span>
-                    <span class="d" data-cuenta-video>Ninguno todavía · MP4, MOV o WEBM de hasta 150 MB</span>
-                    <input type="file" id="evidencia_video" accept="video/*">
-                </label>
-
-                <input type="hidden" name="video_path" id="video-path-input" value="{{ old('video_path') }}">
-
-                <div id="video-progreso-wrap" style="display:none; margin-top:12px;">
-                    <div class="barra-progreso"><span id="video-progreso-barra"></span></div>
-                    <p id="video-progreso-texto" class="campo-nota" style="margin:6px 0 0;">Subiendo video...</p>
+                {{-- Mucho equipo llega sin serial de fábrica. Aquí se le
+                     arma uno propio con el catálogo que ya se eligió. --}}
+                <div class="generar-series">
+                    <div class="txt">
+                        <b>¿No traen número de serie?</b>
+                        <span data-generar-nota>Se les puede armar uno con el tipo, subtipo, marca y modelo.</span>
+                    </div>
+                    <button type="button" class="btn btn--ghost" data-generar-series>Generar series</button>
                 </div>
 
-                <p id="video-error" class="err" style="display:none;"></p>
-                <div class="miniaturas" data-miniaturas="video"></div>
-                @error('video_path')<p class="err">{{ $message }}</p>@enderror
+                {{-- Los errores de cada pieza vienen con su índice
+                     (unidades.0.evidencias): el controlador los junta porque
+                     los bloques los dibuja el script y no pueden traerlos. --}}
+                @if ($erroresPiezas->isNotEmpty())
+                    <div class="paso-faltan" style="margin:12px 0 0;">
+                        <b>Revisa esto:</b>
+                        <ul>
+                            @foreach ($erroresPiezas as $mensaje)<li>{{ $mensaje }}</li>@endforeach
+                        </ul>
+                    </div>
+                @endif
             </x-ui.card>
 
-            <x-ui.card>
+            <div id="piezas-rows"></div>
+
+            <x-ui.card style="margin-top:18px;">
                 <x-ui.section-title style="margin:0 0 6px;">Foto del producto (catálogo)</x-ui.section-title>
                 <p class="campo-nota" style="margin:0 0 14px;">
-                    La foto representativa que se ve en el listado de Productos y en las cotizaciones.
-                    Si el modelo ya tiene una, puedes saltarte esto.
+                    Esta sí es del modelo, no de una pieza: es la foto que se ve en el listado de
+                    Productos y en las cotizaciones. Si el modelo ya tiene una, puedes saltarte esto.
                 </p>
 
                 <div id="imagen-actual-wrap" style="display:none; margin-bottom:14px;">
@@ -391,12 +311,28 @@
                     Firma con el mouse o el dedo para confirmar quién capturó esta entrada.
                 </p>
 
-                <canvas class="signature-box" id="signature-pad"></canvas>
-                <p style="margin:10px 0 0;">
+                <canvas class="signature-box" id="signature-pad"
+                        @if (auth()->user()->tieneFirma())
+                            data-firma-registrada="{{ auth()->user()->firmaDataUri() }}"
+                        @endif></canvas>
+                <p style="margin:10px 0 0; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
                     <a href="#" id="limpiar-firma" class="link" style="font-size:13px;">Limpiar firma</a>
+
+                    @if (auth()->user()->tieneFirma())
+                        <span class="campo-nota" data-firma-aviso>Se cargó tu firma registrada.</span>
+                        <a href="#" class="link" style="font-size:13px; display:none;" data-usar-firma>Usar mi firma registrada</a>
+                    @else
+                        <span class="campo-nota">
+                            Puedes <a href="{{ route('profile.edit') }}" class="link">registrar tu firma</a>
+                            para que se cargue sola la próxima vez.
+                        </span>
+                    @endif
                 </p>
 
-                <input type="hidden" name="firma" id="firma-input">
+                {{-- La firma viaja como imagen en base64: conservarla evita
+                     tener que volver a firmar si el servidor rechaza algo
+                     más del formulario. El lienzo la re-dibuja sola. --}}
+                <input type="hidden" name="firma" id="firma-input" value="{{ old('firma') }}">
                 @error('firma')<p class="err">{{ $message }}</p>@enderror
             </x-ui.card>
         </section>
@@ -411,7 +347,7 @@
         </div>
     </form>
 
-    {{-- Captura primero: define pintarUnidades() y el resumen que usan los pasos. --}}
+    {{-- Captura primero: define pintarPiezas() y el resumen que usan los pasos. --}}
     @include('structure.gestion_Inventario.entrada_salida._script_captura')
     @include('structure.gestion_Inventario.entrada_salida._script_pasos')
 @endsection
