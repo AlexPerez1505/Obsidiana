@@ -32,7 +32,7 @@
             <h1 class="area-title">Área de Endoscopia</h1>
             <p class="area-subtitle">Servicios registrados con equipo de tipo endoscopia</p>
         </div>
-        <a href="{{ route('gestion.servicios.registro') }}" class="btn" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:10px; font-size:14px; font-weight:700; text-decoration:none; background:var(--primary); color:#fff; border:1px solid var(--primary);">
+        <a href="{{ route('gestion.servicios.historial.nueva_orden') }}" class="btn" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:10px; font-size:14px; font-weight:700; text-decoration:none; background:var(--primary); color:#fff; border:1px solid var(--primary);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nuevo servicio
         </a>

@@ -22,7 +22,7 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
         return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('services'));
     })->name('gestion.servicios.historial');
     Route::get('/gestion-servicios/historial-servicios/nueva-orden', function () {
-        $customers = Customer::with('asesor')->latest()->get();
+        $customers = Customer::visiblesPara(auth()->user())->with('asesor')->latest()->get();
 
         if ($clienteId = request('cliente_id')) {
             $selected = $customers->firstWhere('id', $clienteId);
