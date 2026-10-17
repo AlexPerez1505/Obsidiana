@@ -64,10 +64,11 @@ class MovimientosTest extends TestCase
         $this->assertEquals(750, $producto->precio);
         $this->assertTrue($producto->es_serializado);
 
-        // Un solo serial base con cantidad 3: la secuencia se completa sola.
+        // Cada pieza se queda con la serie que se le capturó: ya no se arma
+        // una secuencia a partir de la primera.
         $this->assertSame(
-            ['23A00001', '23A00002', '23A00003'],
-            ProductoSerial::orderBy('no_serie')->pluck('no_serie')->all(),
+            ['23A00001', null, null],
+            ProductoSerial::orderBy('id')->pluck('no_serie')->all(),
         );
 
         $primera = ProductoSerial::where('no_serie', '23A00001')->first();
@@ -295,7 +296,7 @@ class MovimientosTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_eliminar_pide_pin_y_borra_piezas_y_evidencia(): void
+    public function test_eliminar_ya_no_pide_pin_y_borra_piezas_y_evidencia(): void
     {
         $user = $this->usuarioApi(['inventario.registrar', 'inventario.eliminar']);
 
@@ -303,11 +304,7 @@ class MovimientosTest extends TestCase
         $movimiento = InventoryMovement::firstOrFail();
         $evidencia = ProductoSerial::firstOrFail()->evidence_paths[0];
 
-        $this->conToken($user)->deleteJson("/api/v1/movimientos/{$movimiento->id}", ['password' => 'otra'])
-            ->assertStatus(422)
-            ->assertJsonPath('errors.password.0', 'PIN o contraseña incorrecta.');
-
-        $this->conToken($user)->deleteJson("/api/v1/movimientos/{$movimiento->id}", ['password' => 'password'])
+        $this->conToken($user)->deleteJson("/api/v1/movimientos/{$movimiento->id}")
             ->assertOk()
             ->assertJsonPath('message', "Movimiento {$movimiento->folio} eliminado.");
 
@@ -321,17 +318,12 @@ class MovimientosTest extends TestCase
     public function test_no_se_elimina_una_entrada_con_piezas_vendidas(): void
     {
         $user = $this->usuarioApi(['inventario.registrar', 'inventario.eliminar']);
-        $user->setApprovalPin('1234');
 
         $this->conToken($user)->post('/api/v1/movimientos', $this->datosEntrada())->assertCreated();
         $movimiento = InventoryMovement::firstOrFail();
         ProductoSerial::query()->update(['vendido' => true, 'vendido_en' => now()]);
 
-        // Con PIN configurado, la contraseña ya no sirve: va el PIN.
-        $this->conToken($user)->deleteJson("/api/v1/movimientos/{$movimiento->id}", ['password' => 'password'])
-            ->assertStatus(422);
-
-        $this->conToken($user)->deleteJson("/api/v1/movimientos/{$movimiento->id}", ['password' => '1234'])
+        $this->conToken($user)->deleteJson("/api/v1/movimientos/{$movimiento->id}")
             ->assertStatus(409)
             ->assertJsonPath('message', 'No se puede eliminar: alguna unidad de esta entrada ya se vendió.')
             ->assertJsonPath('codigo', 'conflicto');

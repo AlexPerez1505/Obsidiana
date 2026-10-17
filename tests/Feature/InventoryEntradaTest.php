@@ -106,9 +106,9 @@ class InventoryEntradaTest extends TestCase
         $this->assertNotNull($producto);
         $this->assertSame(3, $producto->stock);
 
-        // Un solo serial base con cantidad 3: la secuencia se completa sola.
-        $series = ProductoSerial::where('producto_id', $producto->id)->pluck('no_serie')->sort()->values();
-        $this->assertSame(['23A00001', '23A00002', '23A00003'], $series->all());
+        // Cada pieza conserva la serie que se le capturó (las demás quedan sin serie).
+        $series = ProductoSerial::where('producto_id', $producto->id)->orderBy('id')->pluck('no_serie');
+        $this->assertSame(['23A00001', null, null], $series->all());
 
         $primera = ProductoSerial::where('no_serie', '23A00001')->first();
         $this->assertCount(2, $primera->evidence_paths);
@@ -118,7 +118,7 @@ class InventoryEntradaTest extends TestCase
         $this->assertNotNull($primera->video_path);
         Storage::disk('public')->assertExists($primera->video_path);
 
-        $segunda = ProductoSerial::where('no_serie', '23A00002')->first();
+        $segunda = ProductoSerial::where('producto_id', $producto->id)->orderBy('id')->skip(1)->first();
         $this->assertCount(1, $segunda->evidence_paths);
         $this->assertNull($segunda->video_path);
 
@@ -255,7 +255,7 @@ class InventoryEntradaTest extends TestCase
         $this->assertNotNull($video);
 
         $this->actingAs($user)
-            ->delete(route('inventory.movimientos.destroy', $movimiento), ['password' => 'password'])
+            ->delete(route('inventory.movimientos.destroy', $movimiento))
             ->assertRedirect(route('inventory.movimientos.index'));
 
         $this->assertSame(0, InventoryMovement::count());
@@ -279,9 +279,9 @@ class InventoryEntradaTest extends TestCase
         ProductoSerial::where('no_serie', 'SN-VENDIDA')->update(['vendido' => true, 'vendido_en' => now()]);
 
         $response = $this->actingAs($user)
-            ->delete(route('inventory.movimientos.destroy', $movimiento), ['password' => 'password']);
+            ->delete(route('inventory.movimientos.destroy', $movimiento));
 
-        $response->assertSessionHasErrors('password');
+        $response->assertSessionHasErrors('movimiento');
         $this->assertDatabaseCount('inventory_movements', 1);
     }
 }

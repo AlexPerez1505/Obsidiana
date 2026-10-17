@@ -144,7 +144,12 @@
                                     <div class="muted" style="font-size:12.5px;">{{ $producto->subtipo }}</div>
                                 @endif
                             </td>
-                            <td>{{ $producto->marca ?: '—' }} {{ $producto->modelo }}</td>
+                            <td>
+                                {{ $producto->marca ?: '—' }} {{ $producto->modelo }}
+                                @if ($producto->referencia)
+                                    <div class="muted" style="font-size:12.5px;">Ref. {{ $producto->referencia }}</div>
+                                @endif
+                            </td>
                             @if (\App\Support\PrecioVisible::para())
                                 <td>{{ \App\Support\PrecioVisible::texto($producto) }}</td>
                             @endif
@@ -170,19 +175,26 @@
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                                             Ver ficha
                                         </a>
-                                        <a href="{{ route('inventory.productos.edit', $producto) }}" role="menuitem">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                                            Editar
-                                        </a>
-                                        <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}"
-                                              data-confirm="¿Eliminar este producto?" style="margin:0;">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="es-danger" role="menuitem">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
-                                                Eliminar
-                                            </button>
-                                        </form>
+                                        {{-- Editar: con permiso, o si es suyo y está dentro de
+                                             sus primeras horas (el producto o alguna pieza). --}}
+                                        @if (\App\Support\EdicionPropia::puedeEditarProducto(auth()->user(), $producto)
+                                             || $producto->serialesDisponibles->contains(fn ($s) => \App\Support\EdicionPropia::puedeEditarPieza(auth()->user(), $s)))
+                                            <a href="{{ route('inventory.productos.edit', $producto) }}" role="menuitem">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                                Editar
+                                            </a>
+                                        @endif
+                                        @if (\App\Support\EdicionPropia::puedeEliminarProducto(auth()->user(), $producto))
+                                            <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}"
+                                                  data-confirm="¿Eliminar este producto?" style="margin:0;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="es-danger" role="menuitem">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                                                    Eliminar
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </div>
                             </td>
@@ -212,6 +224,16 @@
                     <button type="button" class="btn btn--ghost" style="padding:5px 10px;" onclick="document.getElementById('unidades-modal-{{ $producto->id }}').style.display='none'">Cerrar</button>
                 </div>
 
+                {{-- Con muchas piezas del mismo equipo, buscar la que se
+                     necesita en vez de recorrerlas todas. --}}
+                @if ($producto->serialesDisponibles->count() > 4)
+                    <div style="display:flex; gap:10px; align-items:center; margin:0 0 12px;">
+                        <input type="search" data-unidades-buscar placeholder="Buscar por serie o etiqueta…"
+                               aria-label="Buscar unidad" style="flex:1; min-width:0;">
+                        <span class="muted" style="font-size:12.5px; white-space:nowrap;" data-unidades-conteo></span>
+                    </div>
+                @endif
+
                 @forelse ($producto->serialesDisponibles as $serial)
                     @php
                         $evidencias = $serial->evidenceUrls();
@@ -228,7 +250,8 @@
                         $etiquetaMedios = $nFotos.' '.($nFotos === 1 ? 'foto' : 'fotos').($video ? ' + video' : '');
                         $modelo = trim($producto->marca.' '.$producto->modelo) ?: $producto->tipo_equipo;
                     @endphp
-                    <div class="unidad-card" @if ($medios->isNotEmpty()) data-medios="{{ $medios->toJson() }}" @endif>
+                    <div class="unidad-card" data-buscar="{{ mb_strtolower(trim($serial->no_serie.' '.$serial->codigo)) }}"
+                         @if ($medios->isNotEmpty()) data-medios="{{ $medios->toJson() }}" @endif>
                         <div class="unidad-card-head">
                             <div style="min-width:0;">
                                 <div class="unidad-serie {{ $serial->no_serie ? '' : 'sin' }}">
@@ -294,6 +317,7 @@
                 @empty
                     <p class="muted" style="padding:16px 0; text-align:center;">No hay unidades disponibles.</p>
                 @endforelse
+                <p class="muted" data-unidades-vacio hidden style="padding:16px 0; text-align:center;">Ninguna unidad coincide con la búsqueda.</p>
             </div>
         </div>
     @endforeach
@@ -398,6 +422,31 @@
             const params = marcados.map(id => 'productos[]=' + encodeURIComponent(id)).join('&');
             window.location.href = @json(route('inventory.paquetes.create')) + '?' + params;
         }
+
+        /* ===================== Buscar dentro de las unidades =====================
+           Cien piezas del mismo modelo salen todas en el modal: el buscador
+           deja a la vista solo las que coinciden con la serie o la etiqueta. */
+        document.addEventListener('input', function (e) {
+            const campo = e.target.closest('[data-unidades-buscar]');
+            if (!campo) return;
+
+            const modal = campo.closest('.unidades-modal');
+            const q = campo.value.trim().toLowerCase();
+            const tarjetas = Array.from(modal.querySelectorAll('.unidad-card'));
+            let visibles = 0;
+
+            tarjetas.forEach(function (t) {
+                const coincide = !q || (t.dataset.buscar || '').includes(q);
+                t.hidden = !coincide;
+                if (coincide) visibles++;
+            });
+
+            const conteo = modal.querySelector('[data-unidades-conteo]');
+            if (conteo) conteo.textContent = q ? visibles + ' de ' + tarjetas.length : '';
+
+            const vacio = modal.querySelector('[data-unidades-vacio]');
+            if (vacio) vacio.hidden = visibles > 0;
+        });
     </script>
 
     @include('partials.row-menu')

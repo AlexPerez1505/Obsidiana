@@ -27,8 +27,10 @@
         @endif
 
         {{-- Una salida la generó una venta: borrarla dejaría esa venta sin
-             origen, así que solo se pueden eliminar entradas. --}}
-        @if ($movimiento->movement_type === 'entrada')
+             origen, así que solo se pueden eliminar entradas. Y solo quien
+             puede: con permiso, o quien la registró en sus primeras horas. --}}
+        @if ($movimiento->movement_type === 'entrada'
+             && \App\Support\EdicionPropia::puedeEliminarMovimiento(auth()->user(), $movimiento))
             <button type="button" role="menuitem" class="es-danger"
                     data-eliminar-movimiento
                     data-url="{{ route('inventory.movimientos.destroy', $movimiento) }}"

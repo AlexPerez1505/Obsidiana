@@ -37,6 +37,16 @@ return [
     ],
 
     /*
+    | Tienda en línea (sitio público en React que lee /api/v1/tienda).
+    | avisar_a: correos (separados por coma) que reciben cada solicitud web.
+    */
+    'tienda' => [
+        'whatsapp' => env('MB_TIENDA_WHATSAPP', ''),
+        'correo' => env('MB_TIENDA_CORREO', ''),
+        'avisar_a' => env('MB_TIENDA_AVISAR_A', ''),
+    ],
+
+    /*
     | Cuentas para transferencia. Se elige el bloque según el IVA del documento:
     | con IVA (requiere factura) va la cuenta de Anahí Téllez; sin IVA van las
     | cuentas de Gabriela Díaz García. El bloque sin IVA admite varias cuentas.

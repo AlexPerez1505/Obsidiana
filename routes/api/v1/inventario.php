@@ -37,7 +37,7 @@ Route::prefix('movimientos')->name('movimientos.')->group(function () {
     Route::get('/{movimiento}/etiquetas', [MovimientoController::class, 'etiquetas'])
         ->whereNumber('movimiento')->middleware('can:inventario.ver')->name('etiquetas');
     Route::delete('/{movimiento}', [MovimientoController::class, 'destroy'])
-        ->whereNumber('movimiento')->middleware('can:inventario.eliminar')->name('destroy');
+        ->whereNumber('movimiento')->name('destroy');
 });
 
 Route::prefix('productos')->name('productos.')->group(function () {
@@ -54,17 +54,22 @@ Route::prefix('productos')->name('productos.')->group(function () {
 
     Route::get('/{producto}', [ProductoController::class, 'show'])
         ->whereNumber('producto')->middleware('can:inventario.ver')->name('show');
+    // Editar y borrar productos, piezas y entradas: inventario.editar /
+    // inventario.eliminar, o quien lo registró durante sus primeras 8 horas.
+    // Por eso no llevan can:, lo revisa cada controlador con EdicionPropia.
     Route::put('/{producto}', [ProductoController::class, 'update'])
-        ->whereNumber('producto')->middleware('can:inventario.editar')->name('update');
+        ->whereNumber('producto')->name('update');
     Route::delete('/{producto}', [ProductoController::class, 'destroy'])
-        ->whereNumber('producto')->middleware('can:inventario.eliminar')->name('destroy');
+        ->whereNumber('producto')->name('destroy');
 
     Route::post('/{producto}/seriales', [SerialController::class, 'store'])
-        ->whereNumber('producto')->middleware('can:inventario.editar')->name('seriales.store');
+        ->whereNumber('producto')->name('seriales.store');
+    Route::put('/{producto}/seriales', [SerialController::class, 'lote'])
+        ->whereNumber('producto')->name('seriales.lote');
     Route::put('/{producto}/seriales/{serial}', [SerialController::class, 'update'])
-        ->whereNumber(['producto', 'serial'])->middleware('can:inventario.editar')->name('seriales.update');
+        ->whereNumber(['producto', 'serial'])->name('seriales.update');
     Route::delete('/{producto}/seriales/{serial}', [SerialController::class, 'destroy'])
-        ->whereNumber(['producto', 'serial'])->middleware('can:inventario.eliminar')->name('seriales.destroy');
+        ->whereNumber(['producto', 'serial'])->name('seriales.destroy');
 });
 
 Route::prefix('fichas-tecnicas')->name('fichas-tecnicas.')->group(function () {

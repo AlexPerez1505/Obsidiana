@@ -61,9 +61,12 @@
     <x-ui.page-header :title="$producto->id ? 'Ficha del producto' : 'Producto'"
                       :back="route('inventory.productos.index')">
         <a href="{{ route('inventory.movimientos.create') }}" class="btn btn--ghost">Registrar entrada</a>
-        <a href="{{ route('inventory.productos.edit', $producto) }}" class="btn-icono" title="Editar producto" aria-label="Editar producto">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-        </a>
+        @if (\App\Support\EdicionPropia::puedeEditarProducto(auth()->user(), $producto)
+             || $piezas->contains(fn ($p) => \App\Support\EdicionPropia::puedeEditarPieza(auth()->user(), $p)))
+            <a href="{{ route('inventory.productos.edit', $producto) }}" class="btn-icono" title="Editar producto" aria-label="Editar producto">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </a>
+        @endif
     </x-ui.page-header>
 
     {{-- ===================== Identidad y stock ===================== --}}
@@ -80,6 +83,7 @@
             <div class="txt">
                 <h2>{{ $nombre }}</h2>
                 @if ($marcaModelo)<p class="mm">{{ $marcaModelo }}</p>@endif
+                @if ($producto->referencia)<p class="mm">Ref. {{ $producto->referencia }}</p>@endif
                 @if ($producto->descripcion)
                     <p class="mm" style="margin-top:6px;">{{ $producto->descripcion }}</p>
                 @endif
@@ -206,6 +210,14 @@
             <p class="campo-nota" style="margin:0;">
                 Cada pieza física con su etiqueta. Escanea su QR para abrir la ficha pública.
             </p>
+
+            @if ($piezas->count() > 5)
+                <div style="display:flex; gap:10px; align-items:center; margin-top:12px;">
+                    <input type="search" id="buscarPieza" placeholder="Buscar por serie, etiqueta o folio…"
+                           aria-label="Buscar pieza" style="flex:1; min-width:0;">
+                    <span class="campo-nota" id="buscarPiezaCuenta" style="white-space:nowrap;"></span>
+                </div>
+            @endif
         </div>
 
         <div class="tbl-scroll">
@@ -222,7 +234,7 @@
                 </thead>
                 <tbody>
                     @forelse ($piezas as $pieza)
-                        <tr>
+                        <tr data-pieza data-buscar="{{ mb_strtolower(implode(' ', array_filter([$pieza->no_serie, $pieza->codigo, $pieza->entrada?->folio, $pieza->estadoLabel()]))) }}">
                             <td class="pz-cod">{{ $pieza->codigo ?: '—' }}</td>
                             <td>{{ $pieza->no_serie ?: '—' }}</td>
                             <td>
@@ -263,4 +275,29 @@
             </table>
         </div>
     </x-ui.card>
+
+    @push('scripts')
+        <script>
+        (function () {
+            const campo = document.getElementById('buscarPieza');
+            if (!campo) return;
+
+            const filas = Array.from(document.querySelectorAll('[data-pieza]'));
+            const cuenta = document.getElementById('buscarPiezaCuenta');
+
+            campo.addEventListener('input', function () {
+                const q = campo.value.trim().toLowerCase();
+                let n = 0;
+
+                filas.forEach(function (tr) {
+                    const ok = !q || tr.dataset.buscar.includes(q);
+                    tr.hidden = !ok;
+                    if (ok) n++;
+                });
+
+                cuenta.textContent = q ? n + ' de ' + filas.length : '';
+            });
+        })();
+        </script>
+    @endpush
 @endsection

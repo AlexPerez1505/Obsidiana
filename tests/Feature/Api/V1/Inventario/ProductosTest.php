@@ -232,8 +232,9 @@ class ProductosTest extends TestCase
             'equipment_model_id' => $cat['modelo']->id,
             'cantidad' => 2,
         ])->assertOk()
-            ->assertJsonPath('data.prefijo', 'TOR-CV190')
-            ->assertJsonPath('data.series', ['TOR-CV190-0001', 'TOR-CV190-0002']);
+            // El tipo ya no va al frente de la serie.
+            ->assertJsonPath('data.prefijo', 'CV190')
+            ->assertJsonPath('data.series', ['CV190-0001', 'CV190-0002']);
     }
 
     public function test_catalogos_piden_registrar_o_editar(): void
@@ -271,22 +272,18 @@ class ProductosTest extends TestCase
         $this->assertSame(3, $producto->fresh()->stock);
     }
 
-    public function test_corregir_una_pieza_pide_pin_y_respeta_la_serie_si_no_se_manda(): void
+    public function test_corregir_una_pieza_sin_pin_y_respeta_la_serie_si_no_se_manda(): void
     {
         $producto = $this->productoConPiezas(['C-1', 'C-2']);
         $pieza = $producto->seriales()->where('no_serie', 'C-1')->firstOrFail();
         $user = $this->usuarioApi(['inventario.editar']);
         $url = "/api/v1/productos/{$producto->id}/seriales/{$pieza->id}";
 
-        $this->conToken($user)->putJson($url, ['password' => 'mala', 'no_serie' => 'NUEVA'])
-            ->assertStatus(422)->assertJsonPath('errors.password.0', 'PIN o contraseña incorrecta.');
-
-        $this->conToken($user)->putJson($url, ['password' => 'password', 'no_serie' => 'C-2'])
+        $this->conToken($user)->putJson($url, ['no_serie' => 'C-2'])
             ->assertStatus(422)->assertJsonPath('errors.no_serie.0', 'Ese número de serie ya existe para este producto.');
 
         $this->conToken($user)->post($url, [
             '_method' => 'PUT',
-            'password' => 'password',
             'foto' => UploadedFile::fake()->image('pieza.jpg'),
         ])->assertOk()
             ->assertJsonPath('message', 'Unidad actualizada correctamente.')
@@ -296,7 +293,7 @@ class ProductosTest extends TestCase
         $this->assertNotNull($pieza->foto_path);
         $this->assertSame($user->id, $pieza->editado_por);
 
-        $this->conToken($user)->putJson($url, ['password' => 'password', 'no_serie' => 'C-9'])
+        $this->conToken($user)->putJson($url, ['no_serie' => 'C-9'])
             ->assertOk()->assertJsonPath('data.no_serie', 'C-9');
         $this->assertStringContainsString('C-9', $producto->fresh()->no_serie);
     }

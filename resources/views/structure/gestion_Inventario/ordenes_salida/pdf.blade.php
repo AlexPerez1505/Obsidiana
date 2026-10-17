@@ -149,6 +149,8 @@
                 <tr><td class="k">Se emplayan</td><td class="v">{{ $orden->items->where('requiere_emplayado', true)->count() }} de {{ $orden->items->count() }}</td></tr>
                 <tr><td class="k">Avance</td><td class="v">{{ $avance['hechos'] }} de {{ $avance['total'] }} pasos ({{ $avance['pct'] }}%)</td></tr>
                 <tr><td class="k">Generó la orden</td><td class="v">{{ $orden->creator?->name ?? '—' }}</td></tr>
+                {{-- Solo el conteo: las fotos y videos se ven en el sistema. --}}
+                <tr><td class="k">Evidencia</td><td class="v">{{ $orden->resumenEvidencias() }}</td></tr>
             </table>
         </td>
     </tr>

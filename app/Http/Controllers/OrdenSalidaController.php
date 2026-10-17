@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\OrdenSalida;
+use App\Models\OrdenSalidaEvidencia;
 use App\Models\OrdenSalidaItem;
+use App\Services\Almacen\EvidenciaDeSalida;
 use App\Services\Almacen\PreparacionDeSalida;
+use App\Services\Inventario\VideoPorPedazos;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -18,8 +22,10 @@ use Illuminate\View\View;
  */
 class OrdenSalidaController extends Controller
 {
-    public function __construct(private readonly PreparacionDeSalida $salidas)
-    {
+    public function __construct(
+        private readonly PreparacionDeSalida $salidas,
+        private readonly EvidenciaDeSalida $evidencia,
+    ) {
     }
 
     public function index(Request $request): View
@@ -44,7 +50,7 @@ class OrdenSalidaController extends Controller
         // se vendió en uno, no está en el almacén y no hay que buscarlo.
         $orden->load([
             'venta.customer', 'venta.seller', 'preparadaPor', 'entregadaPor',
-            'items.ventaItem.seriales.congress',
+            'items.ventaItem.seriales.congress', 'evidencias.subidoPor',
         ]);
 
         return view('structure.gestion_Inventario.ordenes_salida.show', [
@@ -131,5 +137,85 @@ class OrdenSalidaController extends Controller
 
         return redirect()->route('inventory.salidas.show', $orden)
             ->with('status', "Salida {$orden->folio} firmada. El equipo ya salió.");
+    }
+
+    /**
+     * Una foto de evidencia. La pantalla manda cada foto en su propia
+     * petición, una tras otra: así no hay tope de cuántas se suben y
+     * ninguna petición rebasa el tamaño máximo del servidor. Regresa el
+     * cuadro ya pintado para sumarlo a la galería sin recargar.
+     */
+    public function evidenciaFoto(Request $request, OrdenSalida $orden): JsonResponse
+    {
+        if ($razon = $this->evidencia->razonParaNoSubir($orden)) {
+            abort(409, $razon);
+        }
+
+        $data = $request->validate(EvidenciaDeSalida::REGLAS_FOTO, EvidenciaDeSalida::MENSAJES);
+
+        $nueva = $this->evidencia->guardarFoto($orden, $data['foto'], $request->user()->id);
+
+        return $this->evidenciaSubida($request, $orden, $nueva, 'Foto agregada.');
+    }
+
+    /**
+     * Un pedazo del video de evidencia (mismo armado por pedazos que el
+     * video de las entradas). Con el último, el video queda registrado.
+     */
+    public function evidenciaVideo(Request $request, OrdenSalida $orden): JsonResponse
+    {
+        if ($razon = $this->evidencia->razonParaNoSubir($orden)) {
+            abort(409, $razon);
+        }
+
+        $data = $request->validate([...VideoPorPedazos::reglas(), ...EvidenciaDeSalida::REGLAS_VIDEO]);
+
+        $resultado = $this->evidencia->recibirPedazoDeVideo($orden, $request->file('chunk'), $data, $request->user()->id);
+
+        if (! isset($resultado['evidencia'])) {
+            return response()->json(['status' => $resultado['status']]);
+        }
+
+        return $this->evidenciaSubida($request, $orden, $resultado['evidencia'], 'Video agregado.');
+    }
+
+    /** Quita una foto o un video, con todo y su archivo. */
+    public function borrarEvidencia(Request $request, OrdenSalida $orden, OrdenSalidaEvidencia $evidencia): JsonResponse|RedirectResponse
+    {
+        abort_if($evidencia->orden_salida_id !== $orden->id, 404);
+        abort_unless($evidencia->puedeBorrarla($request->user()), 403, 'Solo quien la subió o quien prepara salidas puede quitar esta evidencia.');
+
+        if ($razon = $this->evidencia->razonParaNoBorrar($orden)) {
+            abort(409, $razon);
+        }
+
+        $tipo = $evidencia->esVideo() ? 'Video eliminado.' : 'Foto eliminada.';
+        $evidencia->delete();
+
+        if (! $request->expectsJson()) {
+            return back()->with('status', $tipo);
+        }
+
+        return response()->json([
+            'message' => $tipo,
+            'conteo' => $orden->conteoEvidencias(),
+        ]);
+    }
+
+    private function evidenciaSubida(Request $request, OrdenSalida $orden, OrdenSalidaEvidencia $nueva, string $mensaje): JsonResponse
+    {
+        $nueva->load('subidoPor');
+
+        return response()->json([
+            'status' => 'listo',
+            'message' => $mensaje,
+            'evidencia' => ['id' => $nueva->id, 'tipo' => $nueva->tipo, 'url' => $nueva->url()],
+            'html' => view('structure.gestion_Inventario.ordenes_salida._evidencia', [
+                'orden' => $orden,
+                'evidencia' => $nueva,
+                'borrable' => $nueva->puedeBorrarla($request->user()),
+            ])->render(),
+            'conteo' => $orden->conteoEvidencias(),
+        ], 201);
     }
 }

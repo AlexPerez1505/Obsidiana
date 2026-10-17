@@ -107,6 +107,12 @@
                         <input id="movement_date" type="date" name="movement_date"
                                value="{{ old('movement_date', now()->format('Y-m-d')) }}" required>
                     </x-ui.form-group>
+
+                    {{-- Opcional. Es del modelo: si ya la tiene, se completa sola. --}}
+                    <x-ui.form-group label="Referencia" for="referencia">
+                        <input id="referencia" type="text" name="referencia" maxlength="120"
+                               value="{{ old('referencia') }}" placeholder="Ej. REF o número de parte (opcional)">
+                    </x-ui.form-group>
                 </div>
 
                 <x-ui.form-group label="Descripción" for="descripcion">
@@ -250,10 +256,12 @@
                      arma uno propio con el catálogo que ya se eligió. --}}
                 <div class="generar-series">
                     <div class="txt">
-                        <b>¿No traen número de serie?</b>
-                        <span data-generar-nota>Se les puede armar uno con el tipo, subtipo, marca y modelo.</span>
+                        <b>Cada pieza lleva su propio número de serie.</b>
+                        <span>Escríbelo en cada una. Si no traen, genera las que falten
+                            (<span data-generar-nota>con el subtipo, marca y modelo</span>).</span>
                     </div>
-                    <button type="button" class="btn btn--ghost" data-generar-series>Generar series</button>
+                    <button type="button" class="btn btn--ghost" data-usar-sugeridas hidden></button>
+                    <button type="button" class="btn btn--ghost" data-generar-series>Generar las que faltan</button>
                 </div>
 
                 {{-- Los errores de cada pieza vienen con su índice

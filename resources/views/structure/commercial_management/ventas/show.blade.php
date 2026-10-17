@@ -84,6 +84,17 @@
             @endcan
         @endif
 
+        {{-- Las garantías nacen solas de la venta: una por equipo o componente. --}}
+        @can('garantias.ver')
+            @php $garantiasVenta = \App\Models\Garantia::where('venta_id', $venta->id)->where('estado', 'activa')->count(); @endphp
+            @if ($garantiasVenta)
+                <a href="{{ route('garantias.index', ['q' => $venta->folio]) }}" class="pill-dato" title="Garantías de esta venta">
+                    <span class="et">Garantías</span>
+                    <span class="val">{{ $garantiasVenta }}</span>
+                </a>
+            @endif
+        @endcan
+
         @if (! $venta->cancelada())
             <a href="{{ route('commercial.facturas.create', ['venta' => $venta->id]) }}" class="btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>

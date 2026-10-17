@@ -6,9 +6,9 @@ use App\Http\Controllers\Concerns\ConstruyeCatalogoEquipo;
 use App\Models\InventoryMovement;
 use App\Services\Inventario\EntradasDeInventario;
 use App\Services\Inventario\OperacionRechazada;
-use App\Services\Inventario\PinDeAprobacion;
 use App\Services\Inventario\VideoPorPedazos;
 use App\Support\ChecklistRecepcion;
+use App\Support\EdicionPropia;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -145,14 +145,14 @@ class InventoryMovementController extends Controller
      * Elimina un movimiento. Solo tiene sentido para entradas que todavía
      * no se hayan vendido (si alguna de sus unidades ya se vendió, borrar
      * el movimiento dejaría esa venta sin origen).
+     *
+     * Ya no pide PIN: lo borra quien tiene permiso de eliminar inventario,
+     * o quien registró la entrada durante sus primeras EdicionPropia::HORAS
+     * horas. La pantalla pide confirmar antes de mandar.
      */
     public function destroy(Request $request, InventoryMovement $movimiento, EntradasDeInventario $entradas): RedirectResponse
     {
-        $request->validate(['password' => ['required', 'string']]);
-
-        if (! PinDeAprobacion::valido(auth()->user(), $request->password)) {
-            return back()->withErrors(['password' => PinDeAprobacion::ERROR]);
-        }
+        abort_unless(EdicionPropia::puedeEliminarMovimiento($request->user(), $movimiento), 403, EdicionPropia::mensaje('eliminar'));
 
         try {
             $entradas->eliminar($movimiento);

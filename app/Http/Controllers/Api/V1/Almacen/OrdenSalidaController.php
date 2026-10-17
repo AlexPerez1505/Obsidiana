@@ -4,10 +4,15 @@ namespace App\Http\Controllers\Api\V1\Almacen;
 
 use App\Http\Controllers\Api\V1\Concerns\ListadoApi;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Api\V1\Almacen\OrdenSalidaEvidenciaResource;
 use App\Http\Resources\Api\V1\Almacen\OrdenSalidaResource;
 use App\Models\OrdenSalida;
+use App\Models\OrdenSalidaEvidencia;
 use App\Models\OrdenSalidaItem;
+use App\Services\Almacen\EvidenciaDeSalida;
 use App\Services\Almacen\PreparacionDeSalida;
+use App\Services\Inventario\VideoPorPedazos;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -22,6 +27,9 @@ use Illuminate\Validation\ValidationException;
  * emplayado) → confirmar la preparación → firmar la entrega. Cada paso
  * rechaza con 409 lo que no toca según el estado de la orden.
  *
+ * Aparte va la evidencia (fotos y videos): se le sube mientras la orden no
+ * esté cancelada, también después de entregada.
+ *
  * @tags Almacén · Órdenes de salida
  */
 class OrdenSalidaController extends Controller
@@ -31,11 +39,13 @@ class OrdenSalidaController extends Controller
     /** Lo que trae el detalle (y la respuesta de cada acción). */
     private const DETALLE = [
         'venta.customer', 'venta.seller', 'preparadaPor', 'entregadaPor',
-        'items.ventaItem.seriales.congress',
+        'items.ventaItem.seriales.congress', 'evidencias.subidoPor',
     ];
 
-    public function __construct(private readonly PreparacionDeSalida $salidas)
-    {
+    public function __construct(
+        private readonly PreparacionDeSalida $salidas,
+        private readonly EvidenciaDeSalida $evidencia,
+    ) {
     }
 
     /**
@@ -188,6 +198,113 @@ class OrdenSalidaController extends Controller
         }
 
         return $this->respuesta($orden, "Salida {$orden->folio} firmada. El equipo ya salió.");
+    }
+
+    /**
+     * Listar la evidencia de una orden.
+     *
+     * Fotos y videos, del más viejo al más nuevo, con quién y cuándo subió
+     * cada uno. `conteo` trae cuántas fotos y cuántos videos hay.
+     */
+    public function evidencias(OrdenSalida $orden): AnonymousResourceCollection
+    {
+        $orden->load('evidencias.subidoPor');
+
+        return OrdenSalidaEvidenciaResource::collection($orden->evidencias)
+            ->additional(['conteo' => $orden->conteoEvidencias()]);
+    }
+
+    /**
+     * Subir fotos de evidencia.
+     *
+     * Multipart con `fotos[]`: una o varias por petición, de hasta 10MB cada
+     * una (JPG, PNG, GIF, BMP o WEBP). No hay tope de cuántas junta la
+     * orden: siempre se suman a las que ya tiene. Para no chocar con el
+     * tamaño máximo de una petición, mándalas de una en una o de pocas en
+     * pocas. Se puede subir aunque la orden ya se haya entregado; si está
+     * cancelada, 409.
+     */
+    public function subirFotos(Request $request, OrdenSalida $orden): JsonResponse
+    {
+        if ($razon = $this->evidencia->razonParaNoSubir($orden)) {
+            abort(409, $razon);
+        }
+
+        $data = $request->validate(EvidenciaDeSalida::REGLAS_FOTOS, EvidenciaDeSalida::MENSAJES);
+
+        $nuevas = collect($data['fotos'])
+            ->map(fn ($foto) => $this->evidencia->guardarFoto($orden, $foto, $request->user()->id)->load('subidoPor'));
+
+        return OrdenSalidaEvidenciaResource::collection($nuevas)
+            ->additional([
+                'message' => $nuevas->count() === 1 ? 'Foto agregada.' : "{$nuevas->count()} fotos agregadas.",
+                'conteo' => $orden->conteoEvidencias(),
+            ])
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    /**
+     * Subir un video de evidencia (por pedazos).
+     *
+     * El video viaja en pedazos de hasta 5MB, en orden, cada uno en su
+     * petición multipart: `chunk` (el pedazo), `upload_id` (el mismo en
+     * todos los pedazos de ese video: 8 a 64 letras, números o guiones),
+     * `index` (desde 0), `total`, `extension` (mp4, mov, m4v o webm) y,
+     * opcional, `nombre` (el nombre original del archivo).
+     *
+     * Con cada pedazo responde 200 con `status: chunk_recibido`. Con el
+     * último arma el video (hasta 150MB en total), lo registra y responde
+     * 201 con `status: listo` y la evidencia en `data`. Para varios videos,
+     * cada uno con su propio `upload_id`. Si la orden está cancelada, 409.
+     */
+    public function subirVideo(Request $request, OrdenSalida $orden): JsonResponse
+    {
+        if ($razon = $this->evidencia->razonParaNoSubir($orden)) {
+            abort(409, $razon);
+        }
+
+        $data = $request->validate([...VideoPorPedazos::reglas(), ...EvidenciaDeSalida::REGLAS_VIDEO]);
+
+        $resultado = $this->evidencia->recibirPedazoDeVideo($orden, $request->file('chunk'), $data, $request->user()->id);
+
+        if (! isset($resultado['evidencia'])) {
+            return response()->json(['status' => $resultado['status']]);
+        }
+
+        return (new OrdenSalidaEvidenciaResource($resultado['evidencia']->load('subidoPor')))
+            ->additional([
+                'status' => 'listo',
+                'message' => 'Video agregado.',
+                'conteo' => $orden->conteoEvidencias(),
+            ])
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    /**
+     * Quitar una evidencia.
+     *
+     * La quita quien la subió o quien prepara salidas (`salidas.preparar`);
+     * cualquier otro, 403. Borra también el archivo. La evidencia de una
+     * orden cancelada ya no se toca: 409.
+     */
+    public function borrarEvidencia(Request $request, OrdenSalida $orden, OrdenSalidaEvidencia $evidencia): JsonResponse
+    {
+        abort_if($evidencia->orden_salida_id !== $orden->id, 404, 'Esa evidencia no es de esta orden.');
+        abort_unless($evidencia->puedeBorrarla($request->user()), 403, 'Solo quien la subió o quien prepara salidas puede quitar esta evidencia.');
+
+        if ($razon = $this->evidencia->razonParaNoBorrar($orden)) {
+            abort(409, $razon);
+        }
+
+        $mensaje = $evidencia->esVideo() ? 'Video eliminado.' : 'Foto eliminada.';
+        $evidencia->delete();
+
+        return response()->json([
+            'message' => $mensaje,
+            'conteo' => $orden->conteoEvidencias(),
+        ]);
     }
 
     private function respuesta(OrdenSalida $orden, string $mensaje): OrdenSalidaResource

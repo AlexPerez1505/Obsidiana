@@ -82,10 +82,15 @@ class OrdenesDeSalida
         return $orden;
     }
 
-    /** Al cancelar la venta, la orden se va con ella. */
+    /**
+     * Al cancelar la venta, la orden se va con ella.
+     *
+     * Una por una (no un DELETE masivo) para que la orden se lleve también
+     * los archivos de su evidencia.
+     */
     public function cancelarDe(Venta $venta): void
     {
-        OrdenSalida::where('venta_id', $venta->id)->delete();
+        OrdenSalida::where('venta_id', $venta->id)->get()->each->delete();
     }
 
     private function escribirRenglones(OrdenSalida $orden, $partidas, $previos = null): void

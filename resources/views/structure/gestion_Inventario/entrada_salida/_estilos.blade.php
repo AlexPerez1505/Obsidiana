@@ -64,6 +64,7 @@
         .generar-series .txt b { display:block; }
         .generar-series .txt span { color:var(--muted); font-size:12.5px; }
         .generar-series .btn { flex:0 0 auto; }
+        .generar-series .btn[hidden] { display:none; }
 
         /* Precio ya registrado: se lee como dato, no como campo por llenar. */
         .precio-caja { display:flex; align-items:center; gap:10px; padding:8px 12px;

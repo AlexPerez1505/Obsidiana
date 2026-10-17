@@ -27,17 +27,22 @@ use Illuminate\Support\Facades\Route;
 | firma.
 */
 Route::middleware('can:salidas.ver')->prefix('ordenes-salida')->name('ordenes-salida.')
-    ->whereNumber(['orden', 'item'])
+    ->whereNumber(['orden', 'item', 'evidencia'])
     ->group(function () {
         Route::get('/', [OrdenSalidaController::class, 'index'])->name('index');
         Route::get('/{orden}', [OrdenSalidaController::class, 'show'])->name('show');
         Route::get('/{orden}/pdf', [OrdenSalidaController::class, 'pdf'])->name('pdf');
+        Route::get('/{orden}/evidencias', [OrdenSalidaController::class, 'evidencias'])->name('evidencias.index');
+        // Quien la subió o quien prepara salidas: lo revisa el controlador.
+        Route::delete('/{orden}/evidencias/{evidencia}', [OrdenSalidaController::class, 'borrarEvidencia'])->name('evidencias.destroy');
 
         Route::middleware('can:salidas.preparar')->group(function () {
             Route::patch('/{orden}/partidas/{item}', [OrdenSalidaController::class, 'partida'])->name('partida');
             Route::put('/{orden}/notas', [OrdenSalidaController::class, 'notas'])->name('notas');
             Route::post('/{orden}/confirmar-preparacion', [OrdenSalidaController::class, 'confirmarPreparacion'])->name('confirmar-preparacion');
             Route::post('/{orden}/entregar', [OrdenSalidaController::class, 'entregar'])->name('entregar');
+            Route::post('/{orden}/evidencias/fotos', [OrdenSalidaController::class, 'subirFotos'])->name('evidencias.fotos');
+            Route::post('/{orden}/evidencias/video', [OrdenSalidaController::class, 'subirVideo'])->name('evidencias.video');
         });
     });
 

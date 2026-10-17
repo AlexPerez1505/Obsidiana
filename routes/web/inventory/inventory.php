@@ -32,6 +32,8 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::get('/', [OrdenSalidaController::class, 'index'])->name('index');
         Route::get('/{orden}', [OrdenSalidaController::class, 'show'])->name('show');
         Route::get('/{orden}/pdf', [OrdenSalidaController::class, 'pdf'])->name('pdf');
+        // Quitar evidencia: quien la subió o quien prepara salidas (lo revisa el controlador).
+        Route::delete('/{orden}/evidencias/{evidencia}', [OrdenSalidaController::class, 'borrarEvidencia'])->name('evidencias.destroy');
 
         Route::middleware('can:salidas.preparar')->group(function () {
             Route::post('/{orden}/partidas/{item}', [OrdenSalidaController::class, 'item'])->name('item');
@@ -39,6 +41,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             // Cierra la preparación: queda lista, esperando firma.
             Route::post('/{orden}/preparada', [OrdenSalidaController::class, 'preparada'])->name('preparada');
             Route::post('/{orden}/entregar', [OrdenSalidaController::class, 'entregar'])->name('entregar');
+            // Evidencia: una foto por petición (sin tope de cuántas) y el video por pedazos.
+            Route::post('/{orden}/evidencias/foto', [OrdenSalidaController::class, 'evidenciaFoto'])->name('evidencias.foto');
+            Route::post('/{orden}/evidencias/video-chunk', [OrdenSalidaController::class, 'evidenciaVideo'])->name('evidencias.videoChunk');
         });
     });
     /*
@@ -76,7 +81,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'show'])
         ->middleware('can:inventario.ver')->name('inventory.movimientos.show');
     Route::delete('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'destroy'])
-        ->middleware('can:inventario.eliminar')->name('inventory.movimientos.destroy');
+        // Sin can: aquí: lo revisa el controlador con EdicionPropia
+        // (inventario.eliminar, o las 8 horas de quien la registró).
+        ->name('inventory.movimientos.destroy');
 
     // Productos (stock real, contra base de datos)
     Route::get('/gestion-inventario/productos', [ProductoController::class, 'index'])
@@ -93,18 +100,23 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     // La ficha del producto: qué entró, cuándo y cuánto hay.
     Route::get('/gestion-inventario/productos/{producto}', [ProductoController::class, 'show'])
         ->middleware('can:inventario.ver')->name('inventory.productos.show');
+    // Editar y borrar: quien tiene inventario.editar / inventario.eliminar, o
+    // quien lo registró durante sus primeras 8 horas. Por eso estas rutas no
+    // llevan can:, lo revisa el controlador con EdicionPropia.
     Route::get('/gestion-inventario/productos/{producto}/editar', [ProductoController::class, 'edit'])
-        ->middleware('can:inventario.editar')->name('inventory.productos.edit');
+        ->name('inventory.productos.edit');
     Route::put('/gestion-inventario/productos/{producto}', [ProductoController::class, 'update'])
-        ->middleware('can:inventario.editar')->name('inventory.productos.update');
+        ->name('inventory.productos.update');
     Route::delete('/gestion-inventario/productos/{producto}', [ProductoController::class, 'destroy'])
-        ->middleware('can:inventario.eliminar')->name('inventory.productos.destroy');
+        ->name('inventory.productos.destroy');
     Route::post('/gestion-inventario/productos/{producto}/seriales', [ProductoController::class, 'agregarSeriales'])
-        ->middleware('can:inventario.editar')->name('inventory.productos.seriales.store');
+        ->name('inventory.productos.seriales.store');
+    Route::put('/gestion-inventario/productos/{producto}/seriales', [ProductoController::class, 'seriesEnLote'])
+        ->name('inventory.productos.seriales.lote');
     Route::put('/gestion-inventario/productos/seriales/{serial}', [ProductoController::class, 'actualizarSerial'])
-        ->middleware('can:inventario.editar')->name('inventory.productos.seriales.update');
+        ->name('inventory.productos.seriales.update');
     Route::delete('/gestion-inventario/productos/seriales/{serial}', [ProductoController::class, 'eliminarSerial'])
-        ->middleware('can:inventario.eliminar')->name('inventory.productos.seriales.destroy');
+        ->name('inventory.productos.seriales.destroy');
 
     // Fichas técnicas (nombre + PDF)
     Route::get('/gestion-inventario/fichas-tecnicas', [FichaTecnicaController::class, 'index'])

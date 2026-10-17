@@ -45,6 +45,18 @@ class OrdenSalida extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        /*
+        | La llave foránea borra los registros de evidencia solos, pero no
+        | sus archivos. Se borran uno por uno para que cada evidencia se
+        | lleve el suyo (ver OrdenSalidaEvidencia::booted).
+        */
+        static::deleting(function (OrdenSalida $orden) {
+            $orden->evidencias()->get()->each->delete();
+        });
+    }
+
     public function venta(): BelongsTo
     {
         return $this->belongsTo(Venta::class);
@@ -69,6 +81,37 @@ class OrdenSalida extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** Fotos y videos del equipo preparado, emplayado o entregado. */
+    public function evidencias(): HasMany
+    {
+        return $this->hasMany(OrdenSalidaEvidencia::class)->orderBy('id');
+    }
+
+    /**
+     * Cuántas fotos y videos tiene, con lo ya cargado si se cargó.
+     *
+     * @return array{fotos: int, videos: int}
+     */
+    public function conteoEvidencias(): array
+    {
+        $porTipo = $this->relationLoaded('evidencias')
+            ? $this->evidencias->countBy('tipo')
+            : $this->evidencias()->reorder()->selectRaw('tipo, COUNT(*) as n')->groupBy('tipo')->pluck('n', 'tipo');
+
+        return [
+            'fotos' => (int) ($porTipo[OrdenSalidaEvidencia::FOTO] ?? 0),
+            'videos' => (int) ($porTipo[OrdenSalidaEvidencia::VIDEO] ?? 0),
+        ];
+    }
+
+    /** "3 fotos, 1 video", para la hoja impresa y la pantalla. */
+    public function resumenEvidencias(): string
+    {
+        ['fotos' => $fotos, 'videos' => $videos] = $this->conteoEvidencias();
+
+        return $fotos.($fotos === 1 ? ' foto' : ' fotos').', '.$videos.($videos === 1 ? ' video' : ' videos');
     }
 
     public static function siguienteFolio(): string

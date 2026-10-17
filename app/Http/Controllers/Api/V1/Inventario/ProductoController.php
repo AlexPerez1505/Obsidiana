@@ -9,6 +9,7 @@ use App\Http\Resources\Api\V1\Inventario\ProductoDetalleResource;
 use App\Http\Resources\Api\V1\Inventario\ProductoResource;
 use App\Models\Producto;
 use App\Services\Inventario\ProductosDeInventario;
+use App\Support\EdicionPropia;
 use App\Support\GeneradorDeSeries;
 use App\Support\PrecioVisible;
 use Illuminate\Http\JsonResponse;
@@ -135,7 +136,7 @@ class ProductoController extends Controller
      * Generar series propias.
      *
      * Para equipo que no trae serial de fábrica: arma `cantidad` series con
-     * el catálogo elegido (LAP-CAM-STR-1588-0001…) y un consecutivo que no
+     * el catálogo elegido, sin el tipo al frente (CAM-STR-1588-0001…), y un consecutivo que no
      * choca con las que ya existen. No guarda nada.
      */
     public function generarSeries(Request $request): JsonResponse
@@ -205,6 +206,8 @@ class ProductoController extends Controller
      */
     public function update(Request $request, Producto $producto): ProductoResource
     {
+        abort_unless(EdicionPropia::puedeEditarProducto($request->user(), $producto), 403, EdicionPropia::mensaje('editar'));
+
         // El stock sale de las piezas: aquí se ignora y no hace falta mandarlo.
         $reglas = array_merge(ProductosDeInventario::reglas(), ['stock' => ['sometimes', 'integer', 'min:0']]);
 
@@ -224,10 +227,14 @@ class ProductoController extends Controller
     /**
      * Eliminar un producto.
      *
-     * Se van con él todas sus piezas.
+     * Se van con él todas sus piezas. Lo puede quien tiene
+     * inventario.eliminar, o quien lo dio de alta durante sus primeras
+     * EdicionPropia::HORAS horas.
      */
-    public function destroy(Producto $producto): JsonResponse
+    public function destroy(Request $request, Producto $producto): JsonResponse
     {
+        abort_unless(EdicionPropia::puedeEliminarProducto($request->user(), $producto), 403, EdicionPropia::mensaje('eliminar'));
+
         $producto->delete();
 
         return response()->json(['message' => 'Producto eliminado correctamente.']);

@@ -72,6 +72,8 @@ class EntradasDeInventario
             'precio' => ['nullable', 'numeric', 'min:0'],
             'cantidad' => ['required', 'integer', 'min:1', 'max:5000'],
             'descripcion' => ['nullable', 'string', 'max:1000'],
+            // Opcional: la REF o número de parte del fabricante.
+            'referencia' => ['nullable', 'string', 'max:120'],
             'movement_date' => ['required', 'date'],
             'notas' => ['nullable', 'string', 'max:1000'],
             'imagen' => ['nullable', 'image', 'max:5120'],
@@ -137,17 +139,17 @@ class EntradasDeInventario
         }
 
         /*
-        | Números de serie: si solo se capturó el de la primera pieza, el
-        | resto se completa como secuencia (23A00001 → 23A00002...). Si se
-        | capturaron sueltos (unas sí y otras no), se respeta cada posición
-        | tal como se capturó.
+        | Números de serie: cada pieza se queda con el que se le capturó a
+        | ella, en su posición, y la que se dejó vacía queda sin serie.
+        |
+        | Antes, si solo venía una serie se armaba una secuencia y se
+        | repartía desde la pieza #1: capturar solo la de la pieza #3 se la
+        | ponía a la #1 y le inventaba series a las demás. Para numerar en
+        | secuencia está el botón de generar series de la pantalla.
         */
-        $capturadas = collect($data['unidades'])
+        $series = collect($data['unidades'])
             ->values()
             ->map(fn (array $u) => trim((string) ($u['no_serie'] ?? '')) ?: null);
-
-        $secuencia = $this->autocompletarSecuencia($capturadas->filter()->values(), $cantidad);
-        $series = $secuencia->count() === $cantidad ? $secuencia->values() : $capturadas;
 
         // Los videos ya se subieron por pedazos antes de este submit: solo
         // se verifica que cada ruta sea de un video real y exista.
@@ -273,7 +275,7 @@ class EntradasDeInventario
     public function eliminar(InventoryMovement $movimiento): void
     {
         if ($motivo = $this->motivoParaNoEliminar($movimiento)) {
-            throw new OperacionRechazada('password', $motivo);
+            throw new OperacionRechazada('movimiento', $motivo);
         }
 
         DB::transaction(function () use ($movimiento) {
@@ -385,6 +387,7 @@ class EntradasDeInventario
                 'equipment_model_id' => $data['equipment_model_id'] ?? null,
                 'precio' => $data['precio'],
                 'descripcion' => $data['descripcion'] ?? null,
+                'referencia' => trim((string) ($data['referencia'] ?? '')) ?: null,
             ];
 
             /*
@@ -417,6 +420,7 @@ class EntradasDeInventario
                 }
 
                 $existente->descripcion = $productoData['descripcion'] ?? $existente->descripcion;
+                $existente->referencia = $productoData['referencia'] ?? $existente->referencia;
 
                 // Una vez marcado como serializado, se queda así.
                 if ($serializado) {

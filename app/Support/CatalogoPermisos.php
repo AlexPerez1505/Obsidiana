@@ -67,6 +67,15 @@ class CatalogoPermisos
                 ],
             ],
 
+            'tienda' => [
+                'titulo' => 'Tienda en línea',
+                'descripcion' => 'Solicitudes de cotización que llegan desde la página web.',
+                'permisos' => [
+                    'tienda.ver' => 'Ver las solicitudes de la tienda en línea',
+                    'tienda.atender' => 'Cambiar el estado de las solicitudes y anotar seguimiento',
+                ],
+            ],
+
             'cobranza' => [
                 'titulo' => 'Cobranza',
                 'descripcion' => 'Lo que deben y los pagos que entran.',
@@ -182,6 +191,20 @@ class CatalogoPermisos
                 'permisos' => [
                     'servicios.ver' => 'Ver historial de servicios',
                     'servicios.crear' => 'Crear órdenes de servicio',
+                ],
+            ],
+
+            'garantias' => [
+                'titulo' => 'Garantías',
+                'descripcion' => 'Pólizas por equipo, reclamaciones, costos y recuperaciones.',
+                'permisos' => [
+                    'garantias.ver' => 'Ver garantías, reclamaciones e indicadores',
+                    'garantias.gestionar' => 'Registrar y atender reclamaciones, gastos y préstamos',
+                    'garantias.dictaminar' => 'Dictaminar si una garantía procede o no',
+                    // Excepciones: aceptar garantías vencidas, aprobar gastos
+                    // arriba del límite, corregir fechas y anular pólizas.
+                    'garantias.aprobar' => 'Autorizar excepciones, gastos grandes, cambios de fechas y anulaciones',
+                    'garantias.configurar' => 'Configurar coberturas y regenerar garantías desde las ventas',
                 ],
             ],
 

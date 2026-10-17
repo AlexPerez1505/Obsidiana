@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1\Inventario;
 
 use App\Http\Resources\Api\V1\UsuarioResource;
 use App\Models\InventoryMovement;
+use App\Support\EdicionPropia;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -52,6 +53,9 @@ class MovimientoResource extends JsonResource
             'signature_url' => $this->signatureUrl(),
             'video_url' => $this->videoUrl(),
             'created_by' => $this->created_by,
+            // Solo entradas: una salida la generó una venta.
+            'puede_eliminar' => $this->movement_type === InventoryMovement::TYPE_ENTRY
+                && EdicionPropia::puedeEliminarMovimiento($request->user(), $this->resource),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'creator' => new UsuarioResource($this->whenLoaded('creator')),

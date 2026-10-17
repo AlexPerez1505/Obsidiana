@@ -16,6 +16,15 @@ class Producto extends Model
 
     protected $table = 'productos';
 
+    protected static function booted(): void
+    {
+        // Quién lo dio de alta, venga de donde venga (entrada, alta directa
+        // o API): de eso depende su plazo para corregirlo (EdicionPropia).
+        static::creating(function (Producto $producto) {
+            $producto->created_by ??= auth()->id();
+        });
+    }
+
     protected $fillable = [
         'equipment_type_id',
         'subtype_id',
@@ -29,8 +38,10 @@ class Producto extends Model
         'imagen_path',
         'stock',
         'descripcion',
+        'referencia',
         'no_serie',
         'es_serializado',
+        'created_by',
     ];
 
     protected $casts = [
@@ -50,6 +61,11 @@ class Producto extends Model
     public function nombreVisible(): string
     {
         return trim((string) ($this->subtipo ?: $this->tipo_equipo));
+    }
+
+    public function creador(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function equipmentType(): BelongsTo

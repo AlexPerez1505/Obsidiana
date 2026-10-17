@@ -62,6 +62,10 @@ class OrdenSalidaResource extends JsonResource
             'preparada_por_usuario' => new UsuarioResource($this->whenLoaded('preparadaPor')),
             'entregada_por_usuario' => new UsuarioResource($this->whenLoaded('entregadaPor')),
             'items' => OrdenSalidaItemResource::collection($this->whenLoaded('items')),
+
+            // Fotos y videos del equipo preparado, emplayado o entregado.
+            'evidencias' => OrdenSalidaEvidenciaResource::collection($this->whenLoaded('evidencias')),
+            'conteo_evidencias' => $this->when($this->relationLoaded('evidencias'), fn () => $this->conteoEvidencias()),
         ];
     }
 }

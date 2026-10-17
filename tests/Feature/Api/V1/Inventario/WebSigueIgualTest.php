@@ -183,21 +183,17 @@ class WebSigueIgualTest extends TestCase
         $movimiento = InventoryMovement::firstOrFail();
         $detalle = route('inventory.movimientos.show', $movimiento);
 
-        $this->actingAs($user)->from($detalle)
-            ->delete(route('inventory.movimientos.destroy', $movimiento), ['password' => 'mala'])
-            ->assertRedirect($detalle)
-            ->assertSessionHasErrors(['password' => 'PIN o contraseña incorrecta.']);
-
+        // Ya no pide PIN.
         $movimiento->seriales()->update(['vendido' => true]);
 
         $this->actingAs($user)->from($detalle)
-            ->delete(route('inventory.movimientos.destroy', $movimiento), ['password' => 'password'])
+            ->delete(route('inventory.movimientos.destroy', $movimiento))
             ->assertRedirect($detalle)
-            ->assertSessionHasErrors(['password' => 'No se puede eliminar: alguna unidad de esta entrada ya se vendió.']);
+            ->assertSessionHasErrors(['movimiento' => 'No se puede eliminar: alguna unidad de esta entrada ya se vendió.']);
 
         $movimiento->seriales()->update(['vendido' => false]);
 
-        $this->actingAs($user)->delete(route('inventory.movimientos.destroy', $movimiento), ['password' => 'password'])
+        $this->actingAs($user)->delete(route('inventory.movimientos.destroy', $movimiento))
             ->assertRedirect(route('inventory.movimientos.index'))
             ->assertSessionHas('status', "Movimiento {$movimiento->folio} eliminado.");
     }

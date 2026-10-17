@@ -31,3 +31,9 @@ Schedule::command('congresos:avisar-regresos')->dailyAt('09:30');
 // Asistencia: cierra el día anterior y genera las faltas automáticas (hora local de la empresa).
 // Respaldo: ServicioDeAsistencia::cerrarPendientes al abrir el panel de asistencia.
 Schedule::command('asistencia:cerrar')->dailyAt('00:30')->timezone(config('asistencia.timezone'));
+
+// Garantías: primero se ponen al día con las ventas (por si alguna entrega
+// no pasó por los eventos) y luego se avisa de vencimientos, reclamaciones
+// atrasadas y préstamos sin regresar.
+Schedule::command('garantias:sincronizar')->dailyAt('06:30');
+Schedule::command('garantias:avisar')->dailyAt('08:15');

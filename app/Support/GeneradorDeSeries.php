@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Models\Brand;
 use App\Models\EquipmentModel;
-use App\Models\EquipmentType;
 use App\Models\ProductoSerial;
 use App\Models\Subtype;
 
@@ -13,10 +12,15 @@ use App\Models\Subtype;
  *
  * Muchos accesorios y equipo usado llegan sin serial, y sin él no hay forma
  * de referirse a una pieza concreta en una cotización o en una entrega. La
- * serie se construye con lo que ya se sabe del equipo —tipo, subtipo, marca
- * y modelo— más un consecutivo, para que se lea y se entienda:
+ * serie se construye con lo que ya se sabe del equipo —subtipo, marca y
+ * modelo— más un consecutivo, para que se lea y se entienda:
  *
- *     LAP-CAM-STR-1588-0001
+ *     CAM-STR-1588-0001
+ *
+ * El tipo ya no va al frente: lo pidió así almacén, porque la abreviatura
+ * del tipo (LAP-, TOR-…) alargaba la serie sin decir nada que no dijera ya
+ * la ficha del equipo. Si no se eligió subtipo, marca ni modelo, la serie
+ * arranca con EQ.
  *
  * Es distinta de la etiqueta interna (MB-000147), que es la del QR: esa
  * identifica la pieza dentro del sistema, y esta se escribe en el equipo y
@@ -34,12 +38,12 @@ class GeneradorDeSeries
      * Prefijo legible a partir del catálogo elegido.
      *
      * Las partes que no se eligieron simplemente no aparecen: un equipo sin
-     * subtipo da LAP-STR-1588, no LAP--STR-1588.
+     * subtipo da STR-1588, no -STR-1588. El tipo se recibe porque así lo
+     * mandan las pantallas y la API, pero ya no forma parte de la serie.
      */
     public static function prefijo(?int $tipoId, ?int $subtipoId, ?int $marcaId, ?int $modeloId): string
     {
         $partes = [
-            $tipoId ? EquipmentType::find($tipoId)?->name : null,
             $subtipoId ? Subtype::find($subtipoId)?->name : null,
             $marcaId ? Brand::find($marcaId)?->name : null,
             $modeloId ? EquipmentModel::find($modeloId)?->name : null,

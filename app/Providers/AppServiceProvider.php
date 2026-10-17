@@ -35,6 +35,39 @@ class AppServiceProvider extends ServiceProvider
         $this->registrarPermisos();
         $this->limitarDocumentosPorAsesor();
         $this->configurarApi();
+        $this->sincronizarGarantias();
+    }
+
+    /**
+     * Las garantías siguen a la venta: al registrarla, editarla, cancelarla
+     * o entregar su equipo se recalculan sus expedientes. Corre al terminar
+     * la transacción (ya con renglones y seriales) y nunca tumba la venta.
+     * Respaldo diario: `garantias:sincronizar`.
+     */
+    private function sincronizarGarantias(): void
+    {
+        $programar = fn (?int $ventaId) => \App\Services\Garantias\GeneradorDeGarantias::programar($ventaId);
+
+        Venta::saved(fn (Venta $v) => $programar($v->id));
+        Venta::deleting(function (Venta $v) {
+            try {
+                app(\App\Services\Garantias\GeneradorDeGarantias::class)->ventaEliminada($v);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        });
+        \App\Models\VentaItem::saved(fn ($i) => $programar($i->venta_id));
+        \App\Models\VentaItem::deleted(fn ($i) => $programar($i->venta_id));
+        \App\Models\OrdenSalida::saved(function ($o) use ($programar) {
+            if ($o->wasChanged('estado') || $o->wasRecentlyCreated) {
+                $programar($o->venta_id);
+            }
+        });
+        \App\Models\ProductoSerial::saved(function ($s) use ($programar) {
+            foreach (array_filter([$s->venta_item_id, $s->getOriginal('venta_item_id')]) as $itemId) {
+                $programar(\App\Models\VentaItem::whereKey($itemId)->value('venta_id'));
+            }
+        });
     }
 
     /**
@@ -51,6 +84,10 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('api-login', fn (Request $request) => Limit::perMinute(config('api.limite_login_por_minuto'))
             ->by('api-login:'.Str::lower((string) $request->input('email')).'|'.$request->ip()));
+
+        // Tienda en línea (pública): cada límite con su propia cuenta por IP.
+        RateLimiter::for('tienda', fn (Request $request) => Limit::perMinute(120)->by('tienda:'.$request->ip()));
+        RateLimiter::for('tienda-solicitudes', fn (Request $request) => Limit::perMinutes(10, 5)->by('tienda-sol:'.$request->ip()));
 
         // La documentación (/docs/api) la ve cualquier usuario con acceso.
         Gate::define('viewApiDocs', fn (?User $user = null) => (bool) $user?->isApproved());

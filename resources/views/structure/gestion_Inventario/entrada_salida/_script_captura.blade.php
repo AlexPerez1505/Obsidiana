@@ -31,6 +31,11 @@
            Recibe la zona ya creada (cada pieza tiene la suya) en vez de
            buscarla por nombre: en esta pantalla hay una por cada pieza que
            llegó, no una sola del lote.
+
+           Las fotos se SUMAN. El navegador, cada vez que se elige o se toma
+           una foto, deja en el input solo la nueva; en el celular eso hacía
+           que la segunda foto borrara la primera. Aquí se guarda la lista
+           de lo ya elegido y lo nuevo se le agrega, hasta el máximo.
         ========================================================== */
         function zonaDeArchivos(zona, minis, { max = null, alCambiar = null } = {}) {
             if (!zona) return null;
@@ -39,10 +44,19 @@
             const cuenta = zona.querySelector('[data-cuenta]');
             const textoBase = cuenta ? cuenta.textContent : '';
 
+            // Lo elegido hasta ahora, en orden.
+            let elegidos = [];
+
+            function sincronizar() {
+                const dt = new DataTransfer();
+                elegidos.forEach(a => dt.items.add(a));
+                input.files = dt.files;
+            }
+
             function pintar() {
                 if (minis) minis.innerHTML = '';
 
-                Array.from(input.files || []).forEach(function (archivo, i) {
+                elegidos.forEach(function (archivo, i) {
                     if (!minis) return;
 
                     const caja = document.createElement('div');
@@ -69,43 +83,42 @@
                     minis.appendChild(caja);
                 });
 
-                const n = input.files ? input.files.length : 0;
+                const n = elegidos.length;
                 zona.classList.toggle('lleno', n > 0);
 
                 if (cuenta) {
-                    cuenta.textContent = n === 0
-                        ? textoBase
-                        : (n === 1 ? '1 foto elegida' : n + ' fotos elegidas')
-                          + (max ? ' de ' + max : '') + ' · toca para cambiar';
+                    if (n === 0) {
+                        cuenta.textContent = textoBase;
+                    } else if (max && n >= max) {
+                        cuenta.textContent = n + ' de ' + max + ' fotos · quita una para cambiarla';
+                    } else {
+                        cuenta.textContent = (n === 1 ? '1 foto' : n + ' fotos')
+                            + (max ? ' de ' + max : '') + ' · toca para agregar otra';
+                    }
                 }
 
                 if (alCambiar) alCambiar(n);
             }
 
-            // Un FileList no se puede editar: se arma uno nuevo sin el que
-            // se quitó y se le asigna al input.
             function quitarArchivo(indice) {
-                const dt = new DataTransfer();
-                Array.from(input.files).forEach((a, i) => { if (i !== indice) dt.items.add(a); });
-                input.files = dt.files;
+                elegidos.splice(indice, 1);
+                sincronizar();
                 pintar();
             }
 
-            function recortar() {
-                if (!max || !input.files || input.files.length <= max) return false;
+            function sumar(lista) {
+                const nuevos = Array.from(lista || []);
+                if (!nuevos.length) return;
 
-                const dt = new DataTransfer();
-                Array.from(input.files).slice(0, max).forEach(a => dt.items.add(a));
-                input.files = dt.files;
+                const espacio = max ? Math.max(0, max - elegidos.length) : nuevos.length;
 
-                return true;
-            }
+                if (nuevos.length > espacio && window.showToast) {
+                    window.showToast('Cada pieza lleva máximo ' + max + ' fotos. Quita una para agregar otra.', 'err');
+                }
 
-            function recibir(lista) {
-                const dt = new DataTransfer();
-                Array.from(lista).slice(0, max || lista.length).forEach(a => dt.items.add(a));
-                input.files = dt.files;
-                input.dispatchEvent(new Event('change', { bubbles: true }));
+                elegidos = elegidos.concat(nuevos.slice(0, espacio));
+                sincronizar();
+                pintar();
             }
 
             ['dragenter', 'dragover'].forEach(ev => zona.addEventListener(ev, function (e) {
@@ -119,12 +132,13 @@
             }));
 
             zona.addEventListener('drop', function (e) {
-                if (e.dataTransfer?.files?.length) recibir(e.dataTransfer.files);
+                if (e.dataTransfer?.files?.length) sumar(e.dataTransfer.files);
             });
 
+            // En el "change" el input ya trae solo lo recién elegido: se suma
+            // a lo anterior y se vuelve a armar la lista completa.
             input.addEventListener('change', function () {
-                recortar();
-                pintar();
+                sumar(input.files);
             });
 
             pintar();
@@ -241,7 +255,7 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                             </span>
                             <span class="t">Fotos de esta pieza *</span>
-                            <span class="d" data-cuenta>Hasta ${MAX_FOTOS} · JPG o PNG</span>
+                            <span class="d" data-cuenta>Hasta ${MAX_FOTOS} · toma una y luego otra</span>
                             <input type="file" name="unidades[${i}][evidencias][]" accept="image/*" multiple>
                         </label>
                         <div class="miniaturas" data-minis></div>
@@ -342,7 +356,6 @@
                 }
             }
 
-            aplicarSugerido();
             actualizarResumen();
         };
 
@@ -353,13 +366,42 @@
             return m[1] + String(parseInt(m[2], 10) + delta).padStart(m[2].length, '0');
         }
 
-        function aplicarSugerido() {
-            if (!sugeridoBase || !contenedorPiezas) return;
+        /*
+        | La serie sugerida (consecutiva a la última registrada del modelo) ya
+        | no se escribe sola en las piezas: cada pieza lleva la serie que se le
+        | capture. Si de verdad siguen el consecutivo, el botón llena solo las
+        | que estén vacías.
+        */
+        const btnSugeridas = form.querySelector('[data-usar-sugeridas]');
 
-            contenedorPiezas.querySelectorAll('.pieza-serie').forEach(function (input, i) {
-                if (!input.value) input.value = incrementarSerial(sugeridoBase, i);
-            });
+        function mostrarSugerida() {
+            if (!btnSugeridas) return;
+
+            btnSugeridas.hidden = !sugeridoBase;
+            if (sugeridoBase) btnSugeridas.textContent = 'Seguir consecutivo desde ' + sugeridoBase;
         }
+
+        function aplicarSugerido() {
+            if (!sugeridoBase || !contenedorPiezas) return 0;
+
+            let siguiente = 0;
+
+            seriesDeLasPiezas().forEach(function (input) {
+                if (!input.value.trim()) input.value = incrementarSerial(sugeridoBase, siguiente++);
+            });
+
+            return siguiente;
+        }
+
+        btnSugeridas?.addEventListener('click', function () {
+            const llenadas = aplicarSugerido();
+
+            if (window.showToast) {
+                window.showToast(llenadas
+                    ? 'Se llenaron ' + llenadas + ' pieza(s) vacía(s) con el consecutivo.'
+                    : 'Todas las piezas ya tienen serie.', llenadas ? 'ok' : 'err');
+            }
+        });
 
         function seriesDeLasPiezas() {
             return Array.from(contenedorPiezas?.querySelectorAll('.pieza-serie') || []);
@@ -480,7 +522,7 @@
         form.addEventListener('submit', function (e) {
             if (subiendoVideos > 0) {
                 e.preventDefault();
-                alert('Espera a que terminen de subirse los videos.');
+                window.showToast?.('Espera a que terminen de subirse los videos.', 'err');
             }
         });
 
@@ -547,6 +589,8 @@
             modeloSelect.addEventListener('change', function () {
                 aviso.style.display = 'none';
                 imagenActualWrap.style.display = 'none';
+                sugeridoBase = null;
+                mostrarSugerida();
 
                 if (!modeloSelect.value) return;
 
@@ -571,10 +615,18 @@
                         }
 
                         sugeridoBase = data.no_serie_sugerido || null;
+                        mostrarSugerida();
 
                         if (sugeridoBase) {
-                            aplicarSugerido();
-                            mensaje += ' Las series se sugirieron desde ' + sugeridoBase + ' (consecutivo del último registrado).';
+                            mensaje += ' La última serie registrada sigue con ' + sugeridoBase
+                                + '; si estas piezas siguen ese consecutivo, usa el botón «Seguir consecutivo» en el paso de piezas.';
+                        }
+
+                        // La referencia es del modelo: se completa si no se escribió otra.
+                        const referenciaInput = document.getElementById('referencia');
+                        if (referenciaInput && !referenciaInput.value && data.referencia) {
+                            referenciaInput.value = data.referencia;
+                            mensaje += ' Se completó la referencia.';
                         }
 
                         if (data.imagen) {
@@ -603,7 +655,8 @@
         const notaGenerar = form.querySelector('[data-generar-nota]');
 
         function prefijoALaVista() {
-            const nombres = ['equipment_type_id', 'subtype_id', 'brand_id', 'equipment_model_id']
+            // El tipo ya no forma parte de la serie (GeneradorDeSeries).
+            const nombres = ['subtype_id', 'brand_id', 'equipment_model_id']
                 .map(id => {
                     const s = document.getElementById(id);
                     return s?.value ? s.options[s.selectedIndex]?.text : null;
@@ -619,8 +672,8 @@
             const visto = prefijoALaVista();
 
             notaGenerar.textContent = visto
-                ? 'Se armarán con: ' + visto + '.'
-                : 'Elige al menos el tipo de equipo en el paso anterior.';
+                ? 'con ' + visto + ' y un consecutivo'
+                : 'sin subtipo, marca ni modelo quedan como EQ-0001, EQ-0002…';
         }
 
         ['equipment_type_id', 'subtype_id', 'brand_id', 'equipment_model_id'].forEach(function (id) {
@@ -634,18 +687,24 @@
                 const tipo = document.getElementById('equipment_type_id');
 
                 if (!tipo?.value) {
-                    alert('Elige primero el tipo de equipo, en el paso anterior.');
+                    window.showToast?.('Elige primero el tipo de equipo, en el paso anterior.', 'err');
                     form.dispatchEvent(new CustomEvent('paso:ir', { detail: { paso: 'equipo' } }));
                     return;
                 }
 
-                const inputsSerie = seriesDeLasPiezas();
-                const cuantas = Math.max(1, inputsSerie.length);
+                // Solo se llenan las piezas sin serie: la que ya tiene la suya
+                // la conserva. Si todas tienen, se pregunta antes de pisarlas.
+                let inputsSerie = seriesDeLasPiezas().filter(i => !i.value.trim());
 
-                // Lo capturado no se pisa sin avisar.
-                if (inputsSerie.some(i => i.value.trim()) && !(await window.confirmModal({ message: 'Ya hay series capturadas. ¿Reemplazarlas por las generadas?' }))) {
-                    return;
+                if (!inputsSerie.length) {
+                    if (!(await window.confirmModal({ message: 'Todas las piezas ya tienen serie. ¿Reemplazarlas por series generadas?' }))) {
+                        return;
+                    }
+
+                    inputsSerie = seriesDeLasPiezas();
                 }
+
+                const cuantas = Math.max(1, inputsSerie.length);
 
                 btnGenerar.disabled = true;
                 const textoPrevio = btnGenerar.textContent;
@@ -679,10 +738,10 @@
                     });
 
                     if (notaGenerar) {
-                        notaGenerar.textContent = `Se generaron ${data.series.length} con el prefijo ${data.prefijo}.`;
+                        notaGenerar.textContent = `se generaron ${data.series.length} con el prefijo ${data.prefijo}; puedes cambiar la de cualquier pieza`;
                     }
                 } catch (e) {
-                    alert(e.message || 'No se pudieron generar las series. Intenta de nuevo.');
+                    window.showToast?.(e.message || 'No se pudieron generar las series. Intenta de nuevo.', 'err');
                 } finally {
                     btnGenerar.disabled = false;
                     btnGenerar.textContent = textoPrevio;

@@ -373,16 +373,11 @@
 
             <h3>Eliminar movimiento</h3>
             <p class="campo-nota">
-                Se va a eliminar <b data-folio-eliminar></b> y las piezas que dio de alta.
-                Escribe tu PIN para confirmarlo.
+                Se va a eliminar <b data-folio-eliminar></b> y las piezas que dio de alta,
+                con sus fotos y su video. No se puede deshacer.
             </p>
 
-            <x-ui.form-group label="PIN" for="pinEliminar">
-                <input id="pinEliminar" name="password" type="password" inputmode="numeric" required
-                       placeholder="Tu PIN de aprobación" autocomplete="off">
-            </x-ui.form-group>
-
-            @error('password')<p class="err">{{ $message }}</p>@enderror
+            @error('movimiento')<p class="err">{{ $message }}</p>@enderror
 
             <div class="mv-modal-pie">
                 <button type="button" class="btn btn--ghost" data-cerrar-modal>Cancelar</button>
@@ -465,7 +460,6 @@
                     const form = document.getElementById('formEliminar');
                     form.action = boton.dataset.url;
                     modal.querySelector('[data-folio-eliminar]').textContent = boton.dataset.folio;
-                    modal.querySelector('#pinEliminar').value = '';
                     modal.showModal();
 
                     return;
@@ -512,10 +506,6 @@
                 window.location = fila.dataset.ver;
             });
 
-            @if ($errors->has('password'))
-                // El PIN salió mal: se vuelve a abrir con el error a la vista.
-                document.getElementById('modalEliminar')?.showModal();
-            @endif
         })();
         </script>
     @endpush

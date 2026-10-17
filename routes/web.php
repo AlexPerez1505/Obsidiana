@@ -29,6 +29,7 @@ require __DIR__.'/web/commercial/commercial.php';
 require __DIR__.'/web/cotizaciones.php';
 require __DIR__.'/web/ventas.php';
 require __DIR__.'/web/facturas.php';
+require __DIR__.'/web/commercial/solicitudes-web.php';
 
 // Inventario
 require __DIR__.'/web/inventory/inventory.php';
@@ -53,6 +54,9 @@ require __DIR__.'/web/marketing/marketing.php';
 
 // Gestion de servicios
 require __DIR__.'/web/services/historial.php';
+
+// Garantías
+require __DIR__.'/web/garantias.php';
 
 // Administracion
 require __DIR__.'/web/admin/admin.php';

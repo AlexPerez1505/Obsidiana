@@ -127,7 +127,7 @@ class InventorySerializadoTest extends TestCase
         $this->assertSame(1, ProductoSerial::where('producto_id', $producto->id)->where('no_serie', 'SN-NUEVA')->count());
     }
 
-    public function test_solo_la_primera_unidad_con_serie_genera_la_secuencia_completa(): void
+    public function test_cada_pieza_conserva_su_serie_sin_inventar_secuencias(): void
     {
         Storage::fake('public');
         $user = $this->usuarioAprobado();
@@ -149,12 +149,38 @@ class InventorySerializadoTest extends TestCase
 
         $response->assertRedirect(route('inventory.movimientos.index'));
 
+        // Antes se armaba 23A00010, 23A00011, 23A00012. Ahora la que no trae
+        // serie se queda sin serie: para numerar en secuencia está el botón.
         $producto = Producto::first();
-        $series = ProductoSerial::where('producto_id', $producto->id)->pluck('no_serie')->sort()->values();
-        $this->assertSame(['23A00010', '23A00011', '23A00012'], $series->all());
+        $series = ProductoSerial::where('producto_id', $producto->id)->orderBy('id')->pluck('no_serie');
+        $this->assertSame(['23A00010', null, null], $series->all());
     }
 
-    public function test_actualizar_serial_pide_pin_o_password(): void
+    public function test_la_serie_de_la_pieza_3_no_se_mueve_a_la_pieza_1(): void
+    {
+        Storage::fake('public');
+        $user = $this->usuarioAprobado();
+
+        $tipo = EquipmentType::create(['name' => 'Torre de endoscopia']);
+
+        $this->actingAs($user)->post(route('inventory.movimientos.store'), [
+            'equipment_type_id' => $tipo->id,
+            'precio' => 500,
+            'cantidad' => 3,
+            'movement_date' => now()->format('Y-m-d'),
+            'firma' => $this->firmaValida(),
+            'unidades' => [
+                ['no_serie' => 'AAA-1', 'evidencias' => [UploadedFile::fake()->create('u1.jpg', 50, 'image/jpeg')]],
+                ['no_serie' => null, 'evidencias' => [UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')]],
+                ['no_serie' => 'ZZ-77', 'evidencias' => [UploadedFile::fake()->create('u3.jpg', 50, 'image/jpeg')]],
+            ],
+        ])->assertRedirect(route('inventory.movimientos.index'));
+
+        $series = ProductoSerial::orderBy('id')->pluck('no_serie');
+        $this->assertSame(['AAA-1', null, 'ZZ-77'], $series->all());
+    }
+
+    public function test_actualizar_serial_ya_no_pide_pin(): void
     {
         Storage::fake('public');
         $user = $this->usuarioAprobado();
@@ -169,18 +195,7 @@ class InventorySerializadoTest extends TestCase
         $producto->agregarUnidades(1, ['SN-ORIGINAL']);
         $serial = $producto->seriales()->first();
 
-        // Password incorrecta: rechazado.
         $this->actingAs($user)->put(route('inventory.productos.seriales.update', $serial), [
-            'password' => 'incorrecta',
-            'no_serie' => 'SN-CORREGIDA',
-        ])->assertSessionHasErrors('password');
-
-        $serial->refresh();
-        $this->assertSame('SN-ORIGINAL', $serial->no_serie);
-
-        // Password correcta (la del factory es "password"): se actualiza.
-        $this->actingAs($user)->put(route('inventory.productos.seriales.update', $serial), [
-            'password' => 'password',
             'no_serie' => 'SN-CORREGIDA',
         ])->assertSessionDoesntHaveErrors();
 

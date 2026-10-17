@@ -10,9 +10,9 @@ use App\Http\Resources\Api\V1\Inventario\MovimientoResource;
 use App\Models\InventoryMovement;
 use App\Models\PiezaProceso;
 use App\Services\Inventario\EntradasDeInventario;
-use App\Services\Inventario\PinDeAprobacion;
 use App\Services\Inventario\VideoPorPedazos;
 use App\Support\ChecklistRecepcion;
+use App\Support\EdicionPropia;
 use App\Support\PrecioVisible;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
@@ -191,17 +191,14 @@ class MovimientoController extends Controller
     /**
      * Eliminar un movimiento.
      *
-     * Pide `password`: el PIN de aprobación del usuario o, si no tiene,
-     * su contraseña. Borra las piezas de la entrada y toda su evidencia y
-     * recalcula el stock. Si alguna pieza ya se vendió responde 409.
+     * Ya no pide PIN. Lo puede quien tiene inventario.eliminar, o quien
+     * registró la entrada durante sus primeras EdicionPropia::HORAS horas.
+     * Borra las piezas de la entrada y toda su evidencia y recalcula el
+     * stock. Si alguna pieza ya se vendió responde 409.
      */
     public function destroy(Request $request, InventoryMovement $movimiento, EntradasDeInventario $entradas): JsonResponse
     {
-        $request->validate(['password' => ['required', 'string']]);
-
-        if (! PinDeAprobacion::valido($request->user(), $request->input('password'))) {
-            throw ValidationException::withMessages(['password' => PinDeAprobacion::ERROR]);
-        }
+        abort_unless(EdicionPropia::puedeEliminarMovimiento($request->user(), $movimiento), 403, EdicionPropia::mensaje('eliminar'));
 
         $entradas->eliminar($movimiento);
 

@@ -28,6 +28,7 @@
                     <x-ui.form-group label="Precio de venta" name="precio" type="number" step="0.01" min="0" placeholder="0.00" />
                 @endif
                 <x-ui.form-group label="Stock *" name="stock" type="number" min="0" placeholder="0" :required="true" />
+                <x-ui.form-group label="Referencia" name="referencia" maxlength="120" placeholder="Ej. REF o número de parte (opcional)" />
             </div>
             <x-ui.form-group label="Números de serie (uno por línea, opcional)" for="series_texto">
                 <textarea id="series_texto" name="series_texto" rows="3" placeholder="Un número de serie por unidad. Déjalo vacío si el stock no tiene serial individual."
@@ -86,6 +87,9 @@
                                 // momento, aunque ya hubiera algo escrito ahí.
                                 if (precioInput) precioInput.value = data.precio ?? '';
                                 if (descripcionInput && !descripcionInput.value) descripcionInput.value = data.descripcion ?? '';
+
+                                const referenciaInput = document.getElementById('referencia');
+                                if (referenciaInput && !referenciaInput.value && data.referencia) referenciaInput.value = data.referencia;
                                 let mensaje = 'Este modelo ya está registrado (stock actual: ' + data.stock_actual + '). Al guardar, esta cantidad se agregará como unidades nuevas de esa misma fila (no se crea un producto nuevo). Se completaron precio y descripción.';
 
                                 if (seriesTextoInput && !seriesTextoInput.value && data.no_serie_sugerido) {
