@@ -17,15 +17,15 @@
             <pre id="cfg-agente" class="bm-cfg">{
   "api_url": "{{ url('/api/checador') }}",
   "api_key": "{{ $llaveNueva['llave'] }}",
-  "verificar_ssl": false,
-  "lector": { "tipo": "simulador" },
+  "verificar_ssl": {{ filter_var(request()->getHost(), FILTER_VALIDATE_IP) ? 'false' : 'true' }},
+  "lector": { "tipo": "uareu" },
   "pantalla_url": "{{ $llaveNueva['pantalla'] ?? '' }}"
 }</pre>
             <div class="rh-actions">
                 <button class="btn btn--ghost" type="button" onclick="navigator.clipboard.writeText(document.getElementById('cfg-agente').textContent); window.showToast && showToast('Configuración copiada')"><x-ui.icon name="file" /> Copiar config.json</button>
                 <button class="btn btn--ghost" type="button" onclick="navigator.clipboard.writeText(document.getElementById('llave').textContent); window.showToast && showToast('Llave copiada')"><x-ui.icon name="key" /> Copiar solo la llave</button>
             </div>
-            <p class="rh-sub" style="margin-top:10px;">Cambia <b>"tipo": "simulador"</b> por <b>"zkfinger"</b> cuando conectes un lector ZKTeco. La guía completa está en el README del agente.</p>
+            <p class="rh-sub" style="margin-top:10px;"><b>"uareu"</b> = lector DigitalPersona U.are.U 4500. Para probar sin lector usa <b>"simulador"</b>; para ZKTeco, <b>"zkfinger"</b>. La guía completa está en el README del agente.</p>
         </div>
     @endif
 
