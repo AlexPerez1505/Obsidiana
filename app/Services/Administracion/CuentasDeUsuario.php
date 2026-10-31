@@ -9,9 +9,11 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -141,37 +143,11 @@ class CuentasDeUsuario
 
     /**
      * Por qué no se puede eliminar esta cuenta (null = sí se puede).
-     *
-     * Solo se elimina una cuenta sin historial: de prueba o que nunca se
-     * usó. Borrar a alguien con historial dejaría ventas, entradas o
-     * nóminas sin quién las hizo, borraría sus checadas, viáticos y
-     * documentos, o la base lo impediría (servicios, campañas). Para quitarle
-     * el acceso a alguien con historial está "Quitar acceso".
+     * Cualquier cuenta se puede eliminar, menos la propia.
      */
     public function rechazoAlEliminar(User $user, User $quien): ?string
     {
-        if ($user->id === $quien->id) {
-            return 'No puedes eliminar tu propia cuenta.';
-        }
-
-        if ($user->is_admin) {
-            return "{$user->name} es administrador: quítale primero el rol de administrador.";
-        }
-
-        $historial = $this->historial($user);
-
-        if ($historial === null) {
-            return 'No se pudo revisar el historial de esta cuenta. Usa "Quitar acceso".';
-        }
-
-        if ($historial) {
-            $lista = collect($historial)->map(fn ($n, $que) => "{$n} {$que}")->take(6)->implode(', ');
-
-            return "No se puede eliminar a {$user->name} porque tiene historial ({$lista}). "
-                .'Si ya no debe entrar, usa "Quitar acceso": así no se pierde nada de lo que registró.';
-        }
-
-        return null;
+        return $user->id === $quien->id ? 'No puedes eliminar tu propia cuenta.' : null;
     }
 
     /**
@@ -215,19 +191,56 @@ class CuentasDeUsuario
         return $cuenta;
     }
 
-    /** Elimina una cuenta sin historial (revisar antes con rechazoAlEliminar). */
-    public function eliminar(User $user): void
+    /**
+     * Elimina una cuenta (revisar antes con rechazoAlEliminar).
+     *
+     * Sin historial (de prueba o que nunca se usó) se borra por completo.
+     * Con historial no se puede borrar el renglón sin perder ventas,
+     * checadas o nóminas, así que la cuenta se retira: desaparece de la
+     * lista y de todo el sistema, no puede entrar, su correo queda libre
+     * para registrarse de nuevo, y lo que registró conserva su nombre.
+     *
+     * @return bool  true si se borró por completo, false si se retiró
+     */
+    public function eliminar(User $user, ?User $quien = null): bool
     {
-        $disco = Storage::disk(config('filesystems.fotos_disk', 'public'));
-        $archivos = array_filter([$user->avatar]);
+        $historial = $this->historial($user);
 
-        DB::transaction(function () use ($user) {
+        if ($historial === []) {
+            $disco = Storage::disk(config('filesystems.fotos_disk', 'public'));
+            $archivos = array_filter([$user->avatar]);
+
+            DB::transaction(function () use ($user) {
+                DB::table('sessions')->where('user_id', $user->id)->delete();
+                $user->tokens()->delete();
+                $user->delete();
+            });
+
+            $disco->delete($archivos);
+
+            return true;
+        }
+
+        DB::transaction(function () use ($user, $quien) {
+            $user->forceFill([
+                'status' => User::STATUS_DELETED,
+                'banned_reason' => 'Eliminado'.($quien ? ' por '.$quien->name : '').' el '.now()->format('d/m/Y H:i').' · correo: '.$user->email,
+                'email' => 'eliminado-'.$user->id.'-'.now()->timestamp.'@baja.local',
+                'password' => Hash::make(Str::random(40)),
+                'remember_token' => null,
+                'is_admin' => false,
+            ])->save();
+
+            $user->roles()->detach();
+            DB::table('permission_user')->where('user_id', $user->id)->delete();
             DB::table('sessions')->where('user_id', $user->id)->delete();
             $user->tokens()->delete();
-            $user->delete();
+
+            // Ya no se le espera en el checador ni en la nómina
+            \App\Models\EmployeeSchedule::where('user_id', $user->id)->update(['active' => false]);
         });
 
-        $disco->delete($archivos);
+        return false;
     }
 
     /** Reactiva una cuenta baneada (le devuelve el acceso). */

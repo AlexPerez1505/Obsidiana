@@ -70,13 +70,13 @@
         @endif
         @endcan
 
-        {{-- Solo cuentas sin historial (de prueba o que nunca se usaron): si
-             tiene historial, el servidor lo dice y sugiere "Quitar acceso". --}}
+        {{-- Cualquier cuenta menos la propia. Si tiene historial, sale del
+             sistema y sus registros conservan su nombre. --}}
         @can('usuarios.eliminar')
-        @if (! $u->is_admin && $u->id !== auth()->id())
+        @if ($u->id !== auth()->id())
             <form method="POST" action="{{ route('admin.users.destroy', $u) }}"
-                  data-confirm="Se elimina la cuenta de {{ $u->name }} para siempre. Solo se puede si no tiene historial; si lo tiene, usa Quitar acceso."
-                  data-confirm-title="Eliminar usuario" data-confirm-ok="Eliminar">
+                  data-confirm="Se elimina la cuenta de {{ $u->name }}: ya no podrá entrar ni aparecerá en el sistema. Lo que registró (ventas, checadas, nóminas…) se conserva con su nombre. No se puede deshacer."
+                  data-confirm-title="Eliminar usuario" data-confirm-ok="Eliminar" data-confirm-danger>
                 @csrf
                 @method('DELETE')
                 <button type="submit" role="menuitem" class="danger">

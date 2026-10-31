@@ -62,8 +62,8 @@
                     </a>
                 @endif
 
-                @if (\App\Support\EdicionPropia::puedeEditarMovimiento(auth()->user(), $movimiento))
-                    <a href="{{ route('inventory.movimientos.edit', $movimiento) }}" class="btn btn--ghost">
+                @if (! $editando && \App\Support\EdicionPropia::puedeEditarMovimiento(auth()->user(), $movimiento))
+                    <a href="{{ route('inventory.movimientos.show', [$movimiento, 'editar' => 1]).'#editar' }}" class="btn btn--ghost">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                         Editar
                     </a>
@@ -113,6 +113,11 @@
             <p class="mv-notas"><b>Notas:</b> {{ $movimiento->notes }}</p>
         @endif
     </x-ui.card>
+
+    @if ($editando)
+        @include('structure.gestion_Inventario.entrada_salida._estilos')
+        @include('structure.gestion_Inventario.entrada_salida._form_edicion')
+    @endif
 
     <div class="mv-cuerpo">
         {{-- ===================== Unidades =====================

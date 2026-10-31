@@ -27,7 +27,9 @@ class UserController extends Controller
      */
     public function index(SessionManager $sessions, Request $request): View
     {
-        $query = User::withCount('loginLogs')->with('roles', 'employeeDocuments');
+        // Los eliminados con historial ya no aparecen
+        $query = User::withCount('loginLogs')->with('roles', 'employeeDocuments')
+            ->where('status', '!=', User::STATUS_DELETED);
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -172,9 +174,8 @@ class UserController extends Controller
     }
 
     /**
-     * Elimina una cuenta. Solo se puede si no tiene historial (de prueba o
-     * que nunca se usó); si lo tiene, se dice qué y se sugiere quitarle el
-     * acceso, que no pierde nada.
+     * Elimina una cuenta. Sin historial se borra por completo; con historial
+     * se retira (sale del sistema) y lo que registró conserva su nombre.
      */
     public function destroy(User $user, Request $request): RedirectResponse
     {
@@ -183,9 +184,11 @@ class UserController extends Controller
         }
 
         $nombre = $user->name;
-        $this->cuentas->eliminar($user);
+        $completo = $this->cuentas->eliminar($user, $request->user());
 
-        return redirect()->route('admin.users.index')->with('status', "Eliminaste la cuenta de {$nombre}.");
+        return redirect()->route('admin.users.index')->with('status', $completo
+            ? "Eliminaste la cuenta de {$nombre}."
+            : "Eliminaste la cuenta de {$nombre}. Ya no puede entrar ni aparece en el sistema; sus ventas, checadas y demás registros conservan su nombre.");
     }
 
     /**

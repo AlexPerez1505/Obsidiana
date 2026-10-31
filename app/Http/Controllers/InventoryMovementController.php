@@ -171,14 +171,22 @@ class InventoryMovementController extends Controller
         ]);
     }
 
-    public function show(InventoryMovement $movimiento, EntradasDeInventario $entradas): View
+    public function show(Request $request, InventoryMovement $movimiento, EntradasDeInventario $entradas): View
     {
         $movimiento->load(['creator', 'seriales.procesos']);
+        $producto = $movimiento->producto();
+
+        // Editar abre esta misma pantalla con el formulario arriba
+        $editando = $request->boolean('editar')
+            && EdicionPropia::puedeEditarMovimiento($request->user(), $movimiento);
 
         return view('structure.gestion_Inventario.entrada_salida.show', [
             'movimiento' => $movimiento,
-            'producto' => $movimiento->producto(),
+            'producto' => $producto,
             'ordenSalida' => $entradas->ordenDeSalida($movimiento),
+            'editando' => $editando,
+            'estadosGenerales' => ChecklistRecepcion::ESTADOS,
+            'puedeEditarPiezas' => $editando && $producto && EdicionPropia::puedeEditarProducto($request->user(), $producto),
         ]);
     }
 
@@ -188,18 +196,12 @@ class InventoryMovementController extends Controller
      * permiso de editar inventario, o quien la registró en sus primeras
      * EdicionPropia::HORAS horas.
      */
-    public function edit(Request $request, InventoryMovement $movimiento): View
+    public function edit(Request $request, InventoryMovement $movimiento): RedirectResponse
     {
         abort_unless(EdicionPropia::puedeEditarMovimiento($request->user(), $movimiento), 403, EdicionPropia::mensaje());
 
-        $producto = $movimiento->producto();
-
-        return view('structure.gestion_Inventario.entrada_salida.edit', [
-            'movimiento' => $movimiento,
-            'producto' => $producto,
-            'estadosGenerales' => ChecklistRecepcion::ESTADOS,
-            'puedeEditarPiezas' => $producto && EdicionPropia::puedeEditarProducto($request->user(), $producto),
-        ]);
+        // Se edita en el mismo detalle: así se ve todo lo de la entrada mientras se corrige
+        return redirect()->to(route('inventory.movimientos.show', [$movimiento, 'editar' => 1]).'#editar');
     }
 
     public function update(Request $request, InventoryMovement $movimiento, EntradasDeInventario $entradas): RedirectResponse

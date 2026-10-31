@@ -374,12 +374,12 @@
                 @endif
                 @endcan
 
-                {{-- Solo cuentas sin historial; si lo tiene, el servidor lo dice. --}}
+                {{-- Cualquier cuenta menos la propia; sus registros conservan su nombre. --}}
                 @can('usuarios.eliminar')
-                @if (! $user->is_admin && $user->id !== auth()->id())
+                @if ($user->id !== auth()->id())
                     <form method="POST" action="{{ route('admin.users.destroy', $user) }}"
-                          data-confirm="Se elimina la cuenta de {{ $user->name }} para siempre. Solo se puede si no tiene historial; si lo tiene, usa Banear."
-                          data-confirm-title="Eliminar usuario" data-confirm-ok="Eliminar">
+                          data-confirm="Se elimina la cuenta de {{ $user->name }}: ya no podrá entrar ni aparecerá en el sistema. Lo que registró (ventas, checadas, nóminas…) se conserva con su nombre. No se puede deshacer."
+                          data-confirm-title="Eliminar usuario" data-confirm-ok="Eliminar" data-confirm-danger>
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn-danger">

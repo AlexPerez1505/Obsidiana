@@ -22,6 +22,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public const STATUS_APPROVED = 'approved';
     public const STATUS_BANNED = 'banned';
 
+    /** Eliminado con historial: ya no existe para el sistema, pero lo que registró conserva su nombre. */
+    public const STATUS_DELETED = 'deleted';
+
     protected static function booted(): void
     {
         // Sus tokens de la API (apps e integraciones) mueren con la cuenta.
@@ -136,6 +139,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->status === self::STATUS_BANNED;
     }
 
+    public function isDeleted(): bool
+    {
+        return $this->status === self::STATUS_DELETED;
+    }
+
     /**
      * Etiqueta legible del estado.
      */
@@ -144,6 +152,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return match ($this->status) {
             self::STATUS_APPROVED => 'Con acceso',
             self::STATUS_BANNED   => 'Baneado',
+            self::STATUS_DELETED  => 'Eliminado',
             default               => 'Pendiente',
         };
     }

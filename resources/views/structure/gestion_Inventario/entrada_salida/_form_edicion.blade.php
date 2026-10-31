@@ -1,5 +1,8 @@
-@extends('layouts.dashboard')
-
+{{--
+    Corregir una entrada dentro de su propio detalle (Editar abre esta misma
+    pantalla con el formulario arriba). Espera $movimiento, $producto,
+    $estadosGenerales y $puedeEditarPiezas.
+--}}
 @php
     $usado = $movimiento->condicion === 'usado';
     $checklist = $movimiento->checklist_recepcion ?? [];
@@ -7,21 +10,12 @@
     $grupos = collect($checklist)->groupBy(fn ($p, $llave) => \App\Support\ChecklistRecepcion::grupoDe($llave, $p), preserveKeys: true);
 @endphp
 
-@section('title', 'Editar '.$movimiento->folio)
-@section('page-title', 'Editar entrada')
-@section('page-sub', $movimiento->folio.' · '.$movimiento->item_name)
-
-@include('structure.gestion_Inventario.entrada_salida._estilos')
-
-@section('content')
-    <x-ui.page-header :title="'Editar '.$movimiento->folio" :back="route('inventory.movimientos.show', $movimiento)" />
-
-    <form method="POST" action="{{ route('inventory.movimientos.update', $movimiento) }}">
+    <form method="POST" action="{{ route('inventory.movimientos.update', $movimiento) }}" id="editar" class="mv-editar" data-live="off" style="display:block; margin:18px 0; scroll-margin-top:90px;">
         @csrf
         @method('PUT')
 
         <x-ui.card style="margin-bottom:18px;">
-            <x-ui.section-title style="margin:0 0 6px;">Datos de la entrada</x-ui.section-title>
+            <x-ui.section-title style="margin:0 0 6px;">Editar datos de la entrada</x-ui.section-title>
             <p class="campo-nota" style="margin:0 0 16px;">
                 Equipo {{ $usado ? 'usado' : 'nuevo' }} · {{ $movimiento->quantity }} {{ $movimiento->unit }}.
                 El equipo y la cantidad no se cambian aquí: si se capturó mal, elimina la entrada y regístrala de nuevo.
@@ -154,4 +148,3 @@
         });
         </script>
     @endpush
-@endsection

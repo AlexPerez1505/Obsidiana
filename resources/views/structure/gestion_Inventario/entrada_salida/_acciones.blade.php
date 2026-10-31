@@ -20,7 +20,7 @@
 
         {{-- Corregir la entrada: con permiso, o quien la registró en sus primeras horas. --}}
         @if (\App\Support\EdicionPropia::puedeEditarMovimiento(auth()->user(), $movimiento))
-            <a href="{{ route('inventory.movimientos.edit', $movimiento) }}" role="menuitem">
+            <a href="{{ route('inventory.movimientos.show', [$movimiento, 'editar' => 1]).'#editar' }}" role="menuitem">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                 Editar
             </a>

@@ -35,7 +35,7 @@ class LoginController extends Controller
         $user = Auth::user();
 
         // Cuenta baneada / desactivada: no se permite el acceso.
-        if ($user->isBanned()) {
+        if ($user->isBanned() || $user->isDeleted()) {
             Auth::logout();
             throw ValidationException::withMessages([
                 'email' => 'Tu cuenta fue desactivada. Contacta al administrador.',

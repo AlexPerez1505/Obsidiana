@@ -49,7 +49,7 @@ class AuthController extends Controller
         }
 
         $rechazo = match (true) {
-            $user->isBanned() => ['cuenta_desactivada', 'Tu cuenta fue desactivada. Contacta al administrador.'],
+            $user->isBanned(), $user->isDeleted() => ['cuenta_desactivada', 'Tu cuenta fue desactivada. Contacta al administrador.'],
             ! $user->hasVerifiedEmail() => ['correo_no_verificado', 'Falta verificar tu correo. Entra una vez desde la web para hacerlo.'],
             $user->isPending() => ['cuenta_pendiente', 'Tu cuenta todavía no la aprueba un administrador.'],
             default => null,
