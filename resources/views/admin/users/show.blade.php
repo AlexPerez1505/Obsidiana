@@ -374,6 +374,22 @@
                 @endif
                 @endcan
 
+                {{-- Solo cuentas sin historial; si lo tiene, el servidor lo dice. --}}
+                @can('usuarios.eliminar')
+                @if (! $user->is_admin && $user->id !== auth()->id())
+                    <form method="POST" action="{{ route('admin.users.destroy', $user) }}"
+                          data-confirm="Se elimina la cuenta de {{ $user->name }} para siempre. Solo se puede si no tiene historial; si lo tiene, usa Banear."
+                          data-confirm-title="Eliminar usuario" data-confirm-ok="Eliminar">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn-danger">
+                            <x-gravityui-trash-bin width="16" height="16" />
+                            Eliminar
+                        </button>
+                    </form>
+                @endif
+                @endcan
+
                 @can('usuarios.editar')
                 <a href="{{ route('admin.users.permissions', $user) }}" class="btn-ghost">
                     <x-gravityui-star width="16" height="16" />

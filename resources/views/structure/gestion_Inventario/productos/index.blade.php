@@ -143,7 +143,10 @@
                             {{-- Primero el nombre del producto (su subtipo) y abajo el tipo;
                                  primero el modelo y abajo la marca. --}}
                             <td>
-                                <div style="font-weight:700;">{{ $producto->nombreVisible() }}</div>
+                                <div style="font-weight:700;">
+                                    {{ $producto->nombreVisible() }}
+                                    @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'etiqueta'])
+                                </div>
                                 @if ($producto->subtipo && $producto->tipo_equipo)
                                     <div class="muted" style="font-size:12.5px;">{{ $producto->tipo_equipo }}</div>
                                 @endif
@@ -191,6 +194,7 @@
                                                 Editar
                                             </a>
                                         @endif
+                                        @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'menu'])
                                         @if (\App\Support\EdicionPropia::puedeEliminarProducto(auth()->user(), $producto))
                                             <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}"
                                                   data-confirm="¿Eliminar este producto?" style="margin:0;">
@@ -238,7 +242,10 @@
 
                     <div class="data-card-top" style="padding-top:12px;">
                         <div style="min-width:0; flex:1;">
-                            <div class="t">{{ $producto->nombreVisible() }}</div>
+                            <div class="t">
+                                {{ $producto->nombreVisible() }}
+                                @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'etiqueta'])
+                            </div>
                             @if ($producto->subtipo && $producto->tipo_equipo)
                                 <div class="s">{{ $producto->tipo_equipo }}</div>
                             @endif
@@ -257,8 +264,9 @@
                         @endif
                     </dl>
 
-                    <div class="data-card-foot">
-                        <a class="tbl-link" href="{{ route('inventory.productos.show', $producto) }}">Ver ficha</a>
+                    <div class="data-card-foot" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                        @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'boton'])
+                        <a class="tbl-link" href="{{ route('inventory.productos.show', $producto) }}" style="margin-left:auto;">Ver ficha</a>
                     </div>
                 </article>
             @empty

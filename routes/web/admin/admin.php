@@ -44,6 +44,8 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admi
     Route::post('/usuarios/{user}/aprobar', [UserController::class, 'approve'])->middleware('can:usuarios.aprobar')->name('users.approve');
     Route::post('/usuarios/{user}/banear', [UserController::class, 'ban'])->middleware('can:usuarios.aprobar')->name('users.ban');
     Route::post('/usuarios/{user}/desbanear', [UserController::class, 'unban'])->middleware('can:usuarios.aprobar')->name('users.unban');
+    // Solo cuentas sin historial; lo revisa CuentasDeUsuario::rechazoAlEliminar.
+    Route::delete('/usuarios/{user}', [UserController::class, 'destroy'])->middleware('can:usuarios.eliminar')->name('users.destroy');
     Route::get('/usuarios/{user}/permisos', [PermissionController::class, 'userPermissions'])->middleware('can:usuarios.editar')->name('users.permissions');
     Route::post('/usuarios/{user}/permisos', [PermissionController::class, 'updateUserPermissions'])->middleware('can:usuarios.editar')->name('users.permissions.update');
     Route::get('/usuarios/{user}', [UserController::class, 'show'])->middleware('can:usuarios.ver')->name('users.show');

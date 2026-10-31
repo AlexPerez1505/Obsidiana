@@ -215,6 +215,7 @@ class CatalogoPermisos
                     'usuarios.ver' => 'Ver el panel de usuarios',
                     'usuarios.aprobar' => 'Aprobar o rechazar cuentas nuevas',
                     'usuarios.editar' => 'Editar usuarios y asignarles roles',
+                    'usuarios.eliminar' => 'Eliminar cuentas que no tienen historial (de prueba o que nunca se usaron)',
                     'roles.gestionar' => 'Crear roles y definir qué puede cada uno',
                     'congresos.ver' => 'Ver congresos',
                     'congresos.editar' => 'Crear y editar congresos',

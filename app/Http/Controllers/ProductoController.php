@@ -126,6 +126,25 @@ class ProductoController extends Controller
     }
 
     /**
+     * Muestra u oculta el producto en la tienda en línea. Es un dato del
+     * producto, así que lo cambia quien puede editarlo.
+     */
+    public function tienda(Request $request, Producto $producto): RedirectResponse
+    {
+        abort_unless(EdicionPropia::puedeEditarProducto($request->user(), $producto), 403, EdicionPropia::mensaje('editar'));
+
+        $data = $request->validate(['en_tienda' => ['required', 'boolean']]);
+
+        $producto->update(['en_tienda' => (bool) $data['en_tienda']]);
+
+        $nombre = $producto->nombreVisible();
+
+        return back()->with('status', $producto->en_tienda
+            ? "{$nombre} ya se muestra en la página web."
+            : "{$nombre} se ocultó de la página web.");
+    }
+
+    /**
      * Elimina un producto.
      */
     public function destroy(Request $request, Producto $producto): RedirectResponse

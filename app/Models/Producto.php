@@ -41,6 +41,7 @@ class Producto extends Model
         'referencia',
         'no_serie',
         'es_serializado',
+        'en_tienda',
         'created_by',
     ];
 
@@ -48,6 +49,8 @@ class Producto extends Model
         'precio' => 'decimal:2',
         'stock' => 'integer',
         'es_serializado' => 'boolean',
+        // Si sale en la tienda en línea (por omisión, no).
+        'en_tienda' => 'boolean',
     ];
 
     // La sincronización con el catálogo vive en el trait, compartida con

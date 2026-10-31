@@ -131,7 +131,7 @@
                         </p>
                     @endif
 
-                    @if (\App\Support\PrecioVisible::para() || $producto->es_serializado)
+                    @if (\App\Support\PrecioVisible::para() || $producto->es_serializado || $producto->en_tienda)
                         <div class="pr-chips">
                             @if (\App\Support\PrecioVisible::para())
                                 <span class="badge">{{ \App\Support\PrecioVisible::texto($producto) }}</span>
@@ -139,12 +139,14 @@
                             @if ($producto->es_serializado)
                                 <span class="badge badge--info">Se maneja pieza por pieza</span>
                             @endif
+                            @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'etiqueta'])
                         </div>
                     @endif
                 </div>
             </div>
 
             <div class="pr-acciones">
+                @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'boton'])
                 <a href="{{ route('inventory.movimientos.create') }}" class="btn btn--ghost">Registrar entrada</a>
                 @if (\App\Support\EdicionPropia::puedeEditarProducto(auth()->user(), $producto)
                      || $piezas->contains(fn ($p) => \App\Support\EdicionPropia::puedeEditarPieza(auth()->user(), $p)))

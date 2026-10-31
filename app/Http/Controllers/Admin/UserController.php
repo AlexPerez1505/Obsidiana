@@ -172,6 +172,23 @@ class UserController extends Controller
     }
 
     /**
+     * Elimina una cuenta. Solo se puede si no tiene historial (de prueba o
+     * que nunca se usó); si lo tiene, se dice qué y se sugiere quitarle el
+     * acceso, que no pierde nada.
+     */
+    public function destroy(User $user, Request $request): RedirectResponse
+    {
+        if ($rechazo = $this->cuentas->rechazoAlEliminar($user, $request->user())) {
+            return back()->withErrors(['usuario' => $rechazo]);
+        }
+
+        $nombre = $user->name;
+        $this->cuentas->eliminar($user);
+
+        return redirect()->route('admin.users.index')->with('status', "Eliminaste la cuenta de {$nombre}.");
+    }
+
+    /**
      * Reactiva una cuenta baneada (le devuelve el acceso).
      */
     public function unban(User $user): RedirectResponse

@@ -13,7 +13,8 @@ use Illuminate\Support\Str;
  * Lo que la tienda en línea muestra al público.
  *
  * Junta tres fuentes en una sola lista:
- *  - producto: lo que hay en almacén (solo con stock > 0) → "Disponible".
+ *  - producto: lo que hay en almacén con stock > 0 y marcado para la web
+ *              (en_tienda; se decide producto por producto) → "Disponible".
  *  - equipo:   el catálogo del cotizador (activos) → "Sobre pedido".
  *  - paquete:  los paquetes activos del cotizador.
  *
@@ -31,6 +32,7 @@ class CatalogoTienda
     public function todo(): Collection
     {
         $productos = Producto::query()
+            ->where('en_tienda', true)
             ->where('stock', '>', 0)
             ->with('fichaTecnica')
             ->get()
@@ -81,7 +83,7 @@ class CatalogoTienda
         }
 
         $articulo = match ($fuente) {
-            'producto' => ($p = Producto::with('fichaTecnica')->where('stock', '>', 0)->find($id)) ? $this->deProducto($p) : null,
+            'producto' => ($p = Producto::with('fichaTecnica')->where('en_tienda', true)->where('stock', '>', 0)->find($id)) ? $this->deProducto($p) : null,
             'equipo' => ($e = Equipo::with('fichas')->where('activo', true)->find($id)) ? $this->deEquipo($e) : null,
             'paquete' => ($k = Paquete::with(['productos', 'equipos'])->where('activo', true)->find($id)) ? $this->dePaquete($k) : null,
         };

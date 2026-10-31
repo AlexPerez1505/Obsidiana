@@ -112,6 +112,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/gestion-inventario/productos', [ProductoController::class, 'store'])
         ->middleware('can:inventario.registrar')->name('inventory.productos.store');
     // La ficha del producto: qué entró, cuándo y cuánto hay.
+    // Mostrar u ocultar el producto en la tienda en línea. Quién puede lo
+    // decide EdicionPropia en el controlador (igual que editar el producto).
+    Route::patch('/gestion-inventario/productos/{producto}/tienda', [ProductoController::class, 'tienda'])
+        ->middleware('can:inventario.ver')->name('inventory.productos.tienda');
     Route::get('/gestion-inventario/productos/{producto}', [ProductoController::class, 'show'])
         ->middleware('can:inventario.ver')->name('inventory.productos.show');
     // Editar y borrar: quien tiene inventario.editar / inventario.eliminar, o
