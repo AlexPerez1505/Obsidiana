@@ -32,6 +32,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->whereNumber('sesion')->name('auth.sesiones.cerrar');
 
         require __DIR__.'/api/v1/clientes.php';
+        require __DIR__.'/api/v1/solicitudes-web.php';
         require __DIR__.'/api/v1/ventas.php';
         require __DIR__.'/api/v1/inventario.php';
         require __DIR__.'/api/v1/almacen.php';
@@ -39,6 +40,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         require __DIR__.'/api/v1/rh.php';
         require __DIR__.'/api/v1/administracion.php';
         require __DIR__.'/api/v1/servicios.php';
+        require __DIR__.'/api/v1/garantias.php';
     });
 });
 
