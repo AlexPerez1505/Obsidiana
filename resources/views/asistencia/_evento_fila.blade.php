@@ -15,15 +15,28 @@
         </div>
         @if ($e->note)<div class="evf-s">{{ $e->note }}</div>@endif
     </div>
-    <form method="POST" action="{{ route('asistencia.eventos.destroy', $e) }}" data-confirm="Los días ya pasados vuelven a evaluarse." data-confirm-title="Eliminar evento">@csrf @method('DELETE')
-        <button class="btn btn--ghost" type="submit" style="padding:5px 10px;">Eliminar</button>
-    </form>
+    <div class="evf-acc">
+        {{-- Abre el formulario de arriba ya lleno con este evento. --}}
+        <button type="button" class="btn btn--ghost" style="padding:5px 10px;" data-ev-editar
+                data-url="{{ route('asistencia.eventos.update', $e) }}"
+                data-evento="{{ json_encode([
+                    'name' => $e->name, 'type' => $e->type,
+                    'date_from' => $e->date_from->toDateString(), 'date_to' => $e->date_to->toDateString(),
+                    'scope' => $e->scope, 'user_ids' => $e->user_ids ?? [],
+                    'time_in' => $e->time_in ? substr($e->time_in, 0, 5) : '', 'time_out' => $e->time_out ? substr($e->time_out, 0, 5) : '',
+                    'tolerance_minutes' => $e->tolerance_minutes, 'note' => $e->note,
+                ]) }}">Editar</button>
+        <form method="POST" action="{{ route('asistencia.eventos.destroy', $e) }}" data-confirm="Los días ya pasados vuelven a evaluarse." data-confirm-title="Eliminar evento">@csrf @method('DELETE')
+            <button class="btn btn--ghost" type="submit" style="padding:5px 10px;">Eliminar</button>
+        </form>
+    </div>
 </div>
 @once
 <style>
     .evf { display:flex; gap:12px; align-items:center; padding:13px 18px; border-top:1px solid var(--border); transition:background .15s; }
     .evf:first-child { border-top:0; } .evf:hover { background:var(--surface-2); } .evf form { margin:0; }
     .evf-c { flex:1; min-width:0; } .evf-s { font-size:13px; color:var(--muted); margin-top:3px; }
-    @media (max-width: 560px) { .evf { flex-wrap:wrap; } .evf form { width:100%; } .evf form .btn { width:100%; } }
+    .evf-acc { display:flex; gap:8px; align-items:center; }
+    @media (max-width: 560px) { .evf { flex-wrap:wrap; } .evf-acc { width:100%; } .evf-acc > *, .evf-acc form .btn { flex:1; width:100%; } }
 </style>
 @endonce

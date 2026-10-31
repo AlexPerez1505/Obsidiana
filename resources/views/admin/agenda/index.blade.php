@@ -817,7 +817,7 @@
             </div>
 
             <div class="agenda-hero-actions">
-                <a class="agenda-add is-outline" href="{{ route('configuracion.congresos.create') }}">
+                <a class="agenda-add is-outline" href="{{ route('inventory.congresos.create') }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
                     Agregar Congreso
                 </a>
@@ -1019,7 +1019,7 @@
         const agendaStoreUrl = @json(route('admin.agenda.events.store'));
         const agendaUpdateUrlTemplate = @json(route('admin.agenda.events.update', ['agendaEvent' => '__ID__']));
         const agendaDeleteUrlTemplate = @json(route('admin.agenda.events.destroy', ['agendaEvent' => '__ID__']));
-        const congressShowUrlTemplate = @json(route('configuracion.congresos.show', ['congress' => '__ID__']));
+        const congressShowUrlTemplate = @json(route('inventory.congresos.edit', ['congress' => '__ID__']));
         const todayIso = @json(now()->format('Y-m-d'));
 
         function openAgendaModal(selectedDate, eventData) {

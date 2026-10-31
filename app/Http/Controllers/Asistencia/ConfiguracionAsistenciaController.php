@@ -78,6 +78,15 @@ class ConfiguracionAsistenciaController extends Controller
         return back()->with('status', "Evento «{$evento->name}» registrado.");
     }
 
+    public function actualizarEvento(Request $request, CompanyEvent $evento): RedirectResponse
+    {
+        $data = $request->validate(ConfiguracionDeAsistencia::reglasEvento(), ConfiguracionDeAsistencia::mensajesEvento());
+
+        $this->config->actualizarEvento($evento, $data);
+
+        return back()->with('status', "Evento «{$evento->name}» actualizado y días recalculados.");
+    }
+
     public function eliminarEvento(CompanyEvent $evento): RedirectResponse
     {
         $this->config->eliminarEvento($evento);

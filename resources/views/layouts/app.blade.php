@@ -156,5 +156,7 @@
             });
         });
     </script>
+{{-- Todo lo que se escribe se guarda en MAYÚSCULAS, con corrector. --}}
+@include('partials.mayusculas')
 </body>
 </html>

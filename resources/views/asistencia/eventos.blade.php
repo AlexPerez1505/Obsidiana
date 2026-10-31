@@ -20,7 +20,14 @@
 
     <div class="rh-acc rh-in {{ $errors->any() ? 'open' : '' }}" id="ev-nuevo" style="--i:5; margin-bottom:6px;">
         <div class="rh-acc-b"><div class="rh-acc-i"><div class="rh-acc-c">
-            <form method="POST" action="{{ route('asistencia.eventos.store') }}" class="rh-form">@csrf
+            {{-- El mismo formulario sirve para registrar y para editar: "Editar"
+                 en una fila lo llena con ese evento y lo manda como PUT. --}}
+            <form method="POST" action="{{ route('asistencia.eventos.store') }}" class="rh-form" id="ev-form"
+                  data-url-nuevo="{{ route('asistencia.eventos.store') }}">@csrf
+                <input type="hidden" name="_method" value="POST" id="ev-metodo">
+                {{-- Para volver en modo edición si el servidor regresa un error. --}}
+                <input type="hidden" name="_ev_url" value="{{ old('_ev_url') }}" id="ev-url">
+                <p class="ev-editando" id="ev-editando" hidden>Editando <b></b> · los días que ya pasaron se vuelven a evaluar al guardar.</p>
                 <div class="rh-grid">
                     <label style="grid-column:span 2;">Nombre <input type="text" name="name" value="{{ old('name') }}" placeholder="Vacaciones de diciembre, Comida de fin de año…" required></label>
                     <label>Tipo
@@ -50,7 +57,10 @@
                 </div>
 
                 <label style="display:block; margin-top:12px;">Nota (opcional) <input type="text" name="note" value="{{ old('note') }}"></label>
-                <div class="rh-actions" style="margin-top:14px;"><button class="btn" type="submit">Registrar evento</button></div>
+                <div class="rh-actions" style="margin-top:14px;">
+                    <button class="btn" type="submit" id="ev-guardar">Registrar evento</button>
+                    <button class="btn btn--ghost" type="button" id="ev-cancelar" hidden>Cancelar edición</button>
+                </div>
             </form>
         </div></div></div>
     </div>
@@ -88,6 +98,7 @@
         .ev-gente { display:grid; grid-template-columns:repeat(auto-fill, minmax(210px,1fr)); gap:6px 14px; margin-top:10px; padding:12px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); max-height:220px; overflow:auto; animation:rh-in .25s both; }
         .rh-form .ev-gente label { display:flex; gap:7px; align-items:center; color:var(--text); font-weight:500; font-size:13px; cursor:pointer; } .ev-gente input { margin:0; width:auto; }
         .ev-h3 { margin:24px 0 10px; font-size:15px; }
+        .ev-editando { margin:0 0 12px; padding:9px 12px; border-radius:8px; background:var(--primary-soft); color:var(--text); font-size:13px; }
     </style>
 @endsection
 
@@ -103,6 +114,68 @@
         tipo.addEventListener('change', f);
         document.querySelectorAll('input[name=scope]').forEach(function (r) { r.addEventListener('change', f); });
         f();
+
+        /* Editar: llena el formulario con el evento y lo manda como PUT. */
+        var form = document.getElementById('ev-form'), metodo = document.getElementById('ev-metodo'),
+            aviso = document.getElementById('ev-editando'), guardar = document.getElementById('ev-guardar'),
+            cancelar = document.getElementById('ev-cancelar'), acordeon = document.getElementById('ev-nuevo');
+
+        function campo(n) { return form.querySelector('[name="' + n + '"]'); }
+
+        function modoNuevo() {
+            form.reset();
+            form.action = form.dataset.urlNuevo;
+            document.getElementById('ev-url').value = '';
+            metodo.value = 'POST';
+            aviso.hidden = true; cancelar.hidden = true;
+            guardar.textContent = 'Registrar evento';
+            f();
+        }
+
+        document.addEventListener('click', function (e) {
+            var b = e.target.closest('[data-ev-editar]');
+            if (!b) return;
+            var ev = JSON.parse(b.dataset.evento || '{}');
+
+            ['name', 'type', 'date_from', 'date_to', 'time_in', 'time_out', 'tolerance_minutes', 'note'].forEach(function (n) {
+                if (campo(n)) campo(n).value = ev[n] == null ? '' : ev[n];
+            });
+            form.querySelectorAll('input[name=scope]').forEach(function (r) { r.checked = r.value === ev.scope; });
+            form.querySelectorAll('input[name="user_ids[]"]').forEach(function (c) {
+                c.checked = (ev.user_ids || []).map(String).indexOf(c.value) !== -1;
+            });
+
+            form.action = b.dataset.url;
+            document.getElementById('ev-url').value = b.dataset.url;
+            metodo.value = 'PUT';
+            aviso.querySelector('b').textContent = ev.name;
+            aviso.hidden = false; cancelar.hidden = false;
+            guardar.textContent = 'Guardar cambios';
+            f();
+
+            acordeon.classList.add('open');
+            acordeon.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            campo('name').focus({ preventScroll: true });
+        });
+
+        cancelar.addEventListener('click', modoNuevo);
+
+        // "Nuevo evento" estando en edición vuelve a un formulario limpio.
+        document.querySelector('[data-rh-toggle="ev-nuevo"]')?.addEventListener('click', function () {
+            // El acordeón lo alterna el kit después de este clic: se cierra
+            // aquí para que quede abierto, ya limpio.
+            if (metodo.value === 'PUT') { modoNuevo(); acordeon.classList.remove('open'); }
+        });
+
+        // Regresó del servidor con error a media edición: se queda editando.
+        var urlPrevia = document.getElementById('ev-url').value;
+        if (@json(old('_method')) === 'PUT' && urlPrevia) {
+            form.action = urlPrevia;
+            metodo.value = 'PUT';
+            aviso.querySelector('b').textContent = campo('name').value;
+            aviso.hidden = false; cancelar.hidden = false;
+            guardar.textContent = 'Guardar cambios';
+        }
     })();
 </script>
 @endpush

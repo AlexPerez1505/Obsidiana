@@ -202,6 +202,35 @@ class ConfiguracionDeAsistencia
         return $evento;
     }
 
+    /**
+     * Corrige un evento. Se recalculan los días que cubría antes y los que
+     * cubre ahora: si se movió de fecha o de personas, una falta que estaba
+     * justificada puede dejar de estarlo, o al revés.
+     *
+     * @param  array  $data  ya validado con reglasEvento()
+     */
+    public function actualizarEvento(CompanyEvent $evento, array $data): CompanyEvent
+    {
+        $antes = $evento->replicate();
+        $esEspecial = $data['type'] === 'horario_especial';
+
+        $evento->update([
+            'name' => $data['name'], 'type' => $data['type'],
+            'date_from' => $data['date_from'], 'date_to' => $data['date_to'],
+            'scope' => $data['scope'],
+            'user_ids' => $data['scope'] === 'seleccion' ? array_map('intval', $data['user_ids']) : null,
+            'time_in' => $esEspecial ? $data['time_in'] : null,
+            'time_out' => $esEspecial ? $data['time_out'] : null,
+            'tolerance_minutes' => $esEspecial ? ($data['tolerance_minutes'] ?? null) : null,
+            'note' => $data['note'] ?? null,
+        ]);
+
+        $this->recalcularEvento($antes);
+        $this->recalcularEvento($evento);
+
+        return $evento;
+    }
+
     public function eliminarEvento(CompanyEvent $evento): void
     {
         $evento->delete();

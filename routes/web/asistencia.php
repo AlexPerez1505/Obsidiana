@@ -38,6 +38,7 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('rh/asistencia')->na
         Route::post('/horarios/masivo', [ConfiguracionAsistenciaController::class, 'guardarHorarioMasivo'])->name('horarios.masivo');
         Route::get('/eventos', [ConfiguracionAsistenciaController::class, 'eventos'])->name('eventos');
         Route::post('/eventos', [ConfiguracionAsistenciaController::class, 'guardarEvento'])->name('eventos.store');
+        Route::put('/eventos/{evento}', [ConfiguracionAsistenciaController::class, 'actualizarEvento'])->name('eventos.update');
         Route::delete('/eventos/{evento}', [ConfiguracionAsistenciaController::class, 'eliminarEvento'])->name('eventos.destroy');
         Route::put('/horarios/{user}', [ConfiguracionAsistenciaController::class, 'guardarHorario'])->name('horarios.guardar');
         Route::post('/festivos/oficiales', [ConfiguracionAsistenciaController::class, 'cargarFestivosOficiales'])->name('festivos.oficiales');

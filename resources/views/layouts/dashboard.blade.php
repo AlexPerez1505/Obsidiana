@@ -1245,6 +1245,8 @@
         </main>
         {{-- Tiempo real: la pantalla se actualiza sola con los cambios de otros. --}}
         @include('partials.vivo')
+        {{-- Todo lo que se escribe se guarda en MAYÚSCULAS, con corrector. --}}
+        @include('partials.mayusculas')
     </div>
 </div>
 
