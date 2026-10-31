@@ -24,11 +24,27 @@ class FotoPorPedazos
 
     public const CARPETA = 'inventario/fotos';
 
-    /** Formatos de imagen que el navegador no siempre reconoce como image/*, pero lo son. */
-    private const RAW = ['heic', 'heif', 'dng', 'cr2', 'cr3', 'nef', 'arw', 'orf', 'rw2', 'raf', 'srw', 'pef'];
-
     /** Nunca se guardan, aunque digan ser imagen: se podrían ejecutar o abrir como página. */
-    private const PROHIBIDAS = ['php', 'phtml', 'phar', 'html', 'htm', 'svg', 'svgz', 'js', 'xml', 'exe', 'sh'];
+    private const PROHIBIDAS = ['php', 'phtml', 'phar', 'html', 'htm', 'svg', 'svgz', 'js', 'xml', 'exe', 'sh', 'bat', 'cmd', 'msi', 'jar'];
+
+    /** Contenidos que se podrían ejecutar, aunque traigan nombre de foto. */
+    private const MIMES_PELIGROSOS = [
+        'image/svg+xml', 'application/x-httpd-php', 'application/x-php', 'application/javascript',
+        'application/x-sh', 'application/x-msdownload', 'application/x-dosexec', 'application/x-executable',
+        'application/java-archive', 'application/xhtml+xml', 'application/xml',
+    ];
+
+    /**
+     * ¿Se puede guardar? Se acepta cualquier foto, la reconozca o no el
+     * servidor (HEIC, RAW, AVIF, JXL, capturas de cualquier teléfono…): solo
+     * se rechaza lo que es texto o se podría ejecutar.
+     */
+    public static function esSegura(string $mime, string $extension): bool
+    {
+        return ! in_array($extension, self::PROHIBIDAS, true)
+            && ! str_starts_with($mime, 'text/')
+            && ! in_array($mime, self::MIMES_PELIGROSOS, true);
+    }
 
     public static function reglas(): array
     {
@@ -52,11 +68,8 @@ class FotoPorPedazos
             $extension = strtolower((string) $archivo?->getClientOriginalExtension());
             $mime = (string) $archivo?->getMimeType();
 
-            $esImagen = (str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml')
-                || (in_array($extension, self::RAW, true) && ! str_starts_with($mime, 'text/'));
-
-            if (! $esImagen || in_array($extension, self::PROHIBIDAS, true)) {
-                $falla('Ese archivo no es una imagen.');
+            if (! self::esSegura($mime, $extension)) {
+                $falla('Ese archivo no es una foto.');
             }
         };
     }
@@ -109,7 +122,7 @@ class FotoPorPedazos
         if (! $this->esImagen($absoluta, $extension)) {
             Storage::disk($disco)->delete($path);
 
-            throw ValidationException::withMessages(['chunk' => 'Ese archivo no es una imagen.']);
+            throw ValidationException::withMessages(['chunk' => 'Ese archivo no es una foto.']);
         }
 
         return ['status' => 'listo', 'foto_path' => $path, 'url' => Storage::disk($disco)->url($path)];
@@ -120,13 +133,9 @@ class FotoPorPedazos
     {
         $mime = (string) (new \finfo(FILEINFO_MIME_TYPE))->file($absoluta);
 
-        if (str_starts_with($mime, 'image/')) {
-            return $mime !== 'image/svg+xml';
-        }
-
-        // Los RAW y HEIC a veces no los reconoce el sistema: basta con que no
-        // sean texto (una página o un script disfrazado).
-        return in_array($extension, self::RAW, true) && ! str_starts_with($mime, 'text/');
+        // Muchos formatos (HEIC, RAW, AVIF…) el servidor no los reconoce como
+        // imagen: basta con que no sean texto ni algo que se pueda ejecutar.
+        return self::esSegura($mime, $extension);
     }
 
     /**

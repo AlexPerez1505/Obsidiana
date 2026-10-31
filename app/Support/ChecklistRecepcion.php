@@ -47,23 +47,13 @@ class ChecklistRecepcion
     public static function grupos(): array
     {
         return [
-            'funcionamiento' => [
-                'titulo' => 'Funcionamiento',
-                'puntos' => [
-                    'enciende' => ['texto' => 'Enciende y arranca correctamente', 'manda' => 'mantenimiento'],
-                    'autodiagnostico' => ['texto' => 'Pasa su autodiagnóstico sin errores', 'manda' => 'mantenimiento'],
-                    'imagen' => ['texto' => 'La imagen se ve bien (cámara, monitor, pantalla)', 'manda' => 'mantenimiento'],
-                    'controles' => ['texto' => 'Botones, perillas y controles responden', 'manda' => 'mantenimiento'],
-                    'sin_alarmas' => ['texto' => 'No marca alarmas ni códigos de falla', 'manda' => 'mantenimiento'],
-                ],
-            ],
             'fisico' => [
                 'titulo' => 'Estado físico',
                 'puntos' => [
                     'carcasa' => ['texto' => 'Carcasa sin golpes, rayones ni piezas rotas', 'manda' => 'hojalateria'],
-                    'pantalla_fisica' => ['texto' => 'Pantalla sin rayones, manchas ni pixeles muertos', 'manda' => 'hojalateria'],
+                    'pantalla_fisica' => ['texto' => 'Pantalla sin rayones, golpes ni estrelladuras', 'manda' => 'hojalateria'],
                     'sin_oxido' => ['texto' => 'Sin óxido, corrosión ni fugas', 'manda' => 'hojalateria'],
-                    'ruedas' => ['texto' => 'Ruedas y frenos funcionan (sillas, mesas, carros)', 'manda' => 'hojalateria'],
+                    'ruedas' => ['texto' => 'Ruedas y frenos sin daños (sillas, mesas, carros)', 'manda' => 'hojalateria'],
                     'tapiceria' => ['texto' => 'Tapicería sin roturas ni desgaste (sillas, mesas)', 'manda' => 'hojalateria'],
                 ],
             ],
@@ -86,6 +76,33 @@ class ChecklistRecepcion
         ];
     }
 
+    /**
+     * Puntos que ya no se preguntan al recibir (el funcionamiento lo prueba
+     * mantenimiento después) pero que siguen en entradas viejas: se conservan
+     * solo para mostrar su texto, grupo y proceso.
+     */
+    private static function anteriores(): array
+    {
+        return [
+            'funcionamiento' => [
+                'titulo' => 'Funcionamiento',
+                'puntos' => [
+                    'enciende' => ['texto' => 'Enciende y arranca correctamente', 'manda' => 'mantenimiento'],
+                    'autodiagnostico' => ['texto' => 'Pasa su autodiagnóstico sin errores', 'manda' => 'mantenimiento'],
+                    'imagen' => ['texto' => 'La imagen se ve bien (cámara, monitor, pantalla)', 'manda' => 'mantenimiento'],
+                    'controles' => ['texto' => 'Botones, perillas y controles responden', 'manda' => 'mantenimiento'],
+                    'sin_alarmas' => ['texto' => 'No marca alarmas ni códigos de falla', 'manda' => 'mantenimiento'],
+                ],
+            ],
+        ];
+    }
+
+    /** Los de ahora más los anteriores, para leer checklists ya guardados. */
+    private static function todos(): array
+    {
+        return static::grupos() + static::anteriores();
+    }
+
     /** Todas las llaves de punto, aplanadas, para validar lo que llegó. */
     public static function llaves(): array
     {
@@ -106,7 +123,7 @@ class ChecklistRecepcion
             return (string) $punto['texto'];
         }
 
-        foreach (static::grupos() as $grupo) {
+        foreach (static::todos() as $grupo) {
             if (isset($grupo['puntos'][$llave])) {
                 return $grupo['puntos'][$llave]['texto'];
             }
@@ -125,7 +142,7 @@ class ChecklistRecepcion
             return (string) $punto['grupo'];
         }
 
-        foreach (static::grupos() as $grupo) {
+        foreach (static::todos() as $grupo) {
             if (isset($grupo['puntos'][$llave])) {
                 return $grupo['titulo'];
             }
@@ -141,7 +158,7 @@ class ChecklistRecepcion
             return $punto['manda'] ?: null;
         }
 
-        foreach (static::grupos() as $grupo) {
+        foreach (static::todos() as $grupo) {
             if (isset($grupo['puntos'][$llave])) {
                 return $grupo['puntos'][$llave]['manda'];
             }

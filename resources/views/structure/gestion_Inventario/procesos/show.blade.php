@@ -297,8 +297,8 @@
                         <x-ui.section-title style="margin:0;">Lo que se hizo hoy</x-ui.section-title>
                         <p class="campo-nota pv-sec-nota">
                             Anota lo que avanzaste y sube las fotos que quieras, de cualquier formato y tamaño.
-                            Se guarda en la bitácora con tu nombre y la fecha. Para terminar el proceso hace falta
-                            al menos una foto en total.
+                            Se guarda en la bitácora con tu nombre y la fecha. Las fotos son opcionales: puedes terminar
+                            el proceso aunque no hayas guardado avances.
                         </p>
 
                         <x-ui.form-group label="Nota del avance" for="nota">
@@ -657,7 +657,6 @@
 
                 if (sinResponder) faltas.push('faltan ' + sinResponder + ' punto(s) por responder');
                 if (no) faltas.push(no + ' punto(s) siguen mal');
-                if (totalFotos < 1) faltas.push('falta al menos una foto');
                 if (subiendo) faltas.push('espera a que terminen de subir las fotos');
 
                 const puede = faltas.length === 0;

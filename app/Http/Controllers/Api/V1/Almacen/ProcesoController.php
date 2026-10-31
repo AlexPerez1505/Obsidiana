@@ -21,7 +21,7 @@ use Illuminate\Validation\ValidationException;
  *
  * Cada pieza trae su propia ruta de pasos y aparece en la cola del paso
  * donde está parada. Se toma (iniciar), se trabaja y se cierra con el
- * checklist de salida y al menos una foto; al cerrar el último paso la
+ * checklist de salida (las fotos son opcionales); al cerrar el último paso la
  * pieza queda disponible para venta. Un paso que no hacía falta se
  * descarta con su motivo.
  *

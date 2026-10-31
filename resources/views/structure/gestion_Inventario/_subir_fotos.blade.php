@@ -15,7 +15,7 @@
         window.ObsFotos = (function () {
             const PEDAZO = 4 * 1024 * 1024;
             const SE_VEN = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp', 'jfif'];
-            const ACEPTA = 'image/*,.heic,.heif,.tif,.tiff,.dng,.cr2,.cr3,.nef,.arw,.orf,.rw2,.raf';
+            const ACEPTA = 'image/*,.heic,.heif,.tif,.tiff,.dng,.cr2,.cr3,.nef,.arw,.orf,.rw2,.raf,.srw,.pef,.avif,.jxl,.jfif,.webp,.bmp,.psd';
             const csrf = document.querySelector('meta[name="csrf-token"]')?.content || @json(csrf_token());
             const urlDisco = @json(rtrim(\Illuminate\Support\Facades\Storage::disk(config('filesystems.fotos_disk', 'public'))->url(''), '/') . '/');
 

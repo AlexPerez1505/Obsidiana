@@ -3,6 +3,7 @@
 use App\Http\Controllers\Asistencia\AsistenciaController;
 use App\Http\Controllers\Asistencia\BiometriaController;
 use App\Http\Controllers\Asistencia\ConfiguracionAsistenciaController;
+use App\Http\Controllers\Asistencia\JustificacionesController;
 use App\Http\Controllers\Asistencia\PantallaChecadorController;
 use App\Http\Controllers\Asistencia\PrenominaController;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,10 @@ Route::get('/checador/{token}/feed', [PantallaChecadorController::class, 'feed']
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'verified', 'approved'])->prefix('rh/asistencia')->name('asistencia.')->group(function () {
+    // Cada quien justifica su propio día desde el aviso: no necesita permisos de RH.
+    Route::get('/justificar/{justificacion}', [JustificacionesController::class, 'mostrar'])->name('justificar');
+    Route::post('/justificar/{justificacion}', [JustificacionesController::class, 'responder'])->name('justificar.responder');
+
     Route::middleware('can:asistencia.ver')->group(function () {
         Route::get('/', [AsistenciaController::class, 'panel'])->name('panel');
         Route::get('/checadas', [AsistenciaController::class, 'checadas'])->name('checadas');
@@ -31,6 +36,9 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('rh/asistencia')->na
     Route::middleware('can:asistencia.gestionar')->group(function () {
         Route::post('/checadas/manual', [AsistenciaController::class, 'checadaManual'])->name('checadas.manual');
         Route::post('/checadas/{punch}/anular', [AsistenciaController::class, 'anular'])->name('checadas.anular');
+        Route::post('/checadas/justificar', [JustificacionesController::class, 'pedir'])->name('justificaciones.pedir');
+        Route::post('/justificaciones/{justificacion}/aceptar', [JustificacionesController::class, 'aceptar'])->name('justificaciones.aceptar');
+        Route::post('/justificaciones/{justificacion}/rechazar', [JustificacionesController::class, 'rechazar'])->name('justificaciones.rechazar');
         Route::post('/cerrar-dia', [AsistenciaController::class, 'cerrar'])->name('cerrar');
 
         Route::get('/horarios', [ConfiguracionAsistenciaController::class, 'horarios'])->name('horarios');

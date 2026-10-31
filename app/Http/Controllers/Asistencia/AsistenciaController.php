@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendancePunch;
 use App\Models\User;
 use App\Services\Asistencia\ReporteDeAsistencia;
+use App\Services\Asistencia\ResumenDeChecadas;
 use App\Services\Asistencia\ServicioDeAsistencia;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -57,19 +58,17 @@ class AsistenciaController extends Controller
         ]);
     }
 
-    /** Checadas crudas con filtros. */
-    public function checadas(Request $request): View
+    /** El día de cada persona en palabras, con lo que falta primero. */
+    public function checadas(Request $request, ResumenDeChecadas $resumen): View
     {
         $dia = $this->fecha($request->get('fecha'));
-
-        $checadas = AttendancePunch::with(['user', 'device', 'anuladaPor'])
-            ->whereDate('work_date', $dia)
-            ->when($request->filled('empleado'), fn ($q) => $q->where('user_id', $request->get('empleado')))
-            ->orderByDesc('punched_at')->get();
+        $filas = $resumen->del($dia);
 
         return view('asistencia.checadas', [
             'dia' => $dia,
-            'checadas' => $checadas,
+            'hoy' => ServicioDeAsistencia::diaLocal(now()),
+            'filas' => $filas,
+            'conteos' => $resumen->conteos($filas),
             'empleados' => $this->asistencia->empleados(),
             'filtroEmpleado' => $request->get('empleado'),
             'puedeGestionar' => $request->user()->can('asistencia.gestionar'),

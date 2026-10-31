@@ -171,10 +171,6 @@ class ChecklistProceso
             $razones[] = 'Hay '.$malas->count().' punto(s) que siguen mal. El equipo no puede pasar a stock así.';
         }
 
-        if ($cuantasFotos < 1) {
-            $razones[] = 'Falta al menos una foto que demuestre que quedó funcionando.';
-        }
-
         return $razones;
     }
 

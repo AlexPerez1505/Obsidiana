@@ -62,7 +62,7 @@
     <template id="rh-cond-tpl">
         <div class="nr-cond">
             <select data-c="metric" name="">@foreach ($metricas as $k => $m)<option value="{{ $k }}">{{ $m[0] }}</option>@endforeach</select>
-            <select data-c="scope"><option value="periodo">en la quincena</option><option value="mes">en el mes</option></select>
+            <select data-c="scope"><option value="periodo">en la quincena</option><option value="mes">en el mes</option><option value="anio">en el año</option></select>
             <select data-c="op">@foreach ($operadores as $k => $t)<option value="{{ $k }}">{{ $t }}</option>@endforeach</select>
             <input type="number" step="0.01" min="0" data-c="value" placeholder="valor">
             <button type="button" class="ne-x" data-del-cond title="Quitar condición" aria-label="Quitar condición"><x-ui.icon name="x" /></button>
@@ -98,14 +98,16 @@
         var box = form.querySelector('[data-conds-box]');
         var q = function (s) { return form.querySelector(s); };
         var conds = []; try { conds = JSON.parse(form.dataset.conds || '[]'); } catch (e) {}
-        if (!conds.length) conds = [{ metric: 'retardos', scope: 'periodo', op: '>=', value: 1 }];
+        if (!conds.length && !form.querySelector('[data-f=timing] option[value=fecha]:checked')) conds = [{ metric: 'retardos', scope: 'periodo', op: '>=', value: 1 }];
 
         function renumerar() {
             box.querySelectorAll('.nr-cond').forEach(function (row, i) {
                 row.querySelectorAll('[data-c]').forEach(function (el) { el.name = 'conditions[' + i + '][' + el.dataset.c + ']'; });
             });
             form.querySelector('[data-add-cond]').style.display = box.children.length >= 5 ? 'none' : '';
-            box.querySelectorAll('[data-del-cond]').forEach(function (b) { b.style.visibility = box.children.length > 1 ? 'visible' : 'hidden'; });
+            // Un bono con fecha puede quedarse sin condiciones
+            var conFecha = q('[data-f=timing]').value === 'fecha';
+            box.querySelectorAll('[data-del-cond]').forEach(function (b) { b.style.visibility = (box.children.length > 1 || conFecha) ? 'visible' : 'hidden'; });
             actualizar();
         }
         function agregar(c) {
@@ -132,19 +134,34 @@
             var usaMes = Array.prototype.some.call(box.querySelectorAll('[data-c=scope]'), function (s) { return s.value === 'mes'; });
             q('[data-aviso-mes]').style.display = usaMes ? '' : 'none';
             var timing = q('[data-f=timing]');
-            if (usaMes) timing.value = 'cierre_mes';
+            if (usaMes && timing.value === 'periodo') timing.value = 'cierre_mes';
             timing.disabled = false;
+            var conFecha = timing.value === 'fecha';
+            form.querySelectorAll('[data-fecha-box]').forEach(function (el) { el.style.display = conFecha ? '' : 'none'; });
+            q('[data-f=pay_date]').required = conFecha;
+            q('[data-aviso-fecha]').style.display = conFecha ? '' : 'none';
+            if (conFecha) q('[data-aviso-mes]').style.display = 'none';
+            box.querySelectorAll('[data-del-cond]').forEach(function (b) { b.style.visibility = (box.children.length > 1 || conFecha) ? 'visible' : 'hidden'; });
 
             var partes = Array.prototype.map.call(box.querySelectorAll('.nr-cond'), function (r) {
                 var m = r.querySelector('[data-c=metric]').value, s = r.querySelector('[data-c=scope]').value, o = r.querySelector('[data-c=op]').value, v = r.querySelector('[data-c=value]').value;
-                return (METRICAS[m] || m).toLowerCase() + ' ' + (s === 'mes' ? 'en el mes' : 'en la quincena') + ' ' + (OPS[o] || o) + ' ' + (v === '' ? '…' : v);
+                return (METRICAS[m] || m).toLowerCase() + ' ' + ({ mes: 'en el mes', anio: 'en el año' }[s] || 'en la quincena') + ' ' + (OPS[o] || o) + ' ' + (v === '' ? '…' : v);
             }).join(' y ');
             var amt = parseFloat(q('[data-f=amount]').value);
             var cuanto = isNaN(amt) ? '…' : (cm === 'monto' ? '$' + amt.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : (cm === 'dias_sueldo' ? amt + (amt === 1 ? ' día' : ' días') + ' de sueldo' : amt + '% del sueldo'));
             var cada = q('[data-f=every]').value, rm = q('[data-f=rmetric]').value;
             var veces = rep ? (parseInt(cada, 10) === 1 ? ' por cada ' + (UNID[rm] || '').replace('(s)', '') : ' por cada ' + (cada || '…') + ' ' + (METRICAS[rm] || '').toLowerCase()) : '';
-            q('[data-prev]').innerHTML = '<b>Así quedará:</b> cuando ' + (partes || '…') + ': <b>' + (kind === 'bono' ? 'bonificar ' : 'descontar ') + cuanto + '</b>' + veces +
-                (timing.value === 'cierre_mes' ? ', al cerrar el mes.' : ', cada quincena.');
+            var cuandoTxt = ', cada quincena.';
+            if (timing.value === 'cierre_mes') cuandoTxt = ', al cerrar el mes.';
+            if (conFecha) {
+                var pd = q('[data-f=pay_date]').value, anual = q('[data-f=yearly]').checked, txt = '…';
+                if (pd) {
+                    var d = new Date(pd + 'T12:00:00');
+                    txt = d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' }) + (anual ? ' de cada año' : ' de ' + d.getFullYear());
+                }
+                cuandoTxt = ', el ' + txt + '.';
+            }
+            q('[data-prev]').innerHTML = '<b>Así quedará:</b> ' + (partes ? 'cuando ' + partes : (conFecha ? 'a todos a los que aplique' : 'cuando …')) + ': <b>' + (kind === 'bono' ? 'bonificar ' : 'descontar ') + cuanto + '</b>' + veces + cuandoTxt;
         }
         form.addEventListener('input', actualizar); form.addEventListener('change', actualizar);
         actualizar();

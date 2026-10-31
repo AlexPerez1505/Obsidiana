@@ -59,7 +59,15 @@
             <select name="timing" data-f="timing">
                 <option value="periodo" @selected($o('timing', $r?->timing ?? 'periodo') === 'periodo')>Cada quincena</option>
                 <option value="cierre_mes" @selected($o('timing', $r?->timing) === 'cierre_mes')>Solo al cerrar el mes (2.ª quincena)</option>
+                <option value="fecha" @selected($o('timing', $r?->timing) === 'fecha')>En una fecha (anual o única)</option>
             </select>
+        </label>
+        <label data-fecha-box>Fecha en que se paga
+            <input type="date" name="pay_date" data-f="pay_date" value="{{ $o('pay_date', $r?->pay_date?->toDateString()) }}">
+        </label>
+        <label class="nr-op" data-fecha-box style="align-self:end;">
+            <input type="hidden" name="yearly" value="0">
+            <input type="checkbox" name="yearly" value="1" data-f="yearly" @checked($o('yearly', $r ? $r->yearly : true))> Repetir cada año
         </label>
         <label>A quién
             <select name="scope" data-f="scope">
@@ -74,6 +82,7 @@
             <label><input type="checkbox" name="user_ids[]" value="{{ $u->id }}" @checked(in_array($u->id, $ids))> {{ $u->name }}</label>
         @endforeach
     </div>
+    <p class="rh-sub" data-aviso-fecha style="display:none; margin:8px 0 0;">ℹ Se paga en la quincena que incluye esa fecha. Las condiciones «en el año» cuentan del 1 de enero a esa quincena; si no pones condiciones, se paga a todos a los que aplique.</p>
     <p class="rh-sub" data-aviso-mes style="display:none; margin:8px 0 0;">ℹ Una condición «en el mes» solo se puede decidir cuando el mes termina, así que la regla se aplica en la segunda quincena.</p>
 
     <div class="nr-prev" data-prev></div>

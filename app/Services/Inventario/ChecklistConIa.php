@@ -50,7 +50,7 @@ class ChecklistConIa
             return $this->general('La IA no está configurada: se muestra el checklist general.');
         }
 
-        $llave = 'checklist-ia:v1:'.implode('-', [$tipoId, $subtipoId ?: 0, $marcaId ?: 0, $modeloId ?: 0]);
+        $llave = 'checklist-ia:v2:'.implode('-', [$tipoId, $subtipoId ?: 0, $marcaId ?: 0, $modeloId ?: 0]);
 
         if ($guardado = Cache::get($llave)) {
             return ['ia' => true, 'grupos' => $guardado, 'aviso' => null];
@@ -131,17 +131,20 @@ class ChecklistConIa
 Eres el jefe de recepción de un almacén de equipo médico usado en México (torres de endoscopia y
 laparoscopía, monitores, mesas y sillas de cirugía, electrocirugía, ultrasonido, sus accesorios, etc.).
 
-Arma el checklist de recepción para el equipo que se te indica: los puntos que quien lo recibe debe
-revisar para decir si llegó bien. Cada punto se contesta Sí / No / No aplica, así que redáctalo en
+Arma el checklist de recepción para el equipo que se te indica: lo que quien lo recibe revisa A SIMPLE
+VISTA al llegar para decir si llegó bien. Cada punto se contesta Sí / No / No aplica, así que redáctalo en
 positivo ("La lente no tiene rayones"), de forma que "Sí" signifique que está bien.
 
+- En la recepción el equipo NO se enciende ni se prueba: las pruebas de funcionamiento (encender,
+  autodiagnóstico, imagen, alarmas, controles, presión, succión, etc.) las hace después mantenimiento.
+  No incluyas ningún punto que requiera conectarlo, encenderlo u operarlo, ni un grupo de funcionamiento.
 - Solo puntos que de verdad apliquen a ESE equipo según su tipo, subtipo, marca y modelo. No preguntes
-  por tapicería a un monitor ni por imagen a una mesa quirúrgica. Si conoces el modelo, usa sus partes
-  y funciones reales (puertos, cabezales, baterías, mangueras, lámparas, etc.).
-- Agrúpalos en pocos grupos claros (por ejemplo Funcionamiento, Estado físico, Está completo,
-  Higiene y seguridad), entre 8 y 20 puntos en total, cortos y concretos.
-- En "manda" pon a qué proceso va la pieza si ese punto sale en "No": "mantenimiento" para fallas de
-  funcionamiento o electrónicas, "hojalateria" para golpes, carcasa, pintura, óxido, ruedas o tapicería,
+  por tapicería a un monitor. Si conoces el modelo, usa sus partes reales (puertos, conectores,
+  cabezales, baterías, mangueras, lentes, etc.) para revisar que estén, completas y sin daños.
+- Agrúpalos en pocos grupos claros (por ejemplo Estado físico, Está completo, Higiene y seguridad),
+  entre 8 y 20 puntos en total, cortos y concretos.
+- En "manda" pon a qué proceso va la pieza si ese punto sale en "No": "mantenimiento" para daños en
+  partes eléctricas o electrónicas (conectores, cables pelados, pantallas rotas), "hojalateria" para golpes, carcasa, pintura, óxido, ruedas o tapicería,
   "limpieza" para suciedad o residuos, y "ninguno" cuando la falla solo se anota (falta un manual, un
   accesorio o la placa de serie).
 TXT;
