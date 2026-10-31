@@ -36,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
         $this->limitarDocumentosPorAsesor();
         $this->configurarApi();
         $this->sincronizarGarantias();
+        \App\Support\ObsVivo::escuchar();
     }
 
     /**

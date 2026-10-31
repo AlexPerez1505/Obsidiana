@@ -26,7 +26,7 @@
 <style>
     .stock-page {
         display: grid;
-        gap: 20px;
+        gap: 16px;
     }
 
     .stock-head {
@@ -60,15 +60,17 @@
         background: #eff8ff;
     }
 
+    /* Separación como en el resto del panel: con 48 px las tarjetas
+       quedaban flotando entre huecos. */
     .stock-metrics {
         display: grid;
         grid-template-columns: repeat(4, minmax(150px, 1fr));
-        gap: 48px;
+        gap: 16px;
     }
 
     .stock-metric {
-        min-height: 82px;
-        padding: 16px 22px;
+        min-height: 0;
+        padding: 14px 18px;
         border-radius: 18px;
         background: rgba(255, 255, 255, .72);
         display: grid;
@@ -141,7 +143,7 @@
     }
 
     .stock-table th {
-        padding: 17px 16px;
+        padding: 12px 16px;
         background: #d8e2ff;
         color: #111827;
         font-size: 12px;
@@ -150,8 +152,8 @@
         border-bottom: 1px solid #a8c5ff;
     }
 
+    /* Sin alto fijo: la fila mide lo que su texto (antes 70 px para una línea). */
     .stock-table td {
-        height: 70px;
         padding: 11px 16px;
         border-bottom: 1px solid #a8c5ff;
         background: #fff;

@@ -86,6 +86,12 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     // Antes que /{movimiento}: si no, "etiquetas" se leería como un id.
     Route::get('/gestion-inventario/entrada-salida/{movimiento}/etiquetas', [InventoryMovementController::class, 'etiquetas'])
         ->middleware('can:inventario.ver')->name('inventory.movimientos.etiquetas');
+    // Quién puede editar lo decide EdicionPropia dentro del controlador
+    // (permiso de edición, o quien la registró en sus primeras horas).
+    Route::get('/gestion-inventario/entrada-salida/{movimiento}/editar', [InventoryMovementController::class, 'edit'])
+        ->middleware('can:inventario.ver')->name('inventory.movimientos.edit');
+    Route::put('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'update'])
+        ->middleware('can:inventario.ver')->name('inventory.movimientos.update');
     Route::get('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'show'])
         ->middleware('can:inventario.ver')->name('inventory.movimientos.show');
     Route::delete('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'destroy'])

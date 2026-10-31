@@ -320,6 +320,73 @@ class EntradasDeInventario
     }
 
     /**
+     * Lo que se puede corregir de una entrada ya registrada: sus datos, no
+     * sus piezas (las series y fotos de cada pieza se corrigen en el
+     * producto, y la ruta de procesos en el detalle de la entrada).
+     */
+    public static function reglasEdicion(InventoryMovement $movimiento): array
+    {
+        $reglas = [
+            'movement_date' => ['required', 'date'],
+            'fecha_fabricacion' => ['nullable', 'date'],
+            'fecha_caducidad' => ['nullable', 'date', 'after_or_equal:fecha_fabricacion'],
+            'reference' => ['nullable', 'string', 'max:255'],
+            'notas' => ['nullable', 'string', 'max:1000'],
+        ];
+
+        if ($movimiento->condicion === 'usado') {
+            $reglas['estado_general'] = ['required', Rule::in(array_keys(ChecklistRecepcion::ESTADOS))];
+            $reglas['checklist'] = ['nullable', 'array'];
+        }
+
+        return $reglas;
+    }
+
+    /**
+     * Guarda la corrección. El checklist conserva los puntos que se
+     * preguntaron al recibir (con su texto y su proceso): aquí solo cambian
+     * las respuestas y las notas.
+     */
+    public function actualizar(InventoryMovement $movimiento, array $data): void
+    {
+        $usado = $movimiento->condicion === 'usado';
+        $cambios = [
+            'movement_date' => $data['movement_date'],
+            'fecha_fabricacion' => $data['fecha_fabricacion'] ?? null,
+            // El equipo usado no lleva caducidad.
+            'fecha_caducidad' => $usado ? null : ($data['fecha_caducidad'] ?? null),
+            'reference' => $data['reference'] ?? null,
+            'notes' => $data['notas'] ?? null,
+        ];
+
+        if ($usado) {
+            $cambios['estado_general'] = $data['estado_general'];
+
+            $recibido = $data['checklist'] ?? [];
+            $checklist = [];
+
+            foreach ($movimiento->checklist_recepcion ?? [] as $llave => $punto) {
+                $nuevo = $recibido[$llave] ?? [];
+                $r = $nuevo['r'] ?? null;
+                $punto['r'] = in_array($r, ChecklistRecepcion::RESPUESTAS, true) ? $r : $punto['r'];
+
+                $nota = trim((string) ($nuevo['nota'] ?? ''));
+                if ($nota !== '') {
+                    $punto['nota'] = mb_substr($nota, 0, 300);
+                } else {
+                    unset($punto['nota']);
+                }
+
+                $checklist[$llave] = $punto;
+            }
+
+            $cambios['checklist_recepcion'] = $checklist;
+        }
+
+        $movimiento->update($cambios);
+    }
+
+    /**
      * Por qué no se puede borrar este movimiento, o null si sí se puede.
      *
      * Si alguna de sus unidades ya se vendió, borrarlo dejaría esa venta

@@ -316,6 +316,9 @@
     });
 
     filtrar();
+
+    // Las filas que llegan en tiempo real respetan los filtros puestos.
+    document.addEventListener('obs:vivo', filtrar);
 })();
 </script>
 

@@ -14,12 +14,21 @@
     $filas = $seriales->map(function ($s) use ($yo, $disco) {
         $rutas = array_values(array_filter($s->evidence_paths ?: [$s->foto_path]));
         $enProceso = ! $s->vendido && in_array($s->estado, \App\Models\ProductoSerial::NO_VENDIBLES, true);
+        $fotos = collect($rutas)->map(fn ($r) => ['path' => $r, 'url' => $disco->url($r)]);
+
+        // Lo que se ve en el visor: las fotos y, al final, el video si lo hay.
+        $medios = $fotos->map(fn ($f) => ['tipo' => 'foto', 'url' => $f['url']]);
+        if ($s->video_path) {
+            $medios->push(['tipo' => 'video', 'url' => $disco->url($s->video_path)]);
+        }
 
         return [
             'pieza' => $s,
             'editable' => \App\Support\EdicionPropia::puedeEditarPieza($yo, $s),
             'borrable' => ! $s->vendido && \App\Support\EdicionPropia::puedeEliminarPieza($yo, $s),
-            'fotos' => collect($rutas)->map(fn ($r) => ['path' => $r, 'url' => $disco->url($r)])->all(),
+            'fotos' => $fotos->all(),
+            'medios' => $medios,
+            'video' => (bool) $s->video_path,
             'grupo' => $s->vendido ? 'vendida' : ($enProceso ? 'proceso' : 'disponible'),
             'buscar' => mb_strtolower(implode(' ', array_filter([$s->no_serie, $s->codigo, $s->estadoLabel(), $s->entrada?->folio]))),
         ];
@@ -53,8 +62,42 @@
         .pz-tabla .s { display:block; color:var(--muted); font-size:12px; margin-top:2px; }
         .pz-serie { width:100%; min-width:150px; font-family:ui-monospace, Consolas, monospace; }
         tr.pz-cambiada .pz-serie { border-color:var(--primary); background:var(--primary-soft); }
-        .pz-fotos { display:flex; gap:4px; align-items:center; }
-        .pz-fotos img { width:34px; height:34px; object-fit:cover; border-radius:6px; border:1px solid var(--border); }
+        /* Cuerpo: lo principal a la izquierda y una columna de 300px al lado;
+           en pantallas chicas todo se apila. */
+        .ed-cuerpo { display:grid; grid-template-columns:minmax(0, 1fr); gap:18px; align-items:start; margin-bottom:18px; }
+        @media (min-width: 1100px) {
+            .ed-cuerpo--lateral { grid-template-columns:minmax(0, 1fr) 300px; }
+        }
+        .ed-lateral { display:flex; flex-direction:column; gap:18px; min-width:0; }
+        .ed-botones { display:flex; gap:10px; flex-wrap:wrap; }
+        .ed-botones .btn { flex:1 1 auto; justify-content:center; }
+
+        /* Imagen del catálogo: portada chica; en grande se ve en el visor. */
+        .ed-img { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+        .ed-img-portada { flex:0 0 72px; width:72px; height:72px; padding:0; overflow:hidden; cursor:pointer;
+                          border:1px solid var(--border); border-radius:12px; background:var(--surface-2); }
+        .ed-img-portada img { width:100%; height:100%; object-fit:cover; display:block; }
+        .ed-img-portada:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+        .ed-img-ver { padding:0; border:0; background:none; color:var(--primary); font-size:13px; font-weight:600;
+                      cursor:pointer; text-align:left; }
+        .ed-img-ver:hover { text-decoration:underline; }
+        .ed-lateral input[type=file] { width:100%; max-width:100%; }
+        /* En 300px la rejilla de 260px mínimo se saldría de la tarjeta. */
+        .ed-lateral .rgrid-2 { grid-template-columns:minmax(0, 1fr); }
+
+        /* Evidencia de la pieza en la tabla: portada chiquita con su cuenta,
+           el resto en el visor (ya no tres miniaturas por renglón). */
+        .pz-portada { position:relative; display:block; width:40px; height:40px; padding:0; overflow:hidden; cursor:pointer;
+                      border:1px solid var(--border); border-radius:8px; background:var(--surface-2); }
+        .pz-portada img { width:100%; height:100%; object-fit:cover; display:block; }
+        .pz-portada:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+        .pz-portada-video { display:flex; align-items:center; justify-content:center; width:100%; height:100%;
+                            background:#0f172a; color:#fff; }
+        .pz-portada-video svg { width:16px; height:16px; }
+        .pz-portada-cuenta { position:absolute; right:2px; bottom:2px; display:inline-flex; align-items:center; gap:2px;
+                             padding:1px 4px; border-radius:999px; background:rgba(15,23,42,.75); color:#fff;
+                             font-size:10px; font-weight:700; line-height:1.3; }
+        .pz-portada-cuenta svg { width:8px; height:8px; }
         .pz-acciones { display:flex; gap:6px; justify-content:flex-end; white-space:nowrap; }
         .pz-vacio { padding:22px; text-align:center; color:var(--muted); font-size:13.5px; }
 
@@ -106,7 +149,10 @@
         <form method="POST" action="{{ route('inventory.productos.update', $producto) }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')
-            <x-ui.card style="margin-bottom:18px;">
+            {{-- Los datos a la izquierda; la imagen y los botones de guardar
+                 al lado, para no dejar una tarjeta alta solo para la imagen. --}}
+            <div class="ed-cuerpo ed-cuerpo--lateral">
+            <x-ui.card>
                 <x-ui.section-title style="margin:0 0 16px;">Datos del producto</x-ui.section-title>
                 <div class="rgrid-2">
                     @include('structure.gestion_Inventario.productos._selects_catalogo')
@@ -126,24 +172,36 @@
                         <small class="campo-nota">Se calcula solo, según las piezas de abajo.</small>
                     </x-ui.form-group>
                 </div>
-                <x-ui.form-group label="Descripción" for="descripcion">
+                <x-ui.form-group label="Descripción" for="descripcion" style="margin-bottom:0;">
                     <textarea id="descripcion" name="descripcion" rows="3">{{ old('descripcion', $producto->descripcion) }}</textarea>
-                </x-ui.form-group>
-                <x-ui.form-group label="Imagen del producto" for="imagen">
-                    @if ($producto->imagen_path)
-                        <div style="margin-bottom:10px;">
-                            <img src="{{ asset('storage/'.$producto->imagen_path) }}" alt="Imagen actual" style="max-height:150px; border-radius:8px; border:1px solid var(--border);">
-                            <small class="campo-nota">Imagen actual</small>
-                        </div>
-                    @endif
-                    <input type="file" id="imagen" name="imagen" accept="image/*">
-                    <small class="campo-nota">JPG, PNG o GIF. Máximo 5 MB. Déjalo vacío para conservar la actual.</small>
                 </x-ui.form-group>
             </x-ui.card>
 
-            <div style="display:flex; gap:10px; margin-bottom:18px;">
-                <x-ui.button>Actualizar producto</x-ui.button>
-                <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost">Cancelar</a>
+            <div class="ed-lateral">
+                <x-ui.card>
+                    <x-ui.form-group label="Imagen del producto" for="imagen" style="margin-bottom:0;">
+                        @if ($producto->imagen_path)
+                            @php($imagenActual = asset('storage/'.$producto->imagen_path))
+                            <div class="ed-img" data-medios="{{ collect([['tipo' => 'foto', 'url' => $imagenActual]])->toJson() }}">
+                                <button type="button" class="ed-img-portada" data-galeria data-indice="0" aria-label="Ver la imagen actual">
+                                    <img src="{{ $imagenActual }}" alt="Imagen actual">
+                                </button>
+                                <div>
+                                    <small class="campo-nota" style="display:block; margin:0 0 4px;">Imagen actual</small>
+                                    <button type="button" class="ed-img-ver" data-galeria data-indice="0">Ver en grande</button>
+                                </div>
+                            </div>
+                        @endif
+                        <input type="file" id="imagen" name="imagen" accept="image/*">
+                        <small class="campo-nota">JPG, PNG o GIF. Máximo 5 MB. Déjalo vacío para conservar la actual.</small>
+                    </x-ui.form-group>
+                </x-ui.card>
+
+                <div class="ed-botones">
+                    <x-ui.button>Actualizar producto</x-ui.button>
+                    <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost">Cancelar</a>
+                </div>
+            </div>
             </div>
         </form>
     @else
@@ -158,7 +216,10 @@
         </x-ui.card>
     @endif
 
-    {{-- ===================== Piezas ===================== --}}
+    {{-- ===================== Piezas (+ agregar al lado) =====================
+         La tabla de piezas es lo ancho; el ajuste rápido es un formulario
+         corto que cabe en la columna de 300px en vez de ir hasta abajo. --}}
+    <div class="ed-cuerpo {{ $puedeAgregar ? 'ed-cuerpo--lateral' : '' }}" style="margin-bottom:0;">
     <x-ui.card>
         <x-ui.section-title style="margin:0 0 4px;">Piezas ({{ $seriales->count() }})</x-ui.section-title>
         <p class="campo-nota" style="margin:0;">
@@ -210,7 +271,8 @@
                                     data-buscar="{{ $fila['buscar'] }}"
                                     data-grupo="{{ $fila['grupo'] }}"
                                     data-sin-serie="{{ $s->no_serie ? '0' : '1' }}"
-                                    data-editable="{{ $fila['editable'] ? '1' : '0' }}">
+                                    data-editable="{{ $fila['editable'] ? '1' : '0' }}"
+                                    @if ($fila['medios']->isNotEmpty()) data-medios="{{ $fila['medios']->toJson() }}" @endif>
                                     <td class="cod">{{ $s->codigo ?: '—' }}</td>
                                     <td>
                                         @if ($fila['editable'])
@@ -223,13 +285,28 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <div class="pz-fotos">
-                                            @forelse (array_slice($fila['fotos'], 0, 3) as $foto)
-                                                <a href="{{ $foto['url'] }}" target="_blank" rel="noopener"><img src="{{ $foto['url'] }}" alt="Foto de la pieza" loading="lazy"></a>
-                                            @empty
-                                                <span class="s">—</span>
-                                            @endforelse
-                                        </div>
+                                        @if ($fila['medios']->isNotEmpty())
+                                            @php($nFotos = count($fila['fotos']))
+                                            <button type="button" class="pz-portada" data-galeria data-indice="0"
+                                                    title="Ver {{ $nFotos }} {{ $nFotos === 1 ? 'foto' : 'fotos' }}{{ $fila['video'] ? ' y video' : '' }}"
+                                                    aria-label="Ver la evidencia de la pieza {{ $s->codigo }}">
+                                                @if ($nFotos)
+                                                    <img src="{{ $fila['fotos'][0]['url'] }}" alt="" loading="lazy">
+                                                @else
+                                                    <span class="pz-portada-video" aria-hidden="true">
+                                                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                                    </span>
+                                                @endif
+                                                <span class="pz-portada-cuenta">
+                                                    {{ $nFotos }}
+                                                    @if ($fila['video'])
+                                                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                                    @endif
+                                                </span>
+                                            </button>
+                                        @else
+                                            <span class="s">—</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <span class="badge {{ $s->vendido ? '' : ($fila['grupo'] === 'proceso' ? 'badge--info' : 'badge--ok') }}">{{ $s->estadoLabel() }}</span>
@@ -277,7 +354,8 @@
     </x-ui.card>
 
     @if ($puedeAgregar)
-        <x-ui.card style="margin-top:18px;">
+        <div class="ed-lateral">
+        <x-ui.card>
             <x-ui.section-title style="margin:0 0 6px;">Agregar piezas (ajuste rápido, sin evidencia)</x-ui.section-title>
             <p class="campo-nota" style="margin:0 0 12px;">
                 Úsalo solo para correcciones puntuales. Si llegó mercancía de verdad, regístrala como
@@ -295,7 +373,11 @@
                 <x-ui.button type="submit">Agregar al inventario</x-ui.button>
             </form>
         </x-ui.card>
+        </div>
     @endif
+    </div>
+
+    @include('partials.galeria')
 
     {{-- Un solo modal para las fotos de cualquier pieza (antes había uno por pieza). --}}
     <dialog id="modalFotos" class="pz-modal">

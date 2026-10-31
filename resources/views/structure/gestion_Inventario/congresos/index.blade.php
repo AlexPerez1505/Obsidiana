@@ -6,12 +6,15 @@
 
 @push('head')
 <style>
-    .cgx-actions { display:flex; justify-content:flex-end; margin-bottom:18px; }
 
     .cgx-grid { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:20px; align-items:start; }
     @media (max-width:1024px) { .cgx-grid { grid-template-columns:1fr; } }
 
-    .cgx-cal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    /* El botón de crear vive en la cabecera del calendario: una fila
+       entera solo para él era espacio muerto arriba de todo. */
+    .cgx-cal-head { display:flex; align-items:center; justify-content:space-between; gap:10px 14px;
+                    flex-wrap:wrap; margin-bottom:14px; }
+    .cgx-cal-head-der { display:flex; align-items:center; gap:10px 14px; flex-wrap:wrap; }
     .cgx-cal-nav { display:flex; align-items:center; gap:10px; }
     .cgx-cal-nav a { display:flex; align-items:center; justify-content:center; width:30px; height:30px;
                      border:1px solid var(--border); border-radius:8px; color:var(--text); text-decoration:none; }
@@ -22,7 +25,7 @@
     .cgx-cal { display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; }
     .cgx-cal-dia-nombre { text-align:center; font-size:11.5px; font-weight:700; color:var(--muted);
                           text-transform:uppercase; padding-bottom:6px; }
-    .cgx-cal-cell { min-height:70px; border-radius:9px; border:1px solid var(--border); padding:5px;
+    .cgx-cal-cell { min-height:60px; border-radius:9px; border:1px solid var(--border); padding:5px;
                     display:flex; flex-direction:column; gap:3px; background:var(--surface); }
     .cgx-cal-cell.atenuado { opacity:.4; }
     .cgx-cal-cell.hoy { border-color:var(--primary); box-shadow:0 0 0 1px var(--primary) inset; }
@@ -60,12 +63,14 @@
     .cgx-pendientes span { color:var(--muted); font-size:12.5px; }
     .cgx-pendientes form { flex:0 0 auto; }
 
-    .cgx-stats { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin:16px 0; }
-    .cgx-stat { border:1px solid var(--border); border-radius:10px; padding:10px 12px; text-align:center; }
+    /* Las cuatro cifras en una sola fila; en el teléfono, de dos en dos. */
+    .cgx-stats { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; margin:14px 0; }
+    .cgx-stat { border:1px solid var(--border); border-radius:10px; padding:9px 8px; text-align:center; min-width:0; }
+    @media (max-width:480px) { .cgx-stats { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
     .cgx-stat b { display:block; font-size:18px; font-weight:800; }
     .cgx-stat span { font-size:11px; color:var(--muted); }
 
-    .cgx-costos { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin:0 0 16px; }
+    .cgx-costos { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; margin:0 0 14px; }
     .cgx-costo { border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
     .cgx-costo span { display:block; font-size:11px; color:var(--muted); margin-bottom:2px; }
     .cgx-costo b { font-size:17px; font-weight:800; }
@@ -108,32 +113,34 @@
     .cgx-field select { width:100%; padding:8px 10px; font-size:12.5px; border:1px solid var(--border);
                         border-radius:7px; background:var(--surface); color:var(--text); }
 
-    .cgx-unidades-box { display:grid; grid-template-columns:repeat(auto-fill, minmax(90px, 1fr)); gap:8px; margin-top:10px; }
+    /* Unidades para elegir: filas compactas (casilla | miniatura | código)
+       en lugar de un mosaico de fotos. La foto se ve en grande en el visor. */
+    .cgx-unidades-box { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:6px; margin-top:10px; }
     .cgx-unidades-box:empty { display:none; }
-    .cgx-unidad-card { position:relative; border:1.5px solid var(--border); border-radius:9px; overflow:hidden;
-                       cursor:pointer; background:var(--surface-2); }
+    .cgx-unidad-card { display:flex; align-items:center; gap:9px; min-width:0; padding:6px 8px;
+                       border:1.5px solid var(--border); border-radius:9px; cursor:pointer; background:var(--surface); }
     .cgx-unidad-card.is-elegida { border-color:var(--primary); box-shadow:0 0 0 2px var(--primary-soft); }
-    .cgx-unidad-card img { width:100%; height:70px; object-fit:cover; display:block; }
-    .cgx-unidad-sinfoto { width:100%; height:70px; display:flex; align-items:center; justify-content:center;
-                          color:var(--muted); font-size:10px; }
-    .cgx-unidad-card input { position:absolute; top:5px; right:5px; width:15px; height:15px; margin:0; }
-    .cgx-unidad-codigo { display:block; font-size:10px; padding:3px 5px; text-align:center; background:var(--surface);
-                         font-family:ui-monospace, Consolas, monospace; }
-    .cgx-unidades-submit { margin-top:10px; }
+    .cgx-unidad-card input { flex:0 0 auto; width:15px; height:15px; margin:0; accent-color:var(--primary); }
+    .cgx-unidad-foto, .cgx-unidad-sinfoto { flex:0 0 34px; width:34px; height:34px; border-radius:7px;
+                                            border:1px solid var(--border); background:var(--surface-2); }
+    .cgx-unidad-foto { padding:0; overflow:hidden; cursor:zoom-in; }
+    .cgx-unidad-foto img { width:100%; height:100%; object-fit:cover; display:block; }
+    .cgx-unidad-sinfoto { display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:9px;
+                          text-align:center; line-height:1.1; }
+    .cgx-unidad-codigo { min-width:0; font-size:11.5px; font-family:ui-monospace, Consolas, monospace;
+                         overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cgx-unidades-submit { grid-column:1 / -1; justify-self:start; margin-top:4px; }
+    .cgx-unidades-box > .cgx-unidades-vacio { grid-column:1 / -1; }
+
+    /* Usuarios del sistema y externos: lado a lado cuando la tarjeta es
+       ancha; en una columna angosta se apilan solos. */
+    .cgx-personas { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:0 22px; }
+    .cgx-personas > div { min-width:0; }
     .cgx-unidades-vacio { font-size:12px; color:var(--muted); margin:8px 0 0; }
 </style>
 @endpush
 
 @section('content')
-    <div class="cgx-actions">
-        @can('congresos.editar')
-        <a href="{{ route('inventory.congresos.create') }}" class="btn">
-            <x-gravityui-plus width="15" height="15" />
-            Crear congreso
-        </a>
-        @endcan
-    </div>
-
     @if (session('status'))
         <x-ui.alert type="ok" style="margin-bottom:18px;">{{ session('status') }}</x-ui.alert>
     @endif
@@ -147,6 +154,7 @@
             <x-ui.card style="margin-bottom:20px;">
                 <div class="cgx-cal-head">
                     <x-ui.section-title style="margin:0;">Calendario de congresos</x-ui.section-title>
+                    <div class="cgx-cal-head-der">
                     <div class="cgx-cal-nav">
                         <a href="{{ route('inventory.congresos.index', ['mes' => $mesAnterior, 'congreso' => $congress?->id]) }}" aria-label="Mes anterior">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -155,6 +163,13 @@
                         <a href="{{ route('inventory.congresos.index', ['mes' => $mesSiguiente, 'congreso' => $congress?->id]) }}" aria-label="Mes siguiente">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
                         </a>
+                    </div>
+                    @can('congresos.editar')
+                    <a href="{{ route('inventory.congresos.create') }}" class="btn">
+                        <x-gravityui-plus width="15" height="15" />
+                        Crear congreso
+                    </a>
+                    @endcan
                     </div>
                 </div>
 
@@ -372,7 +387,6 @@
                                     <th>Producto</th>
                                     <th>Cantidad</th>
                                     <th>Series</th>
-                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -392,7 +406,6 @@
                                                 </div>
                                             @endforeach
                                         </td>
-                                        <td></td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -414,6 +427,8 @@
                         <div id="cgxUnidadesBox" class="cgx-unidades-box"></div>
                     </form>
 
+                    <div class="cgx-personas">
+                    <div>
                     {{-- ---------- Usuarios del sistema en el congreso ---------- --}}
                     <div class="cgx-sub-title">
                         <h4>Usuarios del sistema en el congreso</h4>
@@ -451,6 +466,9 @@
                         </form>
                     @endif
 
+                    </div>
+
+                    <div>
                     {{-- ---------- Participantes externos (sin cuenta) ---------- --}}
                     <div class="cgx-sub-title">
                         <h4>Participantes externos</h4>
@@ -482,10 +500,14 @@
                         <input type="text" name="empresa" placeholder="Empresa">
                         <button type="submit" class="btn">Agregar</button>
                     </form>
+                    </div>
+                    </div>
                 </x-ui.card>
             @endif
         </div>
     </div>
+
+    @include('partials.galeria')
 
     @push('scripts')
     <script>
@@ -520,17 +542,29 @@
                 var card = document.createElement('label');
                 card.className = 'cgx-unidad-card';
 
+                // Miniatura chica: tocarla abre la foto en grande (sin marcar
+                // la casilla); tocar el resto de la fila elige la unidad.
                 var media = u.foto
-                    ? '<img src="' + u.foto + '" alt="' + u.codigo + '">'
+                    ? '<button type="button" class="cgx-unidad-foto" aria-label="Ver la foto de ' + u.codigo + '"><img src="' + u.foto + '" alt="" loading="lazy"></button>'
                     : '<span class="cgx-unidad-sinfoto">Sin foto</span>';
 
-                card.innerHTML = media
-                    + '<input type="checkbox" name="serial_ids[]" value="' + u.id + '">'
-                    + '<span class="cgx-unidad-codigo">' + u.codigo + (u.no_serie ? ' · ' + u.no_serie : '') + '</span>';
+                var etiqueta = u.codigo + (u.no_serie ? ' · ' + u.no_serie : '');
+
+                card.innerHTML = '<input type="checkbox" name="serial_ids[]" value="' + u.id + '">'
+                    + media
+                    + '<span class="cgx-unidad-codigo" title="' + etiqueta + '">' + etiqueta + '</span>';
 
                 card.querySelector('input').addEventListener('change', function (e) {
                     card.classList.toggle('is-elegida', e.target.checked);
                 });
+
+                var foto = card.querySelector('.cgx-unidad-foto');
+                if (foto) {
+                    foto.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        if (window.ObsGaleria) window.ObsGaleria.abrir([{ tipo: 'foto', url: u.foto }], 0);
+                    });
+                }
 
                 box.appendChild(card);
             });

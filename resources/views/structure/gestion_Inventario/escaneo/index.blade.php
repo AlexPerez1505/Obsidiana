@@ -40,9 +40,12 @@
         .esc-fila:last-child { border-bottom:none; }
         .esc-fila.nueva { animation:entra .4s ease; }
         @keyframes entra { from { background:var(--primary-soft); } to { background:transparent; } }
-        .esc-fila img, .esc-fila .sinfoto { width:46px; height:46px; border-radius:9px; flex:0 0 46px;
-                                            object-fit:cover; border:1px solid var(--border);
-                                            background:var(--surface-2); }
+        .esc-fila .sinfoto, .esc-fila .esc-foto { width:46px; height:46px; border-radius:9px; flex:0 0 46px;
+                                                  border:1px solid var(--border); background:var(--surface-2); }
+        /* La foto es un botón: se ve en grande en el visor, no en la fila. */
+        .esc-fila .esc-foto { padding:0; overflow:hidden; cursor:pointer; }
+        .esc-fila .esc-foto img { width:100%; height:100%; object-fit:cover; display:block; }
+        .esc-fila .esc-foto:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
         .esc-fila .txt { flex:1; min-width:0; }
         .esc-fila .cod { font-family:ui-monospace, Consolas, monospace; font-size:13px;
                          font-weight:700; letter-spacing:.03em; }
@@ -58,6 +61,18 @@
                             color:var(--muted); font-size:17px; line-height:1; cursor:pointer; flex:0 0 30px; }
         .esc-fila .quitar:hover { background:var(--danger-soft); color:var(--danger); }
 
+        /* Escaneo a la izquierda y la ayuda al lado: la ayuda es corta y,
+           apilada debajo, solo alargaba la página. */
+        .esc-grid { display:grid; grid-template-columns:minmax(0, 1fr); gap:18px; align-items:start; }
+        @media (min-width: 1000px) {
+            .esc-grid { grid-template-columns:minmax(0, 1fr) 300px; }
+        }
+        .esc-ayuda p { margin:0; font-size:13.5px; }
+        .esc-ayuda ul { margin:6px 0 0; padding-left:18px; font-size:13.5px; line-height:1.6; }
+        .esc-ayuda h4 { margin:14px 0 0; padding-top:12px; border-top:1px solid var(--border);
+                        font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+                        color:var(--muted); }
+
         .esc-error { margin-top:12px; padding:11px 14px; border-radius:9px;
                      background:var(--danger-soft); color:var(--danger); font-size:13.5px; }
 
@@ -68,7 +83,7 @@
 @endpush
 
 @section('content')
-    <div class="rgrid-sidebar">
+    <div class="esc-grid">
         <div>
             <x-ui.card style="margin-bottom:18px;">
                 <div class="esc-estado" data-estado>
@@ -95,7 +110,9 @@
                     <button type="button" class="btn btn--ghost" data-limpiar>Vaciar</button>
                 </div>
 
-                <div class="esc-cuentas">
+                {{-- Las cuentas las pone el JavaScript: la actualización en
+                     tiempo real no debe regresarlas a cero. --}}
+                <div class="esc-cuentas" data-live="off">
                     <div><span class="e">Piezas</span><span class="v" data-cuenta-piezas>0</span></div>
                     <div><span class="e">Distintas</span><span class="v" data-cuenta-distintas>0</span></div>
                     <div><span class="e">Disponibles</span><span class="v" data-cuenta-vendibles>0</span></div>
@@ -114,31 +131,30 @@
             </x-ui.card>
         </div>
 
-        <div style="display:flex; flex-direction:column; gap:18px;">
-            <x-ui.card>
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" width="26" height="26"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                    <x-ui.section-title style="margin:0;">Cómo funciona</x-ui.section-title>
-                </div>
-                <p class="muted" style="margin:0;">
-                    La pistola escribe la etiqueta como si fuera un teclado. Esta pantalla la escucha
-                    sola: no tienes que pararte en ningún campo.
-                </p>
-                <p class="muted" style="margin:8px 0 0;">
-                    Si pasas dos veces la misma pieza, no se duplica: sube su contador.
-                </p>
-            </x-ui.card>
+        {{-- Las dos ayudas en una sola tarjeta: son dos párrafos y una lista. --}}
+        <x-ui.card class="esc-ayuda">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" width="22" height="22"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <x-ui.section-title style="margin:0;">Cómo funciona</x-ui.section-title>
+            </div>
+            <p class="muted">
+                La pistola escribe la etiqueta como si fuera un teclado. Esta pantalla la escucha
+                sola: no tienes que pararte en ningún campo.
+            </p>
+            <p class="muted" style="margin-top:8px;">
+                Si pasas dos veces la misma pieza, no se duplica: sube su contador.
+            </p>
 
-            <x-ui.card>
-                <x-ui.section-title style="margin:0 0 12px;">Para qué sirve</x-ui.section-title>
-                <ul style="margin:0; padding-left:18px; font-size:14px; line-height:1.7;">
-                    <li>Conteo físico del almacén.</li>
-                    <li>Armar la lista de un préstamo sin buscar pieza por pieza.</li>
-                    <li>Revisar qué trae un lote antes de moverlo.</li>
-                </ul>
-            </x-ui.card>
-        </div>
+            <h4>Para qué sirve</h4>
+            <ul>
+                <li>Conteo físico del almacén.</li>
+                <li>Armar la lista de un préstamo sin buscar pieza por pieza.</li>
+                <li>Revisar qué trae un lote antes de moverlo.</li>
+            </ul>
+        </x-ui.card>
     </div>
+
+    @include('partials.galeria')
 
     @push('scripts')
         <script>
@@ -263,8 +279,9 @@
                     const fila = document.createElement('div');
                     fila.className = 'esc-fila' + (codigo === resaltar ? ' nueva' : '');
 
+                    // Miniatura chica; tocarla abre la foto en grande en el visor.
                     const foto = d.foto
-                        ? `<img src="${d.foto}" alt="">`
+                        ? `<button type="button" class="esc-foto" aria-label="Ver la foto de ${codigo}"><img src="${d.foto}" alt="" loading="lazy"></button>`
                         : '<span class="sinfoto"></span>';
 
                     const detalle = [d.marca_modelo, d.no_serie ? 'Serie ' + d.no_serie : null]
@@ -291,6 +308,10 @@
                         ${item.veces > 1 ? `<span class="veces">×${item.veces}</span>` : ''}
                         <button type="button" class="quitar" title="Quitar" aria-label="Quitar ${codigo}">×</button>
                     `;
+
+                    fila.querySelector('.esc-foto')?.addEventListener('click', function () {
+                        window.ObsGaleria?.abrir([{ tipo: 'foto', url: d.foto }], 0);
+                    });
 
                     fila.querySelector('.quitar').addEventListener('click', function () {
                         escaneado.delete(codigo);

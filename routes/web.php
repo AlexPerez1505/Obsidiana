@@ -18,6 +18,21 @@ Route::get('/', function () {
 })->name('home');
 
 // Consulta publica del cliente (QR del PDF), sin sesion
+// Tiempo real: las pantallas preguntan cada pocos segundos si algo cambió.
+// Es solo un número, así que va sin sesión ni cookies (no toca la base).
+Route::get('/_vivo', fn () => response()->json(['rev' => \App\Support\ObsVivo::rev()])
+    ->header('Cache-Control', 'no-store'))
+    ->withoutMiddleware([
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+        \Illuminate\Cookie\Middleware\EncryptCookies::class,
+        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+        \App\Http\Middleware\RestrictMantenimientoAccess::class,
+        \App\Http\Middleware\ObsVivoTocar::class,
+    ])
+    ->name('vivo');
+
 require __DIR__.'/web/publico.php';
 
 // Autenticacion y cuenta

@@ -183,6 +183,38 @@ class InventoryMovementController extends Controller
     }
 
     /**
+     * Corregir una entrada: fechas, referencia, notas y, si es usado, su
+     * estado general y las respuestas del checklist. Lo puede quien tiene
+     * permiso de editar inventario, o quien la registró en sus primeras
+     * EdicionPropia::HORAS horas.
+     */
+    public function edit(Request $request, InventoryMovement $movimiento): View
+    {
+        abort_unless(EdicionPropia::puedeEditarMovimiento($request->user(), $movimiento), 403, EdicionPropia::mensaje());
+
+        $producto = $movimiento->producto();
+
+        return view('structure.gestion_Inventario.entrada_salida.edit', [
+            'movimiento' => $movimiento,
+            'producto' => $producto,
+            'estadosGenerales' => ChecklistRecepcion::ESTADOS,
+            'puedeEditarPiezas' => $producto && EdicionPropia::puedeEditarProducto($request->user(), $producto),
+        ]);
+    }
+
+    public function update(Request $request, InventoryMovement $movimiento, EntradasDeInventario $entradas): RedirectResponse
+    {
+        abort_unless(EdicionPropia::puedeEditarMovimiento($request->user(), $movimiento), 403, EdicionPropia::mensaje());
+
+        $data = $request->validate(EntradasDeInventario::reglasEdicion($movimiento), EntradasDeInventario::MENSAJES);
+
+        $entradas->actualizar($movimiento, $data);
+
+        return redirect()->route('inventory.movimientos.show', $movimiento)
+            ->with('status', "Entrada {$movimiento->folio} actualizada.");
+    }
+
+    /**
      * Elimina un movimiento. Solo tiene sentido para entradas que todavía
      * no se hayan vendido (si alguna de sus unidades ya se vendió, borrar
      * el movimiento dejaría esa venta sin origen).

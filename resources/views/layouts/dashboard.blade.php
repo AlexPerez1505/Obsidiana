@@ -335,6 +335,14 @@
                      background:color-mix(in srgb, var(--bg) 88%, transparent);
                      backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
         .page-foot .btn { display:inline-flex; align-items:center; gap:6px; }
+        /* Rejillas de página: contenido + columna lateral, o dos columnas
+           iguales. En pantallas chicas todo va en una columna. Las usaban
+           varias vistas pero nunca se habían definido. */
+        .rgrid-sidebar, .rgrid-2 { display:grid; grid-template-columns:minmax(0, 1fr); gap:18px; align-items:start; }
+        @media (min-width:1000px) {
+            .rgrid-sidebar { grid-template-columns:minmax(0, 1fr) 320px; }
+            .rgrid-2 { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+        }
         /* Si el formulario esta en rejilla, el pie ocupa todo el ancho. */
         .rgrid-sidebar > .page-foot, .rgrid-2 > .page-foot { grid-column:1 / -1; }
 
@@ -1235,6 +1243,8 @@
         <main class="content">
             @yield('content')
         </main>
+        {{-- Tiempo real: la pantalla se actualiza sola con los cambios de otros. --}}
+        @include('partials.vivo')
     </div>
 </div>
 

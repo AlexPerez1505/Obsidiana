@@ -57,6 +57,13 @@ class EdicionPropia
         return static::puede($user, 'inventario.eliminar', $pieza->capturado_por, $pieza->created_at);
     }
 
+    /** Corregir los datos de una entrada (fechas, notas, checklist). Las salidas las genera Ventas. */
+    public static function puedeEditarMovimiento(?User $user, InventoryMovement $movimiento): bool
+    {
+        return $movimiento->movement_type === InventoryMovement::TYPE_ENTRY
+            && static::puede($user, 'inventario.editar', $movimiento->created_by, $movimiento->created_at);
+    }
+
     public static function puedeEliminarMovimiento(?User $user, InventoryMovement $movimiento): bool
     {
         return static::puede($user, 'inventario.eliminar', $movimiento->created_by, $movimiento->created_at);

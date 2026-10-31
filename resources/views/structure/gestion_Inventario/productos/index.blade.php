@@ -56,17 +56,6 @@
                          color:var(--primary); font-size:11.5px; font-weight:600; cursor:pointer; white-space:nowrap; }
         .ver-evidencia:hover { text-decoration:underline; }
 
-        .galeria-overlay { position:fixed; inset:0; background:rgba(0,0,0,.82); display:none;
-                           align-items:center; justify-content:center; z-index:1100; padding:20px; }
-        .galeria-caja { position:relative; max-width:900px; width:100%; text-align:center; }
-        .galeria-medio img, .galeria-medio video { max-width:100%; max-height:74vh; border-radius:10px; }
-        .galeria-cerrar { position:absolute; top:-38px; right:0; border:none; background:transparent;
-                          color:#fff; font-size:28px; line-height:1; cursor:pointer; }
-        .galeria-nav { display:flex; align-items:center; justify-content:center; gap:18px; margin-top:14px; }
-        .galeria-nav button { width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,.35);
-                              background:rgba(255,255,255,.1); color:#fff; font-size:20px; cursor:pointer; }
-        .galeria-nav button:hover { background:rgba(255,255,255,.22); }
-        .galeria-nav span { color:#fff; font-size:13px; }
     </style>
 @endpush
 
@@ -389,81 +378,10 @@
         </div>
     @endforeach
 
-    {{-- Visor de la evidencia de una pieza: sus fotos y su video, uno por uno --}}
-    <div id="galeria-overlay" class="galeria-overlay" onclick="cerrarGaleria(event)">
-        <div class="galeria-caja">
-            <button type="button" class="galeria-cerrar" onclick="cerrarGaleria(event)" aria-label="Cerrar">&times;</button>
-            <div class="galeria-medio" id="galeria-medio"></div>
-            <div class="galeria-nav">
-                <button type="button" onclick="moverGaleria(-1)" aria-label="Anterior">&lsaquo;</button>
-                <span id="galeria-cuenta"></span>
-                <button type="button" onclick="moverGaleria(1)" aria-label="Siguiente">&rsaquo;</button>
-            </div>
-        </div>
-    </div>
+    {{-- Visor de la evidencia de una pieza: compartido con el detalle de Entrada / Salida. --}}
+    @include('partials.galeria')
 
     <script>
-        /* ===================== Galería de evidencia por pieza =====================
-           Los medios viajan en data-medios del renglón de la unidad: cada uno
-           con su tipo (foto o video), así el visor sabe qué etiqueta pintar. */
-        let galeriaMedios = [];
-        let galeriaIndice = 0;
-
-        function abrirGaleria(el) {
-            const fuente = el.closest('[data-medios]');
-            if (!fuente) return;
-
-            try {
-                galeriaMedios = JSON.parse(fuente.dataset.medios || '[]');
-            } catch (e) {
-                galeriaMedios = [];
-            }
-
-            if (!galeriaMedios.length) return;
-
-            // Abre en el medio que se tocó, no siempre en el primero.
-            const pedido = Number(el.dataset.indice);
-            galeriaIndice = Number.isInteger(pedido) && pedido >= 0 && pedido < galeriaMedios.length
-                ? pedido
-                : 0;
-
-            document.getElementById('galeria-overlay').style.display = 'flex';
-            pintarGaleria();
-        }
-
-        function pintarGaleria() {
-            const medio = galeriaMedios[galeriaIndice];
-            const caja = document.getElementById('galeria-medio');
-
-            caja.innerHTML = medio.tipo === 'video'
-                ? '<video src="' + medio.url + '" controls autoplay playsinline></video>'
-                : '<img src="' + medio.url + '" alt="Evidencia de la unidad">';
-
-            document.getElementById('galeria-cuenta').textContent =
-                (galeriaIndice + 1) + ' de ' + galeriaMedios.length + (medio.tipo === 'video' ? ' · video' : '');
-        }
-
-        function moverGaleria(paso) {
-            if (!galeriaMedios.length) return;
-            galeriaIndice = (galeriaIndice + paso + galeriaMedios.length) % galeriaMedios.length;
-            pintarGaleria();
-        }
-
-        function cerrarGaleria(evento) {
-            // Solo cierra al tocar el fondo o la ×, no al tocar la foto.
-            if (evento && evento.target.closest('.galeria-medio')) return;
-
-            document.getElementById('galeria-overlay').style.display = 'none';
-            document.getElementById('galeria-medio').innerHTML = '';
-        }
-
-        document.addEventListener('keydown', function (e) {
-            if (document.getElementById('galeria-overlay').style.display !== 'flex') return;
-
-            if (e.key === 'Escape') cerrarGaleria();
-            if (e.key === 'ArrowLeft') moverGaleria(-1);
-            if (e.key === 'ArrowRight') moverGaleria(1);
-        });
         function espejoPaquete(casilla) {
             document.querySelectorAll('.producto-checkbox[value="' + casilla.value + '"]').forEach(c => { c.checked = casilla.checked; });
             actualizarSeleccionPaquete();

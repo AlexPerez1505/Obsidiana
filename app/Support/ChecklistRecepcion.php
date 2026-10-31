@@ -115,6 +115,25 @@ class ChecklistRecepcion
         return $llave;
     }
 
+    /**
+     * Grupo de un punto: el que trae guardado o, en checklists de antes de
+     * que se guardara, el del checklist general.
+     */
+    public static function grupoDe(string $llave, ?array $punto = null): string
+    {
+        if (! empty($punto['grupo'])) {
+            return (string) $punto['grupo'];
+        }
+
+        foreach (static::grupos() as $grupo) {
+            if (isset($grupo['puntos'][$llave])) {
+                return $grupo['titulo'];
+            }
+        }
+
+        return 'Otros';
+    }
+
     /** A qué proceso manda un punto cuando sale mal, si es que manda. */
     public static function mandaA(string $llave, ?array $punto = null): ?string
     {

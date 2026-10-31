@@ -24,353 +24,420 @@
         </x-ui.alert>
     @endif
 
-    <div class="content-actions" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
-        <a href="{{ route('inventory.salidas.index') }}" class="btn btn--ghost">← Órdenes de salida</a>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            @if ($venta)
-                @can('ventas.ver')
-                    <a href="{{ route('commercial.ventas.show', $venta) }}" class="btn btn--ghost">Ver venta {{ $venta->folio }}</a>
-                @endcan
-            @endif
-            <a href="{{ route('inventory.salidas.pdf', $orden) }}" target="_blank" class="btn {{ $orden->estado === \App\Models\OrdenSalida::ENTREGADA ? '' : 'btn--ghost' }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                {{ $orden->estado === \App\Models\OrdenSalida::ENTREGADA ? 'PDF de la salida' : 'Imprimir hoja de salida' }}
-            </a>
-        </div>
-    </div>
+    {{-- ===================== Encabezado + datos =====================
+         El estado, a quién va y lo que se puede hacer con la orden, en un
+         solo bloque; el avance del checklist cierra la tarjeta. --}}
+    <x-ui.card class="os-cab">
+        <div class="os-cab-top">
+            <div class="os-cab-id">
+                <span class="badge {{ $orden->estadoTono() }}">{{ $orden->estadoLabel() }}</span>
+                <span class="muted">Generada el {{ $orden->created_at?->format('d/m/Y H:i') }}</span>
+            </div>
 
-    {{-- ===================== Resumen ===================== --}}
-    <div class="os-cab">
-        <x-ui.card>
-            <div class="os-cab-grid">
-                <div><span class="k">Estado</span><span class="badge {{ $orden->estadoTono() }}">{{ $orden->estadoLabel() }}</span></div>
-                <div><span class="k">Venta</span><b>{{ $venta?->folio ?? '—' }}</b></div>
-                <div><span class="k">Cliente</span><b>{{ $cliente }}</b></div>
-                <div><span class="k">Asesor</span><b>{{ $venta?->seller?->name ?? '—' }}</b></div>
-                <div><span class="k">Generada</span><b>{{ $orden->created_at?->format('d/m/Y H:i') }}</b></div>
-                @if ($venta?->customer?->direccion)
-                    <div style="grid-column:1 / -1;"><span class="k">Dirección de entrega</span><b>{{ $venta->customer->direccion }}</b></div>
+            <div class="os-acciones">
+                @if ($venta)
+                    @can('ventas.ver')
+                        <a href="{{ route('commercial.ventas.show', $venta) }}" class="btn btn--ghost">Ver venta {{ $venta->folio }}</a>
+                    @endcan
                 @endif
+                <a href="{{ route('inventory.salidas.pdf', $orden) }}" target="_blank" class="btn {{ $orden->estado === \App\Models\OrdenSalida::ENTREGADA ? '' : 'btn--ghost' }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    {{ $orden->estado === \App\Models\OrdenSalida::ENTREGADA ? 'PDF de la salida' : 'Imprimir hoja de salida' }}
+                </a>
+                <a href="{{ route('inventory.salidas.index') }}" class="btn-icono" title="Órdenes de salida" aria-label="Regresar a órdenes de salida">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                </a>
             </div>
+        </div>
 
-            <div class="os-avance">
-                <div class="os-riel"><span style="width:{{ $avance['pct'] }}%"></span></div>
-                <span class="os-riel-txt">{{ $avance['hechos'] }} de {{ $avance['total'] }} pasos hechos</span>
-            </div>
-        </x-ui.card>
-    </div>
+        <dl class="os-datos">
+            <div><dt>Venta</dt><dd>{{ $venta?->folio ?? '—' }}</dd></div>
+            <div class="os-dato-ancho"><dt>Cliente</dt><dd>{{ $cliente }}</dd></div>
+            <div><dt>Asesor</dt><dd>{{ $venta?->seller?->name ?? '—' }}</dd></div>
+            @if ($venta?->customer?->direccion)
+                <div class="os-dato-todo"><dt>Dirección de entrega</dt><dd>{{ $venta->customer->direccion }}</dd></div>
+            @endif
+        </dl>
 
-    {{-- ===================== Checklist ===================== --}}
-    <x-ui.card style="margin-bottom:18px;">
-        <x-ui.section-title style="margin:0 0 4px;">Qué hay que preparar</x-ui.section-title>
-        <p class="muted" style="margin:0 0 14px; font-size:13px;">
-            Marca cada paso conforme lo hagas. Lo que no se emplaya (accesorios, consumibles) viene marcado como "no se emplaya";
-            si algo viene mal clasificado, puedes cambiarlo aquí mismo.
-        </p>
-
-        <div class="os-lista">
-            @foreach ($orden->items as $i => $item)
-                <div class="os-item {{ $item->completo() ? 'is-listo' : '' }}">
-                    <div class="os-item-num">{{ $i + 1 }}</div>
-
-                    <div class="os-item-info">
-                        <div class="os-item-nombre">{{ $item->nombre }} <span class="os-item-cant">× {{ $item->cantidad }}</span></div>
-                        @if ($item->descripcion)
-                            <div class="os-item-sub">{{ $item->descripcion }}</div>
-                        @endif
-                        @if ($item->no_series)
-                            <div class="os-item-sub">Series: {{ $item->no_series }}</div>
-                        @endif
-
-                        {{-- Se vendió en un congreso: el equipo ya está allá,
-                             no hay que buscarlo en el anaquel. --}}
-                        @if ($congreso = $item->congresoDeOrigen())
-                            <div class="os-item-congreso">
-                                Este equipo está en el {{ $congreso }}: no lo busques en el almacén.
-                            </div>
-                        @endif
-
-                        {{-- Observaciones de la partida --}}
-                        @if ($editable)
-                            <form method="POST" action="{{ route('inventory.salidas.item', [$orden, $item]) }}" class="os-obs">
-                                @csrf
-                                <input type="text" name="observaciones" value="{{ $item->observaciones }}" maxlength="500"
-                                       placeholder="Observación (ej. falta cable, caja dañada)" aria-label="Observaciones">
-                                <button type="submit" class="btn btn--ghost" style="padding:6px 10px;">Guardar</button>
-                            </form>
-                        @elseif ($item->observaciones)
-                            <div class="os-item-sub">Obs.: {{ $item->observaciones }}</div>
-                        @endif
-                    </div>
-
-                    <div class="os-pasos">
-                        {{-- Preparado --}}
-                        <form method="POST" action="{{ route('inventory.salidas.item', [$orden, $item]) }}">
-                            @csrf
-                            <input type="hidden" name="preparado" value="{{ $item->preparado ? 0 : 1 }}">
-                            <button type="submit" class="os-paso {{ $item->preparado ? 'is-on' : '' }}" @disabled(! $editable)
-                                    title="{{ $item->preparado ? 'Preparado el '.$item->preparado_en?->format('d/m/Y H:i') : 'Marcar como preparado' }}">
-                                <span class="os-check"></span>
-                                Preparado
-                            </button>
-                        </form>
-
-                        {{-- Emplayado (solo si aplica) --}}
-                        @if ($item->requiere_emplayado)
-                            <form method="POST" action="{{ route('inventory.salidas.item', [$orden, $item]) }}">
-                                @csrf
-                                <input type="hidden" name="emplayado" value="{{ $item->emplayado ? 0 : 1 }}">
-                                <button type="submit" class="os-paso {{ $item->emplayado ? 'is-on' : '' }}" @disabled(! $editable)
-                                        title="{{ $item->emplayado ? 'Emplayado el '.$item->emplayado_en?->format('d/m/Y H:i') : 'Marcar como emplayado' }}">
-                                    <span class="os-check"></span>
-                                    Emplayado
-                                </button>
-                            </form>
-                        @else
-                            <span class="os-paso is-na" title="Esta partida no se emplaya">No se emplaya</span>
-                        @endif
-
-                        {{-- Cambiar si se emplaya o no --}}
-                        @if ($editable)
-                            <form method="POST" action="{{ route('inventory.salidas.item', [$orden, $item]) }}">
-                                @csrf
-                                <input type="hidden" name="requiere_emplayado" value="{{ $item->requiere_emplayado ? 0 : 1 }}">
-                                <button type="submit" class="os-link">
-                                    {{ $item->requiere_emplayado ? 'No se emplaya' : 'Sí se emplaya' }}
-                                </button>
-                            </form>
-                        @endif
-                    </div>
-                </div>
-            @endforeach
+        <div class="os-avance">
+            <div class="os-riel"><span style="width:{{ $avance['pct'] }}%"></span></div>
+            <span class="os-riel-txt">{{ $avance['hechos'] }} de {{ $avance['total'] }} pasos hechos</span>
         </div>
     </x-ui.card>
 
-    {{-- ===================== Evidencia =====================
-         Fotos y videos del equipo preparado, emplayado o entregado. Sin tope
-         de cuántas: cada foto se sube en su propia petición y se suma a las
-         que ya había. Se sigue pudiendo subir después de entregada (la foto
-         de la entrega a veces llega luego), pero no a una orden cancelada. --}}
     @php
         $ordenCancelada = $orden->estado === \App\Models\OrdenSalida::CANCELADA;
         $puedeSubirEvidencia = $puedePreparar && ! $ordenCancelada;
-        $evFotos = $orden->evidencias->where('tipo', \App\Models\OrdenSalidaEvidencia::FOTO);
-        $evVideos = $orden->evidencias->where('tipo', \App\Models\OrdenSalidaEvidencia::VIDEO);
+        $evFotos = $orden->evidencias->where('tipo', \App\Models\OrdenSalidaEvidencia::FOTO)->values();
+        $evVideos = $orden->evidencias->where('tipo', \App\Models\OrdenSalidaEvidencia::VIDEO)->values();
+        // Lo que abre el visor: primero las fotos, luego los videos. El
+        // script arma la misma lista cuando se sube o se quita algo.
+        $medios = $evFotos->map(fn ($ev) => ['tipo' => 'foto', 'url' => $ev->url()])
+            ->concat($evVideos->map(fn ($ev) => ['tipo' => 'video', 'url' => $ev->url()]))
+            ->values();
     @endphp
-    <x-ui.card style="margin-bottom:18px;" id="evidencia"
-               data-ev-foto-url="{{ $puedeSubirEvidencia ? route('inventory.salidas.evidencias.foto', $orden) : '' }}"
-               data-ev-video-url="{{ $puedeSubirEvidencia ? route('inventory.salidas.evidencias.videoChunk', $orden) : '' }}">
-        <div class="ev-cab">
-            <div class="ev-cab-txt">
-                <x-ui.section-title style="margin:0 0 2px;">Evidencia</x-ui.section-title>
-                <span class="ev-cuenta" data-ev-cuenta>{{ $orden->resumenEvidencias() }}</span>
-            </div>
 
-            @if ($puedeSubirEvidencia)
-                <div class="ev-acciones">
-                    {{-- Sin "capture": el teléfono ofrece cámara o galería y deja elegir varias. --}}
-                    <label class="btn ev-boton">
-                        <x-ui.icon name="plus"/> Agregar fotos
-                        <input type="file" accept="image/*" multiple class="ev-input" data-ev-fotos>
-                    </label>
-                    {{-- Directo a la cámara trasera; en computadora no se enseña. --}}
-                    <label class="btn btn--ghost ev-boton ev-solo-tactil">
-                        <x-ui.icon name="camera"/> Tomar foto
-                        <input type="file" accept="image/*" capture="environment" class="ev-input" data-ev-fotos>
-                    </label>
-                    <label class="btn btn--ghost ev-boton">
-                        <x-ui.icon name="play"/> Subir video
-                        <input type="file" accept="video/mp4,video/quicktime,video/webm,video/x-m4v,video/*" multiple class="ev-input" data-ev-videos>
-                    </label>
-                </div>
-            @endif
-        </div>
-
-        @if ($puedeSubirEvidencia)
-            <p class="muted ev-nota">
-                Sube todas las que hagan falta: cada foto se suma a las anteriores (hasta 10MB cada una).
-                Videos MP4, MOV o WEBM de hasta 150MB.
-            </p>
-        @elseif ($ordenCancelada)
-            <p class="muted ev-nota">La orden está cancelada: su evidencia se queda como estaba.</p>
-        @endif
-
-        {{-- Lo que se está subiendo, uno por uno, con su avance. --}}
-        <div class="ev-cola" data-ev-cola hidden></div>
-
-        <p class="muted ev-vacio" data-ev-vacio @if ($orden->evidencias->isNotEmpty()) hidden @endif>
-            Todavía no hay evidencia.
-            @if ($puedeSubirEvidencia) Toma fotos del equipo preparado, emplayado o de la entrega. @endif
-        </p>
-
-        <div class="ev-fotos" data-ev-galeria="foto">
-            @foreach ($evFotos as $ev)
-                @include('structure.gestion_Inventario.ordenes_salida._evidencia', [
-                    'evidencia' => $ev,
-                    'borrable' => ! $ordenCancelada && $ev->puedeBorrarla(auth()->user()),
-                ])
-            @endforeach
-        </div>
-
-        <div class="ev-videos" data-ev-galeria="video">
-            @foreach ($evVideos as $ev)
-                @include('structure.gestion_Inventario.ordenes_salida._evidencia', [
-                    'evidencia' => $ev,
-                    'borrable' => ! $ordenCancelada && $ev->puedeBorrarla(auth()->user()),
-                ])
-            @endforeach
-        </div>
-    </x-ui.card>
-
-    {{-- Visor de fotos en grande. El script lo pasa al <body> para que
-         ningún contenedor recorte el position:fixed. --}}
-    <div class="ev-visor" id="evVisor" hidden role="dialog" aria-modal="true" aria-label="Foto de evidencia">
-        <button type="button" class="ev-visor-btn ev-visor-cerrar" data-visor="cerrar" aria-label="Cerrar"><x-ui.icon name="x" size="20"/></button>
-        <button type="button" class="ev-visor-btn ev-visor-ant" data-visor="ant" aria-label="Foto anterior"><x-ui.icon name="chevron-left" size="22"/></button>
-        <figure class="ev-visor-fig">
-            <img id="evVisorImg" alt="Foto de evidencia en grande">
-            <figcaption id="evVisorPie"></figcaption>
-        </figure>
-        <button type="button" class="ev-visor-btn ev-visor-sig" data-visor="sig" aria-label="Foto siguiente"><x-ui.icon name="chevron-right" size="22"/></button>
-    </div>
-
-    <div class="os-dos">
-        {{-- ===================== Notas ===================== --}}
-        <x-ui.card>
-            <x-ui.section-title style="margin:0 0 10px;">Notas para almacén</x-ui.section-title>
-            @if ($editable)
-                <form method="POST" action="{{ route('inventory.salidas.notas', $orden) }}">
-                    @csrf
-                    <textarea name="notas" rows="4" maxlength="2000" placeholder="Ej. va por paquetería, entregar con manual, revisar cable de luz..."
-                              style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:9px; font-size:14px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('notas', $orden->notas) }}</textarea>
-                    <div style="margin-top:8px; text-align:right;"><button type="submit" class="btn btn--ghost">Guardar notas</button></div>
-                </form>
-            @else
-                <p class="muted" style="margin:0; white-space:pre-line;">{{ $orden->notas ?: 'Sin notas.' }}</p>
-            @endif
-        </x-ui.card>
-
-        {{-- ===================== Salida firmada ===================== --}}
-        <x-ui.card>
-            @if ($orden->estado === \App\Models\OrdenSalida::ENTREGADA)
-                <x-ui.section-title style="margin:0 0 10px;">Salida firmada</x-ui.section-title>
+    <div class="os-cuerpo">
+        {{-- ===================== Columna principal ===================== --}}
+        <div class="os-principal">
+            {{-- ===================== Checklist ===================== --}}
+            <x-ui.card>
+                <x-ui.section-title style="margin:0 0 4px;">Qué hay que preparar</x-ui.section-title>
                 <p class="muted" style="margin:0 0 12px; font-size:13px;">
-                    Salió el {{ $orden->entregada_en?->format('d/m/Y H:i') }}.
-                    Entregó {{ $orden->entregadaPor?->name ?? 'almacén' }}; recibió <b>{{ $orden->recibe_nombre }}</b>.
-                    @if ($orden->preparada_en)
-                        Preparada por {{ $orden->preparadaPor?->name ?? '—' }} el {{ $orden->preparada_en->format('d/m/Y H:i') }}.
-                    @endif
+                    Marca cada paso conforme lo hagas. Lo que no se emplaya (accesorios, consumibles) viene marcado como "no se emplaya";
+                    si algo viene mal clasificado, puedes cambiarlo aquí mismo.
                 </p>
-                <div class="os-firmas">
-                    <div>
-                        <div class="k">Entrega (almacén)</div>
-                        @if ($orden->firmaEntregaUrl())<img src="{{ $orden->firmaEntregaUrl() }}" alt="Firma de quien entrega">@endif
-                    </div>
-                    <div>
-                        <div class="k">Recibe: {{ $orden->recibe_nombre }}</div>
-                        @if ($orden->firmaRecibeUrl())<img src="{{ $orden->firmaRecibeUrl() }}" alt="Firma de quien recibe">@endif
-                    </div>
-                </div>
-            @elseif ($orden->estado === \App\Models\OrdenSalida::CANCELADA)
-                <x-ui.section-title style="margin:0 0 10px;">Orden cancelada</x-ui.section-title>
-                <p class="muted" style="margin:0;">La venta se canceló; no hay nada que preparar.</p>
-            @else
-                <x-ui.section-title style="margin:0 0 4px;">Firmar salida</x-ui.section-title>
-                @if (! $orden->todoListo())
-                    <p class="muted" style="margin:0; font-size:13px;">
-                        Se habilita cuando todas las partidas estén preparadas y, las que aplican, emplayadas.
-                        Faltan {{ $avance['total'] - $avance['hechos'] }} paso(s).
-                    </p>
 
-                {{--
-                    Checklist terminado pero sin cerrar: quien prepara deja la
-                    orden lista y se va; la firma la hace quien entregue, que
-                    puede ser otra persona y otro día.
-                --}}
-                @elseif ($orden->puedeConfirmarPreparacion())
-                    @if ($puedePreparar)
-                        <div class="os-lista-aviso">
-                            <div>
-                                <b>El checklist está completo.</b>
-                                <span>Déjala lista para salir y se queda esperando que alguien firme la salida.</span>
-                            </div>
-                            <form method="POST" action="{{ route('inventory.salidas.preparada', $orden) }}">
-                                @csrf
-                                <button type="submit" class="btn">Dejar lista para salir</button>
-                            </form>
-                        </div>
-                    @else
-                        <p class="muted" style="margin:0; font-size:13px;">
-                            El checklist está completo. Falta que almacén la deje lista para salir.
-                        </p>
-                    @endif
+                <div class="os-lista">
+                    @foreach ($orden->items as $i => $item)
+                        <div class="os-item {{ $item->completo() ? 'is-listo' : '' }}">
+                            <div class="os-item-num">{{ $i + 1 }}</div>
 
-                @elseif (! $puedePreparar)
-                    <p class="muted" style="margin:0; font-size:13px;">
-                        Lista para salir desde el {{ $orden->preparada_en?->format('d/m/Y H:i') }}. La firma la hace almacén.
-                    </p>
-                @else
-                    <p class="muted" style="margin:0 0 12px; font-size:13px;">
-                        Lista para salir: la preparó {{ $orden->preparadaPor?->name ?? '—' }}
-                        el {{ $orden->preparada_en?->format('d/m/Y H:i') }}.
-                        Ahora firma quien entrega y quien se lleva el equipo.
-                    </p>
+                            <div class="os-item-info">
+                                <div class="os-item-nombre">{{ $item->nombre }} <span class="os-item-cant">× {{ $item->cantidad }}</span></div>
+                                @if ($item->descripcion)
+                                    <div class="os-item-sub">{{ $item->descripcion }}</div>
+                                @endif
+                                @if ($item->no_series)
+                                    <div class="os-item-sub">Series: {{ $item->no_series }}</div>
+                                @endif
 
-                    <form method="POST" action="{{ route('inventory.salidas.entregar', $orden) }}" id="formEntrega">
-                        @csrf
-                        <x-ui.form-group label="Quién recibe / se lo lleva *" for="recibe_nombre">
-                            <input type="text" id="recibe_nombre" name="recibe_nombre" required maxlength="255"
-                                   value="{{ old('recibe_nombre') }}" placeholder="Nombre del chofer, cliente o paquetería">
-                        </x-ui.form-group>
+                                {{-- Se vendió en un congreso: el equipo ya está allá,
+                                     no hay que buscarlo en el anaquel. --}}
+                                @if ($congreso = $item->congresoDeOrigen())
+                                    <div class="os-item-congreso">
+                                        Este equipo está en el {{ $congreso }}: no lo busques en el almacén.
+                                    </div>
+                                @endif
 
-                        <div class="os-firmas">
-                            <div>
-                                <div class="k">Firma de quien entrega (almacén)</div>
-                                {{-- La firma registrada del usuario se carga sola.
-                                     La de quien recibe no: esa es del cliente o del
-                                     chofer y se traza en el momento. --}}
-                                <canvas class="os-pad" data-pad="firma_entrega" width="400" height="150"
-                                        @if (auth()->user()->tieneFirma())
-                                            data-firma-registrada="{{ auth()->user()->firmaDataUri() }}"
-                                        @endif></canvas>
-                                <input type="hidden" name="firma_entrega" id="firma_entrega">
-                                <a href="#" class="os-link" data-limpiar="firma_entrega">Limpiar</a>
-                                @if (! auth()->user()->tieneFirma())
-                                    <a href="{{ route('profile.edit') }}" class="os-link">Registrar mi firma</a>
+                                {{-- Observaciones de la partida --}}
+                                @if ($editable)
+                                    <form method="POST" action="{{ route('inventory.salidas.item', [$orden, $item]) }}" class="os-obs">
+                                        @csrf
+                                        <input type="text" name="observaciones" value="{{ $item->observaciones }}" maxlength="500"
+                                               placeholder="Observación (ej. falta cable, caja dañada)" aria-label="Observaciones">
+                                        <button type="submit" class="btn btn--ghost" style="padding:6px 10px;">Guardar</button>
+                                    </form>
+                                @elseif ($item->observaciones)
+                                    <div class="os-item-sub">Obs.: {{ $item->observaciones }}</div>
                                 @endif
                             </div>
-                            <div>
-                                <div class="k">Firma de quien recibe</div>
-                                <canvas class="os-pad" data-pad="firma_recibe" width="400" height="150"></canvas>
-                                <input type="hidden" name="firma_recibe" id="firma_recibe">
-                                <a href="#" class="os-link" data-limpiar="firma_recibe">Limpiar</a>
+
+                            {{-- Los pasos van en renglón, no apilados: así la
+                                 partida mide lo que mide su nombre. --}}
+                            <div class="os-pasos">
+                                {{-- Preparado --}}
+                                <form method="POST" action="{{ route('inventory.salidas.item', [$orden, $item]) }}">
+                                    @csrf
+                                    <input type="hidden" name="preparado" value="{{ $item->preparado ? 0 : 1 }}">
+                                    <button type="submit" class="os-paso {{ $item->preparado ? 'is-on' : '' }}" @disabled(! $editable)
+                                            title="{{ $item->preparado ? 'Preparado el '.$item->preparado_en?->format('d/m/Y H:i') : 'Marcar como preparado' }}">
+                                        <span class="os-check"></span>
+                                        Preparado
+                                    </button>
+                                </form>
+
+                                {{-- Emplayado (solo si aplica) --}}
+                                @if ($item->requiere_emplayado)
+                                    <form method="POST" action="{{ route('inventory.salidas.item', [$orden, $item]) }}">
+                                        @csrf
+                                        <input type="hidden" name="emplayado" value="{{ $item->emplayado ? 0 : 1 }}">
+                                        <button type="submit" class="os-paso {{ $item->emplayado ? 'is-on' : '' }}" @disabled(! $editable)
+                                                title="{{ $item->emplayado ? 'Emplayado el '.$item->emplayado_en?->format('d/m/Y H:i') : 'Marcar como emplayado' }}">
+                                            <span class="os-check"></span>
+                                            Emplayado
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="os-paso is-na" title="Esta partida no se emplaya">No se emplaya</span>
+                                @endif
+
+                                {{-- Cambiar si se emplaya o no --}}
+                                @if ($editable)
+                                    <form method="POST" action="{{ route('inventory.salidas.item', [$orden, $item]) }}" class="os-cambiar">
+                                        @csrf
+                                        <input type="hidden" name="requiere_emplayado" value="{{ $item->requiere_emplayado ? 0 : 1 }}">
+                                        <button type="submit" class="os-link">
+                                            {{ $item->requiere_emplayado ? 'No se emplaya' : 'Sí se emplaya' }}
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </div>
+                    @endforeach
+                </div>
+            </x-ui.card>
 
-                        <div style="margin-top:14px; text-align:right;">
-                            <button type="submit" class="btn">Firmar y dar salida</button>
-                        </div>
+            {{-- ===================== Notas ===================== --}}
+            <x-ui.card>
+                <x-ui.section-title style="margin:0 0 10px;">Notas para almacén</x-ui.section-title>
+                @if ($editable)
+                    <form method="POST" action="{{ route('inventory.salidas.notas', $orden) }}">
+                        @csrf
+                        <textarea name="notas" rows="3" maxlength="2000" placeholder="Ej. va por paquetería, entregar con manual, revisar cable de luz..."
+                                  style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:9px; font-size:14px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('notas', $orden->notas) }}</textarea>
+                        <div style="margin-top:8px; text-align:right;"><button type="submit" class="btn btn--ghost">Guardar notas</button></div>
                     </form>
+                @else
+                    <p class="muted" style="margin:0; white-space:pre-line;">{{ $orden->notas ?: 'Sin notas.' }}</p>
                 @endif
-            @endif
-        </x-ui.card>
+            </x-ui.card>
+        </div>
+
+        {{-- ===================== Lateral =====================
+             La firma (lo que sigue para que salga) y la evidencia, al lado
+             del checklist en lugar de debajo de todo. --}}
+        <div class="os-lateral">
+            {{-- ===================== Salida firmada ===================== --}}
+            <x-ui.card>
+                @if ($orden->estado === \App\Models\OrdenSalida::ENTREGADA)
+                    <x-ui.section-title style="margin:0 0 10px;">Salida firmada</x-ui.section-title>
+                    <p class="muted" style="margin:0 0 12px; font-size:13px;">
+                        Salió el {{ $orden->entregada_en?->format('d/m/Y H:i') }}.
+                        Entregó {{ $orden->entregadaPor?->name ?? 'almacén' }}; recibió <b>{{ $orden->recibe_nombre }}</b>.
+                        @if ($orden->preparada_en)
+                            Preparada por {{ $orden->preparadaPor?->name ?? '—' }} el {{ $orden->preparada_en->format('d/m/Y H:i') }}.
+                        @endif
+                    </p>
+                    <div class="os-firmas">
+                        <div>
+                            <div class="k">Entrega (almacén)</div>
+                            @if ($orden->firmaEntregaUrl())<img src="{{ $orden->firmaEntregaUrl() }}" alt="Firma de quien entrega">@endif
+                        </div>
+                        <div>
+                            <div class="k">Recibe: {{ $orden->recibe_nombre }}</div>
+                            @if ($orden->firmaRecibeUrl())<img src="{{ $orden->firmaRecibeUrl() }}" alt="Firma de quien recibe">@endif
+                        </div>
+                    </div>
+                @elseif ($orden->estado === \App\Models\OrdenSalida::CANCELADA)
+                    <x-ui.section-title style="margin:0 0 10px;">Orden cancelada</x-ui.section-title>
+                    <p class="muted" style="margin:0;">La venta se canceló; no hay nada que preparar.</p>
+                @else
+                    <x-ui.section-title style="margin:0 0 4px;">Firmar salida</x-ui.section-title>
+                    @if (! $orden->todoListo())
+                        <p class="muted" style="margin:0; font-size:13px;">
+                            Se habilita cuando todas las partidas estén preparadas y, las que aplican, emplayadas.
+                            Faltan {{ $avance['total'] - $avance['hechos'] }} paso(s).
+                        </p>
+
+                    {{--
+                        Checklist terminado pero sin cerrar: quien prepara deja la
+                        orden lista y se va; la firma la hace quien entregue, que
+                        puede ser otra persona y otro día.
+                    --}}
+                    @elseif ($orden->puedeConfirmarPreparacion())
+                        @if ($puedePreparar)
+                            <div class="os-lista-aviso">
+                                <div>
+                                    <b>El checklist está completo.</b>
+                                    <span>Déjala lista para salir y se queda esperando que alguien firme la salida.</span>
+                                </div>
+                                <form method="POST" action="{{ route('inventory.salidas.preparada', $orden) }}">
+                                    @csrf
+                                    <button type="submit" class="btn">Dejar lista para salir</button>
+                                </form>
+                            </div>
+                        @else
+                            <p class="muted" style="margin:0; font-size:13px;">
+                                El checklist está completo. Falta que almacén la deje lista para salir.
+                            </p>
+                        @endif
+
+                    @elseif (! $puedePreparar)
+                        <p class="muted" style="margin:0; font-size:13px;">
+                            Lista para salir desde el {{ $orden->preparada_en?->format('d/m/Y H:i') }}. La firma la hace almacén.
+                        </p>
+                    @else
+                        <p class="muted" style="margin:0 0 12px; font-size:13px;">
+                            Lista para salir: la preparó {{ $orden->preparadaPor?->name ?? '—' }}
+                            el {{ $orden->preparada_en?->format('d/m/Y H:i') }}.
+                            Ahora firma quien entrega y quien se lleva el equipo.
+                        </p>
+
+                        <form method="POST" action="{{ route('inventory.salidas.entregar', $orden) }}" id="formEntrega">
+                            @csrf
+                            <x-ui.form-group label="Quién recibe / se lo lleva *" for="recibe_nombre">
+                                <input type="text" id="recibe_nombre" name="recibe_nombre" required maxlength="255"
+                                       value="{{ old('recibe_nombre') }}" placeholder="Nombre del chofer, cliente o paquetería">
+                            </x-ui.form-group>
+
+                            <div class="os-firmas">
+                                <div>
+                                    <div class="k">Firma de quien entrega (almacén)</div>
+                                    {{-- La firma registrada del usuario se carga sola.
+                                         La de quien recibe no: esa es del cliente o del
+                                         chofer y se traza en el momento. --}}
+                                    <canvas class="os-pad" data-pad="firma_entrega" width="400" height="150"
+                                            @if (auth()->user()->tieneFirma())
+                                                data-firma-registrada="{{ auth()->user()->firmaDataUri() }}"
+                                            @endif></canvas>
+                                    <input type="hidden" name="firma_entrega" id="firma_entrega">
+                                    <a href="#" class="os-link" data-limpiar="firma_entrega">Limpiar</a>
+                                    @if (! auth()->user()->tieneFirma())
+                                        <a href="{{ route('profile.edit') }}" class="os-link">Registrar mi firma</a>
+                                    @endif
+                                </div>
+                                <div>
+                                    <div class="k">Firma de quien recibe</div>
+                                    <canvas class="os-pad" data-pad="firma_recibe" width="400" height="150"></canvas>
+                                    <input type="hidden" name="firma_recibe" id="firma_recibe">
+                                    <a href="#" class="os-link" data-limpiar="firma_recibe">Limpiar</a>
+                                </div>
+                            </div>
+
+                            <div style="margin-top:14px;">
+                                <button type="submit" class="btn os-firmar">Firmar y dar salida</button>
+                            </div>
+                        </form>
+                    @endif
+                @endif
+            </x-ui.card>
+
+            {{-- ===================== Evidencia =====================
+                 Fotos y videos del equipo preparado, emplayado o entregado. Sin tope
+                 de cuántas: cada foto se sube en su propia petición y se suma a las
+                 que ya había. Se sigue pudiendo subir después de entregada (la foto
+                 de la entrega a veces llega luego), pero no a una orden cancelada.
+                 Se ve una portada con el conteo; todo se abre en grande en el
+                 visor, y una por una (con quién y cuándo, y para quitarla) en
+                 la lista plegable. --}}
+            <x-ui.card id="evidencia" data-medios="{{ $medios->toJson() }}"
+                       data-ev-foto-url="{{ $puedeSubirEvidencia ? route('inventory.salidas.evidencias.foto', $orden) : '' }}"
+                       data-ev-video-url="{{ $puedeSubirEvidencia ? route('inventory.salidas.evidencias.videoChunk', $orden) : '' }}">
+                <div class="ev-cab">
+                    <x-ui.section-title style="margin:0;">Evidencia</x-ui.section-title>
+                    <span class="ev-cuenta" data-ev-cuenta>{{ $orden->resumenEvidencias() }}</span>
+                </div>
+
+                <div class="ev-resumen">
+                    {{-- Portada: la primera foto con el conteo encima. El script la
+                         vuelve a pintar igual al subir o quitar algo. --}}
+                    <button type="button" class="ev-portada" data-ev-portada data-galeria data-indice="0"
+                            @disabled($medios->isEmpty()) aria-label="Ver toda la evidencia en grande">
+                        @if ($medios->isEmpty())
+                            <span class="ev-portada-vacia">Sin evidencia</span>
+                        @else
+                            @if ($evFotos->isNotEmpty())
+                                <img src="{{ $evFotos->first()->url() }}" alt="" loading="lazy">
+                            @else
+                                <span class="ev-portada-video" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                            @endif
+                            <span class="ev-portada-cuenta">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                                {{ $evFotos->count() }}
+                                @if ($evVideos->isNotEmpty())
+                                    <svg viewBox="0 0 24 24" fill="currentColor" style="margin-left:4px;"><path d="M8 5v14l11-7z"/></svg>
+                                @endif
+                            </span>
+                        @endif
+                    </button>
+
+                    <div class="ev-resumen-txt">
+                        <button type="button" class="ev-ver" data-ev-ver data-galeria data-indice="0" @disabled($medios->isEmpty())>
+                            Ver evidencia
+                        </button>
+                        <p class="muted ev-vacio" data-ev-vacio @if ($orden->evidencias->isNotEmpty()) hidden @endif>
+                            Todavía no hay evidencia.
+                            @if ($puedeSubirEvidencia) Toma fotos del equipo preparado, emplayado o de la entrega. @endif
+                        </p>
+                    </div>
+                </div>
+
+                @if ($puedeSubirEvidencia)
+                    <div class="ev-acciones">
+                        {{-- Sin "capture": el teléfono ofrece cámara o galería y deja elegir varias. --}}
+                        <label class="btn ev-boton">
+                            <x-ui.icon name="plus"/> Agregar fotos
+                            <input type="file" accept="image/*" multiple class="ev-input" data-ev-fotos>
+                        </label>
+                        {{-- Directo a la cámara trasera; en computadora no se enseña. --}}
+                        <label class="btn btn--ghost ev-boton ev-solo-tactil">
+                            <x-ui.icon name="camera"/> Tomar foto
+                            <input type="file" accept="image/*" capture="environment" class="ev-input" data-ev-fotos>
+                        </label>
+                        <label class="btn btn--ghost ev-boton">
+                            <x-ui.icon name="play"/> Subir video
+                            <input type="file" accept="video/mp4,video/quicktime,video/webm,video/x-m4v,video/*" multiple class="ev-input" data-ev-videos>
+                        </label>
+                    </div>
+                    <p class="muted ev-nota">
+                        Sube todas las que hagan falta: cada foto se suma a las anteriores (hasta 10MB cada una).
+                        Videos MP4, MOV o WEBM de hasta 150MB.
+                    </p>
+                @elseif ($ordenCancelada)
+                    <p class="muted ev-nota">La orden está cancelada: su evidencia se queda como estaba.</p>
+                @endif
+
+                {{-- Lo que se está subiendo, uno por uno, con su avance. --}}
+                <div class="ev-cola" data-ev-cola hidden></div>
+
+                {{-- Una por una, en miniatura: quién la subió, cuándo, y la × para quitarla. --}}
+                <details class="ev-lista">
+                    <summary>Ver una por una{{ $puedeSubirEvidencia ? ' o quitar' : '' }}</summary>
+
+                    <div class="ev-fotos" data-ev-galeria="foto">
+                        @foreach ($evFotos as $ev)
+                            @include('structure.gestion_Inventario.ordenes_salida._evidencia', [
+                                'evidencia' => $ev,
+                                'indice' => $loop->index,
+                                'borrable' => ! $ordenCancelada && $ev->puedeBorrarla(auth()->user()),
+                            ])
+                        @endforeach
+                    </div>
+
+                    <div class="ev-videos" data-ev-galeria="video">
+                        @foreach ($evVideos as $ev)
+                            @include('structure.gestion_Inventario.ordenes_salida._evidencia', [
+                                'evidencia' => $ev,
+                                'indice' => $evFotos->count() + $loop->index,
+                                'borrable' => ! $ordenCancelada && $ev->puedeBorrarla(auth()->user()),
+                            ])
+                        @endforeach
+                    </div>
+                </details>
+            </x-ui.card>
+        </div>
     </div>
 
+    @include('partials.galeria')
+
     <style>
+        /* Encabezado: estado y acciones arriba, datos y avance abajo */
         .os-cab { margin-bottom:18px; }
-        .os-cab-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px 18px; }
-        .os-cab-grid .k { display:block; color:var(--muted); font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:3px; }
-        .os-cab-grid b { font-size:14px; }
+        .os-cab-top { display:flex; align-items:center; justify-content:space-between; gap:12px 18px; flex-wrap:wrap; }
+        .os-cab-id { display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap; min-width:0; }
+        .os-acciones { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+        .os-datos { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:12px 20px;
+                    margin:16px 0 0; padding-top:16px; border-top:1px solid var(--border); }
+        .os-datos > div { min-width:0; }
+        .os-dato-ancho { grid-column:span 2; }
+        .os-dato-todo { grid-column:1 / -1; }
+        .os-datos dt { color:var(--muted); font-size:12.5px; }
+        .os-datos dd { margin:2px 0 0; font-weight:700; overflow-wrap:anywhere; }
+
         .os-avance { display:flex; align-items:center; gap:12px; margin-top:16px; }
         .os-riel { flex:1; height:8px; border-radius:4px; background:var(--surface-2); overflow:hidden; }
         .os-riel span { display:block; height:100%; background:var(--green); transition:width .2s; }
         .os-riel-txt { color:var(--muted); font-size:12.5px; white-space:nowrap; }
 
-        .os-lista { display:flex; flex-direction:column; gap:10px; }
-        .os-item { display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:12px; align-items:start; padding:14px; border:1px solid var(--border); border-radius:12px; background:var(--surface); }
+        /* Cuerpo: checklist y notas a la izquierda; firma y evidencia al lado */
+        .os-cuerpo { display:grid; grid-template-columns:minmax(0, 1fr); gap:18px; align-items:start; }
+        @media (min-width: 1000px) {
+            .os-cuerpo { grid-template-columns:minmax(0, 1fr) 300px; }
+        }
+        .os-principal, .os-lateral { display:flex; flex-direction:column; gap:18px; min-width:0; }
+
+        /* Checklist. La lista se mide a sí misma (container query): con
+           espacio, los pasos van a la derecha; si no cabe, bajan debajo del
+           nombre. Así sirve igual con la columna lateral que sin ella. */
+        .os-lista { display:flex; flex-direction:column; gap:8px; container-type:inline-size; }
+        .os-item { display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:10px 12px; align-items:start;
+                   padding:12px 14px; border:1px solid var(--border); border-radius:12px; background:var(--surface); }
         .os-item.is-listo { border-color:var(--green); background:var(--green-soft, rgba(34,197,94,.06)); }
         .os-item-num { width:30px; height:30px; border-radius:9px; background:var(--surface-2); color:var(--muted); font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; }
         .os-item.is-listo .os-item-num { background:var(--green); color:#fff; }
+        .os-item-info { min-width:0; }
         .os-item-nombre { font-weight:700; font-size:14.5px; }
         .os-item-cant { color:var(--muted); font-weight:600; font-size:13px; margin-left:4px; }
         .os-item-sub { color:var(--muted); font-size:12.5px; margin-top:2px; overflow-wrap:anywhere; }
@@ -378,20 +445,17 @@
         .os-item-congreso { display:inline-block; margin-top:5px; padding:3px 9px; border-radius:999px;
                             background:var(--warn-soft, rgba(217,119,6,.12)); color:var(--warn, #b45309);
                             font-size:12px; font-weight:700; }
-
-        /* Checklist completo, esperando que almacén cierre la preparación. */
-        .os-lista-aviso { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:10px;
-                          padding:14px 16px; border:1px solid var(--primary); border-radius:11px;
-                          background:var(--primary-soft); font-size:13.5px; }
-        .os-lista-aviso > div { flex:1; min-width:190px; }
-        .os-lista-aviso b { display:block; }
-        .os-lista-aviso span { color:var(--muted); font-size:12.5px; }
-        .os-lista-aviso form { flex:0 0 auto; }
         .os-obs { display:flex; gap:8px; margin-top:8px; max-width:520px; }
         .os-obs input { flex:1; min-width:0; padding:7px 10px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:var(--surface); color:var(--text); }
 
-        .os-pasos { display:flex; flex-direction:column; gap:6px; align-items:stretch; min-width:150px; }
-        .os-paso { display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--text); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; text-align:left; }
+        .os-pasos { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:6px 8px; }
+        .os-cambiar { flex-basis:100%; text-align:right; }
+        @container (max-width: 620px) {
+            .os-item { grid-template-columns:34px minmax(0,1fr); }
+            .os-pasos { grid-column:2; justify-content:flex-start; }
+            .os-cambiar { flex-basis:auto; text-align:left; }
+        }
+        .os-paso { display:inline-flex; align-items:center; gap:8px; padding:7px 12px; border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--text); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; text-align:left; white-space:nowrap; }
         .os-paso:hover:not(:disabled) { border-color:var(--primary); }
         .os-paso:disabled { cursor:default; opacity:.8; }
         .os-paso.is-on { background:var(--green); border-color:var(--green); color:#fff; }
@@ -400,27 +464,61 @@
         .os-paso.is-on .os-check::after { content:""; position:absolute; left:3px; top:0; width:5px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
         .os-link { background:none; border:none; padding:2px 0; color:var(--primary); font-size:12.5px; cursor:pointer; font-family:inherit; text-decoration:none; text-align:left; }
         .os-link:hover { text-decoration:underline; }
+        .os-firmas .os-link + .os-link { margin-left:12px; }
 
-        .os-dos { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.4fr); gap:18px; align-items:start; }
-        @media (max-width:900px) { .os-dos { grid-template-columns:1fr; } .os-item { grid-template-columns:34px minmax(0,1fr); } .os-pasos { grid-column:2; flex-direction:row; flex-wrap:wrap; } }
+        /* Checklist completo, esperando que almacén cierre la preparación. */
+        .os-lista-aviso { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:10px;
+                          padding:12px 14px; border:1px solid var(--primary); border-radius:11px;
+                          background:var(--primary-soft); font-size:13.5px; }
+        .os-lista-aviso > div { flex:1; min-width:190px; }
+        .os-lista-aviso b { display:block; }
+        .os-lista-aviso span { color:var(--muted); font-size:12.5px; }
+        .os-lista-aviso form { flex:0 0 auto; }
+
+        /* Firmas: en la columna lateral van una sobre otra; sin columna
+           (pantallas medianas) caben lado a lado. */
         .os-firmas { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; }
         .os-firmas .k { color:var(--muted); font-size:12px; margin-bottom:6px; }
         .os-firmas img { max-width:100%; border:1px solid var(--border); border-radius:10px; background:#fff; }
         .os-pad { width:100%; height:150px; border:1px solid var(--border); border-radius:10px; background:#fff; touch-action:none; display:block; }
+        .os-firmar { width:100%; justify-content:center; }
 
         /* ===== Evidencia ===== */
-        .ev-cab { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-        .ev-cab-txt { min-width:0; }
+        .ev-cab { display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; }
         .ev-cuenta { color:var(--muted); font-size:13px; }
-        .ev-acciones { display:flex; gap:8px; flex-wrap:wrap; }
+
+        /* Portada | "Ver evidencia" */
+        .ev-resumen { display:grid; grid-template-columns:88px minmax(0, 1fr); gap:12px; align-items:center; margin-top:12px; }
+        .ev-portada { position:relative; display:block; width:100%; aspect-ratio:1; padding:0; overflow:hidden;
+                      border:1px solid var(--border); border-radius:10px; background:var(--surface-2); cursor:pointer; }
+        .ev-portada img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .25s ease; }
+        .ev-portada:hover:not(:disabled) img { transform:scale(1.04); }
+        .ev-portada:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+        .ev-portada:disabled { cursor:default; border-style:dashed; }
+        .ev-portada-vacia { display:flex; align-items:center; justify-content:center; height:100%; padding:6px;
+                            color:var(--muted); font-size:12px; text-align:center; }
+        .ev-portada-video { display:flex; align-items:center; justify-content:center; width:100%; height:100%;
+                            background:#0f172a; color:#fff; }
+        .ev-portada-video svg { width:28px; height:28px; }
+        .ev-portada-cuenta { position:absolute; left:5px; bottom:5px; display:inline-flex; align-items:center; gap:4px;
+                             padding:3px 7px; border-radius:999px; background:rgba(15,23,42,.72); color:#fff;
+                             font-size:11.5px; font-weight:700; }
+        .ev-portada-cuenta svg { width:12px; height:12px; }
+        .ev-resumen-txt { min-width:0; }
+        .ev-ver { padding:0; border:0; background:none; color:var(--primary); font-size:13.5px; font-weight:600; cursor:pointer; text-align:left; }
+        .ev-ver:hover { text-decoration:underline; }
+        .ev-ver:disabled { display:none; }
+        .ev-vacio { margin:0; font-size:12.5px; }
+
+        .ev-acciones { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
         /* El label global es de bloque con margen: aquí es un botón. */
-        .ev-boton { position:relative; display:inline-flex; align-items:center; gap:7px; margin:0; font-size:13.5px; font-weight:500; }
+        .ev-boton { position:relative; flex:1 1 auto; display:inline-flex; align-items:center; justify-content:center; gap:7px;
+                    margin:0; font-size:13.5px; font-weight:500; }
         /* El input se oculta sin display:none: algunos Safari de iPhone no abren el selector si el input no se pinta. */
         .ev-input { position:absolute; width:1px; height:1px; padding:0; margin:-1px; border:0; overflow:hidden; clip:rect(0 0 0 0); opacity:0; }
         .ev-boton:focus-within { box-shadow:0 0 0 3px var(--primary-soft); }
         @media (hover:hover) and (pointer:fine) { .ev-solo-tactil { display:none; } }
-        .ev-nota { margin:10px 0 0; font-size:12.5px; }
-        .ev-vacio { margin:14px 0 0; font-size:13px; }
+        .ev-nota { margin:8px 0 0; font-size:12px; }
 
         .ev-cola { display:flex; flex-direction:column; gap:6px; margin-top:12px; }
         .ev-fila { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 10px; align-items:center; padding:8px 10px;
@@ -436,43 +534,36 @@
         .ev-fila.is-error .ev-fila-riel { display:none; }
         .ev-reintentar { background:none; border:none; padding:0; margin-left:6px; color:var(--primary); font:inherit; cursor:pointer; text-decoration:underline; }
 
-        .ev-fotos, .ev-videos { display:grid; gap:10px; }
-        .ev-fotos { grid-template-columns:repeat(auto-fill, minmax(104px, 1fr)); }
-        .ev-videos { grid-template-columns:repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+        /* Una por una: plegable y en miniatura; sin nada que mostrar, ni se ve. */
+        .ev-lista { margin-top:12px; padding-top:10px; border-top:1px solid var(--border); }
+        .ev-lista:not(:has(.ev-item)) { display:none; }
+        .ev-lista > summary { cursor:pointer; font-size:12.5px; font-weight:600; color:var(--primary); list-style:none; user-select:none; }
+        .ev-lista > summary::-webkit-details-marker { display:none; }
+        .ev-lista > summary::before { content:'▸ '; }
+        .ev-lista[open] > summary::before { content:'▾ '; }
+        .ev-fotos, .ev-videos { display:grid; gap:8px; grid-template-columns:repeat(auto-fill, minmax(76px, 1fr)); }
         /* Margen solo si la galería tiene algo (con espacios en blanco, :empty no sirve). */
-        .ev-fotos:has(.ev-item), .ev-videos:has(.ev-item) { margin-top:14px; }
+        .ev-fotos:has(.ev-item), .ev-videos:has(.ev-item) { margin-top:10px; }
         .ev-item { position:relative; margin:0; min-width:0; }
-        .ev-mini { display:block; width:100%; aspect-ratio:1 / 1; padding:0; border:1px solid var(--border); border-radius:10px;
+        .ev-mini { position:relative; display:block; width:100%; aspect-ratio:1 / 1; padding:0; border:1px solid var(--border); border-radius:9px;
                    overflow:hidden; background:var(--surface-2); cursor:zoom-in; }
-        .ev-mini img { display:block; width:100%; height:100%; object-fit:cover; }
+        .ev-mini img, .ev-mini video { display:block; width:100%; height:100%; object-fit:cover; pointer-events:none; background:#000; }
+        .ev-mini img { background:none; }
         .ev-mini:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
-        .ev-item--video video { display:block; width:100%; aspect-ratio:16 / 9; border-radius:10px; background:#000; }
-        .ev-pie { display:flex; flex-direction:column; margin-top:4px; font-size:11.5px; line-height:1.35; min-width:0; }
+        .ev-mini-play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; background:rgba(0,0,0,.3); }
+        .ev-mini-play svg { width:22px; height:22px; }
+        .ev-pie { display:flex; flex-direction:column; margin-top:3px; font-size:11px; line-height:1.3; min-width:0; }
         .ev-quien { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .ev-cuando { color:var(--muted); }
-        .ev-quitar { position:absolute; top:5px; right:5px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center;
-                     border:none; border-radius:8px; background:rgba(17,24,39,.62); color:#fff; cursor:pointer; }
+        .ev-quitar { position:absolute; top:4px; right:4px; width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center;
+                     border:none; border-radius:7px; background:rgba(17,24,39,.62); color:#fff; cursor:pointer; }
         .ev-quitar:hover { background:var(--danger); }
         .ev-item.is-borrando { opacity:.45; pointer-events:none; }
 
-        .ev-visor { position:fixed; inset:0; z-index:9000; display:flex; align-items:center; justify-content:center;
-                    background:rgba(0,0,0,.92); padding:48px 12px; }
-        .ev-visor[hidden] { display:none; }
-        .ev-visor-fig { margin:0; max-width:100%; max-height:100%; display:flex; flex-direction:column; align-items:center; gap:8px; min-width:0; }
-        .ev-visor-fig img { max-width:100%; max-height:calc(100vh - 130px); object-fit:contain; border-radius:6px; }
-        .ev-visor-fig figcaption { color:#e5e7eb; font-size:13px; text-align:center; }
-        .ev-visor-btn { position:absolute; width:42px; height:42px; display:inline-flex; align-items:center; justify-content:center;
-                        border:none; border-radius:50%; background:rgba(255,255,255,.14); color:#fff; cursor:pointer; }
-        .ev-visor-btn:hover { background:rgba(255,255,255,.26); }
-        .ev-visor-cerrar { top:10px; right:10px; }
-        .ev-visor-ant { left:10px; top:50%; transform:translateY(-50%); }
-        .ev-visor-sig { right:10px; top:50%; transform:translateY(-50%); }
-        .ev-visor-btn[hidden] { display:none; }
-        @media (max-width:600px) {
-            .ev-acciones { width:100%; }
-            .ev-boton { flex:1 1 auto; justify-content:center; }
-            .ev-fotos { grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; }
-            .ev-visor-ant, .ev-visor-sig { top:auto; bottom:10px; transform:none; }
+        @media (max-width: 560px) {
+            .os-dato-ancho { grid-column:auto; }
+            .os-datos { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+            .os-dato-todo { grid-column:1 / -1; }
         }
     </style>
 
@@ -578,6 +669,43 @@
                 if (!c) return;
                 cuenta.textContent = c.fotos + (c.fotos === 1 ? ' foto' : ' fotos') + ', ' + c.videos + (c.videos === 1 ? ' video' : ' videos');
                 vacio.hidden = (c.fotos + c.videos) > 0;
+            }
+
+            /*
+            | La portada y el visor salen de los cuadros que hay en la lista:
+            | al subir o quitar algo se rearma la lista del visor (fotos
+            | primero, luego videos), el lugar de cada cuadro en ella y la
+            | portada, con el mismo marcado que pinta el servidor.
+            */
+            const portada = tarjeta.querySelector('[data-ev-portada]');
+            const verTodo = tarjeta.querySelector('[data-ev-ver]');
+            const ICONO_FOTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
+            const ICONO_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+
+            function sincronizarPortada() {
+                const cuadros = [...galeria.foto.querySelectorAll('.ev-item'), ...galeria.video.querySelectorAll('.ev-item')];
+                const medios = cuadros.map(c => ({ tipo: c.dataset.tipo === 'video' ? 'video' : 'foto', url: c.dataset.url }));
+                cuadros.forEach((c, i) => { const b = c.querySelector('[data-galeria]'); if (b) b.dataset.indice = i; });
+                tarjeta.dataset.medios = JSON.stringify(medios);
+
+                const fotos = medios.filter(m => m.tipo === 'foto');
+                const hayVideo = medios.length > fotos.length;
+                portada.disabled = verTodo.disabled = !medios.length;
+                portada.innerHTML = '';
+                if (!medios.length) {
+                    portada.innerHTML = '<span class="ev-portada-vacia">Sin evidencia</span>';
+                    return;
+                }
+                if (fotos.length) {
+                    const img = document.createElement('img');
+                    img.src = fotos[0].url;
+                    img.alt = '';
+                    portada.appendChild(img);
+                } else {
+                    portada.insertAdjacentHTML('beforeend', '<span class="ev-portada-video" aria-hidden="true">' + ICONO_PLAY + '</span>');
+                }
+                portada.insertAdjacentHTML('beforeend', '<span class="ev-portada-cuenta">' + ICONO_FOTO + ' ' + fotos.length
+                    + (hayVideo ? ICONO_PLAY.replace('<svg ', '<svg style="margin-left:4px;" ') : '') + '</span>');
             }
 
             function mensajeDeError(status, json) {
@@ -798,6 +926,7 @@
                 const tipo = json.evidencia && json.evidencia.tipo === 'video' ? 'video' : 'foto';
                 galeria[tipo].insertAdjacentHTML('beforeend', json.html);
                 pintarConteo(json.conteo);
+                sincronizarPortada();
             }
 
             if (urlFoto) {
@@ -857,6 +986,7 @@
 
                     item.remove();
                     pintarConteo(json.conteo);
+                    sincronizarPortada();
                     window.showToast(json.message || 'Evidencia eliminada.', 'ok');
                 } catch (err) {
                     item.classList.remove('is-borrando');
@@ -864,71 +994,9 @@
                 }
             });
 
-            /* ---------- Visor de fotos en grande ---------- */
-            const visor = document.getElementById('evVisor');
-            if (!visor) return;
-            document.body.appendChild(visor);
-
-            const visorImg = document.getElementById('evVisorImg');
-            const visorPie = document.getElementById('evVisorPie');
-            let fotos = [];
-            let actual = 0;
-            let focoPrevio = null;
-
-            function mostrar(i) {
-                actual = (i + fotos.length) % fotos.length;
-                const boton = fotos[actual];
-                visorImg.src = boton.dataset.ver;
-                visorPie.textContent = boton.dataset.pie + (fotos.length > 1 ? ' · ' + (actual + 1) + ' de ' + fotos.length : '');
-                visor.querySelector('[data-visor="ant"]').hidden = fotos.length < 2;
-                visor.querySelector('[data-visor="sig"]').hidden = fotos.length < 2;
-            }
-
-            function abrir(boton) {
-                // Se toman al abrir: así entran también las que se acaban de subir.
-                fotos = Array.from(galeria.foto.querySelectorAll('[data-ver]'));
-                focoPrevio = boton;
-                mostrar(Math.max(0, fotos.indexOf(boton)));
-                visor.hidden = false;
-                document.body.style.overflow = 'hidden';
-                visor.querySelector('[data-visor="cerrar"]').focus();
-            }
-
-            function cerrar() {
-                visor.hidden = true;
-                visorImg.removeAttribute('src');
-                document.body.style.overflow = '';
-                if (focoPrevio && document.body.contains(focoPrevio)) focoPrevio.focus();
-            }
-
-            galeria.foto.addEventListener('click', function (e) {
-                const boton = e.target.closest('[data-ver]');
-                if (boton) abrir(boton);
-            });
-
-            visor.addEventListener('click', function (e) {
-                const accion = e.target.closest('[data-visor]')?.dataset.visor;
-                if (accion === 'cerrar' || e.target === visor) cerrar();
-                else if (accion === 'ant') mostrar(actual - 1);
-                else if (accion === 'sig') mostrar(actual + 1);
-            });
-
-            document.addEventListener('keydown', function (e) {
-                if (visor.hidden) return;
-                if (e.key === 'Escape') cerrar();
-                else if (e.key === 'ArrowLeft') mostrar(actual - 1);
-                else if (e.key === 'ArrowRight') mostrar(actual + 1);
-            });
-
-            // En el teléfono se pasa de foto deslizando el dedo.
-            let inicioX = null;
-            visor.addEventListener('touchstart', e => { inicioX = e.touches[0].clientX; }, { passive: true });
-            visor.addEventListener('touchend', function (e) {
-                if (inicioX === null) return;
-                const dx = e.changedTouches[0].clientX - inicioX;
-                inicioX = null;
-                if (Math.abs(dx) > 50 && fotos.length > 1) mostrar(actual + (dx < 0 ? 1 : -1));
-            });
+            // Verlas en grande lo hace el visor compartido (partials.galeria):
+            // la portada, "Ver evidencia" y cada miniatura llevan data-galeria
+            // y toman la lista de data-medios de esta tarjeta.
         });
     </script>
 @endsection

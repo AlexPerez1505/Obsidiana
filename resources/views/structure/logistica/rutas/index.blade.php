@@ -71,7 +71,41 @@
                         </td>
                         <td><span class="badge {{ $r->estadoTono() }}">{{ $r->estadoLabel() }}</span></td>
                         <td style="text-align:right; white-space:nowrap;">
-                            <a href="{{ route('logistica.rutas.show', $r) }}" class="btn btn--ghost" style="padding:6px 12px;">Abrir</a>
+                            {{-- Las mismas acciones que el detalle, con sus mismas condiciones. --}}
+                            <div class="row-menu" data-row-menu>
+                                <button type="button" class="row-menu-btn" data-row-menu-toggle
+                                        aria-haspopup="true" aria-expanded="false" aria-label="Acciones de {{ $r->folio }}">
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+                                </button>
+                                <div class="row-menu-pop" data-row-menu-pop role="menu" hidden>
+                                    <a href="{{ route('logistica.rutas.show', $r) }}" role="menuitem">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        Ver detalle
+                                    </a>
+                                    @if ($r->editable())
+                                        @can('rutas.editar')
+                                            <a href="{{ route('logistica.rutas.edit', $r) }}" role="menuitem">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                                Editar
+                                            </a>
+                                        @endcan
+                                    @endif
+                                    @if (! $r->activa())
+                                        @can('rutas.eliminar')
+                                            <form method="POST" action="{{ route('logistica.rutas.destroy', $r) }}" style="margin:0;"
+                                                  data-confirm="Se elimina la ruta con sus paradas, evidencias y recorrido. No se puede deshacer."
+                                                  data-confirm-title="Eliminar ruta">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="es-danger" role="menuitem">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                                                    Eliminar
+                                                </button>
+                                            </form>
+                                        @endcan
+                                    @endif
+                                </div>
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -114,4 +148,7 @@
         .rt-riel span { display:block; height:100%; background:var(--green); }
         .rt-riel-txt { margin-top:3px; color:var(--muted); font-size:11.5px; }
     </style>
+
+    {{-- Menú de tres puntos de cada ruta (estilos y comportamiento). --}}
+    @include('partials.row-menu')
 @endsection
