@@ -11,18 +11,27 @@ use Illuminate\Support\Facades\Schema;
  */
 return new class extends Migration
 {
+    /*
+    | En producción ya existía fecha_caducidad (migración 2026_10_28 hecha en
+    | el servidor): solo se crea la columna que falte.
+    */
     public function up(): void
     {
         Schema::table('inventory_movements', function (Blueprint $table) {
-            $table->date('fecha_fabricacion')->nullable()->after('movement_date');
-            $table->date('fecha_caducidad')->nullable()->after('fecha_fabricacion');
+            if (! Schema::hasColumn('inventory_movements', 'fecha_fabricacion')) {
+                $table->date('fecha_fabricacion')->nullable()->after('movement_date');
+            }
+
+            if (! Schema::hasColumn('inventory_movements', 'fecha_caducidad')) {
+                $table->date('fecha_caducidad')->nullable()->after('fecha_fabricacion');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('inventory_movements', function (Blueprint $table) {
-            $table->dropColumn(['fecha_fabricacion', 'fecha_caducidad']);
+            $table->dropColumn('fecha_fabricacion');
         });
     }
 };
