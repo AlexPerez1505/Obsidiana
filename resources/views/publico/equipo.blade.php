@@ -154,6 +154,12 @@
             @if ($entrada?->movement_date)
                 <div><span class="e">Ingresó</span><span class="v">{{ $entrada->movement_date->format('d/m/Y') }}</span></div>
             @endif
+            @if ($entrada?->fecha_fabricacion)
+                <div><span class="e">Fabricación</span><span class="v">{{ $entrada->fecha_fabricacion->format('d/m/Y') }}</span></div>
+            @endif
+            @if ($entrada?->fecha_caducidad)
+                <div><span class="e">Caducidad</span><span class="v">{{ $entrada->fecha_caducidad->format('d/m/Y') }}</span></div>
+            @endif
             @if ($producto?->tipo_equipo)
                 <div><span class="e">Tipo</span><span class="v">{{ $producto->tipo_equipo }}</span></div>
             @endif

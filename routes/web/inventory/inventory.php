@@ -23,6 +23,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->middleware('can:inventario.registrar')->name('inventory.movimientos.store');
     Route::post('/gestion-inventario/entrada-salida/video-chunk', [InventoryMovementController::class, 'subirVideoChunk'])
         ->middleware('can:inventario.registrar')->name('inventory.movimientos.videoChunk');
+    Route::post('/gestion-inventario/entrada-salida/foto-chunk', [InventoryMovementController::class, 'subirFotoChunk'])
+        ->middleware('can:inventario.registrar')->name('inventory.movimientos.fotoChunk');
+    Route::get('/gestion-inventario/entrada-salida/checklist-ia', [InventoryMovementController::class, 'checklistIa'])
+        ->middleware('can:inventario.registrar')->name('inventory.movimientos.checklistIa');
 
     /*
     | Órdenes de salida: lo que almacén prepara, emplaya y firma cuando

@@ -189,5 +189,36 @@
         .resumen .e { display:block; color:var(--muted); font-size:11px; font-weight:700;
                       letter-spacing:.06em; text-transform:uppercase; }
         .resumen .v { display:block; margin-top:3px; font-size:15px; font-weight:600; }
+
+        /* Fechas opcionales con botón para dejarlas vacías */
+        .fecha-limpiable { display:flex; align-items:center; gap:6px; }
+        .fecha-limpiable input { flex:1; min-width:0; }
+        .fecha-limpiar { flex:0 0 34px; height:34px; border:1px solid var(--border); border-radius:8px;
+                         background:var(--surface); color:var(--muted); font-size:18px; line-height:1; cursor:pointer; }
+        .fecha-limpiar:hover { color:var(--danger); border-color:var(--danger); }
+
+        /* Checklist armado por la IA y puntos agregados a mano */
+        .chk-origen { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:10px 0 4px;
+                      padding:10px 13px; border:1px solid var(--border); border-radius:10px;
+                      background:var(--surface-2); color:var(--muted); font-size:13px; }
+        .chk-origen .link { margin-left:auto; background:none; border:0; padding:0; cursor:pointer; font-size:13px; }
+        [data-chk-lista].cargando { opacity:.5; pointer-events:none; }
+        .chk-punto.manual .txt { font-style:italic; }
+        .chk-quitar { margin-left:6px; border:0; background:none; color:var(--muted); font-size:16px;
+                      line-height:1; cursor:pointer; padding:0 2px; }
+        .chk-quitar:hover { color:var(--danger); }
+        .chk-agregar { margin-top:18px; padding-top:14px; border-top:1px dashed var(--border); }
+        .chk-agregar h4 { margin:0 0 8px; }
+        .chk-agregar-fila { display:flex; gap:8px; flex-wrap:wrap; }
+        .chk-agregar-fila input { flex:2 1 240px; min-width:0; }
+        .chk-agregar-fila select { flex:1 1 200px; min-width:0; }
+
+        /* Fotos que se están subiendo, o que el navegador no puede dibujar */
+        .mini .mini-ext { display:flex; align-items:center; justify-content:center; width:100%; height:100%;
+                          background:var(--surface-2); color:var(--muted); font-size:12px; font-weight:700; }
+        .mini .mini-estado { position:absolute; left:0; right:0; bottom:0; padding:3px 0; text-align:center;
+                             background:rgba(0,0,0,.55); color:#fff; font-size:11px; font-weight:600; }
+        .mini.subiendo img { opacity:.6; }
+        .mini.con-error { outline:2px solid var(--danger); }
     </style>
 @endpush

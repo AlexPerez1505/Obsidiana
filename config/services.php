@@ -44,4 +44,13 @@ return [
         'template_language' => env('WHATSAPP_TEMPLATE_LANGUAGE', 'es_MX'),
     ],
 
+    // Checklist de recepción armado por IA (OpenAI) según el equipo, igual
+    // que en empresajureto. Sin OPENAI_API_KEY se usa el checklist general.
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+        'model' => env('OPENAI_MODEL', 'gpt-5.4'),
+        'reasoning_effort' => env('OPENAI_REASONING_EFFORT', 'low'),
+    ],
+
 ];

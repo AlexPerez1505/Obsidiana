@@ -24,10 +24,8 @@
         --}}
         @if ($errors->any())
             <div class="aviso-archivos">
-                <b>Se conservó lo que ya habías llenado</b> (datos, checklist, firma
-                @if (old('video_path')) y el video ya subido @endif).
-                Lo único que hay que volver a adjuntar son las <b>fotos</b>: por seguridad
-                el navegador no permite que el sistema las vuelva a poner solo.
+                <b>Se conservó lo que ya habías llenado</b>: datos, checklist, firma, fotos y videos
+                ya subidos. Revisa lo que se marca abajo y vuelve a registrar.
             </div>
         @endif
 
@@ -108,6 +106,31 @@
                                value="{{ old('movement_date', now()->format('Y-m-d')) }}" required>
                     </x-ui.form-group>
 
+                    {{-- Opcionales y se pueden borrar: el botón × las deja
+                         vacías (el calendario del navegador no trae cómo).
+                         La caducidad solo aplica al equipo nuevo. --}}
+                    <x-ui.form-group label="Fecha de fabricación" for="fecha_fabricacion">
+                        <span class="fecha-limpiable">
+                            <input id="fecha_fabricacion" type="date" name="fecha_fabricacion"
+                                   value="{{ old('fecha_fabricacion') }}">
+                            <button type="button" class="fecha-limpiar" data-limpiar-fecha="fecha_fabricacion"
+                                    title="Quitar la fecha" aria-label="Quitar la fecha de fabricación">×</button>
+                        </span>
+                        <small class="campo-nota">Opcional.</small>
+                        @error('fecha_fabricacion')<p class="err">{{ $message }}</p>@enderror
+                    </x-ui.form-group>
+
+                    <x-ui.form-group label="Fecha de caducidad" for="fecha_caducidad" data-solo-nuevo>
+                        <span class="fecha-limpiable">
+                            <input id="fecha_caducidad" type="date" name="fecha_caducidad"
+                                   value="{{ old('fecha_caducidad') }}">
+                            <button type="button" class="fecha-limpiar" data-limpiar-fecha="fecha_caducidad"
+                                    title="Quitar la fecha" aria-label="Quitar la fecha de caducidad">×</button>
+                        </span>
+                        <small class="campo-nota">Opcional. Solo equipo nuevo.</small>
+                        @error('fecha_caducidad')<p class="err">{{ $message }}</p>@enderror
+                    </x-ui.form-group>
+
                     {{-- Opcional. Es del modelo: si ya la tiene, se completa sola. --}}
                     <x-ui.form-group label="Referencia" for="referencia">
                         <input id="referencia" type="text" name="referencia" maxlength="120"
@@ -162,38 +185,37 @@
                     y es lo que después justifica mandarlo a hojalatería o mantenimiento.
                 </p>
                 <p class="campo-nota" style="margin:0 0 4px;">
-                    <b data-chk-cuenta>0</b> de {{ collect($checklist)->sum(fn ($g) => count($g['puntos'])) }} respondidos
+                    <b data-chk-cuenta>0</b> de <b data-chk-total>0</b> respondidos
                     · <b data-chk-mal>0</b> con problema
                 </p>
 
-                @foreach ($checklist as $llaveGrupo => $grupo)
-                    <div class="chk-grupo">
-                        <h4>{{ $grupo['titulo'] }}</h4>
+                {{-- De dónde salió el checklist: hecho por la IA para este
+                     equipo, o el general mientras no se elija tipo. --}}
+                <div class="chk-origen" data-chk-origen>
+                    <span data-chk-origen-texto>Elige el tipo, subtipo, marca y modelo en el paso de Equipo para armar el checklist de ese equipo.</span>
+                    <button type="button" class="link" data-chk-regenerar hidden>Volver a armarlo</button>
+                </div>
 
-                        @foreach ($grupo['puntos'] as $llave => $punto)
-                            {{-- data-manda dice a qué proceso va la pieza si
-                                 este punto sale en "No": de ahí se propone
-                                 sola la ruta de abajo. --}}
-                            <div class="chk-punto" data-chk-punto @if ($punto['manda']) data-manda="{{ $punto['manda'] }}" @endif>
-                                <span class="txt">{{ $punto['texto'] }}</span>
+                {{-- Lo dibuja el script: cambia según el equipo elegido y se
+                     le pueden sumar puntos a mano. Cada punto viaja con su
+                     texto y su proceso, porque ya no es una lista fija. --}}
+                <div data-chk-lista></div>
 
-                                <span class="tri">
-                                    @foreach (['si' => 'Sí', 'no' => 'No', 'na' => 'N/A'] as $r => $etiqueta)
-                                        <label>
-                                            <input type="radio" name="checklist[{{ $llave }}][r]" value="{{ $r }}"
-                                                   {{ old("checklist.$llave.r") === $r ? 'checked' : '' }}>
-                                            <span>{{ $etiqueta }}</span>
-                                        </label>
-                                    @endforeach
-                                </span>
-
-                                <input type="text" class="nota" name="checklist[{{ $llave }}][nota]"
-                                       maxlength="300" placeholder="¿Qué tiene? (ej. rayón en la tapa derecha)"
-                                       value="{{ old("checklist.$llave.nota") }}">
-                            </div>
-                        @endforeach
+                <div class="chk-agregar">
+                    <h4>Agregar un punto</h4>
+                    <div class="chk-agregar-fila">
+                        <input type="text" maxlength="200" data-chk-nuevo-texto
+                               placeholder="Ej. El cabezal no tiene fisuras">
+                        <select data-chk-nuevo-manda aria-label="Si sale en No, manda a">
+                            <option value="">Si sale en No: solo se anota</option>
+                            @foreach (\App\Models\PiezaProceso::PROCESOS as $clave => $nombre)
+                                <option value="{{ $clave }}">Si sale en No: {{ mb_strtolower($nombre) }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn--ghost" data-chk-agregar>Agregar</button>
                     </div>
-                @endforeach
+                    <small class="campo-nota">Escríbelo para que "Sí" signifique que está bien.</small>
+                </div>
 
                 @error('checklist')<p class="err">{{ $message }}</p>@enderror
             </x-ui.card>
@@ -248,7 +270,7 @@
                 <p class="campo-nota" style="margin:0 0 12px;">
                     Abajo hay un bloque por cada una de las <b data-eco-cantidad>1</b> pieza(s) que
                     pusiste en el paso anterior. Cada una necesita <b>al menos una foto propia</b>
-                    (hasta 3) y, si quieres, su video. Cada pieza recibe además su etiqueta interna
+                    (hasta 3, de cualquier formato y tamaño) y, si quieres, su video. Cada pieza recibe además su etiqueta interna
                     con código QR, que imprimes después desde la ficha de la entrada.
                 </p>
 
@@ -292,9 +314,16 @@
                     <p class="campo-nota" style="margin:6px 0 0;">Ya tiene foto. Sube otra solo si quieres cambiarla.</p>
                 </div>
 
+                {{-- Se sube en pedazos al elegirla: sin límite de tamaño y en
+                     cualquier formato de imagen. Solo viaja su ruta. --}}
                 <x-ui.form-group label="Imagen del producto" for="imagen">
-                    <input type="file" id="imagen" name="imagen" accept="image/*">
-                    <small class="campo-nota">JPG, PNG o GIF. Máximo 5 MB.</small>
+                    <input type="file" id="imagen" accept="image/*,.heic,.heif,.tif,.tiff,.dng,.cr2,.cr3,.nef,.arw,.orf,.rw2,.raf" data-foto-catalogo>
+                    <input type="hidden" name="imagen_path" value="{{ old('imagen_path') }}" data-foto-catalogo-path>
+                    <small class="campo-nota" data-foto-catalogo-nota>
+                        @if (old('imagen_path')) Foto ya subida. Elige otra solo si quieres cambiarla.
+                        @else Cualquier formato de imagen (JPG, PNG, HEIC, WEBP, TIFF, RAW...) y de cualquier tamaño.
+                        @endif
+                    </small>
                 </x-ui.form-group>
             </x-ui.card>
         </section>
@@ -357,5 +386,6 @@
 
     {{-- Captura primero: define pintarPiezas() y el resumen que usan los pasos. --}}
     @include('structure.gestion_Inventario.entrada_salida._script_captura')
+    @include('structure.gestion_Inventario.entrada_salida._script_checklist')
     @include('structure.gestion_Inventario.entrada_salida._script_pasos')
 @endsection

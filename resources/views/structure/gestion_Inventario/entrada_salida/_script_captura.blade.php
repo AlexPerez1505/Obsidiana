@@ -26,65 +26,153 @@
         const PREVIAS = @json(array_values((array) old('unidades', [])));
 
         /* ==========================================================
-           Zona para soltar archivos
+           Fotos: se suben al elegirlas, en pedazos
 
-           Recibe la zona ya creada (cada pieza tiene la suya) en vez de
-           buscarla por nombre: en esta pantalla hay una por cada pieza que
-           llegó, no una sola del lote.
-
-           Las fotos se SUMAN. El navegador, cada vez que se elige o se toma
-           una foto, deja en el input solo la nueva; en el celular eso hacía
-           que la segunda foto borrara la primera. Aquí se guarda la lista
-           de lo ya elegido y lo nuevo se le agrega, hasta el máximo.
+           Así no hay límite de tamaño (una foto de 30 MB pasa igual que una
+           de 1 MB) y se acepta cualquier formato de imagen. Las HEIC del
+           iPhone se convierten a JPG aquí mismo para que se vean en
+           cualquier pantalla; lo demás se sube tal como está. El formulario
+           solo manda la ruta de cada foto ya subida, por eso tampoco se
+           pierden si el servidor lo regresa con algún error.
         ========================================================== */
-        function zonaDeArchivos(zona, minis, { max = null, alCambiar = null } = {}) {
-            if (!zona) return null;
+        const URL_FOTO = @json(route('inventory.movimientos.fotoChunk'));
+        const URL_DISCO = @json(rtrim(\Illuminate\Support\Facades\Storage::disk(config('filesystems.fotos_disk', 'public'))->url(''), '/') . '/');
+        const ACEPTA_FOTOS = 'image/*,.heic,.heif,.tif,.tiff,.dng,.cr2,.cr3,.nef,.arw,.orf,.rw2,.raf';
+        const SE_VEN_EN_NAVEGADOR = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp', 'jfif'];
 
+        function extensionDe(nombre) {
+            return (String(nombre).split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'jpg';
+        }
+
+        let heic2anyListo = null;
+        function cargarHeic2any() {
+            heic2anyListo ??= new Promise(function (ok, falla) {
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+                s.onload = () => ok(window.heic2any);
+                s.onerror = () => { heic2anyListo = null; falla(new Error('No se pudo cargar el convertidor de HEIC.')); };
+                document.head.appendChild(s);
+            });
+            return heic2anyListo;
+        }
+
+        /* HEIC/HEIF → JPG. Si no se puede convertir, se sube el original. */
+        async function prepararFoto(archivo) {
+            const ext = extensionDe(archivo.name);
+            if (!['heic', 'heif'].includes(ext) && !/image\/hei[cf]/.test(archivo.type)) return archivo;
+
+            try {
+                const convertir = await cargarHeic2any();
+                const blob = await convertir({ blob: archivo, toType: 'image/jpeg', quality: 0.92 });
+                const unico = Array.isArray(blob) ? blob[0] : blob;
+                return new File([unico], archivo.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+            } catch (e) {
+                return archivo;
+            }
+        }
+
+        async function subirFoto(archivo, alAvanzar) {
+            const extension = extensionDe(archivo.name);
+            const uploadId = (crypto.randomUUID
+                ? crypto.randomUUID()
+                : (Date.now() + '-' + Math.random().toString(36).slice(2))).replace(/[^a-zA-Z0-9-]/g, '');
+            const total = Math.max(1, Math.ceil(archivo.size / CHUNK_SIZE));
+
+            for (let index = 0; index < total; index++) {
+                const datos = new FormData();
+                datos.append('chunk', archivo.slice(index * CHUNK_SIZE, (index + 1) * CHUNK_SIZE), 'chunk');
+                datos.append('upload_id', uploadId);
+                datos.append('index', index);
+                datos.append('total', total);
+                datos.append('extension', extension);
+
+                const r = await fetch(URL_FOTO, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                    body: datos,
+                });
+                const json = await r.json().catch(() => ({}));
+
+                if (!r.ok) throw new Error(json.message || 'No se pudo subir la foto.');
+
+                if (alAvanzar) alAvanzar(Math.round(((index + 1) / total) * 100));
+                if (json.status === 'listo') return json;
+            }
+
+            throw new Error('No se pudo subir la foto.');
+        }
+
+        /*
+        | Zona para soltar fotos de una pieza. Las fotos se SUMAN hasta el
+        | máximo: en el celular, cada foto nueva no borra la anterior.
+        | Cada foto subida deja un oculto con su ruta (data-foto-path).
+        */
+        function zonaDeFotos(zona, minis, nombreCampo, { max = null, previas = [], alCambiar = null } = {}) {
             const input = zona.querySelector('input[type=file]');
             const cuenta = zona.querySelector('[data-cuenta]');
             const textoBase = cuenta ? cuenta.textContent : '';
 
-            // Lo elegido hasta ahora, en orden.
-            let elegidos = [];
-
-            function sincronizar() {
-                const dt = new DataTransfer();
-                elegidos.forEach(a => dt.items.add(a));
-                input.files = dt.files;
-            }
+            // [{ path, url, nombre, subiendo, progreso, error }]
+            let fotos = previas.map(path => ({ path, url: URL_DISCO + path, nombre: path.split('/').pop() }));
 
             function pintar() {
-                if (minis) minis.innerHTML = '';
+                minis.innerHTML = '';
 
-                elegidos.forEach(function (archivo, i) {
-                    if (!minis) return;
-
+                fotos.forEach(function (f, i) {
                     const caja = document.createElement('div');
-                    caja.className = 'mini';
+                    caja.className = 'mini' + (f.subiendo ? ' subiendo' : '') + (f.error ? ' con-error' : '');
 
-                    const esVideo = archivo.type.startsWith('video/');
-                    const medio = document.createElement(esVideo ? 'video' : 'img');
-                    medio.src = URL.createObjectURL(archivo);
-                    if (esVideo) { medio.muted = true; medio.playsInline = true; }
+                    const ext = extensionDe(f.nombre);
+                    if (f.url && SE_VEN_EN_NAVEGADOR.includes(ext)) {
+                        const img = document.createElement('img');
+                        img.src = f.url;
+                        img.alt = f.nombre;
+                        caja.appendChild(img);
+                    } else {
+                        // TIFF, RAW...: el navegador no las dibuja, pero sí se guardan.
+                        const etiqueta = document.createElement('span');
+                        etiqueta.className = 'mini-ext';
+                        etiqueta.textContent = ext.toUpperCase();
+                        caja.appendChild(etiqueta);
+                    }
+
+                    if (f.subiendo || f.error) {
+                        const estado = document.createElement('span');
+                        estado.className = 'mini-estado';
+                        estado.textContent = f.error ? 'Error' : (f.progreso ? f.progreso + '%' : 'Subiendo');
+                        if (f.error) estado.title = f.error;
+                        caja.appendChild(estado);
+                    }
+
+                    if (f.path) {
+                        const oculto = document.createElement('input');
+                        oculto.type = 'hidden';
+                        oculto.name = nombreCampo;
+                        oculto.value = f.path;
+                        oculto.dataset.fotoPath = '';
+                        caja.appendChild(oculto);
+                    }
 
                     const quitar = document.createElement('button');
                     quitar.type = 'button';
                     quitar.className = 'quitar';
                     quitar.textContent = '×';
                     quitar.title = 'Quitar';
-                    quitar.setAttribute('aria-label', 'Quitar ' + archivo.name);
+                    quitar.setAttribute('aria-label', 'Quitar ' + f.nombre);
                     quitar.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.stopPropagation();
-                        quitarArchivo(i);
+                        fotos.splice(i, 1);
+                        pintar();
                     });
 
-                    caja.append(medio, quitar);
+                    caja.appendChild(quitar);
                     minis.appendChild(caja);
                 });
 
-                const n = elegidos.length;
-                zona.classList.toggle('lleno', n > 0);
+                const listas = fotos.filter(f => f.path).length;
+                const n = fotos.length;
+                zona.classList.toggle('lleno', listas > 0);
 
                 if (cuenta) {
                     if (n === 0) {
@@ -97,12 +185,24 @@
                     }
                 }
 
-                if (alCambiar) alCambiar(n);
+                if (alCambiar) alCambiar(listas, fotos.some(f => f.subiendo));
             }
 
-            function quitarArchivo(indice) {
-                elegidos.splice(indice, 1);
-                sincronizar();
+            async function subirUna(f, archivo) {
+                try {
+                    const lista = await prepararFoto(archivo);
+                    f.nombre = lista.name;
+                    if (SE_VEN_EN_NAVEGADOR.includes(extensionDe(lista.name))) f.url = URL.createObjectURL(lista);
+                    pintar();
+
+                    const json = await subirFoto(lista, function (pct) { f.progreso = pct; pintar(); });
+                    f.path = json.foto_path;
+                    f.subiendo = false;
+                } catch (e) {
+                    f.subiendo = false;
+                    f.error = e.message || 'No se pudo subir.';
+                    if (window.showToast) window.showToast(f.error, 'err');
+                }
                 pintar();
             }
 
@@ -110,14 +210,18 @@
                 const nuevos = Array.from(lista || []);
                 if (!nuevos.length) return;
 
-                const espacio = max ? Math.max(0, max - elegidos.length) : nuevos.length;
+                const espacio = max ? Math.max(0, max - fotos.length) : nuevos.length;
 
                 if (nuevos.length > espacio && window.showToast) {
                     window.showToast('Cada pieza lleva máximo ' + max + ' fotos. Quita una para agregar otra.', 'err');
                 }
 
-                elegidos = elegidos.concat(nuevos.slice(0, espacio));
-                sincronizar();
+                nuevos.slice(0, espacio).forEach(function (archivo) {
+                    const f = { path: null, url: null, nombre: archivo.name, subiendo: true, progreso: 0 };
+                    fotos.push(f);
+                    subirUna(f, archivo);
+                });
+
                 pintar();
             }
 
@@ -135,10 +239,9 @@
                 if (e.dataTransfer?.files?.length) sumar(e.dataTransfer.files);
             });
 
-            // En el "change" el input ya trae solo lo recién elegido: se suma
-            // a lo anterior y se vuelve a armar la lista completa.
             input.addEventListener('change', function () {
                 sumar(input.files);
+                input.value = ''; // permite volver a elegir la misma foto
             });
 
             pintar();
@@ -255,8 +358,8 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                             </span>
                             <span class="t">Fotos de esta pieza *</span>
-                            <span class="d" data-cuenta>Hasta ${MAX_FOTOS} · toma una y luego otra</span>
-                            <input type="file" name="unidades[${i}][evidencias][]" accept="image/*" multiple>
+                            <span class="d" data-cuenta>Hasta ${MAX_FOTOS} · cualquier formato y tamaño</span>
+                            <input type="file" accept="${ACEPTA_FOTOS}" multiple>
                         </label>
                         <div class="miniaturas" data-minis></div>
                     </div>
@@ -288,12 +391,13 @@
             const minis = card.querySelector('[data-minis]');
             const estado = card.querySelector('[data-estado]');
 
-            const fotos = zonaDeArchivos(zonaFotos, minis, {
+            const fotos = zonaDeFotos(zonaFotos, minis, `unidades[${i}][fotos_paths][]`, {
                 max: MAX_FOTOS,
-                alCambiar: function (n) {
-                    estado.textContent = n === 0
-                        ? 'Falta su foto'
-                        : (n === 1 ? '1 foto' : n + ' fotos');
+                previas: Array.isArray(previa.fotos_paths) ? previa.fotos_paths : [],
+                alCambiar: function (n, subiendo) {
+                    estado.textContent = subiendo
+                        ? 'Subiendo fotos...'
+                        : (n === 0 ? 'Falta su foto' : (n === 1 ? '1 foto' : n + ' fotos'));
                     estado.classList.toggle('listo', n > 0);
                     actualizarResumen();
                 },
@@ -766,7 +870,7 @@
             let videos = 0;
 
             bloques.forEach(function (card) {
-                const cuantas = card.querySelector('input[type=file][multiple]')?.files.length || 0;
+                const cuantas = card.querySelectorAll('[data-foto-path]').length;
                 fotos += cuantas;
                 if (cuantas === 0) sinFoto++;
                 if (card.querySelector('[data-video-path]')?.value) videos++;
@@ -786,6 +890,37 @@
         }
 
         window.actualizarResumenEntrada = actualizarResumen;
+
+        /* ===================== Foto del catálogo =====================
+           También se sube al elegirla: sin límite de tamaño ni de formato. */
+        const fotoCatalogo = form.querySelector('[data-foto-catalogo]');
+        const fotoCatalogoPath = form.querySelector('[data-foto-catalogo-path]');
+        const fotoCatalogoNota = form.querySelector('[data-foto-catalogo-nota]');
+
+        fotoCatalogo?.addEventListener('change', async function () {
+            const archivo = fotoCatalogo.files?.[0];
+            if (!archivo) return;
+
+            fotoCatalogoPath.value = '';
+            fotoCatalogoNota.textContent = 'Subiendo foto...';
+
+            try {
+                const lista = await prepararFoto(archivo);
+                const json = await subirFoto(lista, pct => { fotoCatalogoNota.textContent = 'Subiendo foto... ' + pct + '%'; });
+                fotoCatalogoPath.value = json.foto_path;
+                fotoCatalogoNota.textContent = 'Foto lista: ' + lista.name;
+
+                const actual = document.getElementById('imagen-actual');
+                if (actual && SE_VEN_EN_NAVEGADOR.includes(extensionDe(lista.name))) {
+                    actual.src = json.url;
+                    document.getElementById('imagen-actual-wrap').style.display = '';
+                }
+            } catch (e) {
+                fotoCatalogoNota.textContent = e.message || 'No se pudo subir la foto. Vuelve a intentarlo.';
+            } finally {
+                fotoCatalogo.value = '';
+            }
+        });
 
         /* ===================== Arranque ===================== */
         window.pintarPiezas();

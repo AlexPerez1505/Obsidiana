@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ConstruyeCatalogoEquipo;
 use App\Models\InventoryMovement;
+use App\Services\Inventario\ChecklistConIa;
 use App\Services\Inventario\EntradasDeInventario;
+use App\Services\Inventario\FotoPorPedazos;
 use App\Services\Inventario\OperacionRechazada;
 use App\Services\Inventario\VideoPorPedazos;
 use App\Support\ChecklistRecepcion;
@@ -89,6 +91,45 @@ class InventoryMovementController extends Controller
         } catch (ValidationException $e) {
             return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
         }
+    }
+
+    /**
+     * Recibe un pedazo de una foto (de una pieza o la del catálogo). Igual
+     * que el video: así no hay límite de tamaño y el submit solo manda rutas.
+     */
+    public function subirFotoChunk(Request $request, FotoPorPedazos $fotos): JsonResponse
+    {
+        $data = $request->validate(FotoPorPedazos::reglas());
+
+        try {
+            return response()->json($fotos->recibir(
+                $request->file('chunk'),
+                $data['upload_id'],
+                (int) $data['index'],
+                (int) $data['total'],
+                $data['extension'],
+            ));
+        } catch (ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
+        }
+    }
+
+    /** Checklist de recepción hecho para el equipo elegido (tipo, subtipo, marca y modelo). */
+    public function checklistIa(Request $request, ChecklistConIa $checklist): JsonResponse
+    {
+        $data = $request->validate([
+            'equipment_type_id' => ['required', 'integer'],
+            'subtype_id' => ['nullable', 'integer'],
+            'brand_id' => ['nullable', 'integer'],
+            'equipment_model_id' => ['nullable', 'integer'],
+        ]);
+
+        return response()->json($checklist->para(
+            (int) $data['equipment_type_id'],
+            $data['subtype_id'] ?? null,
+            $data['brand_id'] ?? null,
+            $data['equipment_model_id'] ?? null,
+        ));
     }
 
     /**

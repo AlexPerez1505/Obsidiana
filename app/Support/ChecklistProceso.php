@@ -89,11 +89,11 @@ class ChecklistProceso
                 continue;
             }
 
-            if (ChecklistRecepcion::mandaA($llave) !== $paso->proceso) {
+            if (ChecklistRecepcion::mandaA($llave, $respuesta) !== $paso->proceso) {
                 continue;
             }
 
-            $texto = ChecklistRecepcion::titulo($llave);
+            $texto = ChecklistRecepcion::titulo($llave, $respuesta);
             $nota = $respuesta['nota'] ?? null;
 
             // Se conserva la llave original con prefijo para no chocar con

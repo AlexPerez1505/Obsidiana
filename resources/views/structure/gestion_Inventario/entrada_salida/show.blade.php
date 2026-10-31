@@ -71,6 +71,12 @@
             <div><div class="muted" style="font-size:12.5px;">Cantidad</div><div style="font-weight:700;">{{ $movimiento->quantity }} {{ $movimiento->unit }}</div></div>
             <div><div class="muted" style="font-size:12.5px;">Stock antes / después</div><div style="font-weight:700;">{{ $movimiento->stock_before }} → {{ $movimiento->stock_after }}</div></div>
             <div><div class="muted" style="font-size:12.5px;">Almacén</div><div style="font-weight:700;">{{ $movimiento->warehouse }}</div></div>
+            @if ($movimiento->fecha_fabricacion)
+                <div><div class="muted" style="font-size:12.5px;">Fabricación</div><div style="font-weight:700;">{{ $movimiento->fecha_fabricacion->format('d/m/Y') }}</div></div>
+            @endif
+            @if ($movimiento->fecha_caducidad)
+                <div><div class="muted" style="font-size:12.5px;">Caducidad</div><div style="font-weight:700;">{{ $movimiento->fecha_caducidad->format('d/m/Y') }}</div></div>
+            @endif
             @if ($movimiento->reference)
                 <div><div class="muted" style="font-size:12.5px;">Referencia</div><div style="font-weight:700;">{{ $movimiento->reference }}</div></div>
             @endif

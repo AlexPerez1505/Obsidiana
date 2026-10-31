@@ -151,9 +151,14 @@
             | falta, por número, en vez de un "sube evidencia" a secas.
             */
             if (paso.dataset.paso === 'piezas') {
+                // Las fotos se suben al elegirlas: cuenta la que ya tiene
+                // su ruta, no la que solo está en el input.
                 const sinFoto = Array.from(paso.querySelectorAll('.pieza-card'))
-                    .filter(card => (card.querySelector('input[type=file][multiple]')?.files.length || 0) === 0)
+                    .filter(card => card.querySelectorAll('[data-foto-path]').length === 0)
                     .map(card => '#' + (Number(card.dataset.pieza) + 1));
+
+                const subiendo = paso.querySelectorAll('.mini.subiendo').length;
+                if (subiendo) falta.push(`Esperar a que terminen de subir ${subiendo} foto(s)`);
 
                 if (sinFoto.length) {
                     falta.push(sinFoto.length === 1
@@ -250,11 +255,33 @@
                 // Los campos del checklist estorban si el equipo es nuevo:
                 // se apagan para que no viajen ni se validen.
                 const pasoChk = form.querySelector('[data-solo-usado]');
-                pasoChk.querySelectorAll('input, textarea').forEach(c => { c.disabled = !esUsado(); });
+                pasoChk.querySelectorAll('input, textarea, select').forEach(c => { c.disabled = !esUsado(); });
+                soloNuevo();
 
                 mostrar();
             });
         });
+
+        /* ===================== Fechas =====================
+           Son opcionales: el × las deja vacías (el calendario del navegador
+           no trae cómo borrarlas). La caducidad solo aplica al equipo nuevo:
+           en usado se esconde y no viaja. */
+        form.querySelectorAll('[data-limpiar-fecha]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const campo = document.getElementById(btn.dataset.limpiarFecha);
+                if (!campo) return;
+                campo.value = '';
+                campo.dispatchEvent(new Event('change', { bubbles: true }));
+                campo.focus();
+            });
+        });
+
+        function soloNuevo() {
+            form.querySelectorAll('[data-solo-nuevo]').forEach(function (bloque) {
+                bloque.style.display = esUsado() ? 'none' : '';
+                bloque.querySelectorAll('input').forEach(c => { c.disabled = esUsado(); });
+            });
+        }
 
         /* ===================== Ecos de la cantidad =====================
            La cantidad manda cuántos bloques de pieza hay que dibujar: una
@@ -271,8 +298,8 @@
             });
         }
 
-        /* ===================== Contadores del checklist ===================== */
-        const puntos = Array.from(form.querySelectorAll('[data-chk-punto]'));
+        /* ===================== Contadores del checklist =====================
+           Los puntos cambian (IA, agregados a mano): se buscan cada vez. */
         const chkCuenta = form.querySelector('[data-chk-cuenta]');
         const chkMal = form.querySelector('[data-chk-mal]');
 
@@ -283,7 +310,7 @@
             // Se junta, por proceso, qué fallas lo hacen necesario.
             const porProceso = {};
 
-            puntos.forEach(function (punto) {
+            form.querySelectorAll('[data-chk-punto]').forEach(function (punto) {
                 const elegido = punto.querySelector('input[type=radio]:checked');
                 if (elegido) respondidos++;
 
@@ -295,7 +322,10 @@
                 const manda = punto.dataset.manda;
 
                 if (esProblema && manda) {
-                    (porProceso[manda] ??= []).push(punto.querySelector('.txt').textContent.trim());
+                    // El texto se toma del oculto: el de pantalla trae el × de quitar.
+                    (porProceso[manda] ??= []).push(
+                        punto.querySelector('input[name$="[texto]"]')?.value || punto.querySelector('.txt').textContent.trim()
+                    );
                 }
             });
 
@@ -354,11 +384,18 @@
                 : 'Pasa por ' + elegidos.join(' y ').toLowerCase() + ', y hasta terminar entra a stock.';
         }
 
-        puntos.forEach(p => p.addEventListener('change', contarChecklist));
+        form.addEventListener('change', function (e) {
+            if (e.target.closest('[data-chk-punto]')) contarChecklist();
+        });
+        form.addEventListener('checklist:cambio', function () {
+            contarChecklist();
+            pintarBarra();
+        });
 
         /* ===================== Arranque ===================== */
         const pasoChk = form.querySelector('[data-solo-usado]');
-        pasoChk.querySelectorAll('input, textarea').forEach(c => { c.disabled = !esUsado(); });
+        pasoChk.querySelectorAll('input, textarea, select').forEach(c => { c.disabled = !esUsado(); });
+        soloNuevo();
 
         contarChecklist();
         if (cantidad) cantidad.dispatchEvent(new Event('input'));

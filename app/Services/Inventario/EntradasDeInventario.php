@@ -43,12 +43,35 @@ class EntradasDeInventario
         'unidades.*.evidencias.required' => 'Cada pieza necesita al menos una foto de cómo llegó ella.',
         'unidades.*.evidencias.min' => 'Cada pieza necesita al menos una foto de cómo llegó ella.',
         'unidades.*.evidencias.max' => 'Puedes subir máximo 3 fotos por pieza.',
+        'unidades.*.fotos_paths.max' => 'Puedes subir máximo 3 fotos por pieza.',
+        'fecha_caducidad.after_or_equal' => 'La fecha de caducidad no puede ser antes de la de fabricación.',
         'firma.required' => 'Se necesita la firma digital de quien registró esta entrada.',
         'estado_general.required' => 'Di en qué estado general llegó el equipo usado.',
         'checklist.required' => 'Responde el checklist de recepción del equipo usado.',
     ];
 
-    public function __construct(private VideoPorPedazos $videos) {}
+    public function __construct(private VideoPorPedazos $videos, private FotoPorPedazos $fotos) {}
+
+    /**
+     * Una foto subida directo (la API) puede ser de cualquier formato de
+     * imagen y de cualquier tamaño: HEIC, TIFF, RAW, WEBP... Solo se revisa
+     * que de verdad sea una imagen y no un script disfrazado.
+     */
+    private static function reglaFoto(): \Closure
+    {
+        return function (string $campo, $archivo, \Closure $falla) {
+            $extension = strtolower((string) $archivo?->getClientOriginalExtension());
+            $mime = (string) $archivo?->getMimeType();
+            $raw = ['heic', 'heif', 'dng', 'cr2', 'cr3', 'nef', 'arw', 'orf', 'rw2', 'raf', 'srw', 'pef'];
+
+            $esImagen = (str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml')
+                || (in_array($extension, $raw, true) && ! str_starts_with($mime, 'text/'));
+
+            if (! $esImagen) {
+                $falla('Ese archivo no es una imagen.');
+            }
+        };
+    }
 
     /**
      * La evidencia es de cada pieza, no del lote.
@@ -76,14 +99,26 @@ class EntradasDeInventario
             'referencia' => ['nullable', 'string', 'max:120'],
             'movement_date' => ['required', 'date'],
             'notas' => ['nullable', 'string', 'max:1000'],
-            'imagen' => ['nullable', 'image', 'max:5120'],
+            // La foto del catálogo: subida por pedazos (imagen_path) desde
+            // la pantalla, o como archivo directo desde la API. Sin límite
+            // de tamaño ni de formato de imagen.
+            'imagen' => ['nullable', 'file', self::reglaFoto()],
+            'imagen_path' => ['nullable', 'string'],
+            // Opcionales. La caducidad solo aplica a equipo nuevo.
+            'fecha_fabricacion' => ['nullable', 'date'],
+            'fecha_caducidad' => ['nullable', 'date', 'after_or_equal:fecha_fabricacion'],
             'firma' => ['required', 'string'],
 
             // Una fila por pieza, cada una con su propia evidencia.
             'unidades' => ['required', 'array', 'min:1'],
             'unidades.*.no_serie' => ['nullable', 'string', 'max:255'],
-            'unidades.*.evidencias' => ['required', 'array', 'min:1', 'max:3'],
-            'unidades.*.evidencias.*' => ['image', 'max:5120'],
+            // Las fotos llegan ya subidas por pedazos (fotos_paths, la
+            // pantalla) o como archivos (evidencias, la API). Que cada pieza
+            // traiga al menos una se revisa en registrar(), sumando las dos.
+            'unidades.*.evidencias' => ['nullable', 'array', 'max:3'],
+            'unidades.*.evidencias.*' => ['file', self::reglaFoto()],
+            'unidades.*.fotos_paths' => ['nullable', 'array', 'max:3'],
+            'unidades.*.fotos_paths.*' => ['string'],
             'unidades.*.video_path' => ['nullable', 'string'],
         ];
 
@@ -117,6 +152,11 @@ class EntradasDeInventario
         $data['condicion'] ??= 'nuevo';
 
         $data['checklist_recepcion'] = $usado ? ChecklistRecepcion::limpiar($request->input('checklist')) : null;
+
+        // El equipo usado no lleva caducidad: aunque llegue, no se guarda.
+        if ($usado) {
+            $data['fecha_caducidad'] = null;
+        }
 
         /*
         | El precio puede no venir de tres maneras: el modelo ya lo tenía y
@@ -174,6 +214,44 @@ class EntradasDeInventario
         }
 
         /*
+        | Las fotos que ya se subieron por pedazos solo se verifican: que cada
+        | ruta sea de una foto real armada por FotoPorPedazos. Igual que el
+        | video, no se borran si algo falla: el usuario reintenta sin volver
+        | a subirlas.
+        */
+        $fotosPrevias = [];
+
+        foreach (array_values($data['unidades']) as $i => $u) {
+            $fotosPrevias[$i] = [];
+
+            foreach ((array) ($u['fotos_paths'] ?? []) as $ruta) {
+                $resuelta = $this->fotos->resolver(trim((string) $ruta), $disco);
+
+                if ($resuelta === null) {
+                    throw ValidationException::withMessages([
+                        "unidades.$i.fotos_paths" => 'Una foto de la pieza #'.($i + 1).' no se subió correctamente. Vuelve a subirla.',
+                    ]);
+                }
+
+                $fotosPrevias[$i][] = $resuelta;
+            }
+
+            $total = count($fotosPrevias[$i]) + count((array) ($u['evidencias'] ?? []));
+
+            if ($total === 0) {
+                throw ValidationException::withMessages([
+                    "unidades.$i.evidencias" => 'Cada pieza necesita al menos una foto de cómo llegó ella.',
+                ]);
+            }
+
+            if ($total > 3) {
+                throw ValidationException::withMessages([
+                    "unidades.$i.evidencias" => 'Puedes subir máximo 3 fotos por pieza.',
+                ]);
+            }
+        }
+
+        /*
         | Ya validado todo lo que no cuesta archivos, se guardan las fotos
         | de cada pieza. Se suben antes de saber si su serial choca con uno
         | existente: eso se depura después, dentro de la transacción, sin
@@ -184,9 +262,9 @@ class EntradasDeInventario
         foreach (array_keys($data['unidades']) as $posicion => $llave) {
             $unidades[] = [
                 'no_serie' => $series->get($posicion),
-                'evidence_paths' => collect($request->file("unidades.$llave.evidencias") ?? [])
+                'evidence_paths' => array_merge($fotosPrevias[$posicion], collect($request->file("unidades.$llave.evidencias") ?? [])
                     ->map(fn ($archivo) => $archivo->store('productos/seriales', $disco))
-                    ->all(),
+                    ->all()),
                 'video_path' => $videos[$posicion],
             ];
         }
@@ -195,9 +273,16 @@ class EntradasDeInventario
         // número de serie del fabricante.
         $serializado = $series->filter()->isNotEmpty();
 
+        // La foto del catálogo ya subida por pedazos se conserva si algo
+        // falla (igual que las de las piezas); la que llegó como archivo en
+        // este mismo request sí se limpia.
+        $imagenPrevia = filled($data['imagen_path'] ?? null) ? $this->fotos->resolver($data['imagen_path'], $disco) : null;
+
         $imagen = $request->hasFile('imagen')
             ? $request->file('imagen')->store('productos', $disco)
             : null;
+        $imagenSubidaAhora = $imagen !== null;
+        $imagen ??= $imagenPrevia;
 
         // La firma se decodifica al final, ya que se sabe que todo lo demás
         // es válido: si falla, se limpia lo que ya se subió en este mismo
@@ -209,12 +294,14 @@ class EntradasDeInventario
         // un tirón si algo falla más adelante. Los videos no van aquí:
         // quedaron de un request anterior y el usuario puede reintentar sin
         // volver a subirlos.
-        $subidoAhora = collect($unidades)->flatMap(fn (array $u) => $u['evidence_paths'])->filter()->all();
+        $previas = collect($fotosPrevias)->flatten()->all();
+        $subidoAhora = collect($unidades)->flatMap(fn (array $u) => $u['evidence_paths'])->filter()
+            ->reject(fn ($ruta) => in_array($ruta, $previas, true))->values()->all();
 
         if ($firma === null) {
             $this->borrarEvidencias($subidoAhora, $disco);
 
-            if ($imagen) {
+            if ($imagen && $imagenSubidaAhora) {
                 Storage::disk($disco)->delete($imagen);
             }
 
@@ -239,7 +326,7 @@ class EntradasDeInventario
             $this->borrarEvidencias($subidoAhora, $disco);
             $this->borrarEvidencias([$firma], $disco);
 
-            if ($imagen) {
+            if ($imagen && $imagenSubidaAhora) {
                 Storage::disk($disco)->delete($imagen);
             }
 
@@ -479,6 +566,8 @@ class EntradasDeInventario
                 'stock_before' => $stockAntes,
                 'stock_after' => $stockAntes + $cantidad,
                 'movement_date' => $data['movement_date'],
+                'fecha_fabricacion' => $data['fecha_fabricacion'] ?? null,
+                'fecha_caducidad' => $data['fecha_caducidad'] ?? null,
                 'notes' => $data['notas'] ?? null,
                 'condicion' => $data['condicion'],
                 'checklist_recepcion' => $data['checklist_recepcion'],

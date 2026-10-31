@@ -39,7 +39,7 @@ class FichaEquipoPublicaController extends Controller
             // El checklist se arma con sus textos para no enseñar llaves.
             'checklist' => collect($entrada?->checklist_recepcion ?? [])
                 ->map(fn (array $p, string $llave) => [
-                    'titulo' => ChecklistRecepcion::titulo($llave),
+                    'titulo' => ChecklistRecepcion::titulo($llave, $p),
                     'respuesta' => ChecklistRecepcion::ETIQUETAS[$p['r']] ?? $p['r'],
                     'clave' => $p['r'],
                     'nota' => $p['nota'] ?? null,
