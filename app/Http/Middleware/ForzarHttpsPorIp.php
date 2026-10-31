@@ -18,14 +18,18 @@ use Symfony\Component\HttpFoundation\Response;
  * termina en "419 Page Expired". Redirigiendo antes de abrir sesión, por
  * http nunca se crea esa segunda cookie.
  *
- * Solo aplica cuando el host es una IP: localhost y obsidiana.test siguen
- * funcionando por http para desarrollar.
+ * Solo aplica cuando el host es una IP de la red local: localhost,
+ * 127.0.0.1 (php artisan serve) y obsidiana.test siguen funcionando
+ * por http para desarrollar.
  */
 class ForzarHttpsPorIp
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->secure() && filter_var($request->getHost(), FILTER_VALIDATE_IP)) {
+        $host = $request->getHost();
+        $esLoopback = in_array($host, ['127.0.0.1', '::1'], true);
+
+        if (! $request->secure() && ! $esLoopback && filter_var($host, FILTER_VALIDATE_IP)) {
             // Sin puerto: el HTTPS lo atiende Apache en el 443.
             $destino = 'https://'.$request->getHost().$request->getRequestUri();
 
