@@ -22,29 +22,42 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('equipos', function (Blueprint $table) {
-            $table->foreignId('equipment_type_id')->nullable()->after('id')
-                ->constrained('equipment_types')->nullOnDelete();
-            $table->foreignId('subtype_id')->nullable()->after('equipment_type_id')
-                ->constrained('subtypes')->nullOnDelete();
-            $table->foreignId('brand_id')->nullable()->after('subtype_id')
-                ->constrained('brands')->nullOnDelete();
-            $table->foreignId('equipment_model_id')->nullable()->after('brand_id')
-                ->constrained('equipment_models')->nullOnDelete();
+            if (! Schema::hasColumn('equipos', 'equipment_type_id')) {
+                $table->foreignId('equipment_type_id')->nullable()->after('id')
+                    ->constrained('equipment_types')->nullOnDelete();
+            }
+            if (! Schema::hasColumn('equipos', 'subtype_id')) {
+                $table->foreignId('subtype_id')->nullable()->after('equipment_type_id')
+                    ->constrained('subtypes')->nullOnDelete();
+            }
+            if (! Schema::hasColumn('equipos', 'brand_id')) {
+                $table->foreignId('brand_id')->nullable()->after('subtype_id')
+                    ->constrained('brands')->nullOnDelete();
+            }
+            if (! Schema::hasColumn('equipos', 'equipment_model_id')) {
+                $table->foreignId('equipment_model_id')->nullable()->after('brand_id')
+                    ->constrained('equipment_models')->nullOnDelete();
+            }
 
             // El subtipo no existía como texto; se agrega para que la ficha
             // del equipo lo pueda mostrar sin consultar el catálogo.
-            $table->string('subtipo')->nullable()->after('tipo');
+            if (! Schema::hasColumn('equipos', 'subtipo')) {
+                $table->string('subtipo')->nullable()->after('tipo');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('equipos', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('equipment_type_id');
-            $table->dropConstrainedForeignId('subtype_id');
-            $table->dropConstrainedForeignId('brand_id');
-            $table->dropConstrainedForeignId('equipment_model_id');
-            $table->dropColumn('subtipo');
+            foreach (['equipment_type_id', 'subtype_id', 'brand_id', 'equipment_model_id'] as $column) {
+                if (Schema::hasColumn('equipos', $column)) {
+                    $table->dropConstrainedForeignId($column);
+                }
+            }
+            if (Schema::hasColumn('equipos', 'subtipo')) {
+                $table->dropColumn('subtipo');
+            }
         });
     }
 };

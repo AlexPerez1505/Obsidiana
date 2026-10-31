@@ -18,17 +18,32 @@ class Service extends Model
         'qr_expires_at',
         'signature',
         'status',
+        'customer_decision',
+        'customer_decision_at',
+        'mano_obra',
         'started_at',
         'finished_at',
+        'garantia_documento_id',
+        'documentos',
+        'reporte_data',
     ];
 
     protected function casts(): array
     {
         return [
             'qr_expires_at' => 'datetime',
+            'customer_decision_at' => 'datetime',
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
+            'mano_obra' => 'decimal:2',
+            'documentos' => 'array',
+            'reporte_data' => 'array',
         ];
+    }
+
+    public function garantiaDocumento()
+    {
+        return $this->belongsTo(GarantiaDocumento::class);
     }
 
     public function serviceEquipment()

@@ -21,7 +21,9 @@ return new class extends Migration
         Schema::create('pieza_procesos', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('producto_serial_id')->constrained('producto_seriales')->cascadeOnDelete();
+            // producto_seriales se crea después (2026_08_31_000004); esa
+            // migración agrega la FK cuando la tabla ya existe.
+            $table->foreignId('producto_serial_id');
 
             $table->string('proceso', 30);
             $table->unsignedSmallInteger('orden')->default(0);

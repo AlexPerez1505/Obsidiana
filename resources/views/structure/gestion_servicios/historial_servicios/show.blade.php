@@ -37,10 +37,7 @@
                 <span class="resumen-label">Product code</span>
                 <span class="resumen-value" style="font-weight:700;">{{ $service->serviceEquipment->product_code ?? 'N/A' }}</span>
             </div>
-            <div class="resumen-detail">
-                <span class="resumen-label">Paso actual</span>
-                <span class="resumen-value" style="font-weight:700;">{{ $service->currentStep?->name ?? 'Completado' }}</span>
-            </div>
+
         </div>
 
         <!-- Ficha Técnica -->
@@ -57,6 +54,30 @@
             <div class="resumen-detail">
                 <span class="resumen-label">Marca / Modelo</span>
                 <span class="resumen-value">{{ $service->serviceEquipment->brand_text ?? '—' }} {{ $service->serviceEquipment->model_text ?? '—' }}</span>
+            </div>
+            <div class="resumen-detail">
+                <span class="resumen-label">Equipo de transporte</span>
+                <span class="resumen-value">
+                    @php
+                        $transporte = $service->serviceEquipment->transport_case ?? null;
+                        $transporteLbl = ['maletin' => 'Maletín', 'estuche' => 'Estuche', 'contenedor' => 'Contenedor', 'otro' => 'Otro'][$transporte] ?? null;
+                    @endphp
+                    @if ($transporte === 'otro' && $service->serviceEquipment->transport_case_other)
+                        Otro: {{ $service->serviceEquipment->transport_case_other }}
+                    @else
+                        {{ $transporteLbl ?? '—' }}
+                    @endif
+                </span>
+            </div>
+            <div class="resumen-detail">
+                <span class="resumen-label">Accesorios incluidos</span>
+                <span class="resumen-value">
+                    @if (is_null($service->serviceEquipment->accessories_included ?? null)) —
+                    @elseif ($service->serviceEquipment->accessories_included)
+                        Sí{{ $service->serviceEquipment->accessories_detail ? ': '.$service->serviceEquipment->accessories_detail : '' }}
+                    @else No
+                    @endif
+                </span>
             </div>
             <div class="resumen-detail">
                 <span class="resumen-label">Médico / Titular</span>

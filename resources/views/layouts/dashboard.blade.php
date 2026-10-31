@@ -677,10 +677,23 @@
         </button>
 
         <nav class="nav">
-            <a class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}" data-tip="Dashboard">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
-                <span class="nav-label">Dashboard</span>
-            </a>
+            @php
+                // El rol Mantenimiento solo ve su tablero y Órdenes de servicio.
+                $soloMantenimiento = auth()->user()->hasRole('mantenimiento') && ! auth()->user()->isAdmin();
+            @endphp
+            @unless ($soloMantenimiento)
+                <a class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}" data-tip="Dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+            @endunless
+            @if (auth()->user()->isAdmin() || auth()->user()->hasRole('mantenimiento'))
+                <a class="nav-item {{ request()->routeIs('mantenimiento.*') ? 'active' : '' }}" href="{{ route('mantenimiento.dashboard') }}" data-tip="Mantenimiento">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                    <span class="nav-label">Mantenimiento</span>
+                </a>
+            @endif
+            @unless ($soloMantenimiento)
             <div class="nav-section">Operación</div>
             <div class="nav-group {{ request()->routeIs('commercial.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Comercial">
@@ -894,6 +907,7 @@
                 </div>
             </div>
             @endcanany
+            @endunless
             <div class="nav-group {{ request()->routeIs('gestion.servicios.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Servicios">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
@@ -906,27 +920,54 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Historial de Servicios</span>
                     </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.refacciones.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.refacciones.index') }}" data-tip="Refacciones">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Refacciones</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.garantia.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.garantia.index') }}" data-tip="Cartas de Garantía">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Cartas de Garantía</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.mantenimiento.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.mantenimiento.index') }}" data-tip="Mantenimiento">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Mantenimiento</span>
+                    </a>
                     @endcan
                     @can('servicios.crear')
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.historial.nueva_orden') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial.nueva_orden') }}" data-tip="Nueva Orden">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Nueva Orden</span>
                     </a>
-                    @endcan
-                    @can('servicios.ver')
-                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.garantia.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.garantia.index') }}" data-tip="Cartas de Garantía">
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.registro') ? 'active' : '' }}" href="{{ route('gestion.servicios.registro') }}" data-tip="Registro Externo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Cartas de Garantía</span>
+                        <span class="nav-label">Registro Externo</span>
                     </a>
                     @endcan
                     @can('servicios.ver')
-                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.mantenimiento.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.mantenimiento.index') }}" data-tip="Mantenimiento">
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.area_endoscopia') ? 'active' : '' }}" href="{{ route('gestion.servicios.area_endoscopia') }}" data-tip="Área de Endoscopia">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Mantenimiento</span>
+                        <span class="nav-label">Área de Endoscopia</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.area') ? 'active' : '' }}" href="{{ route('gestion.servicios.area') }}" data-tip="Área General">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Área General</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.externo') ? 'active' : '' }}" href="{{ route('gestion.servicios.externo') }}" data-tip="Mantenimiento Externo">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Externo</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.servicio_externo.interno') ? 'active' : '' }}" href="{{ route('gestion.servicios.servicio_externo.interno') }}" data-tip="Servicio Externo Interno">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Servicio externo interno</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.servicio_externo.externo') ? 'active' : '' }}" href="{{ route('gestion.servicios.servicio_externo.externo') }}" data-tip="Servicio Externo Externo">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Servicio externo externo</span>
                     </a>
                     @endcan
                 </div>
             </div>
+            @unless ($soloMantenimiento)
             @can('garantias.ver')
             <div class="nav-group {{ request()->routeIs('garantias.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Garantías">
@@ -1010,14 +1051,14 @@
                     --}}
                 </div>
             </div>
-            <div class="nav-group {{ request()->is('structure/marketing*') ? 'open' : '' }}">
+            <div class="nav-group {{ request()->routeIs('marketing.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Marketing">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                     <span class="nav-label">Gestión de Marketing</span>
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-                    <a class="nav-item nav-sub" href="#" data-tip="Inicio">
+                    <a class="nav-item nav-sub {{ request()->routeIs('marketing.inicio') ? 'active' : '' }}" href="{{ route('marketing.inicio') }}" data-tip="Inicio">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Inicio</span>
                     </a>
@@ -1077,6 +1118,7 @@
                     @endcan
                 </div>
             </div>
+            @endunless
         </nav>
 
     </aside>

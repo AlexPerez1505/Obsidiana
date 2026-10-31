@@ -39,6 +39,17 @@
             :required="true"
         />
 
+        <x-ui.form-group label="Rol" for="role_id">
+            <select id="role_id" name="role_id" required>
+                <option value="" disabled selected>Selecciona tu rol</option>
+                @foreach ($roles as $role)
+                    <option value="{{ $role->id }}" {{ old('role_id') == $role->id ? 'selected' : '' }}>
+                        {{ $role->label }}
+                    </option>
+                @endforeach
+            </select>
+        </x-ui.form-group>
+
         <x-ui.button>Crear cuenta</x-ui.button>
     </form>
 

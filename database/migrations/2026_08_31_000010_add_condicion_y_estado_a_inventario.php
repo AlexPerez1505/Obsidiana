@@ -23,24 +23,28 @@ return new class extends Migration
             $table->string('estado_general', 20)->nullable()->after('checklist_recepcion');
         });
 
-        Schema::table('producto_seriales', function (Blueprint $table) {
-            // Etiqueta interna: es lo que va impreso en el QR pegado a la
-            // pieza. Va aparte del número de serie del fabricante, que
-            // puede no existir (accesorios) o venir repetido.
-            $table->string('codigo', 30)->nullable()->unique()->after('producto_id');
-            $table->enum('condicion', ['nuevo', 'usado'])->default('nuevo')->after('no_serie');
-            $table->string('estado', 20)->default('disponible')->after('condicion');
-            $table->index('estado');
-        });
+        // En bases nuevas producto_seriales todavía no existe (se crea en
+        // 2026_08_31_000004 con estas columnas ya incluidas).
+        if (Schema::hasTable('producto_seriales')) {
+            Schema::table('producto_seriales', function (Blueprint $table) {
+                // Etiqueta interna: es lo que va impreso en el QR pegado a la
+                // pieza. Va aparte del número de serie del fabricante, que
+                // puede no existir (accesorios) o venir repetido.
+                $table->string('codigo', 30)->nullable()->unique()->after('producto_id');
+                $table->enum('condicion', ['nuevo', 'usado'])->default('nuevo')->after('no_serie');
+                $table->string('estado', 20)->default('disponible')->after('condicion');
+                $table->index('estado');
+            });
 
-        // Lo que ya estaba registrado se toma como nuevo y disponible: es
-        // como se venía comportando hasta hoy.
-        DB::table('producto_seriales')->whereNull('codigo')->orderBy('id')->each(function ($fila) {
-            DB::table('producto_seriales')->where('id', $fila->id)->update([
-                'codigo' => 'MB-'.str_pad((string) $fila->id, 6, '0', STR_PAD_LEFT),
-                'estado' => $fila->vendido ? 'vendido' : 'disponible',
-            ]);
-        });
+            // Lo que ya estaba registrado se toma como nuevo y disponible: es
+            // como se venía comportando hasta hoy.
+            DB::table('producto_seriales')->whereNull('codigo')->orderBy('id')->each(function ($fila) {
+                DB::table('producto_seriales')->where('id', $fila->id)->update([
+                    'codigo' => 'MB-'.str_pad((string) $fila->id, 6, '0', STR_PAD_LEFT),
+                    'estado' => $fila->vendido ? 'vendido' : 'disponible',
+                ]);
+            });
+        }
     }
 
     public function down(): void
@@ -49,10 +53,12 @@ return new class extends Migration
             $table->dropColumn(['condicion', 'checklist_recepcion', 'estado_general']);
         });
 
-        Schema::table('producto_seriales', function (Blueprint $table) {
-            $table->dropIndex(['estado']);
-            $table->dropUnique(['codigo']);
-            $table->dropColumn(['codigo', 'condicion', 'estado']);
-        });
+        if (Schema::hasTable('producto_seriales')) {
+            Schema::table('producto_seriales', function (Blueprint $table) {
+                $table->dropIndex(['estado']);
+                $table->dropUnique(['codigo']);
+                $table->dropColumn(['codigo', 'condicion', 'estado']);
+            });
+        }
     }
 };

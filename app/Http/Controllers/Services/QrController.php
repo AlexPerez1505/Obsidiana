@@ -88,21 +88,83 @@ class QrController extends Controller
                 'qr_expires_at' => now()->addDay(),
                 'status' => 'en_progreso',
             ]);
-
-            return redirect()->route('qr.show', $newToken)
-                ->with('success', 'Paso completado. Escanea el nuevo QR para continuar.');
+        } else {
+            $service->update([
+                'current_step_id' => null,
+                'qr_token' => null,
+                'qr_expires_at' => null,
+                'status' => 'entregado',
+                'finished_at' => now(),
+            ]);
         }
 
-        $service->update([
-            'current_step_id' => null,
-            'qr_token' => null,
-            'qr_expires_at' => null,
-            'status' => 'entregado',
-            'finished_at' => now(),
+        return redirect()->route('qr.registro', $tracking->qr_token)
+            ->with('success', 'Paso completado. Registra el mantenimiento realizado.');
+    }
+
+    public function registro(string $token)
+    {
+        $tracking = ServiceTracking::with(['service.customer', 'service.serviceEquipment', 'serviceStep'])
+            ->where('qr_token', $token)
+            ->where('status', 'completado')
+            ->firstOrFail();
+
+        $service = $tracking->service;
+        $nextUrl = $this->nextUrl($service);
+
+        return view('structure.gestion_servicios.historial_servicios.qr.registro', compact('tracking', 'service', 'nextUrl'));
+    }
+
+    public function guardarRegistro(Request $request, string $token)
+    {
+        $tracking = ServiceTracking::with('service')
+            ->where('qr_token', $token)
+            ->where('status', 'completado')
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'tipo_mantenimiento' => 'required|in:correctivo,preventivo',
+            'movimientos' => 'nullable|array',
+            'movimientos.*' => 'string|max:255',
+            'movimientos_otros' => 'nullable|string',
+            'evidencia_envio.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'evidencia_devolucion.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
         ]);
 
-        return redirect()->route('qr.completed')
-            ->with('status', 'Servicio completado. Gracias.');
+        $envio = [];
+        foreach (array_slice($request->file('evidencia_envio', []), 0, 5) as $foto) {
+            $envio[] = $foto->store("evidencias/{$tracking->service_id}/registro", 'public');
+        }
+
+        $devolucion = [];
+        foreach (array_slice($request->file('evidencia_devolucion', []), 0, 5) as $foto) {
+            $devolucion[] = $foto->store("evidencias/{$tracking->service_id}/registro", 'public');
+        }
+
+        $tracking->update([
+            'registro_data' => [
+                'tipo_mantenimiento' => $validated['tipo_mantenimiento'],
+                'movimientos' => $validated['movimientos'] ?? [],
+                'movimientos_otros' => $validated['movimientos_otros'] ?? null,
+                'evidencia_envio' => $envio,
+                'evidencia_devolucion' => $devolucion,
+            ],
+        ]);
+
+        return redirect()->to($this->nextUrl($tracking->service))
+            ->with('success', 'Registro de mantenimiento guardado.');
+    }
+
+    private function nextUrl(Service $service): string
+    {
+        $pendiente = $service->serviceTrackings()
+            ->where('status', 'pendiente')
+            ->latest('id')
+            ->first();
+
+        return $pendiente?->qr_token
+            ? route('qr.show', $pendiente->qr_token)
+            : route('qr.completed');
     }
 
     public function print(string $token)

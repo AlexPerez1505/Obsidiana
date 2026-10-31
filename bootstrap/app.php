@@ -4,7 +4,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\PostTooLargeException;
-use Sentry\Laravel\Integration;
 
 $app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -22,6 +21,12 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'approved' => \App\Http\Middleware\EnsureAccountApproved::class,
             'dispositivo' => \App\Http\Middleware\AutenticarDispositivo::class,
             'api.cuenta' => \App\Http\Middleware\CuentaActivaApi::class,
+        ]);
+
+        // Global: el rol Mantenimiento no entra a nada fuera de su tablero
+        // y Órdenes de servicio, ni tecleando la URL directo.
+        $middleware->web(append: [
+            \App\Http\Middleware\RestrictMantenimientoAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -47,7 +52,9 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         // Manda cualquier error no controlado a Sentry (si SENTRY_LARAVEL_DSN
         // está configurado en .env; si no, esto no hace nada).
-        Integration::handles($exceptions);
+        if (class_exists(\Sentry\Laravel\Integration::class)) {
+            \Sentry\Laravel\Integration::handles($exceptions);
+        }
     })->create();
 
 // Si el .env no se alcanza a leer en una petición, se reintenta (ver la clase).

@@ -57,7 +57,7 @@ class LoginController extends Controller
             return redirect()->route('approval.pending');
         }
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(route($user->homeRoute()));
     }
 
     public function destroy(Request $request): RedirectResponse

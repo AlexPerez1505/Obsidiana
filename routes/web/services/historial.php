@@ -1,24 +1,27 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Services\EquipmentReportController;
 use App\Http\Controllers\Services\QrController;
 use App\Http\Controllers\Services\ServiceController;
-use App\Models\Brand;
-use App\Models\Customer;
+use App\Http\Controllers\Services\ServicioExternoController;
 use App\Models\EquipmentType;
-use App\Models\ExternalTechnician;
 use App\Models\Service;
-use App\Models\Equipo;
 use App\Models\GarantiaDocumento;
+use App\Models\Venta;
+use App\Models\Customer;
+use App\Models\Brand;
+use App\Models\Equipo;
+use App\Models\ExternalTechnician;
 use App\Services\Servicios\CartasDeGarantia;
 use App\Services\Servicios\Mantenimientos;
 use App\Services\Servicios\OrdenesDeServicio;
 
 Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(function () {
     Route::get('/gestion-servicios/historial-servicios', function () {
-        $services = Service::with(['customer', 'currentStep'])->latest()->get();
+        $services = Service::with(['customer', 'serviceEquipment'])->latest()->get();
         return view('structure.gestion_servicios.historial_servicios.menu_historial_servicios', compact('services'));
     })->name('gestion.servicios.historial');
     Route::get('/gestion-servicios/historial-servicios/nueva-orden', function () {
@@ -57,6 +60,28 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
 
         return view('structure.gestion_servicios.historial_servicios.aprobaciones.show', compact('service'));
     })->name('gestion.servicios.historial.aprobaciones.show');
+
+    Route::post('/gestion-servicios/historial-servicios/aprobaciones/{service}/cotizacion', [ServiceController::class, 'updateCotizacionPrecios'])
+        ->name('gestion.servicios.historial.aprobaciones.cotizacion');
+
+    Route::get('/gestion-servicios/historial-servicios/aprobaciones/cliente/{service}', [ServiceController::class, 'customerShow'])
+        ->name('gestion.servicios.historial.aprobaciones.cliente')
+        ->middleware('signed');
+
+    Route::post('/gestion-servicios/historial-servicios/aprobaciones/cliente/{service}/decision', [ServiceController::class, 'customerDecide'])
+        ->name('gestion.servicios.historial.aprobaciones.cliente.decision')
+        ->middleware('signed');
+
+    Route::get('/gestion-servicios/historial-servicios/externo', function () {
+        $services = Service::with(['customer', 'serviceEquipment', 'internalTechnician', 'externalTechnician', 'currentStep'])
+            ->where('service_type', 'externo')
+            ->whereIn('status', ['aprobado', 'en_progreso', 'completado', 'entregado'])
+            ->latest()
+            ->get();
+
+        return view('structure.gestion_servicios.historial_servicios.Mantenimiento_Externo.Mantenimiento', compact('services'));
+    })->name('gestion.servicios.externo');
+
     Route::get('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'show'])
         ->name('gestion.servicios.historial.show');
     Route::post('/gestion-servicios/historial-servicios/{service}/aprobar', [ServiceController::class, 'approve'])
@@ -65,6 +90,16 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
         ->middleware('can:servicios.crear')->name('gestion.servicios.historial.deny');
     Route::post('/gestion-servicios/historial-servicios/{service}/renovar-qr', [QrController::class, 'renew'])
         ->middleware('can:servicios.crear')->name('qr.renew');
+    Route::get('/gestion-servicios/historial-servicios/{service}/editar', [ServiceController::class, 'edit'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.edit');
+    Route::put('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'update'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.update');
+    Route::delete('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'destroy'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.destroy');
+    Route::post('/gestion-servicios/historial-servicios/{service}/validar-os', [ServicioExternoController::class, 'validarOs'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.validar_os');
+    Route::post('/gestion-servicios/historial-servicios/{service}/enviar-cliente', [ServicioExternoController::class, 'enviarCliente'])
+        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.enviar_cliente');
 
     Route::post('/gestion-servicios/historial-servicios/nueva-orden/external-technicians', function (Request $request, OrdenesDeServicio $ordenes) {
         $technician = $ordenes->registrarTecnicoExterno($request);
@@ -92,6 +127,48 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
         return redirect()->route('gestion.servicios.garantia.index')->with('success', 'Carta agregada correctamente.');
     })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.guardar_carta');
 
+    Route::get('/gestion-servicios/garantia/{documento}/editar', function (GarantiaDocumento $documento) {
+        $equipmentTypes = EquipmentType::orderBy('name')->get();
+        return view('structure.gestion_servicios.garantia.create', compact('equipmentTypes', 'documento'));
+    })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.editar');
+
+    Route::put('/gestion-servicios/garantia/{documento}', function (Request $request, GarantiaDocumento $documento) {
+        $data = $request->validate([
+            'nombre' => 'required|string|max:255',
+            'tipo_equipo' => 'required|string|max:255',
+            'archivos.*' => 'nullable|file|max:20480',
+        ]);
+
+        $archivos = $documento->archivos ?? [];
+        foreach ($request->file('archivos', []) as $archivo) {
+            $archivos[] = $archivo->store('garantias', 'public');
+        }
+
+        $documento->update([
+            'nombre' => $data['nombre'],
+            'tipo_equipo' => $data['tipo_equipo'],
+            'archivos' => $archivos,
+        ]);
+
+        return redirect()->route('gestion.servicios.garantia.index')->with('success', 'Carta actualizada correctamente.');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.actualizar');
+
+    Route::delete('/gestion-servicios/garantia/{documento}', function (GarantiaDocumento $documento) {
+        foreach ($documento->archivos ?? [] as $path) {
+            Storage::disk('public')->delete($path);
+        }
+        $documento->delete();
+
+        return redirect()->route('gestion.servicios.garantia.index')->with('success', 'Carta eliminada correctamente.');
+    })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.eliminar');
+
+    Route::get('/gestion-servicios/garantia/{documento}/descargar/{index?}', function (GarantiaDocumento $documento, int $index = 0) {
+        $path = $documento->archivos[$index] ?? null;
+        abort_unless($path && Storage::disk('public')->exists($path), 404);
+
+        return Storage::disk('public')->download($path);
+    })->name('gestion.servicios.garantia.descargar');
+
     Route::get('/gestion-servicios/mantenimiento', function (Mantenimientos $mantenimientos) {
         $technicians = $mantenimientos->tecnicos();
         $selected = $mantenimientos->seleccionar($technicians, request('tipo'), request('tecnico'));
@@ -117,7 +194,7 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
         $datos = $mantenimientos->datosDelReporte($service);
 
         $html = file_get_contents(
-            resource_path('views/structure/gestion_servicios/mantenimiento/Fujinon.blade.php')
+            resource_path('views/structure/gestion_servicios/Registro/Fujinon.blade.php')
         );
 
         $script = '<style>'
@@ -224,6 +301,12 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
             .'});'
             .'}})();</script>';
 
+        $script .= '<script>(function(){'
+            .'if(new URLSearchParams(location.search).has("descargar")){'
+            .'window.addEventListener("load",function(){setTimeout(function(){window.print();},600);});'
+            .'}'
+            .'})();</script>';
+
         $pos = strripos($html, '</body>');
         $html = $pos === false
             ? $html.$script
@@ -248,6 +331,10 @@ Route::get('/qr/{token}', [QrController::class, 'show'])
     ->name('qr.show');
 Route::post('/qr/{token}', [QrController::class, 'update'])
     ->name('qr.update');
+Route::get('/qr/{token}/registro', [QrController::class, 'registro'])
+    ->name('qr.registro');
+Route::post('/qr/{token}/registro', [QrController::class, 'guardarRegistro'])
+    ->name('qr.registro.guardar');
 Route::get('/qr/{token}/imprimir', [QrController::class, 'print'])
     ->name('qr.print');
 Route::get('/qr-completado', function () {

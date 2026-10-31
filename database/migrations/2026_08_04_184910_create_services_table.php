@@ -19,7 +19,9 @@ return new class extends Migration
             $table->foreignId('internal_technician_id')->nullable()->constrained('users');
             $table->foreignId('external_technician_id')->nullable()->constrained('external_technicians');
             $table->foreignId('registered_by')->constrained('users');
-            $table->foreignId('current_step_id')->nullable()->constrained('service_steps');
+            // service_steps se crea en la siguiente migración; la FK no puede
+            // declararse aquí en una base nueva.
+            $table->unsignedBigInteger('current_step_id')->nullable();
             $table->string('qr_token')->nullable()->unique();
             $table->timestamp('qr_expires_at')->nullable();
             $table->longText('signature')->nullable();

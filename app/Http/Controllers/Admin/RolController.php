@@ -30,7 +30,6 @@ class RolController extends Controller
         return view('structure.Configuracion.roles.index', [
             'roles' => $roles,
             'grupos' => CatalogoPermisos::grupos(),
-            'totalPermisos' => count(CatalogoPermisos::llaves()),
         ]);
     }
 
