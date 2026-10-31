@@ -16,6 +16,18 @@
         /* ===================== Una tarjeta por unidad =====================
            La evidencia de cómo llegó cada pieza se ve de entrada: sus fotos
            y su video, sin tener que abrir nada. */
+        /* Vista en tarjetas */
+        .prod-card { cursor:pointer; padding:0; overflow:hidden; display:flex; flex-direction:column; }
+        .prod-card > :not(.prod-card-foto) { margin-left:16px; margin-right:16px; }
+        .prod-card .data-card-foot { margin-bottom:14px; }
+        .prod-card-foto { position:relative; aspect-ratio:4/3; background:var(--surface-2);
+                          display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:13px;
+                          border-bottom:1px solid var(--border); }
+        .prod-card-foto img { width:100%; height:100%; object-fit:cover; display:block; }
+        .prod-card-check { position:absolute; top:10px; left:10px; display:flex; padding:6px; border-radius:7px;
+                           background:var(--surface); border:1px solid var(--border); cursor:pointer; }
+        .prod-card-check input { width:16px; height:16px; margin:0; cursor:pointer; }
+
         .unidad-card { border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:12px; }
         .unidad-card:last-child { margin-bottom:0; }
         .unidad-card-head { display:flex; align-items:flex-start; gap:12px; margin-bottom:12px; }
@@ -88,6 +100,7 @@
         @endif
 
         <div style="flex:1;"></div>
+        <x-ui.view-switch key="productos" />
         <a href="{{ route('inventory.paquetes.index') }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"/></svg>
             Paquetes
@@ -107,14 +120,14 @@
     </div>
 
     <x-ui.card>
-        <div style="overflow-x:auto;">
+        <div style="overflow-x:auto;" data-view-list>
             <table>
                 <thead>
                     <tr>
                         <th style="width:36px;"></th>
                         <th>Imagen</th>
-                        <th>Equipo</th>
-                        <th>Marca / Modelo</th>
+                        <th>Producto</th>
+                        <th>Modelo / Marca</th>
                         {{-- El precio es dato de administración: la columna
                              no se dibuja para quien no puede verlo. --}}
                         @if (\App\Support\PrecioVisible::para())
@@ -138,14 +151,19 @@
                                     <div style="width:50px; height:50px; background:var(--surface); border:1px solid var(--border); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:20px;">—</div>
                                 @endif
                             </td>
+                            {{-- Primero el nombre del producto (su subtipo) y abajo el tipo;
+                                 primero el modelo y abajo la marca. --}}
                             <td>
-                                <div style="font-weight:700;">{{ $producto->tipo_equipo }}</div>
-                                @if($producto->subtipo)
-                                    <div class="muted" style="font-size:12.5px;">{{ $producto->subtipo }}</div>
+                                <div style="font-weight:700;">{{ $producto->nombreVisible() }}</div>
+                                @if ($producto->subtipo && $producto->tipo_equipo)
+                                    <div class="muted" style="font-size:12.5px;">{{ $producto->tipo_equipo }}</div>
                                 @endif
                             </td>
                             <td>
-                                {{ $producto->marca ?: '—' }} {{ $producto->modelo }}
+                                <div style="font-weight:600;">{{ $producto->modelo ?: '—' }}</div>
+                                @if ($producto->marca)
+                                    <div class="muted" style="font-size:12.5px;">{{ $producto->marca }}</div>
+                                @endif
                                 @if ($producto->referencia)
                                     <div class="muted" style="font-size:12.5px;">Ref. {{ $producto->referencia }}</div>
                                 @endif
@@ -209,6 +227,55 @@
                 </tbody>
             </table>
         </div>
+
+        {{-- ===================== Vista en tarjetas =====================
+             Misma información que la tabla. Tocar la tarjeta abre las
+             unidades disponibles, igual que la fila. --}}
+        <div class="data-cards" data-view-cards style="display:none;">
+            @forelse ($productos as $producto)
+                <article class="data-card prod-card" title="Ver unidades disponibles"
+                         onclick="if (!event.target.closest('a, input, label')) { document.getElementById('unidades-modal-{{ $producto->id }}').style.display='flex'; }">
+                    <div class="prod-card-foto">
+                        @if ($producto->imagen_path)
+                            <img src="{{ asset('storage/' . $producto->imagen_path) }}" alt="{{ $producto->nombreVisible() }}" loading="lazy">
+                        @else
+                            <span>Sin foto</span>
+                        @endif
+                        <label class="prod-card-check" title="Agrupar en paquete" onclick="event.stopPropagation();">
+                            <input type="checkbox" value="{{ $producto->id }}" onchange="espejoPaquete(this)"
+                                   aria-label="Seleccionar {{ $producto->nombreVisible() }} para un paquete">
+                        </label>
+                    </div>
+
+                    <div class="data-card-top" style="padding-top:12px;">
+                        <div style="min-width:0; flex:1;">
+                            <div class="t">{{ $producto->nombreVisible() }}</div>
+                            @if ($producto->subtipo && $producto->tipo_equipo)
+                                <div class="s">{{ $producto->tipo_equipo }}</div>
+                            @endif
+                        </div>
+                        <span class="badge {{ $producto->stock > 0 ? 'badge--ok' : 'badge--danger' }}">{{ $producto->stock }} u.</span>
+                    </div>
+
+                    <dl>
+                        <div><dt>Modelo</dt><dd>{{ $producto->modelo ?: '—' }}</dd></div>
+                        <div><dt>Marca</dt><dd>{{ $producto->marca ?: '—' }}</dd></div>
+                        @if ($producto->referencia)
+                            <div><dt>Referencia</dt><dd>{{ $producto->referencia }}</dd></div>
+                        @endif
+                        @if (\App\Support\PrecioVisible::para())
+                            <div><dt>Precio de venta</dt><dd>{{ \App\Support\PrecioVisible::texto($producto) }}</dd></div>
+                        @endif
+                    </dl>
+
+                    <div class="data-card-foot">
+                        <a class="tbl-link" href="{{ route('inventory.productos.show', $producto) }}">Ver ficha</a>
+                    </div>
+                </article>
+            @empty
+                <p class="muted" style="text-align:center; padding:32px; grid-column:1/-1;">No hay productos registrados.</p>
+            @endforelse
+        </div>
         @include('partials._paginacion', ['paginator' => $productos])
     </x-ui.card>
 
@@ -218,7 +285,7 @@
             <div class="unidades-modal">
                 <div class="unidades-modal-head">
                     <div>
-                        <strong>{{ trim($producto->marca.' '.$producto->modelo) ?: $producto->tipo_equipo }}</strong>
+                        <strong>{{ $producto->nombreVisible() }}{{ $producto->modelo ? ' · '.trim($producto->modelo.' '.$producto->marca) : '' }}</strong>
                         <div class="muted" style="font-size:12.5px;">Unidades disponibles ({{ $producto->serialesDisponibles->count() }})</div>
                     </div>
                     <button type="button" class="btn btn--ghost" style="padding:5px 10px;" onclick="document.getElementById('unidades-modal-{{ $producto->id }}').style.display='none'">Cerrar</button>
@@ -248,7 +315,7 @@
 
                         $nFotos = count($evidencias);
                         $etiquetaMedios = $nFotos.' '.($nFotos === 1 ? 'foto' : 'fotos').($video ? ' + video' : '');
-                        $modelo = trim($producto->marca.' '.$producto->modelo) ?: $producto->tipo_equipo;
+                        $modelo = trim($producto->modelo.' '.$producto->marca) ?: $producto->nombreVisible();
                     @endphp
                     <div class="unidad-card" data-buscar="{{ mb_strtolower(trim($serial->no_serie.' '.$serial->codigo)) }}"
                          @if ($medios->isNotEmpty()) data-medios="{{ $medios->toJson() }}" @endif>
@@ -397,6 +464,11 @@
             if (e.key === 'ArrowLeft') moverGaleria(-1);
             if (e.key === 'ArrowRight') moverGaleria(1);
         });
+        function espejoPaquete(casilla) {
+            document.querySelectorAll('.producto-checkbox[value="' + casilla.value + '"]').forEach(c => { c.checked = casilla.checked; });
+            actualizarSeleccionPaquete();
+        }
+
         function actualizarSeleccionPaquete() {
             const marcados = document.querySelectorAll('.producto-checkbox:checked');
             const boton = document.getElementById('btn-agrupar-paquete');

@@ -131,7 +131,7 @@ class ProcesoController extends Controller
             abort(409, $razon);
         }
 
-        $data = $request->validate(ColasDeProcesos::REGLAS_CIERRE, ColasDeProcesos::MENSAJES_CIERRE);
+        $data = $request->validate(ColasDeProcesos::reglasCierre(), ColasDeProcesos::MENSAJES_CIERRE);
 
         $razones = $this->colas->cerrar(
             $paso,

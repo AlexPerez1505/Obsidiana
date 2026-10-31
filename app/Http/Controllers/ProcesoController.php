@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\PiezaProceso;
 use App\Models\ProductoSerial;
 use App\Services\Almacen\ColasDeProcesos;
+use App\Services\Inventario\FotoPorPedazos;
 use App\Services\RutaDeProcesos;
 use App\Support\ChecklistProceso;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -49,7 +52,7 @@ class ProcesoController extends Controller
     /** La pantalla de trabajo de una pieza en un proceso. */
     public function show(PiezaProceso $paso): View
     {
-        $paso->load(['pieza.producto', 'pieza.procesos', 'pieza.entrada', 'responsable', 'cerradoPor']);
+        $paso->load(['pieza.producto', 'pieza.procesos', 'pieza.entrada', 'responsable', 'cerradoPor', 'avances.autor']);
 
         return view('structure.gestion_Inventario.procesos.show', [
             'paso' => $paso,
@@ -77,13 +80,14 @@ class ProcesoController extends Controller
      */
     public function terminar(Request $request, PiezaProceso $paso): RedirectResponse
     {
-        $data = $request->validate(ColasDeProcesos::REGLAS_CIERRE, ColasDeProcesos::MENSAJES_CIERRE);
+        $data = $request->validate(ColasDeProcesos::reglasCierre(), ColasDeProcesos::MENSAJES_CIERRE);
 
         $razones = $this->colas->cerrar(
             $paso,
             $data['checklist'] ?? [],
             $request->file('evidencias') ?? [],
-            $data['trabajo_realizado'] ?? null
+            $data['trabajo_realizado'] ?? null,
+            $data['fotos_paths'] ?? []
         );
 
         if ($razones) {
@@ -97,6 +101,49 @@ class ProcesoController extends Controller
         $mensaje .= $falta ? " Sigue en {$falta}." : ' Ya está disponible para venta.';
 
         return redirect()->route('inventory.procesos.index')->with('status', $mensaje);
+    }
+
+    /**
+     * Guarda lo que va sin cerrar el proceso: el checklist contestado hasta
+     * ahora, y la nota y fotos de hoy como un avance más de la bitácora.
+     */
+    public function avance(Request $request, PiezaProceso $paso): RedirectResponse
+    {
+        $data = $request->validate(ColasDeProcesos::reglasAvance());
+
+        $razones = $this->colas->guardarAvance(
+            $paso,
+            $data['checklist'] ?? [],
+            $data['trabajo_realizado'] ?? null,
+            $data['nota'] ?? null,
+            $request->file('evidencias') ?? [],
+            $data['fotos_paths'] ?? []
+        );
+
+        if ($razones) {
+            return back()->withInput()->withErrors(['cierre' => implode(' ', $razones)]);
+        }
+
+        return redirect()->route('inventory.procesos.show', $paso)
+            ->with('status', "Avance guardado. Puedes seguir mañana donde te quedaste.");
+    }
+
+    /** Recibe un pedazo de una foto de avance o de cierre (sin límite de tamaño ni formato). */
+    public function subirFotoChunk(Request $request, FotoPorPedazos $fotos): JsonResponse
+    {
+        $data = $request->validate(FotoPorPedazos::reglas());
+
+        try {
+            return response()->json($fotos->recibir(
+                $request->file('chunk'),
+                $data['upload_id'],
+                (int) $data['index'],
+                (int) $data['total'],
+                $data['extension'],
+            ));
+        } catch (ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
+        }
     }
 
     /** Descarta un paso que al verlo de cerca no hacía falta. */

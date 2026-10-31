@@ -385,6 +385,7 @@
     </form>
 
     {{-- Captura primero: define pintarPiezas() y el resumen que usan los pasos. --}}
+    @include('structure.gestion_Inventario._subir_fotos')
     @include('structure.gestion_Inventario.entrada_salida._script_captura')
     @include('structure.gestion_Inventario.entrada_salida._script_checklist')
     @include('structure.gestion_Inventario.entrada_salida._script_pasos')

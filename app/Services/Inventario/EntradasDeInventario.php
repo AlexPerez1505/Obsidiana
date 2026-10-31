@@ -53,27 +53,6 @@ class EntradasDeInventario
     public function __construct(private VideoPorPedazos $videos, private FotoPorPedazos $fotos) {}
 
     /**
-     * Una foto subida directo (la API) puede ser de cualquier formato de
-     * imagen y de cualquier tamaño: HEIC, TIFF, RAW, WEBP... Solo se revisa
-     * que de verdad sea una imagen y no un script disfrazado.
-     */
-    private static function reglaFoto(): \Closure
-    {
-        return function (string $campo, $archivo, \Closure $falla) {
-            $extension = strtolower((string) $archivo?->getClientOriginalExtension());
-            $mime = (string) $archivo?->getMimeType();
-            $raw = ['heic', 'heif', 'dng', 'cr2', 'cr3', 'nef', 'arw', 'orf', 'rw2', 'raf', 'srw', 'pef'];
-
-            $esImagen = (str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml')
-                || (in_array($extension, $raw, true) && ! str_starts_with($mime, 'text/'));
-
-            if (! $esImagen) {
-                $falla('Ese archivo no es una imagen.');
-            }
-        };
-    }
-
-    /**
      * La evidencia es de cada pieza, no del lote.
      *
      * Si llegaron 3 piezas son 3 juegos de fotos, uno por pieza: cada una
@@ -102,7 +81,7 @@ class EntradasDeInventario
             // La foto del catálogo: subida por pedazos (imagen_path) desde
             // la pantalla, o como archivo directo desde la API. Sin límite
             // de tamaño ni de formato de imagen.
-            'imagen' => ['nullable', 'file', self::reglaFoto()],
+            'imagen' => ['nullable', 'file', FotoPorPedazos::reglaArchivo()],
             'imagen_path' => ['nullable', 'string'],
             // Opcionales. La caducidad solo aplica a equipo nuevo.
             'fecha_fabricacion' => ['nullable', 'date'],
@@ -116,7 +95,7 @@ class EntradasDeInventario
             // pantalla) o como archivos (evidencias, la API). Que cada pieza
             // traiga al menos una se revisa en registrar(), sumando las dos.
             'unidades.*.evidencias' => ['nullable', 'array', 'max:3'],
-            'unidades.*.evidencias.*' => ['file', self::reglaFoto()],
+            'unidades.*.evidencias.*' => ['file', FotoPorPedazos::reglaArchivo()],
             'unidades.*.fotos_paths' => ['nullable', 'array', 'max:3'],
             'unidades.*.fotos_paths.*' => ['string'],
             'unidades.*.video_path' => ['nullable', 'string'],

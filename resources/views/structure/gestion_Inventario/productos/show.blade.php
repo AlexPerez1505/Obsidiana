@@ -1,8 +1,9 @@
 @extends('layouts.dashboard')
 
 @php
-    $nombre = trim(collect([$producto->tipo_equipo, $producto->subtipo])->filter()->implode(' · ')) ?: 'Producto';
-    $marcaModelo = trim(collect([$producto->marca, $producto->modelo])->filter()->implode(' '));
+    // Primero el nombre del producto (subtipo) y luego el tipo; primero el modelo y luego la marca.
+    $nombre = trim(collect([$producto->subtipo, $producto->tipo_equipo])->filter()->unique()->implode(' · ')) ?: 'Producto';
+    $marcaModelo = trim(collect([$producto->modelo, $producto->marca])->filter()->implode(' · '));
 @endphp
 
 @section('title', $nombre)

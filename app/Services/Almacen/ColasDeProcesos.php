@@ -3,7 +3,9 @@
 namespace App\Services\Almacen;
 
 use App\Models\PiezaProceso;
+use App\Models\PiezaProcesoAvance;
 use App\Models\ProductoSerial;
+use App\Services\Inventario\FotoPorPedazos;
 use App\Services\RutaDeProcesos;
 use App\Support\ChecklistProceso;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,14 +32,35 @@ class ColasDeProcesos
         // checklist es obligatorio" que no ayuda.
         'checklist' => ['nullable', 'array'],
         'trabajo_realizado' => ['nullable', 'string', 'max:1000'],
-        'evidencias' => ['nullable', 'array', 'max:5'],
-        'evidencias.*' => ['image', 'max:5120'],
+        // Fotos sin límite de cantidad, tamaño ni formato: llegan ya subidas
+        // por pedazos (fotos_paths, la pantalla) o como archivos (la API).
+        'evidencias' => ['nullable', 'array'],
+        'fotos_paths' => ['nullable', 'array'],
+        'fotos_paths.*' => ['string'],
     ];
 
-    public const MENSAJES_CIERRE = [
-        'evidencias.*.image' => 'La evidencia tiene que ser una foto.',
-        'evidencias.max' => 'Puedes subir máximo 5 fotos.',
+    public const MENSAJES_CIERRE = [];
+
+    /** Un avance del día: lo que va del checklist, una nota y sus fotos. */
+    public const REGLAS_AVANCE = [
+        'checklist' => ['nullable', 'array'],
+        'trabajo_realizado' => ['nullable', 'string', 'max:1000'],
+        'nota' => ['nullable', 'string', 'max:3000'],
+        'evidencias' => ['nullable', 'array'],
+        'fotos_paths' => ['nullable', 'array'],
+        'fotos_paths.*' => ['string'],
     ];
+
+    /** Las fotos subidas como archivo (API) pueden ser cualquier imagen, de cualquier tamaño. */
+    public static function reglasCierre(): array
+    {
+        return self::REGLAS_CIERRE + ['evidencias.*' => ['file', FotoPorPedazos::reglaArchivo()]];
+    }
+
+    public static function reglasAvance(): array
+    {
+        return self::REGLAS_AVANCE + ['evidencias.*' => ['file', FotoPorPedazos::reglaArchivo()]];
+    }
 
     public const REGLAS_OMITIR = [
         'motivo' => ['required', 'string', 'min:10', 'max:1000'],
@@ -48,8 +71,10 @@ class ColasDeProcesos
         'motivo.min' => 'Explica un poco más: esto queda como constancia de la decisión.',
     ];
 
-    public function __construct(private readonly RutaDeProcesos $ruta)
-    {
+    public function __construct(
+        private readonly RutaDeProcesos $ruta,
+        private readonly FotoPorPedazos $fotos,
+    ) {
     }
 
     /**
@@ -101,15 +126,22 @@ class ColasDeProcesos
      * en el disco, y si algo cambia entre la revisión y el guardado, se
      * borra lo que se alcanzó a subir.
      *
+     * Las fotos de los avances de días anteriores también cuentan.
+     *
      * @param  array<int, UploadedFile>  $fotos
+     * @param  array<int, string>  $fotosPaths  fotos ya subidas por pedazos
      * @return array<int, string>
      */
-    public function cerrar(PiezaProceso $paso, ?array $checklistRecibido, array $fotos, ?string $trabajoRealizado): array
+    public function cerrar(PiezaProceso $paso, ?array $checklistRecibido, array $fotos, ?string $trabajoRealizado, array $fotosPaths = []): array
     {
         $checklist = ChecklistProceso::limpiar($paso, $checklistRecibido ?? []);
-        $yaTenia = count($paso->evidencias ?? []);
+        $previas = $this->resolverFotos($fotosPaths);
 
-        $razones = ChecklistProceso::razonesParaNoCerrar($paso, $checklist, $yaTenia + count($fotos));
+        if ($previas === null) {
+            return ['Una de las fotos no se subió correctamente. Vuelve a subirla.'];
+        }
+
+        $razones = ChecklistProceso::razonesParaNoCerrar($paso, $checklist, $paso->totalFotos() + count($previas) + count($fotos));
 
         if ($razones) {
             return $razones;
@@ -122,7 +154,7 @@ class ColasDeProcesos
             ->all();
 
         try {
-            $this->ruta->terminar($paso, $checklist, $subidas, $trabajoRealizado);
+            $this->ruta->terminar($paso, $checklist, array_merge($previas, $subidas), $trabajoRealizado);
         } catch (\RuntimeException $e) {
             Storage::disk($disco)->delete($subidas);
 
@@ -130,6 +162,83 @@ class ColasDeProcesos
         }
 
         return [];
+    }
+
+    /**
+     * Guarda lo que va del proceso sin cerrarlo: lo contestado del checklist,
+     * lo que se le ha hecho, y si trae nota o fotos, un avance nuevo en la
+     * bitácora. Se puede guardar cuantas veces haga falta, un día y otro.
+     *
+     * Si nadie había tomado la pieza, quien guarda el avance la toma.
+     *
+     * @param  array<int, UploadedFile>  $fotos
+     * @param  array<int, string>  $fotosPaths
+     * @return array<int, string>  razones por las que no se guardó (vacío = se guardó)
+     */
+    public function guardarAvance(PiezaProceso $paso, ?array $checklistRecibido, ?string $trabajoRealizado, ?string $nota, array $fotos, array $fotosPaths): array
+    {
+        if (in_array($paso->estado, ['terminado', 'omitido'], true)) {
+            return ['Este proceso ya se cerró.'];
+        }
+
+        $previas = $this->resolverFotos($fotosPaths);
+
+        if ($previas === null) {
+            return ['Una de las fotos no se subió correctamente. Vuelve a subirla.'];
+        }
+
+        if ($paso->estado === 'pendiente') {
+            $this->ruta->iniciar($paso, auth()->id());
+            $paso->refresh();
+        }
+
+        $disco = config('filesystems.fotos_disk', 'public');
+        $subidas = collect($fotos)
+            ->map(fn (UploadedFile $archivo) => $archivo->store('inventario/procesos', $disco))
+            ->all();
+
+        // El checklist se guarda como borrador: lo que ya se contestó se
+        // queda marcado para el día siguiente.
+        $paso->update([
+            'checklist_salida' => ChecklistProceso::limpiar($paso, $checklistRecibido ?? []),
+            'trabajo_realizado' => filled($trabajoRealizado) ? $trabajoRealizado : $paso->trabajo_realizado,
+        ]);
+
+        $evidencias = array_merge($previas, $subidas);
+        $nota = trim((string) $nota);
+
+        if ($nota !== '' || $evidencias) {
+            PiezaProcesoAvance::create([
+                'pieza_proceso_id' => $paso->id,
+                'user_id' => auth()->id(),
+                'nota' => $nota !== '' ? $nota : null,
+                'evidencias' => $evidencias ?: null,
+            ]);
+        }
+
+        return [];
+    }
+
+    /**
+     * Confirma que cada ruta sea de una foto real ya subida por pedazos.
+     *
+     * @return array<int, string>|null  null si alguna no es válida
+     */
+    private function resolverFotos(array $paths): ?array
+    {
+        $buenas = [];
+
+        foreach ($paths as $ruta) {
+            $resuelta = $this->fotos->resolver(trim((string) $ruta));
+
+            if ($resuelta === null) {
+                return null;
+            }
+
+            $buenas[] = $resuelta;
+        }
+
+        return $buenas;
     }
 
     public static function reglasAgregar(): array

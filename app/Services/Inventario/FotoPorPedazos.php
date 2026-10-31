@@ -42,6 +42,26 @@ class FotoPorPedazos
     }
 
     /**
+     * Regla para una foto subida como archivo completo (la API): cualquier
+     * formato de imagen y cualquier tamaño. Solo se revisa que de verdad sea
+     * una imagen y no un script disfrazado.
+     */
+    public static function reglaArchivo(): \Closure
+    {
+        return function (string $campo, $archivo, \Closure $falla) {
+            $extension = strtolower((string) $archivo?->getClientOriginalExtension());
+            $mime = (string) $archivo?->getMimeType();
+
+            $esImagen = (str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml')
+                || (in_array($extension, self::RAW, true) && ! str_starts_with($mime, 'text/'));
+
+            if (! $esImagen || in_array($extension, self::PROHIBIDAS, true)) {
+                $falla('Ese archivo no es una imagen.');
+            }
+        };
+    }
+
+    /**
      * Guarda un pedazo y, si es el último, arma la foto.
      *
      * @return array{status: string, foto_path?: string, url?: string}

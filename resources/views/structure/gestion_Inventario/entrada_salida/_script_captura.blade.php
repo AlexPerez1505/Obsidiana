@@ -26,81 +26,18 @@
         const PREVIAS = @json(array_values((array) old('unidades', [])));
 
         /* ==========================================================
-           Fotos: se suben al elegirlas, en pedazos
-
-           Así no hay límite de tamaño (una foto de 30 MB pasa igual que una
-           de 1 MB) y se acepta cualquier formato de imagen. Las HEIC del
-           iPhone se convierten a JPG aquí mismo para que se vean en
-           cualquier pantalla; lo demás se sube tal como está. El formulario
-           solo manda la ruta de cada foto ya subida, por eso tampoco se
-           pierden si el servidor lo regresa con algún error.
+           Fotos: se suben al elegirlas, en pedazos (ObsFotos, compartido
+           con los procesos). Sin límite de tamaño y en cualquier formato;
+           el formulario solo manda la ruta de cada foto ya subida, así no
+           se pierden si el servidor lo regresa con algún error.
         ========================================================== */
         const URL_FOTO = @json(route('inventory.movimientos.fotoChunk'));
-        const URL_DISCO = @json(rtrim(\Illuminate\Support\Facades\Storage::disk(config('filesystems.fotos_disk', 'public'))->url(''), '/') . '/');
-        const ACEPTA_FOTOS = 'image/*,.heic,.heif,.tif,.tiff,.dng,.cr2,.cr3,.nef,.arw,.orf,.rw2,.raf';
-        const SE_VEN_EN_NAVEGADOR = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp', 'jfif'];
-
-        function extensionDe(nombre) {
-            return (String(nombre).split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'jpg';
-        }
-
-        let heic2anyListo = null;
-        function cargarHeic2any() {
-            heic2anyListo ??= new Promise(function (ok, falla) {
-                const s = document.createElement('script');
-                s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
-                s.onload = () => ok(window.heic2any);
-                s.onerror = () => { heic2anyListo = null; falla(new Error('No se pudo cargar el convertidor de HEIC.')); };
-                document.head.appendChild(s);
-            });
-            return heic2anyListo;
-        }
-
-        /* HEIC/HEIF → JPG. Si no se puede convertir, se sube el original. */
-        async function prepararFoto(archivo) {
-            const ext = extensionDe(archivo.name);
-            if (!['heic', 'heif'].includes(ext) && !/image\/hei[cf]/.test(archivo.type)) return archivo;
-
-            try {
-                const convertir = await cargarHeic2any();
-                const blob = await convertir({ blob: archivo, toType: 'image/jpeg', quality: 0.92 });
-                const unico = Array.isArray(blob) ? blob[0] : blob;
-                return new File([unico], archivo.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
-            } catch (e) {
-                return archivo;
-            }
-        }
-
-        async function subirFoto(archivo, alAvanzar) {
-            const extension = extensionDe(archivo.name);
-            const uploadId = (crypto.randomUUID
-                ? crypto.randomUUID()
-                : (Date.now() + '-' + Math.random().toString(36).slice(2))).replace(/[^a-zA-Z0-9-]/g, '');
-            const total = Math.max(1, Math.ceil(archivo.size / CHUNK_SIZE));
-
-            for (let index = 0; index < total; index++) {
-                const datos = new FormData();
-                datos.append('chunk', archivo.slice(index * CHUNK_SIZE, (index + 1) * CHUNK_SIZE), 'chunk');
-                datos.append('upload_id', uploadId);
-                datos.append('index', index);
-                datos.append('total', total);
-                datos.append('extension', extension);
-
-                const r = await fetch(URL_FOTO, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-                    body: datos,
-                });
-                const json = await r.json().catch(() => ({}));
-
-                if (!r.ok) throw new Error(json.message || 'No se pudo subir la foto.');
-
-                if (alAvanzar) alAvanzar(Math.round(((index + 1) / total) * 100));
-                if (json.status === 'listo') return json;
-            }
-
-            throw new Error('No se pudo subir la foto.');
-        }
+        const URL_DISCO = ObsFotos.urlDisco;
+        const ACEPTA_FOTOS = ObsFotos.ACEPTA;
+        const extensionDe = ObsFotos.extension;
+        const seVe = ObsFotos.seVe;
+        const prepararFoto = ObsFotos.preparar;
+        const subirFoto = (archivo, alAvanzar) => ObsFotos.subir(archivo, URL_FOTO, alAvanzar);
 
         /*
         | Zona para soltar fotos de una pieza. Las fotos se SUMAN hasta el
@@ -123,7 +60,7 @@
                     caja.className = 'mini' + (f.subiendo ? ' subiendo' : '') + (f.error ? ' con-error' : '');
 
                     const ext = extensionDe(f.nombre);
-                    if (f.url && SE_VEN_EN_NAVEGADOR.includes(ext)) {
+                    if (f.url && seVe(f.nombre)) {
                         const img = document.createElement('img');
                         img.src = f.url;
                         img.alt = f.nombre;
@@ -192,7 +129,7 @@
                 try {
                     const lista = await prepararFoto(archivo);
                     f.nombre = lista.name;
-                    if (SE_VEN_EN_NAVEGADOR.includes(extensionDe(lista.name))) f.url = URL.createObjectURL(lista);
+                    if (seVe(lista.name)) f.url = URL.createObjectURL(lista);
                     pintar();
 
                     const json = await subirFoto(lista, function (pct) { f.progreso = pct; pintar(); });
@@ -911,7 +848,7 @@
                 fotoCatalogoNota.textContent = 'Foto lista: ' + lista.name;
 
                 const actual = document.getElementById('imagen-actual');
-                if (actual && SE_VEN_EN_NAVEGADOR.includes(extensionDe(lista.name))) {
+                if (actual && seVe(lista.name)) {
                     actual.src = json.url;
                     document.getElementById('imagen-actual-wrap').style.display = '';
                 }

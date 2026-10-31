@@ -126,7 +126,8 @@ class RutaDeProcesos
         array $evidencias,
         ?string $trabajoRealizado = null
     ): void {
-        $razones = ChecklistProceso::razonesParaNoCerrar($paso, $checklist, count($evidencias));
+        // Cuentan también las fotos que ya tenía el paso y las de sus avances.
+        $razones = ChecklistProceso::razonesParaNoCerrar($paso, $checklist, $paso->totalFotos() + count($evidencias));
 
         if ($razones) {
             throw new \RuntimeException(implode(' ', $razones));

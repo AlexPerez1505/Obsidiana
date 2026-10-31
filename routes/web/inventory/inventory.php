@@ -61,6 +61,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->middleware('can:procesos.trabajar')->name('inventory.procesos.iniciar');
     Route::post('/gestion-inventario/procesos/{paso}/terminar', [ProcesoController::class, 'terminar'])
         ->middleware('can:procesos.trabajar')->name('inventory.procesos.terminar');
+    Route::post('/gestion-inventario/procesos/{paso}/avance', [ProcesoController::class, 'avance'])
+        ->middleware('can:procesos.trabajar')->name('inventory.procesos.avance');
+    Route::post('/gestion-inventario/procesos/foto-chunk', [ProcesoController::class, 'subirFotoChunk'])
+        ->middleware('can:procesos.trabajar')->name('inventory.procesos.fotoChunk');
     Route::post('/gestion-inventario/procesos/{paso}/omitir', [ProcesoController::class, 'omitir'])
         ->middleware('can:procesos.descartar')->name('inventory.procesos.omitir');
     Route::post('/gestion-inventario/procesos/pieza/{pieza}/agregar', [ProcesoController::class, 'agregar'])
