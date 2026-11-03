@@ -20,7 +20,7 @@
             form.querySelectorAll('.pieza-card').forEach(card => {
                 const n = card.querySelectorAll('[data-foto-path]').length;
                 const estado = card.querySelector('[data-estado]');
-                estado.textContent = usaFotoCompartida() ? (hayFotoCompartida() ? 'Foto compartida' : 'Falta la foto compartida')
+                estado.textContent = usaFotoCompartida() ? (hayFotoCompartida() ? 'Fotos compartidas' : 'Faltan las fotos compartidas')
                     : (n ? `${n} foto(s)` : 'Falta su foto');
                 estado.classList.toggle('listo', usaFotoCompartida() ? hayFotoCompartida() : n > 0);
             });
@@ -827,7 +827,7 @@
             let videos = 0;
 
             bloques.forEach(function (card) {
-                const cuantas = usaFotoCompartida() ? (hayFotoCompartida() ? 1 : 0) : card.querySelectorAll('[data-foto-path]').length;
+                const cuantas = usaFotoCompartida() ? panelCompartido.querySelectorAll('[data-foto-path]').length : card.querySelectorAll('[data-foto-path]').length;
                 fotos += cuantas;
                 if (cuantas === 0) sinFoto++;
                 if (card.querySelector('[data-video-path]')?.value) videos++;
@@ -882,7 +882,7 @@
         /* ===================== Arranque ===================== */
         zonaDeFotos(form.querySelector('[data-foto-compartida-zona]'), form.querySelector('[data-foto-compartida-minis]'),
             'foto_compartida_paths[]', {
-                max: 1,
+                max: MAX_FOTOS,
                 previas: @json(array_values((array) old('foto_compartida_paths', []))),
                 alCambiar: sincronizarFotoCompartida,
             });

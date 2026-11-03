@@ -87,7 +87,7 @@ class EntradasDeInventario
             'imagen' => ['nullable', 'file', FotoPorPedazos::reglaArchivo()],
             'imagen_path' => ['nullable', 'string'],
             'foto_compartida' => ['sometimes', 'boolean'],
-            'foto_compartida_paths' => ['required_if:foto_compartida,1', 'nullable', 'array', 'max:1'],
+            'foto_compartida_paths' => ['required_if:foto_compartida,1', 'nullable', 'array', 'max:3'],
             'foto_compartida_paths.*' => ['string'],
             // Opcionales. La caducidad solo aplica a equipo nuevo.
             'fecha_fabricacion' => ['nullable', 'date'],
@@ -136,14 +136,21 @@ class EntradasDeInventario
 
         $data['condicion'] ??= 'nuevo';
         $compartida = filter_var($data['foto_compartida'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        $fotoCompartida = null;
+        $fotosCompartidas = [];
         if ($compartida) {
             if ($usado) {
                 throw ValidationException::withMessages(['foto_compartida' => 'El equipo usado necesita fotos individuales por pieza.']);
             }
-            $fotoCompartida = $this->fotos->resolver((string) ($data['foto_compartida_paths'][0] ?? ''), $disco);
-            if ($fotoCompartida === null) {
-                throw ValidationException::withMessages(['foto_compartida_paths' => 'Sube la foto que se aplicará a todas las piezas nuevas.']);
+            $rutasCompartidas = (array) ($data['foto_compartida_paths'] ?? []);
+            if (count($rutasCompartidas) < 1 || count($rutasCompartidas) > 3) {
+                throw ValidationException::withMessages(['foto_compartida_paths' => 'Sube entre 1 y 3 fotos para todas las piezas nuevas.']);
+            }
+            foreach ($rutasCompartidas as $ruta) {
+                $resuelta = $this->fotos->resolver((string) $ruta, $disco);
+                if ($resuelta === null) {
+                    throw ValidationException::withMessages(['foto_compartida_paths' => 'Una foto compartida no se subió correctamente. Vuelve a subirla.']);
+                }
+                $fotosCompartidas[] = $resuelta;
             }
         }
 
@@ -257,15 +264,19 @@ class EntradasDeInventario
         | perder la evidencia ya subida.
         */
         $unidades = [];
+        $copiasCompartidas = [];
 
         foreach (array_keys($data['unidades']) as $posicion => $llave) {
             if ($compartida) {
-                $copia = dirname($fotoCompartida).'/'.\Illuminate\Support\Str::uuid().'.'.pathinfo($fotoCompartida, PATHINFO_EXTENSION);
-                if (! Storage::disk($disco)->copy($fotoCompartida, $copia)) {
-                    $this->borrarEvidencias(collect($unidades)->pluck('evidence_paths')->flatten()->all(), $disco);
-                    throw ValidationException::withMessages(['foto_compartida_paths' => 'No se pudo aplicar la foto a todas las piezas. Intenta de nuevo.']);
+                foreach ($fotosCompartidas as $fotoCompartida) {
+                    $copia = dirname($fotoCompartida).'/'.\Illuminate\Support\Str::uuid().'.'.pathinfo($fotoCompartida, PATHINFO_EXTENSION);
+                    if (! Storage::disk($disco)->copy($fotoCompartida, $copia)) {
+                        $this->borrarEvidencias($copiasCompartidas, $disco);
+                        throw ValidationException::withMessages(['foto_compartida_paths' => 'No se pudieron aplicar las fotos a todas las piezas. Intenta de nuevo.']);
+                    }
+                    $copiasCompartidas[] = $copia;
+                    $fotosPrevias[$posicion][] = $copia;
                 }
-                $fotosPrevias[$posicion] = [$copia];
             }
             $unidades[] = [
                 'no_serie' => $series->get($posicion),

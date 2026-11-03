@@ -302,13 +302,13 @@
 
             <x-ui.card style="margin-bottom:18px;" data-foto-compartida-opcion>
                 <label><input type="checkbox" name="foto_compartida" value="1" data-foto-compartida @checked(old('foto_compartida'))>
-                    Usar la misma foto para todas las piezas nuevas</label>
+                    Usar las mismas fotos para todas las piezas nuevas</label>
                 <p class="campo-nota">Solo para equipo nuevo. En usado cada pieza necesita sus propias fotos.</p>
                 <div data-foto-compartida-panel hidden>
                     <label class="soltar soltar--chico" data-foto-compartida-zona>
-                        <span class="t">Foto para todas las piezas *</span>
-                        <span class="d" data-cuenta>Sube una sola imagen para este lote</span>
-                        <input type="file" accept="image/*,.heic,.heif,.tif,.tiff,.dng,.cr2,.cr3,.nef,.arw,.orf,.rw2,.raf">
+                        <span class="t">Fotos para todas las piezas *</span>
+                        <span class="d" data-cuenta>Hasta 3 imágenes compartidas para este lote</span>
+                        <input type="file" accept="image/*,.heic,.heif,.tif,.tiff,.dng,.cr2,.cr3,.nef,.arw,.orf,.rw2,.raf" multiple>
                     </label>
                     <div class="miniaturas" data-foto-compartida-minis></div>
                     @error('foto_compartida_paths')<p class="err">{{ $message }}</p>@enderror
