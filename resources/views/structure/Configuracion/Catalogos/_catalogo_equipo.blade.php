@@ -41,7 +41,7 @@
     ];
 @endphp
 
-<div class="card catalog-card eq-card">
+<div class="card catalog-card eq-card" data-live="off">
     <div class="catalog-header">
         <h2 class="page-title">Catálogo de equipo</h2>
         <span class="catalog-count">Tipo → Subtipo → Marca → Modelo</span>
