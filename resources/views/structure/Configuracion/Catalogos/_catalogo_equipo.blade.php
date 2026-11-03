@@ -51,7 +51,12 @@
         Lo que se dé de alta aquí es lo que aparece en las listas del formulario de productos.
     </p>
 
-    <div class="eq-grid">
+    <div class="eq-search">
+        <label for="eq-buscar">Buscar en el catálogo de equipo</label>
+        <input type="search" id="eq-buscar" placeholder="Buscar tipo, subtipo, marca o modelo…" autocomplete="off" aria-controls="eq-resultados">
+    </div>
+
+    <div class="eq-grid" id="eq-resultados">
         {{-- ---------- Tipos ---------- --}}
         <section class="eq-col">
             <header class="eq-col-head">
@@ -291,14 +296,19 @@
 
 <x-catalogo.modal id="modalMarcaCrear" titulo="Nueva marca"
                   :accion="route('configuracion.catalogo_equipo.marcas.store')" boton="Guardar marca">
-    <label for="marcaCrearSubtipo">Subtipo donde se ofrece</label>
-    <select id="marcaCrearSubtipo" name="subtype_id" required>
-        @foreach ($subtiposPorTipo as $nombreTipo => $lista)
-            <optgroup label="{{ $nombreTipo }}">
-                @foreach ($lista as $sub)
-                    <option value="{{ $sub->id }}">{{ $sub->name }}</option>
-                @endforeach
-            </optgroup>
+    <label for="marcaCrearTipo">Tipo de equipo</label>
+    <select id="marcaCrearTipo" required>
+        <option value="">Selecciona un tipo de equipo</option>
+        @foreach ($equipmentTypes as $tipo)
+            <option value="{{ $tipo->id }}">{{ $tipo->name }}</option>
+        @endforeach
+    </select>
+
+    <label for="marcaCrearSubtipo" class="eq-mt">Subtipo donde se ofrece</label>
+    <select id="marcaCrearSubtipo" name="subtype_id" required disabled>
+        <option value="">Primero selecciona un tipo de equipo</option>
+        @foreach ($subtypes as $sub)
+            <option value="{{ $sub->id }}" data-tipo="{{ $sub->equipment_type_id }}">{{ $sub->name }}</option>
         @endforeach
     </select>
 
@@ -335,19 +345,26 @@
 
 <x-catalogo.modal id="modalModeloCrear" titulo="Nuevo modelo"
                   :accion="route('configuracion.catalogo_equipo.modelos.store')" boton="Guardar modelo">
-    <label for="modeloCrearSubtipo">Subtipo</label>
-    <select id="modeloCrearSubtipo" name="subtype_id" required data-cascada-subtipo>
-        @foreach ($subtiposPorTipo as $nombreTipo => $lista)
-            <optgroup label="{{ $nombreTipo }}">
-                @foreach ($lista as $sub)
-                    <option value="{{ $sub->id }}">{{ $sub->name }}</option>
-                @endforeach
-            </optgroup>
+    <label for="modeloCrearTipo">Tipo de equipo</label>
+    <select id="modeloCrearTipo" required>
+        <option value="">Selecciona un tipo de equipo</option>
+        @foreach ($equipmentTypes as $tipo)
+            <option value="{{ $tipo->id }}">{{ $tipo->name }}</option>
+        @endforeach
+    </select>
+
+    <label for="modeloCrearSubtipo" class="eq-mt">Subtipo</label>
+    <select id="modeloCrearSubtipo" name="subtype_id" required disabled data-cascada-subtipo>
+        <option value="">Primero selecciona un tipo de equipo</option>
+        @foreach ($subtypes as $sub)
+            <option value="{{ $sub->id }}" data-tipo="{{ $sub->equipment_type_id }}">{{ $sub->name }}</option>
         @endforeach
     </select>
 
     <label for="modeloCrearMarca" class="eq-mt">Marca</label>
-    <select id="modeloCrearMarca" name="brand_id" required data-cascada-marca></select>
+    <select id="modeloCrearMarca" name="brand_id" required disabled data-cascada-marca>
+        <option value="">Primero selecciona un subtipo</option>
+    </select>
 
     <label for="modeloCrearNombre" class="eq-mt">Nombre</label>
     <input id="modeloCrearNombre" type="text" name="name" required maxlength="255" autocomplete="off"
@@ -381,4 +398,62 @@
 
 <script>
     window.EQ_MARCAS_POR_SUBTIPO = @json($marcasPorSubtipo);
+
+    ['marca', 'modelo'].forEach(function (seccion) {
+        const tipo = document.getElementById(seccion + 'CrearTipo');
+        const subtipo = document.getElementById(seccion + 'CrearSubtipo');
+        const modal = tipo.closest('.cfg-modal');
+        const guardar = modal.querySelector('button[type="submit"]');
+        const opciones = Array.from(subtipo.querySelectorAll('[data-tipo]'));
+
+        function filtrarSubtipos() {
+            const disponibles = opciones.filter(opcion => opcion.dataset.tipo === tipo.value);
+            const mensaje = ! tipo.value ? 'Primero selecciona un tipo de equipo'
+                : disponibles.length ? 'Selecciona un subtipo' : 'Este tipo aún no tiene subtipos';
+            subtipo.replaceChildren(new Option(mensaje, ''));
+            disponibles.forEach(opcion => subtipo.appendChild(opcion));
+            subtipo.disabled = ! disponibles.length;
+            if (guardar) guardar.disabled = seccion === 'modelo' || ! disponibles.length;
+            subtipo.dispatchEvent(new Event('change'));
+        }
+
+        tipo.addEventListener('change', filtrarSubtipos);
+        filtrarSubtipos();
+    });
+
+    (function () {
+        const buscar = document.getElementById('eq-buscar');
+        const normalizar = texto => texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+        const columnas = Array.from(document.querySelectorAll('#eq-resultados .eq-col')).map(columna => {
+            const lista = columna.querySelector('.eq-list');
+            const items = Array.from(lista.querySelectorAll('.eq-item')).map(elemento => ({
+                elemento,
+                texto: normalizar(elemento.querySelector('.eq-item-txt').textContent),
+            }));
+            const vacio = document.createElement('p');
+            vacio.className = 'eq-vacio';
+            vacio.textContent = 'Sin coincidencias.';
+            vacio.hidden = true;
+            lista.appendChild(vacio);
+            columna.querySelector('.eq-num').setAttribute('aria-live', 'polite');
+            return { items, vacio, contador: columna.querySelector('.eq-num'), original: lista.querySelector('.eq-vacio:not([hidden])') };
+        });
+
+        function filtrar() {
+            const palabras = normalizar(buscar.value).split(/\s+/).filter(Boolean);
+            columnas.forEach(({ items, vacio, contador, original }) => {
+                let visibles = 0;
+                items.forEach(({ elemento, texto }) => {
+                    elemento.hidden = ! palabras.every(palabra => texto.includes(palabra));
+                    if (! elemento.hidden) visibles++;
+                });
+                contador.textContent = palabras.length ? `${visibles} / ${items.length}` : items.length;
+                vacio.hidden = ! palabras.length || visibles > 0;
+                if (original) original.hidden = palabras.length > 0;
+            });
+        }
+
+        buscar.addEventListener('input', filtrar);
+        filtrar();
+    })();
 </script>

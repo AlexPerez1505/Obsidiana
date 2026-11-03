@@ -31,30 +31,33 @@
 
         .hoja { max-width:900px; margin:0 auto; padding:18px; }
 
-        .rejilla { display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:10px; }
+        .rejilla { display:grid; grid-template-columns:repeat(auto-fill, 51mm); gap:10px; justify-content:center; }
 
-        .etiqueta { display:flex; align-items:center; gap:11px; padding:11px;
-                    background:#fff; border:1px solid #cfd4da; border-radius:8px;
+        .etiqueta { display:flex; align-items:center; gap:1.5mm; padding:1mm; width:51mm; height:25mm;
+                    background:#fff; outline:1px solid #cfd4da; overflow:hidden;
                     break-inside:avoid; page-break-inside:avoid; }
-        .etiqueta .qr { width:74px; height:74px; flex:0 0 74px; }
+        .etiqueta .qr { width:21mm; height:21mm; flex:0 0 21mm; padding:1mm; background:#fff; }
         .etiqueta .qr svg { width:100%; height:100%; display:block; }
-        .etiqueta .txt { min-width:0; }
-        .etiqueta .cod { font-size:14px; font-weight:800; letter-spacing:.03em; font-family:ui-monospace, Consolas, monospace; }
-        .etiqueta .eq { margin-top:2px; font-size:11px; line-height:1.3; color:#374151;
-                        display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-        .etiqueta .em { margin-top:3px; font-size:9px; letter-spacing:.06em;
-                        text-transform:uppercase; color:#9ca3af; }
+        .etiqueta .txt { min-width:0; flex:1; max-height:23mm; overflow:hidden; }
+        .etiqueta .cod { font-size:7.5pt; line-height:1.1; font-weight:800; overflow-wrap:anywhere;
+                        font-family:ui-monospace, Consolas, monospace; }
+        .etiqueta .eq { margin-top:1mm; font-size:6pt; line-height:1.15; color:#111;
+                        display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+        .etiqueta .em { margin-top:1mm; font-size:5pt; line-height:1.1;
+                        text-transform:uppercase; color:#111; }
+        .aviso { margin:0 0 18px; color:#374151; font-size:13px; line-height:1.5; }
 
         .vacio { padding:40px; text-align:center; color:#6b7280; background:#fff;
                  border:1px solid #e3e6ea; border-radius:12px; }
 
         @media print {
-            body { background:#fff; }
-            .barra { display:none; }
-            .hoja { max-width:none; padding:0; }
-            .rejilla { grid-template-columns:repeat(3, 1fr); gap:6px; }
-            .etiqueta { border-color:#999; }
-            @page { margin:10mm; }
+            @page { size:51mm 25mm; margin:0; }
+            html, body { width:51mm; margin:0; padding:0; background:#fff; }
+            .barra, .aviso, .vacio { display:none; }
+            .hoja { width:51mm; max-width:none; margin:0; padding:0; }
+            .rejilla { display:block; }
+            .etiqueta { margin:0; outline:none; break-after:page; page-break-after:always; }
+            .etiqueta:last-child { break-after:auto; page-break-after:auto; }
         }
     </style>
 </head>
@@ -68,6 +71,9 @@
 </div>
 
 <div class="hoja">
+    <p class="aviso">Formato térmico de 51 × 25 mm: una pieza por etiqueta. Al imprimir, selecciona la impresora térmica,
+        configura el papel en 51 × 25 mm, escala al 100 %, sin márgenes y sin encabezados ni pies de página.
+        Prueba primero una etiqueta y comprueba la lectura del QR antes de imprimir el lote.</p>
     @if ($piezas->isEmpty())
         <p class="vacio">Esta entrada no tiene piezas registradas.</p>
     @else

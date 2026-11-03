@@ -236,6 +236,12 @@
         /* ===== Catálogo de equipo ===== */
         .eq-card { margin-top:22px; }
         .eq-intro { margin:0 0 18px; color:var(--muted); font-size:13.5px; }
+        .eq-search { display:flex; flex-direction:column; gap:6px; margin-bottom:18px; }
+        .eq-search label { color:var(--text); font-size:13px; font-weight:500; }
+        .eq-search input { width:100%; box-sizing:border-box; padding:10px 12px; border:1px solid var(--border);
+                           border-radius:9px; background:var(--surface); color:var(--text); font:inherit; }
+        .eq-search input:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+        .eq-item[hidden], .eq-vacio[hidden] { display:none; }
 
         .eq-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; align-items:start; }
         .eq-col { display:flex; flex-direction:column; min-width:0;
@@ -336,11 +342,14 @@
 
                 var lista = marcasPorSubtipo[selSub.value] || [];
                 selMarca.innerHTML = '';
+                if (modal.id === 'modalModeloCrear') {
+                    modal.querySelector('button[type="submit"]').disabled = !lista.length;
+                }
 
                 if (!lista.length) {
                     var vacio = document.createElement('option');
                     vacio.value = '';
-                    vacio.textContent = 'Ese subtipo aún no tiene marcas';
+                    vacio.textContent = selSub.value ? 'Ese subtipo aún no tiene marcas' : 'Primero selecciona un subtipo';
                     selMarca.appendChild(vacio);
                     selMarca.disabled = true;
                     return;
