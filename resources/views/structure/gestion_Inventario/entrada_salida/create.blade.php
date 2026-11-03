@@ -269,8 +269,9 @@
                 <x-ui.section-title style="margin:0 0 6px;">Evidencia de cada pieza *</x-ui.section-title>
                 <p class="campo-nota" style="margin:0 0 12px;">
                     Abajo hay un bloque por cada una de las <b data-eco-cantidad>1</b> pieza(s) que
-                    pusiste en el paso anterior. Cada una necesita <b>al menos una foto propia</b>
-                    (hasta 3, de cualquier formato y tamaño) y, si quieres, su video. Cada pieza recibe además su etiqueta interna
+                    pusiste en el paso anterior. En equipo usado, cada una necesita <b>al menos una foto propia</b>.
+                    En nuevo puedes activar la foto compartida para todas. Si subes fotos individuales, son hasta 3 por pieza,
+                    de cualquier formato y tamaño y, si quieres, su video. Cada pieza recibe además su etiqueta interna
                     con código QR, que imprimes después desde la ficha de la entrada.
                 </p>
 
@@ -297,6 +298,21 @@
                         </ul>
                     </div>
                 @endif
+            </x-ui.card>
+
+            <x-ui.card style="margin-bottom:18px;" data-foto-compartida-opcion>
+                <label><input type="checkbox" name="foto_compartida" value="1" data-foto-compartida @checked(old('foto_compartida'))>
+                    Usar la misma foto para todas las piezas nuevas</label>
+                <p class="campo-nota">Solo para equipo nuevo. En usado cada pieza necesita sus propias fotos.</p>
+                <div data-foto-compartida-panel hidden>
+                    <label class="soltar soltar--chico" data-foto-compartida-zona>
+                        <span class="t">Foto para todas las piezas *</span>
+                        <span class="d" data-cuenta>Sube una sola imagen para este lote</span>
+                        <input type="file" accept="image/*,.heic,.heif,.tif,.tiff,.dng,.cr2,.cr3,.nef,.arw,.orf,.rw2,.raf">
+                    </label>
+                    <div class="miniaturas" data-foto-compartida-minis></div>
+                    @error('foto_compartida_paths')<p class="err">{{ $message }}</p>@enderror
+                </div>
             </x-ui.card>
 
             <div id="piezas-rows"></div>

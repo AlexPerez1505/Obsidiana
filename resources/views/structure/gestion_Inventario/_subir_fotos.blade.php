@@ -27,16 +27,16 @@
                 return SE_VEN.includes(extension(nombre));
             }
 
-            let heic2any = null;
-            function cargarHeic2any() {
-                heic2any ??= new Promise(function (ok, falla) {
+            let convertidorHeic = null;
+            function cargarConvertidorHeic() {
+                convertidorHeic ??= new Promise(function (ok, falla) {
                     const s = document.createElement('script');
-                    s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
-                    s.onload = () => ok(window.heic2any);
-                    s.onerror = () => { heic2any = null; falla(new Error('No se pudo cargar el convertidor de HEIC.')); };
+                    s.src = 'https://cdn.jsdelivr.net/npm/heic-to@1.6.6/dist/iife/heic-to.js';
+                    s.onload = () => ok(window.HeicTo);
+                    s.onerror = () => { convertidorHeic = null; falla(new Error('No se pudo cargar el convertidor de HEIC.')); };
                     document.head.appendChild(s);
                 });
-                return heic2any;
+                return convertidorHeic;
             }
 
             /* HEIC/HEIF → JPG. Si no se puede convertir, se sube el original. */
@@ -44,8 +44,8 @@
                 if (!['heic', 'heif'].includes(extension(archivo.name)) && !/image\/hei[cf]/.test(archivo.type)) return archivo;
 
                 try {
-                    const convertir = await cargarHeic2any();
-                    const blob = await convertir({ blob: archivo, toType: 'image/jpeg', quality: 0.92 });
+                    const convertir = await cargarConvertidorHeic();
+                    const blob = await convertir({ blob: archivo, type: 'image/jpeg', quality: 0.92 });
                     const unico = Array.isArray(blob) ? blob[0] : blob;
                     return new File([unico], archivo.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
                 } catch (e) {
@@ -84,7 +84,56 @@
                 throw new Error('No se pudo subir la foto.');
             }
 
-            return { PEDAZO, ACEPTA, urlDisco, extension, seVe, preparar, subir };
+            const vistas = new Map();
+            let cola = Promise.resolve();
+
+            function vistaPrevia(url) {
+                const ext = extension(new URL(url, location.href).pathname);
+                if (!['heic', 'heif'].includes(ext)) return Promise.resolve(url);
+                if (vistas.has(url)) return vistas.get(url);
+
+                const tarea = cola.then(async function () {
+                    const respuesta = await fetch(url);
+                    if (!respuesta.ok) throw new Error('No se pudo cargar la foto original.');
+                    const archivo = new File([await respuesta.blob()], 'foto.' + ext, { type: 'image/' + ext });
+                    const compatible = await preparar(archivo);
+                    if (compatible === archivo) throw new Error('No se pudo preparar la vista previa HEIC.');
+                    return URL.createObjectURL(compatible);
+                });
+                cola = tarea.catch(() => {});
+                vistas.set(url, tarea);
+                tarea.catch(() => { vistas.delete(url); });
+                return tarea;
+            }
+
+            window.addEventListener('pagehide', function (evento) {
+                if (evento.persisted) return;
+                vistas.forEach(tarea => tarea.then(url => URL.revokeObjectURL(url)).catch(() => {}));
+                vistas.clear();
+            });
+
+            function cargarMiniaturas(raiz) {
+                const fotos = raiz.matches?.('[data-foto-heic]') ? [raiz] : Array.from(raiz.querySelectorAll?.('[data-foto-heic]') || []);
+                fotos.forEach(function (img) {
+                    if (img.dataset.preparando) return;
+                    img.dataset.preparando = '1';
+                    const estado = img.parentElement.querySelector('[data-foto-estado]');
+                    vistaPrevia(img.dataset.fotoHeic).then(function (url) {
+                        img.src = url;
+                        img.style.display = 'block';
+                        if (estado) estado.style.display = 'none';
+                    }).catch(function () {
+                        if (estado) estado.textContent = 'HEIC · Abrir evidencia';
+                    });
+                });
+            }
+
+            cargarMiniaturas(document);
+            new MutationObserver(cambios => cambios.forEach(cambio => cambio.addedNodes.forEach(nodo => {
+                if (nodo.nodeType === 1) cargarMiniaturas(nodo);
+            }))).observe(document.body, { childList: true, subtree: true });
+
+            return { PEDAZO, ACEPTA, urlDisco, extension, seVe, preparar, subir, vistaPrevia };
         })();
         </script>
     @endpush

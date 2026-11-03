@@ -11,6 +11,9 @@ use App\Models\ProductoSerial;
 use App\Services\RutaDeProcesos;
 use App\Support\ChecklistRecepcion;
 use App\Support\PrecioVisible;
+use App\Support\GeneradorDeSeries;
+use App\Support\EdicionPropia;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -83,6 +86,9 @@ class EntradasDeInventario
             // de tamaño ni de formato de imagen.
             'imagen' => ['nullable', 'file', FotoPorPedazos::reglaArchivo()],
             'imagen_path' => ['nullable', 'string'],
+            'foto_compartida' => ['sometimes', 'boolean'],
+            'foto_compartida_paths' => ['required_if:foto_compartida,1', 'nullable', 'array', 'max:1'],
+            'foto_compartida_paths.*' => ['string'],
             // Opcionales. La caducidad solo aplica a equipo nuevo.
             'fecha_fabricacion' => ['nullable', 'date'],
             'fecha_caducidad' => ['nullable', 'date', 'after_or_equal:fecha_fabricacion'],
@@ -129,6 +135,17 @@ class EntradasDeInventario
         $disco = config('filesystems.fotos_disk', 'public');
 
         $data['condicion'] ??= 'nuevo';
+        $compartida = filter_var($data['foto_compartida'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $fotoCompartida = null;
+        if ($compartida) {
+            if ($usado) {
+                throw ValidationException::withMessages(['foto_compartida' => 'El equipo usado necesita fotos individuales por pieza.']);
+            }
+            $fotoCompartida = $this->fotos->resolver((string) ($data['foto_compartida_paths'][0] ?? ''), $disco);
+            if ($fotoCompartida === null) {
+                throw ValidationException::withMessages(['foto_compartida_paths' => 'Sube la foto que se aplicará a todas las piezas nuevas.']);
+            }
+        }
 
         $data['checklist_recepcion'] = $usado ? ChecklistRecepcion::limpiar($request->input('checklist')) : null;
 
@@ -202,6 +219,9 @@ class EntradasDeInventario
 
         foreach (array_values($data['unidades']) as $i => $u) {
             $fotosPrevias[$i] = [];
+            if ($compartida) {
+                continue;
+            }
 
             foreach ((array) ($u['fotos_paths'] ?? []) as $ruta) {
                 $resuelta = $this->fotos->resolver(trim((string) $ruta), $disco);
@@ -239,9 +259,17 @@ class EntradasDeInventario
         $unidades = [];
 
         foreach (array_keys($data['unidades']) as $posicion => $llave) {
+            if ($compartida) {
+                $copia = dirname($fotoCompartida).'/'.\Illuminate\Support\Str::uuid().'.'.pathinfo($fotoCompartida, PATHINFO_EXTENSION);
+                if (! Storage::disk($disco)->copy($fotoCompartida, $copia)) {
+                    $this->borrarEvidencias(collect($unidades)->pluck('evidence_paths')->flatten()->all(), $disco);
+                    throw ValidationException::withMessages(['foto_compartida_paths' => 'No se pudo aplicar la foto a todas las piezas. Intenta de nuevo.']);
+                }
+                $fotosPrevias[$posicion] = [$copia];
+            }
             $unidades[] = [
                 'no_serie' => $series->get($posicion),
-                'evidence_paths' => array_merge($fotosPrevias[$posicion], collect($request->file("unidades.$llave.evidencias") ?? [])
+                'evidence_paths' => array_merge($fotosPrevias[$posicion], collect($compartida ? [] : ($request->file("unidades.$llave.evidencias") ?? []))
                     ->map(fn ($archivo) => $archivo->store('productos/seriales', $disco))
                     ->all()),
                 'video_path' => $videos[$posicion],
@@ -384,6 +412,35 @@ class EntradasDeInventario
         }
 
         $movimiento->update($cambios);
+    }
+
+    public function generarSeriesFaltantes(InventoryMovement $movimiento, User $usuario): int
+    {
+        abort_unless(EdicionPropia::puedeEditarMovimiento($usuario, $movimiento), 403);
+
+        return DB::transaction(function () use ($movimiento, $usuario) {
+            $producto = Producto::whereKey($movimiento->item_id)->lockForUpdate()->firstOrFail();
+            abort_unless($movimiento->item_type === InventoryMovement::ITEM_PRODUCT
+                && EdicionPropia::puedeEditarProducto($usuario, $producto), 403);
+
+            $piezas = $movimiento->seriales()->where('vendido', false)
+                ->where(fn ($q) => $q->whereNull('no_serie')->orWhereRaw("TRIM(no_serie) = ''"))
+                ->orderBy('id')->lockForUpdate()->get();
+            if ($piezas->isEmpty()) {
+                return 0;
+            }
+            abort_unless($piezas->every(fn ($pieza) => EdicionPropia::puedeEditarPieza($usuario, $pieza)), 403);
+
+            $prefijo = GeneradorDeSeries::prefijo($producto->equipment_type_id, $producto->subtype_id,
+                $producto->brand_id, $producto->equipment_model_id);
+            $series = GeneradorDeSeries::generar($prefijo, $piezas->count());
+            foreach ($piezas as $i => $pieza) {
+                $pieza->update(['no_serie' => $series[$i]]);
+            }
+            $producto->update(['es_serializado' => true]);
+
+            return $piezas->count();
+        });
     }
 
     /**

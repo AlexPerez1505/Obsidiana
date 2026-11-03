@@ -156,7 +156,12 @@
                         <button type="button" class="mv-u-portada" data-galeria data-indice="0"
                                 aria-label="Ver la evidencia de {{ $serial->no_serie ?: 'esta unidad' }}">
                             @if (count($fotos))
-                                <img src="{{ $fotos[0] }}" alt="" loading="lazy">
+                                @if (in_array(strtolower(pathinfo(parse_url($fotos[0], PHP_URL_PATH) ?? '', PATHINFO_EXTENSION)), ['heic', 'heif']))
+                                    <img data-foto-heic="{{ $fotos[0] }}" alt="Evidencia de la pieza" style="display:none;">
+                                    <span data-foto-estado style="display:block; padding:8px; font-size:11px;">Preparando foto…</span>
+                                @else
+                                    <img src="{{ $fotos[0] }}" alt="Evidencia de la pieza" loading="lazy">
+                                @endif
                             @else
                                 <span class="mv-u-solo-video" aria-hidden="true">
                                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>

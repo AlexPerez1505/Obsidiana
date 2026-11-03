@@ -14,6 +14,7 @@ use App\Support\EdicionPropia;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -208,12 +209,20 @@ class InventoryMovementController extends Controller
     {
         abort_unless(EdicionPropia::puedeEditarMovimiento($request->user(), $movimiento), 403, EdicionPropia::mensaje());
 
-        $data = $request->validate(EntradasDeInventario::reglasEdicion($movimiento), EntradasDeInventario::MENSAJES);
+        $data = $request->validate(EntradasDeInventario::reglasEdicion($movimiento)
+            + ['generar_series' => ['sometimes', 'boolean']], EntradasDeInventario::MENSAJES);
 
-        $entradas->actualizar($movimiento, $data);
+        $generadas = DB::transaction(function () use ($request, $movimiento, $entradas, $data) {
+            $cantidad = $request->boolean('generar_series')
+                ? $entradas->generarSeriesFaltantes($movimiento, $request->user()) : 0;
+            $entradas->actualizar($movimiento, $data);
+
+            return $cantidad;
+        });
 
         return redirect()->route('inventory.movimientos.show', $movimiento)
-            ->with('status', "Entrada {$movimiento->folio} actualizada.");
+            ->with('status', "Entrada {$movimiento->folio} actualizada."
+                .($request->boolean('generar_series') ? " Series generadas: {$generadas}. Las existentes se conservaron." : ''));
     }
 
     /**

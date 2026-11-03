@@ -39,11 +39,16 @@
         .etiqueta .qr { width:21mm; height:21mm; flex:0 0 21mm; padding:1mm; background:#fff; }
         .etiqueta .qr svg { width:100%; height:100%; display:block; }
         .etiqueta .txt { min-width:0; flex:1; max-height:23mm; overflow:hidden; }
-        .etiqueta .cod { font-size:7.5pt; line-height:1.1; font-weight:800; overflow-wrap:anywhere;
+        .etiqueta .serie { font-size:7.5pt; line-height:1.1; font-weight:800; overflow-wrap:anywhere;
+                          font-family:ui-monospace, Consolas, monospace; }
+        .etiqueta .serie-larga { font-size:5.5pt; }
+        .etiqueta .cod { margin-top:.3mm; font-size:5pt; line-height:1.1; overflow-wrap:anywhere;
                         font-family:ui-monospace, Consolas, monospace; }
-        .etiqueta .eq { margin-top:1mm; font-size:6pt; line-height:1.15; color:#111;
-                        display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-        .etiqueta .em { margin-top:1mm; font-size:5pt; line-height:1.1;
+        .etiqueta .modelo { margin-top:.8mm; font-size:6.5pt; line-height:1.1; font-weight:800; overflow-wrap:anywhere; }
+        .etiqueta .modelo-largo { font-size:5.5pt; }
+        .etiqueta .eq { margin-top:.4mm; font-size:5pt; line-height:1.1; color:#111;
+                        display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .etiqueta .em { margin-top:.5mm; font-size:4.5pt; line-height:1.1;
                         text-transform:uppercase; color:#111; }
         .aviso { margin:0 0 18px; color:#374151; font-size:13px; line-height:1.5; }
 
@@ -80,11 +85,8 @@
         <div class="rejilla">
             @foreach ($piezas as $pieza)
                 @php
-                    $equipo = trim(collect([
-                        $pieza->producto?->tipo_equipo,
-                        $pieza->producto?->marca,
-                        $pieza->producto?->modelo,
-                    ])->filter()->implode(' '));
+                    $serie = trim((string) $pieza->no_serie);
+                    $modelo = trim((string) $pieza->producto?->modelo);
                 @endphp
 
                 <div class="etiqueta">
@@ -97,8 +99,9 @@
                     </div>
 
                     <div class="txt">
-                        <div class="cod">{{ $pieza->codigo }}</div>
-                        @if ($equipo)<div class="eq">{{ $equipo }}</div>@endif
+                        <div class="serie {{ mb_strlen($serie) > 18 ? 'serie-larga' : '' }}">{{ $serie !== '' ? $serie : 'Sin serie' }}</div>
+                        <div class="cod">ID: {{ $pieza->codigo }}</div>
+                        @if ($modelo !== '')<div class="modelo {{ mb_strlen($modelo) > 24 ? 'modelo-largo' : '' }}">{{ $modelo }}</div>@endif
                         <div class="em">{{ $emp['nombre'] }}</div>
                     </div>
                 </div>
