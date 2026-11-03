@@ -112,26 +112,55 @@
                 vistas.clear();
             });
 
+            const miniaturas = new WeakMap();
+
             function cargarMiniaturas(raiz) {
-                const fotos = raiz.matches?.('[data-foto-heic]') ? [raiz] : Array.from(raiz.querySelectorAll?.('[data-foto-heic]') || []);
+                const fotos = raiz.matches?.('img') ? [raiz] : Array.from(raiz.querySelectorAll?.('img') || []);
                 fotos.forEach(function (img) {
-                    if (img.dataset.preparando) return;
-                    img.dataset.preparando = '1';
-                    const estado = img.parentElement.querySelector('[data-foto-estado]');
-                    vistaPrevia(img.dataset.fotoHeic).then(function (url) {
+                    const origen = img.getAttribute('src') || img.dataset.fotoHeic;
+                    if (!origen) return;
+                    let ext;
+                    try { ext = extension(new URL(origen, location.href).pathname); } catch (e) { return; }
+                    const anterior = miniaturas.get(img);
+                    if (!['heic', 'heif'].includes(ext)) {
+                        if (anterior && !origen.startsWith('blob:')) {
+                            anterior.estado.style.display = 'none';
+                            img.style.display = anterior.display;
+                            miniaturas.delete(img);
+                            delete img.dataset.fotoHeic;
+                        }
+                        return;
+                    }
+                    if (anterior?.origen === origen) return;
+                    const estado = anterior?.estado
+                        || (img.nextElementSibling?.matches('[data-foto-estado]') ? img.nextElementSibling : document.createElement('span'));
+                    estado.dataset.fotoEstado = '';
+                    estado.textContent = 'Preparando foto…';
+                    estado.style.cssText = 'display:block; padding:6px; font-size:11px;';
+                    if (!estado.parentElement) img.after(estado);
+                    const actual = { origen, estado, display: anterior?.display ?? (img.style.display === 'none' ? 'block' : img.style.display) };
+                    miniaturas.set(img, actual);
+                    img.dataset.fotoHeic = origen;
+                    img.removeAttribute('src');
+                    img.style.display = 'none';
+                    vistaPrevia(origen).then(function (url) {
+                        if (miniaturas.get(img) !== actual || img.getAttribute('src')) return;
                         img.src = url;
-                        img.style.display = 'block';
-                        if (estado) estado.style.display = 'none';
+                        img.style.display = actual.display;
+                        estado.style.display = 'none';
                     }).catch(function () {
-                        if (estado) estado.textContent = 'HEIC · Abrir evidencia';
+                        if (miniaturas.get(img) === actual) estado.textContent = 'HEIC · Vista previa no disponible';
                     });
                 });
             }
 
             cargarMiniaturas(document);
-            new MutationObserver(cambios => cambios.forEach(cambio => cambio.addedNodes.forEach(nodo => {
-                if (nodo.nodeType === 1) cargarMiniaturas(nodo);
-            }))).observe(document.body, { childList: true, subtree: true });
+            new MutationObserver(cambios => cambios.forEach(cambio => {
+                if (cambio.type === 'attributes') cargarMiniaturas(cambio.target);
+                cambio.addedNodes.forEach(nodo => {
+                    if (nodo.nodeType === 1) cargarMiniaturas(nodo);
+                });
+            })).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
 
             return { PEDAZO, ACEPTA, urlDisco, extension, seVe, preparar, subir, vistaPrevia };
         })();
