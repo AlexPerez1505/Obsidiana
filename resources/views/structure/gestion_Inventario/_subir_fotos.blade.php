@@ -85,24 +85,70 @@
             }
 
             const vistas = new Map();
+            const contenidos = new Map();
             let cola = Promise.resolve();
+            let cacheHeic;
 
-            function vistaPrevia(url) {
-                const ext = extension(new URL(url, location.href).pathname);
-                if (!['heic', 'heif'].includes(ext)) return Promise.resolve(url);
-                if (vistas.has(url)) return vistas.get(url);
+            function abrirCacheHeic() {
+                cacheHeic ??= window.caches
+                    ? window.caches.open('obs-heic-v1').catch(() => null)
+                    : Promise.resolve(null);
+                return cacheHeic;
+            }
 
-                const tarea = cola.then(async function () {
-                    const respuesta = await fetch(url);
-                    if (!respuesta.ok) throw new Error('No se pudo cargar la foto original.');
-                    const archivo = new File([await respuesta.blob()], 'foto.' + ext, { type: 'image/' + ext });
+            async function convertirVista(blob, ext) {
+                const hash = window.crypto?.subtle
+                    ? Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())), n => n.toString(16).padStart(2, '0')).join('')
+                    : null;
+                if (hash && contenidos.has(hash)) return contenidos.get(hash);
+                const conversion = cola.then(async function () {
+                    const archivo = new File([blob], 'foto.' + ext, { type: 'image/' + ext });
                     const compatible = await preparar(archivo);
                     if (compatible === archivo) throw new Error('No se pudo preparar la vista previa HEIC.');
-                    return URL.createObjectURL(compatible);
+                    return compatible;
                 });
-                cola = tarea.catch(() => {});
-                vistas.set(url, tarea);
-                tarea.catch(() => { vistas.delete(url); });
+                cola = conversion.catch(() => {});
+                if (hash) {
+                    contenidos.set(hash, conversion);
+                    conversion.catch(() => contenidos.delete(hash));
+                }
+                return conversion;
+            }
+
+            function vistaPrevia(url) {
+                const direccion = new URL(url, location.href);
+                const ext = extension(direccion.pathname);
+                if (!['heic', 'heif'].includes(ext)) return Promise.resolve(url);
+                direccion.hash = '';
+                const clave = direccion.href;
+                if (vistas.has(clave)) return vistas.get(clave);
+
+                const tarea = (async function () {
+                    const cache = direccion.origin === location.origin ? await abrirCacheHeic() : null;
+                    if (cache) {
+                        try {
+                            const guardada = await cache.match(clave);
+                            if (guardada && Date.now() - Number(guardada.headers.get('X-Preview-Fecha')) < 7 * 86400000) {
+                                return URL.createObjectURL(await guardada.blob());
+                            }
+                        } catch (e) {}
+                    }
+                    const respuesta = await fetch(url);
+                    if (!respuesta.ok) throw new Error('No se pudo cargar la foto original.');
+                    const compatible = await convertirVista(await respuesta.blob(), ext);
+                    if (cache && compatible.size <= 8 * 1024 * 1024) {
+                        try {
+                            await cache.put(clave, new Response(compatible, { headers: {
+                                'Content-Type': 'image/jpeg', 'X-Preview-Fecha': String(Date.now()),
+                            } }));
+                            const claves = await cache.keys();
+                            await Promise.all(claves.slice(0, Math.max(0, claves.length - 24)).map(antigua => cache.delete(antigua)));
+                        } catch (e) {}
+                    }
+                    return URL.createObjectURL(compatible);
+                })();
+                vistas.set(clave, tarea);
+                tarea.catch(() => { vistas.delete(clave); });
                 return tarea;
             }
 

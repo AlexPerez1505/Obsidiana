@@ -236,6 +236,11 @@
         /* ===== Catálogo de equipo ===== */
         .eq-card { margin-top:22px; }
         .eq-intro { margin:0 0 18px; color:var(--muted); font-size:13.5px; }
+        .eq-filters { display:flex; flex-wrap:wrap; gap:12px; align-items:end; margin-bottom:16px; }
+        .eq-filters label { display:flex; flex:1 1 180px; flex-direction:column; gap:6px; color:var(--text); font-size:13px; }
+        .eq-filters select { width:100%; padding:10px; border:1px solid var(--border); border-radius:9px;
+                             background:var(--surface); color:var(--text); font:inherit; }
+        .eq-filters select:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
         .eq-search { display:flex; flex-direction:column; gap:6px; margin-bottom:18px; }
         .eq-search label { color:var(--text); font-size:13px; font-weight:500; }
         .eq-search input { width:100%; box-sizing:border-box; padding:10px 12px; border:1px solid var(--border);
