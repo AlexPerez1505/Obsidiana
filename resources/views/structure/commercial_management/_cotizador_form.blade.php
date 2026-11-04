@@ -106,6 +106,20 @@
                     <span style="font-size:12px; color:var(--muted); font-weight:500;">Marca <b style="color:var(--green);">Regalo</b> para excluir del total.</span>
                 </div>
                 <div class="cot-panel-body" style="padding-bottom:6px;">
+                    @isset($filtrosProductos)
+                        <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:end; margin-bottom:10px;">
+                            <label style="flex:1 1 150px; font-size:12px;">Tipo de equipo
+                                <select id="prodFilterType" class="cot-input"><option value="">Todos los tipos</option></select>
+                            </label>
+                            <label style="flex:1 1 150px; font-size:12px;">Subtipo
+                                <select id="prodFilterSubtype" class="cot-input"><option value="">Todos los subtipos</option></select>
+                            </label>
+                            <label style="flex:1 1 150px; font-size:12px;">Marca
+                                <select id="prodFilterBrand" class="cot-input"><option value="">Todas las marcas</option></select>
+                            </label>
+                            <button type="button" id="prodFilterClear" class="cot-btn-x">Limpiar filtros</button>
+                        </div>
+                    @endisset
                     <div style="position:relative;">
                         <svg style="position:absolute; left:13px; top:50%; transform:translateY(-50%); width:17px; height:17px; color:var(--muted); pointer-events:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         <input type="text" id="prodSearch" class="cot-input" placeholder="Buscar producto o paquete para agregar..." autocomplete="off" style="padding-left:40px;">
@@ -463,15 +477,30 @@
         return tr;
     }
 
-    function bindAutocomplete(inputEl, resultsEl, url, onPick, render) {
-        let timer = null;
+    function bindAutocomplete(inputEl, resultsEl, url, onPick, render, opciones = {}) {
+        let timer = null, revision = 0;
+        const mensaje = texto => {
+            const el = document.createElement('div');
+            el.className = 'cot-ac-item';
+            el.textContent = texto;
+            resultsEl.replaceChildren(el);
+            resultsEl.classList.add('open');
+        };
         const run = () => {
-            const q = inputEl.value.trim();
-            fetch(url + '?q=' + encodeURIComponent(q), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(r => r.json())
+            clearTimeout(timer);
+            const actual = ++revision;
+            const params = new URLSearchParams({ q: inputEl.value.trim(), ...(opciones.parametros?.() || {}) });
+            if (opciones.sinResultados) mensaje('Buscando…');
+            fetch(url + '?' + params, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => { if (!r.ok) throw new Error('No se pudieron cargar los resultados.'); return r.json(); })
                 .then(data => {
+                    if (actual !== revision) return;
                     resultsEl.innerHTML = '';
-                    if (!data.length) { resultsEl.classList.remove('open'); return; }
+                    if (!data.length) {
+                        if (opciones.sinResultados) mensaje(opciones.sinResultados);
+                        else resultsEl.classList.remove('open');
+                        return;
+                    }
                     data.forEach(d => {
                         const el = document.createElement('div');
                         el.className = 'cot-ac-item';
@@ -480,11 +509,12 @@
                         resultsEl.appendChild(el);
                     });
                     resultsEl.classList.add('open');
-                });
+                }).catch(() => { if (actual === revision) mensaje('No se pudieron cargar los resultados. Intenta de nuevo.'); });
         };
-        inputEl.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 220); });
+        inputEl.addEventListener('input', () => { revision++; clearTimeout(timer); timer = setTimeout(run, 220); });
         inputEl.addEventListener('focus', run);
         document.addEventListener('click', e => { if (!resultsEl.contains(e.target) && e.target !== inputEl) resultsEl.classList.remove('open'); });
+        return run;
     }
 
     function renderCliente() {
@@ -625,9 +655,45 @@
             renderFichas();
         }
     }
-    bindAutocomplete($('prodSearch'), $('prodResults'), ROUTES.productos,
+    const filtroTipo = $('prodFilterType'), filtroSubtipo = $('prodFilterSubtype'), filtroMarca = $('prodFilterBrand');
+    const buscarProductos = bindAutocomplete($('prodSearch'), $('prodResults'), ROUTES.productos,
         d => { addItem(d); $('prodSearch').value = ''; },
-        d => `<b>${d.nombre}</b> <span style="color:var(--muted);">${d.modelo || ''}</span><small>${d.marca || ''} · ${money(d.precio)}</small>`);
+        d => `<b>${d.nombre}</b> <span style="color:var(--muted);">${d.modelo || ''}</span><small>${d.marca || ''} · ${money(d.precio)}</small>`, {
+            parametros: () => Object.fromEntries([
+                ['equipment_type_id', filtroTipo?.value], ['subtype_id', filtroSubtipo?.value], ['brand_id', filtroMarca?.value],
+            ].filter(([, valor]) => valor)),
+            sinResultados: 'No hay productos o paquetes que coincidan con estos filtros.',
+        });
+    if (filtroTipo) {
+        const catalogo = @json($filtrosProductos ?? []);
+        const orden = new Intl.Collator('es', { sensitivity: 'base', numeric: true });
+        const llenar = (select, opciones, titulo) => {
+            select.replaceChildren(new Option(titulo, ''));
+            opciones.sort((a, b) => orden.compare(a.nombre, b.nombre)).forEach(opcion => select.add(new Option(opcion.nombre, opcion.id)));
+            select.value = '';
+        };
+        const subtipos = () => catalogo.filter(tipo => !filtroTipo.value || String(tipo.id) === filtroTipo.value).flatMap(tipo => tipo.subtipos);
+        const llenarMarcas = () => {
+            const marcas = new Map(subtipos().filter(sub => !filtroSubtipo.value || String(sub.id) === filtroSubtipo.value)
+                .flatMap(sub => sub.marcas).map(marca => [marca.id, marca]));
+            llenar(filtroMarca, Array.from(marcas.values()), 'Todas las marcas');
+        };
+        const llenarSubtipos = () => {
+            llenar(filtroSubtipo, subtipos(), 'Todos los subtipos');
+            llenarMarcas();
+        };
+        llenar(filtroTipo, catalogo, 'Todos los tipos');
+        llenarSubtipos();
+        filtroTipo.addEventListener('change', () => { llenarSubtipos(); buscarProductos(); });
+        filtroSubtipo.addEventListener('change', () => { llenarMarcas(); buscarProductos(); });
+        filtroMarca.addEventListener('change', buscarProductos);
+        $('prodFilterClear').addEventListener('click', () => {
+            filtroTipo.value = '';
+            $('prodSearch').value = '';
+            llenarSubtipos();
+            buscarProductos();
+        });
+    }
 
     function renderFichas() {
         const box = $('fichasSelected');
