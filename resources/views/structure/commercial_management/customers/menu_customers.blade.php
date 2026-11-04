@@ -293,6 +293,26 @@
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                                         Editar
                                     </a>
+                                    {{-- No se borra: está ligado a ventas y servicios. Solo se desactiva. --}}
+                                    <form method="POST" action="{{ route('commercial.clientes.toggleActivo', $fila['modelo']) }}"
+                                          data-confirm="{{ $fila['modelo']->activo ? '¿Desactivar a '.$fila['nombre'].'? Dejará de aparecer en las listas pero conserva su historial.' : '¿Reactivar a '.$fila['nombre'].'?' }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" role="menuitem" @disabled(auth()->user()->cannot('clientes.editar'))>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>
+                                            {{ $fila['modelo']->activo ? 'Desactivar' : 'Reactivar' }}
+                                        </button>
+                                    </form>
+                                    {{-- Eliminar de verdad: el servidor solo lo permite si el cliente no tiene historial. --}}
+                                    <form method="POST" action="{{ route('commercial.clientes.destroy', $fila['modelo']) }}"
+                                          data-confirm="¿Eliminar a {{ $fila['nombre'] }} para siempre? Solo se puede si no tiene ventas, cotizaciones ni servicios.">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="es-danger" role="menuitem" @disabled(auth()->user()->cannot('clientes.eliminar'))>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                                            Eliminar
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </td>
@@ -355,6 +375,26 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                                 Editar
                             </a>
+                            {{-- No se borra: está ligado a ventas y servicios. Solo se desactiva. --}}
+                            <form method="POST" action="{{ route('commercial.clientes.toggleActivo', $fila['modelo']) }}"
+                                  data-confirm="{{ $fila['modelo']->activo ? '¿Desactivar a '.$fila['nombre'].'? Dejará de aparecer en las listas pero conserva su historial.' : '¿Reactivar a '.$fila['nombre'].'?' }}">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" role="menuitem" @disabled(auth()->user()->cannot('clientes.editar'))>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>
+                                    {{ $fila['modelo']->activo ? 'Desactivar' : 'Reactivar' }}
+                                </button>
+                            </form>
+                            {{-- Eliminar de verdad: el servidor solo lo permite si el cliente no tiene historial. --}}
+                            <form method="POST" action="{{ route('commercial.clientes.destroy', $fila['modelo']) }}"
+                                  data-confirm="¿Eliminar a {{ $fila['nombre'] }} para siempre? Solo se puede si no tiene ventas, cotizaciones ni servicios.">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="es-danger" role="menuitem" @disabled(auth()->user()->cannot('clientes.eliminar'))>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                                    Eliminar
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>

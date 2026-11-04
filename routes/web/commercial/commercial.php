@@ -34,6 +34,14 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::put('/gestion-comercial/clientes/{cliente}', [CustomerController::class, 'update'])
         ->middleware('can:clientes.editar')->name('commercial.clientes.update');
 
+    // No se borra (tiene ventas/servicios ligados): solo se desactiva.
+    Route::patch('/gestion-comercial/clientes/{cliente}/activo', [CustomerController::class, 'toggleActivo'])
+        ->middleware('can:clientes.editar')->name('commercial.clientes.toggleActivo');
+
+    // Eliminar de verdad: solo si no tiene ventas/cotizaciones/servicios ligados.
+    Route::delete('/gestion-comercial/clientes/{cliente}', [CustomerController::class, 'destroy'])
+        ->middleware('can:clientes.eliminar')->name('commercial.clientes.destroy');
+
     Route::post('/gestion-comercial/clientes/categorias', [CustomerController::class, 'storeCategory'])
         ->middleware('can:clientes.crear')->name('commercial.clientes.categories.store');
 
