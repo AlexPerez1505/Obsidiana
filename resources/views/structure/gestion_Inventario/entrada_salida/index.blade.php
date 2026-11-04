@@ -37,8 +37,8 @@
             ];
         });
 
-        $almacenes = $filas->pluck('almacen')->filter()->unique()->sort()->values();
-        $quienes = $filas->pluck('quien')->filter()->unique()->sort()->values();
+        $almacenes = $opcionesAlmacenes;
+        $quienes = $opcionesQuienes;
 
         // Cómo se pinta cada tipo de movimiento. "Vendido" va en ámbar: no es
         // una salida todavía, es un pendiente de entrega.
@@ -119,10 +119,11 @@
     </div>
 
     {{-- ===================== Búsqueda y filtros ===================== --}}
-    <div class="f-toolbar">
+    <form method="GET" id="filtrosMovimientos" data-live="off" class="f-toolbar">
+        <input type="hidden" name="estado" value="{{ $filters['estado'] ?? '' }}">
         <div class="f-search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="fBuscar" placeholder="Buscar por folio, equipo, almacén o quien registró" autocomplete="off">
+            <input type="text" id="fBuscar" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por folio, equipo, almacén o quien registró" autocomplete="off">
         </div>
 
         <div class="flt" data-flt>
@@ -133,6 +134,10 @@
             </button>
 
             <div class="flt-panel" data-flt-panel hidden>
+                <div class="flt-group" style="grid-column:1/-1;">
+                    <h4>Catálogo de equipo</h4>
+                    @include('partials.inventario-filtros-catalogo')
+                </div>
                 <div class="flt-group">
                     <h4>Tipo de movimiento</h4>
                     {{-- "Vendidas sin entregar" es la lista que le sirve a
@@ -145,7 +150,7 @@
                     ] as $valor => $texto)
                         <label class="flt-opt">
                             <span class="flt-opt-txt">{{ $texto }}</span>
-                            <input type="checkbox" data-f="tipo" value="{{ $valor }}">
+                            <input type="checkbox" data-f="tipo" name="movement_types[]" value="{{ $valor }}" @checked(in_array($valor, $filters['movement_types'] ?? []))>
                         </label>
                     @endforeach
                 </div>
@@ -154,11 +159,11 @@
                     <h4>Condición</h4>
                     <label class="flt-opt">
                         <span class="flt-opt-txt">Equipo nuevo</span>
-                        <input type="checkbox" data-f="condicion" value="nuevo">
+                        <input type="checkbox" data-f="condicion" name="condiciones[]" value="nuevo" @checked(in_array('nuevo', $filters['condiciones'] ?? []))>
                     </label>
                     <label class="flt-opt">
                         <span class="flt-opt-txt">Equipo usado</span>
-                        <input type="checkbox" data-f="condicion" value="usado">
+                        <input type="checkbox" data-f="condicion" name="condiciones[]" value="usado" @checked(in_array('usado', $filters['condiciones'] ?? []))>
                     </label>
                 </div>
 
@@ -168,7 +173,7 @@
                         @foreach ($almacenes as $almacen)
                             <label class="flt-opt">
                                 <span class="flt-opt-txt">{{ $almacen }}</span>
-                                <input type="checkbox" data-f="almacen" value="{{ $almacen }}">
+                                <input type="checkbox" data-f="almacen" name="almacenes[]" value="{{ $almacen }}" @checked(in_array($almacen, $filters['almacenes'] ?? []))>
                             </label>
                         @endforeach
                     </div>
@@ -180,7 +185,7 @@
                         @foreach ($quienes as $quien)
                             <label class="flt-opt">
                                 <span class="flt-opt-txt">{{ $quien }}</span>
-                                <input type="checkbox" data-f="quien" value="{{ $quien }}">
+                                <input type="checkbox" data-f="quien" name="quienes[]" value="{{ $quien }}" @checked(in_array($quien, $filters['quienes'] ?? []))>
                             </label>
                         @endforeach
                     </div>
@@ -189,19 +194,20 @@
                 <div class="flt-group">
                     <h4>Fecha del movimiento</h4>
                     <div class="flt-fechas">
-                        <input type="date" data-f="desde" aria-label="Movimiento desde">
-                        <input type="date" data-f="hasta" aria-label="Movimiento hasta">
+                        <input type="date" data-f="desde" name="desde" value="{{ $filters['desde'] ?? '' }}" aria-label="Movimiento desde">
+                        <input type="date" data-f="hasta" name="hasta" value="{{ $filters['hasta'] ?? '' }}" aria-label="Movimiento hasta">
                     </div>
                 </div>
+                <button type="submit" class="btn">Aplicar filtros</button>
             </div>
         </div>
 
         {{-- Accesos rápidos: lo que entra / lo que sale --}}
         <div class="flt-toggles" role="group" aria-label="Tipo de movimiento">
-            <button type="button" class="flt-tgl" data-f="estado" data-valor="entrada" title="Ver solo entradas" aria-pressed="false">
+            <button type="button" @class(['flt-tgl', 'is-on' => ($filters['estado'] ?? '') === 'entrada']) data-f="estado" data-valor="entrada" title="Ver solo entradas" aria-pressed="{{ ($filters['estado'] ?? '') === 'entrada' ? 'true' : 'false' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
             </button>
-            <button type="button" class="flt-tgl" data-f="estado" data-valor="salida" title="Ver solo salidas" aria-pressed="false">
+            <button type="button" @class(['flt-tgl', 'is-on' => ($filters['estado'] ?? '') === 'salida']) data-f="estado" data-valor="salida" title="Ver solo salidas" aria-pressed="{{ ($filters['estado'] ?? '') === 'salida' ? 'true' : 'false' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
             </button>
         </div>
@@ -210,8 +216,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 3H2l8 9.46V19l4 2v-8.54"/><line x1="16" y1="5" x2="22" y2="11"/><line x1="22" y1="5" x2="16" y2="11"/></svg>
         </button>
 
+        <button type="submit" class="flt-btn">Aplicar</button>
         <x-ui.view-switch key="movimientos" />
-    </div>
+    </form>
 
     <div class="flt-chips" id="fChips" hidden></div>
 
@@ -374,7 +381,7 @@
         </div>
     </div>
 
-    <p class="f-conteo" id="fConteo"></p>
+    <p class="f-conteo" id="fConteo">Mostrando {{ $movements->count() }} de {{ $movements->total() }} movimientos</p>
 
     @include('partials._paginacion', ['paginator' => $movements])
 
@@ -440,6 +447,7 @@
     @include('partials.tabla-filtrable.estilos')
 
     @include('partials.tabla-filtrable.script', [
+        'formServidor' => 'filtrosMovimientos',
         'singular' => 'movimiento',
         'plural' => 'movimientos',
         'estadoCampo' => 'tipo',

@@ -29,6 +29,7 @@
 
 @php
     $cfg = [
+        'formServidor' => $formServidor ?? null,
         'singular' => $singular ?? 'registro',
         'plural' => $plural ?? 'registros',
         'estadoCampo' => $estadoCampo ?? 'activo',
@@ -51,6 +52,7 @@
 (function () {
     var CFG = @json($cfg);
 
+    var formServidor = CFG.formServidor ? document.getElementById(CFG.formServidor) : null;
     var buscar = document.getElementById('fBuscar');
     var conteo = document.getElementById('fConteo');
     var chips = document.getElementById('fChips');
@@ -110,6 +112,20 @@
 
         var seleccion = {};
         grupos().forEach(function (g) { seleccion[g] = marcados(g); });
+
+        if (formServidor) {
+            formServidor.querySelector('[name="estado"]').value = estados[0] || '';
+            pintarContadores(fDesde, fHasta);
+            pintarChips(seleccion, prefs, estados, fDesde, fHasta, texto, porTexto);
+            formServidor.querySelectorAll('[data-catalogo]').forEach(function (select) {
+                if (select.value) chip(select.parentElement.firstChild.textContent.trim() + ': ' + select.selectedOptions[0].textContent, function () {
+                    select.value = '';
+                    select.dispatchEvent(new Event('change'));
+                });
+            });
+            if (chips) chips.hidden = chips.children.length === 0;
+            return;
+        }
 
         var visibles = 0;
 
@@ -181,6 +197,9 @@
                 if ((t.value || '').trim()) n++;
             });
 
+            if (formServidor) {
+                bloque.querySelectorAll('[data-catalogo]').forEach(function (select) { if (select.value) n++; });
+            }
             badge.textContent = n;
             badge.hidden = n === 0;
         });
@@ -197,7 +216,11 @@
         x.type = 'button';
         x.setAttribute('aria-label', 'Quitar filtro ' + texto);
         x.textContent = '×';
-        x.addEventListener('click', function () { alQuitar(); filtrar(); });
+        x.addEventListener('click', function () {
+            alQuitar();
+            filtrar();
+            if (formServidor) formServidor.requestSubmit();
+        });
 
         el.appendChild(x);
         chips.appendChild(el);
@@ -287,12 +310,19 @@
     [desde, hasta].forEach(function (c) { if (c) c.addEventListener('change', filtrar); });
     textos.forEach(function (t) { t.addEventListener('input', filtrar); });
 
+    if (formServidor) {
+        formServidor.querySelectorAll('[data-catalogo]').forEach(function (select) {
+            select.addEventListener('change', function () { queueMicrotask(filtrar); });
+        });
+    }
+
     toggles.forEach(function (t) {
         t.addEventListener('click', function () {
             var on = !t.classList.contains('is-on');
             t.classList.toggle('is-on', on);
             t.setAttribute('aria-pressed', on ? 'true' : 'false');
             filtrar();
+            if (formServidor) formServidor.requestSubmit();
         });
     });
 
@@ -302,6 +332,10 @@
         if (desde) desde.value = '';
         if (hasta) hasta.value = '';
         textos.forEach(function (t) { t.value = ''; });
+        if (formServidor) {
+            formServidor.querySelectorAll('[data-catalogo]').forEach(function (select) { select.value = ''; });
+            formServidor.querySelector('[data-catalogo="tipo"]').dispatchEvent(new Event('change'));
+        }
         toggles.forEach(function (t, i) {
             // Cuál queda encendido lo decide cada pantalla; con null, ninguno.
             var on = CFG.toggleInicial !== null && i === CFG.toggleInicial;
@@ -309,6 +343,7 @@
             t.setAttribute('aria-pressed', on ? 'true' : 'false');
         });
         filtrar();
+        if (formServidor) formServidor.requestSubmit();
     }
 
     document.querySelectorAll('#fLimpiar, [data-limpiar-filtros]').forEach(function (b) {

@@ -520,6 +520,74 @@ class EntradasDeInventario
             ->when($hasta, fn ($q) => $q->whereDate('movement_date', '<=', $hasta));
     }
 
+    public function filtrarListado(Builder $query, array $filtros): Builder
+    {
+        $catalogo = array_filter(array_intersect_key($filtros, ProductosDeInventario::REGLAS_FILTROS_CATALOGO));
+        if ($catalogo) {
+            $query->where('item_type', InventoryMovement::ITEM_PRODUCT)
+                ->whereIn('item_id', Producto::where($catalogo)->select('id'));
+        }
+
+        if ($tipos = $filtros['movement_types'] ?? []) {
+            $query->where(function ($q) use ($tipos) {
+                foreach ($tipos as $tipo) {
+                    $q->orWhere(function ($tipoQuery) use ($tipo) {
+                        $tipoQuery->where('movement_type', $tipo === 'vendido' ? 'salida' : $tipo);
+                        if ($tipo === 'vendido') {
+                            $tipoQuery->whereNull('entregado_en');
+                        } elseif ($tipo === 'salida') {
+                            $tipoQuery->whereNotNull('entregado_en');
+                        }
+                    });
+                }
+            });
+        }
+
+        if ($estado = $filtros['estado'] ?? null) {
+            $query->where('movement_type', $estado);
+            if ($estado === 'salida') {
+                $query->whereNotNull('entregado_en');
+            }
+        }
+
+        if ($condiciones = $filtros['condiciones'] ?? []) {
+            $query->where(function ($q) use ($condiciones) {
+                $q->whereIn('condicion', $condiciones);
+                if (in_array('nuevo', $condiciones, true)) {
+                    $q->orWhereNull('condicion')->orWhere('condicion', '');
+                }
+            });
+        }
+        if ($almacenes = $filtros['almacenes'] ?? []) {
+            $query->where(function ($q) use ($almacenes) {
+                $q->whereIn('warehouse', $almacenes);
+                if (in_array('Sin almacén', $almacenes, true)) {
+                    $q->orWhereNull('warehouse')->orWhere('warehouse', '');
+                }
+            });
+        }
+        if ($quienes = $filtros['quienes'] ?? []) {
+            $query->where(function ($q) use ($quienes) {
+                $q->whereHas('creator', fn ($c) => $c->whereIn('name', $quienes));
+                if (in_array('Sin registrar', $quienes, true)) {
+                    $q->orWhereDoesntHave('creator')->orWhereHas('creator', fn ($c) => $c->where('name', ''));
+                }
+            });
+        }
+        $buscar = $filtros['search'] ?? '';
+        if ($buscar !== '') {
+            $query->where(function ($q) use ($buscar) {
+                $q->where('folio', 'like', "%{$buscar}%")
+                    ->orWhere('item_name', 'like', "%{$buscar}%")
+                    ->orWhere('warehouse', 'like', "%{$buscar}%")
+                    ->orWhereHas('creator', fn ($c) => $c->where('name', 'like', "%{$buscar}%"))
+                    ->orWhereHas('seriales', fn ($s) => $s->where('no_serie', 'like', "%{$buscar}%"));
+            });
+        }
+
+        return $query;
+    }
+
     /**
      * Las métricas son de todo el inventario, no de la página que se está
      * viendo: si se calcularan sobre el paginador dirían otra cosa según en

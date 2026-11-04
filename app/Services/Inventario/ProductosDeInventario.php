@@ -88,14 +88,25 @@ class ProductosDeInventario
         ];
     }
 
+    public const REGLAS_FILTROS_CATALOGO = [
+        'equipment_type_id' => ['nullable', 'integer', 'min:1'],
+        'subtype_id' => ['nullable', 'integer', 'min:1'],
+        'brand_id' => ['nullable', 'integer', 'min:1'],
+    ];
+
     /**
      * Búsqueda del listado (tipo, marca, modelo o serie) y, si se pide, solo
      * lo que se llevaron a congresos: piezas que siguen contando como stock
      * (allá se pueden vender), pero que no están físicamente en el anaquel.
      */
-    public function filtrar(Builder $query, ?string $busqueda, ?string $ubicacion): Builder
+    public function filtrar(Builder $query, ?string $busqueda, ?string $ubicacion, array $catalogo = []): Builder
     {
-        if ($busqueda) {
+        foreach (array_keys(self::REGLAS_FILTROS_CATALOGO) as $campo) {
+            if (! empty($catalogo[$campo])) {
+                $query->where($campo, $catalogo[$campo]);
+            }
+        }
+        if ($busqueda !== null && $busqueda !== '') {
             $query->where(function ($q) use ($busqueda) {
                 $q->where('tipo_equipo', 'like', "%{$busqueda}%")
                     ->orWhere('marca', 'like', "%{$busqueda}%")

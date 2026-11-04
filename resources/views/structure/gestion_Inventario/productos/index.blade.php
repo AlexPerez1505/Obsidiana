@@ -61,12 +61,17 @@
 
 @section('content')
     <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap;">
-        <form method="GET" style="flex:1; min-width:220px; max-width:380px;">
-            <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por tipo, marca, modelo o serie..."
-                   style="width:100%; padding:11px 14px; border:1px solid var(--border); border-radius:9px; font-size:14.5px; background:var(--surface); color:var(--text);">
+        <form method="GET" id="filtrosProductos" data-live="off" style="flex:1 1 100%;display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
+            <label style="flex:1;min-width:220px;">Buscar producto
+                <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por tipo, marca, modelo o serie..."
+                       style="width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);">
+            </label>
+            @include('partials.inventario-filtros-catalogo')
             @if (($filters['ubicacion'] ?? '') === 'congreso')
                 <input type="hidden" name="ubicacion" value="congreso">
             @endif
+            <button type="submit" class="btn">Aplicar filtros</button>
+            <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost">Limpiar filtros</a>
         </form>
 
         {{-- Lo que está fuera del almacén, de un jalón: sigue siendo stock
@@ -78,8 +83,8 @@
         --}}
         @if ($enCongreso > 0)
             <a href="{{ ($filters['ubicacion'] ?? '') === 'congreso'
-                    ? route('inventory.productos.index', array_filter(['search' => $filters['search'] ?? null]))
-                    : route('inventory.productos.index', array_filter(['search' => $filters['search'] ?? null, 'ubicacion' => 'congreso'])) }}"
+                    ? route('inventory.productos.index', array_filter(\Illuminate\Support\Arr::except($filters, ['ubicacion'])))
+                    : route('inventory.productos.index', array_filter(array_merge($filters, ['ubicacion' => 'congreso']))) }}"
                class="btn {{ ($filters['ubicacion'] ?? '') === 'congreso' ? '' : 'btn--ghost' }}"
                style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;"
                title="{{ ($filters['ubicacion'] ?? '') === 'congreso' ? 'Quitar el filtro' : 'Ver solo lo que está en congresos' }}">

@@ -37,15 +37,20 @@ class ProductoController extends Controller
         // Se trae también la entrada y el congreso de cada unidad: el modal
         // muestra la fecha de llegada y avisa si la pieza no está en el
         // almacén. Sin esto era una consulta por unidad.
-        $query = Producto::query()->with('serialesDisponibles.entrada', 'serialesDisponibles.congress')->latest();
+        $query = Producto::query()->with('serialesDisponibles.entrada', 'serialesDisponibles.congress')->latest()->latest('id');
 
-        $this->productos->filtrar($query, $request->get('search'), $request->get('ubicacion'));
+        $filters = $request->validate(ProductosDeInventario::REGLAS_FILTROS_CATALOGO + [
+            'search' => ['nullable', 'string', 'max:255'],
+            'ubicacion' => ['nullable', 'in:congreso'],
+        ]);
+        $this->productos->filtrar($query, $filters['search'] ?? null, $filters['ubicacion'] ?? null, $filters);
 
         $productos = $query->paginate(20)->withQueryString();
 
         return view('structure.gestion_Inventario.productos.index', [
             'productos' => $productos,
-            'filters' => $request->only('search', 'ubicacion'),
+            'filters' => $filters,
+            'catalogo' => $this->catalogoEquipo(false),
             'enCongreso' => $this->productos->piezasEnCongreso(),
         ]);
     }

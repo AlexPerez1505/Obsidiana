@@ -8,6 +8,7 @@ use App\Services\Inventario\ChecklistConIa;
 use App\Services\Inventario\EntradasDeInventario;
 use App\Services\Inventario\FotoPorPedazos;
 use App\Services\Inventario\OperacionRechazada;
+use App\Services\Inventario\ProductosDeInventario;
 use App\Services\Inventario\VideoPorPedazos;
 use App\Support\ChecklistRecepcion;
 use App\Support\EdicionPropia;
@@ -39,13 +40,36 @@ class InventoryMovementController extends Controller
     {
         $query = InventoryMovement::query()->with(['creator', 'seriales'])->latest('movement_date')->latest('id');
 
-        $entradas->filtrar($query, $request->get('tipo'), $request->get('desde'), $request->get('hasta'));
+        $filters = $request->validate(ProductosDeInventario::REGLAS_FILTROS_CATALOGO + [
+            'search' => ['nullable', 'string', 'max:255'],
+            'tipo' => ['nullable', 'in:entrada,salida,transferencia'],
+            'movement_types' => ['nullable', 'array', 'max:4'],
+            'movement_types.*' => ['in:entrada,vendido,salida,transferencia'],
+            'condiciones' => ['nullable', 'array', 'max:2'],
+            'condiciones.*' => ['in:nuevo,usado'],
+            'almacenes' => ['nullable', 'array', 'max:100'],
+            'almacenes.*' => ['string', 'max:255'],
+            'quienes' => ['nullable', 'array', 'max:100'],
+            'quienes.*' => ['string', 'max:255'],
+            'desde' => ['nullable', 'date_format:Y-m-d'],
+            'hasta' => ['nullable', 'date_format:Y-m-d'],
+            'estado' => ['nullable', 'in:entrada,salida'],
+        ]);
+        if (empty($filters['movement_types']) && ! empty($filters['tipo'])) {
+            $filters['movement_types'] = $filters['tipo'] === 'salida' ? ['vendido', 'salida'] : [$filters['tipo']];
+        }
+        $entradas->filtrar($query, null, $filters['desde'] ?? null, $filters['hasta'] ?? null);
+        $entradas->filtrarListado($query, $filters);
 
         $movements = $query->paginate(20)->withQueryString();
 
         return view('structure.gestion_Inventario.entrada_salida.index', [
             'movements' => $movements,
-            'filters' => $request->only('tipo', 'desde', 'hasta'),
+            'filters' => $filters,
+            'catalogo' => $this->catalogoEquipo(false),
+            'opcionesAlmacenes' => InventoryMovement::selectRaw("COALESCE(NULLIF(warehouse, ''), 'Sin almacén') AS nombre")->distinct()->orderBy('nombre')->pluck('nombre'),
+            'opcionesQuienes' => InventoryMovement::leftJoin('users', 'users.id', '=', 'inventory_movements.created_by')
+                ->selectRaw("COALESCE(NULLIF(users.name, ''), 'Sin registrar') AS nombre")->distinct()->orderBy('nombre')->pluck('nombre'),
             'resumen' => $entradas->resumen(),
         ]);
     }
