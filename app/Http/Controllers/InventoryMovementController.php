@@ -37,7 +37,7 @@ class InventoryMovementController extends Controller
 
     public function index(Request $request, EntradasDeInventario $entradas): View
     {
-        $query = InventoryMovement::query()->with('creator')->latest('movement_date')->latest('id');
+        $query = InventoryMovement::query()->with(['creator', 'seriales'])->latest('movement_date')->latest('id');
 
         $entradas->filtrar($query, $request->get('tipo'), $request->get('desde'), $request->get('hasta'));
 

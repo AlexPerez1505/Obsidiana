@@ -16,6 +16,8 @@
             */
             $tipo = $m->tipoVista();
 
+            $series = $m->seriales->pluck('no_serie')->filter()->values();
+
             return [
                 'modelo' => $m,
                 'tipo' => $tipo,
@@ -26,6 +28,12 @@
                 'fecha' => $m->movement_date?->format('Y-m-d') ?? '',
                 'fechaVista' => $m->movement_date?->format('d/m/Y') ?? '—',
                 'nombre' => $m->item_name ?: 'Sin nombre',
+                'series' => $series,
+                // En la tabla no caben 5 series completas: se ven las dos
+                // primeras y el total; la lista completa queda en el tooltip.
+                'seriesVista' => $series->count() <= 2
+                    ? $series->implode(', ')
+                    : $series->take(2)->implode(', ').'… (+'.($series->count() - 2).')',
             ];
         });
 
@@ -43,7 +51,7 @@
 
         $datos = function (array $fila) {
             return [
-                'data-buscar' => mb_strtolower($fila['modelo']->folio.' '.$fila['nombre'].' '.$fila['almacen'].' '.$fila['quien']),
+                'data-buscar' => mb_strtolower($fila['modelo']->folio.' '.$fila['nombre'].' '.$fila['almacen'].' '.$fila['quien'].' '.$fila['series']->implode(' ')),
                 'data-tipo' => $fila['tipo'],
                 'data-almacen' => $fila['almacen'],
                 'data-condicion' => $fila['condicion'],
@@ -259,7 +267,12 @@
                         </td>
                         <td>
                             <div class="t">{{ $fila['nombre'] }}</div>
-                            <div class="s">{{ ucfirst($m->item_type) }} · {{ ucfirst($fila['condicion']) }}</div>
+                            <div class="s">
+                                {{ ucfirst($m->item_type) }} · {{ ucfirst($fila['condicion']) }}
+                                @if ($fila['series']->isNotEmpty())
+                                    <br><span title="{{ $fila['series']->implode(', ') }}">Serie: {{ $fila['seriesVista'] }}</span>
+                                @endif
+                            </div>
                         </td>
                         <td style="white-space:nowrap;">{{ $m->quantity }} {{ $m->unit }}</td>
                         <td>{{ $fila['almacen'] }}</td>
@@ -320,7 +333,11 @@
                 </div>
 
                 <dl>
-                    <div><dt>Equipo</dt><dd>{{ $fila['nombre'] }}</dd></div>
+                    <div><dt>Equipo</dt><dd>{{ $fila['nombre'] }}
+                        @if ($fila['series']->isNotEmpty())
+                            <span class="s" title="{{ $fila['series']->implode(', ') }}">Serie: {{ $fila['seriesVista'] }}</span>
+                        @endif
+                    </dd></div>
                     <div><dt>Cantidad</dt><dd>{{ $m->quantity }} {{ $m->unit }}</dd></div>
                     <div><dt>Condición</dt><dd>{{ ucfirst($fila['condicion']) }}</dd></div>
                     <div><dt>Almacén</dt><dd>{{ $fila['almacen'] }}</dd></div>
