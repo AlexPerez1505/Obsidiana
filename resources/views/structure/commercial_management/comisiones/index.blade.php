@@ -201,7 +201,7 @@
                             <th>Base</th>
                             <th>Nota</th>
                             <th>Registró</th>
-                            @if ($puedeGestionar)<th></th>@endif
+                            @can('comisiones.eliminar')<th></th>@endcan
                         </tr>
                     </thead>
                     <tbody>
@@ -213,7 +213,7 @@
                                 <td>{{ $bases[$p->base] ?? $p->base }}</td>
                                 <td style="color:var(--muted);">{{ $p->nota ?: '—' }}</td>
                                 <td style="color:var(--muted);">{{ $p->registradoPor?->name ?? '—' }}</td>
-                                @if ($puedeGestionar)
+                                @if (auth()->user()->can('comisiones.eliminar'))
                                     <td class="r">
                                         <form method="POST" action="{{ route('commercial.comisiones.pagos.destroy', $p) }}"
                                               data-confirm="¿Eliminar este pago de ${{ number_format((float) $p->monto, 2) }}? Se vuelve a contar como pendiente.">

@@ -608,7 +608,7 @@
                     <x-gravityui-floppy-disk />
                     <span x-text="loading ? 'Guardando...' : 'Guardar cambios'"></span>
                 </button>
-                <button type="button" class="tp-btn-delete" @click="deleteExpense()" :disabled="loading">
+                <button type="button" class="tp-btn-delete" @click="deleteExpense()" :disabled="loading || {{ auth()->user()->can('viaticos.eliminar') ? 'false' : 'true' }}">
                     <x-gravityui-trash-bin />
                     Eliminar
                 </button>

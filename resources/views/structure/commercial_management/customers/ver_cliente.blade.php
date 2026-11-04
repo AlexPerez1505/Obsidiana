@@ -202,7 +202,7 @@
                             </form>
                             <form method="POST" action="{{ route('commercial.clientes.seguimientos.destroy', [$customer, $s]) }}" data-confirm="¿Eliminar este seguimiento?">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="sg-x" title="Eliminar">×</button>
+                                <button type="submit" class="sg-x" title="Eliminar" @disabled(auth()->user()->cannot('clientes.eliminar'))>×</button>
                             </form>
                         </div>
                     </div>

@@ -61,7 +61,7 @@ Route::middleware('can:roles.gestionar')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::get('/{role}', 'show')->name('show');
         Route::put('/{role}', 'update')->name('update');
-        Route::delete('/{role}', 'destroy')->name('destroy');
+        Route::delete('/{role}', 'destroy')->middleware('can:roles.eliminar')->name('destroy');
     });
 
     Route::get('/permisos', [PermisoController::class, 'index'])->name('permisos.index');
@@ -87,7 +87,7 @@ Route::prefix('agenda')->name('agenda.')->whereNumber('event')->controller(Agend
     Route::post('/', 'store')->name('store');
     Route::get('/{event}', 'show')->name('show');
     Route::put('/{event}', 'update')->name('update');
-    Route::delete('/{event}', 'destroy')->name('destroy');
+    Route::delete('/{event}', 'destroy')->middleware('can:agenda.eliminar')->name('destroy');
 });
 
 Route::prefix('materiales')->name('materiales.')->whereNumber('materialRequest')->controller(MaterialController::class)->group(function () {
@@ -116,23 +116,23 @@ Route::middleware('admin')->group(function () {
     });
 
     Route::prefix('viaticos')->name('viaticos.')->whereNumber(['viatic', 'expense'])->controller(ViaticoController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
+        Route::get('/', 'index')->withoutMiddleware('admin')->middleware('can:viaticos.ver')->name('index');
         Route::post('/', 'store')->name('store');
-        Route::get('/{viatic}', 'show')->name('show');
+        Route::get('/{viatic}', 'show')->withoutMiddleware('admin')->middleware('can:viaticos.ver')->name('show');
         Route::patch('/{viatic}', 'update')->name('update');
-        Route::delete('/{viatic}', 'destroy')->name('destroy');
+        Route::delete('/{viatic}', 'destroy')->withoutMiddleware('admin')->middleware(['can:viaticos.ver', 'can:viaticos.eliminar'])->name('destroy');
         Route::post('/{viatic}/gastos', 'agregarGasto')->name('gastos.store');
         Route::patch('/{viatic}/gastos/{expense}', 'actualizarGasto')->name('gastos.update');
-        Route::delete('/{viatic}/gastos/{expense}', 'eliminarGasto')->name('gastos.destroy');
+        Route::delete('/{viatic}/gastos/{expense}', 'eliminarGasto')->withoutMiddleware('admin')->middleware(['can:viaticos.ver', 'can:viaticos.eliminar'])->name('gastos.destroy');
     });
 
     Route::prefix('viajes')->name('viajes.')->whereNumber(['trip', 'expense'])->controller(ViajeController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
-        Route::get('/{trip}', 'show')->name('show');
+        Route::get('/{trip}', 'show')->withoutMiddleware('admin')->middleware('can:viaticos.ver')->name('show');
         Route::post('/{trip}/gastos', 'agregarGasto')->name('gastos.store');
         Route::patch('/{trip}/gastos/{expense}', 'actualizarGasto')->name('gastos.update');
-        Route::delete('/{trip}/gastos/{expense}', 'eliminarGasto')->name('gastos.destroy');
+        Route::delete('/{trip}/gastos/{expense}', 'eliminarGasto')->withoutMiddleware('admin')->middleware(['can:viaticos.ver', 'can:viaticos.eliminar'])->name('gastos.destroy');
         Route::post('/{trip}/finalizar', 'finalizar')->name('finalizar');
     });
 });

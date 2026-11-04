@@ -12,6 +12,11 @@ use Illuminate\Support\Facades\Route;
 | pasa antes de cualquier revisión) puede repartir permisos.
 */
 Route::middleware(['auth', 'verified', 'approved', 'can:roles.gestionar'])->group(function () {
+    Route::get('/configuracion/usuarios/{user}/permisos', [\App\Http\Controllers\Admin\PermissionController::class, 'userPermissions'])
+        ->name('configuracion.usuarios.permisos');
+    Route::post('/configuracion/usuarios/{user}/permisos', [\App\Http\Controllers\Admin\PermissionController::class, 'updateUserPermissions'])
+        ->name('configuracion.usuarios.permisos.update');
+
     Route::get('/configuracion/roles', [RolController::class, 'index'])
         ->name('configuracion.roles.index');
 
@@ -25,5 +30,5 @@ Route::middleware(['auth', 'verified', 'approved', 'can:roles.gestionar'])->grou
         ->name('configuracion.roles.update');
 
     Route::delete('/configuracion/roles/{role}', [RolController::class, 'destroy'])
-        ->name('configuracion.roles.destroy');
+        ->middleware('can:roles.eliminar')->name('configuracion.roles.destroy');
 });

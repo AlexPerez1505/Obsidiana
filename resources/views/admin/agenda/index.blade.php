@@ -990,7 +990,7 @@
                     <textarea id="agenda-notes" name="notes" placeholder="Notas del evento"></textarea>
                 </div>
                 <div class="agenda-form-actions">
-                    <button class="agenda-delete" id="agendaDeleteButton" type="button" hidden>Eliminar evento</button>
+                    <button class="agenda-delete" id="agendaDeleteButton" type="button" hidden @disabled(auth()->user()->cannot('agenda.eliminar'))>Eliminar evento</button>
                     <button class="agenda-save" id="agendaSaveButton" type="submit">Guardar evento</button>
                 </div>
             </form>

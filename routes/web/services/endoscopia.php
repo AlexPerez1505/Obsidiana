@@ -82,5 +82,5 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::put('/gestion-servicios/area-endoscopia/{service}', [ServiceController::class, 'update'])
         ->name('gestion.servicios.area_endoscopia.update');
     Route::delete('/gestion-servicios/area-endoscopia/{service}', [ServiceController::class, 'destroy'])
-        ->name('gestion.servicios.area_endoscopia.destroy');
+        ->middleware('can:servicios.eliminar')->name('gestion.servicios.area_endoscopia.destroy');
 });

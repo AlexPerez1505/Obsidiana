@@ -60,15 +60,15 @@ Route::prefix('rh')->name('rh.')->group(function () {
         Route::get('/eventos', [EventoController::class, 'index'])->name('eventos.index');
         Route::post('/eventos', [EventoController::class, 'store'])->name('eventos.store');
         Route::get('/eventos/{evento}', [EventoController::class, 'show'])->whereNumber('evento')->name('eventos.show');
-        Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->whereNumber('evento')->name('eventos.destroy');
+        Route::delete('/eventos/{evento}', [EventoController::class, 'destroy'])->whereNumber('evento')->withoutMiddleware('can:asistencia.gestionar')->middleware('can:asistencia.eliminar')->name('eventos.destroy');
 
         Route::get('/festivos', [FestivoController::class, 'index'])->name('festivos.index');
         Route::post('/festivos', [FestivoController::class, 'store'])->name('festivos.store');
         Route::post('/festivos/oficiales', [FestivoController::class, 'oficiales'])->name('festivos.oficiales');
-        Route::delete('/festivos/{festivo}', [FestivoController::class, 'destroy'])->whereNumber('festivo')->name('festivos.destroy');
+        Route::delete('/festivos/{festivo}', [FestivoController::class, 'destroy'])->whereNumber('festivo')->withoutMiddleware('can:asistencia.gestionar')->middleware('can:asistencia.eliminar')->name('festivos.destroy');
 
         Route::post('/incidencias', [IncidenciaController::class, 'store'])->name('incidencias.store');
-        Route::delete('/incidencias/{modalidad}', [IncidenciaController::class, 'destroy'])->whereNumber('modalidad')->name('incidencias.destroy');
+        Route::delete('/incidencias/{modalidad}', [IncidenciaController::class, 'destroy'])->whereNumber('modalidad')->withoutMiddleware('can:asistencia.gestionar')->middleware('can:asistencia.eliminar')->name('incidencias.destroy');
     });
 
     // ---------------- Biometría (lectores y huellas) ----------------
@@ -85,7 +85,7 @@ Route::prefix('rh')->name('rh.')->group(function () {
         Route::post('/inscripciones/{inscripcion}/cancelar', [InscripcionController::class, 'cancelar'])->whereNumber('inscripcion')->name('inscripciones.cancelar');
 
         Route::get('/huellas', [HuellaController::class, 'index'])->name('huellas.index');
-        Route::delete('/huellas/{huella}', [HuellaController::class, 'destroy'])->whereNumber('huella')->name('huellas.destroy');
+        Route::delete('/huellas/{huella}', [HuellaController::class, 'destroy'])->whereNumber('huella')->middleware('can:asistencia.biometria_eliminar')->name('huellas.destroy');
     });
 
     // ---------------- Nómina (incluye sueldos) ----------------
@@ -102,14 +102,14 @@ Route::prefix('rh')->name('rh.')->group(function () {
         Route::put('/empleados/{user}/sueldo', [EmpleadoNominaController::class, 'sueldo'])->whereNumber('user')->name('empleados.sueldo');
         Route::post('/empleados/{user}/conceptos', [EmpleadoNominaController::class, 'conceptoFijo'])->whereNumber('user')->name('conceptos.store');
         Route::post('/empleados/{user}/conceptos-unicos', [QuincenaController::class, 'conceptoUnico'])->whereNumber('user')->name('conceptos.unico');
-        Route::delete('/conceptos/{concepto}', [EmpleadoNominaController::class, 'eliminarConcepto'])->whereNumber('concepto')->name('conceptos.destroy');
+        Route::delete('/conceptos/{concepto}', [EmpleadoNominaController::class, 'eliminarConcepto'])->whereNumber('concepto')->middleware('can:asistencia.nomina_eliminar')->name('conceptos.destroy');
 
         Route::get('/reglas', [ReglaNominaController::class, 'index'])->name('reglas.index');
         Route::post('/reglas', [ReglaNominaController::class, 'store'])->name('reglas.store');
         Route::get('/reglas/{regla}', [ReglaNominaController::class, 'show'])->whereNumber('regla')->name('reglas.show');
         Route::put('/reglas/{regla}', [ReglaNominaController::class, 'update'])->whereNumber('regla')->name('reglas.update');
         Route::post('/reglas/{regla}/alternar', [ReglaNominaController::class, 'alternar'])->whereNumber('regla')->name('reglas.alternar');
-        Route::delete('/reglas/{regla}', [ReglaNominaController::class, 'destroy'])->whereNumber('regla')->name('reglas.destroy');
+        Route::delete('/reglas/{regla}', [ReglaNominaController::class, 'destroy'])->whereNumber('regla')->middleware('can:asistencia.nomina_eliminar')->name('reglas.destroy');
 
         Route::get('/ajustes', [ReglaNominaController::class, 'ajustes'])->name('ajustes.show');
         Route::put('/ajustes', [ReglaNominaController::class, 'guardarAjustes'])->name('ajustes.update');

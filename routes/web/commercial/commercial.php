@@ -45,7 +45,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/gestion-comercial/clientes/{cliente}/seguimientos/{seguimiento}/reprogramar', [SeguimientoController::class, 'reprogramar'])
         ->middleware('can:clientes.editar')->name('commercial.clientes.seguimientos.reprogramar');
     Route::delete('/gestion-comercial/clientes/{cliente}/seguimientos/{seguimiento}', [SeguimientoController::class, 'destroy'])
-        ->middleware('can:clientes.editar')->name('commercial.clientes.seguimientos.destroy');
+        ->middleware('can:clientes.eliminar')->name('commercial.clientes.seguimientos.destroy');
     Route::post('/gestion-comercial/clientes/{cliente}/convertir', [SeguimientoController::class, 'convertir'])
         ->middleware('can:clientes.editar')->name('commercial.clientes.convertir');
 

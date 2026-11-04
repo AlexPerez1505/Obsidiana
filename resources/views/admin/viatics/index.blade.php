@@ -269,7 +269,7 @@
                         <form method="POST" action="{{ route('admin.viatics.destroy', $vt) }}" data-confirm="¿Eliminar este viático?" style="display:inline">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="vl-card-btn vl-btn-danger" aria-label="Eliminar">
+                            <button type="submit" class="vl-card-btn vl-btn-danger" aria-label="Eliminar" @disabled(auth()->user()->cannot('viaticos.eliminar'))>
                                 <x-gravityui-trash-bin />
                             </button>
                         </form>

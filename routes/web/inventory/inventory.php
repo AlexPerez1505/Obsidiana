@@ -37,7 +37,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::get('/{orden}', [OrdenSalidaController::class, 'show'])->name('show');
         Route::get('/{orden}/pdf', [OrdenSalidaController::class, 'pdf'])->name('pdf');
         // Quitar evidencia: quien la subió o quien prepara salidas (lo revisa el controlador).
-        Route::delete('/{orden}/evidencias/{evidencia}', [OrdenSalidaController::class, 'borrarEvidencia'])->name('evidencias.destroy');
+        Route::delete('/{orden}/evidencias/{evidencia}', [OrdenSalidaController::class, 'borrarEvidencia'])->middleware('can:salidas.eliminar')->name('evidencias.destroy');
 
         Route::middleware('can:salidas.preparar')->group(function () {
             Route::post('/{orden}/partidas/{item}', [OrdenSalidaController::class, 'item'])->name('item');

@@ -37,7 +37,7 @@
             <form action="{{ route('gestion.servicios.area_endoscopia.destroy', $service) }}" method="POST" onsubmit="return confirm('¿Eliminar este servicio?')">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="erp-btn ghost" style="color:var(--danger); border-color:var(--danger);">Eliminar</button>
+                <button type="submit" class="erp-btn ghost" style="color:var(--danger); border-color:var(--danger);" @disabled(auth()->user()->cannot('servicios.eliminar'))>Eliminar</button>
             </form>
         </div>
     </div>

@@ -19,7 +19,7 @@ class TareasTest extends TestCase
 
     private function editor(): User
     {
-        return $this->usuarioApi(['marketing.ver', 'marketing.editar']);
+        return $this->usuarioApi(['marketing.ver', 'marketing.editar', 'marketing.eliminar']);
     }
 
     private function aprobador(): User

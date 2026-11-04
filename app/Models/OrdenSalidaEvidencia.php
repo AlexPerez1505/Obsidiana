@@ -77,12 +77,12 @@ class OrdenSalidaEvidencia extends Model
      */
     public function puedeBorrarla(User $user): bool
     {
-        if ($user->can('salidas.preparar')) {
+        if ($user->can('salidas.eliminar')) {
             return true;
         }
 
         $token = $user->currentAccessToken();
 
-        return $this->subido_por === $user->id && (! $token || $token->can('salidas.preparar'));
+        return $this->subido_por === $user->id && (! $token || $token->can('salidas.eliminar'));
     }
 }

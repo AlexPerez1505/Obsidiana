@@ -95,7 +95,7 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
     Route::put('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'update'])
         ->middleware('can:servicios.crear')->name('gestion.servicios.historial.update');
     Route::delete('/gestion-servicios/historial-servicios/{service}', [ServiceController::class, 'destroy'])
-        ->middleware('can:servicios.crear')->name('gestion.servicios.historial.destroy');
+        ->middleware('can:servicios.eliminar')->name('gestion.servicios.historial.destroy');
     Route::post('/gestion-servicios/historial-servicios/{service}/validar-os', [ServicioExternoController::class, 'validarOs'])
         ->middleware('can:servicios.crear')->name('gestion.servicios.historial.validar_os');
     Route::post('/gestion-servicios/historial-servicios/{service}/enviar-cliente', [ServicioExternoController::class, 'enviarCliente'])
@@ -160,7 +160,7 @@ Route::middleware(['auth', 'verified', 'approved', 'can:servicios.ver'])->group(
         $documento->delete();
 
         return redirect()->route('gestion.servicios.garantia.index')->with('success', 'Carta eliminada correctamente.');
-    })->middleware('can:servicios.crear')->name('gestion.servicios.garantia.eliminar');
+    })->middleware('can:servicios.eliminar')->name('gestion.servicios.garantia.eliminar');
 
     Route::get('/gestion-servicios/garantia/{documento}/descargar/{index?}', function (GarantiaDocumento $documento, int $index = 0) {
         $path = $documento->archivos[$index] ?? null;

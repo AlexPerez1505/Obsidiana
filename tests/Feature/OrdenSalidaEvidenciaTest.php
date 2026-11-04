@@ -75,7 +75,7 @@ class OrdenSalidaEvidenciaTest extends TestCase
 
     private function almacenista(): User
     {
-        return $this->usuarioApi(['salidas.ver', 'salidas.preparar']);
+        return $this->usuarioApi(['salidas.ver', 'salidas.preparar', 'salidas.eliminar']);
     }
 
     private function subirFoto(User $user, OrdenSalida $orden, string $nombre = 'foto.jpg')

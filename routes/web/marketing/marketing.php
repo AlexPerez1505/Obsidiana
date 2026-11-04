@@ -24,7 +24,7 @@ Route::middleware(['auth', 'verified', 'approved', 'can:marketing.ver'])->group(
         ->middleware('can:marketing.editar')->name('marketing.tareas.update');
 
     Route::delete('/marketing/tareas/{task}', [TaskController::class, 'destroy'])
-        ->middleware('can:marketing.editar')->name('marketing.tareas.destroy');
+        ->middleware('can:marketing.eliminar')->name('marketing.tareas.destroy');
 
     Route::put('/marketing/tareas/{task}/aprobar', [TaskController::class, 'aprobar'])
         ->middleware('can:marketing.aprobar')->name('marketing.tareas.aprobar');

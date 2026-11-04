@@ -102,7 +102,7 @@
                             @unless ($p->tieneCobros())
                                 <form method="POST" action="{{ route('commercial.ventas.cobros.parcialidad.eliminar', [$venta, $p]) }}" style="display:inline;">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="cb-mini cb-mini--danger" title="Eliminar">
+                                    <button type="submit" class="cb-mini cb-mini--danger" title="Eliminar" @disabled(auth()->user()->cannot('cobranza.eliminar'))>
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                                     </button>
                                 </form>
@@ -183,7 +183,7 @@
                             <form method="POST" action="{{ route('commercial.ventas.cobros.destroy', [$venta, $c]) }}"
                                   style="display:inline;" data-confirmar="Se cancelará el cobro {{ $c->folio }} y se borrarán sus evidencias.">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="cb-mini cb-mini--danger" title="Cancelar cobro">
+                                <button type="submit" class="cb-mini cb-mini--danger" title="Cancelar cobro" @disabled(auth()->user()->cannot('cobranza.eliminar'))>
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                                 </button>
                             </form>

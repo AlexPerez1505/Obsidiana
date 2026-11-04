@@ -20,13 +20,13 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admi
     Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda.index');
     Route::post('/agenda/eventos', [AgendaController::class, 'store'])->name('agenda.events.store');
     Route::put('/agenda/eventos/{agendaEvent}', [AgendaController::class, 'update'])->name('agenda.events.update');
-    Route::delete('/agenda/eventos/{agendaEvent}', [AgendaController::class, 'destroy'])->name('agenda.events.destroy');
+    Route::delete('/agenda/eventos/{agendaEvent}', [AgendaController::class, 'destroy'])->middleware('can:agenda.eliminar')->name('agenda.events.destroy');
 
     // Pantalla dedicada de captura; la lista principal es /agenda.
     Route::view('/agenda/crear', 'admin.agenda.create_date')->name('agenda.create');
     Route::post('/agenda', [AgendaEventController::class, 'store'])->name('agenda.store');
     Route::put('/agenda/{event}', [AgendaEventController::class, 'update'])->name('agenda.update');
-    Route::delete('/agenda/{event}', [AgendaEventController::class, 'destroy'])->name('agenda.destroy');
+    Route::delete('/agenda/{event}', [AgendaEventController::class, 'destroy'])->middleware('can:agenda.eliminar')->name('agenda.destroy');
     Route::get('/materiales', [MaterialRequestController::class, 'index'])->name('materials.index');
     Route::post('/materiales', [MaterialRequestController::class, 'store'])->name('materials.store');
     Route::get('/reportes', [ReportController::class, 'index'])->name('reports.index');
@@ -62,22 +62,22 @@ Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->n
     Route::post('/vehiculos', [VehicleController::class, 'store'])->name('vehicles.store');
     Route::get('/vehiculos/{vehicle}', [VehicleController::class, 'show'])->name('vehicles.show');
 
-    Route::get('/viaticos', [ViaticController::class, 'index'])->name('viatics.index');
+    Route::get('/viaticos', [ViaticController::class, 'index'])->withoutMiddleware('admin')->middleware('can:viaticos.ver')->name('viatics.index');
     Route::get('/viaticos/crear', [ViaticController::class, 'create'])->name('viatics.create');
     Route::post('/viaticos', [ViaticController::class, 'store'])->name('viatics.store');
     Route::get('/viaticos/{viatic}/editar', [ViaticController::class, 'edit'])->name('viatics.edit');
     Route::patch('/viaticos/{viatic}', [ViaticController::class, 'update'])->name('viatics.update');
-    Route::delete('/viaticos/{viatic}', [ViaticController::class, 'destroy'])->name('viatics.destroy');
-    Route::get('/viaticos/{viatic}', [ViaticController::class, 'show'])->name('viatics.show');
+    Route::delete('/viaticos/{viatic}', [ViaticController::class, 'destroy'])->withoutMiddleware('admin')->middleware(['can:viaticos.ver', 'can:viaticos.eliminar'])->name('viatics.destroy');
+    Route::get('/viaticos/{viatic}', [ViaticController::class, 'show'])->withoutMiddleware('admin')->middleware('can:viaticos.ver')->name('viatics.show');
     Route::post('/viaticos/{viatic}/gastos', [ViaticController::class, 'addExpense'])->name('viatics.expense');
     Route::patch('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'updateExpense'])->name('viatics.expense.update');
-    Route::delete('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'destroyExpense'])->name('viatics.expense.destroy');
+    Route::delete('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'destroyExpense'])->withoutMiddleware('admin')->middleware(['can:viaticos.ver', 'can:viaticos.eliminar'])->name('viatics.expense.destroy');
 
     Route::post('/viajes', [TripController::class, 'store'])->name('trips.store');
-    Route::get('/viajes/{trip}', [TripController::class, 'show'])->name('trips.show');
+    Route::get('/viajes/{trip}', [TripController::class, 'show'])->withoutMiddleware('admin')->middleware('can:viaticos.ver')->name('trips.show');
     Route::post('/viajes/{trip}/gastos', [TripController::class, 'addExpense'])->name('trips.expense');
     Route::patch('/viajes/{trip}/gastos/{expense}', [TripController::class, 'updateExpense'])->name('trips.expense.update');
-    Route::delete('/viajes/{trip}/gastos/{expense}', [TripController::class, 'destroyExpense'])->name('trips.expense.destroy');
+    Route::delete('/viajes/{trip}/gastos/{expense}', [TripController::class, 'destroyExpense'])->withoutMiddleware('admin')->middleware(['can:viaticos.ver', 'can:viaticos.eliminar'])->name('trips.expense.destroy');
     Route::post('/viajes/{trip}/finalizar', [TripController::class, 'finish'])->name('trips.finish');
 
     // Permisos

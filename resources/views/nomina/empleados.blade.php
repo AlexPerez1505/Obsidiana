@@ -60,9 +60,11 @@
                         <div class="ne-con {{ $c->esBono() ? 'ok' : 'bad' }}">
                             <span><b><x-ui.icon :name="$c->esBono() ? 'plus' : 'minus'" :size="14" /> {{ $c->name }}</b><small>{{ $c->vigenciaTexto() }}{{ $c->note ? ' · '.$c->note : '' }}</small></span>
                             <b>{{ $c->esBono() ? '+' : '−' }}{{ $mon($c->amount) }}</b>
+                            @can('asistencia.nomina_eliminar')
                             <form method="POST" action="{{ route('nomina.conceptos.destroy', $c) }}" data-confirm="Se deja de aplicar en las próximas quincenas. Las cerradas no cambian." data-confirm-title="Quitar concepto">@csrf @method('DELETE')
                                 <button class="ne-x" type="submit" title="Quitar" aria-label="Quitar {{ $c->name }}"><x-ui.icon name="x" /></button>
                             </form>
+                            @endcan
                         </div>
                     @empty
                         <p class="rh-sub" style="margin:4px 0 10px;">Sin conceptos fijos.</p>

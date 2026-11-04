@@ -29,6 +29,9 @@ class RolController extends Controller
 
         return view('structure.Configuracion.roles.index', [
             'roles' => $roles,
+            'usuarios' => \App\Models\User::where('is_admin', false)
+                ->whereDoesntHave('roles', fn ($query) => $query->where('name', \App\Models\User::ROL_ADMIN)->where('is_active', true))
+                ->orderBy('name')->get(['id', 'name']),
             'grupos' => CatalogoPermisos::grupos(),
         ]);
     }

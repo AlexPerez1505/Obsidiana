@@ -81,7 +81,7 @@ class RolesYPermisosTest extends TestCase
 
     public function test_el_rol_admin_es_intocable(): void
     {
-        $user = $this->usuarioApi(['roles.gestionar']);
+        $user = $this->usuarioApi(['roles.gestionar', 'roles.eliminar']);
         $admin = Role::where('name', 'admin')->firstOrFail();
 
         $this->conToken($user)->putJson("/api/v1/roles/{$admin->id}", ['label' => 'Otro', 'permisos' => []])
@@ -95,7 +95,7 @@ class RolesYPermisosTest extends TestCase
 
     public function test_no_se_borra_un_rol_que_alguien_tiene(): void
     {
-        $user = $this->usuarioApi(['roles.gestionar']);
+        $user = $this->usuarioApi(['roles.gestionar', 'roles.eliminar']);
         $rol = Role::create(['name' => 'temporal', 'label' => 'Temporal', 'is_active' => true]);
         $alguien = $this->usuarioApi();
         $alguien->roles()->attach($rol);

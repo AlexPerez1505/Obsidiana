@@ -293,7 +293,7 @@
                             <form method="POST" action="{{ route('inventory.congresos.destroy', $congress) }}" data-confirm="¿Eliminar este congreso? Esta acción no se puede deshacer.">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn--ghost" style="padding:6px 10px; color:var(--danger);" title="Eliminar">
+                                <button type="submit" class="btn btn--ghost" style="padding:6px 10px; color:var(--danger);" title="Eliminar" @disabled(auth()->user()->cannot('congresos.eliminar'))>
                                     <x-gravityui-trash-bin width="14" height="14" />
                                 </button>
                             </form>
@@ -401,7 +401,7 @@
                                                     <form method="POST" action="{{ route('inventory.congresos.productos.destroy', ['congress' => $congress, 'serial' => $unidad]) }}" style="display:inline;" data-confirm="¿Regresar esta unidad del congreso?">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" class="cgx-quitar" title="Quitar" style="font-size:12px;">×</button>
+                                                        <button type="submit" class="cgx-quitar" title="Quitar" @disabled(auth()->user()->cannot('congresos.eliminar')) style="font-size:12px;">×</button>
                                                     </form>
                                                 </div>
                                             @endforeach
@@ -447,7 +447,7 @@
                                 <form method="POST" action="{{ route('inventory.congresos.usuarios.destroy', ['congress' => $congress, 'user' => $u]) }}" data-confirm="¿Quitar a este usuario del congreso?">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="cgx-quitar" title="Quitar">×</button>
+                                    <button type="submit" class="cgx-quitar" title="Quitar" @disabled(auth()->user()->cannot('congresos.eliminar'))>×</button>
                                 </form>
                             </div>
                         @endforeach
@@ -487,7 +487,7 @@
                                 <form method="POST" action="{{ route('inventory.congresos.participantes.destroy', ['congress' => $congress, 'participante' => $participante]) }}" data-confirm="¿Quitar a este participante?">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="cgx-quitar" title="Quitar">×</button>
+                                    <button type="submit" class="cgx-quitar" title="Quitar" @disabled(auth()->user()->cannot('congresos.eliminar'))>×</button>
                                 </form>
                             </div>
                         @endforeach
