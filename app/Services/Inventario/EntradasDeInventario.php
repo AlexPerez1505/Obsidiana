@@ -723,6 +723,10 @@ class EntradasDeInventario
                 }
             }
 
+            if ($data['condicion'] === 'usado') {
+                app(ChecklistConIa::class)->recordarAdicionales($data['equipment_model_id'] ?? null, $data['checklist_recepcion'] ?? []);
+            }
+
             return [
                 'movimiento' => $movimiento,
                 'mensaje' => "Entrada {$movimiento->folio} registrada correctamente.",

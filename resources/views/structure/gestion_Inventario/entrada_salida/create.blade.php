@@ -214,7 +214,7 @@
                         </select>
                         <button type="button" class="btn btn--ghost" data-chk-agregar>Agregar</button>
                     </div>
-                    <small class="campo-nota">Escríbelo para que "Sí" signifique que está bien.</small>
+                    <small class="campo-nota">Escríbelo para que "Sí" signifique que está bien. Al guardar una entrada usada con modelo seleccionado, estos puntos se recordarán para sus próximos registros, sin copiar respuestas ni notas. Sin modelo, solo se guardan en esta entrada.</small>
                 </div>
 
                 @error('checklist')<p class="err">{{ $message }}</p>@enderror

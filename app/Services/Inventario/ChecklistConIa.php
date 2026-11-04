@@ -8,6 +8,7 @@ use App\Models\EquipmentType;
 use App\Models\Subtype;
 use App\Support\ChecklistRecepcion;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -34,6 +35,51 @@ class ChecklistConIa
      * @return array{ia: bool, grupos: array, aviso: ?string}
      */
     public function para(int $tipoId, ?int $subtipoId, ?int $marcaId, ?int $modeloId): array
+    {
+        $resultado = $this->base($tipoId, $subtipoId, $marcaId, $modeloId);
+        $guardados = $modeloId ? (EquipmentModel::find($modeloId)?->checklist_recepcion_adicional ?? []) : [];
+        $textos = collect($resultado['grupos'])->flatMap(fn ($grupo) => collect($grupo['puntos'])->pluck('texto'))
+            ->map(fn ($texto) => mb_strtolower(Str::squish($texto)))->all();
+        $adicionales = array_filter($guardados, fn ($punto) => ! in_array(mb_strtolower(Str::squish($punto['texto'])), $textos, true));
+        $cantidad = collect($resultado['grupos'])->sum(fn ($grupo) => count($grupo['puntos']));
+        $adicionales = array_slice($adicionales, 0, max(0, ChecklistRecepcion::MAX_PUNTOS - $cantidad), true);
+
+        if ($adicionales) {
+            $resultado['grupos']['agregados_modelo'] = ['titulo' => 'Agregados para este modelo', 'puntos' => $adicionales];
+        }
+        $resultado['guardados'] = count($adicionales);
+
+        return $resultado;
+    }
+
+    public function recordarAdicionales(?int $modeloId, array $checklist): void
+    {
+        $manuales = collect(ChecklistRecepcion::limpiar($checklist))
+            ->filter(fn ($punto, $llave) => str_starts_with($llave, 'manual_'));
+        if (! $modeloId || $manuales->isEmpty()) {
+            return;
+        }
+
+        DB::transaction(function () use ($modeloId, $manuales) {
+            $modelo = EquipmentModel::whereKey($modeloId)->lockForUpdate()->first();
+            if (! $modelo) {
+                return;
+            }
+            $guardados = $modelo->checklist_recepcion_adicional ?? [];
+            foreach ($manuales as $punto) {
+                $llave = 'manual_'.substr(hash('sha256', mb_strtolower(Str::squish($punto['texto']))), 0, 32);
+                if (! isset($guardados[$llave]) && count($guardados) >= ChecklistRecepcion::MAX_PUNTOS) {
+                    continue;
+                }
+                $guardados[$llave] = ['texto' => $punto['texto'], 'manda' => $punto['manda']];
+            }
+            if ($guardados !== ($modelo->checklist_recepcion_adicional ?? [])) {
+                $modelo->forceFill(['checklist_recepcion_adicional' => $guardados])->save();
+            }
+        });
+    }
+
+    private function base(int $tipoId, ?int $subtipoId, ?int $marcaId, ?int $modeloId): array
     {
         $equipo = array_filter([
             'Tipo' => EquipmentType::find($tipoId)?->name,
