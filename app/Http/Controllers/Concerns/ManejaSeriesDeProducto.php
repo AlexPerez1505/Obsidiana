@@ -24,7 +24,7 @@ trait ManejaSeriesDeProducto
     {
         return collect(preg_split('/[\r\n,]+/', $texto))
             ->map(fn ($s) => trim($s))
-            ->filter()
+            ->filter(fn ($s) => $s !== '')
             ->values();
     }
 

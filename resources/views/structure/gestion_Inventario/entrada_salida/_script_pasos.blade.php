@@ -128,7 +128,7 @@
 
                 if (! campo.checkValidity()) {
                     const etiqueta = campo.closest('.form-group')?.querySelector('label')?.textContent
-                        || campo.name;
+                        || campo.getAttribute('aria-label') || campo.name;
                     falta.push(etiqueta.replace('*', '').trim());
                 }
             });

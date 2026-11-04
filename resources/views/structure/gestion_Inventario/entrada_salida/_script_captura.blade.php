@@ -304,8 +304,8 @@
                     <span class="pieza-estado" data-estado>Falta su foto</span>
                 </div>
 
-                <input type="text" class="pieza-serie" name="unidades[${i}][no_serie]"
-                       placeholder="No. de serie del fabricante (opcional)"
+                <input type="text" class="pieza-serie" name="unidades[${i}][no_serie]" required maxlength="255" pattern=".*\\S.*"
+                       aria-label="Número de serie de la pieza #${i + 1}" placeholder="No. de serie del fabricante (obligatorio)"
                        value="${(previa.no_serie || '').replace(/"/g, '&quot;')}">
 
                 <div class="pieza-medios">

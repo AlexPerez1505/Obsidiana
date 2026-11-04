@@ -43,6 +43,8 @@ class EntradasDeInventario
 
     public const MENSAJES = [
         'unidades.required' => 'Registra cada pieza que llegó, con su propia evidencia.',
+        'unidades.*.no_serie.required' => 'Captura el número de serie de cada pieza para continuar.',
+        'unidades.*.no_serie.distinct' => 'Cada pieza debe tener un número de serie diferente.',
         'unidades.*.evidencias.required' => 'Cada pieza necesita al menos una foto de cómo llegó ella.',
         'unidades.*.evidencias.min' => 'Cada pieza necesita al menos una foto de cómo llegó ella.',
         'unidades.*.evidencias.max' => 'Puedes subir máximo 3 fotos por pieza.',
@@ -96,7 +98,7 @@ class EntradasDeInventario
 
             // Una fila por pieza, cada una con su propia evidencia.
             'unidades' => ['required', 'array', 'min:1'],
-            'unidades.*.no_serie' => ['nullable', 'string', 'max:255'],
+            'unidades.*.no_serie' => ['required', 'string', 'max:255', 'distinct:ignore_case'],
             // Las fotos llegan ya subidas por pedazos (fotos_paths, la
             // pantalla) o como archivos (evidencias, la API). Que cada pieza
             // traiga al menos una se revisa en registrar(), sumando las dos.
@@ -133,6 +135,14 @@ class EntradasDeInventario
     {
         $usado = ($data['condicion'] ?? null) === 'usado';
         $disco = config('filesystems.fotos_disk', 'public');
+
+        foreach (array_values($data['unidades'] ?? []) as $i => $unidad) {
+            if (trim((string) ($unidad['no_serie'] ?? '')) === '') {
+                throw ValidationException::withMessages([
+                    "unidades.$i.no_serie" => 'Captura el número de serie de la pieza #'.($i + 1).' para continuar.',
+                ]);
+            }
+        }
 
         $data['condicion'] ??= 'nuevo';
         $compartida = filter_var($data['foto_compartida'] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -183,7 +193,7 @@ class EntradasDeInventario
 
         /*
         | Números de serie: cada pieza se queda con el que se le capturó a
-        | ella, en su posición, y la que se dejó vacía queda sin serie.
+        | ella, en su posición; todas deben tener un número de serie.
         |
         | Antes, si solo venía una serie se armaba una secuencia y se
         | repartía desde la pieza #1: capturar solo la de la pieza #3 se la
@@ -192,7 +202,7 @@ class EntradasDeInventario
         */
         $series = collect($data['unidades'])
             ->values()
-            ->map(fn (array $u) => trim((string) ($u['no_serie'] ?? '')) ?: null);
+            ->map(fn (array $u) => trim((string) ($u['no_serie'] ?? '')));
 
         // Los videos ya se subieron por pedazos antes de este submit: solo
         // se verifica que cada ruta sea de un video real y exista.
@@ -289,7 +299,7 @@ class EntradasDeInventario
 
         // El producto queda marcado como serializado si alguna pieza traía
         // número de serie del fabricante.
-        $serializado = $series->filter()->isNotEmpty();
+        $serializado = $series->isNotEmpty();
 
         // La foto del catálogo ya subida por pedazos se conserva si algo
         // falla (igual que las de las piezas); la que llegó como archivo en
@@ -340,15 +350,15 @@ class EntradasDeInventario
                 // reintenta una vez contra la fila que ya quedó creada.
                 return $this->registrarEntrada($data, $unidades, $imagen, $firma, $serializado);
             }
-        } catch (QueryException $e) {
-            $this->borrarEvidencias($subidoAhora, $disco);
+        } catch (QueryException|ValidationException $e) {
+            $this->borrarEvidencias(array_merge($subidoAhora, $copiasCompartidas), $disco);
             $this->borrarEvidencias([$firma], $disco);
 
             if ($imagen && $imagenSubidaAhora) {
                 Storage::disk($disco)->delete($imagen);
             }
 
-            if (! $this->esErrorDeDuplicado($e)) {
+            if ($e instanceof ValidationException || ! $this->esErrorDeDuplicado($e)) {
                 throw $e;
             }
 
@@ -610,6 +620,14 @@ class EntradasDeInventario
                 ->lockForUpdate()
                 ->first();
 
+            $series = collect($unidades)->pluck('no_serie');
+            if ($series->map(fn ($serie) => mb_strtolower($serie))->duplicates()->isNotEmpty()
+                || ($existente && $existente->seriales()->whereIn('no_serie', $series->all())->exists())) {
+                throw ValidationException::withMessages([
+                    'unidades' => 'Uno de esos números de serie ya existe para este producto o está repetido en la entrada. Corrígelo para continuar.',
+                ]);
+            }
+
             $stockAntes = $existente->stock ?? 0;
 
             if ($existente) {
@@ -647,25 +665,11 @@ class EntradasDeInventario
                 ]);
             }
 
+            // Ninguna pieza ni su evidencia se guarda sin su número de
+            // serie: los repetidos se rechazan antes de modificar el producto.
+            // Se conserva la lista de advertencias en la respuesta para
+            // mantener el mismo formato que esperan la pantalla y la API.
             $advertencias = [];
-
-            if ($serializado) {
-                // Ninguna pieza ni su evidencia se descarta por un serial
-                // repetido: solo se limpia el serial de esa pieza (queda
-                // "sin serie capturada") y se avisa, para no perder la
-                // captura de las demás.
-                $series = collect($unidades)->map(fn ($u) => $u['no_serie']);
-                $depurado = $this->depurarSeriesDuplicadas($producto->id, $series);
-
-                $unidades = collect($unidades)
-                    ->values()
-                    ->map(fn (array $u, int $i) => ['no_serie' => $depurado['series'][$i]] + $u)
-                    ->all();
-
-                if ($depurado['rechazadas']->isNotEmpty()) {
-                    $advertencias[] = 'Estos números de serie ya existían para este producto y se guardaron sin serie (la evidencia y la unidad sí se conservaron): '.$depurado['rechazadas']->implode(', ').'.';
-                }
-            }
 
             $movimiento = InventoryMovement::create([
                 'folio' => InventoryMovement::siguienteFolio(InventoryMovement::TYPE_ENTRY),

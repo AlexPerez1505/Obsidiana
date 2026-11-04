@@ -174,14 +174,14 @@ class Producto extends Model
                         $evidencias = array_values(array_filter($unidad['evidence_paths'] ?? []));
 
                         return [
-                            'no_serie' => trim((string) ($unidad['no_serie'] ?? '')) ?: null,
+                            'no_serie' => ($serie = trim((string) ($unidad['no_serie'] ?? ''))) === '' ? null : $serie,
                             'foto_path' => $evidencias[0] ?? ($unidad['foto_path'] ?? null),
                             'evidence_paths' => $evidencias ?: null,
                             'video_path' => $unidad['video_path'] ?? null,
                         ];
                     }
 
-                    return ['no_serie' => trim((string) $unidad) ?: null, 'foto_path' => null, 'evidence_paths' => null, 'video_path' => null];
+                    return ['no_serie' => ($serie = trim((string) $unidad)) === '' ? null : $serie, 'foto_path' => null, 'evidence_paths' => null, 'video_path' => null];
                 })
                 ->filter(fn (array $u) => $u['no_serie'] !== null || $u['foto_path'] !== null)
                 ->values();
