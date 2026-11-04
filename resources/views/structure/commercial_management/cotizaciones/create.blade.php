@@ -49,6 +49,14 @@
 
             <div style="max-width:520px;">
                 <label class="qlabel">Buscar producto o paquete</label>
+                <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+                    <select id="filtro-tipo-items" class="qinput" style="flex:1; min-width:150px;" aria-label="Filtrar por tipo de equipo">
+                        <option value="">Tipo de equipo: todos</option>
+                    </select>
+                    <select id="filtro-marca-items" class="qinput" style="flex:1; min-width:130px;" aria-label="Filtrar por marca">
+                        <option value="">Marca: todas</option>
+                    </select>
+                </div>
                 <div style="position:relative;">
                     <x-gravityui-magnifier style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none;" width="16" height="16" />
                     <input type="text" id="buscador-items" class="qinput" placeholder="Escribe el nombre, marca o modelo..." autocomplete="off" style="padding-left:38px;">
@@ -539,11 +547,33 @@
             });
         }
 
+        // ---- Filtros Tipo → Marca (como en Catálogo): acotan la lista antes de escribir ----
+        const filtroTipoItems = document.getElementById('filtro-tipo-items');
+        const filtroMarcaItems = document.getElementById('filtro-marca-items');
+        const ordenFiltro = new Intl.Collator('es', { sensitivity: 'base', numeric: true });
+        const tiposItems = [...new Set(Object.values(productosData).map(p => p.tipo_equipo).filter(Boolean))].sort(ordenFiltro.compare);
+        tiposItems.forEach(t => filtroTipoItems.add(new Option(t, t)));
+
+        function llenarMarcasItems() {
+            const marcas = [...new Set(Object.values(productosData)
+                .filter(p => (!filtroTipoItems.value || p.tipo_equipo === filtroTipoItems.value) && p.marca)
+                .map(p => p.marca))].sort(ordenFiltro.compare);
+            filtroMarcaItems.replaceChildren(new Option('Marca: todas', ''));
+            marcas.forEach(m => filtroMarcaItems.add(new Option(m, m)));
+            renderResultadosItems(buscadorItems.value);
+        }
+
+        filtroTipoItems.addEventListener('change', llenarMarcasItems);
+        filtroMarcaItems.addEventListener('change', () => renderResultadosItems(buscadorItems.value));
+        llenarMarcasItems();
+
         // ---- Buscador combinado de productos y paquetes (misma UX que el buscador de clientes) ----
         function renderResultadosItems(q) {
             const texto = q.trim().toLowerCase();
 
             const productosMatch = Object.entries(productosData).filter(([id, p]) => {
+                if (filtroTipoItems.value && p.tipo_equipo !== filtroTipoItems.value) return false;
+                if (filtroMarcaItems.value && p.marca !== filtroMarcaItems.value) return false;
                 const t = `${p.tipo_equipo} ${p.marca} ${p.modelo}`.toLowerCase();
                 return texto === '' || t.includes(texto);
             }).map(([id, p]) => ({ tipo: 'producto', id, data: p }));
