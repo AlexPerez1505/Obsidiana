@@ -252,7 +252,7 @@
                             <div class="cell-id">
                                 <span class="us-avatar">
                                     @if ($fila['modelo']->avatar)
-                                        <img src="{{ $fila['modelo']->avatar }}" alt="">
+                                        <img src="{{ $fila['modelo']->avatarUrl() }}" alt="">
                                     @else
                                         <span class="avatar {{ $fila['tinte'] }}">{{ $fila['iniciales'] }}</span>
                                     @endif
@@ -306,7 +306,7 @@
                 <div class="data-card-top">
                     <span class="us-avatar">
                         @if ($fila['modelo']->avatar)
-                            <img src="{{ $fila['modelo']->avatar }}" alt="">
+                            <img src="{{ $fila['modelo']->avatarUrl() }}" alt="">
                         @else
                             <span class="avatar {{ $fila['tinte'] }}">{{ $fila['iniciales'] }}</span>
                         @endif

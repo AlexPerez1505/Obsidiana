@@ -48,6 +48,7 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admi
     Route::delete('/usuarios/{user}', [UserController::class, 'destroy'])->middleware('can:usuarios.eliminar')->name('users.destroy');
     Route::get('/usuarios/{user}/permisos', [PermissionController::class, 'userPermissions'])->middleware('can:usuarios.editar')->name('users.permissions');
     Route::post('/usuarios/{user}/permisos', [PermissionController::class, 'updateUserPermissions'])->middleware('can:usuarios.editar')->name('users.permissions.update');
+    Route::get('/usuarios/{user}/documentos/{documento}', [UserController::class, 'documento'])->middleware('can:usuarios.ver')->name('users.documento');
     Route::get('/usuarios/{user}', [UserController::class, 'show'])->middleware('can:usuarios.ver')->name('users.show');
 });
 

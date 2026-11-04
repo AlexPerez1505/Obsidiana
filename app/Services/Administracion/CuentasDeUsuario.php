@@ -56,6 +56,8 @@ class CuentasDeUsuario
         'nombre_contacto_emergencia_secundario' => ['nullable', 'string', 'max:255'],
         'numero_contacto_emergencia_secundario' => ['nullable', 'string', 'max:50'],
         'domicilio_contacto_emergencia_secundario' => ['nullable', 'string'],
+        // Foto del usuario (se muestra en el listado de usuarios).
+        'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
     ];
 
     public const REGLAS_ROLES = [
@@ -72,10 +74,10 @@ class CuentasDeUsuario
     ];
 
     public const REGLAS_DOCUMENTOS = [
-        'ine_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-        'acta_nacimiento_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-        'licencia_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-        'curp_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+        'ine_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp,heic,heif,doc,docx,xls,xlsx,ppt,pptx', 'max:20480'],
+        'acta_nacimiento_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp,heic,heif,doc,docx,xls,xlsx,ppt,pptx', 'max:20480'],
+        'licencia_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp,heic,heif,doc,docx,xls,xlsx,ppt,pptx', 'max:20480'],
+        'curp_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp,heic,heif,doc,docx,xls,xlsx,ppt,pptx', 'max:20480'],
     ];
 
     /** Aprueba una cuenta pendiente para darle acceso. */
@@ -311,20 +313,25 @@ class CuentasDeUsuario
             ->where('name', $nombre)
             ->first();
 
-        if ($documento && $documento->file_path) {
-            Storage::disk('public')->delete($documento->file_path);
-        }
+        $anterior = $documento?->file_path;
+        $discoAnterior = $anterior && Storage::disk('local')->exists($anterior) ? 'local' : 'public';
+        $ruta = $archivo->store("employee_documents/{$user->id}", 'local');
+        abort_unless($ruta, 500, 'No se pudo guardar el documento.');
 
-        $ruta = $archivo->store("employee_documents/{$user->id}", 'public');
-
-        return EmployeeDocument::updateOrCreate(
+        $documento = EmployeeDocument::updateOrCreate(
             ['user_id' => $user->id, 'name' => $nombre],
             [
                 'file_path' => $ruta,
-                'file_type' => $archivo->getClientMimeType(),
+                'file_type' => $archivo->getMimeType(),
                 'file_size' => $archivo->getSize(),
             ]
         );
+
+        if ($anterior && $anterior !== $ruta) {
+            DB::afterCommit(fn () => Storage::disk($discoAnterior)->delete($anterior));
+        }
+
+        return $documento;
     }
 
     private function protegerRolAdmin(User $user, array $ids, User $quien): void

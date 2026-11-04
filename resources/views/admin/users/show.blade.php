@@ -299,7 +299,7 @@
             <div class="emp-sidebar-avatar-wrap">
                 <div class="emp-sidebar-avatar">
                     @if($user->avatar)
-                        <img src="{{ $user->avatar }}" alt="{{ $user->name }}" style="width:100%;height:100%;object-fit:cover;">
+                        <img src="{{ $user->avatarUrl() }}" alt="{{ $user->name }}" style="width:100%;height:100%;object-fit:cover;">
                     @else
                         <span style="background:{{ $colors[0] }};color:{{ $colors[1] }};width:100%;height:100%;display:flex;align-items:center;justify-content:center;">{{ $init }}</span>
                     @endif
@@ -458,11 +458,11 @@
                                     </p>
                                 </div>
                                 <div class="doc-actions">
-                                    <a href="#" class="doc-btn" onclick="event.preventDefault();alert('Vista previa no disponible aún')">
+                                    <a href="{{ route('admin.users.documento', ['user' => $user, 'documento' => $doc->id]) }}" class="doc-btn" target="_blank" rel="noopener">
                                         <x-gravityui-eye />
                                         Ver
                                     </a>
-                                    <a href="#" class="doc-btn" onclick="event.preventDefault();alert('Descarga no disponible aún')">
+                                    <a href="{{ route('admin.users.documento', ['user' => $user, 'documento' => $doc->id, 'descargar' => 1]) }}" class="doc-btn">
                                         <x-gravityui-arrow-down-to-line />
                                         Descargar
                                     </a>

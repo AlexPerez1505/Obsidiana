@@ -25,6 +25,17 @@ class User extends Authenticatable implements MustVerifyEmail
     /** Eliminado con historial: ya no existe para el sistema, pero lo que registró conserva su nombre. */
     public const STATUS_DELETED = 'deleted';
 
+    public function avatarUrl(): ?string
+    {
+        if (! $this->avatar) {
+            return null;
+        }
+
+        return preg_match('#^(https?://|/)#i', $this->avatar)
+            ? $this->avatar
+            : Storage::disk(config('filesystems.fotos_disk', 'public'))->url($this->avatar);
+    }
+
     protected static function booted(): void
     {
         // Sus tokens de la API (apps e integraciones) mueren con la cuenta.

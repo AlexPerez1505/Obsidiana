@@ -38,6 +38,8 @@ Route::prefix('usuarios')->name('usuarios.')->whereNumber('user')->controller(Us
 
     Route::patch('/{user}', 'update')->middleware('can:usuarios.editar')->name('update');
     Route::post('/{user}/documentos', 'documentos')->middleware('can:usuarios.editar')->name('documentos');
+    Route::get('/{user}/documentos/{documento}', [\App\Http\Controllers\Admin\UserController::class, 'documento'])
+        ->whereNumber('documento')->middleware('can:usuarios.ver')->name('documentos.show');
     Route::get('/{user}/permisos', 'permisos')->middleware('can:usuarios.editar')->name('permisos');
     Route::put('/{user}/permisos', 'actualizarPermisos')->middleware('can:usuarios.editar')->name('permisos.update');
 

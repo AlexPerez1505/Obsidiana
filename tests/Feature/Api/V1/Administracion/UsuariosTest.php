@@ -48,7 +48,7 @@ class UsuariosTest extends TestCase
         $res = $this->conToken($admin)->getJson("/api/v1/usuarios/{$otro->id}")->assertOk();
 
         $res->assertJsonPath('data.documentos.0.name', 'INE')
-            ->assertJsonPath('data.documentos.0.file_url', Storage::disk('public')->url('employee_documents/1/ine.pdf'));
+            ->assertJsonPath('data.documentos.0.file_url', route('api.v1.usuarios.documentos.show', ['user' => $otro->id, 'documento' => $otro->employeeDocuments()->firstOrFail()->id]));
 
         foreach (['password', 'remember_token', 'verification_code', 'approval_pin_hash', 'sueldo_quincenal', 'porcentaje_comision'] as $campo) {
             $res->assertJsonMissingPath("data.{$campo}");
@@ -198,6 +198,7 @@ class UsuariosTest extends TestCase
     public function test_subir_documentos_del_expediente(): void
     {
         Storage::fake('public');
+        Storage::fake('local');
         $editor = $this->usuarioApi(['usuarios.editar']);
         $otro = $this->usuarioApi();
 
@@ -206,8 +207,9 @@ class UsuariosTest extends TestCase
         ])->assertCreated()->assertJsonPath('data.0.name', 'INE');
 
         $doc = EmployeeDocument::where('user_id', $otro->id)->firstOrFail();
-        Storage::disk('public')->assertExists($doc->file_path);
-        $this->assertSame(Storage::disk('public')->url($doc->file_path), $res->json('data.0.file_url'));
+        Storage::disk('local')->assertExists($doc->file_path);
+        Storage::disk('public')->assertMissing($doc->file_path);
+        $this->assertSame(route('api.v1.usuarios.documentos.show', ['user' => $otro->id, 'documento' => $doc->id]), $res->json('data.0.file_url'));
 
         $this->conToken($editor)->postJson("/api/v1/usuarios/{$otro->id}/documentos", [])
             ->assertStatus(422)->assertJsonStructure(['errors' => ['archivo']]);

@@ -1208,7 +1208,12 @@
             {{-- Usuario --}}
             <div class="dd" id="dd-user">
                 <button class="user-btn" type="button" data-dd="dd-user">
-                    <span class="avatar">{{ Str::upper($initials) }}</span>
+                    <span class="avatar" style="position:relative;overflow:hidden;">
+                        {{ Str::upper($initials) }}
+                        @if ($u->avatarUrl())
+                            <img src="{{ $u->avatarUrl() }}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.remove()">
+                        @endif
+                    </span>
                     <span class="user-name">{{ $u->name }}</span>
                     <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>

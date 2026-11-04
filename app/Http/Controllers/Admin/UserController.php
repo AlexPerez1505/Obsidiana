@@ -10,6 +10,7 @@ use App\Services\SessionManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
@@ -85,6 +86,22 @@ class UserController extends Controller
 
         $user = User::findOrFail($data['user_id']);
 
+        // La foto nueva reemplaza a la anterior; el archivo viejo se borra
+        // para no llenar el disco de retratos que ya no se usan.
+        $guardarFoto = function () use ($request, $user) {
+            if (! $request->hasFile('avatar')) {
+                return;
+            }
+            $disco = Storage::disk(config('filesystems.fotos_disk', 'public'));
+            $anterior = $user->avatar;
+            $path = $request->file('avatar')->store("avatars/{$user->id}", config('filesystems.fotos_disk', 'public'));
+            abort_unless($path, 500, 'No se pudo guardar la foto.');
+            $user->forceFill(['avatar' => $path])->save();
+            if ($anterior && $anterior !== $path) {
+                DB::afterCommit(fn () => $disco->delete($anterior));
+            }
+        };
+
         // El formulario es completo: lo que no viene se limpia.
         $rh = [];
         foreach (CuentasDeUsuario::CAMPOS_RH as $campo) {
@@ -98,6 +115,8 @@ class UserController extends Controller
             $this->cuentas->actualizarPerfilRh($user, $rh);
             $this->cuentas->sincronizarRoles($user, $data['roles'] ?? [], $request->user());
         });
+
+        $guardarFoto();
 
         foreach (CuentasDeUsuario::DOCUMENTOS as $field => $documentName) {
             if ($request->hasFile($field)) {
@@ -128,6 +147,29 @@ class UserController extends Controller
             'shifts'      => $shifts,
             'shiftDates'  => $shiftDates,
         ]);
+    }
+
+    public function documento(User $user, int $documento, Request $request)
+    {
+        $doc = $user->employeeDocuments()->findOrFail($documento);
+        $disk = Storage::disk('local');
+        if (! $doc->file_path || ! $disk->exists($doc->file_path)) {
+            $disk = Storage::disk('public');
+        }
+        abort_unless($doc->file_path && $disk->exists($doc->file_path), 404);
+
+        $extension = pathinfo($doc->file_path, PATHINFO_EXTENSION);
+        $nombre = \Illuminate\Support\Str::slug($doc->name) ?: 'documento';
+        $nombre .= $extension ? '.'.$extension : '';
+        $mime = $disk->mimeType($doc->file_path);
+        $inline = ! $request->boolean('descargar')
+            && in_array($mime, ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'], true);
+
+        return $disk->response($doc->file_path, $nombre, [
+            'Content-Type' => $mime ?: 'application/octet-stream',
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ], $inline ? 'inline' : 'attachment');
     }
 
     /**
