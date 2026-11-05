@@ -490,16 +490,20 @@ document.addEventListener('submit', function (e) {
         danger: true
     }).then(function (ok) {
         if (!ok) return;
-        window.confirmModal({
-            title: 'Confirmación final',
-            message: 'Se borrará también su historial comercial completo. ¿Seguro que quieres eliminar definitivamente a ' + nombre + '?',
-            confirmText: 'Sí, eliminar todo',
-            danger: true
-        }).then(function (seguro) {
-            if (!seguro) return;
-            form.dataset.cmDone = '1';
-            if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
-        });
+        // El segundo aviso se abre tras soltar el primero: si se encadena
+        // de inmediato, el cierre del primero se lo lleva de corbata.
+        setTimeout(function () {
+            window.confirmModal({
+                title: 'Confirmación final',
+                message: 'Se borrará también su historial comercial completo. ¿Seguro que quieres eliminar definitivamente a ' + nombre + '?',
+                confirmText: 'Sí, eliminar todo',
+                danger: true
+            }).then(function (seguro) {
+                if (!seguro) return;
+                form.dataset.cmDone = '1';
+                if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
+            });
+        }, 150);
     });
 }, true);
 </script>
