@@ -8,13 +8,10 @@
         const cantidadInput = document.getElementById('cantidad');
         const fotoCompartida = form.querySelector('[data-foto-compartida]');
         const panelCompartido = form.querySelector('[data-foto-compartida-panel]');
-        const usaFotoCompartida = () => !esUsado() && fotoCompartida.checked;
+        const usaFotoCompartida = () => fotoCompartida.checked;
         const hayFotoCompartida = () => usaFotoCompartida() && panelCompartido.querySelector('[data-foto-path]') !== null;
 
         function sincronizarFotoCompartida() {
-            const usado = esUsado();
-            form.querySelector('[data-foto-compartida-opcion]').hidden = usado;
-            fotoCompartida.disabled = usado;
             panelCompartido.hidden = !usaFotoCompartida();
             form.querySelectorAll('[data-fotos-individuales]').forEach(zona => { zona.hidden = usaFotoCompartida(); });
             form.querySelectorAll('.pieza-card').forEach(card => {

@@ -148,12 +148,9 @@ class EntradasDeInventario
         $compartida = filter_var($data['foto_compartida'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $fotosCompartidas = [];
         if ($compartida) {
-            if ($usado) {
-                throw ValidationException::withMessages(['foto_compartida' => 'El equipo usado necesita fotos individuales por pieza.']);
-            }
             $rutasCompartidas = (array) ($data['foto_compartida_paths'] ?? []);
             if (count($rutasCompartidas) < 1 || count($rutasCompartidas) > 3) {
-                throw ValidationException::withMessages(['foto_compartida_paths' => 'Sube entre 1 y 3 fotos para todas las piezas nuevas.']);
+                throw ValidationException::withMessages(['foto_compartida_paths' => 'Sube entre 1 y 3 fotos para todas las piezas.']);
             }
             foreach ($rutasCompartidas as $ruta) {
                 $resuelta = $this->fotos->resolver((string) $ruta, $disco);

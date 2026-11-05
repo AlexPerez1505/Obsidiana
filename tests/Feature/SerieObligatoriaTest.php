@@ -144,4 +144,32 @@ class SerieObligatoriaTest extends TestCase
             Storage::set($disco, $anterior);
         }
     }
+
+    public function test_entrada_usada_tambien_acepta_fotos_compartidas(): void
+    {
+        $disco = config('filesystems.fotos_disk', 'public');
+        $anterior = Storage::disk($disco);
+        Storage::set($disco, Storage::createLocalDriver(['root' => sys_get_temp_dir().'/obsidiana-compartida-'.Str::uuid()]));
+        try {
+            $user = $this->usuarioApi([], admin: true);
+            $this->actingAs($user);
+            $foto = FotoPorPedazos::CARPETA.'/foto_compartida.jpg';
+            Storage::disk($disco)->put($foto, 'foto de prueba');
+            $datos = $this->datos() + ['condicion' => 'usado', 'cantidad' => 2, 'movement_date' => now()->toDateString(),
+                'estado_general' => 'bueno', 'checklist' => ['manual_llave' => ['r' => 'si', 'texto' => 'Incluye llave', 'grupo' => 'Agregados a mano', 'manda' => 'solo_anotar']],
+                'firma' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+                'foto_compartida' => true, 'foto_compartida_paths' => [$foto], 'unidades' => [['no_serie' => 'USA-1'], ['no_serie' => 'USA-2']]];
+            $request = Request::create('/entrada', 'POST', $datos);
+            $request->setUserResolver(fn () => $user);
+            $entrada = app(EntradasDeInventario::class)->registrar($request, $datos)['movimiento'];
+            $this->assertSame(['USA-1', 'USA-2'], $entrada->seriales()->orderBy('id')->pluck('no_serie')->all());
+            // Las dos piezas quedaron con su copia de la foto compartida.
+            foreach ($entrada->seriales as $serial) {
+                $this->assertCount(1, $serial->evidence_paths);
+            }
+        } finally {
+            Storage::disk($disco)->deleteDirectory('');
+            Storage::set($disco, $anterior);
+        }
+    }
 }

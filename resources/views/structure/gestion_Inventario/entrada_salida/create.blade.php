@@ -269,8 +269,8 @@
                 <x-ui.section-title style="margin:0 0 6px;">Evidencia de cada pieza *</x-ui.section-title>
                 <p class="campo-nota" style="margin:0 0 12px;">
                     Abajo hay un bloque por cada una de las <b data-eco-cantidad>1</b> pieza(s) que
-                    pusiste en el paso anterior. En equipo usado, cada una necesita <b>al menos una foto propia</b>.
-                    En nuevo puedes activar la foto compartida para todas. Si subes fotos individuales, son hasta 3 por pieza,
+                    pusiste en el paso anterior. Puedes activar la foto compartida para todas, o subir fotos
+                    individuales: son hasta 3 por pieza,
                     de cualquier formato y tamaño y, si quieres, su video. Cada pieza recibe además su etiqueta interna
                     con código QR, que imprimes después desde la ficha de la entrada.
                 </p>
@@ -302,8 +302,8 @@
 
             <x-ui.card style="margin-bottom:18px;" data-foto-compartida-opcion>
                 <label><input type="checkbox" name="foto_compartida" value="1" data-foto-compartida @checked(old('foto_compartida'))>
-                    Usar las mismas fotos para todas las piezas nuevas</label>
-                <p class="campo-nota">Solo para equipo nuevo. En usado cada pieza necesita sus propias fotos.</p>
+                    Usar las mismas fotos para todas las piezas</label>
+                <p class="campo-nota">Se aplican a todo el lote, nuevo o usado. Si necesitas fotos distintas por pieza, no la actives.</p>
                 <div data-foto-compartida-panel hidden>
                     <label class="soltar soltar--chico" data-foto-compartida-zona>
                         <span class="t">Fotos para todas las piezas *</span>
