@@ -68,6 +68,7 @@ class CatalogoPermisos
                     'ventas.crear' => 'Registrar ventas',
                     'ventas.editar' => 'Editar ventas ya registradas',
                     'ventas.eliminar' => 'Eliminar ventas',
+                    'ventas.eliminar_definitivo' => 'Eliminar ventas con todo su historial',
                 ],
             ],
 

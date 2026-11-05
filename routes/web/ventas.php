@@ -64,6 +64,7 @@ Route::middleware(['auth', 'verified', 'approved'])
         Route::get('/{venta}/editar', [VentaController::class, 'edit'])->middleware('can:ventas.editar')->name('edit');
         Route::put('/{venta}', [VentaController::class, 'update'])->middleware('can:ventas.editar')->name('update');
         Route::delete('/{venta}', [VentaController::class, 'destroy'])->middleware('can:ventas.eliminar')->name('destroy');
+        Route::delete('/{venta}/definitivo', [VentaController::class, 'destroyDefinitivo'])->middleware('can:ventas.eliminar_definitivo')->name('destroyDefinitivo');
         // Cancelar no borra: la venta queda como cancelada con su historial.
         Route::post('/{venta}/cancelar', [VentaController::class, 'cancelar'])->middleware('can:ventas.editar')->name('cancelar');
         Route::get('/{venta}/pdf', [VentaController::class, 'pdf'])->middleware('can:ventas.ver')->name('pdf');

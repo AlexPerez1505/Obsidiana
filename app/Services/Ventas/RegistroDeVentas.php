@@ -420,6 +420,52 @@ class RegistroDeVentas
         return "Venta {$folio} eliminada.";
     }
 
+    /**
+     * Borrado definitivo para limpiar datos de prueba: quita la venta con
+     * TODO su historial (cobros, pagos, facturas, garantías, orden de
+     * salida, fichas y bitácora), sin importar si ya recibió dinero. Las
+     * piezas vendidas regresan a disponible. Solo administradores o quien
+     * traiga ventas.eliminar_definitivo llega aquí por la ruta.
+     */
+    public function eliminarDefinitivo(Venta $venta): string
+    {
+        $folio = $venta->folio;
+        $cotizacionId = $venta->cotizacion_id;
+
+        DB::transaction(function () use ($venta, $cotizacionId) {
+            $this->inventario->liberarSerialesDe($venta);
+
+            $cobros = $venta->cobros()->pluck('id');
+            DB::table('cobro_aplicaciones')->whereIn('cobro_id', $cobros)->delete();
+            DB::table('cobro_evidencias')->whereIn('cobro_id', $cobros)->delete();
+            $venta->cobros()->delete();
+            $venta->pagos()->delete();
+
+            $facturas = DB::table('facturas')->where('venta_id', $venta->id)->pluck('id');
+            DB::table('factura_items')->whereIn('factura_id', $facturas)->delete();
+            DB::table('facturas')->whereIn('id', $facturas)->delete();
+
+            $garantias = DB::table('garantias')->where('venta_id', $venta->id)->pluck('id');
+            foreach (['garantia_archivos', 'garantia_costos', 'garantia_eventos', 'garantia_reclamaciones', 'garantia_sustituciones'] as $tabla) {
+                DB::table($tabla)->whereIn('garantia_id', $garantias)->delete();
+            }
+            DB::table('garantia_documentos')->where('venta_id', $venta->id)->delete();
+            DB::table('garantias')->whereIn('id', $garantias)->delete();
+
+            $venta->ordenSalida()->delete();
+            $venta->fichas()->detach();
+            $venta->bitacora()->delete();
+            $venta->items()->delete();
+            $venta->delete();
+
+            if ($cotizacionId) {
+                Cotizacion::whereKey($cotizacionId)->delete();
+            }
+        });
+
+        return "Venta {$folio} eliminada con todo su historial.";
+    }
+
     /** Lo que se le cobrará al cliente con los datos nuevos, antes de guardar. */
     private function exigibleDe(array $data): float
     {

@@ -176,6 +176,24 @@ class VentaController extends Controller
             ->with('status', $mensaje);
     }
 
+    /**
+     * Borrado definitivo de una venta de prueba, con todo su historial:
+     * cobros, pagos, facturas, garantías, orden de salida y bitácora.
+     * Solo administradores o quien traiga ventas.eliminar_definitivo.
+     */
+    public function destroyDefinitivo(Request $request, Venta $venta): RedirectResponse
+    {
+        abort_unless(
+            $request->user()->can('ventas.ver_todas') || (int) $venta->seller_id === (int) $request->user()->id,
+            404
+        );
+
+        $mensaje = $this->registro->eliminarDefinitivo($venta);
+
+        return redirect()->route('commercial.ventas.index')
+            ->with('status', $mensaje);
+    }
+
     public function pdf(Venta $venta)
     {
         return $this->documentos->venta($venta);

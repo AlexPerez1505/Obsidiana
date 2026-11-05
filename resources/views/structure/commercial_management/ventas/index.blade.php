@@ -76,6 +76,25 @@
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>Cancelar venta
                                         </a>
                                     @endif
+                                    @can('ventas.eliminar')
+                                        <div class="erp-menu-sep"></div>
+                                        <form method="POST" action="{{ route('commercial.ventas.destroy', $v) }}"
+                                              data-confirm="Eliminar la venta {{ $v->folio }} solo si no tiene cobros registrados. ¿Continuar?">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="erp-menu-item danger" style="width:100%;text-align:left;">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>Eliminar
+                                            </button>
+                                        </form>
+                                    @endcan
+                                    @can('ventas.eliminar_definitivo')
+                                        <form method="POST" action="{{ route('commercial.ventas.destroyDefinitivo', $v) }}"
+                                              data-definitivo="{{ $v->folio }}">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="erp-menu-item danger" style="width:100%;text-align:left;">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>Eliminar con historial
+                                            </button>
+                                        </form>
+                                    @endcan
                                 </x-erp.menu>
                             </td>
                         </tr>
@@ -141,6 +160,13 @@
                         <a href="{{ route('commercial.ventas.edit', $v) }}" class="tbl-link">Editar</a>
                     @endif
                     <a href="{{ route('commercial.ventas.pdf', $v) }}" class="tbl-link" target="_blank">PDF</a>
+                    @can('ventas.eliminar_definitivo')
+                        <form method="POST" action="{{ route('commercial.ventas.destroyDefinitivo', $v) }}"
+                              data-definitivo="{{ $v->folio }}" style="display:inline;">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="tbl-link" style="color:var(--danger,#f66);background:none;border:none;cursor:pointer;">Eliminar</button>
+                        </form>
+                    @endcan
                 </div>
             </article>
         @empty
@@ -157,4 +183,44 @@
         @endforelse
     </div>
     @include('partials._paginacion', ['paginator' => $ventas])
+
+@push('scripts')
+<script>
+// "Eliminar con historial" pide dos confirmaciones seguidas: la acción
+// borra también cobros, pagos, facturas y garantías de la venta.
+document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-definitivo')) return;
+    if (form.dataset.cmDone === '1') { form.dataset.cmDone = ''; return; }
+    e.preventDefault();
+    var folio = form.getAttribute('data-definitivo');
+    window.confirmModal({
+        title: 'Eliminar con historial',
+        message: '¿Eliminar la venta ' + folio + ' junto con TODOS sus cobros, pagos, facturas y garantías? Esta acción no se puede deshacer.',
+        confirmText: 'Continuar',
+        danger: true
+    }).then(function (ok) {
+        if (!ok) return;
+        // El segundo aviso solo puede abrirse cuando el primero ya se
+        // ocultó por completo (~180 ms): si se abre antes, el hidden del
+        // primero lo vuelve invisible.
+        var espera = setInterval(function () {
+            var ov = document.getElementById('cmOverlay');
+            if (ov && !ov.hidden) return;
+            clearInterval(espera);
+            window.confirmModal({
+                title: 'Confirmación final',
+                message: 'Se borrará también su historial comercial completo. ¿Seguro que quieres eliminar definitivamente la venta ' + folio + '?',
+                confirmText: 'Sí, eliminar todo',
+                danger: true
+            }).then(function (seguro) {
+                if (!seguro) return;
+                form.dataset.cmDone = '1';
+                if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
+            });
+        }, 150);
+    });
+}, true);
+</script>
+@endpush
 @endsection
