@@ -29,6 +29,12 @@ Route::middleware(['auth', 'verified', 'approved', 'can:roles.gestionar'])->grou
     Route::put('/configuracion/roles/{role}', [RolController::class, 'update'])
         ->name('configuracion.roles.update');
 
+    Route::get('/configuracion/roles/{role}/usuarios/{user}', [RolController::class, 'editUsuario'])
+        ->name('configuracion.roles.usuario.edit');
+
+    Route::put('/configuracion/roles/{role}/usuarios/{user}', [RolController::class, 'updateUsuario'])
+        ->name('configuracion.roles.usuario.update');
+
     Route::delete('/configuracion/roles/{role}', [RolController::class, 'destroy'])
         ->middleware('can:roles.eliminar')->name('configuracion.roles.destroy');
 });

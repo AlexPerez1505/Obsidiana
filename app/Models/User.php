@@ -506,13 +506,16 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function permisosEfectivos(): \Illuminate\Support\Collection
     {
-        return $this->memoPermisos ??= $this->permissions()->pluck('name')
+        return $this->memoPermisos ??= $this->permissions()->wherePivot('concedido', true)->pluck('name')
             ->merge(
                 // Un rol desactivado deja de otorgar: es la forma de quitarle
                 // el acceso a todo un grupo sin borrar el rol ni tocar a nadie.
                 $this->roles()->where('is_active', true)->with('permissions')->get()
                     ->flatMap(fn (Role $r) => $r->permissions->pluck('name'))
             )
+            // Y lo que se le quitó a él en concreto (concedido=0) no cuenta,
+            // aunque venga de un rol.
+            ->diff($this->permissions()->wherePivot('concedido', false)->pluck('name'))
             ->unique()
             ->values();
     }
