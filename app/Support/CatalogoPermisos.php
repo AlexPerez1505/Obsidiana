@@ -37,6 +37,10 @@ class CatalogoPermisos
                     'clientes.crear' => 'Registrar clientes nuevos',
                     'clientes.editar' => 'Editar datos de un cliente',
                     'clientes.eliminar' => 'Eliminar clientes',
+                    // Borra al cliente con TODO su historial (ventas,
+                    // cotizaciones, pagos, servicios, garantías). Solo se
+                    // presta para limpiar registros de prueba.
+                    'clientes.eliminar_definitivo' => 'Eliminar clientes con todo su historial',
                 ],
             ],
 

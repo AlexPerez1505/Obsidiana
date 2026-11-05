@@ -184,6 +184,56 @@ class CustomerController extends Controller
     }
 
     /**
+     * Elimina al cliente CON todo su historial (ventas, cotizaciones,
+     * pagos, servicios y garantías). Está pensado para depurar registros
+     * de prueba; por eso vive detrás de un permiso aparte.
+     *
+     * Las piezas vendidas en las ventas eliminadas vuelven a quedar
+     * disponibles: la venta deja de existir y la pieza no puede quedar
+     * marcada como vendida para siempre.
+     */
+    public function destroyDefinitivo(Customer $cliente): RedirectResponse
+    {
+        return DB::transaction(function () use ($cliente) {
+            $cliente = Customer::whereKey($cliente->id)->lockForUpdate()->firstOrFail();
+            $this->asegurarVisible($cliente);
+
+            abort_if($cliente->esPublicoEnGeneral(), 403,
+                '«Público en general» sostiene las ventas de mostrador y congresos: no se puede eliminar.');
+
+            $nombre = $cliente->nombre.' '.$cliente->apellido;
+
+            // Garantías y reclamaciones: sus archivos/eventos/costos caen
+            // en cascada; costos y sustituciones ligadas a la garantía se
+            // quitan antes porque la FK las deja colgadas (SET NULL).
+            \App\Models\GarantiaReclamacion::where('customer_id', $cliente->id)->delete();
+            $garantiaIds = \App\Models\Garantia::where('customer_id', $cliente->id)->pluck('id');
+            \App\Models\GarantiaCosto::whereIn('garantia_id', $garantiaIds)->delete();
+            \App\Models\GarantiaSustitucion::whereIn('garantia_id', $garantiaIds)->delete();
+            \App\Models\Garantia::where('customer_id', $cliente->id)->delete();
+
+            // Servicios: la FK a clientes es RESTRICT, hay que borrarlos
+            // primero; sus equipos, refacciones y seguimientos caen solos.
+            \App\Models\Service::where('customer_id', $cliente->id)->delete();
+
+            // Las piezas vendidas en las ventas que se van a borrar
+            // regresan a disponible antes de que desaparezca su venta.
+            $ventaItemIds = DB::table('venta_items')
+                ->whereIn('venta_id', $cliente->ventas()->select('id'))->pluck('id');
+            \App\Models\ProductoSerial::whereIn('venta_item_id', $ventaItemIds)
+                ->update(['vendido' => false, 'vendido_en' => null, 'venta_item_id' => null, 'estado' => 'disponible']);
+
+            // Al borrar al cliente, la base elimina en cascada sus
+            // seguimientos, cotizaciones, ventas, facturas, pagos, planes
+            // de pago y suscripciones a campañas/promociones.
+            $cliente->delete();
+
+            return redirect()->route('commercial.clientes.index')
+                ->with('status', "Se eliminó a {$nombre} con todo su historial.");
+        });
+    }
+
+    /**
      * Consulta en vivo desde el formulario: ¿ya existe un cliente con este
      * teléfono o correo? Se llama al salir del campo, para avisar antes
      * de que el usuario llene todo lo demás.

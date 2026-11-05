@@ -125,6 +125,59 @@ class ClientesEliminarTest extends TestCase
         }
     }
 
+    public function test_eliminar_definitivo_borra_al_cliente_con_todo_su_historial(): void
+    {
+        $user = $this->usuario(admin: true);
+        $cliente = $this->cliente($user);
+        $venta = \App\Models\Venta::create(['customer_id' => $cliente->id, 'folio' => 'PRUEBA-'.Str::uuid()]);
+        $item = \App\Models\VentaItem::create(['venta_id' => $venta->id, 'nombre' => 'PRUEBA', 'cantidad' => 1, 'precio_unitario' => 10]);
+        $serial = \App\Models\ProductoSerial::create(['producto_id' => \App\Models\Producto::create(['tipo_equipo' => 'PRUEBA', 'stock' => 0])->id, 'no_serie' => 'DEF-'.Str::random(20), 'codigo' => 'MB-'.Str::random(15), 'estado' => 'vendido', 'vendido' => true, 'venta_item_id' => $item->id]);
+        $cotizacion = \App\Models\Cotizacion::create(['customer_id' => $cliente->id, 'folio' => 'PRUEBA-'.Str::uuid()]);
+        $servicio = \App\Models\Service::create(['customer_id' => $cliente->id, 'service_type' => 'interno', 'registered_by' => $user->id]);
+        $factura = \App\Models\Factura::create(['customer_id' => $cliente->id, 'folio' => 'PRUEBA-'.Str::uuid()]);
+        $plan = \App\Models\PlanPago::create(['nombre' => 'PRUEBA', 'no_pago' => 1, 'cliente_id' => $cliente->id, 'cotizacion_id' => $cotizacion->id, 'plazo_pagar' => now()->addDay()]);
+        $pago = \App\Models\Pago::create(['plan_pago_id' => $plan->id, 'cliente_id' => $cliente->id]);
+        $seguimiento = $cliente->seguimientos()->create(['user_id' => $user->id, 'tipo' => 'llamada', 'fecha' => now()->addDay()]);
+
+        $this->actingAs($user)->delete(route('commercial.clientes.destroyDefinitivo', $cliente))
+            ->assertRedirect(route('commercial.clientes.index'));
+
+        $this->assertDatabaseMissing('clientes', ['id' => $cliente->id]);
+        $this->assertDatabaseMissing('ventas', ['id' => $venta->id]);
+        $this->assertDatabaseMissing('venta_items', ['id' => $item->id]);
+        $this->assertDatabaseMissing('cotizaciones', ['id' => $cotizacion->id]);
+        $this->assertDatabaseMissing('services', ['id' => $servicio->id]);
+        $this->assertDatabaseMissing('facturas', ['id' => $factura->id]);
+        $this->assertDatabaseMissing('pagos', ['id' => $pago->id]);
+        $this->assertDatabaseMissing('cliente_seguimientos', ['id' => $seguimiento->id]);
+        // La pieza vendida regresó a disponible en lugar de quedar huérfana.
+        $serial->refresh();
+        $this->assertFalse((bool) $serial->vendido);
+        $this->assertNull($serial->venta_item_id);
+        $this->assertSame('disponible', $serial->estado);
+    }
+
+    public function test_eliminar_definitivo_exige_su_propio_permiso(): void
+    {
+        $user = $this->usuario(['clientes.ver', 'clientes.editar', 'clientes.eliminar']);
+        $cliente = $this->cliente($user);
+        $this->actingAs($user)->delete(route('commercial.clientes.destroyDefinitivo', $cliente))->assertForbidden();
+        $this->assertDatabaseHas('clientes', ['id' => $cliente->id]);
+        $permiso = \App\Models\Permission::firstOrCreate(['name' => 'clientes.eliminar_definitivo'], ['label' => 'x']);
+        $user->permissions()->syncWithoutDetaching([$permiso->id]);
+        $user->olvidarPermisos();
+        $this->actingAs($user)->delete(route('commercial.clientes.destroyDefinitivo', $cliente))->assertRedirect();
+        $this->assertDatabaseMissing('clientes', ['id' => $cliente->id]);
+    }
+
+    public function test_publico_en_general_no_se_puede_eliminar_definitivamente(): void
+    {
+        $user = $this->usuario(admin: true);
+        $publico = Customer::publicoEnGeneral();
+        $this->actingAs($user)->delete(route('commercial.clientes.destroyDefinitivo', $publico))->assertForbidden();
+        $this->assertDatabaseHas('clientes', ['id' => $publico->id]);
+    }
+
     public function test_lectura_sola_no_permite_desactivar_y_deshabilita_los_botones(): void
     {
         $user = $this->usuario(['clientes.ver']);
@@ -132,7 +185,7 @@ class ClientesEliminarTest extends TestCase
         $this->actingAs($user)->patch(route('commercial.clientes.toggleActivo', $cliente))->assertForbidden();
         $html = $this->get(route('commercial.clientes.index'))->assertOk()->getContent();
         preg_match_all('/<button[^>]*type="submit"[^>]*role="menuitem"[^>]*>/', $html, $botones);
-        $this->assertCount(4, $botones[0]);
+        $this->assertCount(6, $botones[0]);
         foreach ($botones[0] as $boton) $this->assertStringContainsString('disabled', $boton);
     }
 }

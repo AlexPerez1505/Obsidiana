@@ -42,6 +42,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::delete('/gestion-comercial/clientes/{cliente}', [CustomerController::class, 'destroy'])
         ->middleware('can:clientes.eliminar')->name('commercial.clientes.destroy');
 
+    // Borra al cliente con todo su historial: solo para depurar pruebas.
+    Route::delete('/gestion-comercial/clientes/{cliente}/definitivo', [CustomerController::class, 'destroyDefinitivo'])
+        ->middleware('can:clientes.eliminar_definitivo')->name('commercial.clientes.destroyDefinitivo');
+
     Route::post('/gestion-comercial/clientes/categorias', [CustomerController::class, 'storeCategory'])
         ->middleware('can:clientes.crear')->name('commercial.clientes.categories.store');
 
