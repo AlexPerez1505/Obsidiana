@@ -47,11 +47,11 @@
                     <div class="pu-lista">
                         @foreach ($grupo['permisos'] as $clave => $nombre)
                             @php
-                                $delRol = in_array($clave, $delRol, true);
+                                $esDelRol = in_array($clave, $delRol, true);
                                 $dar = in_array($clave, $otorgados, true);
                                 $no = in_array($clave, $quitados, true);
                             @endphp
-                            @if ($delRol)
+                            @if ($esDelRol)
                                 <label class="pu-item {{ $no ? 'no' : '' }}">
                                     <input type="checkbox" name="quitar[]" value="{{ $clave }}" @checked($no)>
                                     <span class="txt">{{ $nombre }}<span class="clave">{{ $clave }}</span></span>
