@@ -50,7 +50,7 @@ class ProductoController extends Controller
         return view('structure.gestion_Inventario.productos.index', [
             'productos' => $productos,
             'filters' => $filters,
-            'catalogo' => $this->catalogoEquipo(false),
+            'catalogo' => $this->catalogoEquipo(),
             'enCongreso' => $this->productos->piezasEnCongreso(),
         ]);
     }

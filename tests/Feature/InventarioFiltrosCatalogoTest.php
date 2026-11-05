@@ -30,7 +30,12 @@ class InventarioFiltrosCatalogoTest extends TestCase
 
     private function producto(array $catalogo): Producto
     {
-        return Producto::create($catalogo + ['modelo' => 'MODELO '.Str::uuid(), 'stock' => 0, 'precio' => 100]);
+        // Cada producto tiene su propio modelo en catálogo (la columna es única).
+        $modelo = \App\Models\EquipmentModel::create([
+            'subtype_id' => $catalogo['subtype_id'], 'brand_id' => $catalogo['brand_id'], 'name' => 'MODELO '.Str::uuid(),
+        ]);
+
+        return Producto::create($catalogo + ['equipment_model_id' => $modelo->id, 'modelo' => 'MODELO '.Str::uuid(), 'stock' => 0, 'precio' => 100]);
     }
 
     private function movimiento(Producto $producto, array $extra = []): InventoryMovement
@@ -71,7 +76,7 @@ class InventarioFiltrosCatalogoTest extends TestCase
         $this->assertSame([$elegido->id], $res->viewData('movements')->getCollection()->modelKeys());
         $this->assertSame(1, $res->viewData('movements')->total());
         $this->assertSame($a['equipment_type_id'], (int) $res->viewData('filters')['equipment_type_id']);
-        $this->assertSame([], $res->viewData('catalogo')['modelos']);
+        $this->assertNotEmpty($res->viewData('catalogo')['modelos']);
         $res->assertSee('name="movement_types[]"', false)->assertSee('id="filtrosMovimientos"', false);
         $this->get(route('inventory.movimientos.index', $a + ['movement_types' => ['salida']]))->assertOk()->assertViewHas('movements', fn ($m) => $m->total() === 0);
     }
@@ -134,6 +139,22 @@ class InventarioFiltrosCatalogoTest extends TestCase
             $this->assertSame(2, $segunda->count());
             $this->assertSame([], array_intersect($primera->getCollection()->modelKeys(), $segunda->getCollection()->modelKeys()));
         }
+    }
+
+    public function test_modelo_filtra_en_productos_y_movimientos(): void
+    {
+        $a = $this->catalogo();
+        $p = $this->producto($a);
+        $otro = $this->producto($a);
+        $m = $this->movimiento($p);
+        $this->movimiento($otro);
+        $this->admin();
+        $solo = ['equipment_model_id' => $p->equipment_model_id];
+        $this->get(route('inventory.productos.index', $solo))->assertOk()
+            ->assertViewHas('productos', fn ($x) => $x->total() === 1 && $x->first()->id === $p->id);
+        $this->get(route('inventory.movimientos.index', $solo))->assertOk()
+            ->assertViewHas('movements', fn ($x) => $x->total() === 1 && $x->first()->id === $m->id)
+            ->assertSee('data-catalogo="modelo"', false);
     }
 
     public function test_permisos_y_parametros_invalidos_no_se_saltan(): void

@@ -66,7 +66,7 @@ class InventoryMovementController extends Controller
         return view('structure.gestion_Inventario.entrada_salida.index', [
             'movements' => $movements,
             'filters' => $filters,
-            'catalogo' => $this->catalogoEquipo(false),
+            'catalogo' => $this->catalogoEquipo(),
             'opcionesAlmacenes' => InventoryMovement::selectRaw("COALESCE(NULLIF(warehouse, ''), 'Sin almacén') AS nombre")->distinct()->orderBy('nombre')->pluck('nombre'),
             'opcionesQuienes' => InventoryMovement::leftJoin('users', 'users.id', '=', 'inventory_movements.created_by')
                 ->selectRaw("COALESCE(NULLIF(users.name, ''), 'Sin registrar') AS nombre")->distinct()->orderBy('nombre')->pluck('nombre'),

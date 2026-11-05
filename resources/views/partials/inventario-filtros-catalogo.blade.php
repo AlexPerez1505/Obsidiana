@@ -9,6 +9,11 @@
         $marcasFiltro = collect($catalogo['marcas'][$subtipoFiltro] ?? []);
     }
     $marcasFiltro = $marcasFiltro->unique('id')->sortBy('name')->values();
+    $marcaFiltro = (string) ($filters['brand_id'] ?? '');
+    $modelosFiltro = collect($catalogo['modelos'] ?? [])
+        ->filter(fn ($lista, $clave) => ($subtipoFiltro === '' || str_starts_with($clave, $subtipoFiltro.'-'))
+            && ($marcaFiltro === '' || str_ends_with($clave, '-'.$marcaFiltro)))
+        ->flatten(1)->unique('id')->sortBy('name')->values();
 @endphp
 
 <div data-catalogo-filtros style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -36,6 +41,14 @@
             @endforeach
         </select>
     </label>
+    <label style="flex:1;min-width:160px;">Modelo
+        <select name="equipment_model_id" data-catalogo="modelo" style="width:100%;">
+            <option value="">Todos los modelos</option>
+            @foreach ($modelosFiltro as $modelo)
+                <option value="{{ $modelo['id'] }}" @selected((string) ($filters['equipment_model_id'] ?? '') === (string) $modelo['id'])>{{ $modelo['name'] }}</option>
+            @endforeach
+        </select>
+    </label>
 </div>
 
 @push('scripts')
@@ -46,6 +59,7 @@
         const tipo = grupo.querySelector('[data-catalogo="tipo"]');
         const subtipo = grupo.querySelector('[data-catalogo="subtipo"]');
         const marca = grupo.querySelector('[data-catalogo="marca"]');
+        const modelo = grupo.querySelector('[data-catalogo="modelo"]');
         const subtipos = () => tipo.value
             ? (catalogo.subtipos[tipo.value] || [])
             : Object.values(catalogo.subtipos).flat();
@@ -60,11 +74,22 @@
                 : subtipos().flatMap(s => catalogo.marcas[s.id] || []);
             llenar(marca, Array.from(new Map(opciones.map(m => [m.id, m])).values()), 'Todas las marcas');
         }
+        function modelos() {
+            // Las llaves del mapa son "subtipo-marca": el modelo depende de
+            // las dos cosas; se conservan solo las combinaciones elegidas.
+            const opciones = Object.entries(catalogo.modelos || {})
+                .filter(([clave]) => (!subtipo.value || clave.startsWith(subtipo.value + '-'))
+                    && (!marca.value || clave.endsWith('-' + marca.value)))
+                .flatMap(([, lista]) => lista);
+            llenar(modelo, Array.from(new Map(opciones.map(m => [m.id, m])).values()), 'Todos los modelos');
+        }
         tipo.addEventListener('change', function () {
             llenar(subtipo, subtipos(), 'Todos los subtipos');
             marcas();
+            modelos();
         });
-        subtipo.addEventListener('change', marcas);
+        subtipo.addEventListener('change', function () { marcas(); modelos(); });
+        marca.addEventListener('change', modelos);
     });
 })();
 </script>
