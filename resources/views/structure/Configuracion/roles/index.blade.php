@@ -95,7 +95,7 @@
                     <span class="usuarios">
                         {{ $role->users->count() }} usuario(s)
                         @if ($role->users->isNotEmpty())
-                            · {{ $role->users->take(2)->pluck('name')->implode(', ') }}{{ $role->users->count() > 2 ? '…' : '' }}
+                            · @foreach ($role->users->take(2) as $u)<a href="{{ route('configuracion.roles.usuario.edit', [$role, $u]) }}" class="link">{{ $u->name }}</a>{{ ! $loop->last ? ', ' : '' }}@endforeach{{ $role->users->count() > 2 ? '…' : '' }}
                         @endif
                     </span>
 

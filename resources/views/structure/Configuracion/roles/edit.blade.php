@@ -96,7 +96,7 @@
                 </p>
                 <div class="pm-usuarios">
                     @foreach ($role->users as $u)
-                        <span class="pm-usuario">{{ $u->name }}</span>
+                        <a href="{{ route('configuracion.roles.usuario.edit', [$role, $u]) }}" class="pm-usuario link">{{ $u->name }}</a>
                     @endforeach
                 </div>
             @endif
