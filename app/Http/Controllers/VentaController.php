@@ -92,7 +92,7 @@ class VentaController extends Controller
         ]);
     }
 
-    public function edit(Venta $venta): View
+    public function edit(Venta $venta): View|RedirectResponse
     {
         $venta->load(['customer', 'items', 'pagos', 'fichas']);
 

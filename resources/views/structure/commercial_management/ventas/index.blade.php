@@ -58,9 +58,11 @@
                                     <a class="erp-menu-item" href="{{ route('commercial.ventas.show', $v) }}">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Ver detalle
                                     </a>
-                                    <a class="erp-menu-item" href="{{ route('commercial.ventas.edit', $v) }}">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar
-                                    </a>
+                                    @if ($v->estado !== 'cancelada')
+                                        <a class="erp-menu-item" href="{{ route('commercial.ventas.edit', $v) }}">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar
+                                        </a>
+                                    @endif
                                     <a class="erp-menu-item" href="{{ route('commercial.ventas.pdf', $v) }}" target="_blank">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Descargar PDF
                                     </a>
@@ -135,7 +137,9 @@
 
                 <div class="data-card-foot">
                     <a href="{{ route('commercial.ventas.show', $v) }}" class="tbl-link">Ver</a>
-                    <a href="{{ route('commercial.ventas.edit', $v) }}" class="tbl-link">Editar</a>
+                    @if ($v->estado !== 'cancelada')
+                        <a href="{{ route('commercial.ventas.edit', $v) }}" class="tbl-link">Editar</a>
+                    @endif
                     <a href="{{ route('commercial.ventas.pdf', $v) }}" class="tbl-link" target="_blank">PDF</a>
                 </div>
             </article>
