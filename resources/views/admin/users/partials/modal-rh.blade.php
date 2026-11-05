@@ -51,6 +51,7 @@
                             data-numces="{{ $u->numero_contacto_emergencia_secundario }}"
                             data-domces="{{ $u->domicilio_contacto_emergencia_secundario }}"
                             data-avatar="{{ $u->avatarUrl() }}"
+                            data-avatar-foco="{{ $u->avatar_foco }}"
                             data-roles="{{ $u->roles->pluck('id')->implode(',') }}"
                             data-docs='@json($u->employeeDocuments->mapWithKeys(fn ($doc) => [$doc->name => route("admin.users.documento", ["user" => $u, "documento" => $doc->id])]))'>
                             {{ $u->name }} — {{ $u->email }}
@@ -61,11 +62,15 @@
 
             {{-- ---------------- Foto ---------------- --}}
             <div style="display:flex; align-items:center; gap:14px; margin-bottom:4px;">
-                <img data-rh-avatar src="" alt="Foto del usuario"
-                     style="width:64px; height:64px; border-radius:50%; object-fit:cover; border:1px solid var(--border); display:none;">
+                <input type="hidden" name="avatar_foco" data-rh-foco value="">
+                <div data-rh-foco-wrap style="position:relative;width:64px;height:64px;border-radius:50%;overflow:hidden;border:1px solid var(--border);display:none;cursor:crosshair;flex:0 0 64px;">
+                    <img data-rh-avatar src="" alt="Foto del usuario"
+                         style="width:100%;height:100%;object-fit:cover;">
+                    <span data-rh-foco-punto style="position:absolute;width:12px;height:12px;border:2px solid #fff;border-radius:50%;background:rgba(0,0,0,.35);transform:translate(-50%,-50%);pointer-events:none;display:none;"></span>
+                </div>
                 <x-ui.form-group label="Foto del usuario" for="avatar" style="flex:1; margin:0;">
                     <input type="file" id="avatar" name="avatar" accept=".jpg,.jpeg,.png,.webp">
-                    <small class="campo-nota">JPG, PNG o WebP, máx. 5 MB. Aparece en el listado de usuarios.</small>
+                    <small class="campo-nota">JPG, PNG o WebP, máx. 5 MB. Toca la foto donde está la cara para ajustar el recorte.</small>
                 </x-ui.form-group>
             </div>
 
@@ -222,14 +227,47 @@
         if (e.target === modal || e.target.closest('[data-cerrar-rh]')) modal.close();
     }, true);
 
+    /* Punto de enfoque del avatar: clic sobre la vista previa marca dónde
+       está la cara; el recorte circular la centra ahí. */
+    var focoWrap = modal.querySelector('[data-rh-foco-wrap]');
+    var focoImg = modal.querySelector('[data-rh-avatar]');
+    var focoPunto = modal.querySelector('[data-rh-foco-punto]');
+    var focoCampo = modal.querySelector('[data-rh-foco]');
+
+    function rhPonerPunto() {
+        var foco = (focoCampo?.value || '').split(',');
+        if (focoPunto) {
+            focoPunto.style.left = foco[0] + '%';
+            focoPunto.style.top = foco[1] + '%';
+            focoPunto.style.display = focoCampo?.value ? 'block' : 'none';
+        }
+    }
+
+    window.rhMostrarFoto = function (src, foco) {
+        if (focoImg.getAttribute('src')?.startsWith('blob:')) URL.revokeObjectURL(focoImg.src);
+        focoImg.src = src || '';
+        focoWrap.style.display = src ? 'block' : 'none';
+        var xy = foco || '50,50';
+        focoImg.style.objectPosition = xy.replace(',', '% ') + '%';
+        if (focoCampo) focoCampo.value = foco || '';
+        rhPonerPunto();
+    };
+
+    focoWrap?.addEventListener('click', function (e) {
+        var r = focoWrap.getBoundingClientRect();
+        var x = Math.max(0, Math.min(100, Math.round((e.clientX - r.left) / r.width * 100)));
+        var y = Math.max(0, Math.min(100, Math.round((e.clientY - r.top) / r.height * 100)));
+        if (focoCampo) focoCampo.value = x + ',' + y;
+        focoImg.style.objectPosition = x + '% ' + y + '%';
+        rhPonerPunto();
+    });
+
     var avatar = modal.querySelector('[name="avatar"]');
     avatar?.addEventListener('change', function () {
-        var foto = modal.querySelector('[data-rh-avatar]');
-        if (foto.getAttribute('src')?.startsWith('blob:')) URL.revokeObjectURL(foto.src);
         var archivo = avatar.files[0];
         var opt = document.getElementById('hr_user_id').selectedOptions[0];
-        foto.src = archivo ? URL.createObjectURL(archivo) : (opt?.dataset.avatar || '');
-        foto.style.display = archivo || opt?.dataset.avatar ? 'block' : 'none';
+        rhMostrarFoto(archivo ? URL.createObjectURL(archivo) : (opt?.dataset.avatar || ''),
+            archivo ? null : (opt?.dataset.avatarFoco || null));
     });
 
     document.querySelectorAll('.hr-file-input').forEach(function (input) {
@@ -278,7 +316,9 @@ function rellenarDatosRhUsuario(select) {
     set('domicilio_contacto_emergencia_secundario', d.domces);
 
     var foto = modal.querySelector('[data-rh-avatar]');
-    if (foto) {
+    if (foto && window.rhMostrarFoto) {
+        rhMostrarFoto(d.avatar || '', d.avatarFoco || null);
+    } else if (foto) {
         foto.src = d.avatar || '';
         foto.style.display = d.avatar ? 'block' : 'none';
     }

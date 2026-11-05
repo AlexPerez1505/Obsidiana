@@ -36,6 +36,20 @@ class User extends Authenticatable implements MustVerifyEmail
             : Storage::disk(config('filesystems.fotos_disk', 'public'))->url($this->avatar);
     }
 
+    /**
+     * object-position del recorte circular: "x% y%" tomado de avatar_foco
+     * ("x,y" en porcentaje). Sin dato, se centra como siempre.
+     */
+    public function avatarFoco(): string
+    {
+        if (! $this->avatar_foco || ! preg_match('/^(\d{1,3}),(\d{1,3})$/', $this->avatar_foco, $m)
+            || $m[1] > 100 || $m[2] > 100) {
+            return '50% 50%';
+        }
+
+        return $m[1].'% '.$m[2].'%';
+    }
+
     protected static function booted(): void
     {
         // Sus tokens de la API (apps e integraciones) mueren con la cuenta.

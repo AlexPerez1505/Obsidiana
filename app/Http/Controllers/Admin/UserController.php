@@ -118,6 +118,12 @@ class UserController extends Controller
 
         $guardarFoto();
 
+        // El punto de enfoque se puede ajustar sin volver a subir la foto.
+        $foco = $request->input('avatar_foco');
+        if (is_string($foco) && preg_match('/^\d{1,3},\d{1,3}$/', $foco)) {
+            $user->forceFill(['avatar_foco' => $foco])->save();
+        }
+
         foreach (CuentasDeUsuario::DOCUMENTOS as $field => $documentName) {
             if ($request->hasFile($field)) {
                 $this->cuentas->guardarDocumento($user, $documentName, $request->file($field));

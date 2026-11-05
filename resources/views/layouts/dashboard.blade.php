@@ -1211,7 +1211,7 @@
                     <span class="avatar" style="position:relative;overflow:hidden;">
                         {{ Str::upper($initials) }}
                         @if ($u->avatarUrl())
-                            <img src="{{ $u->avatarUrl() }}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.remove()">
+                            <img src="{{ $u->avatarUrl() }}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:{{ $u->avatarFoco() }};" onerror="this.remove()">
                         @endif
                     </span>
                     <span class="user-name">{{ $u->name }}</span>
