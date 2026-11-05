@@ -148,9 +148,10 @@
 
             <x-ui.form-group label="Clave *" name="name" for="name">
                 <input id="name" type="text" name="name" value="{{ old('name') }}" placeholder="jefe_almacen"
-                       pattern="[a-z][a-z0-9_]*" required
+                       pattern="[A-Za-z][A-Za-z0-9_]*" required
+                       oninput="this.value = this.value.toLowerCase()"
                        style="font-family:ui-monospace, Consolas, monospace;">
-                <small class="campo-nota">Minúsculas, sin espacios ni acentos. No se puede cambiar después.</small>
+                <small class="campo-nota">Sin espacios ni acentos; se guarda en minúsculas. No se puede cambiar después.</small>
             </x-ui.form-group>
 
             <x-ui.form-group label="Para qué es" for="description">

@@ -8,6 +8,7 @@ use App\Services\Administracion\RolesYPermisos;
 use App\Support\CatalogoPermisos;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
@@ -65,6 +66,10 @@ class RolController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // La clave siempre se guarda en minúsculas: se acepta que la
+        // escriban en mayúsculas y aquí se normaliza antes de validar.
+        $request->merge(['name' => Str::lower(trim((string) $request->input('name')))]);
+
         $data = $request->validate(RolesYPermisos::reglasAlta(), RolesYPermisos::MENSAJES_ALTA);
 
         $role = $this->roles->crear($data);
