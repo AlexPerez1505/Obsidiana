@@ -101,7 +101,7 @@ class BuscadorCotizador
 
     public function filtrosProductos(): Collection
     {
-        return EquipmentType::with(['subtypes.brands'])->orderBy('name')->get()->map(fn ($tipo) => [
+        return EquipmentType::with(['subtypes.brands', 'subtypes.equipmentModels'])->orderBy('name')->get()->map(fn ($tipo) => [
             'id' => $tipo->id,
             'nombre' => $tipo->name,
             'subtipos' => $tipo->subtypes->sortBy('name')->map(fn ($subtipo) => [
@@ -109,6 +109,9 @@ class BuscadorCotizador
                 'nombre' => $subtipo->name,
                 'marcas' => $subtipo->brands->sortBy('name')->map(fn ($marca) => [
                     'id' => $marca->id, 'nombre' => $marca->name,
+                    // El modelo depende de la marca dentro de este subtipo.
+                    'modelos' => $subtipo->equipmentModels->where('brand_id', $marca->id)->sortBy('name')
+                        ->map(fn ($modelo) => ['id' => $modelo->id, 'nombre' => $modelo->name])->values(),
                 ])->values(),
             ])->values(),
         ])->values();
@@ -116,7 +119,7 @@ class BuscadorCotizador
 
     private function filtrarProductos(\Illuminate\Database\Eloquent\Builder $query, array $filtros): \Illuminate\Database\Eloquent\Builder
     {
-        foreach (['equipment_type_id', 'subtype_id', 'brand_id'] as $campo) {
+        foreach (['equipment_type_id', 'subtype_id', 'brand_id', 'equipment_model_id'] as $campo) {
             if (! empty($filtros[$campo])) {
                 $query->where('productos.'.$campo, $filtros[$campo]);
             }

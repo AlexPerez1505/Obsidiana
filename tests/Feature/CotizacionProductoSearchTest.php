@@ -105,6 +105,34 @@ class CotizacionProductoSearchTest extends TestCase
         ]))->assertUnprocessable();
     }
 
+    public function test_filtra_por_modelo_productos_y_paquetes(): void
+    {
+        $user = $this->usuarioAprobado();
+        $prefijo = 'MODELO-'.uniqid();
+        $tipo = EquipmentType::create(['name' => $prefijo]);
+        $subtipo = Subtype::create(['name' => 'SUBTIPO', 'equipment_type_id' => $tipo->id]);
+        $marca = Brand::create(['name' => $prefijo.'-MARCA']);
+        $subtipo->brands()->attach($marca->id);
+        $modelo = \App\Models\EquipmentModel::create(['name' => $prefijo.'-MOD', 'subtype_id' => $subtipo->id, 'brand_id' => $marca->id]);
+        $producto = Producto::create([
+            'equipment_type_id' => $tipo->id, 'subtype_id' => $subtipo->id, 'brand_id' => $marca->id,
+            'equipment_model_id' => $modelo->id, 'modelo' => $prefijo.'-EQUIPO', 'precio' => 500, 'stock' => 2,
+        ]);
+        Producto::create(['tipo_equipo' => $prefijo.'-FUERA', 'modelo' => 'FUERA', 'precio' => 100, 'stock' => 1]);
+        $paquete = Paquete::create(['nombre' => $prefijo.'-PAQUETE', 'activo' => true]);
+        $paquete->productos()->attach($producto->id, ['cantidad' => 1]);
+
+        $this->actingAs($user)->getJson(route('commercial.cotizaciones.productos.buscar', [
+            'equipment_model_id' => $modelo->id,
+        ]))->assertOk()->assertJsonCount(2)
+            ->assertJsonFragment(['tipo_item' => 'producto', 'modelo' => $producto->modelo])
+            ->assertJsonFragment(['tipo_item' => 'paquete', 'nombre' => $paquete->nombre]);
+
+        $this->actingAs($user)->getJson(route('commercial.cotizaciones.productos.buscar', [
+            'equipment_model_id' => 'invalido',
+        ]))->assertUnprocessable();
+    }
+
     public function test_guardar_cotizacion_sincroniza_cliente_id_heredado_si_existe(): void
     {
         $user = $this->usuarioAprobado();

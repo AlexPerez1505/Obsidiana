@@ -160,6 +160,7 @@ class CotizacionController extends Controller
             'equipment_type_id' => ['nullable', 'integer', 'min:1'],
             'subtype_id' => ['nullable', 'integer', 'min:1'],
             'brand_id' => ['nullable', 'integer', 'min:1'],
+            'equipment_model_id' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $productos = $this->buscador->productos($q, $filtros)

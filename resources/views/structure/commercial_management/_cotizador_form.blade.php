@@ -117,6 +117,9 @@
                             <label style="flex:1 1 150px; font-size:12px;">Marca
                                 <select id="prodFilterBrand" class="cot-input"><option value="">Todas las marcas</option></select>
                             </label>
+                            <label style="flex:1 1 150px; font-size:12px;">Modelo
+                                <select id="prodFilterModel" class="cot-input"><option value="">Todos los modelos</option></select>
+                            </label>
                             <button type="button" id="prodFilterClear" class="cot-btn-x">Limpiar filtros</button>
                         </div>
                     @endisset
@@ -655,12 +658,12 @@
             renderFichas();
         }
     }
-    const filtroTipo = $('prodFilterType'), filtroSubtipo = $('prodFilterSubtype'), filtroMarca = $('prodFilterBrand');
+    const filtroTipo = $('prodFilterType'), filtroSubtipo = $('prodFilterSubtype'), filtroMarca = $('prodFilterBrand'), filtroModelo = $('prodFilterModel');
     const buscarProductos = bindAutocomplete($('prodSearch'), $('prodResults'), ROUTES.productos,
         d => { addItem(d); $('prodSearch').value = ''; },
         d => `<b>${d.nombre}</b> <span style="color:var(--muted);">${d.modelo || ''}</span><small>${d.marca || ''} · ${money(d.precio)}</small>`, {
             parametros: () => Object.fromEntries([
-                ['equipment_type_id', filtroTipo?.value], ['subtype_id', filtroSubtipo?.value], ['brand_id', filtroMarca?.value],
+                ['equipment_type_id', filtroTipo?.value], ['subtype_id', filtroSubtipo?.value], ['brand_id', filtroMarca?.value], ['equipment_model_id', filtroModelo?.value],
             ].filter(([, valor]) => valor)),
             sinResultados: 'No hay productos o paquetes que coincidan con estos filtros.',
         });
@@ -678,15 +681,23 @@
                 .flatMap(sub => sub.marcas).map(marca => [marca.id, marca]));
             llenar(filtroMarca, Array.from(marcas.values()), 'Todas las marcas');
         };
+        const llenarModelos = () => {
+            const modelos = new Map(subtipos().filter(sub => !filtroSubtipo.value || String(sub.id) === filtroSubtipo.value)
+                .flatMap(sub => sub.marcas).filter(marca => !filtroMarca.value || String(marca.id) === filtroMarca.value)
+                .flatMap(marca => marca.modelos || []).map(modelo => [modelo.id, modelo]));
+            llenar(filtroModelo, Array.from(modelos.values()), 'Todos los modelos');
+        };
         const llenarSubtipos = () => {
             llenar(filtroSubtipo, subtipos(), 'Todos los subtipos');
             llenarMarcas();
+            llenarModelos();
         };
         llenar(filtroTipo, catalogo, 'Todos los tipos');
         llenarSubtipos();
         filtroTipo.addEventListener('change', () => { llenarSubtipos(); buscarProductos(); });
-        filtroSubtipo.addEventListener('change', () => { llenarMarcas(); buscarProductos(); });
-        filtroMarca.addEventListener('change', buscarProductos);
+        filtroSubtipo.addEventListener('change', () => { llenarMarcas(); llenarModelos(); buscarProductos(); });
+        filtroMarca.addEventListener('change', () => { llenarModelos(); buscarProductos(); });
+        filtroModelo.addEventListener('change', buscarProductos);
         $('prodFilterClear').addEventListener('click', () => {
             filtroTipo.value = '';
             $('prodSearch').value = '';
