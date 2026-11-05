@@ -490,9 +490,13 @@ document.addEventListener('submit', function (e) {
         danger: true
     }).then(function (ok) {
         if (!ok) return;
-        // El segundo aviso se abre tras soltar el primero: si se encadena
-        // de inmediato, el cierre del primero se lo lleva de corbata.
-        setTimeout(function () {
+        // El segundo aviso solo puede abrirse cuando el primero ya se
+        // ocultó por completo (~180 ms): si se abre antes, el hidden del
+        // primero lo vuelve invisible.
+        var espera = setInterval(function () {
+            var ov = document.getElementById('cmOverlay');
+            if (ov && !ov.hidden) return;
+            clearInterval(espera);
             window.confirmModal({
                 title: 'Confirmación final',
                 message: 'Se borrará también su historial comercial completo. ¿Seguro que quieres eliminar definitivamente a ' + nombre + '?',
