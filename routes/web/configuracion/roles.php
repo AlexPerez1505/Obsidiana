@@ -35,6 +35,9 @@ Route::middleware(['auth', 'verified', 'approved', 'can:roles.gestionar'])->grou
     Route::put('/configuracion/roles/{role}/usuarios/{user}', [RolController::class, 'updateUsuario'])
         ->name('configuracion.roles.usuario.update');
 
+    Route::delete('/configuracion/roles/{role}/usuarios/{user}/ajustes', [RolController::class, 'restablecerUsuario'])
+        ->name('configuracion.roles.usuario.reset');
+
     Route::delete('/configuracion/roles/{role}', [RolController::class, 'destroy'])
         ->middleware('can:roles.eliminar')->name('configuracion.roles.destroy');
 });

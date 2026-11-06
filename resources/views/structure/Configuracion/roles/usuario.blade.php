@@ -19,6 +19,10 @@
                   border:1px solid var(--border); color:var(--muted); }
         .pu-item.dar { background:rgba(74,222,128,.07); }
         .pu-item.no { background:rgba(248,113,113,.07); }
+        .pu-leyenda { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; margin-top:14px; }
+        .pu-leyenda div { padding:10px 12px; border:1px solid var(--border); border-radius:9px; font-size:12px; color:var(--muted); }
+        .pu-leyenda b { display:block; margin-bottom:3px; color:var(--text); font-size:12px; }
+        @media (max-width:800px) { .pu-leyenda { grid-template-columns:1fr; } }
         @media (max-width:640px) { .pu-grupos { grid-template-columns:1fr; } }
     </style>
 @endpush
@@ -34,6 +38,11 @@
             <b>esta cuenta</b>: <i>Otorgar</i> le da un permiso que el rol no tiene y
             <i>Quitar</i> le bloquea uno que el rol sí tiene. No cambia a los demás del rol.
         </p>
+        <div class="pu-leyenda">
+            <div><b>Heredado del rol</b>Déjalo desmarcado para conservarlo.</div>
+            <div><b>Bloquear</b>Marca un permiso heredado para quitárselo solo a esta cuenta.</div>
+            <div><b>Adicional</b>Marca un permiso que el rol no tiene para otorgárselo solo a esta cuenta.</div>
+        </div>
     </x-ui.card>
 
     <form method="POST" action="{{ route('configuracion.roles.usuario.update', [$role, $usuario]) }}" data-live="off">
@@ -72,7 +81,13 @@
 
         <div style="display:flex; gap:10px; margin-top:16px;">
             <button type="submit" class="btn">Guardar ajustes de {{ $usuario->name }}</button>
+            <button type="submit" class="btn btn--ghost" form="restablecer-permisos" onclick="return confirm('¿Restaurar todos los permisos heredados del rol y eliminar los ajustes individuales de esta cuenta?')">Restaurar herencia del rol</button>
             <a href="{{ route('configuracion.roles.index') }}" class="btn btn--ghost">Volver a roles</a>
         </div>
+    </form>
+
+    <form id="restablecer-permisos" method="POST" action="{{ route('configuracion.roles.usuario.reset', [$role, $usuario]) }}" data-live="off">
+        @csrf
+        @method('DELETE')
     </form>
 @endsection
