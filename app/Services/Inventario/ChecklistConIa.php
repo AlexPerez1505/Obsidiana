@@ -96,7 +96,20 @@ class ChecklistConIa
             return $this->general('La IA no está configurada: se muestra el checklist general.');
         }
 
-        $llave = 'checklist-ia:v2:'.implode('-', [$tipoId, $subtipoId ?: 0, $marcaId ?: 0, $modeloId ?: 0]);
+        $compartidoPorSubtipo = $this->esEliminadorDeEndoscopia($equipo);
+
+        // ENDOSCOPIA > ELIMINADOR comparte checklist entre sus marcas y
+        // modelos: la marca no debe hacer que la IA lo trate como monitor.
+        if ($compartidoPorSubtipo) {
+            $equipo = [
+                'Tipo' => $equipo['Tipo'],
+                'Subtipo' => $equipo['Subtipo'],
+            ];
+        }
+
+        $llave = $compartidoPorSubtipo
+            ? 'checklist-ia:v3-subtipo:'.implode('-', [$tipoId, $subtipoId ?: 0])
+            : 'checklist-ia:v2:'.implode('-', [$tipoId, $subtipoId ?: 0, $marcaId ?: 0, $modeloId ?: 0]);
 
         if ($guardado = Cache::get($llave)) {
             return ['ia' => true, 'grupos' => $guardado, 'aviso' => null];
@@ -174,6 +187,7 @@ class ChecklistConIa
     private function instrucciones(): string
     {
         return <<<'TXT'
+Regla especial: si el tipo es ENDOSCOPIA y el subtipo es ELIMINADOR, trátalo como equipo de energía/electrocirugía, no como monitor, y usa el mismo checklist para todas sus marcas y modelos.
 Eres el jefe de recepción de un almacén de equipo médico usado en México (torres de endoscopia y
 laparoscopía, monitores, mesas y sillas de cirugía, electrocirugía, ultrasonido, sus accesorios, etc.).
 
@@ -194,6 +208,14 @@ positivo ("La lente no tiene rayones"), de forma que "Sí" signifique que está 
   "limpieza" para suciedad o residuos, y "ninguno" cuando la falla solo se anota (falta un manual, un
   accesorio o la placa de serie).
 TXT;
+    }
+
+    private function esEliminadorDeEndoscopia(array $equipo): bool
+    {
+        $tipo = Str::upper(Str::ascii((string) ($equipo['Tipo'] ?? '')));
+        $subtipo = Str::upper(Str::ascii((string) ($equipo['Subtipo'] ?? '')));
+
+        return $tipo === 'ENDOSCOPIA' && $subtipo === 'ELIMINADOR';
     }
 
     private function esquema(): array
