@@ -201,6 +201,12 @@ class InventoryMovementController extends Controller
         $movimiento->load(['creator', 'seriales.procesos']);
         $producto = $movimiento->producto();
 
+        $returnTo = $request->query('return_to');
+        $volverUrl = route('inventory.movimientos.index');
+        if (is_string($returnTo) && str_starts_with($returnTo, '/') && ! str_starts_with($returnTo, '//')) {
+            $volverUrl = url($returnTo);
+        }
+
         // Editar abre esta misma pantalla con el formulario arriba
         $editando = $request->boolean('editar')
             && EdicionPropia::puedeEditarMovimiento($request->user(), $movimiento);
@@ -212,6 +218,7 @@ class InventoryMovementController extends Controller
             'editando' => $editando,
             'estadosGenerales' => ChecklistRecepcion::ESTADOS,
             'puedeEditarPiezas' => $editando && $producto && EdicionPropia::puedeEditarProducto($request->user(), $producto),
+            'volverUrl' => $volverUrl,
         ]);
     }
 

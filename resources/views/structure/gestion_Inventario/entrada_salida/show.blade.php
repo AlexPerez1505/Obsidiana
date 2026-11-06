@@ -77,7 +77,7 @@
                     </a>
                 @endif
 
-                <a href="{{ route('inventory.movimientos.index') }}" class="btn-icono" title="Regresar" aria-label="Regresar">
+                <a href="{{ $volverUrl }}" class="btn-icono" title="Regresar" aria-label="Regresar">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
                 </a>
             </div>
@@ -88,7 +88,7 @@
                 <dt>Producto</dt>
                 <dd>
                     @if ($producto)
-                        <a href="{{ route('inventory.productos.show', $producto) }}" style="color:inherit;">{{ $movimiento->item_name }}</a>
+                        <a href="{{ route('inventory.productos.show', ['producto' => $producto, 'return_to' => route('inventory.movimientos.show', $movimiento, false)]) }}" style="color:inherit;">{{ $movimiento->item_name }}</a>
                     @else
                         {{ $movimiento->item_name }}
                     @endif
@@ -278,7 +278,7 @@
             @endif
 
             @if ($producto)
-                <a href="{{ route('inventory.productos.show', $producto) }}" class="mv-ficha">
+                <a href="{{ route('inventory.productos.show', ['producto' => $producto, 'return_to' => route('inventory.movimientos.show', $movimiento, false)]) }}" class="mv-ficha">
                     <span>Ver la ficha del producto y su historial</span>
                     <span aria-hidden="true">→</span>
                 </a>
