@@ -86,6 +86,7 @@
             @foreach ($piezas as $pieza)
                 @php
                     $serie = trim((string) $pieza->no_serie);
+                    $tipo = trim((string) ($pieza->producto?->nombreVisible() ?: $pieza->producto?->tipo_equipo));
                     $modelo = trim((string) $pieza->producto?->modelo);
                 @endphp
 
@@ -100,7 +101,7 @@
 
                     <div class="txt">
                         <div class="serie {{ mb_strlen($serie) > 18 ? 'serie-larga' : '' }}">{{ $serie !== '' ? $serie : 'Sin serie' }}</div>
-                        <div class="cod">{{ $pieza->producto?->tipo_equipo ?: $pieza->codigo }}</div>
+                        <div class="cod">{{ $tipo !== '' ? $tipo : $pieza->codigo }}</div>
                         @if ($modelo !== '')<div class="modelo {{ mb_strlen($modelo) > 24 ? 'modelo-largo' : '' }}">{{ $modelo }}</div>@endif
                         <div class="em">{{ $emp['nombre'] }}</div>
                     </div>
