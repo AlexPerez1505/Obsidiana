@@ -180,8 +180,8 @@
 @endpush
 
 @section('content')
-    <x-ui.page-header :title="$paso->nombre()" :back="route('inventory.procesos.index')">
-        <a href="{{ route('inventory.productos.show', $prod) }}" class="btn btn--ghost">Ver el producto</a>
+    <x-ui.page-header :title="$paso->nombre()" :back="$volverUrl">
+        <a href="{{ route('inventory.productos.show', ['producto' => $prod, 'return_to' => route('inventory.procesos.show', $paso, false)]) }}" class="btn btn--ghost">Ver el producto</a>
         @if ($pieza->urlPublica())
             <a href="{{ $pieza->urlPublica() }}" target="_blank" class="btn btn--ghost">Ficha pública</a>
         @endif

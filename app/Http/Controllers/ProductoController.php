@@ -104,6 +104,12 @@ class ProductoController extends Controller
             EdicionPropia::mensaje('editar')
         );
 
+        $returnTo = $request->query('return_to');
+        $volverUrl = route('inventory.productos.index');
+        if (is_string($returnTo) && str_starts_with($returnTo, '/') && ! str_starts_with($returnTo, '//')) {
+            $volverUrl = url($returnTo);
+        }
+
         return view('structure.gestion_Inventario.productos.edit', [
             'producto' => $producto,
             'seriales' => $seriales,
@@ -112,6 +118,7 @@ class ProductoController extends Controller
             'vencePlazo' => EdicionPropia::venceEn($user, $producto->created_by, $producto->created_at),
             'productoOptions' => $this->productos->opciones(),
             'catalogo' => $this->catalogoEquipo(),
+            'volverUrl' => $volverUrl,
         ]);
     }
 
@@ -242,15 +249,24 @@ class ProductoController extends Controller
      * Responde de un vistazo las tres preguntas de almacén: qué entró,
      * cuándo entró y cuánto hay hoy.
      */
-    public function show(Producto $producto): View
+    public function show(Request $request, Producto $producto): View
     {
         $kardex = $this->productos->kardex($producto);
+
+        // Solo aceptamos rutas internas relativas para evitar redirecciones
+        // externas. Si no viene de un contexto concreto, vuelve al catálogo.
+        $returnTo = $request->query('return_to');
+        $volverUrl = route('inventory.productos.index');
+        if (is_string($returnTo) && str_starts_with($returnTo, '/') && ! str_starts_with($returnTo, '//')) {
+            $volverUrl = url($returnTo);
+        }
 
         return view('structure.gestion_Inventario.productos.show', [
             'producto' => $producto,
             'piezas' => $kardex['piezas'],
             'movimientos' => $kardex['movimientos'],
             'conteos' => $kardex['conteos'],
+            'volverUrl' => $volverUrl,
         ]);
     }
 

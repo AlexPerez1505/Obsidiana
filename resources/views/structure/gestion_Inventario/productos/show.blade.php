@@ -150,11 +150,11 @@
                 <a href="{{ route('inventory.movimientos.create') }}" class="btn btn--ghost">Registrar entrada</a>
                 @if (\App\Support\EdicionPropia::puedeEditarProducto(auth()->user(), $producto)
                      || $piezas->contains(fn ($p) => \App\Support\EdicionPropia::puedeEditarPieza(auth()->user(), $p)))
-                    <a href="{{ route('inventory.productos.edit', $producto) }}" class="btn-icono" title="Editar producto" aria-label="Editar producto">
+                    <a href="{{ route('inventory.productos.edit', ['producto' => $producto, 'return_to' => route('inventory.productos.show', $producto, false)]) }}" class="btn-icono" title="Editar producto" aria-label="Editar producto">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                     </a>
                 @endif
-                <a href="{{ route('inventory.productos.index') }}" class="btn-icono" title="Regresar" aria-label="Regresar">
+                <a href="{{ $volverUrl }}" class="btn-icono" title="Regresar" aria-label="Regresar">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
                 </a>
             </div>
@@ -336,14 +336,14 @@
                             <li class="pr-mov">
                                 <div class="pr-mov-l1">
                                     <span class="badge {{ $entra ? 'badge--ok' : 'badge--danger' }}">{{ ucfirst($mov->movement_type) }}</span>
-                                    <a href="{{ route('inventory.movimientos.show', $mov) }}" class="pr-mov-folio">{{ $mov->folio }}</a>
+                                    <a href="{{ route('inventory.movimientos.show', ['movimiento' => $mov, 'return_to' => route('inventory.productos.show', $producto, false)]) }}" class="pr-mov-folio">{{ $mov->folio }}</a>
                                     <span class="pr-mov-cant {{ $entra ? 'entra' : 'sale' }}">{{ $entra ? '+' : '−' }}{{ $mov->quantity }}</span>
                                 </div>
                                 <div class="pr-mov-l2">
                                     <span>{{ $mov->movement_date?->format('d/m/Y') ?? '—' }}</span>
                                     <span>Stock {{ $mov->stock_before ?? '—' }} &rarr; <b>{{ $mov->stock_after ?? '—' }}</b></span>
                                     <span>{{ $mov->creator?->name ?: '—' }}</span>
-                                    <a href="{{ route('inventory.movimientos.show', $mov) }}" class="tbl-link pr-mov-ver">Ver</a>
+                                    <a href="{{ route('inventory.movimientos.show', ['movimiento' => $mov, 'return_to' => route('inventory.productos.show', $producto, false)]) }}" class="tbl-link pr-mov-ver">Ver</a>
                                 </div>
                                 @if ($entra && $mov->condicion)
                                     <span class="nota">Equipo {{ $mov->condicion }}</span>

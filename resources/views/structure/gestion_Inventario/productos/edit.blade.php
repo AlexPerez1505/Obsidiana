@@ -199,7 +199,7 @@
 
                 <div class="ed-botones">
                     <x-ui.button>Actualizar producto</x-ui.button>
-                    <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost">Cancelar</a>
+                    <a href="{{ $volverUrl }}" class="btn btn--ghost">Cancelar</a>
                 </div>
             </div>
             </div>
