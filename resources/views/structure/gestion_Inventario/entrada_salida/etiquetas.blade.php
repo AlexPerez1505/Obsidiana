@@ -101,7 +101,11 @@
 
                     <div class="txt">
                         <div class="serie {{ mb_strlen($serie) > 18 ? 'serie-larga' : '' }}">{{ $serie !== '' ? $serie : 'Sin serie' }}</div>
-                        <div class="cod">{{ $tipo !== '' ? $tipo : $pieza->codigo }}</div>
+                        @if ($tipo !== '')
+                            <div class="modelo {{ mb_strlen($tipo) > 24 ? 'modelo-largo' : '' }}">{{ $tipo }}</div>
+                        @else
+                            <div class="cod">{{ $pieza->codigo }}</div>
+                        @endif
                         @if ($modelo !== '')<div class="modelo {{ mb_strlen($modelo) > 24 ? 'modelo-largo' : '' }}">{{ $modelo }}</div>@endif
                         <div class="em">{{ $emp['nombre'] }}</div>
                     </div>
