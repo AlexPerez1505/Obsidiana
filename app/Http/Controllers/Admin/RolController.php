@@ -141,6 +141,20 @@ class RolController extends Controller
             ->with('status', 'Permisos individuales de '.$user->name.' actualizados.');
     }
 
+    /** Elimina las excepciones de la cuenta para que vuelva a heredar el rol. */
+    public function restablecerUsuario(Role $role, \App\Models\User $user): RedirectResponse
+    {
+        abort_unless($role->users()->where('users.id', $user->id)->exists(), 404, 'Esa cuenta no tiene este rol.');
+        abort_if($user->isAdmin(), 403, 'El administrador siempre tiene todo; no hay nada que ajustar.');
+
+        \Illuminate\Support\Facades\DB::table('permission_user')
+            ->where('user_id', $user->id)
+            ->delete();
+
+        return redirect()->route('configuracion.roles.usuario.edit', [$role, $user])
+            ->with('status', $user->name.' volvió a heredar todos los permisos de '.$role->label.'.');
+    }
+
     /**
      * Elimina un rol. No se puede si hay gente usándolo: primero hay que
      * moverla a otro, si no se quedarían sin permisos de golpe.
