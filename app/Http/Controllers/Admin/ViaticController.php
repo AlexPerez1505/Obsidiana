@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 /**
  * Pantallas de Viáticos. Alta, edición, fotos y gastos viven en Viaticos
@@ -31,10 +32,31 @@ class ViaticController extends Controller
             ->visiblesPara($request->user(), $request->get('search'), $request->get('status'))
             ->get();
 
+        $porLugar = $viatics->groupBy(fn (Viatic $v) => $v->place ?: 'Sin lugar')
+            ->map(fn ($items) => $items->sum(fn (Viatic $v) => (float) $v->total_computed))
+            ->sortDesc();
+        $porVehiculo = $viatics->groupBy(fn (Viatic $v) => $v->vehicle_name ?: 'Sin camioneta')
+            ->map(fn ($items) => $items->sum(fn (Viatic $v) => (float) $v->total_computed))
+            ->sortDesc();
+
         return view('admin.viatics.index', [
             'viatics'  => $viatics,
             'filters'  => $request->only(['search', 'status']),
+            'porLugar' => $porLugar,
+            'porVehiculo' => $porVehiculo,
         ]);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $viatics = $this->viaticos
+            ->visiblesPara($request->user(), $request->get('search'), $request->get('status'))
+            ->get();
+
+        return Pdf::loadView('admin.viatics.pdf', [
+            'viatics' => $viatics,
+            'total' => $viatics->sum(fn (Viatic $v) => (float) $v->total_computed),
+        ])->setPaper('letter', 'landscape')->download('viaticos-' . now()->format('Y-m-d') . '.pdf');
     }
 
     public function create(): View

@@ -184,6 +184,21 @@
         .vl-add-desktop:hover { background: var(--primary-strong); }
         .vl-add-desktop svg { width: 18px; height: 18px; }
     }
+    .vl-tools { display:flex; gap:8px; align-items:center; }
+    .vl-export { display:inline-flex; align-items:center; gap:7px; padding:10px 14px;
+        border:1.5px solid var(--border); border-radius:12px; color:var(--text);
+        background:var(--surface); text-decoration:none; font-size:14px; font-weight:700; }
+    .vl-export:hover { color:var(--primary); border-color:var(--primary); }
+    .vl-export svg { width:17px; height:17px; }
+    .vl-summary { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+    .vl-summary-card { background:var(--surface); border:1.5px solid #94a3b8; border-radius:14px; padding:16px; }
+    .vl-summary-card h2 { margin:0 0 12px; font-size:15px; color:var(--text); }
+    .vl-summary-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; margin:9px 0; }
+    .vl-summary-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font-size:13px; }
+    .vl-summary-amount { color:var(--primary); font-weight:800; font-size:13px; }
+    .vl-summary-bar { grid-column:1 / -1; height:6px; border-radius:99px; background:var(--surface-2); overflow:hidden; margin-top:-5px; }
+    .vl-summary-bar span { display:block; height:100%; border-radius:inherit; background:var(--primary); }
+    @media (max-width: 640px) { .vl-tools { width:100%; } .vl-export { flex:1; justify-content:center; } .vl-summary { grid-template-columns:1fr; } }
 </style>
 @endpush
 
@@ -197,6 +212,9 @@
         </a>
         <h1 class="vl-header-title">Mis Viáticos</h1>
         <div style="flex:1"></div>
+        <a href="{{ route('admin.viatics.export', request()->query()) }}" class="vl-export">
+            <x-gravityui-file-text /> Exportar PDF
+        </a>
         <a href="{{ route('admin.viatics.create') }}" class="vl-add-desktop">
             <x-gravityui-plus />
             Nuevo Viático
@@ -217,6 +235,24 @@
             <div class="vl-stat-num">${{ number_format($viatics->sum(fn($v) => (float) $v->total_computed), 2) }}</div>
             <div class="vl-stat-lbl">Total</div>
         </div>
+    </div>
+
+    <div class="vl-summary">
+        @foreach ([['title' => 'Totales por lugar', 'items' => $porLugar], ['title' => 'Totales por camioneta', 'items' => $porVehiculo]] as $summary)
+            <section class="vl-summary-card">
+                <h2>{{ $summary['title'] }}</h2>
+                @php($max = max((float) ($summary['items']->max() ?: 1), 1))
+                @forelse ($summary['items']->take(8) as $nombre => $monto)
+                    <div class="vl-summary-row">
+                        <span class="vl-summary-name">{{ $nombre }}</span>
+                        <span class="vl-summary-amount">${{ number_format($monto, 2) }}</span>
+                        <div class="vl-summary-bar"><span style="width:{{ min(100, ($monto / $max) * 100) }}%"></span></div>
+                    </div>
+                @empty
+                    <p class="muted">Todavía no hay registros.</p>
+                @endforelse
+            </section>
+        @endforeach
     </div>
 
     {{-- List --}}

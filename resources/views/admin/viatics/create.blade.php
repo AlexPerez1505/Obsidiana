@@ -185,6 +185,12 @@
     .vt-submit:hover { background: var(--primary-strong); }
     .vt-submit svg { width: 20px; height: 20px; }
 
+    .vt-total { display:flex; align-items:center; justify-content:space-between; gap:16px;
+        padding:16px 18px; margin:0 0 20px; border:1.5px solid var(--primary);
+        border-radius:14px; background:var(--primary-soft); color:var(--text); }
+    .vt-total strong { font-size:13px; text-transform:uppercase; letter-spacing:.04em; }
+    .vt-total-value { color:var(--primary); font-size:24px; font-weight:800; }
+
     @media (min-width: 768px) {
         .vt-page { max-width: 100%; }
     }
@@ -291,6 +297,11 @@
             </div>
         </div>
 
+        <div class="vt-total">
+            <strong>Total estimado</strong>
+            <span class="vt-total-value" id="vtTotal">$0.00</span>
+        </div>
+
         {{-- Fotos del ticket --}}
         <div class="vt-photo-previews" id="vtPhotoPreviews"></div>
         <div class="vt-upload" onclick="document.getElementById('vtPhotosInput').click()" style="margin-bottom:20px;">
@@ -317,6 +328,21 @@
         btn.classList.add('selected');
         document.getElementById('vtVehicleId').value = id;
     }
+
+    (function () {
+        const campos = ['tolls', 'fuel', 'meals', 'lodging', 'additional'];
+        const total = document.getElementById('vtTotal');
+        function actualizarTotal() {
+            const suma = campos.reduce((acc, nombre) => {
+                const campo = document.querySelector('[name="' + nombre + '"]');
+                return acc + (parseFloat(campo?.value || 0) || 0);
+            }, 0);
+            total.textContent = new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN' }).format(suma);
+        }
+        document.querySelectorAll('[name="tolls"], [name="fuel"], [name="meals"], [name="lodging"], [name="additional"]')
+            .forEach(campo => campo.addEventListener('input', actualizarTotal));
+        actualizarTotal();
+    })();
 
     (function () {
         const input = document.getElementById('vtPhotosInput');

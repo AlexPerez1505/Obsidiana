@@ -64,6 +64,7 @@ Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->n
     Route::get('/vehiculos/{vehicle}', [VehicleController::class, 'show'])->name('vehicles.show');
 
     Route::get('/viaticos', [ViaticController::class, 'index'])->withoutMiddleware('admin')->middleware('can:viaticos.ver')->name('viatics.index');
+    Route::get('/viaticos/exportar-pdf', [ViaticController::class, 'exportPdf'])->withoutMiddleware('admin')->middleware('can:viaticos.ver')->name('viatics.export');
     Route::get('/viaticos/crear', [ViaticController::class, 'create'])->name('viatics.create');
     Route::post('/viaticos', [ViaticController::class, 'store'])->name('viatics.store');
     Route::get('/viaticos/{viatic}/editar', [ViaticController::class, 'edit'])->name('viatics.edit');
