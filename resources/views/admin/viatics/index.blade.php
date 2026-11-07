@@ -242,15 +242,17 @@
             <section class="vl-summary-card">
                 <h2>{{ $summary['title'] }}</h2>
                 @php($max = max((float) ($summary['items']->max() ?: 1), 1))
-                @forelse ($summary['items']->take(8) as $nombre => $monto)
-                    <div class="vl-summary-row">
-                        <span class="vl-summary-name">{{ $nombre }}</span>
-                        <span class="vl-summary-amount">${{ number_format($monto, 2) }}</span>
-                        <div class="vl-summary-bar"><span style="width:{{ min(100, ($monto / $max) * 100) }}%"></span></div>
-                    </div>
-                @empty
+                @if ($summary['items']->isEmpty())
                     <p class="muted">Todavía no hay registros.</p>
-                @endforelse
+                @else
+                    @foreach ($summary['items']->take(8) as $nombre => $monto)
+                        <div class="vl-summary-row">
+                            <span class="vl-summary-name">{{ $nombre }}</span>
+                            <span class="vl-summary-amount">${{ number_format($monto, 2) }}</span>
+                            <div class="vl-summary-bar"><span style="width:{{ min(100, ($monto / $max) * 100) }}%"></span></div>
+                        </div>
+                    @endforeach
+                @endif
             </section>
         @endforeach
     </div>
