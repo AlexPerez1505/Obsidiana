@@ -241,7 +241,9 @@
         @foreach ([['title' => 'Totales por lugar', 'items' => $porLugar], ['title' => 'Totales por camioneta', 'items' => $porVehiculo]] as $summary)
             <section class="vl-summary-card">
                 <h2>{{ $summary['title'] }}</h2>
-                @php($max = max((float) ($summary['items']->max() ?: 1), 1))
+                @php
+                    $max = max((float) ($summary['items']->max() ?: 1), 1);
+                @endphp
                 @if ($summary['items']->isEmpty())
                     <p class="muted">Todavía no hay registros.</p>
                 @else
