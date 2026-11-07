@@ -140,6 +140,7 @@
                 </p>
             </x-ui.card>
 
+            @if (auth()->user()?->isAdmin())
             <x-ui.card>
                 <div class="cg-head"><x-ui.section-title style="margin:0;">Costos</x-ui.section-title></div>
 
@@ -166,6 +167,7 @@
                     Pendiente por pagar: <b data-pendiente>$0.00</b>
                 </p>
             </x-ui.card>
+            @endif
 
             <x-ui.card>
                 <div class="cg-head"><x-ui.section-title style="margin:0;">Accesos</x-ui.section-title></div>

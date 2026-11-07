@@ -148,7 +148,16 @@ class CongresoController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $this->congresos->normalizar($request, $request->validate(GestionDeCongresos::REGLAS, GestionDeCongresos::MENSAJES));
+        $reglas = GestionDeCongresos::REGLAS;
+        if (! $request->user()->isAdmin()) {
+            unset($reglas['costo'], $reglas['pagado']);
+        }
+
+        $data = $this->congresos->normalizar($request, $request->validate($reglas, GestionDeCongresos::MENSAJES));
+        if (! $request->user()->isAdmin()) {
+            $data['costo'] = null;
+            $data['pagado'] = 0;
+        }
 
         $request->validate(GestionDeCongresos::REGLAS_ALTA_INICIAL);
 
@@ -175,7 +184,16 @@ class CongresoController extends Controller
 
     public function update(Request $request, Congress $congress): RedirectResponse
     {
-        $data = $this->congresos->normalizar($request, $request->validate(GestionDeCongresos::REGLAS, GestionDeCongresos::MENSAJES));
+        $reglas = GestionDeCongresos::REGLAS;
+        if (! $request->user()->isAdmin()) {
+            unset($reglas['costo'], $reglas['pagado']);
+        }
+
+        $data = $this->congresos->normalizar($request, $request->validate($reglas, GestionDeCongresos::MENSAJES));
+        if (! $request->user()->isAdmin()) {
+            $data['costo'] = $congress->costo;
+            $data['pagado'] = $congress->pagado;
+        }
 
         $this->congresos->actualizar($congress, $data, (array) $request->file('archivos', []), (array) $request->input('quitar_archivos', []));
 
