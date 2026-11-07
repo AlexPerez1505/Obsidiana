@@ -5,7 +5,7 @@
 
     $c = $venta->customer;
     $cliente = trim(($c->nombre ?? '') . ' ' . ($c->apellido ?? '')) ?: '—';
-    $firmante = $con['nombre'] ?: (\App\Support\DatosBancarios::beneficiario((bool) $venta->aplica_iva) ?: $emp['nombre']);
+    $firmante = $con['nombre'] ?: (\App\Support\DatosBancarios::beneficiario($venta->cobraConIva()) ?: $emp['nombre']);
 
     $meses = $venta->garantia_meses ?: 6;
     $hasta = $venta->garantiaHasta();

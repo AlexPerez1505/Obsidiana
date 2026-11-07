@@ -177,6 +177,7 @@
                                 @if ($it->modelo)
                                     <div style="color:var(--muted); font-size:12.5px;">{{ $it->marca ? $it->marca.' · ' : '' }}Modelo {{ $it->modelo }}</div>
                                 @endif
+                                @include('structure.commercial_management._paquete_contenido', ['it' => $it])
                             </td>
                             <td>{{ $it->marca ?: '—' }}</td>
                             <td class="c">{{ $it->cantidad }}</td>
@@ -198,13 +199,21 @@
             @if ($doc->descuento_monto > 0)
                 <div><span>Descuento</span><b>-${{ number_format($doc->descuento_monto, 2) }}</b></div>
             @endif
+            @if (($doc->cupon_descuento ?? 0) > 0)
+                <div><span>Cupón {{ $doc->cupon_codigo }}</span><b>-${{ number_format($doc->cupon_descuento, 2) }}</b></div>
+            @endif
             @if ($doc->envio > 0)
                 <div><span>Envío</span><b>${{ number_format($doc->envio, 2) }}</b></div>
             @endif
             @if ($doc->aplica_iva)
                 <div><span>IVA (16%)</span><b>${{ number_format($doc->iva_monto, 2) }}</b></div>
+            @elseif ((float) $doc->iva_monto > 0)
+                <div><span>IVA agregado a mensualidades</span><b>${{ number_format($doc->iva_monto, 2) }}</b></div>
             @endif
             <div class="grande"><span>Total</span><b>${{ number_format($doc->total, 2) }}</b></div>
+            @foreach ($doc->equipos_a_cuenta ?? [] as $r)
+                <div><span>Equipo a cuenta</span><b style="text-align:right;">{{ \App\Support\EquiposACuenta::texto($r) }}</b></div>
+            @endforeach
         </div>
     </div>
 

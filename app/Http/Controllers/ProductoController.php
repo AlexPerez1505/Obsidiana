@@ -37,16 +37,36 @@ class ProductoController extends Controller
         // Se trae también la entrada y el congreso de cada unidad: el modal
         // muestra la fecha de llegada y avisa si la pieza no está en el
         // almacén. Sin esto era una consulta por unidad.
-        $query = Producto::query()->with('serialesDisponibles.entrada', 'serialesDisponibles.congress')->latest();
+        // Agrupados por tipo (laparoscopía, endoscopía…) y en orden
+        // alfabético dentro de cada tipo: subtipo, marca y modelo.
+        $query = Producto::query()->with('serialesDisponibles.entrada', 'serialesDisponibles.congress')
+            ->orderByRaw("COALESCE(NULLIF(tipo_equipo, ''), 'ZZZ')")
+            ->orderBy('subtipo')->orderBy('marca')->orderBy('modelo');
 
         $this->productos->filtrar($query, $request->get('search'), $request->get('ubicacion'));
 
-        $productos = $query->paginate(20)->withQueryString();
+        $tipo = trim((string) $request->get('tipo', ''));
+        $porTipo = (clone $query)->reorder()->selectRaw("COALESCE(NULLIF(tipo_equipo, ''), 'Sin tipo') as tipo, COUNT(*) as n")
+            ->groupBy('tipo')->orderBy('tipo')->pluck('n', 'tipo');
+
+        if ($tipo !== '') {
+            $tipo === 'Sin tipo'
+                ? $query->where(fn ($w) => $w->whereNull('tipo_equipo')->orWhere('tipo_equipo', ''))
+                : $query->where('tipo_equipo', $tipo);
+        }
+
+        $productos = $query->paginate(50)->withQueryString();
+
+        // Los paquetes, agrupados por el tipo que más traen, con su contenido.
+        $paquetes = \App\Models\Paquete::with(['productos', 'equipos'])->orderBy('nombre')->get()
+            ->groupBy(fn ($p) => $p->tipoPrincipal())->sortKeys();
 
         return view('structure.gestion_Inventario.productos.index', [
             'productos' => $productos,
-            'filters' => $request->only('search', 'ubicacion'),
+            'filters' => $request->only('search', 'ubicacion', 'tipo'),
             'enCongreso' => $this->productos->piezasEnCongreso(),
+            'porTipo' => $porTipo,
+            'paquetesPorTipo' => $paquetes,
         ]);
     }
 

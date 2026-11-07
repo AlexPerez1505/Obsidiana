@@ -80,6 +80,9 @@
                 @if ($cotizacion->descuento_monto > 0)
                     <div class="doc-tot"><span class="e">Descuento</span><span class="v">-${{ number_format($cotizacion->descuento_monto, 2) }}</span></div>
                 @endif
+                @if ($cotizacion->cupon_descuento > 0)
+                    <div class="doc-tot"><span class="e">Cupón {{ $cotizacion->cupon_codigo }}</span><span class="v">-${{ number_format($cotizacion->cupon_descuento, 2) }}</span></div>
+                @endif
                 @if ($cotizacion->envio > 0)
                     <div class="doc-tot"><span class="e">Envío</span><span class="v">${{ number_format($cotizacion->envio, 2) }}</span></div>
                 @endif
@@ -93,6 +96,8 @@
                     <div class="doc-tot"><span class="e">Valor a cuenta</span><span class="v">-${{ number_format($cotizacion->valor_a_cuenta, 2) }}</span></div>
                     <div class="doc-tot aparte"><span class="e">Total del contrato</span><span class="v">${{ number_format($cotizacion->total_contrato, 2) }}</span></div>
                 @endif
+
+                @include('structure.commercial_management._equipos_a_cuenta', ['doc' => $cotizacion])
             </x-ui.card>
 
             <x-ui.card>

@@ -237,4 +237,24 @@ class InventoryMovementController extends Controller
 
         return redirect()->route('inventory.movimientos.index')->with('status', "Movimiento {$movimiento->folio} eliminado.");
     }
+
+    /**
+     * Status del equipo escaneado (pistola, cámara o tecleado) para la
+     * pantalla de Entrada y salida.
+     */
+    public function estatus(\Illuminate\Http\Request $request, \App\Services\Inventario\EscaneoDePiezas $escaneo): \Illuminate\Http\JsonResponse
+    {
+        $data = $request->validate(['codigo' => ['required', 'string', 'max:255']]);
+        $codigo = \App\Services\Inventario\EscaneoDePiezas::codigo($data['codigo']);
+
+        if ($codigo === null) {
+            return response()->json(['encontrado' => false, 'mensaje' => \App\Services\Inventario\EscaneoDePiezas::NO_ES_ETIQUETA]);
+        }
+
+        $pieza = $escaneo->pieza($codigo);
+
+        return response()->json($pieza
+            ? $escaneo->estatus($pieza)
+            : ['encontrado' => false, 'codigo' => $codigo, 'mensaje' => \App\Services\Inventario\EscaneoDePiezas::noRegistrada($codigo)]);
+    }
 }

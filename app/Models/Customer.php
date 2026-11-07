@@ -194,6 +194,9 @@ class Customer extends Model
     protected $casts = [
         'recibe_promocion' => 'boolean',
         'activo' => 'boolean',
+        'promocion_autorizada_en' => 'datetime',
+        'promocion_confirmada_en' => 'datetime',
+        'promocion_revocada_en' => 'datetime',
     ];
 
     public function asesor(): BelongsTo
@@ -255,5 +258,39 @@ class Customer extends Model
     public function pagos(): HasMany
     {
         return $this->hasMany(Pago::class, 'cliente_id');
+    }
+
+    // ===================== Marketing y promociones =====================
+
+    /**
+     * ¿Se le pueden mandar promociones? Solo con consentimiento confirmado
+     * y sin baja posterior. Nunca al "Público en general".
+     */
+    public function puedeRecibirPromociones(): bool
+    {
+        return $this->promocion_confirmada_en !== null
+            && $this->promocion_revocada_en === null
+            && ! $this->esPublicoEnGeneral();
+    }
+
+    /** Teléfono para WhatsApp en E.164 sin "+" (México por omisión), o null si no sirve. */
+    public function telefonoWhatsapp(): ?string
+    {
+        return \App\Services\WhatsApp\Telefono::e164($this->telefono);
+    }
+
+    public function consentimientos(): HasMany
+    {
+        return $this->hasMany(MktConsentimiento::class, 'cliente_id')->latest('id');
+    }
+
+    public function promocionesRecibidas(): HasMany
+    {
+        return $this->hasMany(CampanaDestinatario::class, 'cliente_id')->where('es_prueba', false);
+    }
+
+    public function usosDeCupon(): HasMany
+    {
+        return $this->hasMany(CuponUso::class, 'cliente_id');
     }
 }

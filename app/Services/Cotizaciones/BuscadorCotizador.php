@@ -89,7 +89,7 @@ class BuscadorCotizador
     public function paquetes(string $q): Collection
     {
         return Paquete::where('activo', true)
-            ->with('productos')
+            ->with(['productos', 'equipos'])
             ->when($q !== '', fn ($query) => $query->where('nombre', 'like', "%{$q}%"))
             ->orderBy('nombre')
             ->limit(10)

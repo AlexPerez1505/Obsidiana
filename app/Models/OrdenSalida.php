@@ -31,6 +31,7 @@ class OrdenSalida extends Model
 
     protected $fillable = [
         'folio', 'venta_id', 'estado', 'notas',
+        'asignada_a', 'asignada_por', 'asignada_en',
         'preparada_por', 'preparada_en',
         'entregada_por', 'entregada_en', 'recibe_nombre',
         'firma_entrega_path', 'firma_recibe_path',
@@ -41,6 +42,7 @@ class OrdenSalida extends Model
     {
         return [
             'preparada_en' => 'datetime',
+            'asignada_en' => 'datetime',
             'entregada_en' => 'datetime',
         ];
     }
@@ -70,6 +72,17 @@ class OrdenSalida extends Model
     public function preparadaPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'preparada_por');
+    }
+
+    /** Quien va a preparar el equipo (se le avisa por correo y en la campana). */
+    public function asignadaA(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'asignada_a');
+    }
+
+    public function asignadaPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'asignada_por');
     }
 
     public function entregadaPor(): BelongsTo

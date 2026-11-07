@@ -31,6 +31,8 @@ class ObsVivo
     public const IGNORAR = [
         '*foto-chunk', '*video-chunk', '_vivo',
         'login', 'logout', 'register', 'verificar*', 'email/*', 'recuperar-contrasena*', 'restablecer-contrasena*',
+        // Cálculos que no guardan nada (oferta pública y cupón del cotizador).
+        'p/*/calcular', 'promociones/cupones/comprobar', 'promociones/campanas/audiencia',
     ];
 
     private static bool $pendiente = false;

@@ -88,9 +88,22 @@ class CobroController extends Controller
      */
     public function store(Request $request, Venta $venta): JsonResponse
     {
+        // Registrar un cobro directo es aprobarlo: solo con NIP o administrador.
+        abort_unless(\App\Services\Ventas\ComprobantesDePago::puedeAprobar($request->user()), 403,
+            'Solo un administrador o alguien con NIP registra cobros directo. Sube el pago como comprobante para que lo aprueben.');
+
         $this->cobros->asegurarCobrable($venta);
 
         $data = $request->validate(CobrosDeVenta::reglasCobro($venta), CobrosDeVenta::MENSAJES_COBRO);
+
+        // Ya lo subió el vendedor: se aprueba ese. Para registrar uno distinto
+        // del mismo monto se manda es_otro_pago=true.
+        $iguales = app(\App\Services\Ventas\ComprobantesDePago::class)->pendientesIguales($venta, (float) $data['monto']);
+        if ($iguales->isNotEmpty() && ! $request->boolean('es_otro_pago')) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'monto' => \App\Services\Ventas\ComprobantesDePago::avisoDuplicado($iguales),
+            ]);
+        }
 
         $r = $this->cobros->registrar($venta, $data, (array) $request->file('evidencias', []));
 

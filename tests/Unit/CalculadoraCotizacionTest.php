@@ -49,4 +49,31 @@ class CalculadoraCotizacionTest extends TestCase
         $this->assertSame('Primer pago', $plan[1]['nombre']);
         $this->assertSame('Segundo pago', $plan[2]['nombre']);
     }
+
+    public function test_pagos_en_pesos_cerrados_y_centavos_al_ultimo(): void
+    {
+        $plan = (new CalculadoraCotizacion())->planPagos(6002.31, 2);
+
+        $this->assertSame([2000.0, 2000.0, 2002.31], array_column($plan, 'monto'));
+        $this->assertEqualsWithDelta(6002.31, array_sum(array_column($plan, 'monto')), 0.001);
+    }
+
+    public function test_montos_capturados_con_centavos_tambien_se_cierran(): void
+    {
+        // El pago inicial se puso por porcentaje y salió con centavos.
+        $plan = (new CalculadoraCotizacion())->planPagos(10000, 2, [
+            ['nombre' => 'Pago inicial', 'monto' => 3333.33, 'bloqueado' => true],
+            ['nombre' => 'Primer pago'],
+            ['nombre' => 'Segundo pago'],
+        ]);
+
+        $this->assertSame([3333.0, 3333.0, 3334.0], array_column($plan, 'monto'));
+    }
+
+    public function test_cerrar_centavos(): void
+    {
+        $this->assertSame([2000.0, 2000.0, 2002.3], CalculadoraCotizacion::cerrarCentavos([2000.77, 2000.77, 2000.76]));
+        $this->assertSame([5 => 99.0, 9 => 101.0], CalculadoraCotizacion::cerrarCentavos([5 => 99.5, 9 => 100.5]));
+        $this->assertSame([250.75], CalculadoraCotizacion::cerrarCentavos([250.75]));
+    }
 }

@@ -74,6 +74,15 @@
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>Cancelar venta
                                         </a>
                                     @endif
+                                    @can('ventas.eliminar')
+                                        {{-- Sin NIP las primeras 72 horas; después lo pide. Si ya tiene
+                                             cobros o el equipo salió, el servidor no la deja borrar. --}}
+                                        <button type="button" class="erp-menu-item danger" data-eliminar-doc
+                                                data-url="{{ route('commercial.ventas.destroy', $v) }}" data-folio="{{ $v->folio }}" data-que="la venta"
+                                                data-nip="{{ \App\Support\EliminarConNip::requiere($v) ? 1 : 0 }}" data-horas="{{ \App\Support\EliminarConNip::horasRestantes($v) }}">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Eliminar venta
+                                        </button>
+                                    @endcan
                                 </x-erp.menu>
                             </td>
                         </tr>
@@ -153,4 +162,5 @@
         @endforelse
     </div>
     @include('partials._paginacion', ['paginator' => $ventas])
+    @include('structure.commercial_management._eliminar_doc')
 @endsection

@@ -73,6 +73,14 @@
                     <span class="et">Salida</span>
                     <span class="val">{{ $venta->ordenSalida->estadoLabel() }}</span>
                 </a>
+                @php $prepara = $venta->ordenSalida->asignadaA; @endphp
+                @if ($prepara || (! $venta->ordenSalida->cerrada() && auth()->user()->can('salidas.asignar')))
+                    <a href="{{ route('inventory.salidas.show', $venta->ordenSalida) }}#asignar" class="pill-dato"
+                       title="{{ $prepara ? 'Quién prepara el equipo' : 'Elegir quién prepara el equipo' }}">
+                        <span class="et">Prepara</span>
+                        <span class="val">{{ $prepara?->name ?? 'Asignar' }}</span>
+                    </a>
+                @endif
                 <a href="{{ route('inventory.salidas.pdf', $venta->ordenSalida) }}" target="_blank" class="btn-icono" title="PDF de la orden de salida" aria-label="PDF de la orden de salida">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15h6M9 11h2"/></svg>
                 </a>
@@ -198,11 +206,17 @@
                 @if ($venta->descuento_monto > 0)
                     <div class="doc-tot"><span class="e">Descuento</span><span class="v">-${{ number_format($venta->descuento_monto, 2) }}</span></div>
                 @endif
+                @if ($venta->cupon_descuento > 0)
+                    <div class="doc-tot"><span class="e">Cupón {{ $venta->cupon_codigo }}</span><span class="v">-${{ number_format($venta->cupon_descuento, 2) }}</span></div>
+                @endif
                 @if ($venta->envio > 0)
                     <div class="doc-tot"><span class="e">Envío</span><span class="v">${{ number_format($venta->envio, 2) }}</span></div>
                 @endif
                 @if ($venta->aplica_iva)
                     <div class="doc-tot"><span class="e">IVA 16%</span><span class="v">${{ number_format($venta->iva_monto, 2) }}</span></div>
+                @elseif ((float) $venta->iva_monto > 0)
+                    {{-- Salió sin IVA y después se le agregó a las mensualidades. --}}
+                    <div class="doc-tot"><span class="e">IVA agregado a mensualidades</span><span class="v">${{ number_format($venta->iva_monto, 2) }}</span></div>
                 @endif
 
                 <div class="doc-tot total"><span class="e">Total</span><span class="v">${{ number_format($venta->total, 2) }}</span></div>
@@ -211,6 +225,8 @@
                     <div class="doc-tot"><span class="e">Valor a cuenta</span><span class="v">-${{ number_format($venta->valor_a_cuenta, 2) }}</span></div>
                     <div class="doc-tot aparte"><span class="e">Total del contrato</span><span class="v">${{ number_format($venta->total_contrato, 2) }}</span></div>
                 @endif
+
+                @include('structure.commercial_management._equipos_a_cuenta', ['doc' => $venta])
             </x-ui.card>
 
             <x-ui.card>
@@ -223,6 +239,9 @@
                 <div class="doc-barra"><span style="width:{{ $venta->avance() }}%"></span></div>
                 <p class="doc-avance">{{ $venta->avance() }}% cubierto</p>
             </x-ui.card>
+
+            {{-- Pagos subidos por el vendedor que esperan a alguien con NIP. --}}
+            @include('structure.commercial_management.cobros._comprobantes', ['venta' => $venta])
 
             <x-ui.card>
                 <div class="doc-head"><h3>Datos</h3></div>

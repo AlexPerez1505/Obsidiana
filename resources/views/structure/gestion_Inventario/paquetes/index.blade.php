@@ -27,33 +27,41 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($paquetes as $paquete)
-                        <tr>
-                            <td style="font-weight:700;">{{ $paquete->nombre }}</td>
-                            <td>
-                                @if($paquete->productos->count() > 0)
-                                    {{-- Fichas en línea: con una viñeta por renglón, un paquete
-                                         con muchos productos hacía una fila altísima. --}}
-                                    <ul class="pq-prods">
-                                        @foreach($paquete->productos as $producto)
-                                            <li>{{ $producto->tipo_equipo }} {{ $producto->marca }} {{ $producto->modelo }} <b>(x{{ $producto->pivot->cantidad }})</b></li>
-                                        @endforeach
-                                    </ul>
-                                @else
-                                    <span style="color:var(--muted);">Sin productos</span>
-                                @endif
-                            </td>
-                            <td style="white-space:nowrap;">
-                                <div style="display:flex; gap:8px;">
-                                    <a href="{{ route('inventory.paquetes.edit', $paquete) }}" class="btn btn--ghost" style="padding:6px 12px; font-size:13px; text-decoration:none;">Editar</a>
-                                    <form method="POST" action="{{ route('inventory.paquetes.destroy', $paquete) }}" data-confirm="¿Eliminar este paquete?">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn--danger" style="padding:6px 12px; font-size:13px;">Eliminar</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
+                    @forelse ($paquetes->groupBy(fn ($p) => $p->tipoPrincipal())->sortKeys() as $tipoPaq => $grupo)
+                        <tr class="pq-grupo"><td colspan="3">{{ $tipoPaq }} <span>{{ $grupo->count() }} {{ $grupo->count() === 1 ? 'paquete' : 'paquetes' }}</span></td></tr>
+                        @foreach ($grupo as $paquete)
+                            @php $contenido = $paquete->contenido(); @endphp
+                            <tr>
+                                <td style="font-weight:700;">{{ $paquete->nombre }}
+                                    @if (! $paquete->activo)<span class="badge" style="font-size:11px; margin-left:6px;">Inactivo</span>@endif
+                                </td>
+                                <td>
+                                    @if (! empty($contenido))
+                                        {{-- Plegado: un paquete con muchos productos ya no hace una fila altísima. --}}
+                                        <details class="pq-det">
+                                            <summary>{{ count($contenido) }} {{ count($contenido) === 1 ? 'artículo' : 'artículos' }} · ver contenido</summary>
+                                            <ul class="pq-prods">
+                                                @foreach ($contenido as $l)
+                                                    <li><b>{{ $l['cantidad'] }}×</b> {{ $l['nombre'] }}{{ $l['marca'] ? ' · '.$l['marca'] : '' }}{{ $l['modelo'] ? ' · '.$l['modelo'] : '' }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </details>
+                                    @else
+                                        <span style="color:var(--muted);">Sin productos</span>
+                                    @endif
+                                </td>
+                                <td style="white-space:nowrap;">
+                                    <div style="display:flex; gap:8px;">
+                                        <a href="{{ route('inventory.paquetes.edit', $paquete) }}" class="btn btn--ghost" style="padding:6px 12px; font-size:13px; text-decoration:none;">Editar</a>
+                                        <form method="POST" action="{{ route('inventory.paquetes.destroy', $paquete) }}" data-confirm="¿Eliminar este paquete?">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn--danger" style="padding:6px 12px; font-size:13px;">Eliminar</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
                     @empty
                         <tr>
                             <td colspan="3" style="text-align:center; padding:32px; color:var(--muted);">
@@ -73,5 +81,8 @@
         .pq-prods li { padding:3px 9px; border:1px solid var(--border); border-radius:999px;
                        background:var(--surface-2); font-size:12.5px; line-height:1.4; }
         .pq-prods b { font-weight:700; }
+        .pq-grupo td { background:var(--surface-2); font-size:12.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; padding:9px 12px !important; }
+        .pq-grupo td span { font-weight:500; color:var(--muted); letter-spacing:0; text-transform:none; margin-left:6px; }
+        .pq-det summary { cursor:pointer; font-size:13px; color:var(--primary); font-weight:600; margin-bottom:6px; }
     </style>
 @endsection

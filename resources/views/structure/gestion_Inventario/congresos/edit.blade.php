@@ -2,7 +2,7 @@
 
 @section('title', 'Editar congreso')
 @section('page-title', 'Editar congreso')
-@section('page-sub', 'Gestión de Inventario > Congresos > Editar')
+@section('page-sub', 'Gestión Administrativa > Congresos > Editar')
 
 @section('content')
     @include('structure.gestion_Inventario.congresos._form', [

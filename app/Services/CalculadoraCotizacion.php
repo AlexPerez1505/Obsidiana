@@ -66,7 +66,7 @@ class CalculadoraCotizacion
     /**
      * Devuelve el desglose completo de montos.
      *
-     * @return array{subtotal: float, descuento: float, base: float, iva: float, total: float, total_contrato: float}
+     * @return array{subtotal: float, descuento: float, descuento_cupon: float, base: float, iva: float, total: float, total_contrato: float}
      */
     public function desglose(
         array $items,
@@ -74,11 +74,15 @@ class CalculadoraCotizacion
         float $descuentoValor,
         float $envio,
         bool $aplicaIva,
-        float $valorACuenta
+        float $valorACuenta,
+        float $descuentoCupon = 0.0
     ): array {
         $subtotal = $this->subtotal($items);
         $descuento = $this->descuento($subtotal, $descuentoTipo, $descuentoValor);
-        $base = max(0, $subtotal - $descuento) + $envio;
+        // El cupón ya viene calculado por App\Services\Promociones\MotorDeCupones
+        // (nunca del navegador); aquí solo se resta.
+        $descuentoCupon = round(max(0, min($descuentoCupon, $subtotal - $descuento)), 2);
+        $base = max(0, $subtotal - $descuento - $descuentoCupon) + $envio;
         $iva = $this->iva($base, $aplicaIva);
         $total = round($base + $iva, 2);
         $totalContrato = round(max(0, $total - $valorACuenta), 2);
@@ -86,6 +90,7 @@ class CalculadoraCotizacion
         return [
             'subtotal' => $subtotal,
             'descuento' => $descuento,
+            'descuento_cupon' => $descuentoCupon,
             'base' => round($base, 2),
             'iva' => $iva,
             'total' => $total,
@@ -143,7 +148,8 @@ class CalculadoraCotizacion
         $countLibres = count($libres);
 
         if ($countLibres > 0) {
-            $cuota = floor(($restante / $countLibres) * 100) / 100;
+            // Cuotas en pesos cerrados; el último libre se lleva lo que sobra.
+            $cuota = floor($restante / $countLibres);
             foreach ($libres as $pos => $idx) {
                 // El último libre absorbe el residuo por redondeo.
                 if ($pos === $countLibres - 1) {
@@ -155,6 +161,13 @@ class CalculadoraCotizacion
             }
         }
 
+        // Pesos cerrados: los centavos de todos (también de los que se
+        // capturaron a mano o por porcentaje) se juntan en el último pago.
+        $cerrados = self::cerrarCentavos(array_column($pagos, 'monto'));
+        foreach ($cerrados as $idx => $monto) {
+            $pagos[$idx]['monto'] = $monto;
+        }
+
         // Recalcula porcentajes reales sobre el total del contrato.
         foreach ($pagos as $idx => $p) {
             $pagos[$idx]['porcentaje'] = $totalContrato > 0
@@ -163,6 +176,40 @@ class CalculadoraCotizacion
         }
 
         return $pagos;
+    }
+
+    /**
+     * Deja todos los montos en pesos cerrados y junta los centavos en el
+     * último, sin cambiar la suma: [2000.77, 2000.77, 2000.76] →
+     * [2000, 2000, 2002.30]. Se hace en centavos enteros para no arrastrar
+     * errores de punto flotante.
+     *
+     * @param  array<int, float>  $montos
+     * @return array<int, float>
+     */
+    public static function cerrarCentavos(array $montos): array
+    {
+        $llaves = array_keys($montos);
+        if (count($llaves) < 2) {
+            return array_map(fn ($m) => round((float) $m, 2), $montos);
+        }
+
+        $ultimo = end($llaves);
+        $sobrante = 0;
+        $resultado = [];
+        foreach ($montos as $k => $m) {
+            $centavos = (int) round((float) $m * 100);
+            if ($k === $ultimo) {
+                continue;
+            }
+            $cerrado = intdiv(max(0, $centavos), 100) * 100;
+            $sobrante += $centavos - $cerrado;
+            $resultado[$k] = (float) ($cerrado / 100);
+        }
+        $resultado[$ultimo] = (float) (((int) round((float) $montos[$ultimo] * 100) + $sobrante) / 100);
+
+        // Mismo orden de llaves que se recibió.
+        return array_replace(array_fill_keys($llaves, 0.0), $resultado);
     }
 
     private function nombrePago(int $i): string

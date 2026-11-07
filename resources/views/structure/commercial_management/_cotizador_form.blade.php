@@ -144,11 +144,21 @@
                                 <input type="text" id="descuento_valor" class="cot-input cot-num" inputmode="decimal" value="0">
                             </div>
                         </div>
+                        {{-- Cupón de promoción: aquí solo se escribe el código; el descuento lo calcula el servidor. --}}
+                        <div class="cot-tote-row">
+                            <label for="cupon_codigo">Cupón</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="cupon_codigo" class="cot-input" placeholder="Código de promoción" autocomplete="off" style="text-transform:uppercase;">
+                                <button type="button" class="btn btn--ghost" id="cuponAplicar" style="white-space:nowrap;">Aplicar</button>
+                            </div>
+                            <div id="cuponMsg" style="font-size:12px; margin-top:4px; color:var(--muted);"></div>
+                        </div>
                         <label style="display:flex; align-items:center; gap:8px; margin:6px 0;">
                             <input type="checkbox" id="aplica_iva"> Aplicar IVA (16%)
                         </label>
                         <div class="cot-line"><span>Subtotal</span><b id="tSubtotal">$0.00</b></div>
                         <div class="cot-line"><span>Descuento</span><b id="tDescuento">-$0.00</b></div>
+                        <div class="cot-line" id="tCuponLinea" style="display:none; color:var(--green, #15803d);"><span>Cupón <span id="tCuponCodigo"></span></span><b id="tCupon">-$0.00</b></div>
                         <div class="cot-line"><span>IVA</span><b id="tIva">$0.00</b></div>
                         <div class="cot-line cot-line-strong"><span>Total</span><b id="tTotal">$0.00</b></div>
 
@@ -157,7 +167,23 @@
                             <input type="text" id="valor_a_cuenta" class="cot-input cot-num" inputmode="decimal" value="0">
                         </div>
                         <p style="font-size:12px; color:var(--muted); margin:6px 0 0;">Se resta del total para calcular el contrato.</p>
+
                         <div class="cot-line cot-line-strong"><span>Total del contrato</span><b id="tContrato">$0.00</b></div>
+
+                        {{-- Qué equipo entrega el cliente a cuenta: sale en la cotización, la venta, el PDF y el contrato. --}}
+                        @php $sugCuenta = \App\Support\EquiposACuenta::sugerencias(); @endphp
+                        <div class="cot-cuenta">
+                            <div class="cot-cuenta-head">
+                                <span>Equipo a cuenta</span>
+                                <button type="button" class="btn btn--ghost cot-cuenta-add" id="cuentaAgregar">+ Agregar equipo</button>
+                            </div>
+                            <div id="cuentaLista"></div>
+                        </div>
+                        @foreach (['tipo', 'subtipo', 'marca', 'modelo'] as $campo)
+                            <datalist id="dlCuenta-{{ $campo }}">
+                                @foreach ($sugCuenta[$campo] as $v)<option value="{{ $v }}"></option>@endforeach
+                            </datalist>
+                        @endforeach
                     </div>
                 </div>
             </div>
@@ -266,6 +292,20 @@
                        color:var(--warn, #b45309) !important; font-weight:700; }
     .cot-totes label { font-weight:600; }
     .cot-tote-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:8px 0; }
+
+    /* Equipo a cuenta */
+    .cot-cuenta { margin-top:12px; padding-top:12px; border-top:1px dashed var(--border); }
+    .cot-cuenta-head { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:13px; font-weight:600; }
+    .cot-cuenta-add { padding:5px 10px !important; font-size:12.5px !important; }
+    .cot-cuenta-vacio { margin:6px 0 0; font-size:12px; color:var(--muted); }
+    .cot-cuenta-fila { position:relative; display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px; padding:10px 34px 10px 10px;
+                       border:1px solid var(--border); border-radius:10px; background:var(--surface-2, transparent); }
+    .cot-cuenta-fila .cot-input { padding:8px 10px; font-size:13.5px; }
+    .cot-cuenta-fila .cot-cuenta-serie { grid-column:1 / -1; }
+    .cot-cuenta-quitar { position:absolute; top:8px; right:6px; width:24px; height:24px; border:0; border-radius:6px; cursor:pointer;
+                         background:transparent; color:var(--muted); font-size:18px; line-height:1; }
+    .cot-cuenta-quitar:hover { color:var(--danger, #dc2626); }
+    @media (max-width:520px) { .cot-cuenta-fila { grid-template-columns:1fr; } }
     .cot-line { display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:14px; color:var(--text); border-top:1px dashed var(--border); }
     .cot-line-strong { font-size:17px; font-weight:800; border-top:1px solid var(--border); margin-top:4px; padding-top:12px; }
     .cot-pay { border:1px solid var(--border); border-radius:14px; padding:14px; background:var(--surface); }
@@ -365,6 +405,13 @@
     // Con cobros aplicados a alguna parcialidad, el plan no se toca desde aquí.
     const PLAN_BLOQUEADO = @json((bool) ($planBloqueado ?? false));
     const IVA = 0.16;
+    // Cupones: el servidor valida y calcula (MotorDeCupones). Aquí solo se muestra.
+    const CUPON = {
+        url: @json(route('promociones.cupones.comprobar')),
+        cotizacion_id: @json(optional(request()->route('cotizacion'))->id ?? (request()->integer('cotizacion') ?: null)),
+        venta_id: @json(optional(request()->route('venta'))->id),
+        csrf: @json(csrf_token()),
+    };
 
     const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
     const ICON_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
@@ -372,6 +419,7 @@
     const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
     const state = {
+        cuenta: (INITIAL.equipos_a_cuenta || []).map(r => ({ tipo: r.tipo || '', subtipo: r.subtipo || '', marca: r.marca || '', modelo: r.modelo || '', no_serie: r.no_serie || '' })),
         customer: INITIAL.customer,
         items: (INITIAL.items || []).map(i => ({
             tipo_item: i.tipo_item, equipo_id: i.equipo_id, paquete_id: i.paquete_id, producto_id: i.producto_id,
@@ -554,7 +602,7 @@
                 : `<div class="cot-thumb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
             tr.innerHTML = `
                 <td>${thumb}</td>
-                <td style="font-weight:600;">${it.nombre}</td>
+                <td style="font-weight:600;">${it.nombre}${contenidoPaquete(it)}</td>
                 <td>${it.modelo || '—'}</td>
                 <td>${it.marca || '—'}</td>
                 <td>${celdaStock(it, idx)}</td>
@@ -608,12 +656,22 @@
 
         recalc();
     }
+    // Lo que trae un paquete, multiplicado por cuántos paquetes lleva el renglón.
+    function contenidoPaquete(it) {
+        const lineas = (it.tipo_item === 'paquete' && Array.isArray(it.contenido)) ? it.contenido : [];
+        if (!lineas.length) return '';
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const n = Math.max(1, parseInt(it.cantidad) || 1);
+        return `<details style="margin-top:4px; font-weight:400;"><summary style="cursor:pointer; font-size:12px; color:var(--primary);">Incluye ${lineas.length} ${lineas.length === 1 ? 'artículo' : 'artículos'}</summary>
+            <ul style="margin:4px 0 0; padding-left:16px; font-size:12px; color:var(--muted); line-height:1.55;">${lineas.map(l =>
+                `<li><b style="color:var(--text);">${l.cantidad * n}×</b> ${esc(l.nombre)}${l.marca ? ' · ' + esc(l.marca) : ''}${l.modelo ? ' · ' + esc(l.modelo) : ''}</li>`).join('')}</ul></details>`;
+    }
     function addItem(d) {
         state.items.push({
             tipo_item: d.tipo_item, equipo_id: d.tipo_item === 'equipo' ? d.id : null,
             paquete_id: d.tipo_item === 'paquete' ? d.id : null,
             producto_id: d.tipo_item === 'producto' ? d.id : null,
-            nombre: d.nombre, modelo: d.modelo, marca: d.marca, imagen: d.imagen,
+            nombre: d.nombre, modelo: d.modelo, marca: d.marca, imagen: d.imagen, contenido: d.contenido || [],
             cantidad: 1, precio_unitario: +d.precio || 0, sobreprecio: 0, es_regalo: false,
             // Cuánto hay y cuáles piezas se pueden entregar.
             stock: +d.stock || 0, piezas: d.piezas || [], seriales: [], abierto: false,
@@ -627,7 +685,9 @@
     }
     bindAutocomplete($('prodSearch'), $('prodResults'), ROUTES.productos,
         d => { addItem(d); $('prodSearch').value = ''; },
-        d => `<b>${d.nombre}</b> <span style="color:var(--muted);">${d.modelo || ''}</span><small>${d.marca || ''} · ${money(d.precio)}</small>`);
+        d => `<b>${d.nombre}</b> <span style="color:var(--muted);">${d.modelo || ''}</span><small>${d.marca || ''} · ${money(d.precio)}</small>`
+            + (d.tipo_item === 'paquete' && (d.contenido || []).length
+                ? `<small style="display:block; color:var(--muted);">Incluye: ${d.contenido.map(l => l.cantidad + '× ' + l.nombre + (l.modelo ? ' ' + l.modelo : '')).join(' · ')}</small>` : ''));
 
     function renderFichas() {
         const box = $('fichasSelected');
@@ -653,17 +713,22 @@
         if (dVal > 0) descuento = dTipo === 'porcentaje' ? subtotal * Math.min(dVal, 100) / 100 : Math.min(dVal, subtotal);
         descuento = Math.round(descuento * 100) / 100;
         const envio = num($('envio').value);
-        const base = Math.max(0, subtotal - descuento) + envio;
+        const cupon = (state.cupon && state.cupon.valido) ? Math.min(state.cupon.monto, Math.max(0, subtotal - descuento)) : 0;
+        const base = Math.max(0, subtotal - descuento - cupon) + envio;
         const iva = $('aplica_iva').checked ? Math.round(base * IVA * 100) / 100 : 0;
         const total = Math.round((base + iva) * 100) / 100;
         const valorACuenta = num($('valor_a_cuenta').value);
         const contrato = Math.round(Math.max(0, total - valorACuenta) * 100) / 100;
-        return { subtotal, descuento, iva, total, contrato };
+        return { subtotal, descuento, cupon, iva, total, contrato };
     }
     function recalc() {
         const d = calcDesglose();
         $('tSubtotal').textContent = money(d.subtotal);
         $('tDescuento').textContent = '-' + money(d.descuento);
+        $('tCuponLinea').style.display = d.cupon > 0 ? '' : 'none';
+        $('tCupon').textContent = '-' + money(d.cupon);
+        $('tCuponCodigo').textContent = state.cupon && state.cupon.valido ? '(' + state.cupon.codigo + ')' : '';
+        revisarCupon();
         $('tIva').textContent = money(d.iva);
         $('tTotal').textContent = money(d.total);
         $('tContrato').textContent = money(d.contrato);
@@ -672,6 +737,58 @@
     ['envio', 'descuento_valor', 'valor_a_cuenta'].forEach(id => $(id).addEventListener('input', recalc));
     $('descuento_tipo').addEventListener('change', recalc);
     $('aplica_iva').addEventListener('change', recalc);
+
+    // ---------- Cupón ----------
+    let cuponFirma = '', cuponTimer;
+    function cuponDatos() {
+        return {
+            codigo: (state.cupon && state.cupon.codigo) || '',
+            customer_id: state.customer ? state.customer.id : null,
+            descuento_tipo: $('descuento_tipo').value,
+            descuento_valor: num($('descuento_valor').value),
+            cotizacion_id: CUPON.cotizacion_id, venta_id: CUPON.venta_id,
+            items: state.items.map(it => ({ tipo_item: it.tipo_item, producto_id: it.producto_id, paquete_id: it.paquete_id, equipo_id: it.equipo_id,
+                                           cantidad: it.cantidad, precio_unitario: it.precio_unitario, sobreprecio: it.sobreprecio, es_regalo: it.es_regalo ? 1 : 0 })),
+        };
+    }
+    function pintarCupon(msg, ok) {
+        const box = $('cuponMsg');
+        box.textContent = msg || '';
+        box.style.color = ok ? 'var(--green, #15803d)' : (msg ? 'var(--danger)' : 'var(--muted)');
+    }
+    async function validarCupon() {
+        const datos = cuponDatos();
+        if (!datos.codigo) { state.cupon = null; pintarCupon(''); recalc(); return; }
+        if (!datos.customer_id) { pintarCupon('Elige primero al cliente.'); return; }
+        if (!datos.items.length) { pintarCupon('Agrega productos para calcular el cupón.'); return; }
+        cuponFirma = JSON.stringify(datos);
+        try {
+            const r = await fetch(CUPON.url, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': CUPON.csrf }, body: JSON.stringify(datos) });
+            const j = await r.json();
+            if (!r.ok) { pintarCupon(j.message || 'No se pudo revisar el cupón.'); return; }
+            state.cupon = { codigo: datos.codigo, valido: !!j.valido, monto: +j.descuento || 0 };
+            pintarCupon(j.valido ? (j.descripcion + ' · descuento de ' + money(j.descuento)) : j.mensaje, j.valido);
+        } catch (e) { pintarCupon('No se pudo revisar el cupón.'); }
+        recalc();
+    }
+    // Si cambian cliente, renglones o descuento, el servidor vuelve a calcular el cupón.
+    function revisarCupon() {
+        if (!state.cupon || !state.cupon.codigo) return;
+        if (JSON.stringify(cuponDatos()) === cuponFirma) return;
+        clearTimeout(cuponTimer);
+        cuponTimer = setTimeout(validarCupon, 400);
+    }
+    $('cuponAplicar').addEventListener('click', () => {
+        const codigo = $('cupon_codigo').value.trim().toUpperCase();
+        $('cupon_codigo').value = codigo;
+        state.cupon = codigo ? { codigo, valido: false, monto: 0 } : null;
+        cuponFirma = '';
+        validarCupon();
+    });
+    $('cupon_codigo').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('cuponAplicar').click(); } });
+    $('cupon_codigo').addEventListener('input', () => {
+        if (!$('cupon_codigo').value.trim() && state.cupon) { state.cupon = null; pintarCupon(''); recalc(); }
+    });
 
     function addMonths(dateStr, m) {
         const base = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
@@ -719,7 +836,8 @@
         state.pagos.forEach((p, i) => { if (p.bloqueado) sumBloq += p.monto; else libres.push(i); });
         const restante = Math.round((contrato - sumBloq) * 100) / 100;
         if (libres.length) {
-            const cuota = Math.floor((restante / libres.length) * 100) / 100;
+            // Cuotas en pesos cerrados; el último libre se lleva lo que sobra.
+            const cuota = Math.floor(restante / libres.length);
             libres.forEach((idx, pos) => {
                 state.pagos[idx].monto = pos === libres.length - 1
                     ? Math.round((restante - cuota * (libres.length - 1)) * 100) / 100
@@ -727,7 +845,23 @@
                 if (state.pagos[idx].monto < 0) state.pagos[idx].monto = 0;
             });
         }
+        // Pesos cerrados: todos los centavos (también los de montos capturados
+        // a mano o por porcentaje) se juntan en el último pago. Igual que el servidor.
+        cerrarCentavos(state.pagos);
         state.pagos.forEach(p => { p.porcentaje = contrato > 0 ? Math.round(p.monto / contrato * 10000) / 100 : 0; });
+    }
+    function cerrarCentavos(pagos) {
+        if (pagos.length < 2) return;
+        let sobrante = 0;
+        pagos.forEach((p, i) => {
+            if (i === pagos.length - 1) return;
+            const c = Math.round((+p.monto || 0) * 100);
+            const cerrado = Math.floor(Math.max(0, c) / 100) * 100;
+            sobrante += c - cerrado;
+            p.monto = cerrado / 100;
+        });
+        const u = pagos[pagos.length - 1];
+        u.monto = (Math.round((+u.monto || 0) * 100) + sobrante) / 100;
     }
     function addPago() {
         const frecuencia = Math.max(1, parseInt(state.frecuenciaDias) || 30);
@@ -874,6 +1008,11 @@
         add('descuento_valor', num($('descuento_valor').value));
         add('envio', num($('envio').value));
         add('valor_a_cuenta', num($('valor_a_cuenta').value));
+        // Siempre se manda: vacío = se quitó el equipo a cuenta.
+        const cuenta = state.cuenta.filter(r => Object.values(r).some(v => String(v).trim() !== ''));
+        if (!cuenta.length) add('equipos_a_cuenta', '');
+        cuenta.forEach((r, i) => CAMPOS_CUENTA.forEach(([c]) => add(`equipos_a_cuenta[${i}][${c}]`, r[c])));
+        add('cupon_codigo', (state.cupon && state.cupon.codigo) || '');
         add('num_meses', $('modalidad').value === 'financiamiento' ? (parseInt(state.meses) || 0) : 0);
 
         state.items.forEach((it, i) => {
@@ -907,6 +1046,43 @@
         state.fichas.forEach((f, i) => add(`fichas[${i}]`, f.id));
     });
 
+    // ---------- Equipo a cuenta ----------
+    const CAMPOS_CUENTA = [['tipo', 'Tipo'], ['subtipo', 'Subtipo'], ['marca', 'Marca'], ['modelo', 'Modelo'], ['no_serie', 'Núm. de serie']];
+    function renderCuenta() {
+        const box = $('cuentaLista');
+        box.innerHTML = '';
+        if (!state.cuenta.length) {
+            box.innerHTML = '<p class="cot-cuenta-vacio">Si el cliente entrega equipo, agrégalo con su tipo, subtipo, marca y modelo.</p>';
+            return;
+        }
+        state.cuenta.forEach((r, i) => {
+            const fila = document.createElement('div');
+            fila.className = 'cot-cuenta-fila';
+            CAMPOS_CUENTA.forEach(([c, et]) => {
+                const inp = document.createElement('input');
+                inp.type = 'text'; inp.className = 'cot-input' + (c === 'no_serie' ? ' cot-cuenta-serie' : '');
+                inp.placeholder = et; inp.setAttribute('aria-label', et + ' del equipo a cuenta ' + (i + 1));
+                inp.value = r[c] || ''; inp.maxLength = 150;
+                if (c !== 'no_serie') inp.setAttribute('list', 'dlCuenta-' + c);
+                inp.addEventListener('input', () => { r[c] = inp.value; });
+                fila.appendChild(inp);
+            });
+            const q = document.createElement('button');
+            q.type = 'button'; q.className = 'cot-cuenta-quitar'; q.title = 'Quitar'; q.setAttribute('aria-label', 'Quitar equipo a cuenta ' + (i + 1));
+            q.textContent = '×';
+            q.addEventListener('click', () => { state.cuenta.splice(i, 1); renderCuenta(); });
+            fila.appendChild(q);
+            box.appendChild(fila);
+        });
+    }
+    $('cuentaAgregar').addEventListener('click', () => {
+        state.cuenta.push({ tipo: '', subtipo: '', marca: '', modelo: '', no_serie: '' });
+        renderCuenta();
+        const filas = $('cuentaLista').querySelectorAll('.cot-cuenta-fila');
+        filas[filas.length - 1]?.querySelector('input')?.focus();
+    });
+    renderCuenta();
+
     // Init
     $('congreso_id').value = INITIAL.congreso_id || '';
     // 0 es un valor válido ("sin garantía"): solo se cae a 6 si no viene nada.
@@ -918,7 +1094,12 @@
     $('descuento_tipo').value = INITIAL.descuento_tipo || 'porcentaje';
     $('descuento_valor').value = INITIAL.descuento_valor || 0;
     $('valor_a_cuenta').value = INITIAL.valor_a_cuenta || 0;
+    if (INITIAL.cupon_codigo) {
+        $('cupon_codigo').value = INITIAL.cupon_codigo;
+        state.cupon = { codigo: INITIAL.cupon_codigo, valido: false, monto: 0 };
+    }
     renderCliente(); renderItems(); renderFichas(); toggleModalidad();
+    if (state.cupon) validarCupon();
 
     if (PLAN_BLOQUEADO) {
         // Se ve el plan, pero no se edita: modalidad, meses y montos quedan

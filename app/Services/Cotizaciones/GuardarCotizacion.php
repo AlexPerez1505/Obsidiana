@@ -6,6 +6,7 @@ use App\Models\Cotizacion;
 use App\Models\User;
 use App\Models\Venta;
 use App\Services\CalculadoraCotizacion;
+use App\Services\Promociones\MotorDeCupones;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -19,8 +20,10 @@ use Illuminate\Validation\Rule;
  */
 class GuardarCotizacion
 {
-    public function __construct(private readonly CalculadoraCotizacion $calc)
-    {
+    public function __construct(
+        private readonly CalculadoraCotizacion $calc,
+        private readonly MotorDeCupones $cupones,
+    ) {
     }
 
     public function reglas(): array
@@ -38,6 +41,8 @@ class GuardarCotizacion
             'plan_nombre' => ['nullable', 'string', 'max:255'],
             'num_meses' => ['nullable', 'integer', 'min:0', 'max:60'],
             'garantia_meses' => ['nullable', 'integer', Rule::in(Venta::GARANTIAS)],
+            // Solo el código: el descuento lo calcula el servidor (MotorDeCupones).
+            'cupon_codigo' => ['nullable', 'string', 'max:40'],
 
             'items' => ['required', 'array', 'min:1'],
             'items.*.tipo_item' => ['required', 'in:equipo,paquete,producto'],
@@ -62,7 +67,7 @@ class GuardarCotizacion
 
             'fichas' => ['nullable', 'array'],
             'fichas.*' => ['integer', 'exists:fichas_tecnicas,id'],
-        ];
+        ] + \App\Support\EquiposACuenta::reglas();
     }
 
     /**
@@ -82,6 +87,10 @@ class GuardarCotizacion
     public function crear(array $data, User $vendedor): Cotizacion
     {
         return DB::transaction(function () use ($data, $vendedor) {
+            // Primero el cupón: bloquea su fila hasta que esta cotización se guarde.
+            $prep = $this->cupones->prepararDocumento($data);
+            $data['_cupon_monto'] = $prep['resultado']->descuento ?? 0;
+
             $cot = new Cotizacion();
             $cot->folio = Cotizacion::siguienteFolio();
             $cot->seller_id = $vendedor->id;
@@ -92,14 +101,25 @@ class GuardarCotizacion
             $this->guardarPagos($cot, $data);
             $this->guardarFichas($cot, $data['fichas'] ?? []);
 
-            return $cot;
+            // Reserva el uso del cupón (o nada si no trae).
+            $this->cupones->vincularCotizacion($cot, $prep, $data['_destinatario'] ?? null);
+
+            return $cot->refresh();
         });
     }
 
     /** Reemplaza cabecera, renglones, plan y fichas; folio y vendedor se conservan. */
     public function actualizar(Cotizacion $cotizacion, array $data): Cotizacion
     {
+        // Quien no manda el campo (p. ej. la API) no quita el cupón que ya tenía.
+        if (! array_key_exists('cupon_codigo', $data)) {
+            $data['cupon_codigo'] = $cotizacion->cupon_codigo;
+        }
+
         DB::transaction(function () use ($cotizacion, $data) {
+            $prep = $this->cupones->prepararDocumento($data, ['cotizacion_id' => $cotizacion->id]);
+            $data['_cupon_monto'] = $prep['resultado']->descuento ?? 0;
+
             $this->llenarDesde($cotizacion, $data);
             $cotizacion->save();
 
@@ -108,6 +128,8 @@ class GuardarCotizacion
             $this->guardarItems($cotizacion, $data['items']);
             $this->guardarPagos($cotizacion, $data);
             $cotizacion->fichas()->sync($data['fichas'] ?? []);
+
+            $this->cupones->vincularCotizacion($cotizacion, $prep);
         });
 
         return $cotizacion;
@@ -136,6 +158,7 @@ class GuardarCotizacion
             (float) ($data['envio'] ?? 0),
             (bool) ($data['aplica_iva'] ?? false),
             (float) ($data['valor_a_cuenta'] ?? 0),
+            (float) ($data['_cupon_monto'] ?? 0),
         );
     }
 
@@ -191,6 +214,10 @@ class GuardarCotizacion
         $cot->envio = $envio;
         $cot->iva_monto = $d['iva'];
         $cot->valor_a_cuenta = $valorACuenta;
+        // Qué equipo entrega el cliente a cuenta (solo si se mandó: la API puede no traerlo).
+        if (array_key_exists('equipos_a_cuenta', $data)) {
+            $cot->equipos_a_cuenta = \App\Support\EquiposACuenta::limpiar($data['equipos_a_cuenta']) ?: null;
+        }
         $cot->total = $d['total'];
         $cot->total_contrato = $d['total_contrato'];
         $cot->plan_nombre = $data['modalidad'] === 'financiamiento' ? ($data['plan_nombre'] ?? 'Plan Personalizado') : null;

@@ -56,6 +56,38 @@
                          color:var(--primary); font-size:11.5px; font-weight:600; cursor:pointer; white-space:nowrap; }
         .ver-evidencia:hover { text-decoration:underline; }
 
+        /* ===================== Agrupado por tipo ===================== */
+        .tipo-chips { display:flex; gap:6px; flex-wrap:wrap; margin:-6px 0 14px; }
+        .tipo-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border:1px solid var(--border); border-radius:999px;
+                     background:var(--surface); color:var(--text); font-size:12.5px; font-weight:600; text-decoration:none; }
+        .tipo-chip span { color:var(--muted); font-weight:500; }
+        .tipo-chip.on { background:var(--primary); border-color:var(--primary); color:#fff; }
+        .tipo-chip.on span { color:#fff; opacity:.8; }
+        .grupo-fila td { background:var(--surface-2); padding:9px 12px !important; cursor:pointer; user-select:none; }
+        .grupo-cab { display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+        .grupo-cab .n { font-weight:600; color:var(--muted); letter-spacing:0; text-transform:none; }
+        .grupo-cab svg { width:14px; height:14px; transition:transform .18s ease; }
+        .grupo-cerrado .grupo-cab svg { transform:rotate(-90deg); }
+        .grupo-titulo-cards { grid-column:1 / -1; margin:8px 0 -2px; font-size:12.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+
+        /* ===================== Paquetes con su contenido ===================== */
+        .paq-sec > summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px; }
+        .paq-sec > summary::-webkit-details-marker { display:none; }
+        .paq-sec > summary h3 { margin:0; font-size:15px; font-weight:650; flex:1; }
+        .paq-sec > summary .flecha { width:16px; height:16px; transition:transform .18s ease; color:var(--muted); }
+        .paq-sec[open] > summary .flecha { transform:rotate(180deg); }
+        .paq-grupo { margin-top:14px; }
+        .paq-grupo-t { font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin:0 0 8px; }
+        .paq-lista { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px; }
+        .paq-item { border:1px solid var(--border); border-radius:10px; background:var(--surface); }
+        .paq-item > summary { list-style:none; cursor:pointer; padding:11px 13px; display:flex; align-items:center; gap:10px; }
+        .paq-item > summary::-webkit-details-marker { display:none; }
+        .paq-item > summary b { flex:1; min-width:0; font-size:13.5px; }
+        .paq-item > summary small { color:var(--muted); font-size:12px; white-space:nowrap; }
+        .paq-item ul { margin:0; padding:0 13px 12px 30px; font-size:12.5px; line-height:1.65; color:var(--muted); }
+        .paq-item ul b { color:var(--text); }
+        @media (prefers-reduced-motion: reduce) { .grupo-cab svg, .paq-sec > summary .flecha { transition:none; } }
+
     </style>
 @endpush
 
@@ -94,6 +126,13 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"/></svg>
             Paquetes
         </a>
+        {{-- Etiquetas de todas las piezas de los productos marcados, de un jalón. --}}
+        <button type="button" id="btn-etiquetas" class="btn btn--ghost" disabled
+                style="display:inline-flex; align-items:center; gap:7px; opacity:.5; cursor:not-allowed;"
+                onclick="imprimirEtiquetas()" title="Marca productos con la casilla para imprimir sus etiquetas">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Imprimir etiquetas (<span id="contador-etiquetas">0</span>)
+        </button>
         <button type="button" id="btn-agrupar-paquete" class="btn" disabled
                 style="display:inline-flex; align-items:center; gap:7px; opacity:.5; cursor:not-allowed;"
                 onclick="agruparEnPaquete()">
@@ -108,12 +147,66 @@
         @endcan
     </div>
 
+    @php
+        $tipoSel = $filters['tipo'] ?? '';
+        $base = array_filter(['search' => $filters['search'] ?? null, 'ubicacion' => $filters['ubicacion'] ?? null]);
+    @endphp
+    @if ($porTipo->count() > 1 || $tipoSel !== '')
+        <nav class="tipo-chips" aria-label="Filtrar por tipo">
+            <a href="{{ route('inventory.productos.index', $base) }}" class="tipo-chip {{ $tipoSel === '' ? 'on' : '' }}">Todos <span>{{ $porTipo->sum() }}</span></a>
+            @foreach ($porTipo as $t => $n)
+                <a href="{{ route('inventory.productos.index', $base + ['tipo' => $t]) }}" class="tipo-chip {{ $tipoSel === $t ? 'on' : '' }}">{{ $t }} <span>{{ $n }}</span></a>
+            @endforeach
+        </nav>
+    @endif
+
+    {{-- Paquetes agrupados por el tipo que más traen; cada uno se abre y
+         dice qué contiene. --}}
+    @if ($paquetesPorTipo->isNotEmpty())
+        <x-ui.card style="margin-bottom:16px;">
+            <details class="paq-sec" @if (! request()->has('page')) open @endif>
+                <summary>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"/></svg>
+                    <h3>Paquetes <span class="muted" style="font-weight:500; font-size:13px;">{{ $paquetesPorTipo->flatten()->count() }}</span></h3>
+                    <a href="{{ route('inventory.paquetes.index') }}" class="tbl-link" onclick="event.stopPropagation();" style="font-size:13px;">Administrar</a>
+                    <svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                @foreach ($paquetesPorTipo as $tipoPaq => $lista)
+                    <div class="paq-grupo">
+                        <p class="paq-grupo-t">{{ $tipoPaq }} · {{ $lista->count() }}</p>
+                        <div class="paq-lista">
+                            @foreach ($lista as $paq)
+                                @php $contenido = $paq->contenido(); @endphp
+                                <details class="paq-item">
+                                    <summary>
+                                        <b>{{ $paq->nombre }}</b>
+                                        <small>{{ count($contenido) }} {{ count($contenido) === 1 ? 'artículo' : 'artículos' }}</small>
+                                        @if (! $paq->activo)<span class="badge" style="font-size:11px;">Inactivo</span>@endif
+                                    </summary>
+                                    @if (empty($contenido))
+                                        <p class="muted" style="margin:0; padding:0 13px 12px; font-size:12.5px;">Sin productos.</p>
+                                    @else
+                                        <ul>
+                                            @foreach ($contenido as $l)
+                                                <li><b>{{ $l['cantidad'] }}×</b> {{ $l['nombre'] }}{{ $l['marca'] ? ' · '.$l['marca'] : '' }}{{ $l['modelo'] ? ' · '.$l['modelo'] : '' }}</li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
+                                </details>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            </details>
+        </x-ui.card>
+    @endif
+
     <x-ui.card>
         <div style="overflow-x:auto;" data-view-list>
             <table>
                 <thead>
                     <tr>
-                        <th style="width:36px;"></th>
+                        <th style="width:36px;"><input type="checkbox" id="sel-todos" aria-label="Marcar todos los productos de la página" style="width:16px; height:16px; cursor:pointer;" onclick="event.stopPropagation()"></th>
                         <th>Imagen</th>
                         <th>Producto</th>
                         <th>Modelo / Marca</th>
@@ -127,8 +220,23 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @php $tipoPrevio = null; @endphp
                     @forelse($productos as $producto)
-                        <tr class="producto-row" title="Ver unidades disponibles"
+                        @php $tipoFila = $producto->tipo_equipo ?: 'Sin tipo'; @endphp
+                        @if ($tipoFila !== $tipoPrevio)
+                            @php $tipoPrevio = $tipoFila; @endphp
+                            <tr class="grupo-fila" data-grupo-toggle="{{ $tipoFila }}" tabindex="0" aria-expanded="true">
+                                <td colspan="8">
+                                    <span class="grupo-cab">
+                                        <input type="checkbox" data-sel-grupo="{{ $tipoFila }}" aria-label="Marcar todo {{ $tipoFila }}"
+                                               style="width:15px; height:15px; cursor:pointer; margin:0 2px 0 0;" onclick="event.stopPropagation()">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
+                                        {{ $tipoFila }} <span class="n">{{ $porTipo[$tipoFila] ?? '' }} {{ ($porTipo[$tipoFila] ?? 0) === 1 ? 'producto' : 'productos' }}</span>
+                                    </span>
+                                </td>
+                            </tr>
+                        @endif
+                        <tr class="producto-row" data-grupo="{{ $tipoFila }}" title="Ver unidades disponibles"
                             onclick="if (!event.target.closest('.row-menu') && event.target.tagName !== 'INPUT') { document.getElementById('unidades-modal-{{ $producto->id }}').style.display='flex'; }">
                             <td onclick="event.stopPropagation();">
                                 <input type="checkbox" class="producto-checkbox" value="{{ $producto->id }}" onchange="actualizarSeleccionPaquete()" style="width:16px; height:16px; cursor:pointer;">
@@ -225,7 +333,13 @@
              Misma información que la tabla. Tocar la tarjeta abre las
              unidades disponibles, igual que la fila. --}}
         <div class="data-cards" data-view-cards style="display:none;">
+            @php $tipoPrevioC = null; @endphp
             @forelse ($productos as $producto)
+                @php $tipoCard = $producto->tipo_equipo ?: 'Sin tipo'; @endphp
+                @if ($tipoCard !== $tipoPrevioC)
+                    @php $tipoPrevioC = $tipoCard; @endphp
+                    <h3 class="grupo-titulo-cards">{{ $tipoCard }} · {{ $porTipo[$tipoCard] ?? '' }}</h3>
+                @endif
                 <article class="data-card prod-card" title="Ver unidades disponibles"
                          onclick="if (!event.target.closest('a, input, label')) { document.getElementById('unidades-modal-{{ $producto->id }}').style.display='flex'; }">
                     <div class="prod-card-foto">
@@ -401,6 +515,12 @@
 
             document.getElementById('contador-seleccionados').textContent = marcados.length;
 
+            const etq = document.getElementById('btn-etiquetas');
+            document.getElementById('contador-etiquetas').textContent = marcados.length;
+            etq.disabled = marcados.length === 0;
+            etq.style.opacity = marcados.length ? '1' : '.5';
+            etq.style.cursor = marcados.length ? 'pointer' : 'not-allowed';
+
             if (marcados.length > 0) {
                 boton.disabled = false;
                 boton.style.opacity = '1';
@@ -412,6 +532,12 @@
             }
         }
 
+        function imprimirEtiquetas() {
+            const ids = [...new Set(Array.from(document.querySelectorAll('.producto-checkbox:checked')).map(c => c.value))];
+            if (!ids.length) return;
+            window.open(@json(route('inventory.etiquetas.lote')) + '?' + ids.map(id => 'productos[]=' + encodeURIComponent(id)).join('&'), '_blank');
+        }
+
         function agruparEnPaquete() {
             const marcados = Array.from(document.querySelectorAll('.producto-checkbox:checked')).map(c => c.value);
 
@@ -420,6 +546,38 @@
             const params = marcados.map(id => 'productos[]=' + encodeURIComponent(id)).join('&');
             window.location.href = @json(route('inventory.paquetes.create')) + '?' + params;
         }
+
+        /* Tocar el encabezado de un tipo lo pliega o despliega. */
+        function alternarGrupo(cab) {
+            const abierto = cab.getAttribute('aria-expanded') !== 'false';
+            cab.setAttribute('aria-expanded', abierto ? 'false' : 'true');
+            cab.classList.toggle('grupo-cerrado', abierto);
+            document.querySelectorAll('tr[data-grupo]').forEach(function (tr) {
+                if (tr.dataset.grupo === cab.dataset.grupoToggle) tr.hidden = abierto;
+            });
+        }
+        document.addEventListener('click', function (e) {
+            if (e.target.matches('input')) return;
+            const cab = e.target.closest('[data-grupo-toggle]');
+            if (cab) alternarGrupo(cab);
+        });
+
+        /* Marcar todos / todo un tipo (para etiquetas o para un paquete). */
+        document.addEventListener('change', function (e) {
+            let casillas = null;
+            if (e.target.id === 'sel-todos') casillas = document.querySelectorAll('tr[data-grupo] .producto-checkbox');
+            if (e.target.dataset.selGrupo) casillas = document.querySelectorAll('tr[data-grupo="' + CSS.escape(e.target.dataset.selGrupo) + '"] .producto-checkbox');
+            if (!casillas) return;
+            casillas.forEach(c => { c.checked = e.target.checked; });
+            document.querySelectorAll('.prod-card-check input').forEach(c => {
+                c.checked = !!document.querySelector('.producto-checkbox[value="' + c.value + '"]:checked');
+            });
+            actualizarSeleccionPaquete();
+        });
+        document.addEventListener('keydown', function (e) {
+            const cab = e.target.closest && e.target.closest('[data-grupo-toggle]');
+            if (cab && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); alternarGrupo(cab); }
+        });
 
         /* ===================== Buscar dentro de las unidades =====================
            Cien piezas del mismo modelo salen todas en el modal: el buscador

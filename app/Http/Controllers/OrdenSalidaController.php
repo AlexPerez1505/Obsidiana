@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\OrdenSalida;
 use App\Models\OrdenSalidaEvidencia;
 use App\Models\OrdenSalidaItem;
+use App\Services\Almacen\AsignacionDeSalida;
 use App\Services\Almacen\EvidenciaDeSalida;
 use App\Services\Almacen\PreparacionDeSalida;
 use App\Services\Inventario\VideoPorPedazos;
@@ -32,7 +33,14 @@ class OrdenSalidaController extends Controller
     {
         $estado = array_key_exists($request->get('estado'), OrdenSalida::ESTADOS) ? $request->get('estado') : PreparacionDeSalida::ABIERTAS;
 
-        $ordenes = $this->salidas->filtrarPorEstado(OrdenSalida::with(['venta.customer', 'venta.seller', 'items']), $estado)
+        // "Asignadas a mí": lo abierto que me toca preparar.
+        $mias = $request->boolean('mias');
+        $consulta = OrdenSalida::with(['venta.customer', 'venta.seller', 'items', 'asignadaA']);
+        $consulta = $mias
+            ? $this->salidas->filtrarPorEstado($consulta, PreparacionDeSalida::ABIERTAS)->where('asignada_a', $request->user()->id)
+            : $this->salidas->filtrarPorEstado($consulta, $estado);
+
+        $ordenes = $consulta
             ->latest()
             ->paginate(20)
             ->withQueryString();
@@ -40,7 +48,10 @@ class OrdenSalidaController extends Controller
         return view('structure.gestion_Inventario.ordenes_salida.index', [
             'ordenes' => $ordenes,
             'estado' => $estado,
-            'conteos' => $this->salidas->conteos(),
+            'mias' => $mias,
+            'conteos' => $this->salidas->conteos() + [
+                'mias' => $this->salidas->filtrarPorEstado(OrdenSalida::query(), PreparacionDeSalida::ABIERTAS)->where('asignada_a', $request->user()->id)->count(),
+            ],
         ]);
     }
 
@@ -49,14 +60,28 @@ class OrdenSalidaController extends Controller
         // Las piezas de cada partida vienen con su congreso: si el equipo
         // se vendió en uno, no está en el almacén y no hay que buscarlo.
         $orden->load([
-            'venta.customer', 'venta.seller', 'preparadaPor', 'entregadaPor',
+            'venta.customer', 'venta.seller', 'preparadaPor', 'entregadaPor', 'asignadaA', 'asignadaPor',
             'items.ventaItem.seriales.congress', 'evidencias.subidoPor',
         ]);
+
+        $puedeAsignar = auth()->user()->can('salidas.asignar');
 
         return view('structure.gestion_Inventario.ordenes_salida.show', [
             'orden' => $orden,
             'puedePreparar' => auth()->user()->can('salidas.preparar'),
+            'puedeAsignar' => $puedeAsignar,
+            'preparadores' => $puedeAsignar ? app(AsignacionDeSalida::class)->candidatos() : collect(),
         ]);
+    }
+
+    /** Elige quién prepara el equipo; a esa persona le llega el aviso. */
+    public function asignar(Request $request, OrdenSalida $orden, AsignacionDeSalida $asignacion): RedirectResponse
+    {
+        $data = $request->validate(['user_id' => ['nullable', 'integer', 'exists:users,id']]);
+
+        $mensaje = $asignacion->asignar($orden, $data['user_id'] ?? null, $request->user());
+
+        return back()->with('status', $mensaje);
     }
 
     /**

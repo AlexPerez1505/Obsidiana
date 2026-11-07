@@ -2,7 +2,7 @@
 
 @section('title', 'Nuevo congreso')
 @section('page-title', 'Nuevo congreso')
-@section('page-sub', 'Gestión de Inventario > Congresos > Crear')
+@section('page-sub', 'Gestión Administrativa > Congresos > Crear')
 
 @section('content')
     @include('structure.gestion_Inventario.congresos._form', [

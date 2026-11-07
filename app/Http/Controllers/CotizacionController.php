@@ -99,8 +99,11 @@ class CotizacionController extends Controller
             ->with('status', "Cotización {$cotizacion->folio} actualizada.");
     }
 
-    public function destroy(Cotizacion $cotizacion): RedirectResponse
+    public function destroy(Request $request, Cotizacion $cotizacion): RedirectResponse
     {
+        // Pasadas 72 horas desde que se creó, pide el NIP.
+        \App\Support\EliminarConNip::exigir($cotizacion, $request->user(), $request->input('nip'));
+
         $folio = $cotizacion->folio;
         $cotizacion->delete();
 
@@ -194,6 +197,8 @@ class CotizacionController extends Controller
                 'marca' => $this->buscador->marcasDe($p),
                 'precio' => $p->precioCalculado(),
                 'imagen' => $p->imagen ? asset('storage/'.$p->imagen) : null,
+                // Lo que trae, para verlo antes de agregarlo y en el renglón.
+                'contenido' => $p->contenido(),
             ]);
 
         return response()->json($paquetes->concat($productos)->values());

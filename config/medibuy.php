@@ -66,20 +66,23 @@ return [
         ],
 
         // Sin IVA → Gabriela Díaz García (puede llevar varias cuentas).
+        // En estas cuentas se imprime el número de cuenta y no la tarjeta.
         'sin_iva' => [
             [
                 'nombre' => env('MB_BANCO_SIVA_A', ''),
                 'beneficiario' => env('MB_BANCO_SIVA_A_BENEFICIARIO', ''),
                 'cuenta' => env('MB_BANCO_SIVA_A_CUENTA', ''),
                 'clabe' => env('MB_BANCO_SIVA_A_CLABE', ''),
-                'tarjeta' => env('MB_BANCO_SIVA_A_TARJETA', ''),
+                'sucursal' => env('MB_BANCO_SIVA_A_SUCURSAL', ''),
+                'tarjeta' => '',
             ],
             [
                 'nombre' => env('MB_BANCO_SIVA_B', ''),
                 'beneficiario' => env('MB_BANCO_SIVA_B_BENEFICIARIO', ''),
                 'cuenta' => env('MB_BANCO_SIVA_B_CUENTA', ''),
                 'clabe' => env('MB_BANCO_SIVA_B_CLABE', ''),
-                'tarjeta' => env('MB_BANCO_SIVA_B_TARJETA', ''),
+                'sucursal' => env('MB_BANCO_SIVA_B_SUCURSAL', ''),
+                'tarjeta' => '',
             ],
         ],
     ],
@@ -95,7 +98,8 @@ return [
         'La garantía del equipo es de 6 meses a partir de la fecha de entrega.',
         'Los precios pueden cambiar sin previo aviso. Los productos están sujetos a disponibilidad.',
         'Cualquier ajuste a las condiciones de pago deberá ser autorizado por escrito por la empresa.',
-        'En caso de requerir factura, el monto será más IVA. Para su emisión, será necesario que nos proporcione sus datos fiscales completos.',
+        // El texto real de esta línea lo arma el PDF según si el documento lleva IVA.
+        'Para emitir factura (IVA), será necesario que nos proporcione sus datos fiscales completos.',
     ],
 
 ];

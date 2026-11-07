@@ -17,6 +17,13 @@ Route::get('/', function () {
         : redirect()->route('login');
 })->name('home');
 
+// Corrector ortográfico (español de México) para todo lo que se escribe.
+Route::post('/_ortografia', function (\Illuminate\Http\Request $request, \App\Services\Ortografia\CorrectorOrtografico $corrector) {
+    $data = $request->validate(['texto' => ['required', 'string', 'max:'.\App\Services\Ortografia\CorrectorOrtografico::MAXIMO]]);
+
+    return response()->json($corrector->corregir($data['texto']));
+})->middleware(['auth', 'throttle:120,1'])->name('ortografia.corregir');
+
 // Consulta publica del cliente (QR del PDF), sin sesion
 // Tiempo real: las pantallas preguntan cada pocos segundos si algo cambió.
 // Es solo un número, así que va sin sesión ni cookies (no toca la base).
@@ -46,6 +53,9 @@ require __DIR__.'/web/cotizaciones.php';
 require __DIR__.'/web/ventas.php';
 require __DIR__.'/web/facturas.php';
 require __DIR__.'/web/commercial/solicitudes-web.php';
+
+// Marketing y promociones (campañas por WhatsApp, cupones, oferta pública y webhook)
+require __DIR__.'/web/promociones.php';
 
 // Inventario
 require __DIR__.'/web/inventory/inventory.php';

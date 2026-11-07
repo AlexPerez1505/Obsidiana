@@ -26,7 +26,7 @@ class Venta extends Model
         'folio', 'customer_id', 'congreso_id', 'seller_id', 'cotizacion_id',
         'lugar_propuesta', 'nota_cliente', 'modalidad', 'aplica_iva',
         'subtotal', 'descuento_tipo', 'descuento_valor', 'descuento_monto',
-        'envio', 'iva_monto', 'valor_a_cuenta', 'total', 'total_contrato',
+        'envio', 'iva_monto', 'valor_a_cuenta', 'equipos_a_cuenta', 'total', 'total_contrato',
         'plan_nombre', 'num_meses', 'garantia_meses', 'estado',
     ];
 
@@ -40,6 +40,7 @@ class Venta extends Model
             'envio' => 'decimal:2',
             'iva_monto' => 'decimal:2',
             'valor_a_cuenta' => 'decimal:2',
+            'equipos_a_cuenta' => 'array',
             'total' => 'decimal:2',
             'total_contrato' => 'decimal:2',
             'num_meses' => 'integer',
@@ -149,6 +150,24 @@ class Venta extends Model
         return $this->hasMany(VentaBitacora::class)->latest();
     }
 
+    /**
+     * Salió sin IVA pero después se le agregó a sus mensualidades
+     * (IvaEnMensualidades): se cobra con IVA aunque aplica_iva siga en falso.
+     */
+    public function ivaAgregadoDespues(): bool
+    {
+        return ! $this->aplica_iva && (float) $this->iva_monto > 0
+            && ($this->relationLoaded('pagos')
+                ? $this->pagos->contains(fn ($p) => (float) $p->iva_monto > 0)
+                : $this->pagos()->where('iva_monto', '>', 0)->exists());
+    }
+
+    /** ¿Se le cobra con IVA? Decide las cuentas bancarias y quién firma como vendedor. */
+    public function cobraConIva(): bool
+    {
+        return (bool) $this->aplica_iva || $this->ivaAgregadoDespues();
+    }
+
     // ===================== Saldos =====================
 
     public function totalCobrado(): float
@@ -220,7 +239,9 @@ class Venta extends Model
             'confirmada' => 'Confirmada',
             'facturada' => 'Facturada',
             'cancelada' => 'Cancelada',
-            default => 'Borrador',
+            // En la base sigue siendo "borrador"; se muestra "Registrada" porque
+            // la venta ya se hizo.
+            default => 'Registrada',
         };
     }
     /** Congreso donde se levanto. Nulo cuando no vino de un congreso. */

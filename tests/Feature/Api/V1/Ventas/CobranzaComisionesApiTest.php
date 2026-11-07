@@ -80,25 +80,28 @@ class CobranzaComisionesApiTest extends TestCase
     {
         $jefe = $this->usuarioApi(['comisiones.ver', 'comisiones.gestionar']);
         $asesor = $this->usuarioApi();
-        $asesor->forceFill(['porcentaje_comision' => 10])->save();
 
         $venta = $this->ventaFinanciada($asesor);
         $this->cobrar($venta, 2000);
 
+        // Reglas de config/comisiones.php: equipo que no es de endoscopia = 4 %
+        // sobre lo vendido (por omisión) → 4 % de 3,000.
         $res = $this->conToken($jefe)->getJson('/api/v1/comisiones?periodo='.now()->format('Y-m'))
             ->assertOk()
             ->assertJsonPath('data.0.user_id', $asesor->id)
             ->assertJsonPath('data.0.vendido', 3000)
             ->assertJsonPath('data.0.cobrado', 2000)
-            ->assertJsonPath('data.0.comision', 200)
-            ->assertJsonPath('data.0.pendiente', 200)
-            ->assertJsonPath('base', 'cobrado')
+            ->assertJsonPath('data.0.comision', 120)
+            ->assertJsonPath('data.0.comision_otros', 120)
+            ->assertJsonPath('data.0.pendiente', 120)
+            ->assertJsonPath('base', 'vendido')
             ->assertJsonPath('puede_gestionar', true);
 
         $this->assertSame(now()->format('Y-m'), $res->json('periodo'));
 
-        $this->conToken($jefe)->getJson('/api/v1/comisiones?base=vendido')
-            ->assertOk()->assertJsonPath('data.0.comision', 300);
+        // Sobre lo cobrado: la parte que entró (2,000 de 3,000).
+        $this->conToken($jefe)->getJson('/api/v1/comisiones?base=cobrado')
+            ->assertOk()->assertJsonPath('data.0.comision', 80);
     }
 
     public function test_porcentaje_y_pagos_de_comision(): void

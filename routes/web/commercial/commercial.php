@@ -73,7 +73,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-comercial/remisiones/{cotizacion}/pdf', [CotizacionController::class, 'descargarRemisionPdf'])
         ->middleware('can:cotizaciones.ver')->name('commercial.remisiones.pdf');
 
-    Route::get('/gestion-comercial/promociones', function () {
-        return view('structure.commercial_management.placeholder', ['titulo' => 'Promociones']);
-    })->name('commercial.promociones.index');
+    // La pantalla vieja (de relleno) ahora lleva al módulo Marketing y promociones.
+    Route::get('/gestion-comercial/promociones', fn () => redirect()->route('promociones.campanas.index'))
+        ->name('commercial.promociones.index');
 });

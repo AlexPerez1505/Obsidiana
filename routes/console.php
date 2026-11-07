@@ -8,9 +8,9 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Promociones: cada mañana revisa quién sigue esperando que se le pida
-// la confirmación (autorizado por el asesor, sin contestar todavía).
-Schedule::command('app:enviar-confirmaciones-promocion')->dailyAt('09:00');
+// Promociones: lanza las campañas programadas que ya tocan, libera las
+// reservas de cupón vencidas y cierra las campañas que terminaron.
+Schedule::command('promociones:despachar')->everyMinute()->withoutOverlapping();
 /*
 |--------------------------------------------------------------------------
 | Tareas programadas
