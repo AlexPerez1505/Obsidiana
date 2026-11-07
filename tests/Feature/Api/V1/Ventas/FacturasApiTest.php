@@ -15,7 +15,7 @@ class FacturasApiTest extends TestCase
 
     public function test_generar_un_borrador_desde_la_venta_copia_montos_y_la_marca_facturada(): void
     {
-        $yo = $this->usuarioApi(['facturacion.crear', 'facturacion.ver']);
+        $yo = $this->usuarioApi(['facturacion.crear', 'facturacion.ver', 'facturacion.eliminar']);
         $cliente = $this->cliente(['rfc' => 'XAXX010101000']);
         $venta = $this->ventaDe($yo, [
             'customer_id' => $cliente->id,
@@ -56,7 +56,7 @@ class FacturasApiTest extends TestCase
 
     public function test_listado_filtros_validacion_y_borrado(): void
     {
-        $yo = $this->usuarioApi(['facturacion.crear', 'facturacion.ver']);
+        $yo = $this->usuarioApi(['facturacion.crear', 'facturacion.ver', 'facturacion.eliminar']);
         $uno = $this->cliente(['nombre' => 'Hospital', 'apellido' => 'Central']);
         $dos = $this->cliente();
 

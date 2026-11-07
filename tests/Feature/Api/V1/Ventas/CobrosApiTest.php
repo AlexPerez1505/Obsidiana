@@ -19,7 +19,7 @@ class CobrosApiTest extends TestCase
     public function test_un_cobro_se_reparte_en_orden_sin_partirse(): void
     {
         Storage::fake('public');
-        $yo = $this->usuarioApi(['cobranza.registrar', 'cobranza.ver']);
+        $yo = $this->usuarioApi(['cobranza.registrar', 'cobranza.ver', 'cobranza.eliminar']);
         // Registrar cobros directo requiere NIP de aprobación (o ser administrador).
         $yo->setApprovalPin('1234');
         $venta = $this->ventaFinanciada($yo);
@@ -106,7 +106,7 @@ class CobrosApiTest extends TestCase
 
     public function test_cancelar_un_cobro_y_bajar_su_recibo(): void
     {
-        $yo = $this->usuarioApi(['cobranza.registrar', 'cobranza.ver']);
+        $yo = $this->usuarioApi(['cobranza.registrar', 'cobranza.ver', 'cobranza.eliminar']);
         // Registrar cobros directo requiere NIP de aprobación (o ser administrador).
         $yo->setApprovalPin('1234');
         $venta = $this->ventaFinanciada($yo);
@@ -133,7 +133,7 @@ class CobrosApiTest extends TestCase
 
     public function test_ajustes_al_plan_de_pagos(): void
     {
-        $yo = $this->usuarioApi(['cobranza.ajustar', 'cobranza.registrar']);
+        $yo = $this->usuarioApi(['cobranza.ajustar', 'cobranza.registrar', 'cobranza.eliminar']);
         // Registrar cobros directo requiere NIP de aprobación (o ser administrador).
         $yo->setApprovalPin('1234');
         $venta = $this->ventaFinanciada($yo);

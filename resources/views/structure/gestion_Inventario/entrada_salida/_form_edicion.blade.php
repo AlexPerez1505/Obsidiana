@@ -6,6 +6,8 @@
 @php
     $usado = $movimiento->condicion === 'usado';
     $checklist = $movimiento->checklist_recepcion ?? [];
+    $sinSerie = $movimiento->seriales->filter(fn ($pieza) => ! $pieza->vendido
+        && trim((string) $pieza->no_serie) === '')->count();
     // Los puntos se agrupan como se preguntaron al recibir.
     $grupos = collect($checklist)->groupBy(fn ($p, $llave) => \App\Support\ChecklistRecepcion::grupoDe($llave, $p), preserveKeys: true);
 @endphp
@@ -111,6 +113,15 @@
                     @endforeach
                 </x-ui.card>
             @endif
+        @endif
+
+        @if ($puedeEditarPiezas && $sinSerie > 0)
+            <x-ui.card style="margin-bottom:18px;">
+                <x-ui.section-title>Generar números de serie</x-ui.section-title>
+                <p class="campo-nota">Hay {{ $sinSerie }} pieza(s) sin serie. Se generarán series propias solo para las que faltan;
+                    no se modificarán las existentes ni las piezas vendidas. Este botón también guarda los cambios del formulario.</p>
+                <button type="submit" name="generar_series" value="1" class="btn btn--ghost">Generar series faltantes y guardar</button>
+            </x-ui.card>
         @endif
 
         <x-ui.card>

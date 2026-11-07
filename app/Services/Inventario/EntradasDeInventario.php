@@ -11,6 +11,9 @@ use App\Models\ProductoSerial;
 use App\Services\RutaDeProcesos;
 use App\Support\ChecklistRecepcion;
 use App\Support\PrecioVisible;
+use App\Support\GeneradorDeSeries;
+use App\Support\EdicionPropia;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -40,6 +43,8 @@ class EntradasDeInventario
 
     public const MENSAJES = [
         'unidades.required' => 'Registra cada pieza que llegó, con su propia evidencia.',
+        'unidades.*.no_serie.required' => 'Captura el número de serie de cada pieza para continuar.',
+        'unidades.*.no_serie.distinct' => 'Cada pieza debe tener un número de serie diferente.',
         'unidades.*.evidencias.required' => 'Cada pieza necesita al menos una foto de cómo llegó ella.',
         'unidades.*.evidencias.min' => 'Cada pieza necesita al menos una foto de cómo llegó ella.',
         'unidades.*.evidencias.max' => 'Puedes subir máximo 3 fotos por pieza.',
@@ -83,6 +88,9 @@ class EntradasDeInventario
             // de tamaño ni de formato de imagen.
             'imagen' => ['nullable', 'file', FotoPorPedazos::reglaArchivo()],
             'imagen_path' => ['nullable', 'string'],
+            'foto_compartida' => ['sometimes', 'boolean'],
+            'foto_compartida_paths' => ['required_if:foto_compartida,1', 'nullable', 'array', 'max:3'],
+            'foto_compartida_paths.*' => ['string'],
             // Opcionales. La caducidad solo aplica a equipo nuevo.
             'fecha_fabricacion' => ['nullable', 'date'],
             'fecha_caducidad' => ['nullable', 'date', 'after_or_equal:fecha_fabricacion'],
@@ -90,7 +98,7 @@ class EntradasDeInventario
 
             // Una fila por pieza, cada una con su propia evidencia.
             'unidades' => ['required', 'array', 'min:1'],
-            'unidades.*.no_serie' => ['nullable', 'string', 'max:255'],
+            'unidades.*.no_serie' => ['required', 'string', 'max:255', 'distinct:ignore_case'],
             // Las fotos llegan ya subidas por pedazos (fotos_paths, la
             // pantalla) o como archivos (evidencias, la API). Que cada pieza
             // traiga al menos una se revisa en registrar(), sumando las dos.
@@ -128,7 +136,30 @@ class EntradasDeInventario
         $usado = ($data['condicion'] ?? null) === 'usado';
         $disco = config('filesystems.fotos_disk', 'public');
 
+        foreach (array_values($data['unidades'] ?? []) as $i => $unidad) {
+            if (trim((string) ($unidad['no_serie'] ?? '')) === '') {
+                throw ValidationException::withMessages([
+                    "unidades.$i.no_serie" => 'Captura el número de serie de la pieza #'.($i + 1).' para continuar.',
+                ]);
+            }
+        }
+
         $data['condicion'] ??= 'nuevo';
+        $compartida = filter_var($data['foto_compartida'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $fotosCompartidas = [];
+        if ($compartida) {
+            $rutasCompartidas = (array) ($data['foto_compartida_paths'] ?? []);
+            if (count($rutasCompartidas) < 1 || count($rutasCompartidas) > 3) {
+                throw ValidationException::withMessages(['foto_compartida_paths' => 'Sube entre 1 y 3 fotos para todas las piezas.']);
+            }
+            foreach ($rutasCompartidas as $ruta) {
+                $resuelta = $this->fotos->resolver((string) $ruta, $disco);
+                if ($resuelta === null) {
+                    throw ValidationException::withMessages(['foto_compartida_paths' => 'Una foto compartida no se subió correctamente. Vuelve a subirla.']);
+                }
+                $fotosCompartidas[] = $resuelta;
+            }
+        }
 
         $data['checklist_recepcion'] = $usado ? ChecklistRecepcion::limpiar($request->input('checklist')) : null;
 
@@ -159,7 +190,7 @@ class EntradasDeInventario
 
         /*
         | Números de serie: cada pieza se queda con el que se le capturó a
-        | ella, en su posición, y la que se dejó vacía queda sin serie.
+        | ella, en su posición; todas deben tener un número de serie.
         |
         | Antes, si solo venía una serie se armaba una secuencia y se
         | repartía desde la pieza #1: capturar solo la de la pieza #3 se la
@@ -168,7 +199,7 @@ class EntradasDeInventario
         */
         $series = collect($data['unidades'])
             ->values()
-            ->map(fn (array $u) => trim((string) ($u['no_serie'] ?? '')) ?: null);
+            ->map(fn (array $u) => trim((string) ($u['no_serie'] ?? '')));
 
         // Los videos ya se subieron por pedazos antes de este submit: solo
         // se verifica que cada ruta sea de un video real y exista.
@@ -202,6 +233,9 @@ class EntradasDeInventario
 
         foreach (array_values($data['unidades']) as $i => $u) {
             $fotosPrevias[$i] = [];
+            if ($compartida) {
+                continue;
+            }
 
             foreach ((array) ($u['fotos_paths'] ?? []) as $ruta) {
                 $resuelta = $this->fotos->resolver(trim((string) $ruta), $disco);
@@ -237,11 +271,23 @@ class EntradasDeInventario
         | perder la evidencia ya subida.
         */
         $unidades = [];
+        $copiasCompartidas = [];
 
         foreach (array_keys($data['unidades']) as $posicion => $llave) {
+            if ($compartida) {
+                foreach ($fotosCompartidas as $fotoCompartida) {
+                    $copia = dirname($fotoCompartida).'/'.\Illuminate\Support\Str::uuid().'.'.pathinfo($fotoCompartida, PATHINFO_EXTENSION);
+                    if (! Storage::disk($disco)->copy($fotoCompartida, $copia)) {
+                        $this->borrarEvidencias($copiasCompartidas, $disco);
+                        throw ValidationException::withMessages(['foto_compartida_paths' => 'No se pudieron aplicar las fotos a todas las piezas. Intenta de nuevo.']);
+                    }
+                    $copiasCompartidas[] = $copia;
+                    $fotosPrevias[$posicion][] = $copia;
+                }
+            }
             $unidades[] = [
                 'no_serie' => $series->get($posicion),
-                'evidence_paths' => array_merge($fotosPrevias[$posicion], collect($request->file("unidades.$llave.evidencias") ?? [])
+                'evidence_paths' => array_merge($fotosPrevias[$posicion], collect($compartida ? [] : ($request->file("unidades.$llave.evidencias") ?? []))
                     ->map(fn ($archivo) => $archivo->store('productos/seriales', $disco))
                     ->all()),
                 'video_path' => $videos[$posicion],
@@ -250,7 +296,7 @@ class EntradasDeInventario
 
         // El producto queda marcado como serializado si alguna pieza traía
         // número de serie del fabricante.
-        $serializado = $series->filter()->isNotEmpty();
+        $serializado = $series->isNotEmpty();
 
         // La foto del catálogo ya subida por pedazos se conserva si algo
         // falla (igual que las de las piezas); la que llegó como archivo en
@@ -301,15 +347,15 @@ class EntradasDeInventario
                 // reintenta una vez contra la fila que ya quedó creada.
                 return $this->registrarEntrada($data, $unidades, $imagen, $firma, $serializado);
             }
-        } catch (QueryException $e) {
-            $this->borrarEvidencias($subidoAhora, $disco);
+        } catch (QueryException|ValidationException $e) {
+            $this->borrarEvidencias(array_merge($subidoAhora, $copiasCompartidas), $disco);
             $this->borrarEvidencias([$firma], $disco);
 
             if ($imagen && $imagenSubidaAhora) {
                 Storage::disk($disco)->delete($imagen);
             }
 
-            if (! $this->esErrorDeDuplicado($e)) {
+            if ($e instanceof ValidationException || ! $this->esErrorDeDuplicado($e)) {
                 throw $e;
             }
 
@@ -386,6 +432,35 @@ class EntradasDeInventario
         $movimiento->update($cambios);
     }
 
+    public function generarSeriesFaltantes(InventoryMovement $movimiento, User $usuario): int
+    {
+        abort_unless(EdicionPropia::puedeEditarMovimiento($usuario, $movimiento), 403);
+
+        return DB::transaction(function () use ($movimiento, $usuario) {
+            $producto = Producto::whereKey($movimiento->item_id)->lockForUpdate()->firstOrFail();
+            abort_unless($movimiento->item_type === InventoryMovement::ITEM_PRODUCT
+                && EdicionPropia::puedeEditarProducto($usuario, $producto), 403);
+
+            $piezas = $movimiento->seriales()->where('vendido', false)
+                ->where(fn ($q) => $q->whereNull('no_serie')->orWhereRaw("TRIM(no_serie) = ''"))
+                ->orderBy('id')->lockForUpdate()->get();
+            if ($piezas->isEmpty()) {
+                return 0;
+            }
+            abort_unless($piezas->every(fn ($pieza) => EdicionPropia::puedeEditarPieza($usuario, $pieza)), 403);
+
+            $prefijo = GeneradorDeSeries::prefijo($producto->equipment_type_id, $producto->subtype_id,
+                $producto->brand_id, $producto->equipment_model_id);
+            $series = GeneradorDeSeries::generar($prefijo, $piezas->count());
+            foreach ($piezas as $i => $pieza) {
+                $pieza->update(['no_serie' => $series[$i]]);
+            }
+            $producto->update(['es_serializado' => true]);
+
+            return $piezas->count();
+        });
+    }
+
     /**
      * Por qué no se puede borrar este movimiento, o null si sí se puede.
      *
@@ -440,6 +515,74 @@ class EntradasDeInventario
             ->when($tipo, fn ($q) => $q->where('movement_type', $tipo))
             ->when($desde, fn ($q) => $q->whereDate('movement_date', '>=', $desde))
             ->when($hasta, fn ($q) => $q->whereDate('movement_date', '<=', $hasta));
+    }
+
+    public function filtrarListado(Builder $query, array $filtros): Builder
+    {
+        $catalogo = array_filter(array_intersect_key($filtros, ProductosDeInventario::REGLAS_FILTROS_CATALOGO));
+        if ($catalogo) {
+            $query->where('item_type', InventoryMovement::ITEM_PRODUCT)
+                ->whereIn('item_id', Producto::where($catalogo)->select('id'));
+        }
+
+        if ($tipos = $filtros['movement_types'] ?? []) {
+            $query->where(function ($q) use ($tipos) {
+                foreach ($tipos as $tipo) {
+                    $q->orWhere(function ($tipoQuery) use ($tipo) {
+                        $tipoQuery->where('movement_type', $tipo === 'vendido' ? 'salida' : $tipo);
+                        if ($tipo === 'vendido') {
+                            $tipoQuery->whereNull('entregado_en');
+                        } elseif ($tipo === 'salida') {
+                            $tipoQuery->whereNotNull('entregado_en');
+                        }
+                    });
+                }
+            });
+        }
+
+        if ($estado = $filtros['estado'] ?? null) {
+            $query->where('movement_type', $estado);
+            if ($estado === 'salida') {
+                $query->whereNotNull('entregado_en');
+            }
+        }
+
+        if ($condiciones = $filtros['condiciones'] ?? []) {
+            $query->where(function ($q) use ($condiciones) {
+                $q->whereIn('condicion', $condiciones);
+                if (in_array('nuevo', $condiciones, true)) {
+                    $q->orWhereNull('condicion')->orWhere('condicion', '');
+                }
+            });
+        }
+        if ($almacenes = $filtros['almacenes'] ?? []) {
+            $query->where(function ($q) use ($almacenes) {
+                $q->whereIn('warehouse', $almacenes);
+                if (in_array('Sin almacén', $almacenes, true)) {
+                    $q->orWhereNull('warehouse')->orWhere('warehouse', '');
+                }
+            });
+        }
+        if ($quienes = $filtros['quienes'] ?? []) {
+            $query->where(function ($q) use ($quienes) {
+                $q->whereHas('creator', fn ($c) => $c->whereIn('name', $quienes));
+                if (in_array('Sin registrar', $quienes, true)) {
+                    $q->orWhereDoesntHave('creator')->orWhereHas('creator', fn ($c) => $c->where('name', ''));
+                }
+            });
+        }
+        $buscar = $filtros['search'] ?? '';
+        if ($buscar !== '') {
+            $query->where(function ($q) use ($buscar) {
+                $q->where('folio', 'like', "%{$buscar}%")
+                    ->orWhere('item_name', 'like', "%{$buscar}%")
+                    ->orWhere('warehouse', 'like', "%{$buscar}%")
+                    ->orWhereHas('creator', fn ($c) => $c->where('name', 'like', "%{$buscar}%"))
+                    ->orWhereHas('seriales', fn ($s) => $s->where('no_serie', 'like', "%{$buscar}%"));
+            });
+        }
+
+        return $query;
     }
 
     /**
@@ -542,6 +685,14 @@ class EntradasDeInventario
                 ->lockForUpdate()
                 ->first();
 
+            $series = collect($unidades)->pluck('no_serie');
+            if ($series->map(fn ($serie) => mb_strtolower($serie))->duplicates()->isNotEmpty()
+                || ($existente && $existente->seriales()->whereIn('no_serie', $series->all())->exists())) {
+                throw ValidationException::withMessages([
+                    'unidades' => 'Uno de esos números de serie ya existe para este producto o está repetido en la entrada. Corrígelo para continuar.',
+                ]);
+            }
+
             $stockAntes = $existente->stock ?? 0;
 
             if ($existente) {
@@ -579,25 +730,11 @@ class EntradasDeInventario
                 ]);
             }
 
+            // Ninguna pieza ni su evidencia se guarda sin su número de
+            // serie: los repetidos se rechazan antes de modificar el producto.
+            // Se conserva la lista de advertencias en la respuesta para
+            // mantener el mismo formato que esperan la pantalla y la API.
             $advertencias = [];
-
-            if ($serializado) {
-                // Ninguna pieza ni su evidencia se descarta por un serial
-                // repetido: solo se limpia el serial de esa pieza (queda
-                // "sin serie capturada") y se avisa, para no perder la
-                // captura de las demás.
-                $series = collect($unidades)->map(fn ($u) => $u['no_serie']);
-                $depurado = $this->depurarSeriesDuplicadas($producto->id, $series);
-
-                $unidades = collect($unidades)
-                    ->values()
-                    ->map(fn (array $u, int $i) => ['no_serie' => $depurado['series'][$i]] + $u)
-                    ->all();
-
-                if ($depurado['rechazadas']->isNotEmpty()) {
-                    $advertencias[] = 'Estos números de serie ya existían para este producto y se guardaron sin serie (la evidencia y la unidad sí se conservaron): '.$depurado['rechazadas']->implode(', ').'.';
-                }
-            }
 
             $movimiento = InventoryMovement::create([
                 'folio' => InventoryMovement::siguienteFolio(InventoryMovement::TYPE_ENTRY),
@@ -649,6 +786,10 @@ class EntradasDeInventario
                 foreach ($producto->seriales()->where('inventory_movement_id', $movimiento->id)->get() as $pieza) {
                     $servicio->definir($pieza, $ruta->all(), $motivos);
                 }
+            }
+
+            if ($data['condicion'] === 'usado') {
+                app(ChecklistConIa::class)->recordarAdicionales($data['equipment_model_id'] ?? null, $data['checklist_recepcion'] ?? []);
             }
 
             return [

@@ -8,12 +8,14 @@ use App\Services\Inventario\ChecklistConIa;
 use App\Services\Inventario\EntradasDeInventario;
 use App\Services\Inventario\FotoPorPedazos;
 use App\Services\Inventario\OperacionRechazada;
+use App\Services\Inventario\ProductosDeInventario;
 use App\Services\Inventario\VideoPorPedazos;
 use App\Support\ChecklistRecepcion;
 use App\Support\EdicionPropia;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -36,15 +38,38 @@ class InventoryMovementController extends Controller
 
     public function index(Request $request, EntradasDeInventario $entradas): View
     {
-        $query = InventoryMovement::query()->with('creator')->latest('movement_date')->latest('id');
+        $query = InventoryMovement::query()->with(['creator', 'seriales'])->latest('movement_date')->latest('id');
 
-        $entradas->filtrar($query, $request->get('tipo'), $request->get('desde'), $request->get('hasta'));
+        $filters = $request->validate(ProductosDeInventario::REGLAS_FILTROS_CATALOGO + [
+            'search' => ['nullable', 'string', 'max:255'],
+            'tipo' => ['nullable', 'in:entrada,salida,transferencia'],
+            'movement_types' => ['nullable', 'array', 'max:4'],
+            'movement_types.*' => ['in:entrada,vendido,salida,transferencia'],
+            'condiciones' => ['nullable', 'array', 'max:2'],
+            'condiciones.*' => ['in:nuevo,usado'],
+            'almacenes' => ['nullable', 'array', 'max:100'],
+            'almacenes.*' => ['string', 'max:255'],
+            'quienes' => ['nullable', 'array', 'max:100'],
+            'quienes.*' => ['string', 'max:255'],
+            'desde' => ['nullable', 'date_format:Y-m-d'],
+            'hasta' => ['nullable', 'date_format:Y-m-d'],
+            'estado' => ['nullable', 'in:entrada,salida'],
+        ]);
+        if (empty($filters['movement_types']) && ! empty($filters['tipo'])) {
+            $filters['movement_types'] = $filters['tipo'] === 'salida' ? ['vendido', 'salida'] : [$filters['tipo']];
+        }
+        $entradas->filtrar($query, null, $filters['desde'] ?? null, $filters['hasta'] ?? null);
+        $entradas->filtrarListado($query, $filters);
 
         $movements = $query->paginate(20)->withQueryString();
 
         return view('structure.gestion_Inventario.entrada_salida.index', [
             'movements' => $movements,
-            'filters' => $request->only('tipo', 'desde', 'hasta'),
+            'filters' => $filters,
+            'catalogo' => $this->catalogoEquipo(),
+            'opcionesAlmacenes' => InventoryMovement::selectRaw("COALESCE(NULLIF(warehouse, ''), 'Sin almacén') AS nombre")->distinct()->orderBy('nombre')->pluck('nombre'),
+            'opcionesQuienes' => InventoryMovement::leftJoin('users', 'users.id', '=', 'inventory_movements.created_by')
+                ->selectRaw("COALESCE(NULLIF(users.name, ''), 'Sin registrar') AS nombre")->distinct()->orderBy('nombre')->pluck('nombre'),
             'resumen' => $entradas->resumen(),
         ]);
     }
@@ -176,6 +201,12 @@ class InventoryMovementController extends Controller
         $movimiento->load(['creator', 'seriales.procesos']);
         $producto = $movimiento->producto();
 
+        $returnTo = $request->query('return_to');
+        $volverUrl = route('inventory.movimientos.index');
+        if (is_string($returnTo) && str_starts_with($returnTo, '/') && ! str_starts_with($returnTo, '//')) {
+            $volverUrl = url($returnTo);
+        }
+
         // Editar abre esta misma pantalla con el formulario arriba
         $editando = $request->boolean('editar')
             && EdicionPropia::puedeEditarMovimiento($request->user(), $movimiento);
@@ -187,6 +218,7 @@ class InventoryMovementController extends Controller
             'editando' => $editando,
             'estadosGenerales' => ChecklistRecepcion::ESTADOS,
             'puedeEditarPiezas' => $editando && $producto && EdicionPropia::puedeEditarProducto($request->user(), $producto),
+            'volverUrl' => $volverUrl,
         ]);
     }
 
@@ -208,12 +240,20 @@ class InventoryMovementController extends Controller
     {
         abort_unless(EdicionPropia::puedeEditarMovimiento($request->user(), $movimiento), 403, EdicionPropia::mensaje());
 
-        $data = $request->validate(EntradasDeInventario::reglasEdicion($movimiento), EntradasDeInventario::MENSAJES);
+        $data = $request->validate(EntradasDeInventario::reglasEdicion($movimiento)
+            + ['generar_series' => ['sometimes', 'boolean']], EntradasDeInventario::MENSAJES);
 
-        $entradas->actualizar($movimiento, $data);
+        $generadas = DB::transaction(function () use ($request, $movimiento, $entradas, $data) {
+            $cantidad = $request->boolean('generar_series')
+                ? $entradas->generarSeriesFaltantes($movimiento, $request->user()) : 0;
+            $entradas->actualizar($movimiento, $data);
+
+            return $cantidad;
+        });
 
         return redirect()->route('inventory.movimientos.show', $movimiento)
-            ->with('status', "Entrada {$movimiento->folio} actualizada.");
+            ->with('status', "Entrada {$movimiento->folio} actualizada."
+                .($request->boolean('generar_series') ? " Series generadas: {$generadas}. Las existentes se conservaron." : ''));
     }
 
     /**

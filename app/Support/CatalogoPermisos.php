@@ -37,6 +37,10 @@ class CatalogoPermisos
                     'clientes.crear' => 'Registrar clientes nuevos',
                     'clientes.editar' => 'Editar datos de un cliente',
                     'clientes.eliminar' => 'Eliminar clientes',
+                    // Borra al cliente con TODO su historial (ventas,
+                    // cotizaciones, pagos, servicios, garantías). Solo se
+                    // presta para limpiar registros de prueba.
+                    'clientes.eliminar_definitivo' => 'Eliminar clientes con todo su historial',
                 ],
             ],
 
@@ -64,6 +68,7 @@ class CatalogoPermisos
                     'ventas.crear' => 'Registrar ventas',
                     'ventas.editar' => 'Editar ventas ya registradas',
                     'ventas.eliminar' => 'Eliminar ventas',
+                    'ventas.eliminar_definitivo' => 'Eliminar ventas con todo su historial',
                 ],
             ],
 
@@ -84,6 +89,7 @@ class CatalogoPermisos
                     'cobranza.registrar' => 'Registrar pagos y emitir recibos (además necesita NIP o ser administrador)',
                     'cobranza.comprobantes' => 'Subir comprobantes de pago y efectivo de sus ventas (quedan por aprobar)',
                     'cobranza.ajustar' => 'Mover fechas y montos del plan de pagos',
+                    'cobranza.eliminar' => 'Eliminar cobros y parcialidades',
                 ],
             ],
 
@@ -93,6 +99,7 @@ class CatalogoPermisos
                 'permisos' => [
                     'facturacion.ver' => 'Ver facturas',
                     'facturacion.crear' => 'Crear borradores de factura',
+                    'facturacion.eliminar' => 'Eliminar borradores de factura',
                 ],
             ],
 
@@ -106,6 +113,7 @@ class CatalogoPermisos
                     'inventario.eliminar' => 'Eliminar entradas y productos',
                     'inventario.escanear' => 'Usar la pistola lectora',
                     'inventario.catalogo' => 'Administrar el catálogo (tipos, marcas, modelos)',
+                    'inventario.catalogo_eliminar' => 'Eliminar categorías, tipos, subtipos, marcas y modelos',
                 ],
             ],
 
@@ -116,6 +124,7 @@ class CatalogoPermisos
                     'salidas.ver' => 'Ver las órdenes de salida',
                     'salidas.preparar' => 'Marcar preparado / emplayado y firmar la salida',
                     'salidas.asignar' => 'Asignar quién prepara el equipo vendido',
+                    'salidas.eliminar' => 'Eliminar evidencias de las órdenes de salida',
                 ],
             ],
 
@@ -131,6 +140,7 @@ class CatalogoPermisos
                     'rutas.eliminar' => 'Eliminar rutas',
                     'rutas.incidencias' => 'Ver y resolver las incidencias reportadas en ruta',
                     'rutas.flota' => 'Gestionar combustible, kilometraje y mantenimiento de los vehículos',
+                    'rutas.flota_eliminar' => 'Eliminar registros de combustible y mantenimiento de la flota',
                     'rutas.analytics' => 'Ver los indicadores de logística',
                     // Quien lo tiene recibe rutas y reporta su GPS y entregas
                     'rutas.chofer' => 'Ser chofer: ver sus rutas, reportar GPS y cerrar entregas',
@@ -143,7 +153,10 @@ class CatalogoPermisos
                 'permisos' => [
                     'asistencia.ver' => 'Ver el panel de asistencia, las checadas y los indicadores',
                     'asistencia.gestionar' => 'Horarios, festivos, incidencias del día, checadas manuales y anulaciones',
-                    'asistencia.biometria' => 'Administrar lectores y registrar o borrar huellas',
+                    'asistencia.biometria' => 'Administrar lectores y registrar huellas',
+                    'asistencia.eliminar' => 'Eliminar eventos, festivos e incidencias de asistencia',
+                    'asistencia.biometria_eliminar' => 'Eliminar huellas registradas',
+                    'asistencia.nomina_eliminar' => 'Eliminar conceptos y reglas de nómina',
                     // Aparte: incluye sueldos
                     'asistencia.nomina' => 'Ver la prenómina y editar sueldos',
                 ],
@@ -155,6 +168,7 @@ class CatalogoPermisos
                 'permisos' => [
                     'comisiones.ver' => 'Ver el ranking de asesores y sus comisiones',
                     'comisiones.gestionar' => 'Definir porcentajes y registrar pagos de comisión',
+                    'comisiones.eliminar' => 'Eliminar pagos de comisión',
                 ],
             ],
 
@@ -184,6 +198,7 @@ class CatalogoPermisos
                     'marketing.ver' => 'Entrar a Marketing',
                     'marketing.editar' => 'Editar contenido de Marketing',
                     'marketing.aprobar' => 'Aprobar flyers',
+                    'marketing.eliminar' => 'Eliminar tareas y eventos de Marketing',
                 ],
             ],
 
@@ -205,6 +220,7 @@ class CatalogoPermisos
                 'permisos' => [
                     'servicios.ver' => 'Ver historial de servicios',
                     'servicios.crear' => 'Crear órdenes de servicio',
+                    'servicios.eliminar' => 'Eliminar órdenes de servicio, cartas de garantía y refacciones',
                 ],
             ],
 
@@ -231,8 +247,13 @@ class CatalogoPermisos
                     'usuarios.editar' => 'Editar usuarios y asignarles roles',
                     'usuarios.eliminar' => 'Eliminar cuentas que no tienen historial (de prueba o que nunca se usaron)',
                     'roles.gestionar' => 'Crear roles y definir qué puede cada uno',
+                    'roles.eliminar' => 'Eliminar roles sin usuarios asignados',
+                    'agenda.eliminar' => 'Eliminar eventos de la agenda administrativa',
+                    'viaticos.ver' => 'Consultar viáticos, viajes y sus gastos',
+                    'viaticos.eliminar' => 'Eliminar viáticos y gastos de viajes',
                     'congresos.ver' => 'Ver congresos',
                     'congresos.editar' => 'Crear y editar congresos',
+                    'congresos.eliminar' => 'Eliminar congresos y retirar unidades o participantes',
                     'actividad.ver' => 'Ver la línea de tiempo de actividad de todos los usuarios',
                 ],
             ],

@@ -23,7 +23,7 @@ class CatalogoTest extends TestCase
 
     private function catalogo()
     {
-        return $this->conToken($this->usuarioApi(['inventario.catalogo']));
+        return $this->conToken($this->usuarioApi(['inventario.catalogo', 'inventario.catalogo_eliminar']));
     }
 
     public function test_categorias_crud_y_nombre_unico(): void
@@ -140,7 +140,7 @@ class CatalogoTest extends TestCase
 
         $this->conToken($this->usuarioApi(['inventario.ver']))->getJson('/api/v1/catalogo/categorias')->assertForbidden();
 
-        $llave = $this->conToken($this->usuarioApi(['inventario.catalogo']), ['inventario.ver'], TokenApi::TIPO_INTEGRACION);
+        $llave = $this->conToken($this->usuarioApi(['inventario.catalogo', 'inventario.catalogo_eliminar']), ['inventario.ver'], TokenApi::TIPO_INTEGRACION);
         $llave->getJson('/api/v1/catalogo/tipos')->assertForbidden();
     }
 

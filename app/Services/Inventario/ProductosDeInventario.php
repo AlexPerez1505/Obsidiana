@@ -40,7 +40,7 @@ class ProductosDeInventario
 
     public const REGLAS_AGREGAR_UNIDADES = [
         'cantidad' => ['required', 'integer', 'min:1'],
-        'series_texto' => ['nullable', 'string'],
+        'series_texto' => ['required', 'string'],
     ];
 
     /** Cuántas fotos de evidencia lleva cada pieza, como en la entrada. */
@@ -88,14 +88,26 @@ class ProductosDeInventario
         ];
     }
 
+    public const REGLAS_FILTROS_CATALOGO = [
+        'equipment_type_id' => ['nullable', 'integer', 'min:1'],
+        'subtype_id' => ['nullable', 'integer', 'min:1'],
+        'brand_id' => ['nullable', 'integer', 'min:1'],
+        'equipment_model_id' => ['nullable', 'integer', 'min:1'],
+    ];
+
     /**
      * Búsqueda del listado (tipo, marca, modelo o serie) y, si se pide, solo
      * lo que se llevaron a congresos: piezas que siguen contando como stock
      * (allá se pueden vender), pero que no están físicamente en el anaquel.
      */
-    public function filtrar(Builder $query, ?string $busqueda, ?string $ubicacion): Builder
+    public function filtrar(Builder $query, ?string $busqueda, ?string $ubicacion, array $catalogo = []): Builder
     {
-        if ($busqueda) {
+        foreach (array_keys(self::REGLAS_FILTROS_CATALOGO) as $campo) {
+            if (! empty($catalogo[$campo])) {
+                $query->where($campo, $catalogo[$campo]);
+            }
+        }
+        if ($busqueda !== null && $busqueda !== '') {
             $query->where(function ($q) use ($busqueda) {
                 $q->where('tipo_equipo', 'like', "%{$busqueda}%")
                     ->orWhere('subtipo', 'like', "%{$busqueda}%")
@@ -135,14 +147,7 @@ class ProductosDeInventario
      */
     public function registrar(array $data, ?string $seriesTexto, ?UploadedFile $imagen): array
     {
-        $series = $this->parsearSeries($seriesTexto ?? '');
-        $series = $this->autocompletarSecuencia($series, (int) $data['stock']);
-
-        if ($series->isNotEmpty() && $series->count() !== (int) $data['stock']) {
-            throw ValidationException::withMessages([
-                'series_texto' => 'Capturaste '.$series->count()." número(s) de serie, pero el stock dice {$data['stock']}. Deben coincidir, o deja el campo vacío si no vas a registrar series.",
-            ]);
-        }
+        $series = $this->seriesObligatorias($seriesTexto, (int) $data['stock']);
 
         if ($imagen) {
             $data['imagen_path'] = $imagen->store('productos', 'public');
@@ -204,14 +209,7 @@ class ProductosDeInventario
      */
     public function agregarUnidades(Producto $producto, int $cantidad, ?string $seriesTexto): void
     {
-        $series = $this->parsearSeries($seriesTexto ?? '');
-        $series = $this->autocompletarSecuencia($series, $cantidad);
-
-        if ($series->isNotEmpty() && $series->count() !== $cantidad) {
-            throw ValidationException::withMessages([
-                'series_texto' => 'Capturaste '.$series->count()." número(s) de serie, pero la cantidad dice {$cantidad}. Deben coincidir, o deja el campo vacío.",
-            ]);
-        }
+        $series = $this->seriesObligatorias($seriesTexto, $cantidad);
 
         try {
             $producto->agregarUnidades($cantidad, $series->all());
@@ -470,6 +468,24 @@ class ProductosDeInventario
         return array_merge($options, [
             'subtypes_by_type' => $subtypesByType,
         ]);
+    }
+
+    private function seriesObligatorias(?string $texto, int $cantidad): Collection
+    {
+        $series = $this->autocompletarSecuencia($this->parsearSeries($texto ?? ''), $cantidad);
+
+        if ($series->isEmpty()) {
+            throw ValidationException::withMessages([
+                'series_texto' => 'Captura los números de serie de las piezas para continuar.',
+            ]);
+        }
+        if ($series->count() !== $cantidad) {
+            throw ValidationException::withMessages([
+                'series_texto' => 'Capturaste '.$series->count()." número(s) de serie, pero la cantidad dice {$cantidad}. Cada pieza debe tener su número de serie.",
+            ]);
+        }
+
+        return $series;
     }
 
     /**

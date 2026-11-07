@@ -15,6 +15,7 @@
         const PREVIO = @json(old('checklist') ?: null);
         const URL_IA = @json(route('inventory.movimientos.checklistIa'));
         const PROCESOS = @json(\App\Models\PiezaProceso::PROCESOS);
+        const MAX_PUNTOS = @json(\App\Support\ChecklistRecepcion::MAX_PUNTOS);
 
         const origen = form.querySelector('[data-chk-origen-texto]');
         const btnRegenerar = form.querySelector('[data-chk-regenerar]');
@@ -29,7 +30,7 @@
             const salida = [];
             Object.values(grupos || {}).forEach(function (g) {
                 Object.entries(g.puntos || {}).forEach(function ([llave, p]) {
-                    salida.push({ llave, texto: p.texto, manda: p.manda || '', grupo: g.titulo, manual: false });
+                    salida.push({ llave, texto: p.texto, manda: p.manda || '', grupo: g.titulo, manual: llave.startsWith('manual_') });
                 });
             });
             return salida;
@@ -81,7 +82,7 @@
                     if (p.manda) div.dataset.manda = p.manda;
 
                     div.innerHTML = `
-                        <span class="txt">${escapar(p.texto)}${p.manual ? ' <button type="button" class="chk-quitar" title="Quitar este punto" aria-label="Quitar este punto">×</button>' : ''}</span>
+                        <span class="txt">${escapar(p.texto)}${p.manual ? ' <button type="button" class="chk-quitar" title="Quitar de esta entrada" aria-label="Quitar de esta entrada">×</button>' : ''}</span>
                         <span class="tri">
                             ${[['si', 'Sí'], ['no', 'No'], ['na', 'N/A']].map(([v, t]) => `
                                 <label><input type="radio" name="${n}[r]" value="${v}" ${previa.r === v ? 'checked' : ''}><span>${t}</span></label>
@@ -118,6 +119,15 @@
         function agregar() {
             const texto = (nuevoTexto.value || '').trim();
             if (!texto) { nuevoTexto.focus(); return; }
+            if (puntos.length >= MAX_PUNTOS) {
+                window.showToast?.(`El checklist admite hasta ${MAX_PUNTOS} puntos.`, 'err');
+                return;
+            }
+            if (puntos.some(p => p.texto.trim().replace(/\s+/g, ' ').toLocaleLowerCase() === texto.replace(/\s+/g, ' ').toLocaleLowerCase())) {
+                window.showToast?.('Ese punto ya está incluido en el checklist.', 'err');
+                nuevoTexto.focus();
+                return;
+            }
 
             let llave = 'manual_' + texto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
                 .replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 45);
@@ -148,10 +158,30 @@
                 .filter(Boolean).join(' · ');
         }
 
+        function consultaActual() {
+            return new URLSearchParams(Object.entries(equipoElegido()).filter(([, v]) => v)).toString();
+        }
+
         let ultimaConsulta = '';
         let pedido = 0;
+        let equipoDePuntos = consultaActual();
+
+        function sincronizarEquipo() {
+            const consulta = consultaActual();
+            if (consulta !== equipoDePuntos) {
+                equipoDePuntos = consulta;
+                ultimaConsulta = '';
+                pedido++;
+                puntos = desdeGrupos(GENERAL);
+                pintar({});
+                lista.classList.remove('cargando');
+                btnRegenerar.hidden = true;
+                origen.textContent = 'Elige el equipo para cargar su checklist. Las respuestas se capturan en cada entrada.';
+            }
+        }
 
         async function pedirChecklist(forzar = false) {
+            sincronizarEquipo();
             const equipo = equipoElegido();
 
             if (!equipo.equipment_type_id) {
@@ -175,12 +205,19 @@
                 if (este !== pedido) return; // ya se eligió otro equipo
 
                 const manuales = puntos.filter(p => p.manual);
-                puntos = desdeGrupos(data.grupos).concat(manuales);
+                const textos = new Set();
+                puntos = desdeGrupos(data.grupos).concat(manuales).filter(p => {
+                    const texto = p.texto.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+                    if (textos.has(texto)) return false;
+                    textos.add(texto);
+                    return true;
+                }).slice(0, MAX_PUNTOS);
                 pintar();
 
                 origen.textContent = data.ia
                     ? 'Checklist armado por IA para ' + nombreDelEquipo() + '. Agrega abajo lo que falte.'
                     : (data.aviso || 'Se muestra el checklist general.');
+                if (data.guardados) origen.textContent += ` Se cargaron ${data.guardados} punto(s) guardados para este modelo; contéstalos de nuevo.`;
             } catch (e) {
                 if (este !== pedido) return;
                 origen.textContent = 'No se pudo armar el checklist de este equipo. Se queda el que ya estaba.';
@@ -195,6 +232,7 @@
         // Los selects se llenan en cadena: se espera a que se asienten.
         let espera = null;
         function programar() {
+            sincronizarEquipo();
             clearTimeout(espera);
             espera = setTimeout(() => { if (esUsado()) pedirChecklist(); }, 500);
         }

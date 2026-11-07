@@ -10,6 +10,7 @@
     flechas, el teclado, las miniaturas o deslizando en el celular.
 --}}
 @once
+    @include('structure.gestion_Inventario._subir_fotos')
     <style>
         .gal-overlay { position:fixed; inset:0; z-index:1100; display:flex; align-items:center; justify-content:center;
                        padding:20px; background:rgba(8, 12, 20, .86); }
@@ -88,10 +89,42 @@
             return m.tipo === 'video' || SE_VEN.includes(extension(m.url));
         }
 
+        function esHeic(m) {
+            return m.tipo !== 'video' && ['heic', 'heif'].includes(extension(m.url));
+        }
+
+        function fotoHeic(m, destino, mini = false) {
+            const estado = document.createElement('span');
+            estado.className = mini ? 'gal-play' : 'gal-otro';
+            estado.textContent = mini ? 'HEIC' : 'Preparando vista previa…';
+            destino.replaceChildren(estado);
+            const tarea = window.ObsFotos?.vistaPrevia(m.url)
+                || Promise.reject(new Error('Vista previa no disponible.'));
+            tarea.then(function (url) {
+                if (destino.firstChild !== estado) return;
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = mini ? '' : 'Evidencia';
+                destino.replaceChildren(img);
+            }).catch(function () {
+                estado.textContent = mini ? 'HEIC' : 'No se pudo convertir esta foto para mostrarla en el navegador.';
+                if (!mini) {
+                    const enlace = document.createElement('a');
+                    enlace.href = m.url;
+                    enlace.download = '';
+                    enlace.className = 'btn';
+                    enlace.textContent = 'Descargar original';
+                    estado.appendChild(enlace);
+                }
+            });
+        }
+
         function pintar() {
             const m = medios[i];
             if (m.tipo === 'video') {
                 medioEl.innerHTML = '<video src="' + m.url + '" controls autoplay playsinline></video>';
+            } else if (esHeic(m)) {
+                fotoHeic(m, medioEl);
             } else if (seVe(m)) {
                 medioEl.innerHTML = '<img src="' + m.url + '" alt="Evidencia">';
             } else {
@@ -126,6 +159,7 @@
                     : (seVe(m)
                         ? '<img src="' + m.url + '" alt="" loading="lazy">'
                         : '<span class="gal-play" style="font-size:11px; font-weight:700;">' + extension(m.url).toUpperCase() + '</span>');
+                if (esHeic(m)) fotoHeic(m, b, true);
                 b.addEventListener('click', () => { i = j; pintar(); });
                 tira.appendChild(b);
             });

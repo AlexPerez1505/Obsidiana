@@ -1,6 +1,9 @@
-{{-- Una etiqueta de pieza (QR + código + equipo). La usan la hoja de una entrada y la impresión por lote. --}}
+{{-- Una etiqueta de pieza para la impresora térmica (51×25 mm): QR, serie, tipo y modelo.
+     La usan la hoja de una entrada y la impresión por lote, para que salgan iguales. --}}
 @php
-    $equipo = trim(collect([$pieza->producto?->tipo_equipo, $pieza->producto?->marca, $pieza->producto?->modelo])->filter()->implode(' '));
+    $serie = trim((string) $pieza->no_serie);
+    $tipo = trim((string) ($pieza->producto?->nombreVisible() ?: $pieza->producto?->tipo_equipo));
+    $modelo = trim((string) $pieza->producto?->modelo);
 @endphp
 <div class="etiqueta">
     <div class="qr">
@@ -9,9 +12,15 @@
              completo, del que el sistema saca el código. --}}
         {!! \App\Support\CodigoQr::svg($pieza->urlPublica() ?? $pieza->codigo, 150) !!}
     </div>
+
     <div class="txt">
-        <div class="cod">{{ $pieza->codigo }}</div>
-        @if ($equipo)<div class="eq">{{ $equipo }}</div>@endif
+        <div class="serie {{ mb_strlen($serie) > 18 ? 'serie-larga' : '' }}">{{ $serie !== '' ? $serie : 'Sin serie' }}</div>
+        @if ($tipo !== '')
+            <div class="modelo {{ mb_strlen($tipo) > 24 ? 'modelo-largo' : '' }}">{{ $tipo }}</div>
+        @else
+            <div class="cod">{{ $pieza->codigo }}</div>
+        @endif
+        @if ($modelo !== '')<div class="modelo {{ mb_strlen($modelo) > 24 ? 'modelo-largo' : '' }}">{{ $modelo }}</div>@endif
         <div class="em">{{ config('medibuy.empresa.nombre') }}</div>
     </div>
 </div>

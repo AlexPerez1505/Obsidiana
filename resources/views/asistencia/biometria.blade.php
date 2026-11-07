@@ -105,7 +105,7 @@
                     <div class="bm-dedos">
                         @foreach ($activas as $h)
                             <form method="POST" action="{{ route('asistencia.biometria.huellas.destroy', $h) }}" data-confirm="{{ $u->name }} tendrá que volver a registrar este dedo." data-confirm-title="Borrar huella" style="margin:0;">@csrf @method('DELETE')
-                                <span class="bm-dedo" title="Registrada {{ $h->registered_at?->format('d/m/Y') }}"><x-ui.icon name="fingerprint" :size="14" /> {{ $h->dedoLabel() }} <button type="submit" title="Borrar" aria-label="Borrar huella"><x-ui.icon name="x" :size="13" /></button></span>
+                                <span class="bm-dedo" title="Registrada {{ $h->registered_at?->format('d/m/Y') }}"><x-ui.icon name="fingerprint" :size="14" /> {{ $h->dedoLabel() }} @can('asistencia.biometria_eliminar')<button type="submit" title="Borrar" aria-label="Borrar huella"><x-ui.icon name="x" :size="13" /></button>@endcan</span>
                             </form>
                         @endforeach
                     </div>

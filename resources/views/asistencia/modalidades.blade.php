@@ -66,7 +66,7 @@
                             <div>Registró {{ $m->creador?->name ?? '—' }}</div>
                         </td>
                         <td data-label="" style="text-align:right;">
-                            @can('asistencia.gestionar')
+                            @can('asistencia.eliminar')
                                 <form method="POST" action="{{ route('asistencia.modalidades.destroy', $m) }}" data-confirm="Los días vuelven a evaluarse y pueden quedar como falta." data-confirm-title="Eliminar incidencia">@csrf @method('DELETE')
                                     <button class="btn btn--ghost" type="submit" style="padding:4px 10px;">Eliminar</button>
                                 </form>

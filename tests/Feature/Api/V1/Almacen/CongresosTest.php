@@ -51,7 +51,7 @@ class CongresosTest extends TestCase
 
     private function editor()
     {
-        return $this->conToken($this->usuarioApi(['congresos.ver', 'congresos.editar']));
+        return $this->conToken($this->usuarioApi(['congresos.ver', 'congresos.editar', 'congresos.eliminar']));
     }
 
     public function test_crear_con_piezas_y_usuarios_y_ver_el_detalle(): void
@@ -254,7 +254,7 @@ class CongresosTest extends TestCase
         $lector->deleteJson("/api/v1/congresos/{$congreso->id}")->assertForbidden();
         $lector->getJson('/api/v1/congresos/catalogos')->assertForbidden();
 
-        $llave = $this->conToken($this->usuarioApi(['congresos.ver', 'congresos.editar']), ['congresos.ver'], TokenApi::TIPO_INTEGRACION);
+        $llave = $this->conToken($this->usuarioApi(['congresos.ver', 'congresos.editar', 'congresos.eliminar']), ['congresos.ver'], TokenApi::TIPO_INTEGRACION);
         $llave->getJson('/api/v1/congresos')->assertOk();
         $llave->postJson("/api/v1/congresos/{$congreso->id}/regresar-todas")->assertForbidden();
 

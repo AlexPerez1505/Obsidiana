@@ -25,6 +25,31 @@ class User extends Authenticatable implements MustVerifyEmail
     /** Eliminado con historial: ya no existe para el sistema, pero lo que registró conserva su nombre. */
     public const STATUS_DELETED = 'deleted';
 
+    public function avatarUrl(): ?string
+    {
+        if (! $this->avatar) {
+            return null;
+        }
+
+        return preg_match('#^(https?://|/)#i', $this->avatar)
+            ? $this->avatar
+            : Storage::disk(config('filesystems.fotos_disk', 'public'))->url($this->avatar);
+    }
+
+    /**
+     * object-position del recorte circular: "x% y%" tomado de avatar_foco
+     * ("x,y" en porcentaje). Sin dato, se centra como siempre.
+     */
+    public function avatarFoco(): string
+    {
+        if (! $this->avatar_foco || ! preg_match('/^(\d{1,3}),(\d{1,3})$/', $this->avatar_foco, $m)
+            || $m[1] > 100 || $m[2] > 100) {
+            return '50% 50%';
+        }
+
+        return $m[1].'% '.$m[2].'%';
+    }
+
     protected static function booted(): void
     {
         // Sus tokens de la API (apps e integraciones) mueren con la cuenta.
@@ -481,13 +506,16 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function permisosEfectivos(): \Illuminate\Support\Collection
     {
-        return $this->memoPermisos ??= $this->permissions()->pluck('name')
+        return $this->memoPermisos ??= $this->permissions()->wherePivot('concedido', true)->pluck('name')
             ->merge(
                 // Un rol desactivado deja de otorgar: es la forma de quitarle
                 // el acceso a todo un grupo sin borrar el rol ni tocar a nadie.
                 $this->roles()->where('is_active', true)->with('permissions')->get()
                     ->flatMap(fn (Role $r) => $r->permissions->pluck('name'))
             )
+            // Y lo que se le quitó a él en concreto (concedido=0) no cuenta,
+            // aunque venga de un rol.
+            ->diff($this->permissions()->wherePivot('concedido', false)->pluck('name'))
             ->unique()
             ->values();
     }

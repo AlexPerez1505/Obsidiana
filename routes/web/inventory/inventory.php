@@ -40,7 +40,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::get('/{orden}', [OrdenSalidaController::class, 'show'])->name('show');
         Route::get('/{orden}/pdf', [OrdenSalidaController::class, 'pdf'])->name('pdf');
         // Quitar evidencia: quien la subió o quien prepara salidas (lo revisa el controlador).
-        Route::delete('/{orden}/evidencias/{evidencia}', [OrdenSalidaController::class, 'borrarEvidencia'])->name('evidencias.destroy');
+        Route::delete('/{orden}/evidencias/{evidencia}', [OrdenSalidaController::class, 'borrarEvidencia'])->middleware('can:salidas.eliminar')->name('evidencias.destroy');
 
         // Quién prepara: le llega el aviso por correo y en la campana.
         Route::post('/{orden}/asignar', [OrdenSalidaController::class, 'asignar'])

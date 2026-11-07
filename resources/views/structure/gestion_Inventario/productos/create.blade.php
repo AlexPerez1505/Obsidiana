@@ -27,11 +27,11 @@
                 @if (\App\Support\PrecioVisible::editable())
                     <x-ui.form-group label="Precio de venta" name="precio" type="number" step="0.01" min="0" placeholder="0.00" />
                 @endif
-                <x-ui.form-group label="Stock *" name="stock" type="number" min="0" placeholder="0" :required="true" />
+                <x-ui.form-group label="Stock *" name="stock" type="number" min="1" placeholder="1" :required="true" />
                 <x-ui.form-group label="Referencia" name="referencia" maxlength="120" placeholder="Ej. REF o número de parte (opcional)" />
             </div>
-            <x-ui.form-group label="Números de serie (uno por línea, opcional)" for="series_texto">
-                <textarea id="series_texto" name="series_texto" rows="3" placeholder="Un número de serie por unidad. Déjalo vacío si el stock no tiene serial individual."
+            <x-ui.form-group label="Números de serie * (uno por línea)" for="series_texto">
+                <textarea id="series_texto" name="series_texto" rows="3" required placeholder="Captura una serie por unidad o una serie base para generar la secuencia."
                           style="width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; font-size:15px; background:var(--surface); color:var(--text); resize:vertical;">{{ old('series_texto') }}</textarea>
                 <small style="color:var(--muted);">Si capturas todas las series, deben ser exactamente tantas líneas como el stock de arriba: cada línea es una unidad. Si solo pones una y el stock es mayor a 1, el resto de la secuencia se genera solo (ej. 23A12345 → 23A12346, 23A12347...).</small>
             </x-ui.form-group>
@@ -70,6 +70,15 @@
                 const seriesTextoInput = document.getElementById('series_texto');
                 const buscarPorModeloUrl = @json(route('inventory.productos.buscarPorModelo'));
 
+                if (seriesTextoInput) {
+                    const validarSeries = () => seriesTextoInput.setCustomValidity(
+                        seriesTextoInput.value.split(/[\r\n,]+/).some(serie => serie.trim() !== '')
+                            ? '' : 'Captura los números de serie para continuar.'
+                    );
+                    seriesTextoInput.addEventListener('input', validarSeries);
+                    validarSeries();
+                }
+
                 if (modeloSelect) {
                     modeloSelect.addEventListener('change', function () {
                         aviso.style.display = 'none';
@@ -94,6 +103,7 @@
 
                                 if (seriesTextoInput && !seriesTextoInput.value && data.no_serie_sugerido) {
                                     seriesTextoInput.value = data.no_serie_sugerido;
+                                    seriesTextoInput.dispatchEvent(new Event('input'));
                                     mensaje += ' El número de serie se sugirió como ' + data.no_serie_sugerido + ' (consecutivo del último registrado). Si el stock es mayor a 1, deja solo esa línea: el resto de la secuencia se genera solo. Puedes cambiarlo si no corresponde.';
                                 } else {
                                     mensaje += ' Revisa el stock y los números de serie antes de guardar.';

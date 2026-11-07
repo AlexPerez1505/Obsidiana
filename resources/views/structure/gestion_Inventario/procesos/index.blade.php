@@ -209,10 +209,12 @@
                     <article class="data-card f-row" @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
                         <div class="data-card-top">
                             <div style="min-width:0; flex:1;">
-                                <div class="t" style="font-family:ui-monospace,Consolas,monospace; font-size:13px;">{{ $pieza->codigo }}</div>
+                                {{-- Lo importante es la serie del fabricante; luego tipo-subtipo,
+                                     marca y modelo, y la etiqueta interna MB- en letra chica. --}}
+                                <div class="t" style="font-family:ui-monospace,Consolas,monospace; font-size:14px;">{{ $pieza->no_serie ?: 'Sin serie' }}</div>
                                 <div class="pr-eq-tipo">{{ $fila['tipo'] }}</div>
                                 <div class="s">{{ $fila['marca_modelo'] }}</div>
-                                <div class="s">Serie: <b class="pr-eq-serie">{{ $pieza->no_serie ?: 'Sin serie' }}</b></div>
+                                <div class="s" style="font-family:ui-monospace,Consolas,monospace;">{{ $pieza->codigo }}</div>
                             </div>
 
                             <span class="badge {{ $paso->estado === 'en_curso' ? 'badge--info' : '' }}">
@@ -241,7 +243,8 @@
                             </div>
                         </dl>
 
-                        <div class="data-card-foot">
+                        <div class="data-card-foot" style="align-items:center;">
+                            <span style="font-family:ui-monospace,Consolas,monospace; font-size:11px; color:var(--muted);">{{ $pieza->codigo }}</span>
                             <a href="{{ route('inventory.procesos.show', $paso) }}" class="btn">
                                 {{ $paso->estado === 'en_curso' ? 'Continuar' : 'Trabajar esta pieza' }}
                             </a>
@@ -283,7 +286,8 @@
             <div class="pr-listos">
             @foreach ($listas as $pieza)
                 <div class="pr-listo">
-                    <span style="font-family:ui-monospace,Consolas,monospace; font-weight:700; font-size:13px;">{{ $pieza->codigo }}</span>
+                    <span style="font-family:ui-monospace,Consolas,monospace; font-weight:700; font-size:13px;">{{ $pieza->no_serie ?: $pieza->codigo }}
+                        <span style="font-weight:400; font-size:11px; color:var(--muted);">{{ $pieza->codigo }}</span></span>
                     <span style="flex:1; min-width:0; color:var(--muted); font-size:13.5px;">
                         {{ trim(collect([$pieza->producto?->tipo_equipo, $pieza->producto?->marca, $pieza->producto?->modelo])->filter()->implode(' ')) ?: 'Equipo' }}
                     </span>

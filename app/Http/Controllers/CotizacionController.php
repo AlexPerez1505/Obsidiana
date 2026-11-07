@@ -53,6 +53,7 @@ class CotizacionController extends Controller
         return view('structure.commercial_management.cotizaciones.form', [
             'cotizacion' => null,
             'congresos' => Congress::orderBy('nombre')->get(),
+            'filtrosProductos' => $this->buscador->filtrosProductos(),
             'clientePre' => $request->filled('cliente')
                 ? Customer::find($request->integer('cliente'))
                 : null,
@@ -85,6 +86,7 @@ class CotizacionController extends Controller
         return view('structure.commercial_management.cotizaciones.form', [
             'cotizacion' => $cotizacion,
             'congresos' => Congress::orderBy('nombre')->get(),
+            'filtrosProductos' => $this->buscador->filtrosProductos(),
             'clientePre' => $cotizacion->customer,
         ]);
     }
@@ -157,8 +159,14 @@ class CotizacionController extends Controller
     public function buscarProductos(Request $request): JsonResponse
     {
         $q = trim($request->get('q', ''));
+        $filtros = $request->validate([
+            'equipment_type_id' => ['nullable', 'integer', 'min:1'],
+            'subtype_id' => ['nullable', 'integer', 'min:1'],
+            'brand_id' => ['nullable', 'integer', 'min:1'],
+            'equipment_model_id' => ['nullable', 'integer', 'min:1'],
+        ]);
 
-        $productos = $this->buscador->productos($q)
+        $productos = $this->buscador->productos($q, $filtros)
             ->map(fn (Producto $p) => [
                 'id' => $p->id,
                 'tipo_item' => 'producto',
@@ -188,7 +196,7 @@ class CotizacionController extends Controller
                 'ficha' => $p->fichaTecnica ? ['id' => $p->fichaTecnica->id, 'titulo' => $p->fichaTecnica->titulo] : null,
             ]);
 
-        $paquetes = $this->buscador->paquetes($q)
+        $paquetes = $this->buscador->paquetes($q, $filtros)
             ->map(fn (Paquete $p) => [
                 'id' => $p->id,
                 'tipo_item' => 'paquete',

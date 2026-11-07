@@ -36,7 +36,7 @@
         <span class="ev-cuando">{{ $cuando }}</span>
     </figcaption>
 
-    @if ($borrable)
+    @if ($borrable && auth()->user()->can('salidas.eliminar'))
         <button type="button" class="ev-quitar" data-borrar="{{ route('inventory.salidas.evidencias.destroy', [$orden, $evidencia]) }}"
                 title="Quitar {{ $esVideo ? 'este video' : 'esta foto' }}" aria-label="Quitar {{ $esVideo ? 'este video' : 'esta foto' }}">
             <x-ui.icon name="x" size="12"/>

@@ -78,7 +78,7 @@ class CobranzaComisionesApiTest extends TestCase
 
     public function test_comisiones_del_mes(): void
     {
-        $jefe = $this->usuarioApi(['comisiones.ver', 'comisiones.gestionar']);
+        $jefe = $this->usuarioApi(['comisiones.ver', 'comisiones.gestionar', 'comisiones.eliminar']);
         $asesor = $this->usuarioApi();
 
         $venta = $this->ventaFinanciada($asesor);
@@ -106,7 +106,7 @@ class CobranzaComisionesApiTest extends TestCase
 
     public function test_porcentaje_y_pagos_de_comision(): void
     {
-        $jefe = $this->usuarioApi(['comisiones.ver', 'comisiones.gestionar']);
+        $jefe = $this->usuarioApi(['comisiones.ver', 'comisiones.gestionar', 'comisiones.eliminar']);
         $soloVer = $this->usuarioApi(['comisiones.ver']);
         $asesor = $this->usuarioApi();
 

@@ -43,7 +43,11 @@ class ProductoController extends Controller
             ->orderByRaw("COALESCE(NULLIF(tipo_equipo, ''), 'ZZZ')")
             ->orderBy('subtipo')->orderBy('marca')->orderBy('modelo');
 
-        $this->productos->filtrar($query, $request->get('search'), $request->get('ubicacion'));
+        $filters = $request->validate(ProductosDeInventario::REGLAS_FILTROS_CATALOGO + [
+            'search' => ['nullable', 'string', 'max:255'],
+            'ubicacion' => ['nullable', 'in:congreso'],
+        ]);
+        $this->productos->filtrar($query, $filters['search'] ?? null, $filters['ubicacion'] ?? null, $filters);
 
         $tipo = trim((string) $request->get('tipo', ''));
         $porTipo = (clone $query)->reorder()->selectRaw("COALESCE(NULLIF(tipo_equipo, ''), 'Sin tipo') as tipo, COUNT(*) as n")
@@ -63,7 +67,8 @@ class ProductoController extends Controller
 
         return view('structure.gestion_Inventario.productos.index', [
             'productos' => $productos,
-            'filters' => $request->only('search', 'ubicacion', 'tipo'),
+            'filters' => $filters + ['tipo' => $tipo],
+            'catalogo' => $this->catalogoEquipo(),
             'enCongreso' => $this->productos->piezasEnCongreso(),
             'porTipo' => $porTipo,
             'paquetesPorTipo' => $paquetes,
@@ -119,6 +124,12 @@ class ProductoController extends Controller
             EdicionPropia::mensaje('editar')
         );
 
+        $returnTo = $request->query('return_to');
+        $volverUrl = route('inventory.productos.index');
+        if (is_string($returnTo) && str_starts_with($returnTo, '/') && ! str_starts_with($returnTo, '//')) {
+            $volverUrl = url($returnTo);
+        }
+
         return view('structure.gestion_Inventario.productos.edit', [
             'producto' => $producto,
             'seriales' => $seriales,
@@ -127,6 +138,7 @@ class ProductoController extends Controller
             'vencePlazo' => EdicionPropia::venceEn($user, $producto->created_by, $producto->created_at),
             'productoOptions' => $this->productos->opciones(),
             'catalogo' => $this->catalogoEquipo(),
+            'volverUrl' => $volverUrl,
         ]);
     }
 
@@ -257,15 +269,24 @@ class ProductoController extends Controller
      * Responde de un vistazo las tres preguntas de almacén: qué entró,
      * cuándo entró y cuánto hay hoy.
      */
-    public function show(Producto $producto): View
+    public function show(Request $request, Producto $producto): View
     {
         $kardex = $this->productos->kardex($producto);
+
+        // Solo aceptamos rutas internas relativas para evitar redirecciones
+        // externas. Si no viene de un contexto concreto, vuelve al catálogo.
+        $returnTo = $request->query('return_to');
+        $volverUrl = route('inventory.productos.index');
+        if (is_string($returnTo) && str_starts_with($returnTo, '/') && ! str_starts_with($returnTo, '//')) {
+            $volverUrl = url($returnTo);
+        }
 
         return view('structure.gestion_Inventario.productos.show', [
             'producto' => $producto,
             'piezas' => $kardex['piezas'],
             'movimientos' => $kardex['movimientos'],
             'conteos' => $kardex['conteos'],
+            'volverUrl' => $volverUrl,
         ]);
     }
 

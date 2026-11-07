@@ -89,5 +89,5 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
 
         return redirect()->route('gestion.servicios.refacciones.index')
             ->with('success', 'Refacción eliminada correctamente.');
-    })->name('gestion.servicios.refacciones.destroy');
+    })->middleware('can:servicios.eliminar')->name('gestion.servicios.refacciones.destroy');
 });

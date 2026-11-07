@@ -30,7 +30,7 @@ class FlotaIncidenciasApiTest extends TestCase
 
     public function test_combustible_calcula_rendimiento_y_se_puede_borrar(): void
     {
-        $user = $this->usuarioApi(['rutas.flota']);
+        $user = $this->usuarioApi(['rutas.flota', 'rutas.flota_eliminar']);
         $vehiculo = $this->vehiculo();
 
         $this->conToken($user)->post("/api/v1/flota/{$vehiculo->id}/combustible", [
@@ -70,7 +70,7 @@ class FlotaIncidenciasApiTest extends TestCase
 
     public function test_mantenimiento_genera_alertas_en_el_tablero(): void
     {
-        $user = $this->usuarioApi(['rutas.flota']);
+        $user = $this->usuarioApi(['rutas.flota', 'rutas.flota_eliminar']);
         $vehiculo = $this->vehiculo();
 
         $creado = $this->conToken($user)->postJson("/api/v1/flota/{$vehiculo->id}/mantenimiento", [

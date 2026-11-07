@@ -40,7 +40,7 @@ class NominaTest extends TestCase
 
     private function nomina(): static
     {
-        return $this->conToken($this->usuarioApi(['asistencia.nomina']));
+        return $this->conToken($this->usuarioApi(['asistencia.nomina', 'asistencia.nomina_eliminar']));
     }
 
     public function test_la_quincena_se_calcula_con_la_asistencia_y_las_reglas(): void

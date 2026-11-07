@@ -49,9 +49,11 @@
                 <div class="rh-acc-b"><div class="rh-acc-i"><div class="rh-acc-c">
                     @if ($r->description)<p class="rh-sub" style="margin:0 0 12px;">{{ $r->description }}</p>@endif
                     @include('nomina._regla_form', ['regla' => $r, 'fid' => $r->id, 'usuarios' => $usuarios, 'metricas' => $metricas, 'operadores' => $operadores, 'calculos' => $calculos])
+                    @can('asistencia.nomina_eliminar')
                     <form method="POST" action="{{ route('nomina.reglas.destroy', $r) }}" data-confirm="Las quincenas cerradas conservan lo que ya se aplicó." data-confirm-title="Eliminar regla" style="margin-top:12px;">@csrf @method('DELETE')
                         <button class="btn btn--ghost" type="submit" style="color:var(--danger);">Eliminar regla</button>
                     </form>
+                    @endcan
                 </div></div></div>
             </div>
         @empty

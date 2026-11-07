@@ -199,7 +199,7 @@
 
                 <div class="ed-botones">
                     <x-ui.button>Actualizar producto</x-ui.button>
-                    <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost">Cancelar</a>
+                    <a href="{{ $volverUrl }}" class="btn btn--ghost">Cancelar</a>
                 </div>
             </div>
             </div>
@@ -366,8 +366,8 @@
                 <div class="rgrid-2">
                     <x-ui.form-group label="Cantidad a agregar *" name="cantidad" type="number" min="1" placeholder="1" :required="true" />
                 </div>
-                <x-ui.form-group label="Números de serie (uno por línea, opcional)" for="series_texto">
-                    <textarea id="series_texto" name="series_texto" rows="3" placeholder="Una serie por pieza. Déjalo vacío si no tienen serie.">{{ old('series_texto') }}</textarea>
+                <x-ui.form-group label="Números de serie * (uno por línea)" for="series_texto">
+                    <textarea id="series_texto" name="series_texto" rows="3" required placeholder="Captura una serie por pieza o una serie base para generar la secuencia.">{{ old('series_texto') }}</textarea>
                     <small class="campo-nota">Si pones todas, deben ser tantas líneas como la cantidad. Si pones solo una y la cantidad es mayor, el resto sigue la secuencia (23A12345 → 23A12346…).</small>
                 </x-ui.form-group>
                 <x-ui.button type="submit">Agregar al inventario</x-ui.button>

@@ -26,9 +26,11 @@
                     'time_in' => $e->time_in ? substr($e->time_in, 0, 5) : '', 'time_out' => $e->time_out ? substr($e->time_out, 0, 5) : '',
                     'tolerance_minutes' => $e->tolerance_minutes, 'note' => $e->note,
                 ]) }}">Editar</button>
+        @can('asistencia.eliminar')
         <form method="POST" action="{{ route('asistencia.eventos.destroy', $e) }}" data-confirm="Los días ya pasados vuelven a evaluarse." data-confirm-title="Eliminar evento">@csrf @method('DELETE')
             <button class="btn btn--ghost" type="submit" style="padding:5px 10px;">Eliminar</button>
         </form>
+        @endcan
     </div>
 </div>
 @once

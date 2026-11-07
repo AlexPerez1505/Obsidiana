@@ -77,7 +77,7 @@
                     </a>
                 @endif
 
-                <a href="{{ route('inventory.movimientos.index') }}" class="btn-icono" title="Regresar" aria-label="Regresar">
+                <a href="{{ $volverUrl }}" class="btn-icono" title="Regresar" aria-label="Regresar">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
                 </a>
             </div>
@@ -88,7 +88,7 @@
                 <dt>Producto</dt>
                 <dd>
                     @if ($producto)
-                        <a href="{{ route('inventory.productos.show', $producto) }}" style="color:inherit;">{{ $movimiento->item_name }}</a>
+                        <a href="{{ route('inventory.productos.show', ['producto' => $producto, 'return_to' => route('inventory.movimientos.show', $movimiento, false)]) }}" style="color:inherit;">{{ $movimiento->item_name }}</a>
                     @else
                         {{ $movimiento->item_name }}
                     @endif
@@ -156,7 +156,12 @@
                         <button type="button" class="mv-u-portada" data-galeria data-indice="0"
                                 aria-label="Ver la evidencia de {{ $serial->no_serie ?: 'esta unidad' }}">
                             @if (count($fotos))
-                                <img src="{{ $fotos[0] }}" alt="" loading="lazy">
+                                @if (in_array(strtolower(pathinfo(parse_url($fotos[0], PHP_URL_PATH) ?? '', PATHINFO_EXTENSION)), ['heic', 'heif']))
+                                    <img data-foto-heic="{{ $fotos[0] }}" alt="Evidencia de la pieza" style="display:none;">
+                                    <span data-foto-estado style="display:block; padding:8px; font-size:11px;">Preparando foto…</span>
+                                @else
+                                    <img src="{{ $fotos[0] }}" alt="Evidencia de la pieza" loading="lazy">
+                                @endif
                             @else
                                 <span class="mv-u-solo-video" aria-hidden="true">
                                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -273,7 +278,7 @@
             @endif
 
             @if ($producto)
-                <a href="{{ route('inventory.productos.show', $producto) }}" class="mv-ficha">
+                <a href="{{ route('inventory.productos.show', ['producto' => $producto, 'return_to' => route('inventory.movimientos.show', $movimiento, false)]) }}" class="mv-ficha">
                     <span>Ver la ficha del producto y su historial</span>
                     <span aria-hidden="true">→</span>
                 </a>

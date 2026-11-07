@@ -8,6 +8,7 @@ use App\Services\Administracion\RolesYPermisos;
 use App\Support\CatalogoPermisos;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
@@ -29,6 +30,9 @@ class RolController extends Controller
 
         return view('structure.Configuracion.roles.index', [
             'roles' => $roles,
+            'usuarios' => \App\Models\User::where('is_admin', false)
+                ->whereDoesntHave('roles', fn ($query) => $query->where('name', \App\Models\User::ROL_ADMIN)->where('is_active', true))
+                ->orderBy('name')->get(['id', 'name']),
             'grupos' => CatalogoPermisos::grupos(),
         ]);
     }
@@ -62,12 +66,93 @@ class RolController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // La clave siempre se guarda en minúsculas: se acepta que la
+        // escriban en mayúsculas y aquí se normaliza antes de validar.
+        $request->merge(['name' => Str::lower(trim((string) $request->input('name')))]);
+
         $data = $request->validate(RolesYPermisos::reglasAlta(), RolesYPermisos::MENSAJES_ALTA);
 
         $role = $this->roles->crear($data);
 
         return redirect()->route('configuracion.roles.edit', $role)
             ->with('status', "Rol «{$role->label}» creado. Ahora elige qué puede hacer.");
+    }
+
+    /**
+     * Permisos de UNA cuenta dentro de un rol: se puede dar un permiso
+     * que el rol no tenga o quitarle uno que sí, sin tocar al rol.
+     */
+    public function editUsuario(Role $role, \App\Models\User $user): View
+    {
+        abort_unless($role->users()->where('users.id', $user->id)->exists(), 404, 'Esa cuenta no tiene este rol.');
+        abort_if($user->isAdmin(), 403, 'El administrador siempre tiene todo; no hay nada que ajustar.');
+
+        return view('structure.Configuracion.roles.usuario', [
+            'role' => $role->load('permissions'),
+            'usuario' => $user,
+            'grupos' => CatalogoPermisos::grupos(),
+            // Lo que el rol da como base y lo que se le ajustó a él.
+            'delRol' => $role->permissions->pluck('name')->all(),
+            'otorgados' => $user->permissions()->wherePivot('concedido', true)->pluck('name')->all(),
+            'quitados' => $user->permissions()->wherePivot('concedido', false)->pluck('name')->all(),
+        ]);
+    }
+
+    /** Guarda los ajustes individuales: lo que difiera del rol se anota en permission_user. */
+    public function updateUsuario(Request $request, Role $role, \App\Models\User $user): RedirectResponse
+    {
+        abort_unless($role->users()->where('users.id', $user->id)->exists(), 404, 'Esa cuenta no tiene este rol.');
+        abort_if($user->isAdmin(), 403, 'El administrador siempre tiene todo; no hay nada que ajustar.');
+
+        $data = $request->validate([
+            'otorgar' => ['nullable', 'array'],
+            'otorgar.*' => ['string'],
+            'quitar' => ['nullable', 'array'],
+            'quitar.*' => ['string'],
+        ]);
+
+        $catalogo = collect(CatalogoPermisos::grupos())->flatMap(fn ($g) => array_keys($g['permisos']))->all();
+        $otorgar = array_intersect($data['otorgar'] ?? [], $catalogo);
+        $quitar = array_intersect($data['quitar'] ?? [], $catalogo);
+
+        $delRol = $role->permissions->pluck('name')->all();
+        $ids = \Illuminate\Support\Facades\DB::table('permissions')->whereIn('name', $catalogo)->pluck('id', 'name');
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($user, $ids, $delRol, $otorgar, $quitar) {
+            // Regla clara: un ajuste solo puede vivir de un lado. Si el rol
+            // ya lo da, "otorgar" sobra; "quitar" solo vale si el rol lo da.
+            $ahora = now();
+            foreach ($catalogoConIds = $ids as $nombre => $id) {
+                $dar = in_array($nombre, $otorgar, true) && ! in_array($nombre, $delRol, true);
+                $no = in_array($nombre, $quitar, true) && in_array($nombre, $delRol, true);
+                if (! $dar && ! $no) {
+                    \Illuminate\Support\Facades\DB::table('permission_user')
+                        ->where('user_id', $user->id)->where('permission_id', $id)->delete();
+                    continue;
+                }
+                \Illuminate\Support\Facades\DB::table('permission_user')->updateOrInsert(
+                    ['user_id' => $user->id, 'permission_id' => $id],
+                    ['concedido' => $dar, 'updated_at' => $ahora, 'created_at' => $ahora]
+                );
+            }
+        });
+
+        return redirect()->route('configuracion.roles.usuario.edit', [$role, $user])
+            ->with('status', 'Permisos individuales de '.$user->name.' actualizados.');
+    }
+
+    /** Elimina las excepciones de la cuenta para que vuelva a heredar el rol. */
+    public function restablecerUsuario(Role $role, \App\Models\User $user): RedirectResponse
+    {
+        abort_unless($role->users()->where('users.id', $user->id)->exists(), 404, 'Esa cuenta no tiene este rol.');
+        abort_if($user->isAdmin(), 403, 'El administrador siempre tiene todo; no hay nada que ajustar.');
+
+        \Illuminate\Support\Facades\DB::table('permission_user')
+            ->where('user_id', $user->id)
+            ->delete();
+
+        return redirect()->route('configuracion.roles.usuario.edit', [$role, $user])
+            ->with('status', $user->name.' volvió a heredar todos los permisos de '.$role->label.'.');
     }
 
     /**

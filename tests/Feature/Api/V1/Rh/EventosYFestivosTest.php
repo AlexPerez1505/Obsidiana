@@ -26,7 +26,7 @@ class EventosYFestivosTest extends TestCase
     /** Un empleado que faltó el martes 13 (día ya cerrado) y la API de RH. */
     private function conFalta(): array
     {
-        $rh = $this->usuarioApi(['asistencia.gestionar']);
+        $rh = $this->usuarioApi(['asistencia.gestionar', 'asistencia.eliminar']);
         $emp = $this->empleado();
         $this->checada($this->empleado(), '2026-10-12 09:00:00');
         $api = $this->conToken($rh);
@@ -61,7 +61,7 @@ class EventosYFestivosTest extends TestCase
 
     public function test_horario_especial_pide_horas_y_seleccion_pide_personas(): void
     {
-        $rh = $this->usuarioApi(['asistencia.gestionar']);
+        $rh = $this->usuarioApi(['asistencia.gestionar', 'asistencia.eliminar']);
         $emp = $this->empleado();
         $api = $this->conToken($rh);
 
@@ -101,7 +101,7 @@ class EventosYFestivosTest extends TestCase
 
     public function test_cargar_los_festivos_oficiales_solo_agrega_los_que_faltan(): void
     {
-        $rh = $this->usuarioApi(['asistencia.gestionar']);
+        $rh = $this->usuarioApi(['asistencia.gestionar', 'asistencia.eliminar']);
         $api = $this->conToken($rh);
 
         $api->postJson('/api/v1/rh/festivos/oficiales', ['anio' => 2026])

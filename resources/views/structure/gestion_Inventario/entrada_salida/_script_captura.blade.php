@@ -6,6 +6,23 @@
 
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
         const cantidadInput = document.getElementById('cantidad');
+        const fotoCompartida = form.querySelector('[data-foto-compartida]');
+        const panelCompartido = form.querySelector('[data-foto-compartida-panel]');
+        const usaFotoCompartida = () => fotoCompartida.checked;
+        const hayFotoCompartida = () => usaFotoCompartida() && panelCompartido.querySelector('[data-foto-path]') !== null;
+
+        function sincronizarFotoCompartida() {
+            panelCompartido.hidden = !usaFotoCompartida();
+            form.querySelectorAll('[data-fotos-individuales]').forEach(zona => { zona.hidden = usaFotoCompartida(); });
+            form.querySelectorAll('.pieza-card').forEach(card => {
+                const n = card.querySelectorAll('[data-foto-path]').length;
+                const estado = card.querySelector('[data-estado]');
+                estado.textContent = usaFotoCompartida() ? (hayFotoCompartida() ? 'Fotos compartidas' : 'Faltan las fotos compartidas')
+                    : (n ? `${n} foto(s)` : 'Falta su foto');
+                estado.classList.toggle('listo', usaFotoCompartida() ? hayFotoCompartida() : n > 0);
+            });
+            actualizarResumen();
+        }
 
         const CHUNK_SIZE = 4 * 1024 * 1024;
         const EXTENSIONES_VIDEO = ['mp4', 'mov', 'm4v', 'webm'];
@@ -284,12 +301,12 @@
                     <span class="pieza-estado" data-estado>Falta su foto</span>
                 </div>
 
-                <input type="text" class="pieza-serie" name="unidades[${i}][no_serie]"
-                       placeholder="No. de serie del fabricante (opcional)"
+                <input type="text" class="pieza-serie" name="unidades[${i}][no_serie]" required maxlength="255" pattern=".*\\S.*"
+                       aria-label="Número de serie de la pieza #${i + 1}" placeholder="No. de serie del fabricante (obligatorio)"
                        value="${(previa.no_serie || '').replace(/"/g, '&quot;')}">
 
                 <div class="pieza-medios">
-                    <div>
+                    <div data-fotos-individuales>
                         <label class="soltar soltar--chico" data-zona-fotos>
                             <span class="ico">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -397,7 +414,7 @@
                 }
             }
 
-            actualizarResumen();
+            sincronizarFotoCompartida();
         };
 
         /* La serie sugerida por el servidor se reparte como secuencia. */
@@ -807,7 +824,7 @@
             let videos = 0;
 
             bloques.forEach(function (card) {
-                const cuantas = card.querySelectorAll('[data-foto-path]').length;
+                const cuantas = usaFotoCompartida() ? panelCompartido.querySelectorAll('[data-foto-path]').length : card.querySelectorAll('[data-foto-path]').length;
                 fotos += cuantas;
                 if (cuantas === 0) sinFoto++;
                 if (card.querySelector('[data-video-path]')?.value) videos++;
@@ -860,8 +877,16 @@
         });
 
         /* ===================== Arranque ===================== */
+        zonaDeFotos(form.querySelector('[data-foto-compartida-zona]'), form.querySelector('[data-foto-compartida-minis]'),
+            'foto_compartida_paths[]', {
+                max: MAX_FOTOS,
+                previas: @json(array_values((array) old('foto_compartida_paths', []))),
+                alCambiar: sincronizarFotoCompartida,
+            });
+        fotoCompartida.addEventListener('change', sincronizarFotoCompartida);
+        form.querySelectorAll('[data-condicion]').forEach(radio => radio.addEventListener('change', sincronizarFotoCompartida));
         window.pintarPiezas();
-        actualizarResumen();
+        sincronizarFotoCompartida();
     });
     </script>
 @endpush

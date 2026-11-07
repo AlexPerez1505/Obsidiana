@@ -58,9 +58,11 @@
                                     <a class="erp-menu-item" href="{{ route('commercial.ventas.show', $v) }}">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Ver detalle
                                     </a>
-                                    <a class="erp-menu-item" href="{{ route('commercial.ventas.edit', $v) }}">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar
-                                    </a>
+                                    @if ($v->estado !== 'cancelada')
+                                        <a class="erp-menu-item" href="{{ route('commercial.ventas.edit', $v) }}">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar
+                                        </a>
+                                    @endif
                                     <a class="erp-menu-item" href="{{ route('commercial.ventas.pdf', $v) }}" target="_blank">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Descargar PDF
                                     </a>
@@ -75,6 +77,7 @@
                                         </a>
                                     @endif
                                     @can('ventas.eliminar')
+                                        <div class="erp-menu-sep"></div>
                                         {{-- Sin NIP las primeras 72 horas; después lo pide. Si ya tiene
                                              cobros o el equipo salió, el servidor no la deja borrar. --}}
                                         <button type="button" class="erp-menu-item danger" data-eliminar-doc
@@ -82,6 +85,15 @@
                                                 data-nip="{{ \App\Support\EliminarConNip::requiere($v) ? 1 : 0 }}" data-horas="{{ \App\Support\EliminarConNip::horasRestantes($v) }}">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Eliminar venta
                                         </button>
+                                    @endcan
+                                    @can('ventas.eliminar_definitivo')
+                                        <form method="POST" action="{{ route('commercial.ventas.destroyDefinitivo', $v) }}"
+                                              data-definitivo="{{ $v->folio }}">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="erp-menu-item danger" style="width:100%;text-align:left;">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>Eliminar con historial
+                                            </button>
+                                        </form>
                                     @endcan
                                 </x-erp.menu>
                             </td>
@@ -144,8 +156,17 @@
 
                 <div class="data-card-foot">
                     <a href="{{ route('commercial.ventas.show', $v) }}" class="tbl-link">Ver</a>
-                    <a href="{{ route('commercial.ventas.edit', $v) }}" class="tbl-link">Editar</a>
+                    @if ($v->estado !== 'cancelada')
+                        <a href="{{ route('commercial.ventas.edit', $v) }}" class="tbl-link">Editar</a>
+                    @endif
                     <a href="{{ route('commercial.ventas.pdf', $v) }}" class="tbl-link" target="_blank">PDF</a>
+                    @can('ventas.eliminar_definitivo')
+                        <form method="POST" action="{{ route('commercial.ventas.destroyDefinitivo', $v) }}"
+                              data-definitivo="{{ $v->folio }}" style="display:inline;">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="tbl-link" style="color:var(--danger,#f66);background:none;border:none;cursor:pointer;">Eliminar</button>
+                        </form>
+                    @endcan
                 </div>
             </article>
         @empty
@@ -163,4 +184,44 @@
     </div>
     @include('partials._paginacion', ['paginator' => $ventas])
     @include('structure.commercial_management._eliminar_doc')
+
+@push('scripts')
+<script>
+// "Eliminar con historial" pide dos confirmaciones seguidas: la acción
+// borra también cobros, pagos, facturas y garantías de la venta.
+document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-definitivo')) return;
+    if (form.dataset.cmDone === '1') { form.dataset.cmDone = ''; return; }
+    e.preventDefault();
+    var folio = form.getAttribute('data-definitivo');
+    window.confirmModal({
+        title: 'Eliminar con historial',
+        message: '¿Eliminar la venta ' + folio + ' junto con TODOS sus cobros, pagos, facturas y garantías? Esta acción no se puede deshacer.',
+        confirmText: 'Continuar',
+        danger: true
+    }).then(function (ok) {
+        if (!ok) return;
+        // El segundo aviso solo puede abrirse cuando el primero ya se
+        // ocultó por completo (~180 ms): si se abre antes, el hidden del
+        // primero lo vuelve invisible.
+        var espera = setInterval(function () {
+            var ov = document.getElementById('cmOverlay');
+            if (ov && !ov.hidden) return;
+            clearInterval(espera);
+            window.confirmModal({
+                title: 'Confirmación final',
+                message: 'Se borrará también su historial comercial completo. ¿Seguro que quieres eliminar definitivamente la venta ' + folio + '?',
+                confirmText: 'Sí, eliminar todo',
+                danger: true
+            }).then(function (seguro) {
+                if (!seguro) return;
+                form.dataset.cmDone = '1';
+                if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
+            });
+        }, 150);
+    });
+}, true);
+</script>
+@endpush
 @endsection

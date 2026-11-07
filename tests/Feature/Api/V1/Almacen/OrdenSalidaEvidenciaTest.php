@@ -72,7 +72,7 @@ class OrdenSalidaEvidenciaTest extends TestCase
 
     private function almacenista(): User
     {
-        return $this->usuarioApi(['salidas.ver', 'salidas.preparar']);
+        return $this->usuarioApi(['salidas.ver', 'salidas.preparar', 'salidas.eliminar']);
     }
 
     /** @return list<UploadedFile> */

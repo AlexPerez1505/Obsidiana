@@ -3,6 +3,7 @@
 namespace App\Services\Cotizaciones;
 
 use App\Models\Customer;
+use App\Models\EquipmentType;
 use App\Models\FichaTecnica;
 use App\Models\Paquete;
 use App\Models\Producto;
@@ -62,7 +63,7 @@ class BuscadorCotizador
     }
 
     /** @return Collection<int, Producto> */
-    public function productos(string $q): Collection
+    public function productos(string $q, array $filtros = []): Collection
     {
         return Producto::query()
             ->with([
@@ -80,20 +81,51 @@ class BuscadorCotizador
                         ->orWhere('no_serie', 'like', "%{$q}%");
                 });
             })
+            ->when($filtros, fn ($query) => $this->filtrarProductos($query, $filtros))
             ->orderBy('tipo_equipo')
             ->limit(20)
             ->get();
     }
 
     /** @return Collection<int, Paquete> */
-    public function paquetes(string $q): Collection
+    public function paquetes(string $q, array $filtros = []): Collection
     {
         return Paquete::where('activo', true)
             ->with(['productos', 'equipos'])
+            ->when($filtros, fn ($query) => $query->whereHas('productos', fn ($productos) => $this->filtrarProductos($productos, $filtros)))
             ->when($q !== '', fn ($query) => $query->where('nombre', 'like', "%{$q}%"))
             ->orderBy('nombre')
             ->limit(10)
             ->get();
+    }
+
+    public function filtrosProductos(): Collection
+    {
+        return EquipmentType::with(['subtypes.brands', 'subtypes.equipmentModels'])->orderBy('name')->get()->map(fn ($tipo) => [
+            'id' => $tipo->id,
+            'nombre' => $tipo->name,
+            'subtipos' => $tipo->subtypes->sortBy('name')->map(fn ($subtipo) => [
+                'id' => $subtipo->id,
+                'nombre' => $subtipo->name,
+                'marcas' => $subtipo->brands->sortBy('name')->map(fn ($marca) => [
+                    'id' => $marca->id, 'nombre' => $marca->name,
+                    // El modelo depende de la marca dentro de este subtipo.
+                    'modelos' => $subtipo->equipmentModels->where('brand_id', $marca->id)->sortBy('name')
+                        ->map(fn ($modelo) => ['id' => $modelo->id, 'nombre' => $modelo->name])->values(),
+                ])->values(),
+            ])->values(),
+        ])->values();
+    }
+
+    private function filtrarProductos(\Illuminate\Database\Eloquent\Builder $query, array $filtros): \Illuminate\Database\Eloquent\Builder
+    {
+        foreach (['equipment_type_id', 'subtype_id', 'brand_id', 'equipment_model_id'] as $campo) {
+            if (! empty($filtros[$campo])) {
+                $query->where('productos.'.$campo, $filtros[$campo]);
+            }
+        }
+
+        return $query;
     }
 
     /** Las marcas de los productos del paquete, para mostrarlas como una sola. */

@@ -293,6 +293,35 @@
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                                         Editar
                                     </a>
+                                    {{-- No se borra: está ligado a ventas y servicios. Solo se desactiva. --}}
+                                    <form method="POST" action="{{ route('commercial.clientes.toggleActivo', $fila['modelo']) }}"
+                                          data-confirm="{{ $fila['modelo']->activo ? '¿Desactivar a '.$fila['nombre'].'? Dejará de aparecer en las listas pero conserva su historial.' : '¿Reactivar a '.$fila['nombre'].'?' }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" role="menuitem" @disabled(auth()->user()->cannot('clientes.editar'))>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>
+                                            {{ $fila['modelo']->activo ? 'Desactivar' : 'Reactivar' }}
+                                        </button>
+                                    </form>
+                                    {{-- Eliminar de verdad: el servidor solo lo permite si el cliente no tiene historial. --}}
+                                    <form method="POST" action="{{ route('commercial.clientes.destroy', $fila['modelo']) }}"
+                                          data-confirm="¿Eliminar a {{ $fila['nombre'] }} para siempre? Solo se puede si no tiene ventas, cotizaciones ni servicios.">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="es-danger" role="menuitem" @disabled(auth()->user()->cannot('clientes.eliminar'))>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                                            Eliminar
+                                        </button>
+                                    </form>
+                                    {{-- Borra TODO el historial también: pide dos confirmaciones. --}}
+                                    <form method="POST" action="{{ route('commercial.clientes.destroyDefinitivo', $fila['modelo']) }}" data-definitivo="{{ $fila['nombre'] }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="es-danger" role="menuitem" @disabled(auth()->user()->cannot('clientes.eliminar_definitivo'))>
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+                                            Eliminar con historial
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </td>
@@ -355,6 +384,35 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                                 Editar
                             </a>
+                            {{-- No se borra: está ligado a ventas y servicios. Solo se desactiva. --}}
+                            <form method="POST" action="{{ route('commercial.clientes.toggleActivo', $fila['modelo']) }}"
+                                  data-confirm="{{ $fila['modelo']->activo ? '¿Desactivar a '.$fila['nombre'].'? Dejará de aparecer en las listas pero conserva su historial.' : '¿Reactivar a '.$fila['nombre'].'?' }}">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" role="menuitem" @disabled(auth()->user()->cannot('clientes.editar'))>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>
+                                    {{ $fila['modelo']->activo ? 'Desactivar' : 'Reactivar' }}
+                                </button>
+                            </form>
+                            {{-- Eliminar de verdad: el servidor solo lo permite si el cliente no tiene historial. --}}
+                            <form method="POST" action="{{ route('commercial.clientes.destroy', $fila['modelo']) }}"
+                                  data-confirm="¿Eliminar a {{ $fila['nombre'] }} para siempre? Solo se puede si no tiene ventas, cotizaciones ni servicios.">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="es-danger" role="menuitem" @disabled(auth()->user()->cannot('clientes.eliminar'))>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                                    Eliminar
+                                </button>
+                            </form>
+                            {{-- Borra TODO el historial también: pide dos confirmaciones. --}}
+                            <form method="POST" action="{{ route('commercial.clientes.destroyDefinitivo', $fila['modelo']) }}" data-definitivo="{{ $fila['nombre'] }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="es-danger" role="menuitem" @disabled(auth()->user()->cannot('clientes.eliminar_definitivo'))>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+                                    Eliminar con historial
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -414,4 +472,44 @@
             'estado:0' => 'Solo inactivos',
         ],
     ])
+
+@push('scripts')
+<script>
+// "Eliminar con historial" pide dos confirmaciones seguidas: la acción
+// borra también ventas, cotizaciones, pagos y servicios del cliente.
+document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-definitivo')) return;
+    if (form.dataset.cmDone === '1') { form.dataset.cmDone = ''; return; }
+    e.preventDefault();
+    var nombre = form.getAttribute('data-definitivo');
+    window.confirmModal({
+        title: 'Eliminar con historial',
+        message: '¿Eliminar a ' + nombre + ' junto con TODAS sus ventas, cotizaciones, pagos y servicios? Esta acción no se puede deshacer.',
+        confirmText: 'Continuar',
+        danger: true
+    }).then(function (ok) {
+        if (!ok) return;
+        // El segundo aviso solo puede abrirse cuando el primero ya se
+        // ocultó por completo (~180 ms): si se abre antes, el hidden del
+        // primero lo vuelve invisible.
+        var espera = setInterval(function () {
+            var ov = document.getElementById('cmOverlay');
+            if (ov && !ov.hidden) return;
+            clearInterval(espera);
+            window.confirmModal({
+                title: 'Confirmación final',
+                message: 'Se borrará también su historial comercial completo. ¿Seguro que quieres eliminar definitivamente a ' + nombre + '?',
+                confirmText: 'Sí, eliminar todo',
+                danger: true
+            }).then(function (seguro) {
+                if (!seguro) return;
+                form.dataset.cmDone = '1';
+                if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
+            });
+        }, 150);
+    });
+}, true);
+</script>
+@endpush
 @endsection

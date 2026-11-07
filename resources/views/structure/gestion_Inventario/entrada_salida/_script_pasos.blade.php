@@ -128,7 +128,7 @@
 
                 if (! campo.checkValidity()) {
                     const etiqueta = campo.closest('.form-group')?.querySelector('label')?.textContent
-                        || campo.name;
+                        || campo.getAttribute('aria-label') || campo.name;
                     falta.push(etiqueta.replace('*', '').trim());
                 }
             });
@@ -153,8 +153,10 @@
             if (paso.dataset.paso === 'piezas') {
                 // Las fotos se suben al elegirlas: cuenta la que ya tiene
                 // su ruta, no la que solo está en el input.
+                const compartida = form.querySelector('[data-foto-compartida]')?.checked;
+                const compartidaLista = !!paso.querySelector('[data-foto-compartida-panel] [data-foto-path]');
                 const sinFoto = Array.from(paso.querySelectorAll('.pieza-card'))
-                    .filter(card => card.querySelectorAll('[data-foto-path]').length === 0)
+                    .filter(card => compartida ? !compartidaLista : card.querySelectorAll('[data-foto-path]').length === 0)
                     .map(card => '#' + (Number(card.dataset.pieza) + 1));
 
                 const subiendo = paso.querySelectorAll('.mini.subiendo').length;

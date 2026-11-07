@@ -50,7 +50,7 @@ class ProcesoController extends Controller
     }
 
     /** La pantalla de trabajo de una pieza en un proceso. */
-    public function show(PiezaProceso $paso): View
+    public function show(Request $request, PiezaProceso $paso): View
     {
         $paso->load(['pieza.producto', 'pieza.procesos', 'pieza.entrada', 'responsable', 'cerradoPor', 'avances.autor']);
 
@@ -61,7 +61,17 @@ class ProcesoController extends Controller
             'siguientes' => $paso->pieza->procesos
                 ->where('estado', 'pendiente')
                 ->where('id', '!=', $paso->id),
+            'volverUrl' => $this->returnUrl($request, route('inventory.procesos.index')),
         ]);
+    }
+
+    private function returnUrl(Request $request, string $fallback): string
+    {
+        $returnTo = $request->query('return_to');
+
+        return is_string($returnTo) && str_starts_with($returnTo, '/') && ! str_starts_with($returnTo, '//')
+            ? url($returnTo)
+            : $fallback;
     }
 
     /** Alguien tomó la pieza y empezó a trabajarla. */

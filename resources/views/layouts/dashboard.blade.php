@@ -1040,11 +1040,13 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Vehículos</span>
                     </a>
+                    @endif
+                    @can('viaticos.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.viatics.*') ? 'active' : '' }}" href="{{ route('admin.viatics.index') }}" data-tip="Viáticos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Viáticos</span>
                     </a>
-                    @endif
+                    @endcan
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.materials.*') ? 'active' : '' }}" href="{{ route('admin.materials.index') }}" data-tip="Materiales">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Materiales</span>
@@ -1214,7 +1216,12 @@
             {{-- Usuario --}}
             <div class="dd" id="dd-user">
                 <button class="user-btn" type="button" data-dd="dd-user">
-                    <span class="avatar">{{ Str::upper($initials) }}</span>
+                    <span class="avatar" style="position:relative;overflow:hidden;">
+                        {{ Str::upper($initials) }}
+                        @if ($u->avatarUrl())
+                            <img src="{{ $u->avatarUrl() }}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:{{ $u->avatarFoco() }};" onerror="this.remove()">
+                        @endif
+                    </span>
                     <span class="user-name">{{ $u->name }}</span>
                     <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>

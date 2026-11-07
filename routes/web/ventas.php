@@ -46,7 +46,7 @@ Route::middleware(['auth', 'verified', 'approved', 'can:comisiones.ver'])
         Route::middleware('can:comisiones.gestionar')->group(function () {
             Route::put('/asesor/{asesor}/porcentaje', [ComisionController::class, 'porcentaje'])->name('porcentaje');
             Route::post('/pagos', [ComisionController::class, 'pagar'])->name('pagar');
-            Route::delete('/pagos/{pago}', [ComisionController::class, 'eliminarPago'])->name('pagos.destroy');
+            Route::delete('/pagos/{pago}', [ComisionController::class, 'eliminarPago'])->withoutMiddleware('can:comisiones.gestionar')->middleware('can:comisiones.eliminar')->name('pagos.destroy');
         });
     });
 
@@ -80,6 +80,7 @@ Route::middleware(['auth', 'verified', 'approved'])
         Route::get('/{venta}/editar', [VentaController::class, 'edit'])->middleware('can:ventas.editar')->name('edit');
         Route::put('/{venta}', [VentaController::class, 'update'])->middleware('can:ventas.editar')->name('update');
         Route::delete('/{venta}', [VentaController::class, 'destroy'])->middleware('can:ventas.eliminar')->name('destroy');
+        Route::delete('/{venta}/definitivo', [VentaController::class, 'destroyDefinitivo'])->middleware('can:ventas.eliminar_definitivo')->name('destroyDefinitivo');
         // Cancelar no borra: la venta queda como cancelada con su historial.
         Route::post('/{venta}/cancelar', [VentaController::class, 'cancelar'])->middleware('can:ventas.editar')->name('cancelar');
         Route::get('/{venta}/pdf', [VentaController::class, 'pdf'])->middleware('can:ventas.ver')->name('pdf');
@@ -96,7 +97,7 @@ Route::middleware(['auth', 'verified', 'approved'])
         Route::prefix('/{venta}/cobranza')->name('cobros.')->group(function () {
             Route::get('/', [CobroController::class, 'index'])->middleware('can:cobranza.ver')->name('index');
             Route::post('/', [CobroController::class, 'store'])->middleware('can:cobranza.registrar')->name('store');
-            Route::delete('/{cobro}', [CobroController::class, 'destroy'])->middleware('can:cobranza.registrar')->name('destroy');
+            Route::delete('/{cobro}', [CobroController::class, 'destroy'])->middleware('can:cobranza.eliminar')->name('destroy');
             Route::get('/{cobro}/recibo', [CobroController::class, 'recibo'])->middleware('can:cobranza.ver')->name('recibo');
 
             // Ajustes al plan
@@ -108,6 +109,6 @@ Route::middleware(['auth', 'verified', 'approved'])
             Route::post('/absorber-excedente', [CobroController::class, 'absorberExcedente'])->middleware('can:cobranza.ajustar')->name('absorber-excedente');
             Route::post('/parcialidad', [CobroController::class, 'agregarParcialidad'])->middleware('can:cobranza.ajustar')->name('parcialidad.agregar');
             Route::put('/parcialidad/{pago}', [CobroController::class, 'actualizarParcialidad'])->middleware('can:cobranza.ajustar')->name('parcialidad.actualizar');
-            Route::delete('/parcialidad/{pago}', [CobroController::class, 'eliminarParcialidad'])->middleware('can:cobranza.ajustar')->name('parcialidad.eliminar');
+            Route::delete('/parcialidad/{pago}', [CobroController::class, 'eliminarParcialidad'])->middleware('can:cobranza.eliminar')->name('parcialidad.eliminar');
         });
     });

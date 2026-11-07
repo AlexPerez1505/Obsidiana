@@ -41,7 +41,7 @@
     ];
 @endphp
 
-<div class="card catalog-card eq-card">
+<div class="card catalog-card eq-card" data-live="off">
     <div class="catalog-header">
         <h2 class="page-title">Catálogo de equipo</h2>
         <span class="catalog-count">Tipo → Subtipo → Marca → Modelo</span>
@@ -51,7 +51,29 @@
         Lo que se dé de alta aquí es lo que aparece en las listas del formulario de productos.
     </p>
 
-    <div class="eq-grid">
+    <div class="eq-filters">
+        <label>Tipo de equipo
+            <select id="eq-filtro-tipo" aria-controls="eq-resultados"><option value="">Todos los tipos</option>
+                @foreach ($equipmentTypes as $tipo)<option value="{{ $tipo->id }}">{{ $tipo->name }}</option>@endforeach
+            </select>
+        </label>
+        <label>Subtipo
+            <select id="eq-filtro-subtipo" aria-controls="eq-resultados"><option value="">Todos los subtipos</option>
+                @foreach ($subtypes as $sub)<option value="{{ $sub->id }}" data-tipo="{{ $sub->equipment_type_id }}">{{ $sub->name }}</option>@endforeach
+            </select>
+        </label>
+        <label>Marca
+            <select id="eq-filtro-marca" aria-controls="eq-resultados"><option value="">Todas las marcas</option></select>
+        </label>
+        <button type="button" class="btn btn--ghost" id="eq-limpiar">Limpiar filtros</button>
+    </div>
+
+    <div class="eq-search">
+        <label for="eq-buscar">Buscar en el catálogo de equipo</label>
+        <input type="search" id="eq-buscar" placeholder="Buscar tipo, subtipo, marca o modelo…" autocomplete="off" aria-controls="eq-resultados">
+    </div>
+
+    <div class="eq-grid" id="eq-resultados">
         {{-- ---------- Tipos ---------- --}}
         <section class="eq-col">
             <header class="eq-col-head">
@@ -70,7 +92,7 @@
                             '__aviso' => 'Se eliminarán también sus subtipos, marcas y modelos.',
                         ];
                     @endphp
-                    <div class="eq-item">
+                    <div class="eq-item" data-tipo="{{ $tipo->id }}">
                         <div class="eq-item-txt">
                             <span class="eq-item-name">{{ $tipo->name }}</span>
                             <span class="eq-item-meta">{{ $tipo->subtypes_count }} {{ $tipo->subtypes_count === 1 ? 'subtipo' : 'subtipos' }}{{ $tipo->requiere_emplayado ? '' : ' · no se emplaya' }}</span>
@@ -111,7 +133,7 @@
                             '__aviso' => 'Se eliminarán también sus marcas y modelos.',
                         ];
                     @endphp
-                    <div class="eq-item">
+                    <div class="eq-item" data-tipo="{{ $sub->equipment_type_id }}" data-subtipo="{{ $sub->id }}">
                         <div class="eq-item-txt">
                             <span class="eq-item-name">{{ $sub->name }}</span>
                             <span class="eq-item-meta">{{ $sub->equipmentType?->name ?? 'Sin tipo' }}</span>
@@ -158,7 +180,7 @@
                             '__aviso' => 'Se quita de ese subtipo, junto con sus modelos ahí. Sigue existiendo en los demás subtipos.',
                         ];
                     @endphp
-                    <div class="eq-item">
+                    <div class="eq-item" data-tipo="{{ $fila['subtype']->equipment_type_id }}" data-subtipo="{{ $fila['subtype']->id }}" data-marca="{{ $fila['brand']->id }}">
                         <div class="eq-item-txt">
                             <span class="eq-item-name">{{ $fila['brand']->name }}</span>
                             <span class="eq-item-meta">{{ $fila['subtype']->name }}</span>
@@ -205,7 +227,7 @@
                             '__aviso' => 'Esta acción no se puede deshacer.',
                         ];
                     @endphp
-                    <div class="eq-item">
+                    <div class="eq-item" data-tipo="{{ $modelo->subtype?->equipment_type_id }}" data-subtipo="{{ $modelo->subtype_id }}" data-marca="{{ $modelo->brand_id }}">
                         <div class="eq-item-txt">
                             <span class="eq-item-name">{{ $modelo->name }}</span>
                             <span class="eq-item-meta">{{ $modelo->brand?->name }} · {{ $modelo->subtype?->name ?? 'Sin subtipo' }}</span>
@@ -291,14 +313,19 @@
 
 <x-catalogo.modal id="modalMarcaCrear" titulo="Nueva marca"
                   :accion="route('configuracion.catalogo_equipo.marcas.store')" boton="Guardar marca">
-    <label for="marcaCrearSubtipo">Subtipo donde se ofrece</label>
-    <select id="marcaCrearSubtipo" name="subtype_id" required>
-        @foreach ($subtiposPorTipo as $nombreTipo => $lista)
-            <optgroup label="{{ $nombreTipo }}">
-                @foreach ($lista as $sub)
-                    <option value="{{ $sub->id }}">{{ $sub->name }}</option>
-                @endforeach
-            </optgroup>
+    <label for="marcaCrearTipo">Tipo de equipo</label>
+    <select id="marcaCrearTipo" required>
+        <option value="">Selecciona un tipo de equipo</option>
+        @foreach ($equipmentTypes as $tipo)
+            <option value="{{ $tipo->id }}">{{ $tipo->name }}</option>
+        @endforeach
+    </select>
+
+    <label for="marcaCrearSubtipo" class="eq-mt">Subtipo donde se ofrece</label>
+    <select id="marcaCrearSubtipo" name="subtype_id" required disabled>
+        <option value="">Primero selecciona un tipo de equipo</option>
+        @foreach ($subtypes as $sub)
+            <option value="{{ $sub->id }}" data-tipo="{{ $sub->equipment_type_id }}">{{ $sub->name }}</option>
         @endforeach
     </select>
 
@@ -335,19 +362,26 @@
 
 <x-catalogo.modal id="modalModeloCrear" titulo="Nuevo modelo"
                   :accion="route('configuracion.catalogo_equipo.modelos.store')" boton="Guardar modelo">
-    <label for="modeloCrearSubtipo">Subtipo</label>
-    <select id="modeloCrearSubtipo" name="subtype_id" required data-cascada-subtipo>
-        @foreach ($subtiposPorTipo as $nombreTipo => $lista)
-            <optgroup label="{{ $nombreTipo }}">
-                @foreach ($lista as $sub)
-                    <option value="{{ $sub->id }}">{{ $sub->name }}</option>
-                @endforeach
-            </optgroup>
+    <label for="modeloCrearTipo">Tipo de equipo</label>
+    <select id="modeloCrearTipo" required>
+        <option value="">Selecciona un tipo de equipo</option>
+        @foreach ($equipmentTypes as $tipo)
+            <option value="{{ $tipo->id }}">{{ $tipo->name }}</option>
+        @endforeach
+    </select>
+
+    <label for="modeloCrearSubtipo" class="eq-mt">Subtipo</label>
+    <select id="modeloCrearSubtipo" name="subtype_id" required disabled data-cascada-subtipo>
+        <option value="">Primero selecciona un tipo de equipo</option>
+        @foreach ($subtypes as $sub)
+            <option value="{{ $sub->id }}" data-tipo="{{ $sub->equipment_type_id }}">{{ $sub->name }}</option>
         @endforeach
     </select>
 
     <label for="modeloCrearMarca" class="eq-mt">Marca</label>
-    <select id="modeloCrearMarca" name="brand_id" required data-cascada-marca></select>
+    <select id="modeloCrearMarca" name="brand_id" required disabled data-cascada-marca>
+        <option value="">Primero selecciona un subtipo</option>
+    </select>
 
     <label for="modeloCrearNombre" class="eq-mt">Nombre</label>
     <input id="modeloCrearNombre" type="text" name="name" required maxlength="255" autocomplete="off"
@@ -381,4 +415,109 @@
 
 <script>
     window.EQ_MARCAS_POR_SUBTIPO = @json($marcasPorSubtipo);
+
+    ['marca', 'modelo'].forEach(function (seccion) {
+        const tipo = document.getElementById(seccion + 'CrearTipo');
+        const subtipo = document.getElementById(seccion + 'CrearSubtipo');
+        const modal = tipo.closest('.cfg-modal');
+        const guardar = modal.querySelector('button[type="submit"]');
+        const opciones = Array.from(subtipo.querySelectorAll('[data-tipo]'));
+
+        function filtrarSubtipos() {
+            const disponibles = opciones.filter(opcion => opcion.dataset.tipo === tipo.value);
+            const mensaje = ! tipo.value ? 'Primero selecciona un tipo de equipo'
+                : disponibles.length ? 'Selecciona un subtipo' : 'Este tipo aún no tiene subtipos';
+            subtipo.replaceChildren(new Option(mensaje, ''));
+            disponibles.forEach(opcion => subtipo.appendChild(opcion));
+            subtipo.disabled = ! disponibles.length;
+            if (guardar) guardar.disabled = seccion === 'modelo' || ! disponibles.length;
+            subtipo.dispatchEvent(new Event('change'));
+        }
+
+        tipo.addEventListener('change', filtrarSubtipos);
+        filtrarSubtipos();
+    });
+
+    (function () {
+        const buscar = document.getElementById('eq-buscar');
+        const tipo = document.getElementById('eq-filtro-tipo');
+        const subtipo = document.getElementById('eq-filtro-subtipo');
+        const marca = document.getElementById('eq-filtro-marca');
+        const orden = new Intl.Collator('es', { sensitivity: 'base', numeric: true });
+        const ordenar = (a, b) => orden.compare(a.textContent.trim(), b.textContent.trim());
+        const opcionesSubtipo = Array.from(subtipo.options).slice(1).sort(ordenar);
+        Array.from(tipo.options).slice(1).sort(ordenar).forEach(opcion => tipo.appendChild(opcion));
+        const normalizar = texto => texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+        const columnas = Array.from(document.querySelectorAll('#eq-resultados .eq-col')).map(columna => {
+            const lista = columna.querySelector('.eq-list');
+            const elementos = Array.from(lista.querySelectorAll('.eq-item')).sort((a, b) =>
+                orden.compare(a.querySelector('.eq-item-name').textContent, b.querySelector('.eq-item-name').textContent)
+                || ordenar(a, b));
+            elementos.forEach(elemento => lista.appendChild(elemento));
+            const items = elementos.map(elemento => ({
+                elemento,
+                texto: normalizar(elemento.querySelector('.eq-item-txt').textContent),
+            }));
+            const vacio = document.createElement('p');
+            vacio.className = 'eq-vacio';
+            vacio.textContent = 'Sin coincidencias.';
+            vacio.hidden = true;
+            lista.appendChild(vacio);
+            columna.querySelector('.eq-num').setAttribute('aria-live', 'polite');
+            return { items, lista, vacio, contador: columna.querySelector('.eq-num'), original: lista.querySelector('.eq-vacio:not([hidden])') };
+        });
+
+        function filtrar() {
+            const palabras = normalizar(buscar.value).split(/\s+/).filter(Boolean);
+            const activo = palabras.length || tipo.value || subtipo.value || marca.value;
+            columnas.forEach(({ items, lista, vacio, contador, original }, indice) => {
+                let visibles = 0;
+                items.forEach(({ elemento, texto }) => {
+                    const datos = elemento.dataset;
+                    elemento.hidden = !palabras.every(palabra => texto.includes(palabra))
+                        || !!(tipo.value && datos.tipo !== tipo.value)
+                        || !!(indice > 0 && subtipo.value && datos.subtipo !== subtipo.value)
+                        || !!(indice > 1 && marca.value && datos.marca !== marca.value);
+                    if (!elemento.hidden) visibles++;
+                });
+                contador.textContent = activo ? `${visibles} / ${items.length}` : items.length;
+                vacio.hidden = !activo || visibles > 0;
+                if (original) original.hidden = !!activo;
+                lista.scrollTop = 0;
+            });
+        }
+
+        function llenarMarcasFiltro() {
+            const marcas = new Map();
+            columnas[2].items.forEach(({ elemento }) => {
+                const datos = elemento.dataset;
+                if ((!tipo.value || datos.tipo === tipo.value) && (!subtipo.value || datos.subtipo === subtipo.value)) {
+                    marcas.set(datos.marca, elemento.querySelector('.eq-item-name').textContent.trim());
+                }
+            });
+            marca.replaceChildren(new Option('Todas las marcas', ''));
+            Array.from(marcas).sort((a, b) => orden.compare(a[1], b[1]))
+                .forEach(([id, nombre]) => marca.add(new Option(nombre, id)));
+            filtrar();
+        }
+
+        function llenarSubtiposFiltro() {
+            subtipo.replaceChildren(new Option('Todos los subtipos', ''));
+            opcionesSubtipo.filter(opcion => !tipo.value || opcion.dataset.tipo === tipo.value)
+                .forEach(opcion => subtipo.appendChild(opcion));
+            subtipo.value = '';
+            llenarMarcasFiltro();
+        }
+
+        tipo.addEventListener('change', llenarSubtiposFiltro);
+        subtipo.addEventListener('change', llenarMarcasFiltro);
+        marca.addEventListener('change', filtrar);
+        buscar.addEventListener('input', filtrar);
+        document.getElementById('eq-limpiar').addEventListener('click', function () {
+            tipo.value = '';
+            buscar.value = '';
+            llenarSubtiposFiltro();
+        });
+        llenarSubtiposFiltro();
+    })();
 </script>

@@ -208,7 +208,7 @@ class OrdenSalidaController extends Controller
     public function borrarEvidencia(Request $request, OrdenSalida $orden, OrdenSalidaEvidencia $evidencia): JsonResponse|RedirectResponse
     {
         abort_if($evidencia->orden_salida_id !== $orden->id, 404);
-        abort_unless($evidencia->puedeBorrarla($request->user()), 403, 'Solo quien la subió o quien prepara salidas puede quitar esta evidencia.');
+        abort_unless($evidencia->puedeBorrarla($request->user()), 403, 'No tienes permiso para eliminar esta evidencia.');
 
         if ($razon = $this->evidencia->razonParaNoBorrar($orden)) {
             abort(409, $razon);

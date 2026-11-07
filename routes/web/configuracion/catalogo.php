@@ -26,10 +26,10 @@ Route::middleware(['auth', 'verified', 'approved', 'can:inventario.catalogo'])->
         ->name('configuracion.categorias.update');
 
     Route::get('/configuracion/categorias/eliminar/{category}', [CategoryController::class, 'delete'])
-        ->name('configuracion.categorias.delete');
+        ->middleware('can:inventario.catalogo_eliminar')->name('configuracion.categorias.delete');
 
     Route::delete('/configuracion/categorias/{category}', [CategoryController::class, 'destroy'])
-        ->name('configuracion.categorias.destroy');
+        ->middleware('can:inventario.catalogo_eliminar')->name('configuracion.categorias.destroy');
 
     /*
     |----------------------------------------------------------------------
@@ -46,18 +46,18 @@ Route::middleware(['auth', 'verified', 'approved', 'can:inventario.catalogo'])->
 
             Route::post('/tipos', [CatalogoEquipoController::class, 'storeType'])->name('tipos.store');
             Route::put('/tipos/{type}', [CatalogoEquipoController::class, 'updateType'])->name('tipos.update');
-            Route::delete('/tipos/{type}', [CatalogoEquipoController::class, 'destroyType'])->name('tipos.destroy');
+            Route::delete('/tipos/{type}', [CatalogoEquipoController::class, 'destroyType'])->middleware('can:inventario.catalogo_eliminar')->name('tipos.destroy');
 
             Route::post('/subtipos', [CatalogoEquipoController::class, 'storeSubtype'])->name('subtipos.store');
             Route::put('/subtipos/{subtype}', [CatalogoEquipoController::class, 'updateSubtype'])->name('subtipos.update');
-            Route::delete('/subtipos/{subtype}', [CatalogoEquipoController::class, 'destroySubtype'])->name('subtipos.destroy');
+            Route::delete('/subtipos/{subtype}', [CatalogoEquipoController::class, 'destroySubtype'])->middleware('can:inventario.catalogo_eliminar')->name('subtipos.destroy');
 
             Route::post('/marcas', [CatalogoEquipoController::class, 'storeBrand'])->name('marcas.store');
             Route::put('/marcas/{brand}', [CatalogoEquipoController::class, 'updateBrand'])->name('marcas.update');
-            Route::delete('/marcas/{brand}', [CatalogoEquipoController::class, 'destroyBrand'])->name('marcas.destroy');
+            Route::delete('/marcas/{brand}', [CatalogoEquipoController::class, 'destroyBrand'])->middleware('can:inventario.catalogo_eliminar')->name('marcas.destroy');
 
             Route::post('/modelos', [CatalogoEquipoController::class, 'storeModel'])->name('modelos.store');
             Route::put('/modelos/{model}', [CatalogoEquipoController::class, 'updateModel'])->name('modelos.update');
-            Route::delete('/modelos/{model}', [CatalogoEquipoController::class, 'destroyModel'])->name('modelos.destroy');
+            Route::delete('/modelos/{model}', [CatalogoEquipoController::class, 'destroyModel'])->middleware('can:inventario.catalogo_eliminar')->name('modelos.destroy');
         });
 });

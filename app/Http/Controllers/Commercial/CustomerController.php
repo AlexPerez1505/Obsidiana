@@ -11,6 +11,7 @@ use App\Services\Clientes\RegistroClientes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -127,6 +128,109 @@ class CustomerController extends Controller
         $this->registro->actualizar($cliente, $data);
 
         return redirect()->route('commercial.clientes.index')->with('status', 'Cliente actualizado correctamente.');
+    }
+
+    /**
+     * Desactiva/reactiva al cliente. No se borra: está ligado a ventas,
+     * cotizaciones y servicios, así que solo sale de las listas mientras
+     * está inactivo y conserva todo su historial.
+     */
+    public function toggleActivo(Customer $cliente): RedirectResponse
+    {
+        $this->asegurarVisible($cliente);
+
+        $cliente->activo = ! $cliente->activo;
+        $cliente->save();
+
+        return back()->with('status', $cliente->activo
+            ? "Se reactivó a {$cliente->nombre}."
+            : "Se desactivó a {$cliente->nombre}. Ya no aparece en las listas pero conserva su historial.");
+    }
+
+    /**
+     * Borra al cliente de verdad, pero solo cuando no deja nada suelto:
+     * si tiene ventas, cotizaciones, servicios, facturas o pagos ligados,
+     * eliminarlo rompería ese historial y ahí lo correcto es desactivarlo.
+     *
+     * Sirve para quitarse de encima los registros de prueba.
+     */
+    public function destroy(Customer $cliente): RedirectResponse
+    {
+        return DB::transaction(function () use ($cliente) {
+            $cliente = Customer::whereKey($cliente->id)->lockForUpdate()->firstOrFail();
+            $this->asegurarVisible($cliente);
+
+            $ligado = collect([
+                'ventas' => $cliente->ventas()->exists(),
+                'cotizaciones' => $cliente->cotizaciones()->exists(),
+                'servicios' => \App\Models\Service::where('customer_id', $cliente->id)->exists(),
+                'facturas' => \App\Models\Factura::where('customer_id', $cliente->id)->exists(),
+                'planes de pago' => $cliente->planPagos()->exists(),
+                'pagos' => $cliente->pagos()->exists(),
+            ])->filter()->keys();
+
+            if ($ligado->isNotEmpty()) {
+                return back()->withErrors(['eliminar' =>
+                    "No se puede eliminar a {$cliente->nombre}: tiene {$ligado->implode(', ')} ligados. Mejor desactívalo."]);
+            }
+
+            // Lo que sí se va con él: sus seguimientos (recordatorios suyos, de nadie más).
+            $cliente->seguimientos()->delete();
+            $cliente->delete();
+
+            return redirect()->route('commercial.clientes.index')
+                ->with('status', "Se eliminó a {$cliente->nombre}.");
+        });
+    }
+
+    /**
+     * Elimina al cliente CON todo su historial (ventas, cotizaciones,
+     * pagos, servicios y garantías). Está pensado para depurar registros
+     * de prueba; por eso vive detrás de un permiso aparte.
+     *
+     * Las piezas vendidas en las ventas eliminadas vuelven a quedar
+     * disponibles: la venta deja de existir y la pieza no puede quedar
+     * marcada como vendida para siempre.
+     */
+    public function destroyDefinitivo(Customer $cliente): RedirectResponse
+    {
+        return DB::transaction(function () use ($cliente) {
+            $cliente = Customer::whereKey($cliente->id)->lockForUpdate()->firstOrFail();
+            $this->asegurarVisible($cliente);
+
+            abort_if($cliente->esPublicoEnGeneral(), 403,
+                '«Público en general» sostiene las ventas de mostrador y congresos: no se puede eliminar.');
+
+            $nombre = $cliente->nombre.' '.$cliente->apellido;
+
+            // Garantías y reclamaciones: sus archivos/eventos/costos caen
+            // en cascada; costos y sustituciones ligadas a la garantía se
+            // quitan antes porque la FK las deja colgadas (SET NULL).
+            \App\Models\GarantiaReclamacion::where('customer_id', $cliente->id)->delete();
+            $garantiaIds = \App\Models\Garantia::where('customer_id', $cliente->id)->pluck('id');
+            \App\Models\GarantiaCosto::whereIn('garantia_id', $garantiaIds)->delete();
+            \App\Models\GarantiaSustitucion::whereIn('garantia_id', $garantiaIds)->delete();
+            \App\Models\Garantia::where('customer_id', $cliente->id)->delete();
+
+            // Servicios: la FK a clientes es RESTRICT, hay que borrarlos
+            // primero; sus equipos, refacciones y seguimientos caen solos.
+            \App\Models\Service::where('customer_id', $cliente->id)->delete();
+
+            // Las piezas vendidas en las ventas que se van a borrar
+            // regresan a disponible antes de que desaparezca su venta.
+            $ventaItemIds = DB::table('venta_items')
+                ->whereIn('venta_id', $cliente->ventas()->select('id'))->pluck('id');
+            \App\Models\ProductoSerial::whereIn('venta_item_id', $ventaItemIds)
+                ->update(['vendido' => false, 'vendido_en' => null, 'venta_item_id' => null, 'estado' => 'disponible']);
+
+            // Al borrar al cliente, la base elimina en cascada sus
+            // seguimientos, cotizaciones, ventas, facturas, pagos, planes
+            // de pago y suscripciones a campañas/promociones.
+            $cliente->delete();
+
+            return redirect()->route('commercial.clientes.index')
+                ->with('status', "Se eliminó a {$nombre} con todo su historial.");
+        });
     }
 
     /**

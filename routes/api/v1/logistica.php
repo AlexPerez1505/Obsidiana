@@ -46,10 +46,10 @@ Route::middleware('can:rutas.flota')->prefix('flota')->name('flota.')->group(fun
     Route::get('/{vehicle}', [FlotaController::class, 'show'])->whereNumber('vehicle')->name('show');
     Route::get('/{vehicle}/combustible', [FlotaController::class, 'combustibles'])->whereNumber('vehicle')->name('combustible.index');
     Route::post('/{vehicle}/combustible', [FlotaController::class, 'guardarCombustible'])->whereNumber('vehicle')->name('combustible.store');
-    Route::delete('/combustible/{carga}', [FlotaController::class, 'eliminarCombustible'])->whereNumber('carga')->name('combustible.destroy');
+    Route::delete('/combustible/{carga}', [FlotaController::class, 'eliminarCombustible'])->whereNumber('carga')->middleware('can:rutas.flota_eliminar')->name('combustible.destroy');
     Route::get('/{vehicle}/mantenimiento', [FlotaController::class, 'mantenimientos'])->whereNumber('vehicle')->name('mantenimiento.index');
     Route::post('/{vehicle}/mantenimiento', [FlotaController::class, 'guardarMantenimiento'])->whereNumber('vehicle')->name('mantenimiento.store');
-    Route::delete('/mantenimiento/{mantenimiento}', [FlotaController::class, 'eliminarMantenimiento'])->whereNumber('mantenimiento')->name('mantenimiento.destroy');
+    Route::delete('/mantenimiento/{mantenimiento}', [FlotaController::class, 'eliminarMantenimiento'])->whereNumber('mantenimiento')->middleware('can:rutas.flota_eliminar')->name('mantenimiento.destroy');
 });
 
 Route::get('/logistica/indicadores', [IndicadoresController::class, 'index'])->middleware('can:rutas.analytics')->name('logistica.indicadores');

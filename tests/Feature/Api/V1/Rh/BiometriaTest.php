@@ -101,7 +101,7 @@ class BiometriaTest extends TestCase
 
     public function test_las_plantillas_de_huella_nunca_salen_por_la_api(): void
     {
-        $rh = $this->usuarioApi(['asistencia.biometria', 'asistencia.ver']);
+        $rh = $this->usuarioApi(['asistencia.biometria', 'asistencia.ver', 'asistencia.biometria_eliminar']);
         $emp = $this->empleado(['name' => 'Sara Gil']);
         $huella = EmployeeBiometric::create([
             'user_id' => $emp->id, 'finger_index' => 1, 'template' => 'PLANTILLA-SECRETA-123', 'template_format' => 'zkteco',

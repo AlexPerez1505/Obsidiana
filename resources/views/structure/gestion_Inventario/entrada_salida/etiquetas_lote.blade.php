@@ -33,30 +33,33 @@
         .sel input { position:absolute; top:8px; right:8px; width:18px; height:18px; accent-color:#007aff; cursor:pointer; z-index:1; }
         .sel.fuera .etiqueta { opacity:.35; }
 
-        .etiqueta { display:flex; align-items:center; gap:11px; padding:11px; background:#fff; border:1px solid #cfd4da; border-radius:8px;
-                    break-inside:avoid; page-break-inside:avoid; }
-        .sel:not(.fuera) .etiqueta { border-color:#007aff; box-shadow:0 0 0 1px #007aff inset; }
-        .etiqueta .qr { width:74px; height:74px; flex:0 0 74px; }
+        /* La etiqueta es la misma de la impresora térmica (51×25 mm) que la hoja de una entrada. */
+        .rejilla { grid-template-columns:repeat(auto-fill, 51mm); justify-content:start; }
+        .etiqueta { display:flex; align-items:center; gap:1.5mm; padding:1mm; width:51mm; height:25mm;
+                    background:#fff; outline:1px solid #cfd4da; overflow:hidden; break-inside:avoid; page-break-inside:avoid; }
+        .sel:not(.fuera) .etiqueta { outline:2px solid #007aff; }
+        .etiqueta .qr { width:21mm; height:21mm; flex:0 0 21mm; padding:1mm; background:#fff; }
         .etiqueta .qr svg { width:100%; height:100%; display:block; }
-        .etiqueta .txt { min-width:0; padding-right:16px; }
-        .etiqueta .cod { font-size:14px; font-weight:800; letter-spacing:.03em; font-family:ui-monospace, Consolas, monospace; }
-        .etiqueta .eq { margin-top:2px; font-size:11px; line-height:1.3; color:#374151; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-        .etiqueta .em { margin-top:3px; font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:#9ca3af; }
+        .etiqueta .txt { min-width:0; flex:1; max-height:23mm; overflow:hidden; }
+        .etiqueta .serie { font-size:7.5pt; line-height:1.1; font-weight:800; overflow-wrap:anywhere; font-family:ui-monospace, Consolas, monospace; }
+        .etiqueta .serie-larga { font-size:5.5pt; }
+        .etiqueta .cod { margin-top:.3mm; font-size:5pt; line-height:1.1; overflow-wrap:anywhere; font-family:ui-monospace, Consolas, monospace; }
+        .etiqueta .modelo { margin-top:.8mm; font-size:6.5pt; line-height:1.1; font-weight:800; overflow-wrap:anywhere; }
+        .etiqueta .modelo-largo { font-size:5.5pt; }
+        .etiqueta .em { margin-top:.5mm; font-size:4.5pt; line-height:1.1; text-transform:uppercase; color:#111; }
+        .sel input { top:2px; right:2px; }
         .vacio { padding:40px; text-align:center; color:#6b7280; background:#fff; border:1px solid #e3e6ea; border-radius:12px; }
         .oculta { display:none !important; }
 
         @media print {
-            body { background:#fff; }
-            .barra, .aviso, .grupo-cab, .sel input { display:none !important; }
-            .hoja { max-width:none; padding:0; }
-            /* Una sola rejilla corrida: las etiquetas no marcadas no salen. */
-            .grupo { margin:0; display:contents; }
-            .lista { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; }
-            .rejilla { display:contents; }
+            /* Una etiqueta por hoja de 51×25 mm, como la hoja de una entrada; las no marcadas no salen. */
+            @page { size:51mm 25mm; margin:0; }
+            html, body { width:51mm; margin:0; padding:0; background:#fff; }
+            .barra, .aviso, .grupo-cab, .sel input, .vacio { display:none !important; }
+            .hoja { width:51mm; max-width:none; margin:0; padding:0; }
+            .grupo, .lista, .rejilla { display:block; margin:0; }
             .sel.fuera, .sel.oculta { display:none !important; }
-            .sel .etiqueta { opacity:1 !important; box-shadow:none !important; border-color:#999 !important; }
-            .etiqueta .txt { padding-right:0; }
-            @page { margin:10mm; }
+            .etiqueta { margin:0; outline:none !important; break-after:page; page-break-after:always; }
         }
     </style>
 </head>

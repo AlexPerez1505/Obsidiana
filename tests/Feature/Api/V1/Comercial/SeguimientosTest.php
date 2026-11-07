@@ -155,7 +155,7 @@ class SeguimientosTest extends TestCase
 
     public function test_eliminar_y_seguimiento_de_otro_cliente_da_404(): void
     {
-        $yo = $this->usuarioApi(['clientes.editar']);
+        $yo = $this->usuarioApi(['clientes.editar', 'clientes.eliminar']);
         $cliente = $this->cliente($yo);
         $otroCliente = $this->cliente($yo);
         $seguimiento = $this->seguimiento($cliente, $yo);
