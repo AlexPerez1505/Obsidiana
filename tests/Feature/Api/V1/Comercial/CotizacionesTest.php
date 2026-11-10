@@ -139,6 +139,16 @@ class CotizacionesTest extends TestCase
         $this->assertDatabaseHas('cotizacion_ficha', ['cotizacion_id' => $res->json('data.id'), 'ficha_tecnica_id' => $this->ficha->id]);
     }
 
+    public function test_siguiente_folio_usa_el_consecutivo_mas_alto_y_no_el_total_de_registros(): void
+    {
+        $yo = User::factory()->create();
+
+        $this->cotizacionDe($yo, 'COT-'.now()->year.'-0001');
+        $this->cotizacionDe($yo, 'COT-'.now()->year.'-0003');
+
+        $this->assertSame('COT-'.now()->year.'-0004', Cotizacion::siguienteFolio());
+    }
+
     public function test_la_api_guarda_exactamente_lo_mismo_que_la_web(): void
     {
         $yo = $this->usuarioApi(['cotizaciones.crear', 'cotizaciones.ver']);
