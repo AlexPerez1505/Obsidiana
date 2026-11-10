@@ -295,6 +295,7 @@
         }
         .congress-menu.open .congress-menu-dropdown { display: flex; }
         .category-list .congress-menu .congress-menu-dropdown,
+        .eq-list .congress-menu .congress-menu-dropdown,
         .table-wrap .congress-menu .congress-menu-dropdown,
         .equipment-table .congress-menu .congress-menu-dropdown {
             position: fixed;

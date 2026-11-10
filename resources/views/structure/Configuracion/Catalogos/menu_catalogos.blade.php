@@ -523,13 +523,20 @@
                     });
                     // Posición fija para menús dentro de listas con scroll propio,
                     // que si no los recortarían.
-                    if (menu.closest('.category-list, .eq-list')) {
+                    var open = !menu.classList.contains('open');
+                    menu.classList.toggle('open', open);
+                    trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    if (open && menu.closest('.category-list, .eq-list')) {
                         var rect = trigger.getBoundingClientRect();
-                        menu.style.setProperty('--menu-top', (rect.bottom + 4) + 'px');
+                        var dropdown = menu.querySelector('.congress-menu-dropdown');
+                        var altura = dropdown.getBoundingClientRect().height;
+                        var top = rect.bottom + 4;
+                        if (top + altura > window.innerHeight && rect.top - altura - 4 >= 0) {
+                            top = rect.top - altura - 4;
+                        }
+                        menu.style.setProperty('--menu-top', top + 'px');
                         menu.style.setProperty('--menu-right', (window.innerWidth - rect.right) + 'px');
                     }
-                    var open = menu.classList.toggle('open');
-                    trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
                 });
             });
             // Cerrar menú al hacer clic fuera
