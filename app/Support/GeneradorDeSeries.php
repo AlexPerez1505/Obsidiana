@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\EquipmentModel;
 use App\Models\ProductoSerial;
 use App\Models\Subtype;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Arma números de serie propios cuando el equipo no trae uno de fábrica.
@@ -20,7 +21,7 @@ use App\Models\Subtype;
  * El tipo ya no va al frente: lo pidió así almacén, porque la abreviatura
  * del tipo (LAP-, TOR-…) alargaba la serie sin decir nada que no dijera ya
  * la ficha del equipo. Si no se eligió subtipo, marca ni modelo, la serie
- * arranca con EQ.
+ * arranca con EQ. El número final es un consecutivo global del inventario.
  *
  * Es distinta de la etiqueta interna (MB-000147), que es la del QR: esa
  * identifica la pieza dentro del sistema, y esta se escribe en el equipo y
@@ -28,6 +29,9 @@ use App\Models\Subtype;
  */
 class GeneradorDeSeries
 {
+    /** Registro único que reserva el consecutivo para todo el inventario. */
+    private const CLAVE_SECUENCIA_GLOBAL = '__global__';
+
     /** Cuántas letras se toman de cada parte del nombre. */
     private const LETRAS = 3;
 
@@ -58,38 +62,61 @@ class GeneradorDeSeries
     }
 
     /**
-     * Genera $cantidad series consecutivas que no choquen con las que ya
-     * existen para ese prefijo.
+     * Reserva y genera $cantidad series consecutivas para todo el inventario.
+     *
+     * La reserva vive en la base de datos y se bloquea en un registro global.
+     * Así dos usuarios que generen series al mismo tiempo no reciben el mismo
+     * lote, aunque ninguno haya guardado todavía la entrada.
      *
      * @return array<int, string>
      */
     public static function generar(string $prefijo, int $cantidad): array
     {
         $cantidad = max(1, min($cantidad, 5000));
-        $desde = static::ultimoConsecutivo($prefijo);
 
-        return collect(range(1, $cantidad))
-            ->map(fn (int $i) => $prefijo.'-'.str_pad((string) ($desde + $i), self::DIGITOS, '0', STR_PAD_LEFT))
-            ->all();
+        return DB::transaction(function () use ($prefijo, $cantidad) {
+            DB::table('serial_sequences')->insertOrIgnore([
+                'prefijo' => self::CLAVE_SECUENCIA_GLOBAL,
+                'siguiente' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $secuencia = DB::table('serial_sequences')
+                ->where('prefijo', self::CLAVE_SECUENCIA_GLOBAL)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // También considera series antiguas o capturadas manualmente que
+            // todavía no hayan pasado por esta tabla de secuencias.
+            $desde = max((int) $secuencia->siguiente - 1, static::ultimoConsecutivoGlobal());
+            $siguiente = $desde + $cantidad + 1;
+
+            DB::table('serial_sequences')
+                ->where('id', $secuencia->id)
+                ->update(['siguiente' => $siguiente, 'updated_at' => now()]);
+
+            return collect(range(1, $cantidad))
+                ->map(fn (int $i) => $prefijo.'-'.str_pad((string) ($desde + $i), self::DIGITOS, '0', STR_PAD_LEFT))
+                ->all();
+        });
     }
 
-    /**
-     * El consecutivo más alto ya usado con ese prefijo.
-     *
-     * Se busca en todas las piezas y no solo en las de un producto: el
-     * prefijo describe al equipo, así que dos filas del mismo modelo no
-     * deben repetir número.
-     */
-    private static function ultimoConsecutivo(string $prefijo): int
+    /** El consecutivo numérico más alto ya usado en cualquier serie. */
+    private static function ultimoConsecutivoGlobal(): int
     {
         $usadas = ProductoSerial::query()
-            ->where('no_serie', 'like', $prefijo.'-%')
+            ->whereNotNull('no_serie')
+            ->where('no_serie', '!=', '')
             ->pluck('no_serie');
 
-        $largo = mb_strlen($prefijo) + 1;
-
         return (int) $usadas
-            ->map(fn (string $serie) => (int) mb_substr($serie, $largo))
+            ->map(function (string $serie) {
+                return preg_match('/(\d+)$/', trim($serie), $coincidencia)
+                    ? (int) $coincidencia[1]
+                    : null;
+            })
+            ->filter()
             ->max();
     }
 
