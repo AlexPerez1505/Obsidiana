@@ -102,7 +102,13 @@ class GeneradorDeSeries
         });
     }
 
-    /** El consecutivo numérico más alto ya usado en cualquier serie. */
+    /**
+     * El consecutivo más alto ya usado por una serie automática.
+     *
+     * Los números de fábrica y códigos capturados manualmente pueden terminar
+     * en muchos dígitos, pero no forman parte de nuestra secuencia. Solo se
+     * consideran etiquetas con el formato automático PREFIJO-0000.
+     */
     private static function ultimoConsecutivoGlobal(): int
     {
         $usadas = ProductoSerial::query()
@@ -112,7 +118,7 @@ class GeneradorDeSeries
 
         return (int) $usadas
             ->map(function (string $serie) {
-                return preg_match('/(\d+)$/', trim($serie), $coincidencia)
+                return preg_match('/-(\d{4})$/', trim($serie), $coincidencia)
                     ? (int) $coincidencia[1]
                     : null;
             })
