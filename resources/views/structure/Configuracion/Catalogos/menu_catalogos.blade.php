@@ -511,6 +511,18 @@
 
             // ---- Menú de tres puntos (acciones de categoría) ----
             var menus = document.querySelectorAll('.congress-menu');
+            function posicionarMenu(menu) {
+                var trigger = menu.querySelector('.congress-menu-trigger');
+                var dropdown = menu.querySelector('.congress-menu-dropdown');
+                var rect = trigger.getBoundingClientRect();
+                var altura = dropdown.getBoundingClientRect().height;
+                var top = rect.bottom + 4;
+                if (top + altura > window.innerHeight && rect.top - altura - 4 >= 0) {
+                    top = rect.top - altura - 4;
+                }
+                menu.style.setProperty('--menu-top', top + 'px');
+                menu.style.setProperty('--menu-right', (window.innerWidth - rect.right) + 'px');
+            }
             menus.forEach(function (menu) {
                 var trigger = menu.querySelector('.congress-menu-trigger');
                 trigger.addEventListener('click', function (e) {
@@ -529,10 +541,7 @@
                     menu.classList.toggle('open', open);
                     trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
                     if (open && menu.closest('.eq-list')) {
-                        var eqRect = trigger.getBoundingClientRect();
-                        var eqDropdown = menu.querySelector('.congress-menu-dropdown');
-                        var eqAltura = eqDropdown.getBoundingClientRect().height;
-                        menu.classList.toggle('open-up', eqRect.bottom + eqAltura + 4 > window.innerHeight && eqRect.top - eqAltura - 4 >= 0);
+                        posicionarMenu(menu);
                     } else if (open && menu.closest('.category-list')) {
                         var rect = trigger.getBoundingClientRect();
                         var dropdown = menu.querySelector('.congress-menu-dropdown');
@@ -546,6 +555,11 @@
                     }
                 });
             });
+            window.addEventListener('scroll', function () {
+                menus.forEach(function (menu) {
+                    if (menu.classList.contains('open') && menu.closest('.eq-list')) posicionarMenu(menu);
+                });
+            }, true);
             // Cerrar menú al hacer clic fuera
             document.addEventListener('click', function () {
                 menus.forEach(function (m) {
