@@ -41,6 +41,7 @@ class VentaResource extends JsonResource
             'iva_monto' => (float) $this->iva_monto,
             // Equipo que el cliente entrega a cambio.
             'valor_a_cuenta' => (float) $this->valor_a_cuenta,
+            'equipos_a_cuenta' => array_values($this->equipos_a_cuenta ?? []),
             'total' => (float) $this->total,
             'total_contrato' => (float) $this->total_contrato,
             // Lo que se le cobra de verdad: el total del contrato si hay valor a cuenta.

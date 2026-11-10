@@ -59,6 +59,8 @@
             @endif
         </dl>
 
+        @include('structure.gestion_Inventario.ordenes_salida._asignar')
+
         <div class="os-avance">
             <div class="os-riel"><span style="width:{{ $avance['pct'] }}%"></span></div>
             <span class="os-riel-txt">{{ $avance['hechos'] }} de {{ $avance['total'] }} pasos hechos</span>

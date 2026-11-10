@@ -78,13 +78,13 @@
                                     @endif
                                     @can('ventas.eliminar')
                                         <div class="erp-menu-sep"></div>
-                                        <form method="POST" action="{{ route('commercial.ventas.destroy', $v) }}"
-                                              data-confirm="Eliminar la venta {{ $v->folio }} solo si no tiene cobros registrados. ¿Continuar?">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="erp-menu-item danger" style="width:100%;text-align:left;">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>Eliminar
-                                            </button>
-                                        </form>
+                                        {{-- Sin NIP las primeras 72 horas; después lo pide. Si ya tiene
+                                             cobros o el equipo salió, el servidor no la deja borrar. --}}
+                                        <button type="button" class="erp-menu-item danger" data-eliminar-doc
+                                                data-url="{{ route('commercial.ventas.destroy', $v) }}" data-folio="{{ $v->folio }}" data-que="la venta"
+                                                data-nip="{{ \App\Support\EliminarConNip::requiere($v) ? 1 : 0 }}" data-horas="{{ \App\Support\EliminarConNip::horasRestantes($v) }}">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Eliminar venta
+                                        </button>
                                     @endcan
                                     @can('ventas.eliminar_definitivo')
                                         <form method="POST" action="{{ route('commercial.ventas.destroyDefinitivo', $v) }}"
@@ -183,6 +183,7 @@
         @endforelse
     </div>
     @include('partials._paginacion', ['paginator' => $ventas])
+    @include('structure.commercial_management._eliminar_doc')
 
 @push('scripts')
 <script>

@@ -38,7 +38,14 @@
             @endforeach
         </div>
 
+        @php $t = config('comisiones'); @endphp
+        <div class="cm-reglas" aria-label="Reglas de comisión">
+            <span><b>{{ rtrim(rtrim(number_format($t['endoscopia'], 2), '0'), '.') }} %</b> endoscopia</span>
+            <span><b>{{ rtrim(rtrim(number_format($t['general'], 2), '0'), '.') }} %</b> lo demás</span>
+            <span><b>{{ rtrim(rtrim(number_format($t['congreso'], 2), '0'), '.') }} %</b> ventas de congreso, repartido entre quienes fueron</span>
+        </div>
         <span class="cm-nota">
+            Sin IVA, después de descuentos. Una venta es de congreso si la venta o su cliente están registrados en uno; ese porcentaje se divide entre los usuarios asignados al congreso.
             @if ($base === 'cobrado')
                 La comisión se calcula sobre el dinero que entró en {{ $periodoTexto }}, aunque la venta sea de otro mes.
             @else
@@ -81,7 +88,9 @@
                     <th class="r">Ventas</th>
                     <th>Vendido</th>
                     <th class="r">Cobrado</th>
-                    <th class="r">% comisión</th>
+                    <th class="r">Endoscopia</th>
+                    <th class="r">Lo demás</th>
+                    <th class="r">Congresos</th>
                     <th class="r">Comisión</th>
                     <th class="r">Pagado</th>
                     <th class="r">Pendiente</th>
@@ -114,32 +123,27 @@
                             </div>
                         </td>
                         <td class="r ok">${{ number_format($f['cobrado'], 2) }}</td>
-                        <td class="r">
-                            @if ($puedeGestionar)
-                                <form method="POST" action="{{ route('commercial.comisiones.porcentaje', $f['asesor']) }}" class="cm-pct">
-                                    @csrf
-                                    @method('PUT')
-                                    <input type="hidden" name="periodo" value="{{ $periodo }}">
-                                    <input type="number" name="porcentaje" step="0.01" min="0" max="100"
-                                           value="{{ $f['porcentaje'] !== null ? rtrim(rtrim(number_format($f['porcentaje'], 2, '.', ''), '0'), '.') : '' }}"
-                                           placeholder="—" aria-label="Porcentaje de comisión de {{ $f['asesor']->name }}"
-                                           onchange="this.form.submit()">
-                                    <span>%</span>
-                                </form>
-                            @else
-                                {{ $f['porcentaje'] !== null ? rtrim(rtrim(number_format($f['porcentaje'], 2, '.', ''), '0'), '.') . '%' : '—' }}
-                            @endif
+                        <td class="r" title="Sobre ${{ number_format($f['base_endoscopia'], 2) }}">
+                            {{ $f['comision_endoscopia'] > 0 ? '$'.number_format($f['comision_endoscopia'], 2) : '—' }}
+                        </td>
+                        <td class="r" title="Sobre ${{ number_format($f['base_otros'], 2) }}">
+                            {{ $f['comision_otros'] > 0 ? '$'.number_format($f['comision_otros'], 2) : '—' }}
                         </td>
                         <td class="r">
-                            @if ($f['porcentaje'] === null)
-                                <span class="cm-sin">Sin %</span>
+                            @if ($f['comision_congreso'] > 0)
+                                ${{ number_format($f['comision_congreso'], 2) }}
+                                <div class="cm-sin">{{ $f['ventas_congreso'] }} venta(s)</div>
                             @else
-                                <b>${{ number_format($f['comision'], 2) }}</b>
+                                —
                             @endif
+                            @foreach ($f['avisos'] as $aviso)
+                                <div class="cm-aviso" title="{{ $aviso }}">Congreso sin asignados</div>
+                            @endforeach
                         </td>
+                        <td class="r"><b>${{ number_format($f['comision'], 2) }}</b></td>
                         <td class="r ok">${{ number_format($f['pagado'], 2) }}</td>
                         <td class="r">
-                            @if ($f['porcentaje'] === null)
+                            @if ($f['comision'] <= 0 && $f['pagado'] <= 0)
                                 —
                             @elseif ($liquidado)
                                 <span class="cg-chip es-pagado">Liquidado</span>
@@ -157,8 +161,7 @@
                                         data-id="{{ $f['asesor']->id }}"
                                         data-nombre="{{ $f['asesor']->name }}"
                                         data-monto="{{ $f['pendiente'] > 0 ? number_format($f['pendiente'], 2, '.', '') : '' }}"
-                                        @disabled($f['porcentaje'] === null)
-                                        title="{{ $f['porcentaje'] === null ? 'Primero define su porcentaje' : 'Registrar un pago de comisión' }}">
+                                        title="Registrar un pago de comisión">
                                     Registrar pago
                                 </button>
                             </td>
@@ -166,7 +169,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $puedeGestionar ? 10 : 9 }}">
+                        <td colspan="{{ $puedeGestionar ? 12 : 11 }}">
                             <div class="empty-state">
                                 <span class="ico">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -289,6 +292,10 @@
         .cm-pct input:focus { border-color:var(--primary); outline:none; }
         .cm-pct span { color:var(--muted); font-size:12.5px; }
         .cm-sin { color:var(--muted); font-size:12px; }
+        .cm-reglas { display:flex; flex-wrap:wrap; gap:6px; }
+        .cm-reglas span { padding:4px 10px; border:1px solid var(--border); border-radius:999px; background:var(--surface); font-size:12.5px; color:var(--muted); }
+        .cm-reglas b { color:var(--text); }
+        .cm-aviso { font-size:11.5px; color:var(--accent); cursor:help; }
         .cm-pend { color:var(--accent); }
 
         .cm-modal { border:none; border-radius:16px; padding:0; width:min(480px, calc(100vw - 32px)); background:var(--surface, #fff); color:var(--text); box-shadow:0 24px 64px rgba(0,0,0,.28); }

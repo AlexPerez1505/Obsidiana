@@ -40,6 +40,7 @@ class CotizacionResource extends JsonResource
             'envio' => (float) $this->envio,
             'iva_monto' => (float) $this->iva_monto,
             'valor_a_cuenta' => (float) $this->valor_a_cuenta,
+            'equipos_a_cuenta' => array_values($this->equipos_a_cuenta ?? []),
             'total' => (float) $this->total,
             'total_contrato' => (float) $this->total_contrato,
             'plan_nombre' => $this->plan_nombre,

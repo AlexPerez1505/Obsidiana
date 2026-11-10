@@ -171,6 +171,12 @@ class ChecklistProceso
             $razones[] = 'Hay '.$malas->count().' punto(s) que siguen mal. El equipo no puede pasar a stock así.';
         }
 
+        // Sin evidencia no se cierra: cuentan las fotos de cierre y las de
+        // los avances de días anteriores.
+        if ($cuantasFotos < 1) {
+            $razones[] = 'Falta al menos una foto que demuestre que quedó funcionando.';
+        }
+
         return $razones;
     }
 

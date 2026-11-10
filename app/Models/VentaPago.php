@@ -12,7 +12,7 @@ class VentaPago extends Model
     protected $table = 'venta_pagos';
 
     protected $fillable = [
-        'venta_id', 'nombre', 'fecha', 'porcentaje', 'monto', 'bloqueado', 'orden',
+        'venta_id', 'nombre', 'fecha', 'porcentaje', 'monto', 'iva_monto', 'bloqueado', 'orden',
     ];
 
     protected function casts(): array
@@ -21,6 +21,7 @@ class VentaPago extends Model
             'fecha' => 'date',
             'porcentaje' => 'decimal:2',
             'monto' => 'decimal:2',
+            'iva_monto' => 'decimal:2',
             'bloqueado' => 'boolean',
             'orden' => 'integer',
         ];

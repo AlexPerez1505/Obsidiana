@@ -3,67 +3,170 @@
 namespace App\Jobs;
 
 use App\Contracts\WhatsAppSender;
+use App\Models\Campana;
 use App\Models\CampanaDestinatario;
+use App\Services\Promociones\Lanzador;
+use App\Services\Promociones\MensajeCampana;
+use App\Services\WhatsApp\LogWhatsAppSender;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\RateLimited;
 
 /**
- * Manda el mensaje de una campaña a UN destinatario, y deja el
- * resultado en su fila de campana_destinatarios (nunca se manda sin
- * dejar rastro de qué pasó).
+ * Manda la promoción a UN destinatario y deja el resultado en su renglón.
+ *
+ * • No duplica: antes de llamar a WhatsApp "reclama" el renglón con un
+ *   UPDATE condicionado (pendiente → enviando). Si otro proceso ya lo
+ *   tomó, este no hace nada.
+ * • Reintenta solo errores pasajeros (red, límites, 5xx), con espera
+ *   creciente; los definitivos (número sin WhatsApp, plantilla rechazada,
+ *   el cliente bloqueó el marketing) se marcan como fallo de inmediato.
+ * • Revisa en el último momento la pausa, el consentimiento y la frecuencia.
  */
 class EnviarMensajeCampanaJob implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public int $destinatarioId)
+    /** Reintentos de errores pasajeros (las esperas del limitador no cuentan aquí). */
+    public int $maxExceptions = 3;
+
+    public function __construct(public int $destinatarioId, public bool $prueba = false)
     {
     }
 
-    /** Un mensaje por segundo: aquí es donde de verdad importa no rebasar el ritmo de la cuenta de WhatsApp. */
+    public function retryUntil(): \DateTimeInterface
+    {
+        return now()->addHours(6);
+    }
+
     public function middleware(): array
     {
-        return [new RateLimited('whatsapp')];
+        // La prueba se manda al momento (dispatchSync): no pasa por el limitador de la cola.
+        return $this->prueba ? [] : [new RateLimited('whatsapp')];
     }
 
-    public function handle(WhatsAppSender $sender): void
+    public function handle(WhatsAppSender $sender, MensajeCampana $mensajes, Lanzador $lanzador): void
     {
-        $destinatario = CampanaDestinatario::with(['cliente', 'campana'])->find($this->destinatarioId);
+        $d = CampanaDestinatario::with(['campana.cupon', 'cliente', 'cupon'])->find($this->destinatarioId);
 
-        if (! $destinatario || $destinatario->estado !== CampanaDestinatario::ESTADO_PENDIENTE) {
+        if (! $d || $d->estado !== CampanaDestinatario::PENDIENTE) {
             return;
         }
 
-        $cliente = $destinatario->cliente;
+        $campana = $d->campana;
 
-        // Última barrera antes de mandar: si en el momento de armar la
-        // campaña calificaba pero ya no (revocó, o nunca llegó a
-        // confirmar), se excluye aquí también, no solo al armar la lista.
-        if (! $cliente || ! $cliente->puedeRecibirPromociones()) {
-            $destinatario->update([
-                'estado' => CampanaDestinatario::ESTADO_EXCLUIDO,
-                'error' => 'El cliente ya no tiene el consentimiento confirmado al momento de enviar.',
-            ]);
+        if (! $d->es_prueba) {
+            if ($campana->estado === Campana::CANCELADA) {
+                $d->update(['estado' => CampanaDestinatario::CANCELADO]);
 
-            return;
+                return;
+            }
+            if ($campana->estado !== Campana::ENVIANDO) {
+                return; // pausada: se queda pendiente y se encola al reanudar
+            }
+
+            // Última barrera: pudo darse de baja después de armar la lista.
+            if (! $d->cliente || ! $d->cliente->puedeRecibirPromociones()) {
+                $d->update(['estado' => CampanaDestinatario::OMITIDO_CONSENTIMIENTO, 'error' => 'Sin consentimiento vigente al momento de enviar.']);
+                $lanzador->cerrarSiTermino($campana);
+
+                return;
+            }
+
+            if ($this->recibioOtraHacePoco($d)) {
+                $d->update(['estado' => CampanaDestinatario::OMITIDO_FRECUENCIA, 'error' => 'Recibió otra promoción en las últimas '.config('promociones.frecuencia_horas').' h.']);
+                $lanzador->cerrarSiTermino($campana);
+
+                return;
+            }
         }
 
-        $resultado = $sender->enviar($cliente->telefono, $destinatario->campana->mensaje);
+        // Reclamo atómico: si dos procesos agarran el mismo envío, solo uno sigue.
+        $tomado = CampanaDestinatario::whereKey($d->id)
+            ->where('estado', CampanaDestinatario::PENDIENTE)
+            ->update(['estado' => CampanaDestinatario::ENVIANDO, 'intentos' => $d->intentos + 1, 'updated_at' => now()]);
 
-        if ($resultado->exito) {
-            $destinatario->update([
-                'estado' => CampanaDestinatario::ESTADO_ENVIADO,
-                'whatsapp_message_id' => $resultado->messageId,
+        if (! $tomado) {
+            return;
+        }
+        $d->syncOriginalAttribute('estado');
+        $d->estado = CampanaDestinatario::ENVIANDO;
+        $d->syncOriginalAttribute('estado');
+
+        // Mientras PROMO_SOLO_NUMEROS_PRUEBA esté encendido, solo los números
+        // autorizados reciben de verdad; los demás quedan como simulados.
+        if (! $d->es_prueba && config('promociones.solo_numeros_prueba') && ! $this->esNumeroDePrueba((string) $d->telefono)) {
+            $sender = new LogWhatsAppSender();
+        }
+
+        $r = $sender->enviarPlantilla($mensajes->paraDestinatario($d));
+
+        if ($r->exito) {
+            $d->update([
+                'estado' => $r->simulado ? CampanaDestinatario::SIMULADO : CampanaDestinatario::ENVIADO,
+                'simulado' => $r->simulado,
+                'whatsapp_message_id' => $r->messageId,
                 'enviado_en' => now(),
+                'error' => null,
+                'error_codigo' => null,
             ]);
+        } elseif ($r->transitorio && ! $d->es_prueba && $this->attempts() < 4) {
+            // Por consulta: en memoria el renglón todavía dice "pendiente" y
+            // Eloquent no guardaría el regreso desde "enviando".
+            CampanaDestinatario::whereKey($d->id)->update(['estado' => CampanaDestinatario::PENDIENTE, 'error' => $r->error, 'error_codigo' => $r->codigo]);
+            $this->release([60, 300, 900][min($this->attempts() - 1, 2)]);
 
             return;
+        } else {
+            $d->update([
+                'estado' => CampanaDestinatario::FALLO,
+                'error' => $r->error,
+                'error_codigo' => $r->codigo,
+                'fallo_en' => now(),
+            ]);
         }
 
-        $destinatario->update([
-            'estado' => CampanaDestinatario::ESTADO_FALLO,
-            'error' => $resultado->error,
-        ]);
+        if (! $d->es_prueba) {
+            $lanzador->cerrarSiTermino($campana);
+        }
+    }
+
+    public function failed(?\Throwable $e): void
+    {
+        CampanaDestinatario::whereKey($this->destinatarioId)
+            ->whereIn('estado', [CampanaDestinatario::PENDIENTE, CampanaDestinatario::ENVIANDO])
+            ->update([
+                'estado' => CampanaDestinatario::FALLO,
+                'fallo_en' => now(),
+                'error_codigo' => 'reintentos',
+                'error' => 'No se pudo enviar después de varios intentos.',
+            ]);
+    }
+
+    private function recibioOtraHacePoco(CampanaDestinatario $d): bool
+    {
+        $horas = (int) config('promociones.frecuencia_horas');
+        if ($horas <= 0) {
+            return false;
+        }
+
+        return CampanaDestinatario::where('cliente_id', $d->cliente_id)
+            ->where('id', '!=', $d->id)
+            ->where('campana_id', '!=', $d->campana_id)
+            ->where('es_prueba', false)
+            ->whereIn('estado', [CampanaDestinatario::ENVIADO, CampanaDestinatario::ENTREGADO, CampanaDestinatario::LEIDO])
+            ->where('enviado_en', '>=', now()->subHours($horas))
+            ->exists();
+    }
+
+    private function esNumeroDePrueba(string $telefono): bool
+    {
+        foreach (config('promociones.numeros_prueba') as $n) {
+            if (\App\Services\WhatsApp\Telefono::e164($n) === $telefono) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

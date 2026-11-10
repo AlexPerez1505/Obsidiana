@@ -36,11 +36,16 @@ class CobroController extends Controller
             'venta' => $venta,
             'metodos' => Cobro::METODOS,
             'excedentePendiente' => $this->calendario->excedentePendiente($venta),
+            'ivaCandidatas' => app(\App\Services\Ventas\IvaEnMensualidades::class)->candidatas($venta),
         ]);
     }
 
     public function store(Request $request, Venta $venta): RedirectResponse
     {
+        if (! \App\Services\Ventas\ComprobantesDePago::puedeAprobar($request->user())) {
+            return back()->withErrors(['monto' => 'Solo un administrador o alguien con NIP registra cobros directo. Sube el pago como comprobante para que lo aprueben.']);
+        }
+
         try {
             $this->cobros->asegurarCobrable($venta);
         } catch (OperacionRechazada $e) {
@@ -48,6 +53,14 @@ class CobroController extends Controller
         }
 
         $data = $request->validate(CobrosDeVenta::reglasCobro($venta), CobrosDeVenta::MENSAJES_COBRO);
+
+        // ¿Ya lo subió el vendedor? Entonces se aprueba ese, no se captura otro.
+        $iguales = app(\App\Services\Ventas\ComprobantesDePago::class)->pendientesIguales($venta, (float) $data['monto']);
+        if ($iguales->isNotEmpty() && ! $request->boolean('es_otro_pago')) {
+            return back()->withInput()
+                ->withErrors(['monto' => \App\Services\Ventas\ComprobantesDePago::avisoDuplicado($iguales)])
+                ->with('cb_duplicado', true);
+        }
 
         try {
             $r = $this->cobros->registrar($venta, $data, (array) $request->file('evidencias', []));
@@ -110,6 +123,21 @@ class CobroController extends Controller
         } catch (OperacionRechazada $e) {
             return back()->withErrors([$e->campo => $e->getMessage()]);
         }
+    }
+
+    /** Agrega IVA (16 %) a lo que falta de las mensualidades elegidas de una venta sin IVA. */
+    public function agregarIva(Request $request, Venta $venta, \App\Services\Ventas\IvaEnMensualidades $iva): RedirectResponse
+    {
+        $data = $request->validate(['pagos' => ['required', 'array', 'min:1'], 'pagos.*' => ['integer']],
+            ['pagos.required' => 'Elige al menos una mensualidad.']);
+
+        return back()->with('status', $iva->agregar($venta, $data['pagos'], $request->user()));
+    }
+
+    /** Quita el IVA agregado mientras no se haya cobrado. */
+    public function quitarIva(Request $request, Venta $venta, \App\Services\Ventas\IvaEnMensualidades $iva): RedirectResponse
+    {
+        return back()->with('status', $iva->quitar($venta, $request->user()));
     }
 
     /** Reasigna a las parcialidades pendientes el excedente de abonos sueltos o que se pasaron de lo que les tocaba. */

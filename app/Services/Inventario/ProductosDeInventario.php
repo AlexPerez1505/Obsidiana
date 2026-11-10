@@ -110,6 +110,7 @@ class ProductosDeInventario
         if ($busqueda !== null && $busqueda !== '') {
             $query->where(function ($q) use ($busqueda) {
                 $q->where('tipo_equipo', 'like', "%{$busqueda}%")
+                    ->orWhere('subtipo', 'like', "%{$busqueda}%")
                     ->orWhere('marca', 'like', "%{$busqueda}%")
                     ->orWhere('modelo', 'like', "%{$busqueda}%")
                     ->orWhere('referencia', 'like', "%{$busqueda}%")

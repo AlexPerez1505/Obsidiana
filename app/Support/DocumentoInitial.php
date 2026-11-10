@@ -33,6 +33,8 @@ class DocumentoInitial
             'descuento_tipo' => $doc->descuento_tipo ?? 'porcentaje',
             'descuento_valor' => (float) ($doc->descuento_valor ?? 0),
             'valor_a_cuenta' => (float) ($doc->valor_a_cuenta ?? 0),
+            'equipos_a_cuenta' => array_values($doc->equipos_a_cuenta ?? []),
+            'cupon_codigo' => $doc->cupon_codigo ?? '',
             'plan_nombre' => $doc->plan_nombre ?? 'Plan Personalizado',
             'num_meses' => (int) ($doc->num_meses ?? 2),
             'items' => $doc ? $doc->items->map(fn ($i) => [
@@ -48,6 +50,9 @@ class DocumentoInitial
                 'precio_unitario' => (float) $i->precio_unitario,
                 'sobreprecio' => (float) $i->sobreprecio,
                 'es_regalo' => (bool) $i->es_regalo,
+                'contenido' => $i->tipo_item === 'paquete' && $i->paquete_id
+                    ? (\App\Models\Paquete::with(['productos', 'equipos'])->find($i->paquete_id)?->contenido() ?? [])
+                    : [],
             ])->values() : [],
             'pagos' => $doc ? $doc->pagos->map(fn ($p) => [
                 'nombre' => $p->nombre,

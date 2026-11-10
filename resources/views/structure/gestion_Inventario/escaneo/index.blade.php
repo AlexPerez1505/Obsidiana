@@ -90,7 +90,7 @@
                     <span class="luz"></span>
                     <span class="t">
                         <b data-estado-titulo>Listo para escanear</b>
-                        <span data-estado-nota>Dispara la pistola sobre la etiqueta. No hace falta hacer clic en ningún lado.</span>
+                        <span data-estado-nota>Dispara la pistola sobre la etiqueta o usa la cámara del celular.</span>
                     </span>
                 </div>
 
@@ -98,6 +98,11 @@
                 <div class="esc-manual">
                     <input type="text" data-manual placeholder="MB-000147" autocomplete="off" spellcheck="false">
                     <button type="button" class="btn btn--ghost" data-manual-ok>Agregar</button>
+                </div>
+
+                {{-- Sin pistola: con la cámara del celular (en vivo o foto del QR). --}}
+                <div style="margin-top:12px;">
+                    @include('partials.lector_qr', ['id' => 'escaneo'])
                 </div>
 
                 <div class="esc-error" data-error style="display:none;"></div>
@@ -139,7 +144,8 @@
             </div>
             <p class="muted">
                 La pistola escribe la etiqueta como si fuera un teclado. Esta pantalla la escucha
-                sola: no tienes que pararte en ningún campo.
+                sola: no tienes que pararte en ningún campo. Sin pistola, usa la cámara del celular
+                ("Escanear con cámara") o toma una foto del QR.
             </p>
             <p class="muted" style="margin-top:8px;">
                 Si pasas dos veces la misma pieza, no se duplica: sube su contador.
@@ -221,6 +227,9 @@
                 const v = manual.value.trim();
                 if (v) { manual.value = ''; procesar(v); }
             });
+
+            // La cámara del celular hace lo mismo que la pistola.
+            document.querySelector('[data-lectorqr]')?.addEventListener('lector-qr', e => procesar(e.detail.texto));
 
             /* ===================== Consultar y agregar ===================== */
             async function procesar(leido) {

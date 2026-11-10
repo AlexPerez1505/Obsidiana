@@ -3,6 +3,7 @@
 use App\Http\Controllers\CobranzaController;
 use App\Http\Controllers\CobroController;
 use App\Http\Controllers\ComisionController;
+use App\Http\Controllers\ComprobantePagoController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\VentaRapidaController;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,21 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified', 'approved', 'can:cobranza.ver'])
     ->get('/gestion-comercial/cobranza', [CobranzaController::class, 'index'])
     ->name('commercial.cobranza.index');
+
+/*
+|--------------------------------------------------------------------------
+| Pagos por aprobar: el vendedor sube el comprobante (o avisa del efectivo)
+| y solo un administrador o alguien con NIP lo aprueba (ComprobantesDePago).
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'verified', 'approved'])->prefix('/gestion-comercial')->name('commercial.comprobantes.')->group(function () {
+    Route::post('/ventas/{venta}/comprobantes', [ComprobantePagoController::class, 'store'])
+        ->middleware('can:cobranza.comprobantes')->name('store');
+    Route::post('/comprobantes/{solicitud}/aprobar', [ComprobantePagoController::class, 'aprobar'])->name('aprobar');
+    Route::post('/comprobantes/{solicitud}/ligar', [ComprobantePagoController::class, 'ligar'])->name('ligar');
+    Route::post('/comprobantes/{solicitud}/rechazar', [ComprobantePagoController::class, 'rechazar'])->name('rechazar');
+    Route::delete('/comprobantes/{solicitud}', [ComprobantePagoController::class, 'destroy'])->name('destroy');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -87,6 +103,9 @@ Route::middleware(['auth', 'verified', 'approved'])
             // Ajustes al plan
             Route::post('/recorrer', [CobroController::class, 'recorrer'])->middleware('can:cobranza.ajustar')->name('recorrer');
             Route::post('/rebalancear', [CobroController::class, 'rebalancear'])->middleware('can:cobranza.ajustar')->name('rebalancear');
+            // Venta que salió sin IVA: agregarlo a lo que falta de las mensualidades (o quitarlo).
+            Route::post('/iva', [CobroController::class, 'agregarIva'])->middleware('can:cobranza.ajustar')->name('iva.agregar');
+            Route::post('/iva/quitar', [CobroController::class, 'quitarIva'])->middleware('can:cobranza.ajustar')->name('iva.quitar');
             Route::post('/absorber-excedente', [CobroController::class, 'absorberExcedente'])->middleware('can:cobranza.ajustar')->name('absorber-excedente');
             Route::post('/parcialidad', [CobroController::class, 'agregarParcialidad'])->middleware('can:cobranza.ajustar')->name('parcialidad.agregar');
             Route::put('/parcialidad/{pago}', [CobroController::class, 'actualizarParcialidad'])->middleware('can:cobranza.ajustar')->name('parcialidad.actualizar');

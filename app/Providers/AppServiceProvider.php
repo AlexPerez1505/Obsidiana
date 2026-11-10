@@ -27,7 +27,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // WhatsApp: log (simulado, desarrollo) o meta (API oficial). Ver config/promociones.php.
+        $this->app->bind(\App\Contracts\WhatsAppSender::class, fn () => config('promociones.whatsapp.driver') === 'meta'
+            ? new \App\Services\WhatsApp\MetaCloudSender()
+            : new \App\Services\WhatsApp\LogWhatsAppSender());
     }
 
     public function boot(): void
@@ -36,7 +39,29 @@ class AppServiceProvider extends ServiceProvider
         $this->limitarDocumentosPorAsesor();
         $this->configurarApi();
         $this->sincronizarGarantias();
+        $this->configurarPromociones();
         \App\Support\ObsVivo::escuchar();
+    }
+
+    /**
+     * Promociones: ritmo de envío a WhatsApp, límites de la oferta pública
+     * y el cupón que sigue a la venta (cancelar o borrar lo devuelve).
+     */
+    private function configurarPromociones(): void
+    {
+        RateLimiter::for('whatsapp', fn () => Limit::perMinute(max(1, (int) config('promociones.mensajes_por_minuto'))));
+        RateLimiter::for('promo-publica', fn (Request $request) => Limit::perMinute(60)->by('promo:'.$request->ip()));
+        RateLimiter::for('promo-confirmar', fn (Request $request) => Limit::perMinutes(10, 8)->by('promo-conf:'.$request->route('token').'|'.$request->ip()));
+
+        $cupones = fn () => app(\App\Services\Promociones\MotorDeCupones::class);
+
+        Venta::updated(function (Venta $v) use ($cupones) {
+            if ($v->wasChanged('estado') && $v->estado === 'cancelada') {
+                $cupones()->revertirDeVenta($v, 'Venta cancelada');
+            }
+        });
+        Venta::deleting(fn (Venta $v) => $cupones()->revertirDeVenta($v, 'Venta eliminada'));
+        \App\Models\Cotizacion::deleting(fn ($c) => $cupones()->liberarDeCotizacion($c, 'Cotización eliminada'));
     }
 
     /**

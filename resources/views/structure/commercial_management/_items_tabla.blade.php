@@ -38,6 +38,7 @@
                         @if (! empty($it->no_series))
                             <div class="doc-det">No. Serie: {{ $it->no_series }}</div>
                         @endif
+                        @include('structure.commercial_management._paquete_contenido', ['it' => $it])
                     </td>
                     <td>{{ $it->marca ?: '—' }}</td>
                     <td class="c">{{ $it->cantidad }}</td>

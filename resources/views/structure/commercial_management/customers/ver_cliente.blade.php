@@ -157,6 +157,9 @@
                     <p class="vc-text vc-pre {{ $customer->comentarios ? '' : 'vc-empty' }}">{{ $customer->comentarios ?: 'Sin comentarios' }}</p>
                 </div>
             </x-ui.card>
+
+            {{-- Marketing y promociones: consentimiento, campañas recibidas y cupones --}}
+            @include('structure.promociones._perfil_cliente', ['customer' => $customer])
         </div>
 
         <div class="vc-col">

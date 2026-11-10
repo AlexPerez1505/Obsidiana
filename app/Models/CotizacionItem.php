@@ -47,6 +47,11 @@ class CotizacionItem extends Model
         return $this->belongsTo(Producto::class);
     }
 
+    public function paquete(): BelongsTo
+    {
+        return $this->belongsTo(Paquete::class);
+    }
+
     /**
      * Importe del renglón (0 si es regalo).
      */

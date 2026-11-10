@@ -4,45 +4,56 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 /**
- * Una campaña de promoción: el mensaje, a quién se le manda (por
- * filtro), y el registro de qué pasó con cada destinatario.
+ * Una campaña de promoción por WhatsApp: el mensaje, la oferta (productos,
+ * cupón, vigencia), a quién va (filtros) y lo que pasó con cada envío.
+ *
+ * borrador → programada → enviando ⇄ pausada → completada
+ *         ↘ (enviar ahora) ↗          cualquiera sin terminar → cancelada
  */
 class Campana extends Model
 {
     protected $table = 'campanas';
 
-    public const ESTADO_BORRADOR = 'borrador';
-    public const ESTADO_EN_COLA = 'en_cola';
-    public const ESTADO_ENVIANDO = 'enviando';
-    public const ESTADO_COMPLETADA = 'completada';
-    public const ESTADO_CANCELADA = 'cancelada';
+    public const BORRADOR = 'borrador';
+    public const PROGRAMADA = 'programada';
+    public const ENVIANDO = 'enviando';
+    public const PAUSADA = 'pausada';
+    public const COMPLETADA = 'completada';
+    public const CANCELADA = 'cancelada';
 
     public const ESTADOS = [
-        self::ESTADO_BORRADOR => 'Borrador',
-        self::ESTADO_EN_COLA => 'En cola',
-        self::ESTADO_ENVIANDO => 'Enviando',
-        self::ESTADO_COMPLETADA => 'Completada',
-        self::ESTADO_CANCELADA => 'Cancelada',
+        self::BORRADOR => 'Borrador',
+        self::PROGRAMADA => 'Programada',
+        self::ENVIANDO => 'Enviando',
+        self::PAUSADA => 'Pausada',
+        self::COMPLETADA => 'Completada',
+        self::CANCELADA => 'Cancelada',
     ];
 
     protected $fillable = [
-        'nombre',
-        'mensaje',
-        'filtros',
-        'creado_por',
-        'programada_para',
-        'estado',
+        'nombre', 'titulo_oferta', 'mensaje', 'plantilla', 'imagen_path', 'cupon_id', 'cupon_exclusivo',
+        'filtros', 'creado_por', 'actualizado_por', 'enviado_por', 'cancelado_por',
+        'programada_para', 'vigencia_inicio', 'vigencia_fin', 'estado',
+        'iniciada_en', 'pausada_en', 'terminada_en', 'cancelada_en', 'prueba_enviada_en',
     ];
 
     protected function casts(): array
     {
         return [
             'filtros' => 'array',
+            'cupon_exclusivo' => 'boolean',
             'programada_para' => 'datetime',
+            'vigencia_inicio' => 'datetime',
+            'vigencia_fin' => 'datetime',
+            'iniciada_en' => 'datetime',
+            'pausada_en' => 'datetime',
+            'terminada_en' => 'datetime',
+            'cancelada_en' => 'datetime',
+            'prueba_enviada_en' => 'datetime',
         ];
     }
 
@@ -51,44 +62,89 @@ class Campana extends Model
         return $this->belongsTo(User::class, 'creado_por');
     }
 
+    public function editor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'actualizado_por');
+    }
+
+    public function cupon(): BelongsTo
+    {
+        return $this->belongsTo(Cupon::class, 'cupon_id');
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(CampanaItem::class)->orderBy('orden');
+    }
+
     public function destinatarios(): HasMany
     {
         return $this->hasMany(CampanaDestinatario::class);
     }
 
-    public function clientes(): BelongsToMany
+    public function eventos(): HasMany
     {
-        return $this->belongsToMany(Customer::class, 'campana_destinatarios', 'campana_id', 'cliente_id')
-            ->withPivot(['estado', 'whatsapp_message_id', 'enviado_en', 'entregado_en', 'leido_en', 'error'])
-            ->withTimestamps();
+        return $this->hasMany(MktEvento::class)->latest('id');
     }
 
     public function estadoLabel(): string
     {
-        return self::ESTADOS[$this->estado] ?? $this->estado;
+        return self::ESTADOS[$this->estado] ?? ucfirst((string) $this->estado);
     }
 
-    public function puedeLanzarse(): bool
+    public function tonoEstado(): string
     {
-        return $this->estado === self::ESTADO_BORRADOR;
-    }
-
-    /** Resumen rápido de en qué van los envíos, para el listado y el detalle. */
-    public function resumenEnvios(): array
-    {
-        $conteos = $this->destinatarios()
-            ->selectRaw('estado, count(*) as total')
-            ->groupBy('estado')
-            ->pluck('total', 'estado');
-
         return [
-            'total' => $conteos->sum(),
-            'pendiente' => $conteos->get(CampanaDestinatario::ESTADO_PENDIENTE, 0),
-            'enviado' => $conteos->get(CampanaDestinatario::ESTADO_ENVIADO, 0),
-            'entregado' => $conteos->get(CampanaDestinatario::ESTADO_ENTREGADO, 0),
-            'leido' => $conteos->get(CampanaDestinatario::ESTADO_LEIDO, 0),
-            'fallo' => $conteos->get(CampanaDestinatario::ESTADO_FALLO, 0),
-            'excluido' => $conteos->get(CampanaDestinatario::ESTADO_EXCLUIDO, 0),
-        ];
+            self::BORRADOR => 'neutral', self::PROGRAMADA => 'info', self::ENVIANDO => 'info',
+            self::PAUSADA => 'warn', self::COMPLETADA => 'ok', self::CANCELADA => 'danger',
+        ][$this->estado] ?? 'neutral';
+    }
+
+    public function editable(): bool
+    {
+        return in_array($this->estado, [self::BORRADOR, self::PROGRAMADA], true);
+    }
+
+    public function puedeEnviarse(): bool
+    {
+        return in_array($this->estado, [self::BORRADOR, self::PROGRAMADA], true);
+    }
+
+    public function puedePausarse(): bool
+    {
+        return in_array($this->estado, [self::ENVIANDO, self::PROGRAMADA], true);
+    }
+
+    public function puedeReanudarse(): bool
+    {
+        return $this->estado === self::PAUSADA;
+    }
+
+    public function puedeCancelarse(): bool
+    {
+        return in_array($this->estado, [self::BORRADOR, self::PROGRAMADA, self::ENVIANDO, self::PAUSADA], true);
+    }
+
+    /** ¿La oferta sigue abierta para que el cliente arme su pedido? */
+    public function ofertaVigente(): bool
+    {
+        if ($this->estado === self::CANCELADA) {
+            return false;
+        }
+        if ($this->vigencia_inicio && $this->vigencia_inicio->isFuture()) {
+            return false;
+        }
+
+        return ! ($this->vigencia_fin && $this->vigencia_fin->isPast());
+    }
+
+    public function imagenUrl(): ?string
+    {
+        return $this->imagen_path ? Storage::disk('public')->url($this->imagen_path) : null;
+    }
+
+    public function plantillaWhatsapp(): string
+    {
+        return $this->plantilla ?: (string) config('promociones.whatsapp.plantilla');
     }
 }

@@ -62,6 +62,17 @@
     @endphp
 
     <div class="content-actions">
+        {{-- Status del equipo con la pistola, la cámara o tecleando la etiqueta. --}}
+        <button type="button" class="btn btn--ghost" data-scan-abrir title="También puedes disparar la pistola en cualquier momento">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+            Escanear
+        </button>
+        {{-- Etiquetas de las entradas marcadas con la casilla, de un jalón. --}}
+        <button type="button" class="btn btn--ghost" id="mvEtiquetas" disabled style="opacity:.5; cursor:not-allowed;"
+                title="Marca entradas con la casilla para imprimir sus etiquetas">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Imprimir etiquetas (<span id="mvEtqN">0</span>)
+        </button>
         @can('inventario.registrar')
         <a href="{{ route('inventory.movimientos.create') }}" class="btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -123,7 +134,11 @@
         <input type="hidden" name="estado" value="{{ $filters['estado'] ?? '' }}">
         <div class="f-search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="fBuscar" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por folio, equipo, almacén o quien registró" autocomplete="off">
+            <input type="text" id="fBuscar" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar, o escanea / escribe la etiqueta (MB-000123) + Enter" autocomplete="off">
+        </div>
+
+        <div class="mov-catalogo-visible">
+            @include('partials.inventario-filtros-catalogo')
         </div>
 
         <div class="mov-catalogo-visible">
@@ -227,6 +242,7 @@
         <table class="mv-table">
             <thead>
                 <tr>
+                    <th style="width:36px;"><input type="checkbox" id="mvEtqTodas" aria-label="Marcar todas las entradas de la página" style="width:16px; height:16px; cursor:pointer;"></th>
                     <th>Movimiento</th>
                     <th>Equipo</th>
                     <th>Cantidad</th>
@@ -247,6 +263,11 @@
                         aria-label="Ver detalle de {{ $m->folio }}"
                         data-ver="{{ route('inventory.movimientos.show', $m) }}"
                         @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
+                        <td>
+                            @if ($fila['tipo'] === 'entrada')
+                                <input type="checkbox" class="mv-etq" value="{{ $m->id }}" aria-label="Imprimir etiquetas de {{ $m->folio }}" style="width:16px; height:16px; cursor:pointer;">
+                            @endif
+                        </td>
                         <td>
                             <div class="cell-id">
                                 <span class="mv-ico {{ $fila['tipo'] }}">
@@ -290,7 +311,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="empty-state">
                                 <span class="ico">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
@@ -514,7 +535,7 @@
                 const fila = e.target.closest('[data-ver]');
                 if (! fila) return;
 
-                if (e.target.closest('a, button, input, select, textarea, [data-row-menu]')) return;
+                if (e.target.closest('a, button, input, select, textarea, label, [data-row-menu]')) return;
                 if ((window.getSelection()?.toString() || '').trim() !== '') return;
 
                 // Clic con la rueda o con Ctrl/Cmd: en pestaña nueva.
@@ -540,4 +561,29 @@
         })();
         </script>
     @endpush
+    <script>
+        /* Etiquetas de varias entradas a la vez. */
+        (function () {
+            const boton = document.getElementById('mvEtiquetas'), n = document.getElementById('mvEtqN'), todas = document.getElementById('mvEtqTodas');
+            const marcadas = () => [...document.querySelectorAll('.mv-etq:checked')].map(c => c.value);
+            function pintar() {
+                const k = marcadas().length;
+                n.textContent = k; boton.disabled = !k;
+                boton.style.opacity = k ? '1' : '.5'; boton.style.cursor = k ? 'pointer' : 'not-allowed';
+                const visibles = [...document.querySelectorAll('.mv-etq')];
+                todas.checked = visibles.length > 0 && visibles.every(c => c.checked);
+                todas.indeterminate = k > 0 && !todas.checked;
+            }
+            document.addEventListener('change', e => {
+                if (e.target === todas) document.querySelectorAll('.mv-etq').forEach(c => { if (!c.closest('[hidden]') && c.closest('tr')?.style.display !== 'none') c.checked = todas.checked; });
+                if (e.target === todas || e.target.matches('.mv-etq')) pintar();
+            });
+            boton.addEventListener('click', () => {
+                const ids = marcadas();
+                if (ids.length) window.open(@json(route('inventory.etiquetas.lote')) + '?' + ids.map(id => 'movimientos[]=' + id).join('&'), '_blank');
+            });
+            pintar();
+        })();
+    </script>
+    @include('structure.gestion_Inventario.entrada_salida._escaner_estatus')
 @endsection

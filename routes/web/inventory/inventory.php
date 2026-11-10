@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-inventario/entrada-salida', [InventoryMovementController::class, 'index'])
         ->middleware('can:inventario.ver')->name('inventory.movimientos.index');
+    // Status rápido del equipo con la pistola o la cámara.
+    Route::post('/gestion-inventario/entrada-salida/estatus', [InventoryMovementController::class, 'estatus'])
+        ->middleware('can:inventario.ver')->name('inventory.movimientos.estatus');
     Route::get('/gestion-inventario/entrada-salida/crear', [InventoryMovementController::class, 'create'])
         ->middleware('can:inventario.registrar')->name('inventory.movimientos.create');
     Route::post('/gestion-inventario/entrada-salida', [InventoryMovementController::class, 'store'])
@@ -38,6 +41,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::get('/{orden}/pdf', [OrdenSalidaController::class, 'pdf'])->name('pdf');
         // Quitar evidencia: quien la subió o quien prepara salidas (lo revisa el controlador).
         Route::delete('/{orden}/evidencias/{evidencia}', [OrdenSalidaController::class, 'borrarEvidencia'])->middleware('can:salidas.eliminar')->name('evidencias.destroy');
+
+        // Quién prepara: le llega el aviso por correo y en la campana.
+        Route::post('/{orden}/asignar', [OrdenSalidaController::class, 'asignar'])
+            ->middleware('can:salidas.asignar')->name('asignar');
 
         Route::middleware('can:salidas.preparar')->group(function () {
             Route::post('/{orden}/partidas/{item}', [OrdenSalidaController::class, 'item'])->name('item');
@@ -82,6 +89,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->middleware('can:inventario.escanear')->name('inventory.escaneo.index');
     Route::post('/gestion-inventario/escanear/buscar', [EscaneoController::class, 'buscar'])
         ->middleware('can:inventario.escanear')->name('inventory.escaneo.buscar');
+
+    // Varias etiquetas de un jalón: de los productos o entradas que se marcaron.
+    Route::get('/gestion-inventario/etiquetas', [\App\Http\Controllers\EtiquetasController::class, 'lote'])
+        ->middleware('can:inventario.ver')->name('inventory.etiquetas.lote');
 
     // Antes que /{movimiento}: si no, "etiquetas" se leería como un id.
     Route::get('/gestion-inventario/entrada-salida/{movimiento}/etiquetas', [InventoryMovementController::class, 'etiquetas'])

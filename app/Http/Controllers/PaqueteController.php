@@ -17,7 +17,9 @@ class PaqueteController extends Controller
     public function index(): View
     {
         return view('structure.gestion_Inventario.paquetes.index', [
-            'paquetes' => Paquete::with('productos')->latest()->get(),
+            // Agrupados por el tipo que más traen (laparoscopía, endoscopía…)
+            // y en orden alfabético dentro de cada grupo.
+            'paquetes' => Paquete::with(['productos', 'equipos'])->orderBy('nombre')->get(),
         ]);
     }
 

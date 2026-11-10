@@ -703,7 +703,7 @@
             @endif
             @unless ($soloMantenimiento)
             <div class="nav-section">Operación</div>
-            <div class="nav-group {{ request()->routeIs('commercial.*') ? 'open' : '' }}">
+            <div class="nav-group {{ request()->routeIs('commercial.*') && ! request()->routeIs('commercial.comisiones.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Comercial">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 5a3 3 0 0 1 0 6"/><path d="M20 20c0-2.5-1.3-4.2-3.5-5"/></svg>
                     <span class="nav-label">Gestión Comercial</span>
@@ -746,12 +746,6 @@
                         <span class="nav-label">Cobranza</span>
                     </a>
                     @endcan
-                    @can('comisiones.ver')
-                        <a class="nav-item nav-sub {{ request()->routeIs('commercial.comisiones.*') ? 'active' : '' }}" href="{{ route('commercial.comisiones.index') }}" data-tip="Comisiones">
-                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                            <span class="nav-label">Comisiones</span>
-                        </a>
-                    @endcan
                     @can('facturacion.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.facturas.*') ? 'active' : '' }}" href="{{ route('commercial.facturas.index') }}" data-tip="Facturación">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
@@ -764,7 +758,7 @@
                     </a>
                 </div>
             </div>
-            <div class="nav-group {{ request()->routeIs('inventory.*') || request()->routeIs('configuracion.catalogos.*') ? 'open' : '' }}">
+            <div class="nav-group {{ (request()->routeIs('inventory.*') && ! request()->routeIs('inventory.congresos.*')) || request()->routeIs('configuracion.catalogos.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Inventario">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                     <span class="nav-label">Gestión de Inventario</span>
@@ -805,12 +799,6 @@
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.fichas.*') ? 'active' : '' }}" href="{{ route('inventory.fichas.index') }}" data-tip="Fichas técnicas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Fichas técnicas</span>
-                    </a>
-                    @endcan
-                    @can('congresos.ver')
-                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.congresos.*') ? 'active' : '' }}" href="{{ route('inventory.congresos.index') }}" data-tip="Congresos">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Congresos</span>
                     </a>
                     @endcan
                     @can('inventario.catalogo')
@@ -868,8 +856,8 @@
                 </div>
             </div>
             @endcanany
-            @canany(['asistencia.ver', 'asistencia.biometria', 'asistencia.nomina'])
-            <div class="nav-group {{ request()->routeIs('asistencia.*') ? 'open' : '' }}">
+            @canany(['asistencia.ver', 'asistencia.biometria', 'asistencia.nomina', 'comisiones.ver'])
+            <div class="nav-group {{ request()->routeIs('asistencia.*', 'nomina.*', 'commercial.comisiones.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Recursos Humanos">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 11c0-1.1.9-2 2-2m-6 4a6 6 0 0 1 12 0M6 9a8 8 0 0 1 16 0M4 14c0-4.4 3.6-8 8-8"/><path d="M9 20c1 .6 2 1 3 1M12 17v1"/></svg>
                     <span class="nav-label">Asistencia (RH)</span>
@@ -904,6 +892,13 @@
                     <a class="nav-item nav-sub {{ request()->routeIs('nomina.*') ? 'active' : '' }}" href="{{ route('nomina.index') }}" data-tip="Nómina">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Nómina</span>
+                    </a>
+                    @endcan
+                    {{-- Comisiones de los vendedores: se pagan con RH, junto a la nómina. --}}
+                    @can('comisiones.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.comisiones.*') ? 'active' : '' }}" href="{{ route('commercial.comisiones.index') }}" data-tip="Comisiones">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Comisiones</span>
                     </a>
                     @endcan
                     @can('asistencia.biometria')
@@ -1010,7 +1005,7 @@
             </div>
             @endcan
             <div class="nav-section">Administración</div>
-            <div class="nav-group {{ request()->routeIs('admin.*') ? 'open' : '' }}">
+            <div class="nav-group {{ request()->routeIs('admin.*', 'inventory.congresos.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Administrativa">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                     <span class="nav-label">Gestión Administrativa</span>
@@ -1021,6 +1016,13 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Agenda</span>
                     </a>
+                    {{-- Congresos: eventos de la empresa (quién va, equipo enviado, ventas de congreso). --}}
+                    @can('congresos.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.congresos.*') ? 'active' : '' }}" href="{{ route('inventory.congresos.index') }}" data-tip="Congresos">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Congresos</span>
+                    </a>
+                    @endcan
                     @can('actividad.ver')
                         <a class="nav-item nav-sub {{ request()->routeIs('admin.actividad.*') ? 'active' : '' }}" href="{{ route('admin.actividad.index') }}" data-tip="Actividad">
                             <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
@@ -1061,7 +1063,7 @@
                     --}}
                 </div>
             </div>
-            <div class="nav-group {{ request()->routeIs('marketing.*') ? 'open' : '' }}">
+            <div class="nav-group {{ request()->routeIs('marketing.*', 'promociones.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Marketing">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                     <span class="nav-label">Gestión de Marketing</span>
@@ -1094,6 +1096,12 @@
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.biblioteca_catalogo.index') ? 'active' : '' }}" href="{{ route('marketing.biblioteca_catalogo.index') }}" data-tip="Biblioteca & catálogo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Biblioteca & catálogo</span>
+                    </a>
+                    @endcan
+                    @can('promociones.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('promociones.*') ? 'active' : '' }}" href="{{ route('promociones.campanas.index') }}" data-tip="Promociones y cupones">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Promociones y cupones</span>
                     </a>
                     @endcan
                     <div class="submenu-label">Datos</div>
@@ -1254,6 +1262,8 @@
         @include('partials.vivo')
         {{-- Todo lo que se escribe se guarda en MAYÚSCULAS, con corrector. --}}
         @include('partials.mayusculas')
+        {{-- Autocorrector ortográfico (español de México) al salir de cada campo. --}}
+        @include('partials.ortografia')
     </div>
 </div>
 

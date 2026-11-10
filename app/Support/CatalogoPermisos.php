@@ -86,19 +86,10 @@ class CatalogoPermisos
                 'descripcion' => 'Lo que deben y los pagos que entran.',
                 'permisos' => [
                     'cobranza.ver' => 'Ver saldos y quién debe',
-                    'cobranza.registrar' => 'Registrar pagos y emitir recibos',
+                    'cobranza.registrar' => 'Registrar pagos y emitir recibos (además necesita NIP o ser administrador)',
+                    'cobranza.comprobantes' => 'Subir comprobantes de pago y efectivo de sus ventas (quedan por aprobar)',
                     'cobranza.ajustar' => 'Mover fechas y montos del plan de pagos',
                     'cobranza.eliminar' => 'Eliminar cobros y parcialidades',
-                ],
-            ],
-
-            'comisiones' => [
-                'titulo' => 'Comisiones',
-                'descripcion' => 'Quién vendió más y cuánto le toca.',
-                'permisos' => [
-                    'comisiones.ver' => 'Ver el ranking de asesores y sus comisiones',
-                    'comisiones.gestionar' => 'Definir porcentajes y registrar pagos de comisión',
-                    'comisiones.eliminar' => 'Eliminar pagos de comisión',
                 ],
             ],
 
@@ -132,6 +123,7 @@ class CatalogoPermisos
                 'permisos' => [
                     'salidas.ver' => 'Ver las órdenes de salida',
                     'salidas.preparar' => 'Marcar preparado / emplayado y firmar la salida',
+                    'salidas.asignar' => 'Asignar quién prepara el equipo vendido',
                     'salidas.eliminar' => 'Eliminar evidencias de las órdenes de salida',
                 ],
             ],
@@ -170,6 +162,16 @@ class CatalogoPermisos
                 ],
             ],
 
+            'comisiones' => [
+                'titulo' => 'Comisiones',
+                'descripcion' => 'Quién vendió más y cuánto le toca.',
+                'permisos' => [
+                    'comisiones.ver' => 'Ver el ranking de asesores y sus comisiones',
+                    'comisiones.gestionar' => 'Definir porcentajes y registrar pagos de comisión',
+                    'comisiones.eliminar' => 'Eliminar pagos de comisión',
+                ],
+            ],
+
             'procesos' => [
                 'titulo' => 'Procesos',
                 'descripcion' => 'Hojalatería, mantenimiento y limpieza.',
@@ -197,6 +199,18 @@ class CatalogoPermisos
                     'marketing.editar' => 'Editar contenido de Marketing',
                     'marketing.aprobar' => 'Aprobar flyers',
                     'marketing.eliminar' => 'Eliminar tareas y eventos de Marketing',
+                ],
+            ],
+
+            'promociones' => [
+                'titulo' => 'Marketing y promociones',
+                'descripcion' => 'Campañas por WhatsApp, cupones de descuento y sus resultados.',
+                'permisos' => [
+                    'promociones.ver' => 'Ver campañas, cupones y resultados',
+                    'promociones.gestionar' => 'Crear, editar, duplicar y cancelar campañas',
+                    'promociones.enviar' => 'Mandar pruebas, programar, enviar y pausar campañas',
+                    'cupones.gestionar' => 'Crear, editar y pausar cupones',
+                    'promociones.consentimiento' => 'Registrar o quitar el consentimiento de un cliente',
                 ],
             ],
 

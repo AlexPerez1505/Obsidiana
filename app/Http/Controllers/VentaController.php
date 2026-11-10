@@ -163,8 +163,11 @@ class VentaController extends Controller
      * Eliminar del todo solo se permite cuando la venta no tiene ningún
      * cobro: si ya entró dinero, se cancela (y el historial se queda).
      */
-    public function destroy(Venta $venta): RedirectResponse
+    public function destroy(Request $request, Venta $venta): RedirectResponse
     {
+        // Pasadas 72 horas desde que se registró, pide el NIP.
+        \App\Support\EliminarConNip::exigir($venta, $request->user(), $request->input('nip'));
+
         try {
             $mensaje = $this->registro->eliminar($venta);
         } catch (OperacionRechazada $e) {

@@ -15,7 +15,11 @@
 @php
     $emp = config('medibuy.empresa');
     $con = config('medibuy.contacto');
-    $cuentasBanco = \App\Support\DatosBancarios::cuentas((bool) $doc->aplica_iva);
+    // Una venta sin IVA a la que después se le agregó en las mensualidades
+    // se paga a las cuentas de con IVA.
+    $conIva = method_exists($doc, 'cobraConIva') ? $doc->cobraConIva() : (bool) $doc->aplica_iva;
+    $ivaDespues = method_exists($doc, 'ivaAgregadoDespues') && $doc->ivaAgregadoDespues();
+    $cuentasBanco = \App\Support\DatosBancarios::cuentas($conIva);
     $comp = config('medibuy.comprobantes');
     /*
     | La línea de garantía de los términos se arma con lo que dice el
@@ -27,8 +31,22 @@
         ? "La garantía del equipo es de {$mesesGarantia} meses a partir de la fecha de entrega."
         : 'El equipo se vende sin garantía, en el estado en que se encuentra y que el cliente declara haber revisado.';
 
+    /*
+    | La línea del IVA también sigue al documento: si ya trae IVA, decir que
+    | "el monto será más IVA" contradecía el total impreso.
+    */
+    $lineaIva = $ivaDespues
+        ? 'A las mensualidades pendientes se les agregó el IVA (16%); lo ya pagado se mantiene sin IVA. Para emitir la factura, será necesario que nos proporcione sus datos fiscales completos.'
+        : ($doc->aplica_iva
+        ? 'Los montos de este documento ya incluyen IVA (16%). Para emitir la factura, será necesario que nos proporcione sus datos fiscales completos.'
+        : 'Los montos de este documento no incluyen IVA. Si requiere factura, será necesario que nos proporcione sus datos fiscales completos.');
+
     $terminos = collect(config('medibuy.terminos', []))
-        ->map(fn ($t) => mb_stripos($t, 'garantía') !== false ? $lineaGarantia : $t)
+        ->map(fn ($t) => match (true) {
+            mb_stripos($t, 'garantía') !== false => $lineaGarantia,
+            mb_stripos($t, 'IVA') !== false => $lineaIva,
+            default => $t,
+        })
         ->all();
 
     $leyenda = $leyenda ?? 'Precios en MXN';
@@ -266,6 +284,7 @@
                 @if (! empty($it->no_series))
                     <div class="det">No. Serie: {{ $it->no_series }}</div>
                 @endif
+                @include('structure.commercial_management._paquete_contenido', ['it' => $it, 'pdf' => true])
             </td>
             <td class="c">{{ $it->cantidad }}</td>
             <td class="r">
@@ -287,8 +306,14 @@
     @if ($doc->descuento_monto > 0)
         <tr><td>Descuento</td><td class="v">-${{ number_format($doc->descuento_monto, 2) }}</td></tr>
     @endif
+    @if (($doc->cupon_descuento ?? 0) > 0)
+        <tr><td>Cupón {{ $doc->cupon_codigo }}</td><td class="v">-${{ number_format($doc->cupon_descuento, 2) }}</td></tr>
+    @endif
     @if ($doc->envio > 0)
         <tr><td>Envío</td><td class="v">${{ number_format($doc->envio, 2) }}</td></tr>
+    @endif
+    @if (! $doc->aplica_iva && (float) $doc->iva_monto > 0)
+        <tr><td>IVA agregado a mensualidades</td><td class="v">${{ number_format($doc->iva_monto, 2) }}</td></tr>
     @endif
     @if ($doc->aplica_iva)
         <tr><td>IVA 16%</td><td class="v">${{ number_format($doc->iva_monto, 2) }}</td></tr>
@@ -298,6 +323,25 @@
         <tr class="aparte"><td>A financiar</td><td class="v r">${{ number_format($doc->total_contrato, 2) }}</td></tr>
     @endif
 </table>
+
+@if (count($doc->equipos_a_cuenta ?? []))
+    {{-- Lo que el cliente entrega a cuenta, con su tipo, subtipo, marca y modelo. --}}
+    <p class="parrafo" style="margin-bottom:4px;"><b>Equipo a cuenta</b>@if ($doc->valor_a_cuenta > 0) (valor ${{ number_format($doc->valor_a_cuenta, 2) }})@endif</p>
+    <table style="width:100%; border-collapse:collapse; font-size:9.5px; margin-bottom:10px;">
+        <tr>
+            @foreach (\App\Support\EquiposACuenta::ETIQUETAS as $et)
+                <th style="text-align:left; padding:4px 6px; border-bottom:1px solid #cbd5e1; color:#475569;">{{ $et }}</th>
+            @endforeach
+        </tr>
+        @foreach ($doc->equipos_a_cuenta as $r)
+            <tr>
+                @foreach (array_keys(\App\Support\EquiposACuenta::ETIQUETAS) as $c)
+                    <td style="padding:4px 6px; border-bottom:1px solid #eef2f7;">{{ ($r[$c] ?? '') !== '' ? $r[$c] : '—' }}</td>
+                @endforeach
+            </tr>
+        @endforeach
+    </table>
+@endif
 
 @if ($doc->nota_cliente)
     <p class="parrafo"><b>Nota.</b> {{ $doc->nota_cliente }}</p>
@@ -361,6 +405,7 @@
                         @if ($ban['beneficiario'])<tr><td class="k">Beneficiario</td><td class="v">{{ $ban['beneficiario'] }}</td></tr>@endif
                         @if ($ban['clabe'])<tr><td class="k">CLABE</td><td class="v">{{ $ban['clabe'] }}</td></tr>@endif
                         @if ($ban['cuenta'])<tr><td class="k">Cuenta</td><td class="v">{{ $ban['cuenta'] }}</td></tr>@endif
+                        @if (! empty($ban['sucursal']))<tr><td class="k">Sucursal</td><td class="v">{{ $ban['sucursal'] }}</td></tr>@endif
                         @if ($ban['tarjeta'])<tr><td class="k">Tarjeta</td><td class="v">{{ $ban['tarjeta'] }}</td></tr>@endif
                         <tr><td class="k">Concepto</td><td class="v">{{ $doc->folio }}</td></tr>
                     </table>

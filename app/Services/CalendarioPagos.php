@@ -109,21 +109,23 @@ class CalendarioPagos
             return ['ajustadas' => 0, 'diferencia' => $diferencia, 'sin_donde' => true];
         }
 
-        $porCada = round($diferencia / $libres->count(), 2);
+        // En pesos cerrados: cada una sube (o baja) lo mismo en pesos enteros
+        // y los centavos, los de la diferencia y los que ya traían, se juntan
+        // en la última sin cobrar.
+        $porCada = (int) ($diferencia / $libres->count());
 
         DB::transaction(function () use ($libres, $porCada, $diferencia) {
+            $nuevos = [];
             $acumulado = 0.0;
-
             foreach ($libres as $i => $pago) {
-                // La última absorbe el redondeo, para que la suma cuadre exacta.
-                $ajuste = $i === $libres->count() - 1
-                    ? round($diferencia - $acumulado, 2)
-                    : $porCada;
-
-                $pago->monto = max(0, round((float) $pago->monto + $ajuste, 2));
-                $pago->save();
-
+                $ajuste = $i === $libres->count() - 1 ? round($diferencia - $acumulado, 2) : $porCada;
+                $nuevos[$i] = max(0, round((float) $pago->monto + $ajuste, 2));
                 $acumulado = round($acumulado + $ajuste, 2);
+            }
+
+            foreach (\App\Services\CalculadoraCotizacion::cerrarCentavos($nuevos) as $i => $monto) {
+                $libres[$i]->monto = $monto;
+                $libres[$i]->save();
             }
         });
 

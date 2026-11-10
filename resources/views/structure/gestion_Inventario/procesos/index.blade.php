@@ -13,7 +13,10 @@
             return [
                 'paso' => $paso,
                 'pieza' => $pieza,
-                'equipo' => trim(collect([$prod?->tipo_equipo, $prod?->marca, $prod?->modelo])->filter()->implode(' ')) ?: 'Equipo',
+                'equipo' => trim(collect([$prod?->tipo_equipo, $prod?->subtipo, $prod?->marca, $prod?->modelo])->filter()->implode(' ')) ?: 'Equipo',
+                // Para la tarjeta: tipo-subtipo, marca y modelo por separado.
+                'tipo' => collect([$prod?->tipo_equipo, $prod?->subtipo])->filter()->implode(' - ') ?: 'Sin tipo',
+                'marca_modelo' => collect([$prod?->marca, $prod?->modelo])->filter()->implode(' · ') ?: 'Sin marca ni modelo',
                 'responsable' => $paso->responsable?->name ?: 'Sin asignar',
                 'dias' => $paso->diasDetenida(),
                 'fecha' => ($paso->iniciado_en ?? $paso->created_at)?->format('Y-m-d') ?? '',
@@ -206,10 +209,12 @@
                     <article class="data-card f-row" @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
                         <div class="data-card-top">
                             <div style="min-width:0; flex:1;">
-                                {{-- Lo importante es la serie del fabricante; la
-                                     etiqueta interna MB- va en letra chica abajo. --}}
-                                <div class="t" style="font-family:ui-monospace,Consolas,monospace; font-size:14px;">{{ $pieza->no_serie ?: $pieza->codigo }}</div>
-                                <div class="s">{{ $fila['equipo'] }}</div>
+                                {{-- Lo importante es la serie del fabricante; luego tipo-subtipo,
+                                     marca y modelo, y la etiqueta interna MB- en letra chica. --}}
+                                <div class="t" style="font-family:ui-monospace,Consolas,monospace; font-size:14px;">{{ $pieza->no_serie ?: 'Sin serie' }}</div>
+                                <div class="pr-eq-tipo">{{ $fila['tipo'] }}</div>
+                                <div class="s">{{ $fila['marca_modelo'] }}</div>
+                                <div class="s" style="font-family:ui-monospace,Consolas,monospace;">{{ $pieza->codigo }}</div>
                             </div>
 
                             <span class="badge {{ $paso->estado === 'en_curso' ? 'badge--info' : '' }}">
@@ -310,6 +315,8 @@
                      border:1px solid var(--border); font-size:12.5px; font-weight:700;
                      font-variant-numeric:tabular-nums; }
         .pr-cola .data-card + .data-card { margin-top:10px; }
+        .pr-eq-tipo { font-size:13.5px; font-weight:600; margin-top:3px; overflow-wrap:anywhere; }
+        .pr-eq-serie { font-family:ui-monospace,Consolas,monospace; font-weight:600; color:var(--text); overflow-wrap:anywhere; }
 
         /* Tarjeta de pieza más compacta dentro de la cola: los datos en dos
            columnas (detenida | responsable) y "al terminar" abajo a lo

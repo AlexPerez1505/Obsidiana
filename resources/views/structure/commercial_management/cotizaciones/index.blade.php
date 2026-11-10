@@ -16,7 +16,7 @@
 
     <div class="erp-stats">
         <div class="erp-stat"><span class="ic blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span><div><div class="n">{{ $total }}</div><div class="l">Cotizaciones</div></div></div>
-        <div class="erp-stat"><span class="ic amber"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></span><div><div class="n">{{ $borradores }}</div><div class="l">Borradores</div></div></div>
+        <div class="erp-stat"><span class="ic amber"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></span><div><div class="n">{{ $borradores }}</div><div class="l">Generadas</div></div></div>
         <div class="erp-stat"><span class="ic green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polyline points="20 6 9 17 4 12"/></svg></span><div><div class="n">{{ $aceptadas }}</div><div class="l">Aceptadas</div></div></div>
         <div class="erp-stat"><span class="ic slate"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><div><div class="n" style="font-size:19px;">${{ number_format($montoTotal, 2) }}</div><div class="l">Monto total</div></div></div>
     </div>
@@ -69,12 +69,12 @@
                                     @endcan
                                     @can('cotizaciones.eliminar')
                                     <div class="erp-menu-sep"></div>
-                                    <form method="POST" action="{{ route('commercial.cotizaciones.destroy', $cot) }}" data-confirm="¿Eliminar la cotización {{ $cot->folio }}?">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="erp-menu-item danger">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Eliminar
-                                        </button>
-                                    </form>
+                                    {{-- Sin NIP las primeras 72 horas; después lo pide. --}}
+                                    <button type="button" class="erp-menu-item danger" data-eliminar-doc
+                                            data-url="{{ route('commercial.cotizaciones.destroy', $cot) }}" data-folio="{{ $cot->folio }}" data-que="la cotización"
+                                            data-nip="{{ \App\Support\EliminarConNip::requiere($cot) ? 1 : 0 }}" data-horas="{{ \App\Support\EliminarConNip::horasRestantes($cot) }}">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Eliminar
+                                    </button>
                                     @endcan
                                 </x-erp.menu>
                             </td>
@@ -163,4 +163,5 @@
         @endforelse
     </div>
     @include('partials._paginacion', ['paginator' => $cotizaciones])
+    @include('structure.commercial_management._eliminar_doc')
 @endsection

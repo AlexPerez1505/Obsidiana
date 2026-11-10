@@ -2,7 +2,7 @@
 
 @php
     $prod = $pieza->producto;
-    $equipo = trim(collect([$prod?->tipo_equipo, $prod?->marca, $prod?->modelo])->filter()->implode(' ')) ?: 'Equipo';
+    $equipo = trim(collect([$prod?->tipo_equipo, $prod?->subtipo, $prod?->marca, $prod?->modelo])->filter()->implode(' ')) ?: 'Equipo';
     $enCurso = $paso->estado === 'en_curso';
     // Se puede ir guardando avance mientras el paso no se cierre; si nadie
     // la había tomado, quien guarda el primer avance la toma.
@@ -211,6 +211,9 @@
         </div>
 
         <dl class="pv-datos">
+            <div><dt>Tipo - subtipo</dt><dd>{{ collect([$prod?->tipo_equipo, $prod?->subtipo])->filter()->implode(' - ') ?: '—' }}</dd></div>
+            <div><dt>Marca</dt><dd>{{ $prod?->marca ?: '—' }}</dd></div>
+            <div><dt>Modelo</dt><dd>{{ $prod?->modelo ?: '—' }}</dd></div>
             <div><dt>No. de serie</dt><dd>{{ $pieza->no_serie ?: 'Sin serie' }}</dd></div>
             <div><dt>Condición</dt><dd>{{ ucfirst($pieza->condicion) }}</dd></div>
             <div><dt>Entró al proceso</dt><dd>{{ ($paso->iniciado_en ?? $paso->created_at)?->format('d/m/Y') ?? '—' }}</dd></div>
@@ -297,8 +300,8 @@
                         <x-ui.section-title style="margin:0;">Lo que se hizo hoy</x-ui.section-title>
                         <p class="campo-nota pv-sec-nota">
                             Anota lo que avanzaste y sube las fotos que quieras, de cualquier formato y tamaño.
-                            Se guarda en la bitácora con tu nombre y la fecha. Las fotos son opcionales: puedes terminar
-                            el proceso aunque no hayas guardado avances.
+                            Se guarda en la bitácora con tu nombre y la fecha. Para terminar el proceso se necesita
+                            al menos una foto de evidencia (cuentan las de los avances de días anteriores).
                         </p>
 
                         <x-ui.form-group label="Nota del avance" for="nota">
@@ -658,6 +661,7 @@
                 if (sinResponder) faltas.push('faltan ' + sinResponder + ' punto(s) por responder');
                 if (no) faltas.push(no + ' punto(s) siguen mal');
                 if (subiendo) faltas.push('espera a que terminen de subir las fotos');
+                else if (totalFotos < 1) faltas.push('sube al menos una foto de evidencia');
 
                 const puede = faltas.length === 0;
 
