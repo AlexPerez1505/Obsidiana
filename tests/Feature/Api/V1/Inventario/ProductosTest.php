@@ -212,6 +212,8 @@ class ProductosTest extends TestCase
     {
         $cat = $this->catalogo();
         $producto = $this->productoConPiezas(['23A0099'], ['equipment_model_id' => $cat['modelo']->id]);
+        // Un número de fábrica como 2105-4774 no debe contaminar la secuencia global.
+        $this->productoConPiezas(['2105-4774']);
 
         $user = $this->usuarioApi(['inventario.ver', 'inventario.registrar']);
 

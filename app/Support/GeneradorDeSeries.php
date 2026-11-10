@@ -107,7 +107,9 @@ class GeneradorDeSeries
      *
      * Los números de fábrica y códigos capturados manualmente pueden terminar
      * en muchos dígitos, pero no forman parte de nuestra secuencia. Solo se
-     * consideran etiquetas con el formato automático PREFIJO-0000.
+     * consideran etiquetas con el formato automático PREFIJO-0000. Un código
+     * manual cuyo prefijo es solo numérico (por ejemplo, 2105-4774) tampoco
+     * pertenece a esta secuencia.
      */
     private static function ultimoConsecutivoGlobal(): int
     {
@@ -118,7 +120,7 @@ class GeneradorDeSeries
 
         return (int) $usadas
             ->map(function (string $serie) {
-                return preg_match('/-(\d{4})$/', trim($serie), $coincidencia)
+                return preg_match('/^(?=.*[A-Za-z]).*-(\d{4})$/', trim($serie), $coincidencia)
                     ? (int) $coincidencia[1]
                     : null;
             })
