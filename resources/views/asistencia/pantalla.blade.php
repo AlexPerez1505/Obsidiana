@@ -211,7 +211,7 @@
         }
     }
     consultar();
-    setInterval(consultar, 1000);
+    setInterval(consultar, 5000);
 
     // Sin menús ni atajos de navegador al alcance de quien pase
     document.addEventListener('contextmenu', e => e.preventDefault());

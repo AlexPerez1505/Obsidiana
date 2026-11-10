@@ -87,14 +87,20 @@ class RolController extends Controller
         abort_unless($role->users()->where('users.id', $user->id)->exists(), 404, 'Esa cuenta no tiene este rol.');
         abort_if($user->isAdmin(), 403, 'El administrador siempre tiene todo; no hay nada que ajustar.');
 
+        $delRol = $role->permissions->pluck('name');
+        $otorgados = $user->permissions()->wherePivot('concedido', true)->pluck('name');
+        $quitados = $user->permissions()->wherePivot('concedido', false)->pluck('name');
+        $activos = $delRol->merge($otorgados)->diff($quitados)->unique()->values()->all();
+
         return view('structure.Configuracion.roles.usuario', [
             'role' => $role->load('permissions'),
             'usuario' => $user,
             'grupos' => CatalogoPermisos::grupos(),
             // Lo que el rol da como base y lo que se le ajustó a él.
-            'delRol' => $role->permissions->pluck('name')->all(),
-            'otorgados' => $user->permissions()->wherePivot('concedido', true)->pluck('name')->all(),
-            'quitados' => $user->permissions()->wherePivot('concedido', false)->pluck('name')->all(),
+            'activos' => $activos,
+            'delRol' => $delRol->all(),
+            'otorgados' => $otorgados->all(),
+            'quitados' => $quitados->all(),
         ]);
     }
 
@@ -105,34 +111,30 @@ class RolController extends Controller
         abort_if($user->isAdmin(), 403, 'El administrador siempre tiene todo; no hay nada que ajustar.');
 
         $data = $request->validate([
-            'otorgar' => ['nullable', 'array'],
-            'otorgar.*' => ['string'],
-            'quitar' => ['nullable', 'array'],
-            'quitar.*' => ['string'],
+            'permisos' => ['nullable', 'array'],
+            'permisos.*' => ['string'],
         ]);
 
         $catalogo = collect(CatalogoPermisos::grupos())->flatMap(fn ($g) => array_keys($g['permisos']))->all();
-        $otorgar = array_intersect($data['otorgar'] ?? [], $catalogo);
-        $quitar = array_intersect($data['quitar'] ?? [], $catalogo);
+        $deseados = array_intersect($data['permisos'] ?? [], $catalogo);
 
         $delRol = $role->permissions->pluck('name')->all();
         $ids = \Illuminate\Support\Facades\DB::table('permissions')->whereIn('name', $catalogo)->pluck('id', 'name');
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($user, $ids, $delRol, $otorgar, $quitar) {
-            // Regla clara: un ajuste solo puede vivir de un lado. Si el rol
-            // ya lo da, "otorgar" sobra; "quitar" solo vale si el rol lo da.
+        \Illuminate\Support\Facades\DB::transaction(function () use ($user, $ids, $delRol, $deseados) {
             $ahora = now();
-            foreach ($catalogoConIds = $ids as $nombre => $id) {
-                $dar = in_array($nombre, $otorgar, true) && ! in_array($nombre, $delRol, true);
-                $no = in_array($nombre, $quitar, true) && in_array($nombre, $delRol, true);
-                if (! $dar && ! $no) {
+            foreach ($ids as $nombre => $id) {
+                $activo = in_array($nombre, $deseados, true);
+                $heredado = in_array($nombre, $delRol, true);
+
+                if ($activo === $heredado) {
                     \Illuminate\Support\Facades\DB::table('permission_user')
                         ->where('user_id', $user->id)->where('permission_id', $id)->delete();
                     continue;
                 }
                 \Illuminate\Support\Facades\DB::table('permission_user')->updateOrInsert(
                     ['user_id' => $user->id, 'permission_id' => $id],
-                    ['concedido' => $dar, 'updated_at' => $ahora, 'created_at' => $ahora]
+                    ['concedido' => $activo, 'updated_at' => $ahora, 'created_at' => $ahora]
                 );
             }
         });
