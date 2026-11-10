@@ -234,7 +234,15 @@ class ProductosTest extends TestCase
         ])->assertOk()
             // El tipo ya no va al frente de la serie.
             ->assertJsonPath('data.prefijo', 'CV190')
-            ->assertJsonPath('data.series', ['CV190-0001', 'CV190-0002']);
+            ->assertJsonPath('data.series', ['CV190-0100', 'CV190-0101']);
+
+        // El consecutivo es global, incluso si cambia el prefijo del equipo.
+        $this->conToken($user)->postJson('/api/v1/productos/generar-series', [
+            'equipment_type_id' => $cat['tipo']->id,
+            'cantidad' => 1,
+        ])->assertOk()
+            ->assertJsonPath('data.prefijo', 'EQ')
+            ->assertJsonPath('data.series', ['EQ-0102']);
     }
 
     public function test_catalogos_piden_registrar_o_editar(): void
