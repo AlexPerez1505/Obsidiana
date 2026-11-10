@@ -321,6 +321,7 @@
             function cerrarMenus() {
                 document.querySelectorAll('.congress-menu.open').forEach(function (m) {
                     m.classList.remove('open');
+                    m.classList.remove('open-up');
                     var t = m.querySelector('.congress-menu-trigger');
                     if (t) t.setAttribute('aria-expanded', 'false');
                 });
@@ -518,6 +519,7 @@
                     menus.forEach(function (m) {
                         if (m !== menu) {
                             m.classList.remove('open');
+                            m.classList.remove('open-up');
                             m.querySelector('.congress-menu-trigger').setAttribute('aria-expanded', 'false');
                         }
                     });
@@ -526,7 +528,12 @@
                     var open = !menu.classList.contains('open');
                     menu.classList.toggle('open', open);
                     trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-                    if (open && menu.closest('.category-list, .eq-list')) {
+                    if (open && menu.closest('.eq-list')) {
+                        var eqRect = trigger.getBoundingClientRect();
+                        var eqDropdown = menu.querySelector('.congress-menu-dropdown');
+                        var eqAltura = eqDropdown.getBoundingClientRect().height;
+                        menu.classList.toggle('open-up', eqRect.bottom + eqAltura + 4 > window.innerHeight && eqRect.top - eqAltura - 4 >= 0);
+                    } else if (open && menu.closest('.category-list')) {
                         var rect = trigger.getBoundingClientRect();
                         var dropdown = menu.querySelector('.congress-menu-dropdown');
                         var altura = dropdown.getBoundingClientRect().height;
@@ -543,6 +550,7 @@
             document.addEventListener('click', function () {
                 menus.forEach(function (m) {
                     m.classList.remove('open');
+                    m.classList.remove('open-up');
                     m.querySelector('.congress-menu-trigger').setAttribute('aria-expanded', 'false');
                 });
             });
