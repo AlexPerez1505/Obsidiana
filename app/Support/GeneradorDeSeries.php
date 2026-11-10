@@ -29,9 +29,6 @@ use Illuminate\Support\Facades\DB;
  */
 class GeneradorDeSeries
 {
-    /** Registro único que reserva el consecutivo para todo el inventario. */
-    private const CLAVE_SECUENCIA_GLOBAL = '__global__';
-
     /** Cuántas letras se toman de cada parte del nombre. */
     private const LETRAS = 3;
 
@@ -62,34 +59,39 @@ class GeneradorDeSeries
     }
 
     /**
-     * Reserva y genera $cantidad series consecutivas para todo el inventario.
+     * Reserva y genera $cantidad series consecutivas para un catálogo.
      *
-     * La reserva vive en la base de datos y se bloquea en un registro global.
-     * Así dos usuarios que generen series al mismo tiempo no reciben el mismo
-     * lote, aunque ninguno haya guardado todavía la entrada.
+     * La reserva vive en la base de datos y se bloquea en un registro por
+     * catálogo. Así dos usuarios que generen series al mismo tiempo no reciben
+     * el mismo lote, aunque ninguno haya guardado todavía la entrada.
      *
      * @return array<int, string>
      */
-    public static function generar(string $prefijo, int $cantidad): array
+    public static function generar(string $prefijo, int $cantidad, array $catalogo = []): array
     {
         $cantidad = max(1, min($cantidad, 5000));
+        $catalogo = array_slice(array_pad(array_map(
+            static fn ($id): ?int => $id === null || $id === '' ? null : (int) $id,
+            $catalogo
+        ), 4, null), 0, 4);
+        $clave = static::claveSecuencia($catalogo);
 
-        return DB::transaction(function () use ($prefijo, $cantidad) {
+        return DB::transaction(function () use ($prefijo, $cantidad, $catalogo, $clave) {
             DB::table('serial_sequences')->insertOrIgnore([
-                'prefijo' => self::CLAVE_SECUENCIA_GLOBAL,
+                'prefijo' => $clave,
                 'siguiente' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
             $secuencia = DB::table('serial_sequences')
-                ->where('prefijo', self::CLAVE_SECUENCIA_GLOBAL)
+                ->where('prefijo', $clave)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            // También considera series antiguas o capturadas manualmente que
-            // todavía no hayan pasado por esta tabla de secuencias.
-            $desde = max((int) $secuencia->siguiente - 1, static::ultimoConsecutivoGlobal());
+            // También considera series automáticas antiguas que todavía no
+            // hayan pasado por esta tabla de secuencias.
+            $desde = max((int) $secuencia->siguiente - 1, static::ultimoConsecutivo($catalogo));
             $siguiente = $desde + $cantidad + 1;
 
             DB::table('serial_sequences')
@@ -111,9 +113,15 @@ class GeneradorDeSeries
      * manual cuyo prefijo es solo numérico (por ejemplo, 2105-4774) tampoco
      * pertenece a esta secuencia.
      */
-    private static function ultimoConsecutivoGlobal(): int
+    private static function ultimoConsecutivo(array $catalogo): int
     {
         $usadas = ProductoSerial::query()
+            ->whereHas('producto', function ($query) use ($catalogo) {
+                foreach (['equipment_type_id', 'subtype_id', 'brand_id', 'equipment_model_id'] as $indice => $campo) {
+                    $valor = $catalogo[$indice] ?? null;
+                    $valor === null ? $query->whereNull($campo) : $query->where($campo, $valor);
+                }
+            })
             ->whereNotNull('no_serie')
             ->where('no_serie', '!=', '')
             ->pluck('no_serie');
@@ -126,6 +134,15 @@ class GeneradorDeSeries
             })
             ->filter()
             ->max();
+    }
+
+    /** La clave incluye el catálogo completo, aunque el tipo no se vea en la serie. */
+    private static function claveSecuencia(array $catalogo): string
+    {
+        return 'catalogo:'.implode('-', array_map(
+            static fn (?int $id): string => $id === null ? '0' : (string) $id,
+            array_pad(array_slice($catalogo, 0, 4), 4, null)
+        ));
     }
 
     /** Deja las primeras letras útiles de una palabra, sin acentos ni signos. */

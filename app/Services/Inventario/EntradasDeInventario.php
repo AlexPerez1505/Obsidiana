@@ -451,7 +451,12 @@ class EntradasDeInventario
 
             $prefijo = GeneradorDeSeries::prefijo($producto->equipment_type_id, $producto->subtype_id,
                 $producto->brand_id, $producto->equipment_model_id);
-            $series = GeneradorDeSeries::generar($prefijo, $piezas->count());
+            $series = GeneradorDeSeries::generar($prefijo, $piezas->count(), [
+                $producto->equipment_type_id,
+                $producto->subtype_id,
+                $producto->brand_id,
+                $producto->equipment_model_id,
+            ]);
             foreach ($piezas as $i => $pieza) {
                 $pieza->update(['no_serie' => $series[$i]]);
             }
