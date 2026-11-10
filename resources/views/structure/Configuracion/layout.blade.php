@@ -295,7 +295,6 @@
         }
         .congress-menu.open .congress-menu-dropdown { display: flex; }
         .category-list .congress-menu .congress-menu-dropdown,
-        .eq-list .congress-menu .congress-menu-dropdown,
         .table-wrap .congress-menu .congress-menu-dropdown,
         .equipment-table .congress-menu .congress-menu-dropdown {
             position: fixed;
@@ -303,6 +302,17 @@
             right: var(--menu-right, auto);
             left: auto;
             bottom: auto;
+        }
+        .eq-list .congress-menu .congress-menu-dropdown {
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            left: auto;
+            bottom: auto;
+        }
+        .eq-list .congress-menu.open-up .congress-menu-dropdown {
+            top: auto;
+            bottom: calc(100% + 4px);
         }
         .congress-menu-item {
             display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px;
