@@ -137,6 +137,10 @@
             <input type="text" id="fBuscar" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar, o escanea / escribe la etiqueta (MB-000123) + Enter" autocomplete="off">
         </div>
 
+        <div class="mov-catalogo-visible">
+            @include('partials.inventario-filtros-catalogo')
+        </div>
+
         <div class="flt" data-flt>
             <button type="button" class="flt-btn" data-flt-toggle aria-expanded="false">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
@@ -145,10 +149,6 @@
             </button>
 
             <div class="flt-panel" data-flt-panel hidden>
-                <div class="flt-group" style="grid-column:1/-1;">
-                    <h4>Catálogo de equipo</h4>
-                    @include('partials.inventario-filtros-catalogo')
-                </div>
                 <div class="flt-group">
                     <h4>Tipo de movimiento</h4>
                     {{-- "Vendidas sin entregar" es la lista que le sirve a
@@ -458,6 +458,12 @@
                         background:var(--danger-soft); color:var(--danger); }
         .mv-modal-ico svg { width:24px; height:24px; }
         .mv-modal-pie { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+        .mov-catalogo-visible { flex:1 0 100%; min-width:0; }
+        .mov-catalogo-visible [data-catalogo-filtros] { align-items:end; gap:10px; }
+        .mov-catalogo-visible [data-catalogo-filtros] label { display:flex; flex-direction:column; gap:6px; color:var(--text); font-size:13px; }
+        .mov-catalogo-visible [data-catalogo-filtros] select { padding:9px 12px; border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--text); font:inherit; }
+        .mov-catalogo-visible [data-catalogo-filtros] select:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+        .f-toolbar > .flt .flt-panel { left:0; right:auto; }
         @media (max-width:520px) { .mv-modal-pie .btn { flex:1; justify-content:center; } }
     </style>
 
