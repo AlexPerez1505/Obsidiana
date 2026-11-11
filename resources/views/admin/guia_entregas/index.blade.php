@@ -27,7 +27,7 @@
             @foreach($guias as $guia)
                 <tr>
                     <td><a class="ge-link" href="{{ route('admin.guia_entregas.show', $guia) }}">{{ $guia->numero_rastreo }}</a></td>
-                    <td>{{ IlluminateSupportStr::limit($guia->contenido ?: '—', 48) }}</td>
+                    <td>{{ Illuminate\Support\Str::limit($guia->contenido ?: '—', 48) }}</td>
                     <td><span class="ge-badge">{{ ucfirst($guia->estado) }}</span></td>
                     <td>{{ $guia->fecha_entrega?->format('Y-m-d') }}</td>
                     <td><div class="ge-series">@forelse($guia->seriales->take(3) as $serial)<span>{{ $serial->no_serie }}</span>@empty—@endforelse @if($guia->seriales->count()>3)<span>+{{ $guia->seriales->count()-3 }}</span>@endif</div></td>
