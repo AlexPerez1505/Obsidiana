@@ -45,6 +45,7 @@ class Viaticos
         'meals' => ['nullable', 'numeric', 'min:0'],
         'lodging' => ['nullable', 'numeric', 'min:0'],
         'additional' => ['nullable', 'numeric', 'min:0'],
+        'extras' => ['nullable', 'string', 'max:1000'],
         'description' => ['nullable', 'string', 'max:1000'],
         'expense_date' => ['nullable', 'date'],
         'ticket_photos' => ['nullable', 'array'],

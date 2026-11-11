@@ -15,7 +15,7 @@ class Viatic extends Model
     protected $fillable = [
         'user_id', 'vehicle_id', 'vehicle_name', 'place',
         'personas_viaje', 'dias_hospedaje', 'fecha_ida', 'fecha_regreso',
-        'tolls', 'fuel', 'meals', 'lodging', 'additional',
+        'tolls', 'fuel', 'meals', 'lodging', 'additional', 'extras',
         'description', 'ticket_photo', 'ticket_photos', 'expense_date', 'status',
     ];
 

@@ -304,11 +304,15 @@
 
             {{-- Extras --}}
             <div class="vt-field">
-                <label class="vt-label">Extras</label>
+                <label class="vt-label">Costo de extras</label>
                 <div class="vt-input-wrap">
                     <span class="vt-prefix">$</span>
                     <input type="number" name="additional" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal" value="{{ old('additional', $viatic->additional) }}">
                 </div>
+            </div>
+            <div class="vt-field">
+                <label class="vt-label">Detalle de extras</label>
+                <textarea name="extras" class="vt-input" placeholder="Ej. Galletas, agua o material adicional...">{{ old('extras', $viatic->extras) }}</textarea>
             </div>
 
             {{-- Descripción --}}
