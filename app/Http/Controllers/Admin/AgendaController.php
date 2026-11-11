@@ -12,10 +12,30 @@ use Illuminate\View\View;
 
 class AgendaController extends Controller
 {
-    private const TYPES = ['training', 'delivery', 'install', 'meeting', 'maintenance'];
+    private const TYPES = ['training', 'delivery', 'install', 'meeting', 'maintenance', 'administrative', 'campaign', 'payment', 'task'];
+
+    public function general(Request $request): View
+    {
+        $request->merge(['calendar' => 'general']);
+
+        return $this->index($request);
+    }
+
+    public function mio(Request $request): View
+    {
+        $request->merge(['calendar' => 'personal']);
+
+        return $this->index($request);
+    }
 
     public function index(Request $request): View
     {
+        $legacyAgenda = $request->routeIs('admin.agenda.index');
+        $calendarScope = $legacyAgenda ? 'legacy' : (string) $request->input('calendar', 'general');
+        if (! in_array($calendarScope, ['legacy', 'general', 'personal'], true)) {
+            $calendarScope = 'general';
+        }
+
         $requestedMonth = (string) $request->input('month', now()->format('Y-m'));
 
         try {
@@ -27,20 +47,26 @@ class AgendaController extends Controller
         $rangeStart = $month->copy()->startOfMonth()->startOfWeek(Carbon::SUNDAY);
         $rangeEnd = $month->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
 
-        $agendaEvents = AgendaEvent::query()
+        $agendaQuery = AgendaEvent::query()
             ->where('start_date', '<=', $rangeEnd)
             ->where('end_date', '>=', $rangeStart)
-            ->orderBy('start_date')
-            ->get()
+            ->when($calendarScope === 'personal',
+                fn ($query) => $query
+                    ->where('created_by', $request->user()->id)
+                    ->where('visibility', 'privado'),
+                fn ($query) => $legacyAgenda ? $query : $query->where('visibility', 'publico'))
+            ->orderBy('start_date');
+
+        $agendaEvents = $agendaQuery->get()
             ->map(fn (AgendaEvent $event): array => $this->mapAgendaEvent($event));
 
-        $congresses = Congress::query()
+        $congresses = in_array($calendarScope, ['legacy', 'general'], true) ? Congress::query()
             ->with('category')
             ->where('fecha_inicio', '<=', $rangeEnd)
             ->where('fecha_finalizacion', '>=', $rangeStart)
             ->orderBy('fecha_inicio')
             ->get()
-            ->map(fn (Congress $congress): array => $this->mapCongress($congress));
+            ->map(fn (Congress $congress): array => $this->mapCongress($congress)) : collect();
 
         $eventList = $agendaEvents->concat($congresses)
             ->sortBy('start_date')
@@ -99,6 +125,7 @@ class AgendaController extends Controller
             'monthLabel' => ucfirst($month->translatedFormat('F Y')),
             'prevMonth' => $month->copy()->subMonth()->format('Y-m'),
             'nextMonth' => $month->copy()->addMonth()->format('Y-m'),
+            'calendarScope' => $calendarScope,
             'currentMonth' => now()->format('Y-m'),
         ]);
     }
@@ -114,12 +141,21 @@ class AgendaController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.agenda.index', ['month' => Carbon::parse($data['start_date'])->format('Y-m')])
+            ->route($request->filled('calendar')
+                ? (($request->input('calendar') === 'personal') ? 'calendarios.mio' : 'calendarios.general')
+                : 'admin.agenda.index', [
+                'month' => Carbon::parse($data['start_date'])->format('Y-m'),
+                'calendar' => $request->input('calendar', 'general'),
+            ])
             ->with('status', 'Evento registrado correctamente.');
     }
 
     public function update(Request $request, AgendaEvent $agendaEvent): RedirectResponse
     {
+        if ($request->filled('calendar')) {
+            abort_unless($this->puedeModificarDesdeWeb($agendaEvent, $request), 403);
+        }
+
         $data = $this->validated($request);
 
         $agendaEvent->update([
@@ -128,17 +164,31 @@ class AgendaController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.agenda.index', ['month' => Carbon::parse($data['start_date'])->format('Y-m')])
+            ->route($request->filled('calendar')
+                ? (($request->input('calendar') === 'personal') ? 'calendarios.mio' : 'calendarios.general')
+                : 'admin.agenda.index', [
+                'month' => Carbon::parse($data['start_date'])->format('Y-m'),
+                'calendar' => $request->input('calendar', 'general'),
+            ])
             ->with('status', 'Evento actualizado correctamente.');
     }
 
     public function destroy(Request $request, AgendaEvent $agendaEvent): RedirectResponse
     {
+        if ($request->filled('calendar')) {
+            abort_unless($this->puedeModificarDesdeWeb($agendaEvent, $request), 403);
+        }
+
         $month = $agendaEvent->start_date->format('Y-m');
         $agendaEvent->delete();
 
         return redirect()
-            ->route('admin.agenda.index', ['month' => $month])
+            ->route($request->filled('calendar')
+                ? (($request->input('calendar') === 'personal') ? 'calendarios.mio' : 'calendarios.general')
+                : 'admin.agenda.index', [
+                'month' => $month,
+                'calendar' => $request->input('calendar', 'general'),
+            ])
             ->with('status', 'Evento eliminado correctamente.');
     }
 
@@ -152,6 +202,7 @@ class AgendaController extends Controller
             'time' => ['required', 'date_format:H:i'],
             'participants' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'calendar' => ['nullable', 'in:general,personal'],
         ]);
 
         $participants = trim((string) ($data['participants'] ?? ''));
@@ -164,7 +215,18 @@ class AgendaController extends Controller
             'start_time' => $data['time'],
             'participants' => $participants !== '' ? array_map('trim', explode(',', $participants)) : [],
             'notes' => $data['notes'] ?? null,
+            'visibility' => ($data['calendar'] ?? 'general') === 'personal' ? 'privado' : 'publico',
         ];
+    }
+
+    private function puedeModificarDesdeWeb(AgendaEvent $event, Request $request): bool
+    {
+        if ($event->visibility === 'publico') {
+            return true;
+        }
+
+        return (int) $event->created_by === (int) $request->user()->id
+            || (bool) $request->user()->isAdmin();
     }
 
     private function mapAgendaEvent(AgendaEvent $event): array
@@ -269,6 +331,10 @@ class AgendaController extends Controller
             'install' => ['bg' => '#c7a7ff', 'text' => '#3d178b', 'line' => '#c8a7ff'],
             'meeting' => ['bg' => '#ffd9a3', 'text' => '#9a4f00', 'line' => '#ffd39a'],
             'maintenance' => ['bg' => '#ff9ea5', 'text' => '#a3131e', 'line' => '#ffa0a6'],
+            'administrative' => ['bg' => '#c4b5fd', 'text' => '#5b21b6', 'line' => '#c4b5fd'],
+            'campaign' => ['bg' => '#f9a8d4', 'text' => '#9d174d', 'line' => '#f9a8d4'],
+            'payment' => ['bg' => '#fde68a', 'text' => '#92400e', 'line' => '#fde68a'],
+            'task' => ['bg' => '#bae6fd', 'text' => '#075985', 'line' => '#bae6fd'],
             'congress' => ['bg' => '#a9bcff', 'text' => '#053394', 'line' => '#a9bcff'],
         ];
     }

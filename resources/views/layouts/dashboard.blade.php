@@ -1004,6 +1004,19 @@
                 </div>
             </div>
             @endcan
+            <div class="nav-section">Calendarios</div>
+            <div class="nav-group open {{ request()->routeIs('calendarios.*') ? 'active' : '' }}">
+                <div class="submenu">
+                    <a class="nav-item nav-sub {{ request()->routeIs('calendarios.general') ? 'active' : '' }}" href="{{ route('calendarios.general') }}" data-tip="Calendario general">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Calendario general</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('calendarios.mio') ? 'active' : '' }}" href="{{ route('calendarios.mio') }}" data-tip="Mi calendario">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Mi calendario</span>
+                    </a>
+                </div>
+            </div>
             <div class="nav-section">Administración</div>
             <div class="nav-group {{ request()->routeIs('admin.*', 'inventory.congresos.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Administrativa">
@@ -1159,6 +1172,10 @@
                 @endif
             </div>
             <div class="topbar-spacer"></div>
+
+            <a class="icon-btn" href="{{ route('calendarios.mio') }}" aria-label="Mi calendario" title="Mi calendario">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+            </a>
 
             {{-- Tema --}}
             <button class="icon-btn" id="theme-toggle" type="button" aria-label="Cambiar tema">

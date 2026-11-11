@@ -1,7 +1,7 @@
 @extends('layouts.dashboard')
 @section('title', 'Agenda')
-@section('page-title', 'Agenda')
-@section('page-sub', 'Gestion Administrativa > Agenda')
+@section('page-title', $calendarScope === 'legacy' ? 'Agenda' : 'Calendario')
+@section('page-sub', $calendarScope === 'legacy' ? 'Gestión Administrativa > Agenda' : 'Gestión Administrativa > Calendario')
 
 @push('head')
 <style>
@@ -252,6 +252,23 @@
         box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .22);
     }
 
+    .calendar-cell.is-today {
+        background: rgba(168, 85, 247, .12);
+        box-shadow: inset 0 0 0 2px rgba(192, 132, 252, .65);
+    }
+
+    .calendar-cell.is-today .calendar-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        background: #c084fc;
+        color: #2e1065;
+        font-weight: 900;
+    }
+
     .calendar-cell.is-range-start {
         box-shadow: inset 4px 0 0 rgba(37, 99, 235, .65), inset 0 0 0 1px rgba(37, 99, 235, .22);
     }
@@ -309,6 +326,45 @@
         text-align: left;
         overflow: hidden;
         cursor: pointer;
+    }
+
+    .agenda-hover-card {
+        position: fixed;
+        z-index: 200;
+        width: min(300px, calc(100vw - 24px));
+        padding: 13px 15px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--text);
+        box-shadow: 0 14px 36px rgba(0, 0, 0, .28);
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(4px);
+        transition: opacity .12s ease, transform .12s ease;
+    }
+
+    .agenda-hover-card.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .agenda-hover-card-title {
+        margin: 0 0 7px;
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1.25;
+    }
+
+    .agenda-hover-card-row {
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+    }
+
+    .agenda-hover-card-row strong {
+        color: var(--text);
     }
 
     .calendar-event:hover {
@@ -392,6 +448,29 @@
         font-size: 14px;
         line-height: 1.12;
         font-weight: 800;
+    }
+    .agenda-subtitle {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+    }
+    .agenda-tabs {
+        display: flex;
+        gap: 8px;
+        margin: 18px 0 14px;
+        border-bottom: 1px solid var(--border);
+    }
+    .agenda-tabs a {
+        padding: 10px 16px;
+        color: var(--muted);
+        text-decoration: none;
+        font-weight: 700;
+        border-bottom: 2px solid transparent;
+    }
+    .agenda-tabs a:hover,
+    .agenda-tabs a.is-active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
     }
 
     .upcoming-line {
@@ -801,21 +880,24 @@
 
 @section('content')
     <section class="agenda-page">
-        <nav class="agenda-crumb" aria-label="Ruta">
-            <a href="{{ route('dashboard') }}">Gestion Administrativa</a>
-            <span>&gt;</span>
-            <strong>Agenda</strong>
-        </nav>
+        @if ($calendarScope === 'legacy')
+            <nav class="agenda-crumb" aria-label="Ruta">
+                <a href="{{ route('dashboard') }}">Gestion Administrativa</a>
+                <span>&gt;</span>
+                <strong>Agenda</strong>
+            </nav>
+        @endif
 
         <div class="agenda-hero">
-            <div class="agenda-title">
-                <svg class="agenda-title-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="4" y="3" width="16" height="18" rx="2"></rect>
-                    <path d="M8 3v18M4 8h16M4 13h16M4 18h16"></path>
-                </svg>
-                <h2>Agenda/Evento</h2>
-            </div>
-
+            @if ($calendarScope === 'legacy')
+                <div class="agenda-title">
+                    <svg class="agenda-title-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+                        <path d="M8 3v18M4 8h16M4 13h16M4 18h16"></path>
+                    </svg>
+                    <h2>Agenda/Evento</h2>
+                </div>
+            @endif
             <div class="agenda-hero-actions">
                 <a class="agenda-add is-outline" href="{{ route('inventory.congresos.create') }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
@@ -828,14 +910,21 @@
             </div>
         </div>
 
+        @if ($calendarScope !== 'legacy')
+        <div class="agenda-tabs" role="tablist" aria-label="Tipo de calendario">
+            <a class="{{ $calendarScope === 'general' ? 'is-active' : '' }}" href="{{ route('calendarios.general', ['month' => request('month', $currentMonth)]) }}" role="tab" aria-selected="{{ $calendarScope === 'general' ? 'true' : 'false' }}">Calendario general</a>
+            <a class="{{ $calendarScope === 'personal' ? 'is-active' : '' }}" href="{{ route('calendarios.mio', ['month' => request('month', $currentMonth)]) }}" role="tab" aria-selected="{{ $calendarScope === 'personal' ? 'true' : 'false' }}">Mi calendario</a>
+        </div>
+        @endif
+
         <div class="agenda-shell">
             <div class="agenda-main">
                 <div class="agenda-toolbar">
-                    <a class="agenda-today" href="{{ route('admin.agenda.index', ['month' => $currentMonth]) }}">Hoy</a>
-                    <a class="agenda-icon-btn" href="{{ route('admin.agenda.index', ['month' => $prevMonth]) }}" aria-label="Mes anterior">
+                    <a class="agenda-today" href="{{ route($calendarScope === 'legacy' ? 'admin.agenda.index' : ($calendarScope === 'personal' ? 'calendarios.mio' : 'calendarios.general'), ['month' => $currentMonth]) }}">Hoy</a>
+                    <a class="agenda-icon-btn" href="{{ route($calendarScope === 'legacy' ? 'admin.agenda.index' : ($calendarScope === 'personal' ? 'calendarios.mio' : 'calendarios.general'), ['month' => $prevMonth]) }}" aria-label="Mes anterior">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
                     </a>
-                    <a class="agenda-icon-btn" href="{{ route('admin.agenda.index', ['month' => $nextMonth]) }}" aria-label="Mes siguiente">
+                    <a class="agenda-icon-btn" href="{{ route($calendarScope === 'legacy' ? 'admin.agenda.index' : ($calendarScope === 'personal' ? 'calendarios.mio' : 'calendarios.general'), ['month' => $nextMonth]) }}" aria-label="Mes siguiente">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
                     </a>
                     <p class="agenda-month">{{ $monthLabel }}</p>
@@ -856,6 +945,10 @@
                             $dayEvents = empty($day['muted']) ? ($events[$day['num']] ?? []) : [];
                             $selectedDate = $day['date'];
                             $dayClasses = ['calendar-cell'];
+
+                            if ($selectedDate === now()->toDateString()) {
+                                $dayClasses[] = 'is-today';
+                            }
 
                             if ($dayEvents) {
                                 $dayClasses[] = 'is-busy';
@@ -953,6 +1046,9 @@
             <form class="agenda-form" id="agendaForm" method="POST" action="{{ route('admin.agenda.events.store') }}">
                 @csrf
                 <input type="hidden" name="_method" id="agenda-method" value="POST">
+                @if ($calendarScope !== 'legacy')
+                    <input type="hidden" name="calendar" value="{{ $calendarScope }}">
+                @endif
                 <div>
                     <label for="agenda-title">Titulo</label>
                     <input id="agenda-title" type="text" name="title" placeholder="Nombre del evento" required>
@@ -979,6 +1075,12 @@
                         <option value="install">Instalacion</option>
                         <option value="maintenance">Mantenimiento</option>
                         <option value="meeting">Reunion</option>
+                        @if ($calendarScope !== 'legacy')
+                            <option value="administrative">Administrativo</option>
+                            <option value="campaign">Campaña</option>
+                            <option value="payment">Pago</option>
+                            <option value="task">Tarea</option>
+                        @endif
                     </select>
                 </div>
                 <div>
@@ -997,9 +1099,16 @@
             <form id="agendaDeleteForm" method="POST" action="" hidden>
                 @csrf
                 @method('DELETE')
+                @if ($calendarScope !== 'legacy')
+                    <input type="hidden" name="calendar" value="{{ $calendarScope }}">
+                @endif
             </form>
         </div>
     </div>
+
+    @if ($calendarScope !== 'legacy')
+        <div class="agenda-hover-card" id="agendaHoverCard" role="tooltip" aria-hidden="true"></div>
+    @endif
 
     <script>
         const agendaModal = document.getElementById('agendaModal');
@@ -1142,6 +1251,20 @@
         const agendaMonthGrid = document.querySelector('.calendar-grid');
         const agendaViewButtons = document.querySelectorAll('.agenda-view button');
         const agendaMonthLabel = document.querySelector('.agenda-month');
+        const agendaHoverCard = document.getElementById('agendaHoverCard');
+        const agendaTypeLabels = {
+            training: 'Capacitación',
+            delivery: 'Entrega de equipo',
+            install: 'Instalación',
+            maintenance: 'Mantenimiento',
+            meeting: 'Reunión',
+            administrative: 'Administrativo',
+            campaign: 'Campaña',
+            payment: 'Pago',
+            task: 'Tarea',
+            congress: 'Congreso',
+        };
+        let agendaHoveredEvent = null;
         const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
         const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -1162,6 +1285,74 @@
             return d;
         }
         function monthName(date) { return monthNames[date.getMonth()]; }
+
+        function escapeAgendaHtml(value) {
+            return String(value ?? '').replace(/[&<>'"]/g, (character) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;'
+            }[character]));
+        }
+
+        function showAgendaHoverCard(item) {
+            if (!agendaHoverCard) return;
+
+            const data = item.dataset;
+            const date = data.agendaStartDate === data.agendaEndDate
+                ? data.agendaStartDate
+                : `${data.agendaStartDate} al ${data.agendaEndDate}`;
+            const type = agendaTypeLabels[data.agendaType] || data.agendaType || 'Evento';
+            const source = data.agendaSource === 'congress' ? 'Congresos' : 'Calendario';
+
+            agendaHoverCard.innerHTML = `
+                <p class="agenda-hover-card-title">${escapeAgendaHtml(data.agendaTitle)}</p>
+                <div class="agenda-hover-card-row"><strong>Fecha:</strong> ${escapeAgendaHtml(date)}</div>
+                <div class="agenda-hover-card-row"><strong>Hora:</strong> ${escapeAgendaHtml(data.agendaTime || 'Todo el día')}</div>
+                <div class="agenda-hover-card-row"><strong>Tipo:</strong> ${escapeAgendaHtml(type)}</div>
+                <div class="agenda-hover-card-row"><strong>Origen:</strong> ${escapeAgendaHtml(source)}</div>
+                ${data.agendaParticipants ? `<div class="agenda-hover-card-row"><strong>Participantes:</strong> ${escapeAgendaHtml(data.agendaParticipants)}</div>` : ''}
+                ${data.agendaNotes ? `<div class="agenda-hover-card-row"><strong>Descripción:</strong> ${escapeAgendaHtml(data.agendaNotes)}</div>` : ''}
+            `;
+
+            agendaHoverCard.hidden = false;
+            agendaHoverCard.classList.add('is-visible');
+            agendaHoverCard.setAttribute('aria-hidden', 'false');
+
+            const rect = item.getBoundingClientRect();
+            const gap = 10;
+            const cardWidth = Math.min(300, window.innerWidth - 24);
+            let left = rect.left;
+            let top = rect.bottom + gap;
+
+            if (left + cardWidth > window.innerWidth - 12) left = window.innerWidth - cardWidth - 12;
+            if (top + agendaHoverCard.offsetHeight > window.innerHeight - 12) top = rect.top - agendaHoverCard.offsetHeight - gap;
+            if (top < 12) top = 12;
+
+            agendaHoverCard.style.left = `${Math.max(12, left)}px`;
+            agendaHoverCard.style.top = `${top}px`;
+        }
+
+        function hideAgendaHoverCard() {
+            if (!agendaHoverCard) return;
+            agendaHoverCard.classList.remove('is-visible');
+            agendaHoverCard.setAttribute('aria-hidden', 'true');
+            agendaHoverCard.hidden = true;
+            agendaHoveredEvent = null;
+        }
+
+        document.addEventListener('mouseover', (event) => {
+            const item = event.target.closest('[data-agenda-event]');
+            if (!item || item === agendaHoveredEvent) return;
+            agendaHoveredEvent = item;
+            showAgendaHoverCard(item);
+        });
+
+        document.addEventListener('mouseout', (event) => {
+            if (!agendaHoveredEvent || agendaHoveredEvent.contains(event.relatedTarget)) return;
+            hideAgendaHoverCard();
+        });
+
+        window.addEventListener('scroll', hideAgendaHoverCard, true);
+        window.addEventListener('resize', hideAgendaHoverCard);
+
         function eventsForDate(dateKey) {
             return agendaReservedEvents.filter((event) => dateKey >= event.start_date && dateKey <= event.end_date);
         }

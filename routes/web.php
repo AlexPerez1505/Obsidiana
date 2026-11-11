@@ -64,6 +64,9 @@ require __DIR__.'/web/inventory/congresos.php';
 // Logistica y rutas
 require __DIR__.'/web/logistica.php';
 
+// Calendarios principales del sistema
+require __DIR__.'/web/calendarios.php';
+
 // Recursos humanos: asistencia con lector de huella
 require __DIR__.'/web/asistencia.php';
 require __DIR__.'/web/nomina.php';
