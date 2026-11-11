@@ -36,7 +36,7 @@ class Viaticos
         'vehicle_id' => ['nullable', 'exists:vehicles,id'],
         'vehicle_name' => ['nullable', 'string', 'max:100'],
         'place' => ['nullable', 'string', 'max:255'],
-        'numero_personas' => ['nullable', 'integer', 'min:1', 'max:1000'],
+        'personas_viaje' => ['nullable', 'string', 'max:1000'],
         'dias_hospedaje' => ['nullable', 'integer', 'min:0', 'max:3650'],
         'fecha_ida' => ['nullable', 'date'],
         'fecha_regreso' => ['nullable', 'date', 'after_or_equal:fecha_ida'],

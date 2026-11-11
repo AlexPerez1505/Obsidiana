@@ -254,8 +254,8 @@
                 </div>
             </div>
             <div class="vt-field">
-                <label class="vt-label">Cuántas personas</label>
-                <input type="number" name="numero_personas" class="vt-input" placeholder="1" min="1" max="1000" step="1" value="{{ old('numero_personas', 1) }}">
+                <label class="vt-label">Quiénes fueron</label>
+                <input type="text" name="personas_viaje" class="vt-input" placeholder="Nombres de las personas que viajaron" value="{{ old('personas_viaje') }}">
             </div>
 
             {{-- Casetas & Gasolina --}}
