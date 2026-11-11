@@ -1004,8 +1004,16 @@
                 </div>
             </div>
             @endcan
-            <div class="nav-section">Calendarios</div>
-            <div class="nav-group open {{ request()->routeIs('calendarios.*') ? 'active' : '' }}">
+            <div class="nav-group {{ request()->routeIs('calendarios.*') ? 'open' : '' }}">
+                <a class="nav-item nav-toggle" href="#" data-tip="Calendarios">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="17" rx="2"></rect>
+                        <path d="M16 2v4M8 2v4M3 10h18"></path>
+                        <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"></path>
+                    </svg>
+                    <span class="nav-label">Calendarios</span>
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </a>
                 <div class="submenu">
                     <a class="nav-item nav-sub {{ request()->routeIs('calendarios.general') ? 'active' : '' }}" href="{{ route('calendarios.general') }}" data-tip="Calendario general">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
