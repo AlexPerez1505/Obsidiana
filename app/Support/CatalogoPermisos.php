@@ -251,6 +251,8 @@ class CatalogoPermisos
                     'agenda.eliminar' => 'Eliminar eventos de la agenda administrativa',
                     'viaticos.ver' => 'Consultar viáticos, viajes y sus gastos',
                     'viaticos.eliminar' => 'Eliminar viáticos y gastos de viajes',
+                    'entregas_guias.ver' => 'Consultar entregas de guías y sus equipos vinculados',
+                    'entregas_guias.crear' => 'Registrar entregas de guías con firma y evidencia',
                     'congresos.ver' => 'Ver congresos',
                     'congresos.editar' => 'Crear y editar congresos',
                     'congresos.eliminar' => 'Eliminar congresos y retirar unidades o participantes',

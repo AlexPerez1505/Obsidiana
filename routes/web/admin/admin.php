@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AgendaController;
 use App\Http\Controllers\Admin\AgendaEventController;
+use App\Http\Controllers\Admin\GuiaEntregaController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\MaterialRequestController;
 use App\Http\Controllers\Admin\ReportController;
@@ -74,6 +75,12 @@ Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->n
     Route::post('/viaticos/{viatic}/gastos', [ViaticController::class, 'addExpense'])->name('viatics.expense');
     Route::patch('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'updateExpense'])->name('viatics.expense.update');
     Route::delete('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'destroyExpense'])->withoutMiddleware('admin')->middleware(['can:viaticos.ver', 'can:viaticos.eliminar'])->name('viatics.expense.destroy');
+
+    Route::get('/entregas-guias', [GuiaEntregaController::class, 'index'])->withoutMiddleware('admin')->middleware('can:entregas_guias.ver')->name('guia_entregas.index');
+    Route::get('/entregas-guias/crear', [GuiaEntregaController::class, 'create'])->withoutMiddleware('admin')->middleware('can:entregas_guias.crear')->name('guia_entregas.create');
+    Route::get('/entregas-guias/buscar-series', [GuiaEntregaController::class, 'searchSeriales'])->withoutMiddleware('admin')->middleware('can:entregas_guias.crear')->name('guia_entregas.search_seriales');
+    Route::post('/entregas-guias', [GuiaEntregaController::class, 'store'])->withoutMiddleware('admin')->middleware('can:entregas_guias.crear')->name('guia_entregas.store');
+    Route::get('/entregas-guias/{guiaEntrega}', [GuiaEntregaController::class, 'show'])->withoutMiddleware('admin')->middleware('can:entregas_guias.ver')->name('guia_entregas.show');
 
     Route::post('/viajes', [TripController::class, 'store'])->name('trips.store');
     Route::get('/viajes/{trip}', [TripController::class, 'show'])->withoutMiddleware('admin')->middleware('can:viaticos.ver')->name('trips.show');
