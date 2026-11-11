@@ -643,6 +643,10 @@
         background: rgba(10, 132, 255, .13);
     }
 
+    :root[data-theme="dark"] .upcoming-item {
+        color: #f8fafc !important;
+    }
+
     @media (max-width: 1100px) {
         .agenda-shell {
             grid-template-columns: 1fr;
