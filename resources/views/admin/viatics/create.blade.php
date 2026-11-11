@@ -218,6 +218,11 @@
                 {{ $v->model ?: $v->brand ?: 'Vehículo' }}
             </button>
         @endforeach
+        <button type="button" class="vt-chip" data-vehicle-id="" data-vehicle-name="Nissan y Versa"
+                onclick="vtSelectVehicle(this, '', 'Nissan y Versa')">
+            <x-gravityui-car />
+            Ambos carros
+        </button>
         @if($vehicles->isEmpty())
             <button type="button" class="vt-chip selected" data-vehicle-id="">
                 <x-gravityui-car />
@@ -230,6 +235,7 @@
     <form method="POST" action="{{ route('admin.viatics.store') }}" enctype="multipart/form-data" id="vtForm">
         @csrf
         <input type="hidden" name="vehicle_id" id="vtVehicleId" value="{{ $vehicles->first()?->id ?? '' }}">
+        <input type="hidden" name="vehicle_name" id="vtVehicleName" value="">
         <input type="hidden" name="expense_date" value="{{ now()->format('Y-m-d') }}">
 
         <div class="vt-form-card">
@@ -349,10 +355,11 @@
 </div>
 
 <script>
-    function vtSelectVehicle(btn, id) {
+    function vtSelectVehicle(btn, id, nombre = '') {
         document.querySelectorAll('.vt-chip').forEach(c => c.classList.remove('selected'));
         btn.classList.add('selected');
         document.getElementById('vtVehicleId').value = id;
+        document.getElementById('vtVehicleName').value = nombre;
     }
 
     (function () {

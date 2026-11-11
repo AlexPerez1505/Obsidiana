@@ -219,6 +219,12 @@
                 {{ $v->model ?: $v->brand ?: 'Vehículo' }}
             </button>
         @endforeach
+        <button type="button" class="vt-chip {{ !$viatic->vehicle_id && $viatic->vehicle_name === 'Nissan y Versa' ? 'selected' : '' }}"
+                data-vehicle-id="" data-vehicle-name="Nissan y Versa"
+                onclick="vtSelectVehicle(this, '', 'Nissan y Versa')">
+            <x-gravityui-car />
+            Ambos carros
+        </button>
         @if($vehicles->isEmpty())
             <button type="button" class="vt-chip selected" data-vehicle-id="">
                 <x-gravityui-car />
@@ -232,6 +238,7 @@
         @csrf
         @method('PATCH')
         <input type="hidden" name="vehicle_id" id="vtVehicleId" value="{{ $viatic->vehicle_id ?? '' }}">
+        <input type="hidden" name="vehicle_name" id="vtVehicleName" value="{{ $viatic->vehicle_id ? '' : ($viatic->vehicle_name ?? '') }}">
         <input type="hidden" name="expense_date" value="{{ $viatic->expense_date?->format('Y-m-d') ?? now()->format('Y-m-d') }}">
 
         <div class="vt-form-card">
@@ -367,10 +374,11 @@
 </div>
 
 <script>
-    function vtSelectVehicle(btn, id) {
+    function vtSelectVehicle(btn, id, nombre = '') {
         document.querySelectorAll('.vt-chip').forEach(c => c.classList.remove('selected'));
         btn.classList.add('selected');
         document.getElementById('vtVehicleId').value = id;
+        document.getElementById('vtVehicleName').value = nombre;
     }
 
     function vtQuitarFotoExistente(btn, ruta) {
