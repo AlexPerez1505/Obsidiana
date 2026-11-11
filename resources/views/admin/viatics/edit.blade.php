@@ -244,6 +244,22 @@
                 </div>
             </div>
 
+            {{-- Fechas y personas --}}
+            <div class="vt-row-2">
+                <div class="vt-field">
+                    <label class="vt-label">Fecha de ida</label>
+                    <input type="date" name="fecha_ida" class="vt-input" value="{{ old('fecha_ida', $viatic->fecha_ida?->format('Y-m-d')) }}">
+                </div>
+                <div class="vt-field">
+                    <label class="vt-label">Fecha de regreso</label>
+                    <input type="date" name="fecha_regreso" class="vt-input" value="{{ old('fecha_regreso', $viatic->fecha_regreso?->format('Y-m-d')) }}">
+                </div>
+            </div>
+            <div class="vt-field">
+                <label class="vt-label">Cuántas personas</label>
+                <input type="number" name="numero_personas" class="vt-input" placeholder="1" min="1" max="1000" step="1" value="{{ old('numero_personas', $viatic->numero_personas ?? 1) }}">
+            </div>
+
             {{-- Casetas & Gasolina --}}
             <div class="vt-row-2">
                 <div class="vt-field">
@@ -265,7 +281,7 @@
             {{-- Viáticos & Hospedaje --}}
             <div class="vt-row-2">
                 <div class="vt-field">
-                    <label class="vt-label">Viáticos</label>
+                    <label class="vt-label">Comida</label>
                     <div class="vt-input-wrap">
                         <span class="vt-prefix">$</span>
                         <input type="number" name="meals" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal" value="{{ old('meals', $viatic->meals) }}">
@@ -282,7 +298,13 @@
 
             {{-- Adicional --}}
             <div class="vt-field">
-                <label class="vt-label">Adicional</label>
+                <label class="vt-label">Días de hospedaje</label>
+                <input type="number" name="dias_hospedaje" class="vt-input" placeholder="0" min="0" max="3650" step="1" value="{{ old('dias_hospedaje', $viatic->dias_hospedaje ?? 0) }}">
+            </div>
+
+            {{-- Extras --}}
+            <div class="vt-field">
+                <label class="vt-label">Extras</label>
                 <div class="vt-input-wrap">
                     <span class="vt-prefix">$</span>
                     <input type="number" name="additional" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal" value="{{ old('additional', $viatic->additional) }}">
