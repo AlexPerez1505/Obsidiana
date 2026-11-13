@@ -92,6 +92,10 @@
 @endpush
 
 @section('content')
+    @if (request()->query('from') === 'dashboard')
+        <x-ui.page-header title="Inventario" :back="route('dashboard')" />
+    @endif
+
     <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap;">
         <form method="GET" id="filtrosProductos" data-live="off" style="flex:1 1 100%;display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
             <label style="flex:1;min-width:220px;">Buscar producto
