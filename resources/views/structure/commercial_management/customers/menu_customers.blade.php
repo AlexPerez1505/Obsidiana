@@ -19,7 +19,9 @@
         $congresos = collect($congresos ?? $customers->pluck('congress.nombre'))->filter()->unique()->sort()->values();
     @endphp
 
-    <x-ui.page-header title="Clientes" :back="route('dashboard')" />
+    @if (request()->query('from') === 'dashboard')
+        <x-ui.page-header title="Clientes" :back="route('dashboard')" />
+    @endif
 
     <div class="content-actions">
         @can('clientes.crear')
