@@ -19,6 +19,8 @@
         $congresos = collect($congresos ?? $customers->pluck('congress.nombre'))->filter()->unique()->sort()->values();
     @endphp
 
+    <x-ui.page-header title="Clientes" :back="route('dashboard')" />
+
     <div class="content-actions">
         @can('clientes.crear')
         <a href="{{ route('commercial.clientes.create') }}" class="btn">
