@@ -15,6 +15,10 @@
 @php
     $textoGuardar = $textoGuardar ?? 'Guardar';
     $avisosStock = $avisosStock ?? [];
+    // La cotización no aparta ni entrega piezas: ahí no se muestra el stock
+    // ni se eligen números de serie (eso se decide al hacer la venta).
+    $mostrarStock = $mostrarStock ?? true;
+    $columnas = $mostrarStock ? 10 : 9;
 @endphp
 
 {{-- Cabecera estandar del sistema. El guardado vive al pie del formulario. --}}
@@ -134,11 +138,11 @@
                         <thead>
                             <tr>
                                 <th>Imagen</th><th>Equipo</th><th>Modelo</th><th>Marca</th>
-                                <th>Stock</th><th>Cantidad</th><th>Subtotal</th><th>Sobreprecio</th><th>Regalo</th><th>Acción</th>
+                                @if ($mostrarStock)<th>Stock</th>@endif<th>Cantidad</th><th>Subtotal</th><th>Sobreprecio</th><th>Regalo</th><th>Acción</th>
                             </tr>
                         </thead>
                         <tbody id="itemsBody">
-                            <tr id="itemsEmpty"><td colspan="10" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>
+                            <tr id="itemsEmpty"><td colspan="{{ $columnas }}" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -149,7 +153,7 @@
                     <div class="cot-totes">
                         <div class="cot-tote-row">
                             <label>Envío</label>
-                            <input type="text" id="envio" class="cot-input cot-num" inputmode="decimal" value="0">
+                            <input type="text" id="envio" class="cot-input cot-num" inputmode="decimal" value="" placeholder="0">
                         </div>
                         <div class="cot-tote-row">
                             <label>Descuento</label>
@@ -158,7 +162,7 @@
                                     <option value="porcentaje">%</option>
                                     <option value="monto">$ monto</option>
                                 </select>
-                                <input type="text" id="descuento_valor" class="cot-input cot-num" inputmode="decimal" value="0">
+                                <input type="text" id="descuento_valor" class="cot-input cot-num" inputmode="decimal" value="" placeholder="0">
                             </div>
                         </div>
                         {{-- Cupón de promoción: aquí solo se escribe el código; el descuento lo calcula el servidor. --}}
@@ -181,7 +185,7 @@
 
                         <div class="cot-tote-row" style="margin-top:12px;">
                             <label>Valor a cuenta (equipos / mercancía a cuenta)</label>
-                            <input type="text" id="valor_a_cuenta" class="cot-input cot-num" inputmode="decimal" value="0">
+                            <input type="text" id="valor_a_cuenta" class="cot-input cot-num" inputmode="decimal" value="" placeholder="0">
                         </div>
                         <p style="font-size:12px; color:var(--muted); margin:6px 0 0;">Se resta del total para calcular el contrato.</p>
 
@@ -419,6 +423,8 @@
 (function () {
     const ROUTES = { clientes: @json($rClientes), productos: @json($rProductos), fichas: @json($rFichas) };
     const INITIAL = @json($initial);
+    const MOSTRAR_STOCK = @json($mostrarStock);
+    const COLUMNAS = MOSTRAR_STOCK ? 10 : 9;
     // Con cobros aplicados a alguna parcialidad, el plan no se toca desde aquí.
     const PLAN_BLOQUEADO = @json((bool) ($planBloqueado ?? false));
     const IVA = 0.16;
@@ -457,6 +463,9 @@
     const money = n => '$' + (Math.round((+n || 0) * 100) / 100).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const $ = id => document.getElementById(id);
     const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g, '')); return isNaN(n) ? 0 : n; };
+    // Los campos de importes no arrancan con un 0 escrito (estorba al
+    // capturar): si vale 0 se muestran vacíos, con el 0 solo de guía.
+    const sinCero = v => (num(v) === 0 ? '' : v);
     const MESES_ABBR = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
     const fmtFecha = s => { if (!s) return ''; const d = new Date(s + 'T00:00:00'); return `${String(d.getDate()).padStart(2,'0')} ${MESES_ABBR[d.getMonth()]} ${d.getFullYear()}`; };
 
@@ -510,7 +519,7 @@
         const sobran = elegidas.length > it.cantidad;
 
         tr.innerHTML = `
-            <td colspan="10" style="background:var(--surface-2); padding:14px 16px;">
+            <td colspan="${COLUMNAS}" style="background:var(--surface-2); padding:14px 16px;">
                 <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
                     <b style="font-size:13px;">¿Cuáles piezas se entregan?</b>
                     <span style="color:${sobran ? 'var(--danger)' : 'var(--muted)'}; font-size:12.5px;">
@@ -624,7 +633,7 @@
         const body = $('itemsBody');
         body.innerHTML = '';
         if (!state.items.length) {
-            body.innerHTML = '<tr id="itemsEmpty"><td colspan="10" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>';
+            body.innerHTML = `<tr id="itemsEmpty"><td colspan="${COLUMNAS}" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>`;
             recalc(); return;
         }
         state.items.forEach((it, idx) => {
@@ -638,16 +647,16 @@
                 <td style="font-weight:600;">${it.nombre}${contenidoPaquete(it)}</td>
                 <td>${it.modelo || '—'}</td>
                 <td>${it.marca || '—'}</td>
-                <td>${celdaStock(it, idx)}</td>
+                ${MOSTRAR_STOCK ? `<td>${celdaStock(it, idx)}</td>` : ''}
                 <td><input type="number" min="1" class="cot-input cot-cell-num" data-k="cantidad" data-i="${idx}" value="${it.cantidad}"></td>
                 <td>${it.es_regalo ? '<span style="color:var(--green); font-weight:700;">Regalo</span>' : money(sub)}</td>
-                <td><input type="text" inputmode="decimal" class="cot-input cot-cell-num" data-k="sobreprecio" data-i="${idx}" value="${it.sobreprecio}"></td>
+                <td><input type="text" inputmode="decimal" class="cot-input cot-cell-num" data-k="sobreprecio" data-i="${idx}" value="${sinCero(it.sobreprecio)}" placeholder="0"></td>
                 <td><label class="cot-switch"><input type="checkbox" data-k="es_regalo" data-i="${idx}" ${it.es_regalo ? 'checked' : ''}><span class="track"></span></label></td>
                 <td style="text-align:right;"><button type="button" class="cot-ico-btn danger" data-del="${idx}" title="Eliminar" aria-label="Eliminar">${ICON_TRASH}</button></td>`;
             body.appendChild(tr);
 
             // Renglón desplegable para elegir cuáles piezas se entregan.
-            if (it.abierto && (it.piezas || []).length) {
+            if (MOSTRAR_STOCK && it.abierto && (it.piezas || []).length) {
                 body.appendChild(filaDePiezas(it, idx));
             }
         });
@@ -1002,8 +1011,8 @@
                     </div>
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                         <button type="button" class="cot-lock ${p.bloqueado ? 'on' : ''}" data-lock="${idx}" title="Fijo: conserva su monto. Auto: se reparte solo.">${p.bloqueado ? ICON_LOCK : ICON_UNLOCK}${p.bloqueado ? 'Fijo' : 'Auto'}</button>
-                        <div class="cot-pay-mini"><input type="text" inputmode="decimal" data-pct="${idx}" value="${p.porcentaje}"><span>%</span></div>
-                        <div class="cot-pay-mini"><input type="text" inputmode="decimal" data-monto="${idx}" value="${p.monto}" style="width:100px;"><span>MXN</span></div>
+                        <div class="cot-pay-mini"><input type="text" inputmode="decimal" data-pct="${idx}" value="${sinCero(p.porcentaje)}" placeholder="0"><span>%</span></div>
+                        <div class="cot-pay-mini"><input type="text" inputmode="decimal" data-monto="${idx}" value="${sinCero(p.monto)}" placeholder="0" style="width:100px;"><span>MXN</span></div>
                         <button type="button" class="cot-ico-btn danger" data-delp="${idx}" title="Eliminar" aria-label="Eliminar">${ICON_TRASH}</button>
                     </div>
                 </div>`;
@@ -1167,10 +1176,10 @@
     $('nota_cliente').value = INITIAL.nota_cliente || '';
     $('modalidad').value = INITIAL.modalidad || 'contado';
     $('aplica_iva').checked = !!INITIAL.aplica_iva;
-    $('envio').value = INITIAL.envio || 0;
+    $('envio').value = sinCero(INITIAL.envio);
     $('descuento_tipo').value = INITIAL.descuento_tipo || 'porcentaje';
-    $('descuento_valor').value = INITIAL.descuento_valor || 0;
-    $('valor_a_cuenta').value = INITIAL.valor_a_cuenta || 0;
+    $('descuento_valor').value = sinCero(INITIAL.descuento_valor);
+    $('valor_a_cuenta').value = sinCero(INITIAL.valor_a_cuenta);
     if (INITIAL.cupon_codigo) {
         $('cupon_codigo').value = INITIAL.cupon_codigo;
         state.cupon = { codigo: INITIAL.cupon_codigo, valido: false, monto: 0 };
