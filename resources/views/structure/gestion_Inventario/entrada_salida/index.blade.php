@@ -137,11 +137,10 @@
             <input type="text" id="fBuscar" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar, o escanea / escribe la etiqueta (MB-000123) + Enter" autocomplete="off">
         </div>
 
-        <div class="mov-catalogo-visible">
-            @include('partials.inventario-filtros-catalogo')
-        </div>
-
-        <div class="mov-catalogo-visible">
+        {{-- Catálogo del equipo en una sola fila de selectores compactos:
+             el texto del label queda oculto a la vista (lo usan los lectores
+             de pantalla y los chips), y se aplica en cuanto se elige. --}}
+        <div class="mov-cat">
             @include('partials.inventario-filtros-catalogo')
         </div>
 
@@ -231,7 +230,6 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 3H2l8 9.46V19l4 2v-8.54"/><line x1="16" y1="5" x2="22" y2="11"/><line x1="22" y1="5" x2="16" y2="11"/></svg>
         </button>
 
-        <button type="submit" class="flt-btn">Aplicar</button>
         <x-ui.view-switch key="movimientos" />
     </form>
 
@@ -462,11 +460,32 @@
                         background:var(--danger-soft); color:var(--danger); }
         .mv-modal-ico svg { width:24px; height:24px; }
         .mv-modal-pie { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
-        .mov-catalogo-visible { flex:1 0 100%; min-width:0; }
-        .mov-catalogo-visible [data-catalogo-filtros] { align-items:end; gap:10px; }
-        .mov-catalogo-visible [data-catalogo-filtros] label { display:flex; flex-direction:column; gap:6px; color:var(--text); font-size:13px; }
-        .mov-catalogo-visible [data-catalogo-filtros] select { padding:9px 12px; border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--text); font:inherit; }
-        .mov-catalogo-visible [data-catalogo-filtros] select:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+        /* Búsqueda arriba a lo ancho; debajo, una sola fila con el catálogo
+           y los demás controles. */
+        .f-toolbar > .f-search { flex:1 0 100%; }
+        .mov-cat { flex:1 1 520px; min-width:0; }
+        .mov-cat [data-catalogo-filtros] { gap:8px !important; flex-wrap:nowrap !important; }
+        .mov-cat [data-catalogo-filtros] label { position:relative; flex:1 1 0 !important; min-width:0 !important;
+            font-size:0; line-height:0; }
+        .mov-cat [data-catalogo-filtros] label::after { content:''; position:absolute; right:13px; top:50%;
+            width:6px; height:6px; border-right:1.6px solid var(--muted); border-bottom:1.6px solid var(--muted);
+            transform:translateY(-70%) rotate(45deg); pointer-events:none; }
+        .mov-cat select { -webkit-appearance:none; appearance:none; width:100%; height:38px; padding:0 32px 0 14px;
+            border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--muted);
+            font:inherit; font-size:13px; line-height:38px; cursor:pointer; text-overflow:ellipsis;
+            transition:border-color .15s, background-color .15s, color .15s; }
+        .mov-cat select:hover { border-color:var(--muted); color:var(--text); }
+        .mov-cat select:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+        /* Con algo elegido se nota de un vistazo qué está filtrando. */
+        .mov-cat select:not(:has(option[value=""]:checked)) { border-color:var(--primary); background:var(--primary-soft);
+            color:var(--primary); font-weight:600; }
+        .mov-cat label:has(select:not(:has(option[value=""]:checked)))::after { border-color:var(--primary); }
+        .mov-cat select option { color:var(--text); background:var(--surface); font-weight:400; }
+        @media (max-width:760px) {
+            .mov-cat { flex-basis:100%; }
+            .mov-cat [data-catalogo-filtros] { flex-wrap:wrap !important; }
+            .mov-cat [data-catalogo-filtros] label { flex:1 1 calc(50% - 4px) !important; }
+        }
         .f-toolbar > .flt .flt-panel { left:0; right:auto; }
         @media (max-width:520px) { .mv-modal-pie .btn { flex:1; justify-content:center; } }
     </style>
@@ -546,6 +565,15 @@
                 }
 
                 window.location = fila.dataset.ver;
+            });
+
+            // El catálogo se aplica en cuanto se elige (ya no hay botón
+            // "Aplicar"); se espera un turno para que el tipo termine de
+            // rellenar subtipo, marca y modelo.
+            document.querySelectorAll('#filtrosMovimientos [data-catalogo]').forEach(function (select) {
+                select.addEventListener('change', function () {
+                    setTimeout(function () { document.getElementById('filtrosMovimientos').requestSubmit(); }, 0);
+                });
             });
 
             // Con el teclado: Enter sobre la fila enfocada hace lo mismo.
