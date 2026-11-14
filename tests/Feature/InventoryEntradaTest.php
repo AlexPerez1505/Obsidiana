@@ -58,7 +58,7 @@ class InventoryEntradaTest extends TestCase
     private function unidad(array $overrides = []): array
     {
         return array_merge([
-            'no_serie' => null,
+            'no_serie' => 'SN-'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(10)), // cada pieza lleva su serie (es obligatoria y única)
             'evidencias' => [UploadedFile::fake()->create('u.jpg', 50, 'image/jpeg')],
         ], $overrides);
     }
@@ -108,7 +108,10 @@ class InventoryEntradaTest extends TestCase
 
         // Cada pieza conserva la serie que se le capturó (las demás quedan sin serie).
         $series = ProductoSerial::where('producto_id', $producto->id)->orderBy('id')->pluck('no_serie');
-        $this->assertSame(['23A00001', null, null], $series->all());
+        $series = ProductoSerial::where('producto_id', $producto->id)->orderBy('id')->pluck('no_serie')->all();
+        $this->assertSame('23A00001', $series[0]);
+        $this->assertNotContains('23A00002', $series);
+        $this->assertNotContains(null, $series);
 
         $primera = ProductoSerial::where('no_serie', '23A00001')->first();
         $this->assertCount(2, $primera->evidence_paths);
@@ -149,7 +152,7 @@ class InventoryEntradaTest extends TestCase
         $user = $this->usuarioAprobado();
 
         $response = $this->actingAs($user)->post(route('inventory.movimientos.store'), $this->datosBase([
-            'unidades' => [['no_serie' => null, 'evidencias' => []]],
+            'unidades' => [['no_serie' => 'SN-SIN-FOTO', 'evidencias' => []]],
         ]));
 
         $response->assertSessionHasErrors('unidades.0.evidencias');

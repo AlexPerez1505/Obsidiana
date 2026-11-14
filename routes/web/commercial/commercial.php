@@ -20,6 +20,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/gestion-comercial/clientes/registrar', [CustomerController::class, 'store'])
         ->middleware('can:clientes.crear')->name('commercial.clientes.store');
 
+    // Municipios del estado elegido en la dirección (catálogo INEGI).
+    Route::get('/gestion-comercial/clientes/municipios', [CustomerController::class, 'municipios'])
+        ->middleware('can:clientes.ver')->name('commercial.clientes.municipios');
+
     // Va antes de {cliente} para que "similar" no se tome como un id.
     Route::get('/gestion-comercial/clientes/similar', [CustomerController::class, 'similar'])
         ->middleware('can:clientes.ver')->name('commercial.clientes.similar');
@@ -50,14 +54,19 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->middleware('can:clientes.crear')->name('commercial.clientes.categories.store');
 
     // Seguimientos de clientes y prospectos (recordatorios)
+    // Historial completo de seguimientos (modal de la lista de clientes).
+    Route::get('/gestion-comercial/clientes/{cliente}/seguimientos', [SeguimientoController::class, 'historial'])
+        ->middleware('can:clientes.ver')->name('commercial.clientes.seguimientos.historial');
     Route::post('/gestion-comercial/clientes/{cliente}/seguimientos', [SeguimientoController::class, 'store'])
         ->middleware('can:clientes.editar')->name('commercial.clientes.seguimientos.store');
     Route::post('/gestion-comercial/clientes/{cliente}/seguimientos/{seguimiento}/hecho', [SeguimientoController::class, 'hecho'])
         ->middleware('can:clientes.editar')->name('commercial.clientes.seguimientos.hecho');
     Route::post('/gestion-comercial/clientes/{cliente}/seguimientos/{seguimiento}/reprogramar', [SeguimientoController::class, 'reprogramar'])
         ->middleware('can:clientes.editar')->name('commercial.clientes.seguimientos.reprogramar');
+    Route::post('/gestion-comercial/clientes/{cliente}/seguimientos/{seguimiento}/reasignar', [SeguimientoController::class, 'reasignar'])
+        ->middleware('can:clientes.editar')->name('commercial.clientes.seguimientos.reasignar');
     Route::delete('/gestion-comercial/clientes/{cliente}/seguimientos/{seguimiento}', [SeguimientoController::class, 'destroy'])
-        ->middleware('can:clientes.eliminar')->name('commercial.clientes.seguimientos.destroy');
+        ->middleware('can:clientes.editar')->name('commercial.clientes.seguimientos.destroy');
     Route::post('/gestion-comercial/clientes/{cliente}/convertir', [SeguimientoController::class, 'convertir'])
         ->middleware('can:clientes.editar')->name('commercial.clientes.convertir');
 

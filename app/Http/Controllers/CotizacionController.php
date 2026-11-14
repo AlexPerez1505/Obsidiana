@@ -138,7 +138,7 @@ class CotizacionController extends Controller
                     'telefono' => $c->telefono,
                     'rfc' => $c->rfc,
                     'direccion' => $c->direccion,
-                    'categoria' => $c->category?->nombre,
+                    'categoria' => $c->tipoEquipo?->name,
                     'asesor' => $c->asesor?->name,
                     'conocido' => $c->comoConocio(),
                     'activo' => (bool) $c->activo,

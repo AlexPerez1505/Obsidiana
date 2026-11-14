@@ -14,6 +14,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Support\SeriesUnicas;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -78,7 +79,7 @@ class ProductosDeInventario
             'brand_id' => ['nullable', 'exists:brands,id'],
             'equipment_model_id' => ['nullable', 'exists:equipment_models,id'],
             'precio' => ['nullable', 'numeric', 'min:0'],
-            'stock' => ['required', 'integer', 'min:0'],
+            'stock' => ['required', 'integer', 'min:1'],
             'descripcion' => ['nullable', 'string', 'max:1000'],
             // Opcional: la REF o número de parte del fabricante.
             'referencia' => ['nullable', 'string', 'max:120'],
@@ -148,6 +149,7 @@ class ProductosDeInventario
     public function registrar(array $data, ?string $seriesTexto, ?UploadedFile $imagen): array
     {
         $series = $this->seriesObligatorias($seriesTexto, (int) $data['stock']);
+        SeriesUnicas::exigir($series, 'series_texto');
 
         if ($imagen) {
             $data['imagen_path'] = $imagen->store('productos', 'public');
@@ -177,7 +179,7 @@ class ProductosDeInventario
             // Si sigue fallando, ya no es una carrera: el serial de verdad
             // está repetido para ese producto.
             throw ValidationException::withMessages([
-                'series_texto' => 'Uno de esos números de serie ya existe para este producto. Revísalos y vuelve a intentar.',
+                'series_texto' => SeriesUnicas::MENSAJE_INDICE,
             ]);
         }
     }
@@ -210,6 +212,7 @@ class ProductosDeInventario
     public function agregarUnidades(Producto $producto, int $cantidad, ?string $seriesTexto): void
     {
         $series = $this->seriesObligatorias($seriesTexto, $cantidad);
+        SeriesUnicas::exigir($series, 'series_texto');
 
         try {
             $producto->agregarUnidades($cantidad, $series->all());
@@ -219,7 +222,7 @@ class ProductosDeInventario
             }
 
             throw ValidationException::withMessages([
-                'series_texto' => 'Uno de esos números de serie ya existe para este producto. Revísalos y vuelve a intentar.',
+                'series_texto' => SeriesUnicas::MENSAJE_INDICE,
             ]);
         }
     }
@@ -255,6 +258,10 @@ class ProductosDeInventario
             ]);
         }
 
+        if ($nuevaSerie !== null && SeriesUnicas::normalizar($nuevaSerie) !== SeriesUnicas::normalizar($serial->no_serie)) {
+            SeriesUnicas::exigir([$nuevaSerie], 'no_serie', [$serial->id]);
+        }
+
         $subidas = [];
 
         try {
@@ -285,7 +292,7 @@ class ProductosDeInventario
                 throw $e;
             }
 
-            throw ValidationException::withMessages(['no_serie' => 'Ese número de serie ya existe para este producto.']);
+            throw ValidationException::withMessages(['no_serie' => SeriesUnicas::MENSAJE_INDICE]);
         }
 
         // Ya guardado el cambio, se borran del disco las que se quitaron.
@@ -333,12 +340,18 @@ class ProductosDeInventario
             ->map(fn (ProductoSerial $p) => $cambios->has($p->id) ? $cambios[$p->id] : $p->no_serie)
             ->filter();
 
-        $repetidas = $finales->countBy()->filter(fn (int $n) => $n > 1)->keys();
+        $repetidas = SeriesUnicas::repetidasEnLista($finales);
 
         if ($repetidas->isNotEmpty()) {
             throw ValidationException::withMessages([
                 'series' => 'Quedarían piezas con la misma serie: '.$repetidas->implode(', ').'. Cada pieza debe tener la suya.',
             ]);
+        }
+
+        // Contra las piezas de OTROS productos (las de este ya se revisaron arriba).
+        $usadas = SeriesUnicas::enUso($cambios->filter()->values(), $piezas->keys()->all());
+        if ($usadas->isNotEmpty()) {
+            throw ValidationException::withMessages(['series' => SeriesUnicas::mensaje($usadas)]);
         }
 
         DB::transaction(function () use ($producto, $cambios) {

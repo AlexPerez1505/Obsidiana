@@ -6,9 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Una categoría para clasificar clientes (hospital, clínica, médico…).
+ * Tipo de equipo del catálogo de equipo con el que se clasifica al cliente.
  *
- * @mixin \App\Models\Category
+ * @mixin \App\Models\EquipmentType
  */
 class CategoriaClienteResource extends JsonResource
 {
@@ -16,8 +16,8 @@ class CategoriaClienteResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'nombre' => $this->nombre,
-            'descripcion' => $this->descripcion,
+            'nombre' => $this->name,
+            'descripcion' => $this->description,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

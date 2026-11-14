@@ -127,16 +127,17 @@ class InventarioFiltrosCatalogoTest extends TestCase
     public function test_paginacion_conserva_filtros_y_muestra_todos_los_resultados(): void
     {
         $a = $this->catalogo();
-        for ($i = 0; $i < 22; $i++) $this->movimiento($this->producto($a));
+        for ($i = 0; $i < 52; $i++) $this->movimiento($this->producto($a));
         $this->admin();
-        foreach (['inventory.productos.index' => 'productos', 'inventory.movimientos.index' => 'movements'] as $ruta => $dato) {
+        // Productos se pagina de 50 en 50 y movimientos de 20 en 20.
+        foreach (['inventory.productos.index' => ['productos', 50], 'inventory.movimientos.index' => ['movements', 20]] as $ruta => [$dato, $porPagina]) {
             $primera = $this->get(route($ruta, $a))->assertOk()->viewData($dato);
-            $this->assertSame(22, $primera->total());
-            $this->assertSame(20, $primera->count());
+            $this->assertSame(52, $primera->total());
+            $this->assertSame($porPagina, $primera->count());
             $this->assertStringContainsString('equipment_type_id='.$a['equipment_type_id'], $primera->nextPageUrl());
             $this->assertStringContainsString('brand_id='.$a['brand_id'], $primera->nextPageUrl());
             $segunda = $this->get(route($ruta, $a + ['page' => 2]))->assertOk()->viewData($dato);
-            $this->assertSame(2, $segunda->count());
+            $this->assertSame(min($porPagina, 52 - $porPagina), $segunda->count());
             $this->assertSame([], array_intersect($primera->getCollection()->modelKeys(), $segunda->getCollection()->modelKeys()));
         }
     }

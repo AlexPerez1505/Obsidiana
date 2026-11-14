@@ -27,11 +27,11 @@
                     <x-ui.form-group for="asesor" label="Asesor de Ventas">
                         <input id="asesor" type="text" value="{{ $customer->asesor?->name ?? auth()->user()?->name }}" readonly />
                     </x-ui.form-group>
-                    <x-ui.form-group for="categoria_id" label="Categoría">
+                    <x-ui.form-group for="categoria_id" label="Tipo de equipo">
                         <select id="categoria_id" name="categoria_id">
-                            <option value="" @selected(! old('categoria_id', $customer->categoria_id))>Sin categoría</option>
+                            <option value="" @selected(! old('categoria_id', $customer->categoria_id))>Sin tipo de equipo</option>
                             @foreach ($categories as $category)
-                                <option value="{{ $category->id }}" @selected(old('categoria_id', $customer->categoria_id) == $category->id)>{{ $category->nombre }}</option>
+                                <option value="{{ $category->id }}" @selected(old('categoria_id', $customer->categoria_id) == $category->id)>{{ $category->name }}</option>
                             @endforeach
                         </select>
                     </x-ui.form-group>
@@ -76,12 +76,15 @@
                 </div>
             </x-ui.card>
 
+            {{-- Dirección por partes --}}
+            <x-ui.card style="margin-bottom:18px;">
+                <x-ui.section-title style="margin:0 0 16px;">Dirección</x-ui.section-title>
+                @include('structure.commercial_management.customers._direccion', ['customer' => $customer])
+            </x-ui.card>
+
             {{-- Información adicional --}}
             <x-ui.card>
                 <x-ui.section-title style="margin:0 0 16px;">Información Adicional</x-ui.section-title>
-                <div style="margin-bottom:16px;">
-                    <x-ui.form-group label="Dirección *" name="direccion" placeholder="Dirección del cliente" :value="$customer->direccion" :required="true" />
-                </div>
                 <x-ui.form-group label="Comentarios" for="comentarios">
                     <textarea id="comentarios" name="comentarios" rows="4" placeholder="Comentarios">{{ old('comentarios', $customer->comentarios) }}</textarea>
                 </x-ui.form-group>

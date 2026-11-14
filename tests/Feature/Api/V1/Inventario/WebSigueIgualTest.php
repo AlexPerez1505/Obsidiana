@@ -72,12 +72,19 @@ class WebSigueIgualTest extends TestCase
 
         $this->assertSame(['W-1', 'W-2'], Producto::firstOrFail()->seriales()->orderBy('no_serie')->pluck('no_serie')->all());
 
-        // El textarea vacío llega como null y no debe tronar.
+        // El textarea vacío llega como null: no truena, pide las series.
         $this->actingAs($user)->post(route('inventory.productos.store'), [
             'equipment_type_id' => $cat['tipo']->id,
             'equipment_model_id' => $cat['modelo']->id,
             'stock' => 1,
             'series_texto' => '',
+        ])->assertSessionHasErrors('series_texto');
+
+        $this->actingAs($user)->post(route('inventory.productos.store'), [
+            'equipment_type_id' => $cat['tipo']->id,
+            'equipment_model_id' => $cat['modelo']->id,
+            'stock' => 1,
+            'series_texto' => 'W-3',
         ])->assertSessionHas('status', 'Se agregaron 1 unidad(es) al stock existente de CV-190.');
 
         $this->actingAs($user)->from(route('inventory.productos.create'))
@@ -100,10 +107,11 @@ class WebSigueIgualTest extends TestCase
         $this->actingAs($user)->from($editar)
             ->post(route('inventory.productos.seriales.store', $producto), ['cantidad' => 2, 'series_texto' => 'E-1'])
             ->assertRedirect($editar)
-            ->assertSessionHasErrors(['series_texto' => 'Uno de esos números de serie ya existe para este producto. Revísalos y vuelve a intentar.']);
+            ->assertSessionHasErrors('series_texto');
+        $this->assertStringContainsString('ya está registrado en el inventario', session('errors')->first('series_texto'));
 
         $this->actingAs($user)->from($editar)
-            ->post(route('inventory.productos.seriales.store', $producto), ['cantidad' => 2])
+            ->post(route('inventory.productos.seriales.store', $producto), ['cantidad' => 2, 'series_texto' => "E-5\nE-6"])
             ->assertRedirect($editar)
             ->assertSessionHas('status', 'Se agregaron 2 unidad(es) al inventario.');
 

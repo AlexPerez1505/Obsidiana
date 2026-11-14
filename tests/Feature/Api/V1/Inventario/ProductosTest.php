@@ -107,6 +107,7 @@ class ProductosTest extends TestCase
             'equipment_type_id' => $cat['tipo']->id,
             'equipment_model_id' => $cat['modelo']->id,
             'stock' => 2,
+            'series_texto' => "SER-0010\nSER-0011",
         ])->assertCreated()
             ->assertJsonPath('data.id', $producto->id)
             ->assertJsonPath('data.stock', 5)
@@ -123,7 +124,8 @@ class ProductosTest extends TestCase
         $this->conToken($user)->post('/api/v1/productos', [
             'equipment_type_id' => $cat['tipo']->id,
             'precio' => 1234.5,
-            'stock' => 0,
+            'stock' => 1,
+            'series_texto' => 'IMG-0001',
             'imagen' => UploadedFile::fake()->image('foto.jpg'),
         ])->assertCreated()->assertJsonPath('data.precio', 1234.5);
 
@@ -142,7 +144,7 @@ class ProductosTest extends TestCase
             'stock' => 3,
             'series_texto' => "A\nB",
         ])->assertStatus(422)
-            ->assertJsonPath('errors.series_texto.0', 'Capturaste 2 número(s) de serie, pero el stock dice 3. Deben coincidir, o deja el campo vacío si no vas a registrar series.');
+            ->assertJsonPath('errors.series_texto.0', 'Capturaste 2 número(s) de serie, pero la cantidad dice 3. Cada pieza debe tener su número de serie.');
 
         $this->conToken($user)->postJson('/api/v1/productos', ['stock' => 1])
             ->assertStatus(422)->assertJsonValidationErrors('equipment_type_id');
@@ -267,7 +269,7 @@ class ProductosTest extends TestCase
             'cantidad' => 1,
             'series' => ['P-1'],
         ])->assertStatus(422)
-            ->assertJsonPath('errors.series_texto.0', 'Uno de esos números de serie ya existe para este producto. Revísalos y vuelve a intentar.');
+            ->assertJsonPath('errors.series_texto.0', fn (string $m) => str_contains($m, 'ya está registrado en el inventario'));
 
         $this->assertSame(3, $producto->fresh()->stock);
     }
@@ -280,7 +282,7 @@ class ProductosTest extends TestCase
         $url = "/api/v1/productos/{$producto->id}/seriales/{$pieza->id}";
 
         $this->conToken($user)->putJson($url, ['no_serie' => 'C-2'])
-            ->assertStatus(422)->assertJsonPath('errors.no_serie.0', 'Ese número de serie ya existe para este producto.');
+            ->assertStatus(422)->assertJsonPath('errors.no_serie.0', fn (string $m) => str_contains($m, 'ya está registrado en el inventario'));
 
         $this->conToken($user)->post($url, [
             '_method' => 'PUT',

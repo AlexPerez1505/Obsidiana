@@ -1005,17 +1005,20 @@
             </div>
             @endcan
             <div class="nav-section">Administración</div>
-            <div class="nav-group {{ request()->routeIs('admin.*', 'inventory.congresos.*') ? 'open' : '' }}">
+            <div class="nav-group {{ request()->routeIs('admin.*', 'inventory.congresos.*', 'agenda.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Administrativa">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                     <span class="nav-label">Gestión Administrativa</span>
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-                    <a class="nav-item nav-sub {{ request()->routeIs('admin.agenda.index') ? 'active' : '' }}" href="{{ route('admin.agenda.index') }}" data-tip="Agenda">
+                    {{-- Agenda empresarial y personal: seguimientos de Clientes + eventos de la empresa. --}}
+                    @can('agenda.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('agenda.*') || request()->routeIs('admin.agenda.index') ? 'active' : '' }}" href="{{ route('agenda.index') }}" data-tip="Agenda">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Agenda</span>
                     </a>
+                    @endcan
                     {{-- Congresos: eventos de la empresa (quién va, equipo enviado, ventas de congreso). --}}
                     @can('congresos.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.congresos.*') ? 'active' : '' }}" href="{{ route('inventory.congresos.index') }}" data-tip="Congresos">

@@ -49,6 +49,9 @@ require __DIR__.'/web/mantenimiento/mantenimiento.php';
 
 // Gestion comercial
 require __DIR__.'/web/commercial/commercial.php';
+
+// Agenda empresarial y personal (seguimientos de Clientes + eventos)
+require __DIR__.'/web/agenda.php';
 require __DIR__.'/web/cotizaciones.php';
 require __DIR__.'/web/ventas.php';
 require __DIR__.'/web/facturas.php';

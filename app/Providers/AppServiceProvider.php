@@ -41,6 +41,13 @@ class AppServiceProvider extends ServiceProvider
         $this->sincronizarGarantias();
         $this->configurarPromociones();
         \App\Support\ObsVivo::escuchar();
+
+        // Agenda: historial, recordatorios, comentarios y checklist apuntan a
+        // un seguimiento de Clientes o a una actividad, con nombres cortos.
+        \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
+            'seguimiento' => \App\Models\ClienteSeguimiento::class,
+            'actividad' => \App\Models\AgendaActividad::class,
+        ]);
     }
 
     /**

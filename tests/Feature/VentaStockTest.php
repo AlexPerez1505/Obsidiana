@@ -166,7 +166,7 @@ class VentaStockTest extends TestCase
 
         $congress = \App\Models\Congress::create([
             'nombre' => 'Congreso de Prueba',
-            'categoria_id' => \App\Models\Category::create(['nombre' => 'Endoscopia'])->id,
+            'categoria_id' => \App\Models\EquipmentType::create(['name' => 'Endoscopia'])->id,
             'fecha_inicio' => now()->toDateString(),
             'fecha_finalizacion' => now()->addDay()->toDateString(),
             'hora_montaje' => '08:00',
@@ -197,7 +197,7 @@ class VentaStockTest extends TestCase
 
         $congress = \App\Models\Congress::create([
             'nombre' => 'Congreso de Prueba',
-            'categoria_id' => \App\Models\Category::create(['nombre' => 'Endoscopia'])->id,
+            'categoria_id' => \App\Models\EquipmentType::create(['name' => 'Endoscopia'])->id,
             'fecha_inicio' => now()->toDateString(),
             'fecha_finalizacion' => now()->addDay()->toDateString(),
             'hora_montaje' => '08:00',

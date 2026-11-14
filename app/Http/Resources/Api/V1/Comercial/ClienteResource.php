@@ -28,6 +28,12 @@ class ClienteResource extends JsonResource
             'rfc' => $this->rfc,
             'gmail' => $this->gmail,
             'direccion' => $this->direccion,
+            // La misma dirección por partes (vacías en clientes viejos).
+            'estado' => $this->estado,
+            'municipio' => $this->municipio,
+            'colonia' => $this->colonia,
+            'codigo_postal' => $this->codigo_postal,
+            'calle' => $this->calle,
             'comentarios' => $this->comentarios,
             'categoria_id' => $this->categoria_id,
             'congreso_id' => $this->congreso_id,
@@ -48,9 +54,9 @@ class ClienteResource extends JsonResource
             'updated_at' => $this->updated_at,
 
             'asesor' => UsuarioResource::make($this->whenLoaded('asesor')),
-            'categoria' => $this->whenLoaded('category', fn () => $this->category ? [
-                'id' => $this->category->id,
-                'nombre' => $this->category->nombre,
+            'categoria' => $this->whenLoaded('tipoEquipo', fn () => $this->tipoEquipo ? [
+                'id' => $this->tipoEquipo->id,
+                'nombre' => $this->tipoEquipo->name,
             ] : null),
             'congreso' => $this->whenLoaded('congress', fn () => $this->congress ? [
                 'id' => $this->congress->id,

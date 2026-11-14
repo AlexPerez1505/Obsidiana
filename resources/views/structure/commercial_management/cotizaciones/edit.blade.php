@@ -318,11 +318,11 @@
                     <x-ui.form-group label="RFC" name="rfc" maxlength="13" />
                     <x-ui.form-group label="Correo (Gmail)" name="gmail" type="email" />
                     <x-ui.form-group label="Dirección *" name="direccion" :required="true" />
-                    <x-ui.form-group for="categoria_id" label="Categoría">
+                    <x-ui.form-group for="categoria_id" label="Tipo de equipo">
                         <select id="categoria_id" name="categoria_id" class="qinput">
-                            <option value="" selected>Sin categoría</option>
+                            <option value="" selected>Sin tipo de equipo</option>
                             @foreach ($categories as $category)
-                                <option value="{{ $category->id }}">{{ $category->nombre }}</option>
+                                <option value="{{ $category->id }}">{{ $category->name }}</option>
                             @endforeach
                         </select>
                     </x-ui.form-group>

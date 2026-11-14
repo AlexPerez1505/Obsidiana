@@ -167,6 +167,7 @@ class SeguimientosTest extends TestCase
 
         $peticion->deleteJson("/api/v1/clientes/{$cliente->id}/seguimientos/{$seguimiento->id}")
             ->assertOk()->assertJsonPath('message', 'Seguimiento eliminado.');
-        $this->assertDatabaseMissing('cliente_seguimientos', ['id' => $seguimiento->id]);
+        // Ya no se borra: se cancela y queda en el historial (agenda y ficha).
+        $this->assertDatabaseHas('cliente_seguimientos', ['id' => $seguimiento->id, 'estado' => 'cancelado']);
     }
 }

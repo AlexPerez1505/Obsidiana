@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Commercial;
 
 use App\Http\Controllers\Controller;
 
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\Congress;
 use App\Models\Customer;
 use App\Services\Clientes\RegistroClientes;
@@ -28,7 +28,7 @@ class CustomerController extends Controller
     {
         // Cada quien ve lo suyo, salvo que tenga permiso de ver todos.
         $customers = Customer::visiblesPara($request->user())
-            ->with(['asesor', 'category', 'congress', 'seguimientos'])
+            ->with(['asesor', 'tipoEquipo', 'congress', 'seguimientos'])
             ->latest()
             ->get();
 
@@ -49,7 +49,7 @@ class CustomerController extends Controller
         $this->asegurarVisible($cliente);
 
         return view('structure.commercial_management.customers.ver_cliente', [
-            'customer' => $cliente->load(['asesor', 'category', 'congress', 'cotizaciones', 'seguimientos.responsable', 'seguimientos.hechoPor']),
+            'customer' => $cliente->load(['asesor', 'tipoEquipo', 'congress', 'cotizaciones', 'seguimientos.responsable', 'seguimientos.hechoPor']),
             'tiposSeguimiento' => \App\Models\ClienteSeguimiento::TIPOS,
             // Solo quien ve a todos puede asignarle el seguimiento a otro.
             'usuarios' => auth()->user()->can('clientes.ver_todos')
@@ -64,7 +64,7 @@ class CustomerController extends Controller
     public function create(Request $request): View
     {
         return view('structure.commercial_management.customers.registrar_cliente', [
-            'categories' => Category::query()->orderBy('nombre')->get(),
+            'categories' => EquipmentType::query()->orderBy('name')->get(),
             'congresses' => Congress::query()->latest()->get(),
         ]);
     }
@@ -105,7 +105,7 @@ class CustomerController extends Controller
 
         return view('structure.commercial_management.customers.actulizar_cliente', [
             'customer' => $cliente,
-            'categories' => Category::query()->orderBy('nombre')->get(),
+            'categories' => EquipmentType::query()->orderBy('name')->get(),
             'congresses' => Congress::query()->latest()->get(),
         ]);
     }
@@ -142,9 +142,16 @@ class CustomerController extends Controller
         $cliente->activo = ! $cliente->activo;
         $cliente->save();
 
+        // Regla al archivar: sus seguimientos abiertos se cancelan (con motivo
+        // en el historial) y salen de la agenda. Al reactivarlo no se reabren.
+        $cancelados = ! $cliente->activo
+            ? app(\App\Services\Clientes\SeguimientosCliente::class)->cancelarAbiertosDe($cliente, auth()->user(), 'Cliente desactivado (archivado)')
+            : 0;
+
         return back()->with('status', $cliente->activo
             ? "Se reactivó a {$cliente->nombre}."
-            : "Se desactivó a {$cliente->nombre}. Ya no aparece en las listas pero conserva su historial.");
+            : "Se desactivó a {$cliente->nombre}. Ya no aparece en las listas pero conserva su historial."
+                .($cancelados ? " Se cancelaron {$cancelados} seguimiento(s) pendiente(s)." : ''));
     }
 
     /**
@@ -295,8 +302,16 @@ class CustomerController extends Controller
         abort_unless($cliente->visiblePara(auth()->user()), 403, 'Este cliente lo registró otro asesor.');
     }
 
+    /** Municipios del estado elegido en la dirección (catálogo INEGI, en caché). */
+    public function municipios(Request $request): JsonResponse
+    {
+        return response()->json([
+            'municipios' => \App\Support\Mexico::municipios($request->query('estado')),
+        ]);
+    }
+
     /**
-     * Guarda una nueva categoría vía AJAX.
+     * Da de alta un tipo de equipo vía AJAX (alta rápida desde el formulario).
      */
     public function storeCategory(Request $request): JsonResponse
     {
@@ -306,7 +321,7 @@ class CustomerController extends Controller
 
         return response()->json([
             'id' => $category->id,
-            'nombre' => $category->nombre,
+            'nombre' => $category->name,
         ]);
     }
 }

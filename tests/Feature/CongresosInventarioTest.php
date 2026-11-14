@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\Congress;
 use App\Models\InventoryMovement;
 use App\Models\Producto;
@@ -31,7 +31,7 @@ class CongresosInventarioTest extends TestCase
 
     private function congreso(): Congress
     {
-        $categoria = Category::create(['nombre' => 'Endoscopia']);
+        $categoria = EquipmentType::create(['name' => 'Endoscopia']);
 
         return Congress::create([
             'nombre' => 'Congreso de Prueba',
@@ -69,7 +69,7 @@ class CongresosInventarioTest extends TestCase
     public function test_crear_congreso_desde_inventario(): void
     {
         $user = $this->usuarioAprobado();
-        $categoria = Category::create(['nombre' => 'Endoscopia']);
+        $categoria = EquipmentType::create(['name' => 'Endoscopia']);
 
         $response = $this->actingAs($user)->post(route('inventory.congresos.store'), [
             'nombre' => 'Congreso Nuevo',
@@ -87,7 +87,7 @@ class CongresosInventarioTest extends TestCase
     public function test_crear_congreso_con_productos_y_usuarios_desde_la_misma_pantalla(): void
     {
         $admin = $this->usuarioAprobado();
-        $categoria = Category::create(['nombre' => 'Endoscopia']);
+        $categoria = EquipmentType::create(['name' => 'Endoscopia']);
         $vendedor = User::factory()->create(['status' => User::STATUS_APPROVED, 'approved_at' => now()]);
 
         $producto = Producto::create([

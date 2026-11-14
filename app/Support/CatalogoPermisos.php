@@ -238,6 +238,19 @@ class CatalogoPermisos
                 ],
             ],
 
+            'agenda' => [
+                'titulo' => 'Agenda',
+                'descripcion' => 'Mi agenda, seguimientos de clientes y eventos de la empresa.',
+                'permisos' => [
+                    'agenda.ver' => 'Usar la agenda (sus actividades, seguimientos y los eventos que le tocan)',
+                    'agenda.ver_todos' => 'Consultar la agenda de cualquier usuario (lo privado sale como "Ocupado")',
+                    'agenda.reasignar' => 'Asignar y reasignar actividades y seguimientos a otras personas de su equipo',
+                    'agenda.empresa' => 'Publicar y modificar eventos para la empresa, departamentos o equipos',
+                    'agenda.equipos' => 'Administrar los equipos de trabajo de la agenda',
+                    'agenda.carga' => 'Ver la carga de trabajo por responsable',
+                ],
+            ],
+
             'administracion' => [
                 'titulo' => 'Administración',
                 'descripcion' => 'Quién entra al sistema y qué puede hacer.',

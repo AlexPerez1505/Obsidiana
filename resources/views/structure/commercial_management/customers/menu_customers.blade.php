@@ -13,7 +13,8 @@
 
         // Listas para los filtros: solo se ofrece lo que realmente existe en los datos.
         $asesores = $customers->pluck('asesor.name')->filter()->unique()->sort()->values();
-        $categorias = $customers->pluck('category.nombre')->filter()->unique()->sort()->values();
+        $categorias = $customers->pluck('tipoEquipo.name')->filter()->unique()->sort()->values();
+        $estadosMx = $customers->pluck('estado')->filter()->unique()->sort()->values();
         // Congresos: los manda el controlador (todos los del sistema); si no
         // llegaran, se cae a los que aparecen en los clientes.
         $congresos = collect($congresos ?? $customers->pluck('congress.nombre'))->filter()->unique()->sort()->values();
@@ -108,12 +109,24 @@
 
                 @if ($categorias->isNotEmpty())
                     <div class="flt-group">
-                        <h4>Categoria</h4>
+                        <h4>Tipo de equipo</h4>
                         @foreach ($categorias as $nombreCategoria)
                             <label class="flt-opt">
                                 <span class="flt-dot c{{ (crc32($nombreCategoria) % 5) + 1 }}"></span>
                                 <span class="flt-opt-txt">{{ $nombreCategoria }}</span>
                                 <input type="checkbox" data-f="categoria" value="{{ $nombreCategoria }}">
+                            </label>
+                        @endforeach
+                    </div>
+                @endif
+
+                @if ($estadosMx->isNotEmpty())
+                    <div class="flt-group">
+                        <h4>Estado</h4>
+                        @foreach ($estadosMx as $nombreEstado)
+                            <label class="flt-opt">
+                                <span class="flt-opt-txt">{{ $nombreEstado }}</span>
+                                <input type="checkbox" data-f="edo" value="{{ $nombreEstado }}">
                             </label>
                         @endforeach
                     </div>
@@ -202,7 +215,7 @@
                 'modelo' => $customer,
                 'nombre' => $nombreCompleto ?: 'Sin nombre',
                 'iniciales' => $iniciales,
-                'categoria' => $customer->category?->nombre ?? 'Sin categoria',
+                'categoria' => $customer->tipoEquipo?->name ?? 'Sin tipo de equipo',
                 'congreso' => $customer->congress?->nombre ?? '',
                 'asesor' => $customer->asesor?->name ?? 'Sin asesor',
                 'promo' => $customer->recibe_promocion ? '1' : '0',
@@ -222,6 +235,7 @@
                 'data-seguimiento' => $fila['modelo']->proximoSeguimiento() ? '1' : '0',
                 'data-asesor' => $fila['asesor'],
                 'data-categoria' => $fila['categoria'],
+                'data-edo' => $fila['modelo']->estado ?? '',
                 'data-congreso' => $fila['congreso'],
                 'data-promo' => $fila['promo'],
                 'data-activo' => $fila['activo'],
@@ -229,6 +243,23 @@
                 'data-telefono' => $fila['modelo']->telefono ? '1' : '0',
                 'data-fecha' => $fila['fecha'],
             ];
+        };
+    @endphp
+
+    @php
+        // Botón de la columna "Seguimiento": lo próximo a la vista; el clic abre el historial completo.
+        $botonSeguimiento = function ($c) {
+            $sig = $c->proximoSeguimiento();
+            $total = $c->seguimientos->count();
+            $clase = $sig ? ($sig->vencido() ? 'is-vencido' : ($sig->esHoy() ? 'is-hoy' : 'is-prox')) : 'is-nada';
+            $texto = $sig ? $sig->tipoLabel() : 'Sin seguimiento';
+            $sub = $sig ? $sig->cuando() : ($total ? 'Ver historial' : 'Nada registrado');
+
+            return '<button type="button" class="sg-col '.$clase.'" data-seg-historial="'.e(route('commercial.clientes.seguimientos.historial', $c)).'" data-seg-nombre="'.e(trim($c->nombre.' '.$c->apellido)).'"'
+                .' aria-label="Ver el historial de seguimiento de '.e(trim($c->nombre.' '.$c->apellido)).'">'
+                .'<span class="sg-col-dot"></span><span class="sg-col-txt"><b>'.e($texto).'</b><small>'.e($sub).'</small></span>'
+                .($total ? '<span class="sg-col-n" title="Seguimientos registrados">'.$total.'</span>' : '')
+                .'</button>';
         };
     @endphp
 
@@ -242,6 +273,7 @@
                     <th>Correo</th>
                     <th>Direccion</th>
                     <th>Asesor</th>
+                    <th>Seguimiento</th>
                     <th>Promocion</th>
                     <th></th>
                 </tr>
@@ -259,12 +291,7 @@
                                             <span class="badge badge--info" style="margin-left:6px; font-size:10.5px;">Prospecto</span>
                                         @endif
                                     </div>
-                                    <div class="s">
-                                        {{ $fila['categoria'] }}
-                                        @if ($sig = $fila['modelo']->proximoSeguimiento())
-                                            · <span style="color:{{ $sig->vencido() ? 'var(--danger)' : ($sig->esHoy() ? 'var(--accent)' : 'var(--muted)') }};">{{ $sig->tipoLabel() }}: {{ mb_strtolower($sig->cuando()) }}</span>
-                                        @endif
-                                    </div>
+                                    <div class="s">{{ $fila['categoria'] }}</div>
                                 </div>
                             </div>
                         </td>
@@ -272,6 +299,7 @@
                         <td>{{ $fila['modelo']->gmail ?: '—' }}</td>
                         <td style="max-width:220px; white-space:normal;">{{ $fila['modelo']->direccion ?: '—' }}</td>
                         <td>{{ $fila['asesor'] }}</td>
+                        <td>{!! $botonSeguimiento($fila['modelo']) !!}</td>
                         <td>
                             <span class="badge {{ $fila['promo'] === '1' ? 'badge--ok' : '' }}">
                                 {{ $fila['promo'] === '1' ? 'Si' : 'No' }}
@@ -328,7 +356,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7">
+                        <td colspan="8">
                             <div class="empty-state">
                                 <span class="ico">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
@@ -365,6 +393,7 @@
                     <div><dt>Direccion</dt><dd>{{ $fila['modelo']->direccion ?: '—' }}</dd></div>
                     <div><dt>Congreso</dt><dd>{{ $fila['congreso'] ?: '—' }}</dd></div>
                     <div><dt>Asesor</dt><dd>{{ $fila['asesor'] }}</dd></div>
+                    <div><dt>Seguimiento</dt><dd>{!! $botonSeguimiento($fila['modelo']) !!}</dd></div>
                     <div><dt>Promocion</dt><dd>{{ $fila['promo'] === '1' ? 'Si' : 'No' }}</dd></div>
                 </dl>
 
@@ -453,13 +482,188 @@
 
     @include('partials.tabla-filtrable.estilos')
 
+
+    {{-- ===================== Historial de seguimiento (modal) ===================== --}}
+    <dialog class="sgm" id="sgModal" aria-labelledby="sgmTitulo">
+        <div class="sgm-caja">
+            <header class="sgm-cab">
+                <div style="min-width:0">
+                    <span class="sgm-k">Seguimiento</span>
+                    <h3 id="sgmTitulo">Cliente</h3>
+                    <p class="sgm-sub" id="sgmSub"></p>
+                </div>
+                <button type="button" class="sgm-x" data-sgm-cerrar aria-label="Cerrar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </header>
+            <div class="sgm-res" id="sgmResumen"></div>
+            <div class="sgm-cuerpo" id="sgmCuerpo" aria-live="polite"></div>
+            <footer class="sgm-pie">
+                <a class="btn btn--ghost" id="sgmAgenda" href="{{ route('agenda.index') }}" @cannot('agenda.ver') hidden @endcannot>Abrir agenda</a>
+                <a class="btn" id="sgmFicha" href="#">Ir a la ficha</a>
+            </footer>
+        </div>
+    </dialog>
+
+    <style>
+        /* ===== Columna Seguimiento ===== */
+        .sg-col { display:flex; align-items:center; gap:9px; width:100%; min-width:170px; max-width:240px; padding:6px 9px; border:1px solid var(--border); border-radius:10px; background:var(--surface); cursor:pointer; text-align:left; font:inherit; color:var(--text); transition: border-color .15s, background .15s, box-shadow .15s; }
+        .sg-col:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); box-shadow:0 2px 8px rgba(15,23,42,.06); }
+        .sg-col:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+        .sg-col-dot { width:8px; height:8px; border-radius:50%; flex:0 0 8px; background:var(--muted); }
+        .sg-col-txt { display:flex; flex-direction:column; min-width:0; flex:1; line-height:1.25; }
+        .sg-col-txt b { font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .sg-col-txt small { font-size:11.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .sg-col-n { min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--surface-2); color:var(--muted); font-size:11px; font-weight:700; display:grid; place-items:center; }
+        .sg-col.is-vencido .sg-col-dot { background:var(--danger); }
+        .sg-col.is-vencido small { color:var(--danger); font-weight:600; }
+        .sg-col.is-hoy .sg-col-dot { background:var(--accent); }
+        .sg-col.is-hoy small { color:var(--accent); font-weight:600; }
+        .sg-col.is-prox .sg-col-dot { background:var(--primary); }
+        .sg-col.is-nada { border-style:dashed; }
+        .sg-col.is-nada b { color:var(--muted); font-weight:500; }
+
+        /* ===== Modal de historial ===== */
+        .sgm { width:min(640px, calc(100vw - 24px)); max-height:min(86vh, 820px); padding:0; border:0; border-radius:16px; background:var(--surface); color:var(--text); box-shadow:0 24px 60px -16px rgba(15,23,42,.35); overflow:hidden; }
+        .sgm::backdrop { background:rgba(15,23,42,.38); }
+        .sgm[open] { animation: sgm-entra .2s cubic-bezier(.2,.7,.2,1); }
+        @keyframes sgm-entra { from { opacity:0; transform: translateY(8px) scale(.985); } to { opacity:1; transform:none; } }
+        .sgm-caja { display:flex; flex-direction:column; max-height:inherit; }
+        .sgm-cab { display:flex; align-items:flex-start; gap:12px; padding:18px 20px 12px; border-bottom:1px solid var(--border); }
+        .sgm-k { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--primary); }
+        .sgm-cab h3 { margin:2px 0 0; font-size:18px; font-weight:700; letter-spacing:-.01em; }
+        .sgm-sub { margin:3px 0 0; font-size:12.5px; color:var(--muted); }
+        .sgm-x { margin-left:auto; width:34px; height:34px; border:0; border-radius:9px; background:none; color:var(--muted); display:grid; place-items:center; cursor:pointer; flex:0 0 34px; }
+        .sgm-x:hover { background:var(--surface-2); color:var(--text); }
+        .sgm-x svg { width:18px; height:18px; }
+        .sgm-res { display:flex; flex-wrap:wrap; gap:6px; padding:10px 20px; border-bottom:1px solid var(--border); background: color-mix(in srgb, var(--surface-2) 60%, var(--surface)); }
+        .sgm-res:empty { display:none; }
+        .sgm-chip { display:inline-flex; align-items:center; gap:6px; height:24px; padding:0 10px; border-radius:12px; font-size:12px; font-weight:600; background:var(--surface); border:1px solid var(--border); color:var(--muted); }
+        .sgm-chip b { color:var(--text); }
+        .sgm-chip.is-alerta { background:var(--danger-soft); border-color:transparent; color:var(--danger); }
+        .sgm-chip.is-alerta b { color:var(--danger); }
+        .sgm-cuerpo { flex:1; overflow:auto; padding:6px 20px 16px; }
+        .sgm-sec { margin:14px 0 6px; font-size:11.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+        .sgm-tl { position:relative; margin:0; padding:0; list-style:none; }
+        .sgm-tl::before { content:''; position:absolute; left:8px; top:8px; bottom:8px; width:2px; background:var(--border); border-radius:1px; }
+        .sgm-it { position:relative; padding:0 0 14px 30px; }
+        .sgm-it::before { content:''; position:absolute; left:2px; top:5px; width:14px; height:14px; border-radius:50%; background:var(--surface); border:3px solid var(--muted); box-sizing:border-box; }
+        .sgm-it.is-pendiente::before { border-color:var(--primary); }
+        .sgm-it.is-vencido::before { border-color:var(--danger); }
+        .sgm-it.is-completado::before { border-color:var(--green); background:var(--green); }
+        .sgm-it.is-cancelado::before { border-color:var(--muted); background:var(--surface-2); }
+        .sgm-card { padding:10px 12px; border:1px solid var(--border); border-radius:11px; background:var(--surface); }
+        .sgm-it.is-vencido .sgm-card { border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); }
+        .sgm-top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .sgm-top b { font-size:14px; }
+        .sgm-cuando { font-size:12.5px; color:var(--muted); }
+        .sgm-tag { display:inline-flex; align-items:center; height:20px; padding:0 8px; border-radius:10px; font-size:11px; font-weight:650; background:var(--surface-2); color:var(--muted); }
+        .sgm-tag.is-pendiente, .sgm-tag.is-en_proceso { background:var(--primary-soft); color:var(--primary); }
+        .sgm-tag.is-vencido { background:var(--danger-soft); color:var(--danger); }
+        .sgm-tag.is-completado { background:var(--green-soft); color:var(--green); }
+        .sgm-tag.is-alta { background:var(--accent-soft); color: color-mix(in srgb, var(--accent) 85%, var(--text)); }
+        .sgm-txt { margin:6px 0 0; font-size:13px; line-height:1.45; overflow-wrap:anywhere; }
+        .sgm-txt small { color:var(--muted); font-weight:600; }
+        .sgm-meta { margin-top:6px; font-size:12px; color:var(--muted); display:flex; flex-wrap:wrap; gap:4px 12px; }
+        .sgm-meta a { color:var(--primary); font-weight:600; text-decoration:none; }
+        .sgm-cambios { margin-top:6px; }
+        .sgm-cambios summary { cursor:pointer; font-size:12px; font-weight:600; color:var(--primary); list-style:none; }
+        .sgm-cambios summary::-webkit-details-marker { display:none; }
+        .sgm-cambios ul { margin:6px 0 0; padding:0 0 0 12px; border-left:2px solid var(--border); list-style:none; font-size:12px; }
+        .sgm-cambios li { padding:3px 0; }
+        .sgm-cambios li span { color:var(--muted); }
+        .sgm-vacio { padding:34px 10px; text-align:center; color:var(--muted); }
+        .sgm-vacio b { display:block; color:var(--text); font-size:14.5px; margin-bottom:4px; }
+        .sgm-sk { height:64px; border-radius:11px; margin:12px 0 0; background: linear-gradient(90deg, var(--surface-2) 25%, color-mix(in srgb, var(--border) 50%, var(--surface)) 50%, var(--surface-2) 75%); background-size:200% 100%; animation: sgm-brillo 1.2s ease-in-out infinite; }
+        @keyframes sgm-brillo { to { background-position:-200% 0; } }
+        .sgm-pie { display:flex; justify-content:flex-end; gap:8px; padding:12px 20px; border-top:1px solid var(--border); }
+        @media (max-width: 640px) {
+            .sgm { width:100vw; max-width:100vw; max-height:92vh; margin:auto 0 0; border-radius:18px 18px 0 0; }
+            .sgm-cab, .sgm-cuerpo, .sgm-res, .sgm-pie { padding-left:16px; padding-right:16px; }
+        }
+        @media (prefers-reduced-motion: reduce) { .sgm[open], .sgm-sk { animation:none; } }
+    </style>
+
+    <script>
+    (function () {
+        const modal = document.getElementById('sgModal');
+        if (!modal || typeof modal.showModal !== 'function') return;
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const cuerpo = document.getElementById('sgmCuerpo');
+        let pedido = 0;
+
+        function item(s) {
+            const clase = s.vencido ? 'is-vencido' : (s.estado === 'en_proceso' ? 'is-pendiente' : 'is-' + s.estado);
+            const estado = s.vencido ? '<span class="sgm-tag is-vencido">Vencido</span>' : '<span class="sgm-tag is-' + esc(s.estado) + '">' + esc(s.estado_label) + '</span>';
+            const meta = [];
+            if (s.responsable) meta.push('Responsable: ' + esc(s.responsable));
+            if (s.estado === 'completado' && s.hecho_en) meta.push('Hecho el ' + esc(s.hecho_en) + (s.hecho_por ? ' por ' + esc(s.hecho_por) : ''));
+            if (s.estado === 'cancelado' && s.cancelado_en) meta.push('Cancelado el ' + esc(s.cancelado_en));
+            if (s.creado_en) meta.push('Programado el ' + esc(s.creado_en) + (s.creado_por ? ' por ' + esc(s.creado_por) : '') + (s.origen === 'agenda' ? ' desde la agenda' : ''));
+            if (s.agenda) meta.push('<a href="' + esc(s.agenda) + '">Ver en agenda</a>');
+            const cambios = (s.cambios || []).filter((c) => c.accion !== 'Creó');
+            return '<li class="sgm-it ' + clase + '"><div class="sgm-card">'
+                + '<div class="sgm-top"><b>' + esc(s.tipo) + '</b>' + estado + (s.prioridad === 'alta' ? '<span class="sgm-tag is-alta">Prioridad alta</span>' : '')
+                + '<span class="sgm-cuando">' + esc(s.fecha) + (s.hora ? ' · ' + esc(s.hora) : ' · sin hora') + (s.abierto ? ' · ' + esc(s.cuando) : '') + '</span></div>'
+                + (s.nota ? '<p class="sgm-txt"><small>Motivo:</small> ' + esc(s.nota) + '</p>' : '')
+                + (s.resultado ? '<p class="sgm-txt"><small>Resultado:</small> ' + esc(s.resultado) + '</p>' : '')
+                + (s.motivo_cancelacion ? '<p class="sgm-txt"><small>Motivo de cancelación:</small> ' + esc(s.motivo_cancelacion) + '</p>' : '')
+                + '<div class="sgm-meta">' + meta.map((m) => '<span>' + m + '</span>').join('') + '</div>'
+                + (cambios.length ? '<details class="sgm-cambios"><summary>Cambios (' + cambios.length + ')</summary><ul>'
+                    + cambios.map((c) => '<li><b>' + esc(c.accion) + '</b> · ' + esc(c.usuario) + ' <span>' + esc(c.cuando) + '</span>'
+                        + (c.detalle && c.detalle.length ? '<br><span>' + c.detalle.map(esc).join(' · ') + '</span>' : '')
+                        + (c.motivo ? '<br><span>Motivo: ' + esc(c.motivo) + '</span>' : '') + '</li>').join('') + '</ul></details>' : '')
+                + '</div></li>';
+        }
+
+        async function abrir(boton) {
+            const id = ++pedido;
+            document.getElementById('sgmTitulo').textContent = boton.dataset.segNombre || 'Cliente';
+            document.getElementById('sgmSub').textContent = '';
+            document.getElementById('sgmResumen').innerHTML = '';
+            cuerpo.innerHTML = '<div class="sgm-sk"></div><div class="sgm-sk"></div><div class="sgm-sk"></div>';
+            modal.showModal();
+            try {
+                const r = await fetch(boton.dataset.segHistorial, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+                if (!r.ok) throw new Error(r.status === 403 ? 'No tienes acceso al seguimiento de este cliente.' : 'No se pudo cargar el historial.');
+                const d = await r.json();
+                if (id !== pedido) return;
+                const c = d.cliente;
+                document.getElementById('sgmTitulo').textContent = c.nombre;
+                document.getElementById('sgmSub').textContent = [c.etapa, c.asesor ? 'Asesor: ' + c.asesor : null, c.telefono].filter(Boolean).join(' · ');
+                document.getElementById('sgmFicha').href = c.ficha;
+                document.getElementById('sgmFicha').textContent = d.puede_programar ? 'Programar en la ficha' : 'Ir a la ficha';
+                const res = d.resumen;
+                document.getElementById('sgmResumen').innerHTML = [
+                    ['Pendientes', res.pendientes, false], ['Vencidos', res.vencidos, res.vencidos > 0],
+                    ['Completados', res.completados, false], ['Cancelados', res.cancelados, false],
+                ].map(([t, n, alerta]) => '<span class="sgm-chip' + (alerta ? ' is-alerta' : '') + '"><b>' + n + '</b>' + t + '</span>').join('');
+                let h = '';
+                if (d.pendientes.length) h += '<div class="sgm-sec">Pendientes</div><ul class="sgm-tl">' + d.pendientes.map(item).join('') + '</ul>';
+                if (d.historial.length) h += '<div class="sgm-sec">Historial</div><ul class="sgm-tl">' + d.historial.map(item).join('') + '</ul>';
+                cuerpo.innerHTML = h || '<div class="sgm-vacio"><b>Sin seguimientos todavía</b>Programa el primero desde la ficha del cliente.</div>';
+            } catch (e) {
+                if (id !== pedido) return;
+                cuerpo.innerHTML = '<div class="sgm-vacio"><b>' + esc(e.message) + '</b>Intenta de nuevo en un momento.</div>';
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-seg-historial]');
+            if (b) { e.preventDefault(); abrir(b); return; }
+            if (e.target.closest('[data-sgm-cerrar]') || e.target === modal) modal.close();
+        });
+    })();
+    </script>
+
     @include('partials.tabla-filtrable.script', [
         'singular' => 'cliente',
         'plural' => 'clientes',
         'estadoCampo' => 'activo',
         'etiquetas' => [
             'asesor' => 'Asesor',
-            'categoria' => 'Categoría',
+            'categoria' => 'Tipo de equipo',
+            'edo' => 'Estado',
             'congreso' => 'Congreso',
             'congreso:' => 'Sin congreso',
             'direccion' => 'Dirección',

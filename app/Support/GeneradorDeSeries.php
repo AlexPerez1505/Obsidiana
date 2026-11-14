@@ -5,7 +5,9 @@ namespace App\Support;
 use App\Models\Brand;
 use App\Models\EquipmentModel;
 use App\Models\ProductoSerial;
+use App\Models\SerieReserva;
 use App\Models\Subtype;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Arma números de serie propios cuando el equipo no trae uno de fábrica.
@@ -57,40 +59,78 @@ class GeneradorDeSeries
         return $abreviadas->isEmpty() ? 'EQ' : $abreviadas->implode('-');
     }
 
+    /** Cuánto dura apartado un número generado que todavía no se guarda. */
+    private const HORAS_RESERVA = 12;
+
     /**
-     * Genera $cantidad series consecutivas que no choquen con las que ya
-     * existen para ese prefijo.
+     * Genera $cantidad series consecutivas que no choquen con ninguna que
+     * ya exista en el inventario (de cualquier producto) ni con las que se
+     * generaron en otra captura que aún no se guarda: cada número entregado
+     * queda reservado unas horas, así dos personas (o dos equipos con el
+     * mismo subtipo, marca y modelo capturados a la vez) nunca reciben el
+     * mismo.
      *
      * @return array<int, string>
      */
     public static function generar(string $prefijo, int $cantidad): array
     {
         $cantidad = max(1, min($cantidad, 5000));
-        $desde = static::ultimoConsecutivo($prefijo);
 
-        return collect(range(1, $cantidad))
-            ->map(fn (int $i) => $prefijo.'-'.str_pad((string) ($desde + $i), self::DIGITOS, '0', STR_PAD_LEFT))
-            ->all();
+        // Un solo generador a la vez por prefijo (entre procesos).
+        return Cache::lock('generador-series:'.$prefijo, 15)->block(10, function () use ($prefijo, $cantidad) {
+            SerieReserva::where('expira_en', '<', now())->delete();
+
+            // Se arranca después del número más alto en uso, guardado o
+            // reservado (la búsqueda no distingue mayúsculas), así que ninguna
+            // de las nuevas puede chocar.
+            $desde = max(static::ultimoConsecutivo($prefijo), static::ultimaReserva($prefijo));
+            $series = array_map(
+                fn (int $i) => $prefijo.'-'.str_pad((string) ($desde + $i), self::DIGITOS, '0', STR_PAD_LEFT),
+                range(1, $cantidad)
+            );
+
+            $ahora = now();
+            SerieReserva::insert(array_map(fn (string $serie) => [
+                'serie' => $serie,
+                'prefijo' => $prefijo,
+                'user_id' => auth()->id(),
+                'expira_en' => $ahora->copy()->addHours(self::HORAS_RESERVA),
+                'created_at' => $ahora,
+                'updated_at' => $ahora,
+            ], $series));
+
+            return $series;
+        });
     }
 
     /**
-     * El consecutivo más alto ya usado con ese prefijo.
-     *
-     * Se busca en todas las piezas y no solo en las de un producto: el
-     * prefijo describe al equipo, así que dos filas del mismo modelo no
-     * deben repetir número.
+     * El consecutivo más alto ya usado con ese prefijo, en todas las piezas
+     * (no solo las de un producto): el prefijo describe al equipo, así que
+     * dos filas del mismo modelo no deben repetir número. Solo cuenta lo que
+     * es exactamente PREFIJO-número (CAM-STR no se confunde con CAM-STR-1588).
      */
     private static function ultimoConsecutivo(string $prefijo): int
     {
-        $usadas = ProductoSerial::query()
-            ->where('no_serie', 'like', $prefijo.'-%')
-            ->pluck('no_serie');
+        return static::mayorNumero(ProductoSerial::query()->where('no_serie', 'like', static::comoLike($prefijo).'-%')->pluck('no_serie'), $prefijo);
+    }
 
-        $largo = mb_strlen($prefijo) + 1;
+    private static function ultimaReserva(string $prefijo): int
+    {
+        return static::mayorNumero(SerieReserva::where('prefijo', $prefijo)->pluck('serie'), $prefijo);
+    }
 
-        return (int) $usadas
-            ->map(fn (string $serie) => (int) mb_substr($serie, $largo))
+    private static function mayorNumero($series, string $prefijo): int
+    {
+        $patron = '/^'.preg_quote(mb_strtoupper($prefijo), '/').'-(\d+)$/u';
+
+        return (int) collect($series)
+            ->map(fn ($serie) => preg_match($patron, mb_strtoupper(trim((string) $serie)), $m) ? (int) $m[1] : 0)
             ->max();
+    }
+
+    private static function comoLike(string $texto): string
+    {
+        return addcslashes($texto, '\\%_');
     }
 
     /** Deja las primeras letras útiles de una palabra, sin acentos ni signos. */

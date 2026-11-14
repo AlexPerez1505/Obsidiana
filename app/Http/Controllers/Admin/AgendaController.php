@@ -35,7 +35,7 @@ class AgendaController extends Controller
             ->map(fn (AgendaEvent $event): array => $this->mapAgendaEvent($event));
 
         $congresses = Congress::query()
-            ->with('category')
+            ->with('tipoEquipo')
             ->where('fecha_inicio', '<=', $rangeEnd)
             ->where('fecha_finalizacion', '>=', $rangeStart)
             ->orderBy('fecha_inicio')
@@ -220,7 +220,7 @@ class AgendaController extends Controller
             'time_desmontaje_value' => $desmontaje ? $desmontaje->format('H:i') : '',
             'type' => 'congress',
             'notes' => $congress->direccion ?: ($congress->comments ?? ''),
-            'participants' => $congress->category?->nombre ?? '',
+            'participants' => $congress->tipoEquipo?->name ?? '',
         ];
     }
 

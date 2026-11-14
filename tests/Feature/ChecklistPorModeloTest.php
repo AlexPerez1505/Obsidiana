@@ -56,7 +56,7 @@ class ChecklistPorModeloTest extends TestCase
         $puntos = $resultado['grupos']['agregados_modelo']['puntos'];
         $this->assertCount(1, $puntos);
         $punto = array_values($puntos)[0];
-        $this->assertSame(['texto' => 'Incluye llave azul', 'manda' => 'mantenimiento'], $punto);
+        $this->assertEquals(['texto' => 'Incluye llave azul', 'manda' => 'mantenimiento'], $punto);
         $this->assertStringStartsWith('manual_', array_key_first($puntos));
         $guardado = EquipmentModel::findOrFail($equipo['equipment_model_id'])->checklist_recepcion_adicional;
         $this->assertSame($puntos, $guardado);

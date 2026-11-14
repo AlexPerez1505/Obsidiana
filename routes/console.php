@@ -37,3 +37,8 @@ Schedule::command('asistencia:cerrar')->dailyAt('00:30')->timezone(config('asist
 // atrasadas y préstamos sin regresar.
 Schedule::command('garantias:sincronizar')->dailyAt('06:30');
 Schedule::command('garantias:avisar')->dailyAt('08:15');
+
+// Agenda: recordatorios y avisos de vencidos (cada minuto) y resumen diario
+// (hora de la empresa). Respaldo: Recordatorios::despacharSiToca al abrir la agenda.
+Schedule::command('agenda:recordar')->everyMinute()->withoutOverlapping();
+Schedule::command('agenda:resumen')->dailyAt(config('agenda.hora_resumen'))->timezone(config('agenda.timezone'));

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\Congress;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,7 +29,7 @@ class AgendaCongresoTest extends TestCase
     public function test_congreso_de_varios_dias_muestra_montaje_desmontaje_y_nombre_en_medio(): void
     {
         $user = $this->usuarioAprobado();
-        $categoria = Category::create(['nombre' => 'Endoscopia']);
+        $categoria = EquipmentType::create(['name' => 'Endoscopia']);
 
         Congress::create([
             'nombre' => 'Congreso de Prueba',
@@ -72,7 +72,7 @@ class AgendaCongresoTest extends TestCase
     public function test_congreso_de_un_solo_dia_combina_montaje_y_desmontaje(): void
     {
         $user = $this->usuarioAprobado();
-        $categoria = Category::create(['nombre' => 'Endoscopia']);
+        $categoria = EquipmentType::create(['name' => 'Endoscopia']);
 
         Congress::create([
             'nombre' => 'Congreso de un Dia',

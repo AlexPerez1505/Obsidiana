@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Models\Brand;
-use App\Models\Category;
 use App\Models\Cotizacion;
 use App\Models\Customer;
 use App\Models\EquipmentModel;
@@ -304,14 +303,14 @@ class DashboardWidgets
         }
 
         if ($nivel >= 3) {
-            // Desglose por categoria, para que la tarjeta amplia diga algo mas.
+            // Desglose por tipo de equipo, para que la tarjeta amplia diga algo mas.
             $datos['tabla'] = Customer::selectRaw('categoria_id, COUNT(*) as total')
                 ->groupBy('categoria_id')
                 ->orderByDesc('total')
                 ->limit($filas)
                 ->get()
                 ->map(fn ($fila) => [
-                    'etiqueta' => Category::find($fila->categoria_id)?->nombre ?? 'Sin categoría',
+                    'etiqueta' => \App\Models\EquipmentType::find($fila->categoria_id)?->name ?? 'Sin tipo de equipo',
                     'valor' => $fila->total,
                 ])
                 ->all();
