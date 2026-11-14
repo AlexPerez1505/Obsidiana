@@ -107,7 +107,7 @@ class MovimientoDetalleTest extends TestCase
         $pagina->assertSee('SN-001');
         $pagina->assertSee('SN-002');
         $pagina->assertSee('SN-003');
-        $pagina->assertSee('Evidencia por unidad');
+        $pagina->assertSee('Unidades y su evidencia');
     }
 
     public function test_el_detalle_de_una_salida_tambien_muestra_las_piezas_que_salieron(): void

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\Congress;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -199,7 +199,7 @@ class FirmaRegistradaTest extends TestCase
         $user = $this->usuario();
         Congress::create([
             'nombre' => 'Congreso',
-            'categoria_id' => Category::create(['nombre' => 'Endoscopia'])->id,
+            'categoria_id' => EquipmentType::create(['name' => 'Endoscopia'])->id,
             'fecha_inicio' => now()->toDateString(),
             'fecha_finalizacion' => now()->addDay()->toDateString(),
             'hora_montaje' => '08:00',

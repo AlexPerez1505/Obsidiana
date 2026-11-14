@@ -39,7 +39,14 @@ class SerialController extends Controller
     {
         abort_unless(EdicionPropia::puedeAgregarPiezas($request->user(), $producto), 403, EdicionPropia::mensaje('agregar piezas a'));
 
-        $data = $request->validate(ProductosDeInventario::REGLAS_AGREGAR_UNIDADES + ProductoController::REGLAS_SERIES);
+        // Las series pueden venir en series_texto o como lista en series[]:
+        // basta con una de las dos (antes se exigía series_texto siempre).
+        $data = $request->validate([
+            'cantidad' => ProductosDeInventario::REGLAS_AGREGAR_UNIDADES['cantidad'],
+            'series_texto' => ['required_without:series', 'nullable', 'string'],
+        ] + ProductoController::REGLAS_SERIES, [
+            'series_texto.required_without' => 'Captura los números de serie de las piezas para continuar.',
+        ]);
 
         $this->productos->agregarUnidades($producto, (int) $data['cantidad'], ProductoController::seriesTexto($data));
 

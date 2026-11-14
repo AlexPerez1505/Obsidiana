@@ -6,9 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Categoría del catálogo (la que se le pone a un congreso).
+ * Tipo de equipo del catálogo de equipo (el que se le pone a un congreso).
  *
- * @mixin \App\Models\Category
+ * @mixin \App\Models\EquipmentType
  */
 class CategoriaResource extends JsonResource
 {
@@ -16,8 +16,8 @@ class CategoriaResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'nombre' => $this->nombre,
-            'descripcion' => $this->descripcion,
+            'nombre' => $this->name,
+            'descripcion' => $this->description,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

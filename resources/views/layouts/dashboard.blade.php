@@ -1004,27 +1004,31 @@
                 </div>
             </div>
             @endcan
-            <div class="nav-group {{ request()->routeIs('calendarios.*') ? 'open' : '' }}">
-                <a class="nav-item nav-toggle" href="#" data-tip="Calendarios">
+            {{-- Agenda: un solo módulo para la agenda personal y la de la empresa
+                 (los antiguos "Calendarios" redirigen aquí). --}}
+            @can('agenda.ver')
+            <div class="nav-group {{ request()->routeIs('calendarios.*', 'agenda.*') ? 'open' : '' }}">
+                <a class="nav-item nav-toggle" href="#" data-tip="Agenda">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="4" width="18" height="17" rx="2"></rect>
                         <path d="M16 2v4M8 2v4M3 10h18"></path>
                         <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"></path>
                     </svg>
-                    <span class="nav-label">Calendarios</span>
+                    <span class="nav-label">Agenda</span>
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </a>
                 <div class="submenu">
-                    <a class="nav-item nav-sub {{ request()->routeIs('calendarios.general') ? 'active' : '' }}" href="{{ route('calendarios.general') }}" data-tip="Calendario general">
+                    <a class="nav-item nav-sub {{ request()->routeIs('agenda.*') && request('ambito') !== 'empresa' ? 'active' : '' }}" href="{{ route('agenda.index', ['ambito' => 'mia']) }}" data-tip="Mi agenda">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Calendario general</span>
+                        <span class="nav-label">Mi agenda</span>
                     </a>
-                    <a class="nav-item nav-sub {{ request()->routeIs('calendarios.mio') ? 'active' : '' }}" href="{{ route('calendarios.mio') }}" data-tip="Mi calendario">
+                    <a class="nav-item nav-sub {{ request()->routeIs('agenda.*') && request('ambito') === 'empresa' ? 'active' : '' }}" href="{{ route('agenda.index', ['ambito' => 'empresa']) }}" data-tip="Agenda de la empresa">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Mi calendario</span>
+                        <span class="nav-label">Agenda de la empresa</span>
                     </a>
                 </div>
             </div>
+            @endcan
             <div class="nav-section">Administración</div>
             <div class="nav-group {{ request()->routeIs('admin.*', 'inventory.congresos.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Administrativa">
@@ -1033,10 +1037,6 @@
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-                    <a class="nav-item nav-sub {{ request()->routeIs('admin.agenda.index') ? 'active' : '' }}" href="{{ route('admin.agenda.index') }}" data-tip="Agenda">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Agenda</span>
-                    </a>
                     {{-- Congresos: eventos de la empresa (quién va, equipo enviado, ventas de congreso). --}}
                     @can('congresos.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.congresos.*') ? 'active' : '' }}" href="{{ route('inventory.congresos.index') }}" data-tip="Congresos">

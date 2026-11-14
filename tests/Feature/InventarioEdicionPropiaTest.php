@@ -311,11 +311,13 @@ class InventarioEdicionPropiaTest extends TestCase
             'equipment_type_id' => $cat['tipo']->id,
             'equipment_model_id' => $cat['modelo']->id,
             'stock' => 1,
+            'series_texto' => 'REF-OPC-1',
         ])->assertSessionHasNoErrors();
 
         $this->actingAs($yo)->post(route('inventory.productos.store'), [
             'equipment_type_id' => $cat['tipo']->id,
             'stock' => 1,
+            'series_texto' => 'REF-OPC-2',
             'referencia' => str_repeat('x', 121),
         ])->assertSessionHasErrors('referencia');
     }

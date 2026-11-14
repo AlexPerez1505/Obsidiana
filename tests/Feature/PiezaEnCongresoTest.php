@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\Congress;
 use App\Models\Producto;
 use App\Models\ProductoSerial;
@@ -33,7 +33,7 @@ class PiezaEnCongresoTest extends TestCase
 
     private function congreso(array $overrides = []): Congress
     {
-        $categoria = Category::firstOrCreate(['nombre' => 'Endoscopia']);
+        $categoria = EquipmentType::firstOrCreate(['name' => 'Endoscopia']);
 
         return Congress::create(array_merge([
             'nombre' => 'Congreso de Endoscopia 2026',
@@ -74,7 +74,7 @@ class PiezaEnCongresoTest extends TestCase
 
         $respuesta->assertOk();
         $respuesta->assertJsonPath('encontrado', true);
-        $respuesta->assertJsonPath('congreso', 'Congreso de Endoscopia 2026');
+        $respuesta->assertJsonPath('congreso', 'CONGRESO DE ENDOSCOPIA 2026');
         $respuesta->assertJsonPath('congreso_desde', now()->format('d/m/Y'));
         // Seguir en un congreso no la vuelve invendible: allá se vende.
         $respuesta->assertJsonPath('vendible', true);
@@ -103,7 +103,7 @@ class PiezaEnCongresoTest extends TestCase
         $pagina = $this->actingAs($user)->get(route('inventory.productos.index'));
 
         $pagina->assertOk();
-        $pagina->assertSee('En congreso: Congreso de Endoscopia 2026');
+        $pagina->assertSee('En congreso: CONGRESO DE ENDOSCOPIA 2026');
         // Y el acceso directo para ver todo lo que está fuera del almacén.
         $pagina->assertSee('En congreso (1)');
     }

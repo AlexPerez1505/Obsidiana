@@ -117,7 +117,7 @@ class WebComercialSigueIgualTest extends TestCase
 
         $this->actingAs($yo)->post(route('commercial.clientes.seguimientos.reprogramar', [$cliente, $seguimiento]), [
             'fecha' => $nueva->toDateString(),
-        ])->assertRedirect($ficha)->assertSessionHas('status', 'Seguimiento movido al '.$nueva->format('d/m/Y').'.');
+        ])->assertRedirect($ficha)->assertSessionHas('status', 'Seguimiento movido al '.$nueva->format('d/m/Y').'. También cambió en la agenda.');
 
         $this->actingAs($yo)->post(route('commercial.clientes.seguimientos.hecho', [$cliente, $seguimiento]), [
             'resultado' => 'Listo',
@@ -128,8 +128,9 @@ class WebComercialSigueIgualTest extends TestCase
             ->assertRedirect($ficha)->assertSessionHas('status', 'Marta Solís ahora es cliente.');
 
         $this->actingAs($yo)->delete(route('commercial.clientes.seguimientos.destroy', [$cliente, $seguimiento]))
-            ->assertRedirect($ficha)->assertSessionHas('status', 'Seguimiento eliminado.');
-        $this->assertSame(0, ClienteSeguimiento::count());
+            ->assertRedirect($ficha)->assertSessionHas('status', 'Seguimiento cancelado. Queda en el historial.');
+        // Ya no se borra: el historial del cliente (y de la agenda) lo conserva.
+        $this->assertSame(1, ClienteSeguimiento::count());
     }
 
     public function test_cotizacion_web_edita_descarga_y_busca_como_antes(): void

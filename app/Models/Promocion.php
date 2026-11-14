@@ -22,9 +22,13 @@ class Promocion extends Model
         'estado',
     ];
 
+    /**
+     * Tipo de equipo del catálogo (Configuración > Catálogos). La columna
+     * conserva el nombre `categoria_id`, pero ya apunta a equipment_types.
+     */
     public function categoria(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'categoria_id');
+        return $this->belongsTo(EquipmentType::class, 'categoria_id');
     }
 
     public function producto(): BelongsTo

@@ -119,10 +119,8 @@ trait ManejaSeriesDeProducto
     {
         $noVacias = $series->filter()->values();
 
-        $existentes = $noVacias->isEmpty() ? [] : ProductoSerial::where('producto_id', $productoId)
-            ->whereIn('no_serie', $noVacias->all())
-            ->pluck('no_serie')
-            ->all();
+        // En todo el inventario, no solo en este producto.
+        $existentes = \App\Support\SeriesUnicas::enUso($noVacias)->keys()->all();
 
         $vistos = [];
         $limpias = collect();
@@ -134,13 +132,14 @@ trait ManejaSeriesDeProducto
                 continue;
             }
 
-            if (in_array($serie, $existentes, true) || in_array($serie, $vistos, true)) {
+            $clave = \App\Support\SeriesUnicas::normalizar($serie);
+            if (in_array($clave, $existentes, true) || in_array($clave, $vistos, true)) {
                 $rechazadas->push($serie);
                 $limpias->push(null);
                 continue;
             }
 
-            $vistos[] = $serie;
+            $vistos[] = $clave;
             $limpias->push($serie);
         }
 

@@ -109,7 +109,7 @@
             pon('mensaje', aviso.mensaje);
             pon('iniciales', iniciales(c.nombre));
             pon('nombre', c.nombre);
-            pon('categoria', c.categoria || 'Sin categoría');
+            pon('categoria', c.categoria || 'Sin tipo de equipo');
             pon('telefono', c.telefono);
             pon('correo', c.correo);
             pon('direccion', c.direccion);

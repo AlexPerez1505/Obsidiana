@@ -132,7 +132,7 @@ class LineaDeTiempo
         return Customer::whereBetween('created_at', [$desde, $hasta])->get()->map(fn (Customer $c) => $this->evento(
             $c->created_at, $c->asesor_id, 'clientes',
             'Registró '.($c->esProspecto() ? 'al prospecto ' : 'al cliente ').trim($c->nombre.' '.$c->apellido),
-            collect([$c->category?->nombre, $c->comoConocio() ? 'conocido en '.$c->comoConocio() : null])->filter()->implode(' · '),
+            collect([$c->tipoEquipo?->name, $c->comoConocio() ? 'conocido en '.$c->comoConocio() : null])->filter()->implode(' · '),
             route('commercial.clientes.show', $c)
         ));
     }

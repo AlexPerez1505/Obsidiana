@@ -5,8 +5,9 @@ namespace App\Support;
 use App\Models\Brand;
 use App\Models\EquipmentModel;
 use App\Models\ProductoSerial;
+use App\Models\SerieReserva;
 use App\Models\Subtype;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Arma números de serie propios cuando el equipo no trae uno de fábrica.
@@ -21,7 +22,7 @@ use Illuminate\Support\Facades\DB;
  * El tipo ya no va al frente: lo pidió así almacén, porque la abreviatura
  * del tipo (LAP-, TOR-…) alargaba la serie sin decir nada que no dijera ya
  * la ficha del equipo. Si no se eligió subtipo, marca ni modelo, la serie
- * arranca con EQ. El número final es un consecutivo global del inventario.
+ * arranca con EQ.
  *
  * Es distinta de la etiqueta interna (MB-000147), que es la del QR: esa
  * identifica la pieza dentro del sistema, y esta se escribe en el equipo y
@@ -58,91 +59,78 @@ class GeneradorDeSeries
         return $abreviadas->isEmpty() ? 'EQ' : $abreviadas->implode('-');
     }
 
+    /** Cuánto dura apartado un número generado que todavía no se guarda. */
+    private const HORAS_RESERVA = 12;
+
     /**
-     * Reserva y genera $cantidad series consecutivas para un catálogo.
-     *
-     * La reserva vive en la base de datos y se bloquea en un registro por
-     * catálogo. Así dos usuarios que generen series al mismo tiempo no reciben
-     * el mismo lote, aunque ninguno haya guardado todavía la entrada.
+     * Genera $cantidad series consecutivas que no choquen con ninguna que
+     * ya exista en el inventario (de cualquier producto) ni con las que se
+     * generaron en otra captura que aún no se guarda: cada número entregado
+     * queda reservado unas horas, así dos personas (o dos equipos con el
+     * mismo subtipo, marca y modelo capturados a la vez) nunca reciben el
+     * mismo.
      *
      * @return array<int, string>
      */
-    public static function generar(string $prefijo, int $cantidad, array $catalogo = []): array
+    public static function generar(string $prefijo, int $cantidad): array
     {
         $cantidad = max(1, min($cantidad, 5000));
-        $catalogo = array_slice(array_pad(array_map(
-            static fn ($id): ?int => $id === null || $id === '' ? null : (int) $id,
-            $catalogo
-        ), 4, null), 0, 4);
-        $clave = static::claveSecuencia($catalogo);
 
-        return DB::transaction(function () use ($prefijo, $cantidad, $catalogo, $clave) {
-            DB::table('serial_sequences')->insertOrIgnore([
-                'prefijo' => $clave,
-                'siguiente' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        // Un solo generador a la vez por prefijo (entre procesos).
+        return Cache::lock('generador-series:'.$prefijo, 15)->block(10, function () use ($prefijo, $cantidad) {
+            SerieReserva::where('expira_en', '<', now())->delete();
 
-            $secuencia = DB::table('serial_sequences')
-                ->where('prefijo', $clave)
-                ->lockForUpdate()
-                ->firstOrFail();
+            // Se arranca después del número más alto en uso, guardado o
+            // reservado (la búsqueda no distingue mayúsculas), así que ninguna
+            // de las nuevas puede chocar.
+            $desde = max(static::ultimoConsecutivo($prefijo), static::ultimaReserva($prefijo));
+            $series = array_map(
+                fn (int $i) => $prefijo.'-'.str_pad((string) ($desde + $i), self::DIGITOS, '0', STR_PAD_LEFT),
+                range(1, $cantidad)
+            );
 
-            // También considera series automáticas antiguas que todavía no
-            // hayan pasado por esta tabla de secuencias.
-            $desde = max((int) $secuencia->siguiente - 1, static::ultimoConsecutivo($catalogo));
-            $siguiente = $desde + $cantidad + 1;
+            $ahora = now();
+            SerieReserva::insert(array_map(fn (string $serie) => [
+                'serie' => $serie,
+                'prefijo' => $prefijo,
+                'user_id' => auth()->id(),
+                'expira_en' => $ahora->copy()->addHours(self::HORAS_RESERVA),
+                'created_at' => $ahora,
+                'updated_at' => $ahora,
+            ], $series));
 
-            DB::table('serial_sequences')
-                ->where('id', $secuencia->id)
-                ->update(['siguiente' => $siguiente, 'updated_at' => now()]);
-
-            return collect(range(1, $cantidad))
-                ->map(fn (int $i) => $prefijo.'-'.str_pad((string) ($desde + $i), self::DIGITOS, '0', STR_PAD_LEFT))
-                ->all();
+            return $series;
         });
     }
 
     /**
-     * El consecutivo más alto ya usado por una serie automática.
-     *
-     * Los números de fábrica y códigos capturados manualmente pueden terminar
-     * en muchos dígitos, pero no forman parte de nuestra secuencia. Solo se
-     * consideran etiquetas con el formato automático PREFIJO-0000. Un código
-     * manual cuyo prefijo es solo numérico (por ejemplo, 2105-4774) tampoco
-     * pertenece a esta secuencia.
+     * El consecutivo más alto ya usado con ese prefijo, en todas las piezas
+     * (no solo las de un producto): el prefijo describe al equipo, así que
+     * dos filas del mismo modelo no deben repetir número. Solo cuenta lo que
+     * es exactamente PREFIJO-número (CAM-STR no se confunde con CAM-STR-1588).
      */
-    private static function ultimoConsecutivo(array $catalogo): int
+    private static function ultimoConsecutivo(string $prefijo): int
     {
-        $usadas = ProductoSerial::query()
-            ->whereHas('producto', function ($query) use ($catalogo) {
-                foreach (['equipment_type_id', 'subtype_id', 'brand_id', 'equipment_model_id'] as $indice => $campo) {
-                    $valor = $catalogo[$indice] ?? null;
-                    $valor === null ? $query->whereNull($campo) : $query->where($campo, $valor);
-                }
-            })
-            ->whereNotNull('no_serie')
-            ->where('no_serie', '!=', '')
-            ->pluck('no_serie');
+        return static::mayorNumero(ProductoSerial::query()->where('no_serie', 'like', static::comoLike($prefijo).'-%')->pluck('no_serie'), $prefijo);
+    }
 
-        return (int) $usadas
-            ->map(function (string $serie) {
-                return preg_match('/^(?=.*[A-Za-z]).*-(\d{4})$/', trim($serie), $coincidencia)
-                    ? (int) $coincidencia[1]
-                    : null;
-            })
-            ->filter()
+    private static function ultimaReserva(string $prefijo): int
+    {
+        return static::mayorNumero(SerieReserva::where('prefijo', $prefijo)->pluck('serie'), $prefijo);
+    }
+
+    private static function mayorNumero($series, string $prefijo): int
+    {
+        $patron = '/^'.preg_quote(mb_strtoupper($prefijo), '/').'-(\d+)$/u';
+
+        return (int) collect($series)
+            ->map(fn ($serie) => preg_match($patron, mb_strtoupper(trim((string) $serie)), $m) ? (int) $m[1] : 0)
             ->max();
     }
 
-    /** La clave incluye el catálogo completo, aunque el tipo no se vea en la serie. */
-    private static function claveSecuencia(array $catalogo): string
+    private static function comoLike(string $texto): string
     {
-        return 'catalogo:'.implode('-', array_map(
-            static fn (?int $id): string => $id === null ? '0' : (string) $id,
-            array_pad(array_slice($catalogo, 0, 4), 4, null)
-        ));
+        return addcslashes($texto, '\\%_');
     }
 
     /** Deja las primeras letras útiles de una palabra, sin acentos ni signos. */

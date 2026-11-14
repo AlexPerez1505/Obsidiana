@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\Congress;
 use App\Models\Customer;
 use App\Models\User;
@@ -45,7 +45,7 @@ class ComoConocioClienteTest extends TestCase
     public function test_ignora_como_conocio_cuando_si_hay_congreso(): void
     {
         $user = $this->usuarioAprobado();
-        $categoria = Category::create(['nombre' => 'Categoria Test']);
+        $categoria = EquipmentType::create(['name' => 'Categoria Test']);
         $congreso = Congress::create([
             'nombre' => 'Expo Médica 2026',
             'categoria_id' => $categoria->id,

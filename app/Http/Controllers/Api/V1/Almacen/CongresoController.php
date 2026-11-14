@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\Almacen\CategoriaResource;
 use App\Http\Resources\Api\V1\Almacen\CongresoParticipanteResource;
 use App\Http\Resources\Api\V1\Almacen\CongresoResource;
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\Congress;
 use App\Models\CongresoParticipante;
 use App\Models\Producto;
@@ -65,7 +65,7 @@ class CongresoController extends Controller
         ]);
 
         $query = Congress::query()
-            ->with('category')
+            ->with('tipoEquipo')
             ->withCount(['unidadesPresentes', 'unidadesVendidas'])
             ->when($filtros['buscar'] ?? null, fn ($q, string $texto) => $q->where(fn ($w) => $w
                 ->where('nombre', 'like', "%{$texto}%")
@@ -90,7 +90,7 @@ class CongresoController extends Controller
     public function catalogos(): JsonResponse
     {
         return response()->json(['data' => [
-            'categorias' => CategoriaResource::collection(Category::query()->orderBy('nombre')->get()),
+            'categorias' => CategoriaResource::collection(EquipmentType::query()->orderBy('name')->get()),
             'productos' => Producto::orderBy('tipo_equipo')->get()->map(fn (Producto $p) => [
                 'id' => $p->id,
                 'nombre' => $p->nombreVisible(),
@@ -303,7 +303,7 @@ class CongresoController extends Controller
     private function detalle(Congress $congreso): Congress
     {
         return $congreso->load([
-            'category',
+            'tipoEquipo',
             'unidadesPresentes.producto',
             'participantes' => fn ($q) => $q->latest(),
             'notifiedUsers',

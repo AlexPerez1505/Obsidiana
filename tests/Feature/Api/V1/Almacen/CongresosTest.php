@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Api\V1\Almacen;
 
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\Congress;
 use App\Models\Producto;
 use App\Models\ProductoSerial;
@@ -25,7 +25,7 @@ class CongresosTest extends TestCase
     {
         return $extra + [
             'nombre' => 'Congreso de Prueba',
-            'categoria_id' => Category::firstOrCreate(['nombre' => 'Endoscopia'])->id,
+            'categoria_id' => EquipmentType::firstOrCreate(['name' => 'Endoscopia'])->id,
             'fecha_inicio' => now()->addDays(2)->toDateString(),
             'fecha_finalizacion' => now()->addDays(4)->toDateString(),
             'hora_montaje' => '08:00',
@@ -233,12 +233,12 @@ class CongresosTest extends TestCase
 
     public function test_catalogos_del_formulario(): void
     {
-        Category::create(['nombre' => 'Endoscopia']);
+        EquipmentType::create(['name' => 'Endoscopia']);
         $this->producto(1);
 
         $this->editor()->getJson('/api/v1/congresos/catalogos')
             ->assertOk()
-            ->assertJsonPath('data.categorias.0.nombre', 'Endoscopia')
+            ->assertJsonPath('data.categorias.0.nombre', 'ENDOSCOPIA')
             ->assertJsonPath('data.productos.0.marca', 'Olympus')
             ->assertJsonStructure(['data' => ['usuarios']]);
     }

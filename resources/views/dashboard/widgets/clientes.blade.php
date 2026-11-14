@@ -22,7 +22,7 @@
     @endif
 
     @if (($w['nivel'] ?? 1) >= 3)
-        <div class="dw-sep">Por categoría</div>
+        <div class="dw-sep">Por tipo de equipo</div>
         @include('dashboard.widgets._tabla', ['filas' => $w['tabla'] ?? []])
     @endif
 </div>

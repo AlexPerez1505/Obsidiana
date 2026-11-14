@@ -113,18 +113,14 @@ class InventorySerializadoTest extends TestCase
             ],
         ]);
 
-        $response->assertRedirect(route('inventory.movimientos.index'));
+        // Una serie no puede repetirse: la entrada completa se rechaza con el
+        // aviso de quién ya la tiene, y no se guarda ninguna pieza a medias.
+        $response->assertSessionHasErrors('unidades');
+        $this->assertStringContainsString('SN-YA-EXISTE', session('errors')->first('unidades'));
 
         $producto->refresh();
-        // La unidad vieja (1) + las 2 nuevas que llegaron = 3, aunque una
-        // de las nuevas se quedó sin serial por el choque.
-        $this->assertSame(3, $producto->stock);
-
-        $sinSerie = ProductoSerial::where('producto_id', $producto->id)->whereNull('no_serie')->get();
-        $this->assertCount(1, $sinSerie);
-        $this->assertNotNull($sinSerie->first()->foto_path, 'La evidencia de la unidad rechazada no debe perderse.');
-
-        $this->assertSame(1, ProductoSerial::where('producto_id', $producto->id)->where('no_serie', 'SN-NUEVA')->count());
+        $this->assertSame(1, $producto->seriales()->count());
+        $this->assertSame(0, ProductoSerial::where('no_serie', 'SN-NUEVA')->count());
     }
 
     public function test_cada_pieza_conserva_su_serie_sin_inventar_secuencias(): void
@@ -142,18 +138,19 @@ class InventorySerializadoTest extends TestCase
             'firma' => $this->firmaValida(),
             'unidades' => [
                 ['no_serie' => '23A00010', 'evidencias' => [UploadedFile::fake()->create('u1.jpg', 50, 'image/jpeg')]],
-                ['no_serie' => null, 'evidencias' => [UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')]],
-                ['no_serie' => null, 'evidencias' => [UploadedFile::fake()->create('u3.jpg', 50, 'image/jpeg')]],
+                ['no_serie' => 'X-2', 'evidencias' => [UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')]],
+                ['no_serie' => 'Y-3', 'evidencias' => [UploadedFile::fake()->create('u3.jpg', 50, 'image/jpeg')]],
             ],
         ]);
 
         $response->assertRedirect(route('inventory.movimientos.index'));
 
-        // Antes se armaba 23A00010, 23A00011, 23A00012. Ahora la que no trae
-        // serie se queda sin serie: para numerar en secuencia está el botón.
+        // Antes se armaba 23A00010, 23A00011, 23A00012 a partir de la
+        // primera. Ahora cada pieza se queda con la serie que trae (para
+        // numerar en secuencia está el botón "Generar series").
         $producto = Producto::first();
         $series = ProductoSerial::where('producto_id', $producto->id)->orderBy('id')->pluck('no_serie');
-        $this->assertSame(['23A00010', null, null], $series->all());
+        $this->assertSame(['23A00010', 'X-2', 'Y-3'], $series->all());
     }
 
     public function test_la_serie_de_la_pieza_3_no_se_mueve_a_la_pieza_1(): void
@@ -171,13 +168,13 @@ class InventorySerializadoTest extends TestCase
             'firma' => $this->firmaValida(),
             'unidades' => [
                 ['no_serie' => 'AAA-1', 'evidencias' => [UploadedFile::fake()->create('u1.jpg', 50, 'image/jpeg')]],
-                ['no_serie' => null, 'evidencias' => [UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')]],
+                ['no_serie' => 'BBB-2', 'evidencias' => [UploadedFile::fake()->create('u2.jpg', 50, 'image/jpeg')]],
                 ['no_serie' => 'ZZ-77', 'evidencias' => [UploadedFile::fake()->create('u3.jpg', 50, 'image/jpeg')]],
             ],
         ])->assertRedirect(route('inventory.movimientos.index'));
 
         $series = ProductoSerial::orderBy('id')->pluck('no_serie');
-        $this->assertSame(['AAA-1', null, 'ZZ-77'], $series->all());
+        $this->assertSame(['AAA-1', 'BBB-2', 'ZZ-77'], $series->all());
     }
 
     public function test_actualizar_serial_ya_no_pide_pin(): void

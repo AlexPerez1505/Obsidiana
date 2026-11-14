@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Support\SeriesUnicas;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -360,7 +361,7 @@ class EntradasDeInventario
             }
 
             throw ValidationException::withMessages([
-                'unidades' => 'Uno de esos números de serie ya existe para este producto. Revísalos y vuelve a intentar.',
+                'unidades' => SeriesUnicas::MENSAJE_INDICE,
             ]);
         }
     }
@@ -690,13 +691,9 @@ class EntradasDeInventario
                 ->lockForUpdate()
                 ->first();
 
-            $series = collect($unidades)->pluck('no_serie');
-            if ($series->map(fn ($serie) => mb_strtolower($serie))->duplicates()->isNotEmpty()
-                || ($existente && $existente->seriales()->whereIn('no_serie', $series->all())->exists())) {
-                throw ValidationException::withMessages([
-                    'unidades' => 'Uno de esos números de serie ya existe para este producto o está repetido en la entrada. Corrígelo para continuar.',
-                ]);
-            }
+            // Una serie no se repite en todo el inventario: ni en este
+            // producto ni en otro (aunque tenga el mismo subtipo, marca y modelo).
+            SeriesUnicas::exigir(collect($unidades)->pluck('no_serie'), 'unidades');
 
             $stockAntes = $existente->stock ?? 0;
 

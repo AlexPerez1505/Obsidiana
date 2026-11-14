@@ -74,6 +74,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'avatar',
 
         'dashboard_widgets',
+        'agenda_preferencias',
         'curp',
         'ine',
         'acta_nacimiento',
@@ -119,6 +120,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'vacaciones_disponibles' => 'integer',
             'sueldo_quincenal' => 'decimal:2',
             'dashboard_widgets' => 'array',
+            'agenda_preferencias' => 'array',
         ];
     }
 

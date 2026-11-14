@@ -52,7 +52,7 @@ class CongresoResource extends JsonResource
             // Ya terminó y quedan piezas marcadas como que están allá.
             'tiene_piezas_sin_regresar' => $this->whenLoaded('unidadesPresentes', fn () => $this->tienePiezasSinRegresar()),
             'unidades_vendidas_count' => $this->whenCounted('unidadesVendidas'),
-            'category' => CategoriaResource::make($this->whenLoaded('category')),
+            'category' => CategoriaResource::make($this->whenLoaded('tipoEquipo')),
             // Lo que sigue allá, agrupado por producto como en la pantalla.
             'productos' => $this->whenLoaded('unidadesPresentes', fn () => $this->unidadesPresentes
                 ->groupBy('producto_id')

@@ -28,7 +28,7 @@ class BuscadorCotizador
         return Customer::visiblesPara($usuario)
             // Se traen de una vez: sin esto, calcular el saldo de cada
             // cliente dispararía una consulta por venta.
-            ->with(['congress', 'category', 'asesor', 'ventas.cobros', 'ventas.pagos'])
+            ->with(['congress', 'tipoEquipo', 'asesor', 'ventas.cobros', 'ventas.pagos'])
             ->withCount('cotizaciones')
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($sub) use ($q) {

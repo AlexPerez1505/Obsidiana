@@ -67,9 +67,13 @@ class Congress extends Model
         'aviso_regreso_en' => 'datetime',
     ];
 
-    public function category(): BelongsTo
+    /**
+     * Tipo de equipo del catálogo (Configuración > Catálogos). La columna
+     * conserva el nombre `categoria_id`, pero ya apunta a equipment_types.
+     */
+    public function tipoEquipo(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'categoria_id');
+        return $this->belongsTo(EquipmentType::class, 'categoria_id');
     }
 
     public function customers(): HasMany

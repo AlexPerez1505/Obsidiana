@@ -81,7 +81,7 @@ class EntradaConservaDatosTest extends TestCase
             ]);
 
         $respuesta->assertRedirect(route('inventory.movimientos.create'));
-        $respuesta->assertSessionHasErrors(['unidades.1.evidencias', 'unidades.2.evidencias']);
+        $respuesta->assertSessionHasErrors(['unidades.1.evidencias']);
 
         // El formulario se vuelve a dibujar con lo que ya se había capturado.
         $pagina = $this->actingAs($user)->get(route('inventory.movimientos.create'));
@@ -97,8 +97,8 @@ class EntradaConservaDatosTest extends TestCase
         $pagina->assertSee($firma, false);
         // El video de esa pieza ya vive en el servidor: no se vuelve a subir.
         $pagina->assertSee(str_replace('/', '\/', $video), false);
-        // Y se avisa que las fotos sí hay que volver a adjuntarlas.
-        $pagina->assertSee('volver a adjuntar', false);
+        // Y se avisa qué se conservó para volver a registrar.
+        $pagina->assertSee('Se conservó lo que ya habías llenado', false);
         // El error de cada pieza se muestra con su número.
         $pagina->assertSee('foto de cómo llegó ella', false);
     }

@@ -106,7 +106,7 @@ class GaleriaEvidenciaProductoTest extends TestCase
         // Con su número de serie, su etiqueta interna y el modelo.
         $response->assertSee('SN-VISIBLE');
         $response->assertSee('MB-000123');
-        $response->assertSee('Olympus HD-900');
+        $response->assertSee('HD-900 Olympus');
     }
 
     public function test_una_unidad_sin_evidencia_lo_dice_en_la_ventana(): void
