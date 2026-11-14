@@ -31,6 +31,7 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admi
     Route::get('/materiales', [MaterialRequestController::class, 'index'])->name('materials.index');
     Route::post('/materiales', [MaterialRequestController::class, 'store'])->name('materials.store');
     Route::get('/reportes', [ReportController::class, 'index'])->name('reports.index');
+    Route::view('/paqueteria', 'admin.paqueteria.index')->name('paqueteria.index');
 
     // Línea de tiempo de actividad de todos los usuarios
     Route::get('/actividad', [\App\Http\Controllers\Admin\ActividadController::class, 'index'])

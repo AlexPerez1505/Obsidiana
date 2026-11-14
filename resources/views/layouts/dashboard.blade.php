@@ -1068,6 +1068,10 @@
                         <span class="nav-label">Viáticos</span>
                     </a>
                     @endcan
+                    <a class="nav-item nav-sub {{ request()->routeIs('admin.paqueteria.*') ? 'active' : '' }}" href="{{ route('admin.paqueteria.index') }}" data-tip="Paquetería">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Paquetería</span>
+                    </a>
                     @can('entregas_guias.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.guia_entregas.*') ? 'active' : '' }}" href="{{ route('admin.guia_entregas.index') }}" data-tip="Entregas de guías">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
