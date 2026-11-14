@@ -417,49 +417,19 @@
             sincronizarFotoCompartida();
         };
 
-        /* La serie sugerida por el servidor se reparte como secuencia. */
-        function incrementarSerial(base, delta) {
-            const m = /^(.*?)(\d+)$/.exec(base || '');
-            if (!m) return '';
-            return m[1] + String(parseInt(m[2], 10) + delta).padStart(m[2].length, '0');
-        }
-
         /*
-        | La serie sugerida (consecutiva a la última registrada del modelo) ya
-        | no se escribe sola en las piezas: cada pieza lleva la serie que se le
-        | capture. Si de verdad siguen el consecutivo, el botón llena solo las
-        | que estén vacías.
+        | Un solo botón para las series: "Seguir consecutivo desde …". El
+        | número que enseña lo calcula el servidor con el consecutivo que
+        | comparten todos los equipos del mismo subtipo, marca y modelo
+        | (aunque sean otros productos); al darle clic se apartan de verdad.
         */
-        const btnSugeridas = form.querySelector('[data-usar-sugeridas]');
+        const btnSugeridas = form.querySelector('[data-generar-series]');
 
         function mostrarSugerida() {
-            if (!btnSugeridas) return;
+            if (!btnSugeridas || btnSugeridas.disabled) return;
 
-            btnSugeridas.hidden = !sugeridoBase;
-            if (sugeridoBase) btnSugeridas.textContent = 'Seguir consecutivo desde ' + sugeridoBase;
+            btnSugeridas.textContent = sugeridoBase ? 'Seguir consecutivo desde ' + sugeridoBase : 'Seguir consecutivo';
         }
-
-        function aplicarSugerido() {
-            if (!sugeridoBase || !contenedorPiezas) return 0;
-
-            let siguiente = 0;
-
-            seriesDeLasPiezas().forEach(function (input) {
-                if (!input.value.trim()) input.value = incrementarSerial(sugeridoBase, siguiente++);
-            });
-
-            return siguiente;
-        }
-
-        btnSugeridas?.addEventListener('click', function () {
-            const llenadas = aplicarSugerido();
-
-            if (window.showToast) {
-                window.showToast(llenadas
-                    ? 'Se llenaron ' + llenadas + ' pieza(s) vacía(s) con el consecutivo.'
-                    : 'Todas las piezas ya tienen serie.', llenadas ? 'ok' : 'err');
-            }
-        });
 
         function seriesDeLasPiezas() {
             return Array.from(contenedorPiezas?.querySelectorAll('.pieza-serie') || []);
@@ -676,8 +646,8 @@
                         mostrarSugerida();
 
                         if (sugeridoBase) {
-                            mensaje += ' La última serie registrada sigue con ' + sugeridoBase
-                                + '; si estas piezas siguen ese consecutivo, usa el botón «Seguir consecutivo» en el paso de piezas.';
+                            mensaje += ' El consecutivo de este equipo sigue en ' + sugeridoBase
+                                + '; si estas piezas no traen serie, usa «Seguir consecutivo» en el paso de piezas.';
                         }
 
                         // La referencia es del modelo: se completa si no se escribió otra.
@@ -734,12 +704,53 @@
                 : 'sin subtipo, marca ni modelo quedan como EQ-0001, EQ-0002…';
         }
 
+        /* Cuál sigue, según el servidor (sin apartarla): va en el botón. */
+        let consultaSiguiente = 0;
+
+        async function cargarSiguiente() {
+            const tipo = document.getElementById('equipment_type_id');
+            const turno = ++consultaSiguiente;
+
+            if (!tipo?.value) {
+                sugeridoBase = null;
+                mostrarSugerida();
+                return;
+            }
+
+            try {
+                const r = await fetch(@json(route('inventory.productos.generarSeries')), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                    body: JSON.stringify({
+                        solo_ver: true,
+                        equipment_type_id: tipo.value || null,
+                        subtype_id: document.getElementById('subtype_id')?.value || null,
+                        brand_id: document.getElementById('brand_id')?.value || null,
+                        equipment_model_id: document.getElementById('equipment_model_id')?.value || null,
+                    }),
+                });
+                const data = await r.json();
+
+                // Si cambiaron el catálogo mientras tanto, gana la última consulta.
+                if (turno !== consultaSiguiente) return;
+                sugeridoBase = r.ok ? (data.siguiente || null) : null;
+                mostrarSugerida();
+            } catch (e) {
+                // Sin vista previa el botón sigue funcionando.
+            }
+        }
+
         ['equipment_type_id', 'subtype_id', 'brand_id', 'equipment_model_id'].forEach(function (id) {
-            document.getElementById(id)?.addEventListener('change', pintarNotaGenerar);
+            document.getElementById(id)?.addEventListener('change', function () {
+                pintarNotaGenerar();
+                // El modelo se llena después del subtipo/marca: un respiro.
+                setTimeout(cargarSiguiente, 50);
+            });
         });
 
         if (btnGenerar) {
             pintarNotaGenerar();
+            cargarSiguiente();
 
             btnGenerar.addEventListener('click', async function () {
                 const tipo = document.getElementById('equipment_type_id');
@@ -803,6 +814,7 @@
                 } finally {
                     btnGenerar.disabled = false;
                     btnGenerar.textContent = textoPrevio;
+                    cargarSiguiente();
                 }
             });
         }

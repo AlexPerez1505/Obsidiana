@@ -104,6 +104,18 @@ class GeneradorDeSeries
     }
 
     /**
+     * La serie que sigue con ese prefijo, sin apartarla: es solo para
+     * enseñarla ("Seguir consecutivo desde CAM-STR-1588-0006"). Al generar
+     * de verdad se aparta con generar(), que es la que evita choques.
+     */
+    public static function siguiente(string $prefijo): string
+    {
+        $desde = max(static::ultimoConsecutivo($prefijo), static::ultimaReserva($prefijo));
+
+        return $prefijo.'-'.str_pad((string) ($desde + 1), self::DIGITOS, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * El consecutivo más alto ya usado con ese prefijo, en todas las piezas
      * (no solo las de un producto): el prefijo describe al equipo, así que
      * dos filas del mismo modelo no deben repetir número. Solo cuenta lo que

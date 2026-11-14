@@ -307,6 +307,14 @@ class ProductoController extends Controller
             $data['equipment_model_id'] ?? null,
         );
 
+        // Solo para enseñar en el botón cuál sigue, sin apartar nada.
+        if ($request->boolean('solo_ver')) {
+            return response()->json([
+                'prefijo' => $prefijo,
+                'siguiente' => GeneradorDeSeries::siguiente($prefijo),
+            ]);
+        }
+
         $series = GeneradorDeSeries::generar($prefijo, (int) $data['cantidad'], [
             $data['equipment_type_id'] ?? null,
             $data['subtype_id'] ?? null,

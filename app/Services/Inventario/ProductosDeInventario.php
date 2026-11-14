@@ -36,7 +36,8 @@ class ProductosDeInventario
         'subtype_id' => ['nullable', 'exists:subtypes,id'],
         'brand_id' => ['nullable', 'exists:brands,id'],
         'equipment_model_id' => ['nullable', 'exists:equipment_models,id'],
-        'cantidad' => ['required', 'integer', 'min:1', 'max:5000'],
+        'cantidad' => ['required_unless:solo_ver,1,true', 'integer', 'min:1', 'max:5000'],
+        'solo_ver' => ['nullable', 'boolean'],
     ];
 
     public const REGLAS_AGREGAR_UNIDADES = [
@@ -395,9 +396,16 @@ class ProductosDeInventario
     }
 
     /** El serial que seguiría para este producto, si sus series terminan en dígitos. */
+    /**
+     * La serie que sigue para este equipo. Es el mismo consecutivo para todo
+     * lo que comparte subtipo, marca y modelo (aunque sea otro producto), no
+     * el de este producto solo.
+     */
     public function siguienteSerial(Producto $producto): ?string
     {
-        return $this->sugerirSiguienteSerial($producto->id);
+        return \App\Support\GeneradorDeSeries::siguiente(\App\Support\GeneradorDeSeries::prefijo(
+            $producto->equipment_type_id, $producto->subtype_id, $producto->brand_id, $producto->equipment_model_id,
+        ));
     }
 
     /**
