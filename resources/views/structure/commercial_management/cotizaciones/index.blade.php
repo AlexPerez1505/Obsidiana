@@ -4,6 +4,10 @@
 @section('page-title', 'Cotizaciones')
 
 @section('erp_content')
+    @if (request()->query('from') === 'dashboard')
+        <x-ui.page-header title="Cotizaciones" :back="route('dashboard')" />
+    @endif
+
     <div class="content-actions">
         <x-ui.view-switch key="cotizaciones" />
         @can('cotizaciones.crear')

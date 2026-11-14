@@ -185,6 +185,12 @@
     .vt-submit:hover { background: var(--primary-strong); }
     .vt-submit svg { width: 20px; height: 20px; }
 
+    .vt-total { display:flex; align-items:center; justify-content:space-between; gap:16px;
+        padding:16px 18px; margin:0 0 20px; border:1.5px solid var(--primary);
+        border-radius:14px; background:var(--primary-soft); color:var(--text); }
+    .vt-total strong { font-size:13px; text-transform:uppercase; letter-spacing:.04em; }
+    .vt-total-value { color:var(--primary); font-size:24px; font-weight:800; }
+
     @media (min-width: 768px) {
         .vt-page { max-width: 100%; }
     }
@@ -212,6 +218,11 @@
                 {{ $v->model ?: $v->brand ?: 'Vehículo' }}
             </button>
         @endforeach
+        <button type="button" class="vt-chip" data-vehicle-id="" data-vehicle-name="Nissan y Versa"
+                onclick="vtSelectVehicle(this, '', 'Nissan y Versa')">
+            <x-gravityui-car />
+            Ambos carros
+        </button>
         @if($vehicles->isEmpty())
             <button type="button" class="vt-chip selected" data-vehicle-id="">
                 <x-gravityui-car />
@@ -224,6 +235,7 @@
     <form method="POST" action="{{ route('admin.viatics.store') }}" enctype="multipart/form-data" id="vtForm">
         @csrf
         <input type="hidden" name="vehicle_id" id="vtVehicleId" value="{{ $vehicles->first()?->id ?? '' }}">
+        <input type="hidden" name="vehicle_name" id="vtVehicleName" value="">
         <input type="hidden" name="expense_date" value="{{ now()->format('Y-m-d') }}">
 
         <div class="vt-form-card">
@@ -234,6 +246,22 @@
                     <x-gravityui-map-pin class="vt-input-icon" />
                     <input type="text" name="place" class="vt-input" placeholder="Ej. Guadalajara, Jalisco">
                 </div>
+            </div>
+
+            {{-- Fechas y personas --}}
+            <div class="vt-row-2">
+                <div class="vt-field">
+                    <label class="vt-label">Fecha de ida</label>
+                    <input type="date" name="fecha_ida" class="vt-input" value="{{ old('fecha_ida', now()->format('Y-m-d')) }}">
+                </div>
+                <div class="vt-field">
+                    <label class="vt-label">Fecha de regreso</label>
+                    <input type="date" name="fecha_regreso" class="vt-input" value="{{ old('fecha_regreso') }}">
+                </div>
+            </div>
+            <div class="vt-field">
+                <label class="vt-label">Quiénes fueron</label>
+                <input type="text" name="personas_viaje" class="vt-input" placeholder="Nombres de las personas que viajaron" value="{{ old('personas_viaje') }}">
             </div>
 
             {{-- Casetas & Gasolina --}}
@@ -257,7 +285,7 @@
             {{-- Viáticos & Hospedaje --}}
             <div class="vt-row-2">
                 <div class="vt-field">
-                    <label class="vt-label">Viáticos</label>
+                    <label class="vt-label">Comida</label>
                     <div class="vt-input-wrap">
                         <span class="vt-prefix">$</span>
                         <input type="number" name="meals" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
@@ -274,11 +302,21 @@
 
             {{-- Adicional --}}
             <div class="vt-field">
-                <label class="vt-label">Adicional</label>
+                <label class="vt-label">Días de hospedaje</label>
+                <input type="number" name="dias_hospedaje" class="vt-input" placeholder="0" min="0" max="3650" step="1" value="{{ old('dias_hospedaje', 0) }}">
+            </div>
+
+            {{-- Extras --}}
+            <div class="vt-field">
+                <label class="vt-label">Costo de extras</label>
                 <div class="vt-input-wrap">
                     <span class="vt-prefix">$</span>
                     <input type="number" name="additional" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
                 </div>
+            </div>
+            <div class="vt-field">
+                <label class="vt-label">Detalle de extras</label>
+                <textarea name="extras" class="vt-input" placeholder="Ej. Galletas, agua o material adicional...">{{ old('extras') }}</textarea>
             </div>
 
             {{-- Descripción --}}
@@ -289,6 +327,11 @@
                     <textarea name="description" class="vt-input" placeholder="Describe el motivo del viaje o gastos adicionales..."></textarea>
                 </div>
             </div>
+        </div>
+
+        <div class="vt-total">
+            <strong>Total estimado</strong>
+            <span class="vt-total-value" id="vtTotal">$0.00</span>
         </div>
 
         {{-- Fotos del ticket --}}
@@ -312,11 +355,27 @@
 </div>
 
 <script>
-    function vtSelectVehicle(btn, id) {
+    function vtSelectVehicle(btn, id, nombre = '') {
         document.querySelectorAll('.vt-chip').forEach(c => c.classList.remove('selected'));
         btn.classList.add('selected');
         document.getElementById('vtVehicleId').value = id;
+        document.getElementById('vtVehicleName').value = nombre;
     }
+
+    (function () {
+        const campos = ['tolls', 'fuel', 'meals', 'lodging', 'additional'];
+        const total = document.getElementById('vtTotal');
+        function actualizarTotal() {
+            const suma = campos.reduce((acc, nombre) => {
+                const campo = document.querySelector('[name="' + nombre + '"]');
+                return acc + (parseFloat(campo?.value || 0) || 0);
+            }, 0);
+            total.textContent = new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN' }).format(suma);
+        }
+        document.querySelectorAll('[name="tolls"], [name="fuel"], [name="meals"], [name="lodging"], [name="additional"]')
+            .forEach(campo => campo.addEventListener('input', actualizarTotal));
+        actualizarTotal();
+    })();
 
     (function () {
         const input = document.getElementById('vtPhotosInput');

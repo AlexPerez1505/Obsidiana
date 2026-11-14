@@ -48,7 +48,7 @@ class AgendaCongresoTest extends TestCase
 
         // Día 10 (montaje): título con "Montaje" y su hora.
         $diaMontaje = collect($events[10])->firstWhere('source', 'congress');
-        $this->assertSame('Montaje: Congreso de Prueba', $diaMontaje['title']);
+        $this->assertSame('Montaje: CONGRESO DE PRUEBA', $diaMontaje['title']);
         $this->assertSame('08:00', $diaMontaje['time_value']);
 
         // Días 11, 12, 13 (intermedios): el cuadro sí aparece, pero solo con
@@ -56,13 +56,13 @@ class AgendaCongresoTest extends TestCase
         foreach ([11, 12, 13] as $dia) {
             $diaIntermedio = collect($events[$dia])->firstWhere('source', 'congress');
             $this->assertNotNull($diaIntermedio, "El día {$dia} debe mostrar el cuadro del congreso.");
-            $this->assertSame('Congreso de Prueba', $diaIntermedio['title']);
+            $this->assertSame('CONGRESO DE PRUEBA', $diaIntermedio['title']);
             $this->assertSame('', $diaIntermedio['time_value']);
         }
 
         // Día 14 (desmontaje): título con "Desmontaje" y su hora.
         $diaDesmontaje = collect($events[14])->firstWhere('source', 'congress');
-        $this->assertSame('Desmontaje: Congreso de Prueba', $diaDesmontaje['title']);
+        $this->assertSame('Desmontaje: CONGRESO DE PRUEBA', $diaDesmontaje['title']);
         $this->assertSame('18:00', $diaDesmontaje['time_value']);
 
         // El mes debe mostrarse en español.
@@ -89,6 +89,6 @@ class AgendaCongresoTest extends TestCase
         $congresosEseDia = collect($events[20])->where('source', 'congress');
 
         $this->assertCount(1, $congresosEseDia, 'Un congreso de un solo día debe generar un único cuadro, no dos.');
-        $this->assertSame('Montaje y desmontaje: Congreso de un Dia', $congresosEseDia->first()['title']);
+        $this->assertSame('Montaje y desmontaje: CONGRESO DE UN DIA', $congresosEseDia->first()['title']);
     }
 }

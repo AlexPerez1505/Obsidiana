@@ -98,6 +98,7 @@ class AgendaController extends Controller
                 ],
             ],
             'abrir' => $request->query('item'),
+            'ambito' => in_array($request->query('ambito'), ['mia', 'empresa', 'todas'], true) ? $request->query('ambito') : null,
         ]);
     }
 

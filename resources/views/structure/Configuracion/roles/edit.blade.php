@@ -58,7 +58,7 @@
         <x-ui.alert type="ok">{{ session('status') }}</x-ui.alert>
     @endif
 
-    <form method="POST" action="{{ route('configuracion.roles.update', $role) }}" id="formPermisos">
+    <form method="POST" action="{{ route('configuracion.roles.update', $role) }}" id="formPermisos" data-live="off">
         @csrf
         @method('PUT')
 
@@ -94,6 +94,7 @@
                 <p class="campo-nota" style="margin:14px 0 0;">
                     Lo tienen {{ $role->users->count() }} usuario(s). Lo que marques aquí les aplica a todos:
                 </p>
+                <p class="campo-nota" style="margin:10px 0 0;">Toca un nombre para darle o quitarle permisos solo a él.</p>
                 <div class="pm-usuarios">
                     @foreach ($role->users as $u)
                         <a href="{{ route('configuracion.roles.usuario.edit', [$role, $u]) }}" class="pm-usuario link">{{ $u->name }}</a>

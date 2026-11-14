@@ -153,6 +153,7 @@
 <script>
     window.AGENDA = @json($config);
     window.AGENDA.abrir = @json($abrir);
+    window.AGENDA.ambitoInicial = @json($ambito);
 </script>
 <script src="{{ asset('js/agenda.js') }}?v={{ @filemtime(public_path('js/agenda.js')) }}" defer></script>
 

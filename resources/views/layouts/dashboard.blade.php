@@ -1004,21 +1004,39 @@
                 </div>
             </div>
             @endcan
+            {{-- Agenda: un solo módulo para la agenda personal y la de la empresa
+                 (los antiguos "Calendarios" redirigen aquí). --}}
+            @can('agenda.ver')
+            <div class="nav-group {{ request()->routeIs('calendarios.*', 'agenda.*') ? 'open' : '' }}">
+                <a class="nav-item nav-toggle" href="#" data-tip="Agenda">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="17" rx="2"></rect>
+                        <path d="M16 2v4M8 2v4M3 10h18"></path>
+                        <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"></path>
+                    </svg>
+                    <span class="nav-label">Agenda</span>
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </a>
+                <div class="submenu">
+                    <a class="nav-item nav-sub {{ request()->routeIs('agenda.*') && request('ambito') !== 'empresa' ? 'active' : '' }}" href="{{ route('agenda.index', ['ambito' => 'mia']) }}" data-tip="Mi agenda">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Mi agenda</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('agenda.*') && request('ambito') === 'empresa' ? 'active' : '' }}" href="{{ route('agenda.index', ['ambito' => 'empresa']) }}" data-tip="Agenda de la empresa">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Agenda de la empresa</span>
+                    </a>
+                </div>
+            </div>
+            @endcan
             <div class="nav-section">Administración</div>
-            <div class="nav-group {{ request()->routeIs('admin.*', 'inventory.congresos.*', 'agenda.*') ? 'open' : '' }}">
+            <div class="nav-group {{ request()->routeIs('admin.*', 'inventory.congresos.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Administrativa">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                     <span class="nav-label">Gestión Administrativa</span>
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-                    {{-- Agenda empresarial y personal: seguimientos de Clientes + eventos de la empresa. --}}
-                    @can('agenda.ver')
-                    <a class="nav-item nav-sub {{ request()->routeIs('agenda.*') || request()->routeIs('admin.agenda.index') ? 'active' : '' }}" href="{{ route('agenda.index') }}" data-tip="Agenda">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Agenda</span>
-                    </a>
-                    @endcan
                     {{-- Congresos: eventos de la empresa (quién va, equipo enviado, ventas de congreso). --}}
                     @can('congresos.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.congresos.*') ? 'active' : '' }}" href="{{ route('inventory.congresos.index') }}" data-tip="Congresos">
@@ -1048,6 +1066,12 @@
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.viatics.*') ? 'active' : '' }}" href="{{ route('admin.viatics.index') }}" data-tip="Viáticos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Viáticos</span>
+                    </a>
+                    @endcan
+                    @can('entregas_guias.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('admin.guia_entregas.*') ? 'active' : '' }}" href="{{ route('admin.guia_entregas.index') }}" data-tip="Entregas de guías">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Entregas de guías</span>
                     </a>
                     @endcan
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.materials.*') ? 'active' : '' }}" href="{{ route('admin.materials.index') }}" data-tip="Materiales">
@@ -1162,6 +1186,10 @@
                 @endif
             </div>
             <div class="topbar-spacer"></div>
+
+            <a class="icon-btn" href="{{ route('calendarios.mio') }}" aria-label="Mi calendario" title="Mi calendario">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+            </a>
 
             {{-- Tema --}}
             <button class="icon-btn" id="theme-toggle" type="button" aria-label="Cambiar tema">

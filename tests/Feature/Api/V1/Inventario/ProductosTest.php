@@ -214,6 +214,8 @@ class ProductosTest extends TestCase
     {
         $cat = $this->catalogo();
         $producto = $this->productoConPiezas(['23A0099'], ['equipment_model_id' => $cat['modelo']->id]);
+        // Un número de fábrica como 2105-4774 no debe contaminar la secuencia global.
+        $this->productoConPiezas(['2105-4774']);
 
         $user = $this->usuarioApi(['inventario.ver', 'inventario.registrar']);
 
@@ -237,6 +239,21 @@ class ProductosTest extends TestCase
             // El tipo ya no va al frente de la serie.
             ->assertJsonPath('data.prefijo', 'CV190')
             ->assertJsonPath('data.series', ['CV190-0001', 'CV190-0002']);
+
+        $this->conToken($user)->postJson('/api/v1/productos/generar-series', [
+            'equipment_type_id' => $cat['tipo']->id,
+            'equipment_model_id' => $cat['modelo']->id,
+            'cantidad' => 1,
+        ])->assertOk()
+            ->assertJsonPath('data.series', ['CV190-0003']);
+
+        // Cada combinación de catálogo tiene su propia secuencia.
+        $this->conToken($user)->postJson('/api/v1/productos/generar-series', [
+            'equipment_type_id' => $cat['tipo']->id,
+            'cantidad' => 1,
+        ])->assertOk()
+            ->assertJsonPath('data.prefijo', 'EQ')
+            ->assertJsonPath('data.series', ['EQ-0001']);
     }
 
     public function test_catalogos_piden_registrar_o_editar(): void

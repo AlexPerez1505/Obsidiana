@@ -152,7 +152,12 @@ class ProductoController extends Controller
 
         return response()->json(['data' => [
             'prefijo' => $prefijo,
-            'series' => GeneradorDeSeries::generar($prefijo, (int) $data['cantidad']),
+            'series' => GeneradorDeSeries::generar($prefijo, (int) $data['cantidad'], [
+                $data['equipment_type_id'] ?? null,
+                $data['subtype_id'] ?? null,
+                $data['brand_id'] ?? null,
+                $data['equipment_model_id'] ?? null,
+            ]),
         ]]);
     }
 

@@ -83,7 +83,7 @@
     const G = leer();
     const S = {
         vista: G.vista || 'mes',
-        ambito: G.ambito || 'todas',
+        ambito: CFG.ambitoInicial || G.ambito || 'todas',
         seccion: null,
         fecha: CFG.hoy,
         filtros: {},

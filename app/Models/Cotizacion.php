@@ -91,7 +91,12 @@ class Cotizacion extends Model
     public static function siguienteFolio(): string
     {
         $anio = now()->year;
-        $ultimo = static::where('folio', 'like', "COT-{$anio}-%")->count();
+        // Contar registros puede repetir folios cuando se eliminó alguno.
+        // Tomamos el consecutivo más alto que ya existe.
+        $ultimo = static::where('folio', 'like', "COT-{$anio}-%")
+            ->pluck('folio')
+            ->map(fn (string $folio): int => (int) Str::afterLast($folio, '-'))
+            ->max() ?? 0;
 
         return sprintf('COT-%d-%04d', $anio, $ultimo + 1);
     }

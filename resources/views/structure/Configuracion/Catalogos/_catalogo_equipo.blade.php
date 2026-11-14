@@ -65,6 +65,9 @@
         <label>Marca
             <select id="eq-filtro-marca" aria-controls="eq-resultados"><option value="">Todas las marcas</option></select>
         </label>
+        <label>Modelo
+            <select id="eq-filtro-modelo" aria-controls="eq-resultados"><option value="">Todos los modelos</option></select>
+        </label>
         <button type="button" class="btn btn--ghost" id="eq-limpiar">Limpiar filtros</button>
     </div>
 
@@ -227,7 +230,7 @@
                             '__aviso' => 'Esta acción no se puede deshacer.',
                         ];
                     @endphp
-                    <div class="eq-item" data-tipo="{{ $modelo->subtype?->equipment_type_id }}" data-subtipo="{{ $modelo->subtype_id }}" data-marca="{{ $modelo->brand_id }}">
+                    <div class="eq-item" data-tipo="{{ $modelo->subtype?->equipment_type_id }}" data-subtipo="{{ $modelo->subtype_id }}" data-marca="{{ $modelo->brand_id }}" data-modelo="{{ $modelo->id }}">
                         <div class="eq-item-txt">
                             <span class="eq-item-name">{{ $modelo->name }}</span>
                             <span class="eq-item-meta">{{ $modelo->brand?->name }} · {{ $modelo->subtype?->name ?? 'Sin subtipo' }}</span>
@@ -443,6 +446,7 @@
         const tipo = document.getElementById('eq-filtro-tipo');
         const subtipo = document.getElementById('eq-filtro-subtipo');
         const marca = document.getElementById('eq-filtro-marca');
+        const modelo = document.getElementById('eq-filtro-modelo');
         const orden = new Intl.Collator('es', { sensitivity: 'base', numeric: true });
         const ordenar = (a, b) => orden.compare(a.textContent.trim(), b.textContent.trim());
         const opcionesSubtipo = Array.from(subtipo.options).slice(1).sort(ordenar);
@@ -469,7 +473,7 @@
 
         function filtrar() {
             const palabras = normalizar(buscar.value).split(/\s+/).filter(Boolean);
-            const activo = palabras.length || tipo.value || subtipo.value || marca.value;
+            const activo = palabras.length || tipo.value || subtipo.value || marca.value || modelo.value;
             columnas.forEach(({ items, lista, vacio, contador, original }, indice) => {
                 let visibles = 0;
                 items.forEach(({ elemento, texto }) => {
@@ -477,7 +481,8 @@
                     elemento.hidden = !palabras.every(palabra => texto.includes(palabra))
                         || !!(tipo.value && datos.tipo !== tipo.value)
                         || !!(indice > 0 && subtipo.value && datos.subtipo !== subtipo.value)
-                        || !!(indice > 1 && marca.value && datos.marca !== marca.value);
+                        || !!(indice > 1 && marca.value && datos.marca !== marca.value)
+                        || !!(indice > 2 && modelo.value && datos.modelo !== modelo.value);
                     if (!elemento.hidden) visibles++;
                 });
                 contador.textContent = activo ? `${visibles} / ${items.length}` : items.length;
@@ -498,6 +503,22 @@
             marca.replaceChildren(new Option('Todas las marcas', ''));
             Array.from(marcas).sort((a, b) => orden.compare(a[1], b[1]))
                 .forEach(([id, nombre]) => marca.add(new Option(nombre, id)));
+            llenarModelosFiltro();
+        }
+
+        function llenarModelosFiltro() {
+            const modelos = new Map();
+            columnas[3].items.forEach(({ elemento }) => {
+                const datos = elemento.dataset;
+                if ((!tipo.value || datos.tipo === tipo.value)
+                    && (!subtipo.value || datos.subtipo === subtipo.value)
+                    && (!marca.value || datos.marca === marca.value)) {
+                    modelos.set(datos.modelo, elemento.querySelector('.eq-item-name').textContent.trim());
+                }
+            });
+            modelo.replaceChildren(new Option('Todos los modelos', ''));
+            Array.from(modelos).sort((a, b) => orden.compare(a[1], b[1]))
+                .forEach(([id, nombre]) => modelo.add(new Option(nombre, id)));
             filtrar();
         }
 
@@ -511,7 +532,8 @@
 
         tipo.addEventListener('change', llenarSubtiposFiltro);
         subtipo.addEventListener('change', llenarMarcasFiltro);
-        marca.addEventListener('change', filtrar);
+        marca.addEventListener('change', llenarModelosFiltro);
+        modelo.addEventListener('change', filtrar);
         buscar.addEventListener('input', filtrar);
         document.getElementById('eq-limpiar').addEventListener('click', function () {
             tipo.value = '';

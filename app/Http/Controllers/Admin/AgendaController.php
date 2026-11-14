@@ -14,6 +14,18 @@ class AgendaController extends Controller
 {
     private const TYPES = ['training', 'delivery', 'install', 'meeting', 'maintenance'];
 
+    /** Los antiguos "Calendarios" ahora son la Agenda (vista de la empresa). */
+    public function general(): RedirectResponse
+    {
+        return redirect()->route('agenda.index', ['ambito' => 'empresa']);
+    }
+
+    /** Los antiguos "Calendarios" ahora son la Agenda (vista personal). */
+    public function mio(): RedirectResponse
+    {
+        return redirect()->route('agenda.index', ['ambito' => 'mia']);
+    }
+
     public function index(Request $request): View
     {
         $requestedMonth = (string) $request->input('month', now()->format('Y-m'));
@@ -100,6 +112,8 @@ class AgendaController extends Controller
             'prevMonth' => $month->copy()->subMonth()->format('Y-m'),
             'nextMonth' => $month->copy()->addMonth()->format('Y-m'),
             'currentMonth' => now()->format('Y-m'),
+            // La vista también sirve a los antiguos "Calendarios"; aquí es la agenda anterior.
+            'calendarScope' => 'legacy',
         ]);
     }
 
