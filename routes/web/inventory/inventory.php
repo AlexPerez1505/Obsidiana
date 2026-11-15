@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\EscaneoController;
+use App\Http\Controllers\Inventory\ComponenteController;
 use App\Http\Controllers\Inventory\FichaTecnicaController;
 use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\OrdenSalidaController;
@@ -28,6 +29,16 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->middleware('can:inventario.registrar')->name('inventory.movimientos.videoChunk');
     Route::post('/gestion-inventario/entrada-salida/foto-chunk', [InventoryMovementController::class, 'subirFotoChunk'])
         ->middleware('can:inventario.registrar')->name('inventory.movimientos.fotoChunk');
+
+    // Componentes de una pieza (set completo o partes que llegan después).
+    Route::get('/gestion-inventario/piezas/{pieza}/componentes', [ComponenteController::class, 'index'])
+        ->middleware('can:inventario.ver')->name('inventory.componentes.index');
+    Route::post('/gestion-inventario/piezas/{pieza}/componentes', [ComponenteController::class, 'store'])
+        ->middleware('can:inventario.registrar')->name('inventory.componentes.store');
+    Route::put('/gestion-inventario/componentes/{componente}', [ComponenteController::class, 'update'])
+        ->middleware('can:inventario.registrar')->name('inventory.componentes.update');
+    Route::delete('/gestion-inventario/componentes/{componente}', [ComponenteController::class, 'destroy'])
+        ->middleware('can:inventario.ver')->name('inventory.componentes.destroy');
     Route::get('/gestion-inventario/entrada-salida/checklist-ia', [InventoryMovementController::class, 'checklistIa'])
         ->middleware('can:inventario.registrar')->name('inventory.movimientos.checklistIa');
 

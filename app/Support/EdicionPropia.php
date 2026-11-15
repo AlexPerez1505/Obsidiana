@@ -57,6 +57,12 @@ class EdicionPropia
         return static::puede($user, 'inventario.eliminar', $pieza->capturado_por, $pieza->created_at);
     }
 
+    /** Quitar un componente: quien lo capturó (dentro del plazo) o quien puede eliminar. */
+    public static function puedeEliminarComponente(?User $user, \App\Models\PiezaComponente $componente): bool
+    {
+        return static::puede($user, 'inventario.eliminar', $componente->capturado_por, $componente->created_at);
+    }
+
     /** Corregir los datos de una entrada (fechas, notas, checklist). Las salidas las genera Ventas. */
     public static function puedeEditarMovimiento(?User $user, InventoryMovement $movimiento): bool
     {

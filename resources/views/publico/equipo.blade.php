@@ -198,6 +198,35 @@
         </div>
     @endif
 
+    {{-- ===================== Componentes ===================== --}}
+    @php
+        $componentes = $pieza->componentes()->get();
+        $nivelDe = function ($c) use ($componentes) {
+            $n = 0;
+            for ($p = $c->padre_id; $p && $n < 5; $n++) { $p = $componentes->firstWhere('id', $p)?->padre_id; }
+            return $n;
+        };
+        $ordenados = collect();
+        $agregar = function ($padre) use (&$agregar, $componentes, &$ordenados) {
+            foreach ($componentes->where('padre_id', $padre) as $c) { $ordenados->push($c); $agregar($c->id); }
+        };
+        $agregar(null);
+    @endphp
+    @if ($ordenados->isNotEmpty())
+        <div class="tarjeta">
+            <h2>Componentes</h2>
+            @foreach ($ordenados as $c)
+                <div class="punto" style="padding-left:{{ $nivelDe($c) * 18 }}px;">
+                    <span class="r {{ $c->porLlegar() ? 'na' : 'si' }}">{{ $c->porLlegar() ? 'Por llegar' : 'Incluido' }}</span>
+                    <span class="t">
+                        {{ $nivelDe($c) ? '↳ ' : '' }}{{ $c->nombre }}
+                        @if ($c->no_serie)<span class="n">S/N {{ $c->no_serie }}</span>@endif
+                    </span>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
     {{-- ===================== Checklist (solo usado) ===================== --}}
     @if ($checklist->isNotEmpty())
         <div class="tarjeta">

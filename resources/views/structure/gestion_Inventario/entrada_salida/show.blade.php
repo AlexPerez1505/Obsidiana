@@ -13,6 +13,7 @@
     };
     $esEntrada = $movimiento->movement_type === \App\Models\InventoryMovement::TYPE_ENTRY;
     $unidades = $movimiento->unidadesRelacionadas();
+    $resumenComp = \App\Models\PiezaComponente::resumenPara($unidades->pluck('id'));
     $tonoProceso = [
         'pendiente' => 'badge--warn',
         'en_curso' => 'badge--info',
@@ -193,6 +194,7 @@
                                 <span class="muted">· {{ count($fotos) }} {{ count($fotos) === 1 ? 'foto' : 'fotos' }}{{ $serial->videoUrl() ? ' y video' : '' }}</span>
                             </button>
                         @endif
+                        @include('structure.gestion_Inventario._componentes_boton', ['pieza' => $serial, 'resumen' => $resumenComp])
                     </div>
 
                     <div class="mv-u-procesos">
@@ -287,6 +289,7 @@
     </div>
 
     @include('partials.galeria')
+    @include('structure.gestion_Inventario._componentes')
 
     <style>
         /* Encabezado: identidad y acciones arriba, datos abajo */
