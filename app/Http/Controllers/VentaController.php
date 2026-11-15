@@ -6,6 +6,7 @@ use App\Models\Congress;
 use App\Models\Cotizacion;
 use App\Models\Customer;
 use App\Models\Venta;
+use App\Services\Cotizaciones\BuscadorCotizador;
 use App\Services\Ventas\DocumentosDeVenta;
 use App\Services\Ventas\OperacionRechazada;
 use App\Services\Ventas\RegistroDeVentas;
@@ -68,6 +69,8 @@ class VentaController extends Controller
             'venta' => null,
             'initial' => $this->registro->inicial($origen, $clientePre),
             'congresos' => Congress::orderBy('nombre')->get(),
+            // Los mismos filtros del catálogo que en la cotización.
+            'filtrosProductos' => app(BuscadorCotizador::class)->filtrosProductos(),
             'origenId' => $origen?->id,
             'avisosStock' => $origen ? $this->registro->avisosStock($origen->items) : [],
         ]);
@@ -105,6 +108,7 @@ class VentaController extends Controller
             'venta' => $venta,
             'initial' => DocumentoInitial::build($venta, $venta->customer),
             'congresos' => Congress::orderBy('nombre')->get(),
+            'filtrosProductos' => app(BuscadorCotizador::class)->filtrosProductos(),
             'origenId' => null,
             // Con dinero cobrado sobre alguna parcialidad, el plan se congela
             // en el formulario: se ajusta desde Cobranza, no desde aquí.

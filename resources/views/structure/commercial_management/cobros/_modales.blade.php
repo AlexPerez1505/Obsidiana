@@ -170,13 +170,13 @@
             <label for="cbNota" class="cb-mt">Nota</label>
             <input type="text" id="cbNota" name="nota" value="{{ old('nota') }}" placeholder="Opcional">
 
-            <label for="cbEvidencias" class="cb-mt">Evidencia del pago</label>
+            <label for="cbEvidencias" class="cb-mt">Evidencia del pago <small>(obligatoria)</small></label>
             <label class="cb-drop" for="cbEvidencias" data-drop>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
                 <span data-nombre>Comprobante, captura o ficha de depósito</span>
                 <small>Imagen o PDF · hasta 5 archivos</small>
             </label>
-            <input type="file" id="cbEvidencias" name="evidencias[]" multiple
+            <input type="file" id="cbEvidencias" name="evidencias[]" multiple required
                    accept="image/*,.pdf" class="cb-file">
         </div>
 

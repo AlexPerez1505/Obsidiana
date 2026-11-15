@@ -126,12 +126,26 @@ class WebSigueIgualTest extends TestCase
 
     public function test_fichas_desde_la_web(): void
     {
-        $producto = $this->productoConPiezas();
+        $cat = $this->catalogo();
+        $producto = $this->productoConPiezas(['SN-1', 'SN-2'], [
+            'equipment_type_id' => $cat['tipo']->id, 'subtype_id' => $cat['subtipo']->id,
+            'brand_id' => $cat['marca']->id, 'equipment_model_id' => $cat['modelo']->id,
+        ]);
         $user = $this->usuarioApi(['inventario.registrar', 'inventario.editar', 'inventario.eliminar']);
+        $equipo = [
+            'equipment_type_id' => $cat['tipo']->id, 'subtype_id' => $cat['subtipo']->id,
+            'brand_id' => $cat['marca']->id, 'equipment_model_id' => $cat['modelo']->id,
+        ];
 
+        // El catálogo del equipo es obligatorio.
         $this->actingAs($user)->post(route('inventory.fichas.store'), [
+            'titulo' => 'Sin catálogo',
+            'archivo' => UploadedFile::fake()->create('f.pdf', 50, 'application/pdf'),
+        ])->assertSessionHasErrors(['equipment_type_id', 'subtype_id', 'brand_id', 'equipment_model_id']);
+
+        // Con el catálogo se liga sola al producto de ese modelo.
+        $this->actingAs($user)->post(route('inventory.fichas.store'), $equipo + [
             'titulo' => 'Ficha web',
-            'item' => "producto:{$producto->id}",
             'activo' => '1',
             'archivo' => UploadedFile::fake()->create('f.pdf', 50, 'application/pdf'),
         ])->assertRedirect(route('inventory.fichas.index'))
@@ -139,24 +153,61 @@ class WebSigueIgualTest extends TestCase
 
         $ficha = FichaTecnica::firstOrFail();
         $this->assertSame($producto->id, $ficha->producto_id);
+        $this->assertSame($cat['modelo']->id, $ficha->equipment_model_id);
         Storage::disk('public')->assertExists($ficha->archivo);
 
-        $this->actingAs($user)->post(route('inventory.fichas.store'), [
+        $this->actingAs($user)->post(route('inventory.fichas.store'), $equipo + [
             'titulo' => 'Repetida',
-            'item' => "producto:{$producto->id}",
             'archivo' => UploadedFile::fake()->create('f.pdf', 50, 'application/pdf'),
-        ])->assertSessionHasErrors(['item' => 'Ese producto ya tiene otra ficha técnica asignada.']);
+        ])->assertSessionHasErrors(['equipment_model_id' => 'El producto de ese modelo ya tiene otra ficha técnica.']);
 
-        // Sin "activo" en el formulario la casilla quedó desmarcada.
-        $this->actingAs($user)->put(route('inventory.fichas.update', $ficha), ['titulo' => 'Ficha web 2', 'item' => ''])
+        // Sin "activo" en el formulario la casilla quedó desmarcada. Con un
+        // modelo que aún no está en el inventario se queda sin producto.
+        $otro = $this->catalogo('CV-290')['modelo'];
+        $this->actingAs($user)->put(route('inventory.fichas.update', $ficha), ['equipment_model_id' => $otro->id] + $equipo + ['titulo' => 'Ficha web 2'])
             ->assertSessionHas('status', 'Ficha técnica actualizada correctamente.');
         $ficha->refresh();
         $this->assertFalse($ficha->activo);
         $this->assertNull($ficha->producto_id);
+        $this->assertSame($otro->id, $ficha->equipment_model_id);
 
         $this->actingAs($user)->delete(route('inventory.fichas.destroy', $ficha))
             ->assertSessionHas('status', 'Ficha técnica eliminada correctamente.');
         Storage::disk('public')->assertMissing($ficha->archivo);
+    }
+
+    public function test_observacion_de_ficha_llega_al_usuario_y_se_atiende(): void
+    {
+        $cat = $this->catalogo();
+        $ficha = FichaTecnica::create([
+            'titulo' => 'Ficha con error', 'archivo' => 'fichas/x.pdf', 'activo' => true,
+            'equipment_type_id' => $cat['tipo']->id, 'subtype_id' => $cat['subtipo']->id,
+            'brand_id' => $cat['marca']->id, 'equipment_model_id' => $cat['modelo']->id,
+        ]);
+        $revisa = $this->usuarioApi(['inventario.ver']);
+        $corrige = $this->usuarioApi(['inventario.ver']);
+        $tercero = $this->usuarioApi(['inventario.ver']);
+
+        $this->actingAs($revisa)->post(route('inventory.fichas.observar', $ficha), ['para_id' => $corrige->id, 'texto' => 'El modelo no coincide con el PDF.'])
+            ->assertRedirect(route('inventory.fichas.index', ['observaciones' => $ficha->id]))
+            ->assertSessionHas('status');
+
+        $obs = $ficha->observaciones()->firstOrFail();
+        $this->assertSame($corrige->id, $obs->para_id);
+        $aviso = $corrige->notifications()->firstOrFail();
+        $this->assertSame($obs->id, $aviso->data['observacion_id']);
+        $this->assertStringContainsString('Ficha con error', $aviso->data['titulo']);
+
+        // Sin texto o sin destinatario no se manda.
+        $this->actingAs($revisa)->post(route('inventory.fichas.observar', $ficha), [])->assertSessionHasErrors(['para_id', 'texto']);
+
+        // Solo quien la recibió (o quien edita fichas) la da por atendida.
+        $this->actingAs($tercero)->post(route('inventory.fichas.observacion.atender', $obs))->assertForbidden();
+        $this->actingAs($corrige)->post(route('inventory.fichas.observacion.atender', $obs))->assertSessionHas('status');
+        $this->assertNotNull($obs->fresh()->atendida_en);
+        $this->assertNotNull($aviso->fresh()->read_at);
+
+        $this->actingAs($revisa)->get(route('inventory.fichas.index'))->assertOk()->assertSee('Notas y observaciones');
     }
 
     public function test_escaneo_y_video_por_pedazos_desde_la_web(): void

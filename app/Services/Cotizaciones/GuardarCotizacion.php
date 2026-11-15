@@ -157,7 +157,7 @@ class GuardarCotizacion
             (float) ($data['descuento_valor'] ?? 0),
             (float) ($data['envio'] ?? 0),
             (bool) ($data['aplica_iva'] ?? false),
-            (float) ($data['valor_a_cuenta'] ?? 0),
+            \App\Support\EquiposACuenta::valorDocumento($data),
             (float) ($data['_cupon_monto'] ?? 0),
         );
     }
@@ -197,7 +197,7 @@ class GuardarCotizacion
         $descValor = (float) ($data['descuento_valor'] ?? 0);
         $envio = (float) ($data['envio'] ?? 0);
         $aplicaIva = (bool) ($data['aplica_iva'] ?? false);
-        $valorACuenta = (float) ($data['valor_a_cuenta'] ?? 0);
+        $valorACuenta = \App\Support\EquiposACuenta::valorDocumento($data);
 
         $d = $this->desglose($data);
 

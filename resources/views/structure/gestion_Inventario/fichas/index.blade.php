@@ -157,7 +157,7 @@
             <thead>
                 <tr>
                     <th>Ficha técnica</th>
-                    <th>Producto/Paquete</th>
+                    <th>Equipo</th>
                     <th>Archivo</th>
                     <th>Alta</th>
                     <th>Estado</th>
@@ -178,7 +178,21 @@
                                 </div>
                             </div>
                         </td>
-                        <td>{{ $ficha->nombreRelacionado() ?? '—' }}</td>
+                        <td>
+                            @if ($ficha->catalogoTexto())
+                                <div class="ft-eq">{{ $ficha->catalogoTexto() }}</div>
+                                <div class="ft-eq-s {{ $ficha->producto ? 'ok' : '' }}">
+                                    {{ $ficha->producto ? 'Ligada al producto del inventario' : 'Aún sin producto en el inventario' }}@if ($ficha->paquete) · Paquete {{ $ficha->paquete->nombre }}@endif
+                                </div>
+                            @else
+                                {{ $ficha->nombreRelacionado() ?? '—' }}
+                                <div class="ft-eq-s falta">Falta elegir su tipo, subtipo, marca y modelo</div>
+                            @endif
+                            @php $obsPend = $ficha->observaciones->whereNull('atendida_en')->count(); @endphp
+                            @if ($obsPend)
+                                <button type="button" class="ft-obs-chip" data-obs-ficha="{{ $ficha->id }}" data-nombre="{{ $ficha->titulo }}">{{ $obsPend }} observación(es) por atender</button>
+                            @endif
+                        </td>
                         <td>
                             <span class="badge {{ $ficha->archivo ? 'badge--info' : '' }}">
                                 {{ $ficha->archivo ? 'PDF' : 'Sin archivo' }}
@@ -222,7 +236,7 @@
                     </span>
                     <div style="min-width:0; flex:1;">
                         <div class="t">{{ $ficha->titulo }}</div>
-                        <div class="s">{{ $ficha->nombreRelacionado() ?? 'Sin relacionar' }}</div>
+                        <div class="s">{{ $ficha->catalogoTexto() ?? $ficha->nombreRelacionado() ?? 'Sin relacionar' }}</div>
                     </div>
                     @if ($ficha->activo)
                         <span class="badge badge--ok">Activa</span>
@@ -298,8 +312,78 @@
         </form>
     </dialog>
 
+    {{-- Notas y observaciones de una ficha, dirigidas a un usuario. --}}
+    <dialog class="ft-modal" id="ftObs">
+        <div class="ft-modal-box ft-obs-box">
+            <div class="ft-modal-head ft-obs-head">
+                <h3>Notas y observaciones</h3>
+                <span class="ft-obs-ficha" data-obs-nombre></span>
+                <button type="button" class="ft-obs-x" data-cerrar aria-label="Cerrar">×</button>
+            </div>
+
+            <div class="ft-modal-body">
+                <div class="ft-obs-lista" data-obs-lista></div>
+
+                <form method="POST" class="ft-obs-form" data-obs-form>
+                    @csrf
+                    <label class="ft-obs-lbl" for="obsPara">¿A quién le llega?</label>
+                    <select id="obsPara" name="para_id" required>
+                        <option value="">Elige un usuario</option>
+                        @foreach ($usuarios as $u)
+                            <option value="{{ $u->id }}">{{ $u->name }}</option>
+                        @endforeach
+                    </select>
+
+                    <label class="ft-obs-lbl" for="obsTexto">Observación</label>
+                    <textarea id="obsTexto" name="texto" rows="3" maxlength="2000" required
+                              placeholder="Ej. El modelo de la ficha no coincide: es GIF-H190, no GIF-H180."></textarea>
+
+                    <div class="ft-obs-pie">
+                        <span>Le llega a su campana de avisos.</span>
+                        <button type="submit" class="btn">Enviar observación</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </dialog>
+
+    <script type="application/json" id="ftObsDatos">@json($observaciones)</script>
+
     <style>
         /* Solo lo propio de esta pantalla: lo demás vive en los partials. */
+        .ft-eq { font-size:13.5px; overflow-wrap:anywhere; }
+        .ft-eq-s { font-size:12px; color:var(--muted); margin-top:2px; }
+        .ft-eq-s.ok { color:var(--green, #15803d); }
+        .ft-eq-s.falta { color:var(--amber, #b45309); }
+        .ft-obs-chip { margin-top:6px; padding:2px 9px; border:0; border-radius:999px; cursor:pointer;
+                       background:var(--danger-soft); color:var(--danger); font:inherit; font-size:12px; font-weight:600; }
+        .ft-obs-n { margin-left:auto; min-width:18px; padding:0 6px; border-radius:999px; background:var(--danger);
+                    color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center; }
+
+        .ft-obs-box { width:min(560px, calc(100vw - 28px)); }
+        .ft-obs-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .ft-obs-head h3 { flex:0 0 auto; }
+        .ft-obs-ficha { flex:1; min-width:0; color:var(--muted); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .ft-obs-x { width:30px; height:30px; border:0; border-radius:8px; background:transparent; color:var(--muted);
+                    font-size:20px; cursor:pointer; }
+        .ft-obs-x:hover { background:var(--surface-2); color:var(--text); }
+        .ft-obs-lista { display:flex; flex-direction:column; gap:8px; max-height:280px; overflow:auto; margin-bottom:14px; }
+        .ft-obs-vacio { margin:0; color:var(--muted); font-size:13px; }
+        .ft-obs-item { padding:10px 12px; border:1px solid var(--border); border-radius:10px; }
+        .ft-obs-item.atendida { opacity:.7; }
+        .ft-obs-meta { display:flex; flex-wrap:wrap; gap:4px 10px; font-size:12px; color:var(--muted); }
+        .ft-obs-meta b { color:var(--text); font-weight:600; }
+        .ft-obs-texto { margin:6px 0 0; font-size:14px; color:var(--text); white-space:pre-wrap; overflow-wrap:anywhere; }
+        .ft-obs-estado { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; font-size:12px; }
+        .ft-obs-estado .pend { color:var(--danger); font-weight:600; }
+        .ft-obs-estado .ok { color:var(--green, #15803d); }
+        .ft-obs-form { display:flex; flex-direction:column; gap:6px; padding-top:12px; border-top:1px solid var(--border); }
+        .ft-obs-lbl { font-size:13px; font-weight:600; }
+        .ft-obs-form select, .ft-obs-form textarea { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:9px;
+            background:var(--surface); color:var(--text); font:inherit; font-size:14px; }
+        .ft-obs-form textarea { resize:vertical; }
+        .ft-obs-pie { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:6px;
+                      font-size:12.5px; color:var(--muted); flex-wrap:wrap; }
         .ft-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin-bottom:16px; }
         .ft-table { width:100%; border-collapse:collapse; }
 
@@ -310,7 +394,7 @@
 
         .ft-modal { padding:0; border:0; background:transparent; max-width:none; }
         .ft-modal::backdrop { background:rgba(2,6,23,.5); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); }
-        .ft-modal-box { width:min(440px, calc(100vw - 28px)); background:var(--surface);
+        .ft-modal-box { width:min(440px, calc(100vw - 28px)); background:var(--surface); color:var(--text);
                         border:1px solid var(--border); border-radius:14px; overflow:hidden;
                         box-shadow:0 24px 60px rgba(17,24,39,.22); }
         .ft-modal-head { padding:17px 20px; border-bottom:1px solid var(--border); }
@@ -364,6 +448,56 @@
         });
 
         modal.addEventListener('click', function (e) { if (e.target === modal) modal.close(); });
+    })();
+
+    /* Notas y observaciones: lista de la ficha + enviar una nueva. */
+    (function () {
+        var modal = document.getElementById('ftObs');
+        var datos = JSON.parse(document.getElementById('ftObsDatos').textContent || '{}');
+        var lista = modal.querySelector('[data-obs-lista]');
+        var form = modal.querySelector('[data-obs-form]');
+        var urlObservar = @json(route('inventory.fichas.observar', ['ficha' => '__ID__']));
+        var csrf = form.querySelector('input[name="_token"]').value;
+
+        function esc(t) {
+            return String(t ?? '').replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+        }
+
+        function abrir(id, nombre) {
+            var obs = datos[id] || [];
+            modal.querySelector('[data-obs-nombre]').textContent = nombre || '';
+            form.action = urlObservar.replace('__ID__', id);
+            lista.innerHTML = obs.length ? obs.map(function (o) {
+                return '<div class="ft-obs-item ' + (o.atendida ? 'atendida' : '') + '">'
+                    + '<div class="ft-obs-meta"><span>De <b>' + esc(o.autor) + '</b></span><span>para <b>' + esc(o.para) + '</b></span><span>' + esc(o.fecha) + '</span></div>'
+                    + '<p class="ft-obs-texto">' + esc(o.texto) + '</p>'
+                    + '<div class="ft-obs-estado">'
+                    + (o.atendida
+                        ? '<span class="ok">✓ Atendida ' + esc(o.atendida) + (o.atendio ? ' por ' + esc(o.atendio) : '') + '</span>'
+                        : '<span class="pend">Por atender</span>')
+                    + (o.puede_atender
+                        ? '<form method="POST" action="' + esc(o.url_atender) + '"><input type="hidden" name="_token" value="' + esc(csrf) + '"><button type="submit" class="btn btn--ghost" style="padding:4px 10px; font-size:12.5px;">Marcar como atendida</button></form>'
+                        : '')
+                    + '</div></div>';
+            }).join('') : '<p class="ft-obs-vacio">Esta ficha no tiene observaciones todavía.</p>';
+            if (typeof modal.showModal === 'function') { modal.showModal(); } else { modal.setAttribute('open', ''); }
+        }
+
+        document.addEventListener('click', function (e) {
+            var b = e.target.closest('[data-obs-ficha]');
+            if (!b) return;
+            abrir(b.dataset.obsFicha, b.dataset.nombre);
+        }, true); // captura: el menú de tres puntos corta la propagación
+
+        modal.querySelector('[data-cerrar]').addEventListener('click', function () { modal.close(); });
+        modal.addEventListener('click', function (e) { if (e.target === modal) modal.close(); });
+
+        // Desde el aviso de la campana: ?observaciones=ID abre esa ficha.
+        var abrirId = @json($abrirObservaciones);
+        if (abrirId) {
+            var boton = document.querySelector('[data-obs-ficha="' + abrirId + '"]');
+            abrir(abrirId, boton ? boton.dataset.nombre : '');
+        }
     })();
     </script>
 @endsection

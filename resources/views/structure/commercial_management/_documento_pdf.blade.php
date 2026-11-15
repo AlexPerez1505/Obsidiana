@@ -332,12 +332,14 @@
             @foreach (\App\Support\EquiposACuenta::ETIQUETAS as $et)
                 <th style="text-align:left; padding:4px 6px; border-bottom:1px solid #cbd5e1; color:#475569;">{{ $et }}</th>
             @endforeach
+            <th style="text-align:right; padding:4px 6px; border-bottom:1px solid #cbd5e1; color:#475569;">Valor</th>
         </tr>
         @foreach ($doc->equipos_a_cuenta as $r)
             <tr>
                 @foreach (array_keys(\App\Support\EquiposACuenta::ETIQUETAS) as $c)
                     <td style="padding:4px 6px; border-bottom:1px solid #eef2f7;">{{ ($r[$c] ?? '') !== '' ? $r[$c] : '—' }}</td>
                 @endforeach
+                <td style="padding:4px 6px; border-bottom:1px solid #eef2f7; text-align:right; white-space:nowrap;">{{ (float) ($r['valor'] ?? 0) > 0 ? '$'.number_format((float) $r['valor'], 2) : '—' }}</td>
             </tr>
         @endforeach
     </table>

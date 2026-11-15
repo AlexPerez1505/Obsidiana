@@ -68,14 +68,22 @@
             <div class="cot-panel">
                 <div class="cot-panel-head">Detalles de la propuesta</div>
                 <div class="cot-panel-body">
-                    <label class="cot-lbl">Congreso</label>
-                    <select id="congreso_id" class="cot-input">
-                        <option value="">Sin congreso</option>
-                        @foreach ($congresos as $congresoOpcion)
-                            <option value="{{ $congresoOpcion->id }}">{{ $congresoOpcion->nombre }}</option>
-                        @endforeach
-                    </select>
-                    <p class="cot-hint">Déjalo en «Sin congreso» si no se levantó en uno; entonces no aparece en el PDF.</p>
+                    {{-- Si el cliente se conoció en un congreso, se toma solo y el
+                         selector queda escondido tras "Cambiar". --}}
+                    <div class="cot-congreso-resumen" id="congresoResumen" hidden>
+                        <span>Congreso <b id="congresoNombre"></b></span>
+                        <button type="button" class="cot-link" id="congresoCambiar">Cambiar</button>
+                    </div>
+                    <div id="congresoCampo">
+                        <label class="cot-lbl">Congreso</label>
+                        <select id="congreso_id" class="cot-input">
+                            <option value="">Sin congreso</option>
+                            @foreach ($congresos as $congresoOpcion)
+                                <option value="{{ $congresoOpcion->id }}">{{ $congresoOpcion->nombre }}</option>
+                            @endforeach
+                        </select>
+                        <p class="cot-hint" id="congresoHint">Déjalo en «Sin congreso» si no se levantó en uno; entonces no aparece en el PDF.</p>
+                    </div>
 
                     <label class="cot-lbl" style="margin-top:14px;">Garantía del equipo</label>
                     <select id="garantia_meses" class="cot-input">
@@ -111,20 +119,25 @@
                 </div>
                 <div class="cot-panel-body" style="padding-bottom:6px;">
                     @isset($filtrosProductos)
-                        <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:end; margin-bottom:10px;">
-                            <label style="flex:1 1 150px; font-size:12px;">Tipo de equipo
-                                <select id="prodFilterType" class="cot-input"><option value="">Todos los tipos</option></select>
+                        {{-- Catálogo en una fila de selectores compactos (como en
+                             Inventario): el texto del label se queda para los
+                             lectores de pantalla, la opción ya dice qué es. --}}
+                        <div class="cot-filtros">
+                            <label>Tipo de equipo
+                                <select id="prodFilterType"><option value="">Todos los tipos</option></select>
                             </label>
-                            <label style="flex:1 1 150px; font-size:12px;">Subtipo
-                                <select id="prodFilterSubtype" class="cot-input"><option value="">Todos los subtipos</option></select>
+                            <label>Subtipo
+                                <select id="prodFilterSubtype"><option value="">Todos los subtipos</option></select>
                             </label>
-                            <label style="flex:1 1 150px; font-size:12px;">Marca
-                                <select id="prodFilterBrand" class="cot-input"><option value="">Todas las marcas</option></select>
+                            <label>Marca
+                                <select id="prodFilterBrand"><option value="">Todas las marcas</option></select>
                             </label>
-                            <label style="flex:1 1 150px; font-size:12px;">Modelo
-                                <select id="prodFilterModel" class="cot-input"><option value="">Todos los modelos</option></select>
+                            <label>Modelo
+                                <select id="prodFilterModel"><option value="">Todos los modelos</option></select>
                             </label>
-                            <button type="button" id="prodFilterClear" class="cot-btn-x">Limpiar filtros</button>
+                            <button type="button" id="prodFilterClear" class="cot-filtros-x" title="Limpiar filtros" aria-label="Limpiar filtros">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 3H2l8 9.46V19l4 2v-8.54"/><line x1="16" y1="5" x2="22" y2="11"/><line x1="22" y1="5" x2="16" y2="11"/></svg>
+                            </button>
                         </div>
                     @endisset
                     <div style="position:relative;">
@@ -183,15 +196,9 @@
                         <div class="cot-line"><span>IVA</span><b id="tIva">$0.00</b></div>
                         <div class="cot-line cot-line-strong"><span>Total</span><b id="tTotal">$0.00</b></div>
 
-                        <div class="cot-tote-row" style="margin-top:12px;">
-                            <label>Valor a cuenta (equipos / mercancía a cuenta)</label>
-                            <input type="text" id="valor_a_cuenta" class="cot-input cot-num" inputmode="decimal" value="" placeholder="0">
-                        </div>
-                        <p style="font-size:12px; color:var(--muted); margin:6px 0 0;">Se resta del total para calcular el contrato.</p>
-
-                        <div class="cot-line cot-line-strong"><span>Total del contrato</span><b id="tContrato">$0.00</b></div>
-
-                        {{-- Qué equipo entrega el cliente a cuenta: sale en la cotización, la venta, el PDF y el contrato. --}}
+                        {{-- Qué equipo entrega el cliente a cuenta, cada uno con su
+                             valor: la suma se resta del total para el contrato.
+                             Sale en la cotización, la venta, el PDF y el contrato. --}}
                         @php $sugCuenta = \App\Support\EquiposACuenta::sugerencias(); @endphp
                         <div class="cot-cuenta">
                             <div class="cot-cuenta-head">
@@ -200,6 +207,9 @@
                             </div>
                             <div id="cuentaLista"></div>
                         </div>
+
+                        <div class="cot-line" id="tCuentaLinea" style="display:none;"><span>Valor a cuenta</span><b id="tCuenta">-$0.00</b></div>
+                        <div class="cot-line cot-line-strong"><span>Total del contrato</span><b id="tContrato">$0.00</b></div>
                         @foreach (['tipo', 'subtipo', 'marca', 'modelo'] as $campo)
                             <datalist id="dlCuenta-{{ $campo }}">
                                 @foreach ($sugCuenta[$campo] as $v)<option value="{{ $v }}"></option>@endforeach
@@ -295,6 +305,10 @@
     .cli-alcorriente { margin:10px 0 0; color:var(--green); font-size:12.5px; font-weight:600; }
 
     /* Elegir cuáles piezas se entregan */
+    .cot-congreso-resumen { display:flex; align-items:center; justify-content:space-between; gap:10px;
+        padding:10px 12px; border:1px solid var(--border); border-radius:9px; font-size:14px; color:var(--muted); }
+    .cot-congreso-resumen[hidden] { display:none; }
+    .cot-congreso-resumen b { color:var(--text); margin-left:4px; }
     .cot-link { padding:0; border:0; background:none; color:var(--primary); font-family:inherit;
                 font-size:12px; font-weight:600; cursor:pointer; text-decoration:underline; }
     .cot-piezas { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:8px; }
@@ -322,7 +336,9 @@
     .cot-cuenta-fila { position:relative; display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px; padding:10px 34px 10px 10px;
                        border:1px solid var(--border); border-radius:10px; background:var(--surface-2, transparent); }
     .cot-cuenta-fila .cot-input { padding:8px 10px; font-size:13.5px; }
-    .cot-cuenta-fila .cot-cuenta-serie { grid-column:1 / -1; }
+    .cot-cuenta-valor { position:relative; }
+    .cot-cuenta-valor span { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:13px; pointer-events:none; }
+    .cot-cuenta-valor .cot-input { padding-left:22px; text-align:right; }
     .cot-cuenta-quitar { position:absolute; top:8px; right:6px; width:24px; height:24px; border:0; border-radius:6px; cursor:pointer;
                          background:transparent; color:var(--muted); font-size:18px; line-height:1; }
     .cot-cuenta-quitar:hover { color:var(--danger, #dc2626); }
@@ -335,6 +351,31 @@
     .cot-pay-date { color:var(--muted); font-size:13px; margin-top:2px; }
     .cot-pay-amt { font-weight:800; font-size:16px; }
     .cot-pay-controls { display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap; }
+    /* Filtros del catálogo: una fila de selectores redondeados. */
+    .cot-filtros { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+    .cot-filtros label { position:relative; flex:1 1 0; min-width:0; font-size:0; line-height:0; }
+    .cot-filtros label::after { content:''; position:absolute; right:13px; top:50%; width:6px; height:6px;
+        border-right:1.6px solid var(--muted); border-bottom:1.6px solid var(--muted);
+        transform:translateY(-70%) rotate(45deg); pointer-events:none; }
+    .cot-filtros select { -webkit-appearance:none; appearance:none; width:100%; height:38px; padding:0 32px 0 14px;
+        border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--muted);
+        font:inherit; font-size:13px; line-height:38px; cursor:pointer; text-overflow:ellipsis;
+        transition:border-color .15s, background-color .15s, color .15s; }
+    .cot-filtros select:hover { border-color:var(--muted); color:var(--text); }
+    .cot-filtros select:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+    .cot-filtros select:not(:has(option[value=""]:checked)) { border-color:var(--primary); background:var(--primary-soft);
+        color:var(--primary); font-weight:600; }
+    .cot-filtros label:has(select:not(:has(option[value=""]:checked)))::after { border-color:var(--primary); }
+    .cot-filtros select option { color:var(--text); background:var(--surface); font-weight:400; }
+    .cot-filtros-x { flex:0 0 38px; height:38px; display:inline-flex; align-items:center; justify-content:center;
+        border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--muted); cursor:pointer; }
+    .cot-filtros-x:hover { background:var(--danger-soft); color:var(--danger); border-color:transparent; }
+    .cot-filtros-x svg { width:16px; height:16px; }
+    @media (max-width:760px) {
+        .cot-filtros { flex-wrap:wrap; }
+        .cot-filtros label { flex:1 1 calc(50% - 4px); }
+    }
+    .cot-prow-fecha { width:auto; padding:5px 8px; font-size:12.5px; margin-top:4px; }
     .cot-btn-x { background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:9px; padding:6px 11px; cursor:pointer; font-weight:600; font-size:13px;
                  transition:background .14s ease, color .14s ease, border-color .14s ease, transform .12s var(--erp-ease); }
     .cot-btn-x:hover { background:var(--danger-soft); color:var(--danger); border-color:transparent; }
@@ -442,7 +483,7 @@
     const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
     const state = {
-        cuenta: (INITIAL.equipos_a_cuenta || []).map(r => ({ tipo: r.tipo || '', subtipo: r.subtipo || '', marca: r.marca || '', modelo: r.modelo || '', no_serie: r.no_serie || '' })),
+        cuenta: (INITIAL.equipos_a_cuenta || []).map(r => ({ tipo: r.tipo || '', subtipo: r.subtipo || '', marca: r.marca || '', modelo: r.modelo || '', no_serie: r.no_serie || '', valor: +r.valor || 0 })),
         customer: INITIAL.customer,
         items: (INITIAL.items || []).map(i => ({
             tipo_item: i.tipo_item, equipo_id: i.equipo_id, paquete_id: i.paquete_id, producto_id: i.producto_id,
@@ -454,9 +495,9 @@
         pagos: (INITIAL.pagos || []).map(p => ({ ...p, porcentaje:+p.porcentaje, monto:+p.monto, bloqueado:!!p.bloqueado })),
         fichas: INITIAL.fichas || [],
         meses: (+INITIAL.num_meses > 0 ? +INITIAL.num_meses : 2),
-        // Automático: las fechas se calculan solas cada "frecuenciaDias" días.
-        // Manual: cada pago tiene su propia fecha, editable libremente.
-        modoPagos: 'automatico',
+        // Solo hay modo manual: cada pago tiene su propia fecha, editable.
+        // La frecuencia solo propone la fecha del pago que se agrega.
+        modoPagos: 'manual',
         frecuenciaDias: 30,
     };
 
@@ -623,11 +664,45 @@
                 ? `<p class="cli-debe">Debe <b>${money(saldo)}</b> de compras anteriores.</p>`
                 : (c.compras ? '<p class="cli-alcorriente">Al corriente con sus pagos.</p>' : '')}`;
 
-        $('clienteClear').addEventListener('click', () => { state.customer = null; $('clienteSearch').focus(); renderCliente(); });
+        $('clienteClear').addEventListener('click', () => { state.customer = null; $('clienteSearch').focus(); renderCliente(); mostrarSelectorCongreso(true); });
     }
+    /*
+    | Si al cliente lo conocimos en un congreso, la propuesta toma ese
+    | congreso sola y el selector se esconde: queda una línea con el nombre
+    | y un botón "Cambiar" por si hace falta otro.
+    */
+    function mostrarSelectorCongreso(ver) {
+        $('congresoCampo').hidden = !ver;
+        $('congresoResumen').hidden = ver;
+    }
+    function congresoDelCliente(c) {
+        const select = $('congreso_id');
+        const opcion = c && c.congreso_id ? select.querySelector(`option[value="${c.congreso_id}"]`) : null;
+
+        if (opcion) {
+            select.value = String(c.congreso_id);
+            $('congresoNombre').textContent = opcion.textContent.trim();
+            mostrarSelectorCongreso(false);
+        } else {
+            mostrarSelectorCongreso(true);
+        }
+    }
+    $('congresoCambiar').addEventListener('click', () => {
+        mostrarSelectorCongreso(true);
+        $('congreso_id').focus();
+    });
+
     bindAutocomplete($('clienteSearch'), $('clienteResults'), ROUTES.clientes,
-        d => { state.customer = d; $('clienteSearch').value = ''; renderCliente(); },
+        d => { state.customer = d; $('clienteSearch').value = ''; renderCliente(); congresoDelCliente(d); },
         d => `<b>${d.nombre}</b><small>${[d.telefono, d.rfc, d.correo].filter(Boolean).join(' · ')}</small>`);
+
+    // Un solo aviso aunque se insista con el signo de menos.
+    let avisoSobreprecio = 0;
+    function avisarSobreprecioNegativo() {
+        if (Date.now() - avisoSobreprecio < 2500) return;
+        avisoSobreprecio = Date.now();
+        window.showToast?.('El sobreprecio solo acepta cantidades positivas. Para bajar el precio usa el campo Descuento.', 'warn');
+    }
 
     function renderItems() {
         const body = $('itemsBody');
@@ -665,6 +740,14 @@
                 const i = +e.target.dataset.i, k = e.target.dataset.k;
                 if (k === 'es_regalo') state.items[i][k] = e.target.checked;
                 else if (k === 'cantidad') state.items[i][k] = Math.max(1, parseInt(e.target.value) || 1);
+                else if (k === 'sobreprecio') {
+                    // Solo cantidades positivas: para bajar el precio está Descuento.
+                    if (e.target.value.includes('-')) {
+                        e.target.value = e.target.value.replace(/-/g, '');
+                        avisarSobreprecioNegativo();
+                    }
+                    state.items[i][k] = Math.max(0, num(e.target.value));
+                }
                 else state.items[i][k] = num(e.target.value);
                 if (k === 'es_regalo' || k === 'cantidad') renderItems();
                 else recalc();
@@ -803,9 +886,13 @@
         const base = Math.max(0, subtotal - descuento - cupon) + envio;
         const iva = $('aplica_iva').checked ? Math.round(base * IVA * 100) / 100 : 0;
         const total = Math.round((base + iva) * 100) / 100;
-        const valorACuenta = num($('valor_a_cuenta').value);
+        const valorACuenta = valorCuenta();
         const contrato = Math.round(Math.max(0, total - valorACuenta) * 100) / 100;
-        return { subtotal, descuento, cupon, iva, total, contrato };
+        return { subtotal, descuento, cupon, iva, total, valorACuenta, contrato };
+    }
+    // Lo que vale todo el equipo a cuenta: la suma de cada renglón.
+    function valorCuenta() {
+        return Math.round(state.cuenta.reduce((a, r) => a + num(r.valor), 0) * 100) / 100;
     }
     function recalc() {
         const d = calcDesglose();
@@ -817,10 +904,12 @@
         revisarCupon();
         $('tIva').textContent = money(d.iva);
         $('tTotal').textContent = money(d.total);
+        $('tCuentaLinea').style.display = d.valorACuenta > 0 ? '' : 'none';
+        $('tCuenta').textContent = '-' + money(d.valorACuenta);
         $('tContrato').textContent = money(d.contrato);
         if ($('modalidad').value === 'financiamiento') renderPagos();
     }
-    ['envio', 'descuento_valor', 'valor_a_cuenta'].forEach(id => $(id).addEventListener('input', recalc));
+    ['envio', 'descuento_valor'].forEach(id => $(id).addEventListener('input', recalc));
     $('descuento_tipo').addEventListener('change', recalc);
     $('aplica_iva').addEventListener('change', recalc);
 
@@ -896,12 +985,10 @@
         const hoy = new Date().toISOString().slice(0, 10);
         const prev = state.pagos;
 
-        // En automático, cuántos pagos salen depende de la frecuencia: cada
-        // "frecuenciaDias" días, dentro del plazo en meses (30 días = 1 mes).
+        // Se conservan los pagos que ya hay; si no hay, se proponen el
+        // inicial más uno por mes del plazo guardado.
         const frecuencia = Math.max(1, parseInt(state.frecuenciaDias) || 30);
-        const count = state.modoPagos === 'automatico'
-            ? Math.max(1, Math.round((meses * 30) / frecuencia)) + 1
-            : Math.max(1, prev.length || meses + 1);
+        const count = Math.max(1, prev.length || meses + 1);
 
         state.pagos = [];
         for (let i = 0; i < count; i++) {
@@ -962,42 +1049,11 @@
         const suma = Math.round(state.pagos.reduce((a, p) => a + (+p.monto || 0), 0) * 100) / 100;
         const cuadra = Math.abs(suma - contrato) < 0.5;
 
-        const esAutomatico = state.modoPagos === 'automatico';
-        const frecuenciasFijas = [15, 30];
-        const esFrecuenciaFija = frecuenciasFijas.includes(+state.frecuenciaDias);
-
         let html = `<div class="cot-plan">
-            <div class="cot-plan-head" style="flex-wrap:wrap; gap:10px;">
+            <div class="cot-plan-head">
                 <b>Plan de pagos</b>
-                <div class="cot-seg" role="tablist" style="height:32px;">
-                    <button type="button" class="cot-seg-btn ${esAutomatico ? 'on' : ''}" data-modo-pagos="automatico" style="padding:0 14px; font-size:12.5px;">Automático</button>
-                    <button type="button" class="cot-seg-btn ${!esAutomatico ? 'on' : ''}" data-modo-pagos="manual" style="padding:0 14px; font-size:12.5px;">Manual</button>
-                </div>
+                <span class="cot-lbl" style="margin:0;">Elige la fecha de cada pago</span>
             </div>`;
-
-        if (esAutomatico) {
-            html += `
-            <div class="cot-plan-head" style="border-top:0; padding-top:0;">
-                <div style="display:flex; align-items:center; gap:9px;">
-                    <span class="cot-lbl" style="margin:0;">Diferir a</span>
-                    <div class="cot-step">
-                        <button type="button" id="mesMinus" aria-label="Menos meses">−</button>
-                        <span class="val">${state.meses}</span>
-                        <button type="button" id="mesPlus" aria-label="Más meses">+</button>
-                    </div>
-                    <span class="cot-lbl" style="margin:0;">meses</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:9px;">
-                    <span class="cot-lbl" style="margin:0;">Cobrar cada</span>
-                    <select id="frecuenciaSelect" class="cot-input" style="width:auto; padding:6px 10px;">
-                        <option value="15" ${+state.frecuenciaDias === 15 ? 'selected' : ''}>15 días</option>
-                        <option value="30" ${+state.frecuenciaDias === 30 ? 'selected' : ''}>30 días</option>
-                        <option value="personalizado" ${!esFrecuenciaFija ? 'selected' : ''}>Personalizado</option>
-                    </select>
-                    ${!esFrecuenciaFija ? `<input type="number" min="1" id="frecuenciaPersonalizada" class="cot-input" style="width:70px; padding:6px 8px;" value="${state.frecuenciaDias}"><span class="cot-lbl" style="margin:0;">días</span>` : ''}
-                </div>
-            </div>`;
-        }
 
         state.pagos.forEach((p, idx) => {
             html += `
@@ -1005,9 +1061,7 @@
                     <span class="cot-prow-num">${idx + 1}</span>
                     <div class="cot-prow-info">
                         <div class="cot-prow-name">${p.nombre}</div>
-                        ${esAutomatico
-                            ? `<div class="cot-prow-date">${fmtFecha(p.fecha)}</div>`
-                            : `<input type="date" data-fecha="${idx}" value="${p.fecha}" class="cot-input" style="width:auto; padding:5px 8px; font-size:12.5px; margin-top:4px;">`}
+                        <input type="date" data-fecha="${idx}" value="${p.fecha}" class="cot-input cot-prow-fecha" aria-label="Fecha de ${p.nombre}">
                     </div>
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                         <button type="button" class="cot-lock ${p.bloqueado ? 'on' : ''}" data-lock="${idx}" title="Fijo: conserva su monto. Auto: se reparte solo.">${p.bloqueado ? ICON_LOCK : ICON_UNLOCK}${p.bloqueado ? 'Fijo' : 'Auto'}</button>
@@ -1027,24 +1081,6 @@
 
         wrap.innerHTML = html;
 
-        wrap.querySelectorAll('button[data-modo-pagos]').forEach(b => b.addEventListener('click', () => {
-            state.modoPagos = b.dataset.modoPagos;
-            if (state.modoPagos === 'automatico') rebuildPagos();
-            renderPagos();
-        }));
-        if (esAutomatico) {
-            $('mesMinus').addEventListener('click', () => { state.meses = Math.max(1, state.meses - 1); rebuildPagos(); renderPagos(); });
-            $('mesPlus').addEventListener('click', () => { state.meses = Math.min(60, state.meses + 1); rebuildPagos(); renderPagos(); });
-            $('frecuenciaSelect').addEventListener('change', e => {
-                state.frecuenciaDias = e.target.value === 'personalizado' ? 45 : parseInt(e.target.value);
-                rebuildPagos(); renderPagos();
-            });
-            const personalizada = document.getElementById('frecuenciaPersonalizada');
-            if (personalizada) personalizada.addEventListener('change', e => {
-                state.frecuenciaDias = Math.max(1, parseInt(e.target.value) || 30);
-                rebuildPagos(); renderPagos();
-            });
-        }
         wrap.querySelectorAll('input[data-fecha]').forEach(c => c.addEventListener('change', e => {
             const i = +e.target.dataset.fecha;
             state.pagos[i].fecha = e.target.value;
@@ -1093,13 +1129,18 @@
         add('descuento_tipo', $('descuento_tipo').value);
         add('descuento_valor', num($('descuento_valor').value));
         add('envio', num($('envio').value));
-        add('valor_a_cuenta', num($('valor_a_cuenta').value));
+        add('valor_a_cuenta', valorCuenta());
         // Siempre se manda: vacío = se quitó el equipo a cuenta.
         const cuenta = state.cuenta.filter(r => Object.values(r).some(v => String(v).trim() !== ''));
         if (!cuenta.length) add('equipos_a_cuenta', '');
-        cuenta.forEach((r, i) => CAMPOS_CUENTA.forEach(([c]) => add(`equipos_a_cuenta[${i}][${c}]`, r[c])));
+        cuenta.forEach((r, i) => {
+            CAMPOS_CUENTA.forEach(([c]) => add(`equipos_a_cuenta[${i}][${c}]`, r[c]));
+            add(`equipos_a_cuenta[${i}][valor]`, num(r.valor));
+        });
         add('cupon_codigo', (state.cupon && state.cupon.codigo) || '');
-        add('num_meses', $('modalidad').value === 'financiamiento' ? (parseInt(state.meses) || 0) : 0);
+        // El plazo sale de los pagos capturados (inicial + uno por mes): así
+        // el servidor no vuelve a agregar los que se borraron.
+        add('num_meses', $('modalidad').value === 'financiamiento' ? Math.max(0, state.pagos.length - 1) : 0);
 
         state.items.forEach((it, i) => {
             add(`items[${i}][tipo_item]`, it.tipo_item);
@@ -1153,24 +1194,42 @@
                 inp.addEventListener('input', () => { r[c] = inp.value; });
                 fila.appendChild(inp);
             });
+            const valor = document.createElement('div');
+            valor.className = 'cot-cuenta-valor';
+            valor.innerHTML = '<span>$</span>';
+            const vInp = document.createElement('input');
+            vInp.type = 'text'; vInp.inputMode = 'decimal'; vInp.className = 'cot-input cot-num';
+            vInp.placeholder = 'Valor'; vInp.setAttribute('aria-label', 'Valor del equipo a cuenta ' + (i + 1));
+            vInp.value = sinCero(r.valor);
+            vInp.addEventListener('input', () => { r.valor = num(vInp.value); recalc(); });
+            valor.appendChild(vInp);
+            fila.appendChild(valor);
             const q = document.createElement('button');
             q.type = 'button'; q.className = 'cot-cuenta-quitar'; q.title = 'Quitar'; q.setAttribute('aria-label', 'Quitar equipo a cuenta ' + (i + 1));
             q.textContent = '×';
-            q.addEventListener('click', () => { state.cuenta.splice(i, 1); renderCuenta(); });
+            q.addEventListener('click', () => { state.cuenta.splice(i, 1); renderCuenta(); recalc(); });
             fila.appendChild(q);
             box.appendChild(fila);
         });
     }
     $('cuentaAgregar').addEventListener('click', () => {
-        state.cuenta.push({ tipo: '', subtipo: '', marca: '', modelo: '', no_serie: '' });
+        state.cuenta.push({ tipo: '', subtipo: '', marca: '', modelo: '', no_serie: '', valor: 0 });
         renderCuenta();
         const filas = $('cuentaLista').querySelectorAll('.cot-cuenta-fila');
         filas[filas.length - 1]?.querySelector('input')?.focus();
     });
+    // Documentos de antes guardaban un solo valor para todo: pasa al primer
+    // equipo (o a un renglón nuevo) para que no se pierda al editar.
+    if (+INITIAL.valor_a_cuenta > 0 && valorCuenta() === 0) {
+        if (!state.cuenta.length) state.cuenta.push({ tipo: '', subtipo: '', marca: '', modelo: '', no_serie: '', valor: 0 });
+        state.cuenta[0].valor = +INITIAL.valor_a_cuenta;
+    }
     renderCuenta();
 
     // Init
     $('congreso_id').value = INITIAL.congreso_id || '';
+    // Nuevo con el cliente ya elegido (p. ej. desde su ficha): su congreso.
+    if (INITIAL.es_nuevo && !INITIAL.congreso_id && state.customer) congresoDelCliente(state.customer);
     // 0 es un valor válido ("sin garantía"): solo se cae a 6 si no viene nada.
     $('garantia_meses').value = (INITIAL.garantia_meses === null || INITIAL.garantia_meses === undefined || INITIAL.garantia_meses === '') ? 6 : INITIAL.garantia_meses;
     $('nota_cliente').value = INITIAL.nota_cliente || '';
@@ -1179,7 +1238,6 @@
     $('envio').value = sinCero(INITIAL.envio);
     $('descuento_tipo').value = INITIAL.descuento_tipo || 'porcentaje';
     $('descuento_valor').value = sinCero(INITIAL.descuento_valor);
-    $('valor_a_cuenta').value = sinCero(INITIAL.valor_a_cuenta);
     if (INITIAL.cupon_codigo) {
         $('cupon_codigo').value = INITIAL.cupon_codigo;
         state.cupon = { codigo: INITIAL.cupon_codigo, valido: false, monto: 0 };

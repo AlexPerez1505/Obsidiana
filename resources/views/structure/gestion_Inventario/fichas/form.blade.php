@@ -24,36 +24,37 @@
                              placeholder="Ej. Gastroscopio Olympus GIF-H190"
                              :value="$ficha->titulo" :required="true" :autofocus="true" />
 
-            @php
-                $itemActual = old('item', $ficha->producto_id ? 'producto:'.$ficha->producto_id : ($ficha->paquete_id ? 'paquete:'.$ficha->paquete_id : ''));
-            @endphp
-            <div style="margin-top:16px;">
-                <x-ui.form-group for="item" label="Producto o paquete relacionado">
-                    <select id="item" name="item">
-                        <option value="">Sin relacionar</option>
-                        @if ($productos->isNotEmpty())
-                            <optgroup label="Productos">
-                                @foreach ($productos as $producto)
-                                    <option value="producto:{{ $producto->id }}"
-                                        @selected($itemActual === 'producto:'.$producto->id)>
-                                        {{ trim($producto->marca . ' ' . $producto->modelo) ?: 'Producto #' . $producto->id }}
-                                    </option>
-                                @endforeach
-                            </optgroup>
-                        @endif
-                        @if ($paquetes->isNotEmpty())
-                            <optgroup label="Paquetes">
-                                @foreach ($paquetes as $paquete)
-                                    <option value="paquete:{{ $paquete->id }}"
-                                        @selected($itemActual === 'paquete:'.$paquete->id)>
-                                        {{ $paquete->nombre }}
-                                    </option>
-                                @endforeach
-                            </optgroup>
-                        @endif
-                    </select>
-                </x-ui.form-group>
+            {{-- El equipo que describe, con el catálogo: obligatorio. Con el
+                 modelo se liga sola al producto que coincide en el inventario. --}}
+            <div class="ft-catalogo" data-ft-catalogo>
+                @foreach ([
+                    ['equipment_type_id', 'tipo', 'Tipo de equipo *', 'Elige el tipo'],
+                    ['subtype_id', 'subtipo', 'Subtipo *', 'Elige el subtipo'],
+                    ['brand_id', 'marca', 'Marca *', 'Elige la marca'],
+                    ['equipment_model_id', 'modelo', 'Modelo *', 'Elige el modelo'],
+                ] as [$campo, $clave, $etiqueta, $vacio])
+                    <x-ui.form-group :for="$campo" :label="$etiqueta">
+                        <select id="{{ $campo }}" name="{{ $campo }}" data-cat="{{ $clave }}" required
+                                data-valor="{{ old($campo, $ficha->{$campo}) }}">
+                            <option value="">{{ $vacio }}</option>
+                        </select>
+                    </x-ui.form-group>
+                @endforeach
             </div>
+            <p class="ft-liga" data-ft-liga></p>
+
+            @if ($paquetes->isNotEmpty())
+                <div style="margin-top:16px;">
+                    <x-ui.form-group for="paquete_id" label="Paquete relacionado (opcional)">
+                        <select id="paquete_id" name="paquete_id">
+                            <option value="">Sin paquete</option>
+                            @foreach ($paquetes as $paquete)
+                                <option value="{{ $paquete->id }}" @selected((string) old('paquete_id', $ficha->paquete_id) === (string) $paquete->id)>{{ $paquete->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </x-ui.form-group>
+                </div>
+            @endif
 
             <div style="margin-top:16px;">
                 <x-ui.form-group label="Notas" for="contenido">
@@ -123,6 +124,12 @@
         .ft-form select:focus, .ft-form textarea:focus { border-color:var(--primary); }
         .ft-form textarea { resize:vertical; }
 
+        .ft-catalogo { display:grid; grid-template-columns:1fr 1fr; gap:0 12px; margin-top:16px; }
+        .ft-liga { margin:2px 0 0; font-size:13px; color:var(--muted); min-height:18px; }
+        .ft-liga b { color:var(--text); }
+        .ft-liga.ok { color:var(--green, #15803d); }
+        @media (max-width:560px) { .ft-catalogo { grid-template-columns:1fr; } }
+
         .ft-file { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
 
         .ft-drop { display:flex; flex-direction:column; align-items:center; gap:6px;
@@ -158,6 +165,50 @@
     </style>
 
     <script>
+    /* Tipo → subtipo → marca → modelo, y a qué producto se va a ligar. */
+    (function () {
+        var catalogo = @json($catalogo);
+        var productos = @json($productosPorModelo);
+        var caja = document.querySelector('[data-ft-catalogo]');
+        var liga = document.querySelector('[data-ft-liga]');
+        var sel = {};
+        caja.querySelectorAll('[data-cat]').forEach(function (s) { sel[s.dataset.cat] = s; });
+
+        function llenar(select, opciones, conservar) {
+            var antes = conservar ? (select.value || select.dataset.valor || '') : '';
+            var vacio = select.options[0].textContent;
+            select.innerHTML = '';
+            select.add(new Option(vacio, ''));
+            (opciones || []).slice().sort(function (a, b) { return a.name.localeCompare(b.name, 'es'); })
+                .forEach(function (o) { select.add(new Option(o.name, o.id)); });
+            select.value = antes && select.querySelector('option[value="' + antes + '"]') ? antes : '';
+            select.disabled = !opciones || !opciones.length;
+        }
+
+        function pintarLiga() {
+            var modelo = sel.modelo.value;
+            if (!modelo) { liga.textContent = ''; liga.className = 'ft-liga'; return; }
+            var p = productos[modelo];
+            liga.className = 'ft-liga' + (p ? ' ok' : '');
+            liga.innerHTML = p
+                ? '✓ Se liga al producto <b></b> del inventario.'
+                : 'Ese modelo aún no está en el inventario: se ligará solo cuando se dé de alta.';
+            if (p) liga.querySelector('b').textContent = p;
+        }
+
+        function subtipos(c) { llenar(sel.subtipo, catalogo.subtipos[sel.tipo.value] || [], c); marcas(c); }
+        function marcas(c) { llenar(sel.marca, catalogo.marcas[sel.subtipo.value] || [], c); modelos(c); }
+        function modelos(c) { llenar(sel.modelo, (catalogo.modelos || {})[sel.subtipo.value + '-' + sel.marca.value] || [], c); pintarLiga(); }
+
+        llenar(sel.tipo, catalogo.tipos, true);
+        subtipos(true);
+
+        sel.tipo.addEventListener('change', function () { subtipos(false); });
+        sel.subtipo.addEventListener('change', function () { marcas(false); });
+        sel.marca.addEventListener('change', function () { modelos(false); });
+        sel.modelo.addEventListener('change', pintarLiga);
+    })();
+
     (function () {
         var input = document.getElementById('archivo');
         var zona = document.querySelector('[data-drop]');
@@ -190,7 +241,7 @@
             if (!archivo) return;
 
             if (archivo.type !== 'application/pdf') {
-                alert('El archivo debe ser un PDF.');
+                window.showToast?.('El archivo debe ser un PDF.', 'warn');
                 return;
             }
 

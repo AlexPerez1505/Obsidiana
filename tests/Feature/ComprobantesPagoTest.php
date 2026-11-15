@@ -65,11 +65,48 @@ class ComprobantesPagoTest extends TestCase
         $this->assertEquals(10000, $this->venta->fresh()->saldo());
     }
 
-    public function test_transferencia_sin_comprobante_no_se_acepta_pero_efectivo_si(): void
+    public function test_sin_comprobante_no_se_acepta_ni_en_efectivo(): void
     {
         $this->subir(['archivos' => []])->assertSessionHasErrorsIn('comprobante', 'archivos');
-        $this->subir(['metodo' => 'efectivo', 'archivos' => []])->assertSessionHasNoErrors();
+        $this->subir(['metodo' => 'efectivo', 'archivos' => []])->assertSessionHasErrorsIn('comprobante', 'archivos');
+        $this->assertSame(0, CobroSolicitud::count());
+
+        // En efectivo, con la foto del recibo sí.
+        $this->subir(['metodo' => 'efectivo'])->assertSessionHasNoErrors();
         $this->assertSame('efectivo', CobroSolicitud::firstOrFail()->metodo);
+    }
+
+    public function test_solo_valida_quien_toca_segun_el_iva_y_solo_a_ella_le_llega(): void
+    {
+        $gaby = $this->usuarioApi(['ventas.ver', 'cobranza.ver', 'cobranza.registrar', 'ventas.ver_todas']);
+        $ana = $this->usuarioApi(['ventas.ver', 'cobranza.ver', 'cobranza.registrar', 'ventas.ver_todas']);
+        $gaby->setApprovalPin('1111');
+        $ana->setApprovalPin('2222');
+        config(['medibuy.cobranza.valida_sin_iva' => $gaby->id, 'medibuy.cobranza.valida_con_iva' => $ana->id]);
+
+        // Venta sin IVA → Gaby. A ella (y solo a ella) le llega el aviso.
+        $this->subir()->assertSessionHasNoErrors();
+        $s = CobroSolicitud::firstOrFail();
+        $this->assertSame([$gaby->id], app(\App\Services\Ventas\ComprobantesDePago::class)->aprobadores($s)->pluck('id')->all());
+        $this->assertSame(1, $gaby->notifications()->count());
+        $this->assertSame(0, $ana->notifications()->count());
+        $this->assertSame(0, $this->cajera->notifications()->count());
+
+        // La cajera con NIP ya no aprueba; Ana tampoco (es de ventas con IVA).
+        $this->actingAs($this->cajera)->post(route('commercial.comprobantes.aprobar', $s), ['nip' => '2468'])->assertSessionHasErrors('nip');
+        $this->actingAs($ana)->post(route('commercial.comprobantes.aprobar', $s), ['nip' => '2222'])->assertSessionHasErrors('nip');
+        $this->actingAs($this->cajera)->post(route('commercial.ventas.cobros.store', $this->venta),
+            ['monto' => 1000, 'fecha' => now()->toDateString(), 'metodo' => 'efectivo', 'evidencias' => [UploadedFile::fake()->image('r.jpg')]])
+            ->assertSessionHasErrors('monto');
+
+        $this->actingAs($gaby)->post(route('commercial.comprobantes.aprobar', $s), ['nip' => '1111'])->assertSessionHasNoErrors();
+        $this->assertSame('aprobado', $s->fresh()->estado);
+
+        // La misma venta con IVA → ahora valida Ana.
+        $this->venta->update(['aplica_iva' => true]);
+        $this->assertSame($ana->id, \App\Services\Ventas\ComprobantesDePago::validadorDe($this->venta->fresh()));
+        $this->assertTrue(\App\Services\Ventas\ComprobantesDePago::puedeAprobar($ana, $this->venta->fresh()));
+        $this->assertFalse(\App\Services\Ventas\ComprobantesDePago::puedeAprobar($gaby, $this->venta->fresh()));
     }
 
     public function test_no_se_puede_subir_mas_de_lo_que_falta(): void
@@ -127,7 +164,11 @@ class ComprobantesPagoTest extends TestCase
 
     public function test_registrar_cobro_directo_solo_con_nip_o_admin(): void
     {
-        $datos = ['monto' => 1000, 'fecha' => now()->toDateString(), 'metodo' => 'efectivo'];
+        $datos = ['monto' => 1000, 'fecha' => now()->toDateString(), 'metodo' => 'efectivo', 'evidencias' => [UploadedFile::fake()->image('recibo.jpg')]];
+
+        // Sin evidencia no se registra, ni siquiera quien valida.
+        $this->actingAs($this->cajera)->post(route('commercial.ventas.cobros.store', $this->venta), ['evidencias' => []] + $datos)
+            ->assertSessionHasErrors('evidencias');
 
         $this->actingAs($this->vendedor)->post(route('commercial.ventas.cobros.store', $this->venta), $datos)->assertSessionHasErrors('monto');
         $this->assertSame(0, Cobro::count());
@@ -163,7 +204,7 @@ class ComprobantesPagoTest extends TestCase
     public function test_registrar_lo_que_ya_subio_el_vendedor_se_frena(): void
     {
         $this->subir();
-        $datos = ['monto' => 4000, 'fecha' => now()->toDateString(), 'metodo' => 'transferencia'];
+        $datos = ['monto' => 4000, 'fecha' => now()->toDateString(), 'metodo' => 'transferencia', 'evidencias' => [UploadedFile::fake()->image('recibo.jpg')]];
 
         // Mismo monto que el pago subido: no se registra, se pide aprobar ese.
         $this->actingAs($this->cajera)->post(route('commercial.ventas.cobros.store', $this->venta), $datos)
@@ -184,7 +225,7 @@ class ComprobantesPagoTest extends TestCase
         $this->subir();
         $s = CobroSolicitud::firstOrFail();
         $this->actingAs($this->cajera)->post(route('commercial.ventas.cobros.store', $this->venta),
-            ['monto' => 4000, 'fecha' => now()->toDateString(), 'metodo' => 'transferencia', 'es_otro_pago' => 1]);
+            ['monto' => 4000, 'fecha' => now()->toDateString(), 'metodo' => 'transferencia', 'es_otro_pago' => 1, 'evidencias' => [UploadedFile::fake()->image('recibo.jpg')]]);
         $cobro = Cobro::where('venta_id', $this->venta->id)->firstOrFail();
 
         // La pantalla ofrece ligarlo.
@@ -199,7 +240,7 @@ class ComprobantesPagoTest extends TestCase
         $this->assertSame($cobro->id, $s->cobro_id);
         $this->assertSame(1, Cobro::where('venta_id', $this->venta->id)->count());
         $this->assertEquals(6000, $this->venta->fresh()->saldo());
-        $this->assertSame(1, $cobro->evidencias()->count());   // el comprobante del vendedor pasa al cobro
+        $this->assertSame(2, $cobro->evidencias()->count());   // su evidencia + el comprobante del vendedor
 
         // Ya no se puede ligar otra vez ni aprobar.
         $this->actingAs($this->cajera)->post(route('commercial.comprobantes.aprobar', $s), ['nip' => '2468'])->assertSessionHasErrors('nip');
@@ -209,7 +250,7 @@ class ComprobantesPagoTest extends TestCase
     {
         $this->subir();
         $this->actingAs($this->cajera)->post(route('commercial.ventas.cobros.store', $this->venta),
-            ['monto' => 1500, 'fecha' => now()->toDateString(), 'metodo' => 'efectivo']);
+            ['monto' => 1500, 'fecha' => now()->toDateString(), 'metodo' => 'efectivo', 'evidencias' => [UploadedFile::fake()->image('recibo.jpg')]]);
 
         $this->actingAs($this->cajera)->post(route('commercial.comprobantes.ligar', CobroSolicitud::first()), ['cobro_id' => Cobro::first()->id])
             ->assertSessionHasErrors('cobro_id');

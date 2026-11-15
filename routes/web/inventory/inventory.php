@@ -162,6 +162,11 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->middleware('can:inventario.eliminar')->name('inventory.fichas.destroy');
     Route::get('/gestion-inventario/fichas-tecnicas/{ficha}/descargar', [FichaTecnicaController::class, 'download'])
         ->middleware('can:inventario.ver')->name('inventory.fichas.download');
+    // Notas y observaciones dirigidas a un usuario ("te equivocaste en…").
+    Route::post('/gestion-inventario/fichas-tecnicas/{ficha}/observaciones', [FichaTecnicaController::class, 'observar'])
+        ->middleware('can:inventario.ver')->name('inventory.fichas.observar');
+    Route::post('/gestion-inventario/fichas-tecnicas/observaciones/{observacion}/atendida', [FichaTecnicaController::class, 'atender'])
+        ->middleware('can:inventario.ver')->name('inventory.fichas.observacion.atender');
 
     // Paquetes (armados desde productos)
     Route::get('/gestion-inventario/paquetes', [PaqueteController::class, 'index'])

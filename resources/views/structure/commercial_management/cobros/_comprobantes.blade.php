@@ -9,7 +9,8 @@
     use App\Services\Ventas\ComprobantesDePago;
 
     $yo = auth()->user();
-    $aprueba = ComprobantesDePago::puedeAprobar($yo);
+    // En una venta: si a mí me toca validarla. En la lista general: si valido alguna.
+    $aprueba = ComprobantesDePago::puedeAprobar($yo, isset($venta) && ! isset($solicitudes) ? $venta : null);
     $conPin = filled($yo->approval_pin_hash);
     $deVenta = isset($venta) && ! isset($solicitudes);
     $lista = $solicitudes ?? CobroSolicitud::with(['subidoPor:id,name', 'revisadoPor:id,name', 'cobro:id,folio', 'parcialidad:id,nombre'])
@@ -38,10 +39,11 @@
         @endif
     </div>
     @unless ($aprueba)
-        <p class="cp-nota">Los pagos que subas no cuentan en el saldo hasta que un administrador o alguien con NIP confirme que se vio reflejado (o que recibió el efectivo).</p>
+        <p class="cp-nota">Todo pago se sube con su comprobante (en efectivo, la foto del recibo). No cuenta en el saldo hasta que lo valide {{ $deVenta ? ComprobantesDePago::quienValida($venta) : 'quien valida esa venta' }}.</p>
     @endunless
 
     @forelse ($lista as $s)
+        @php $apruebaEsta = $deVenta ? $aprueba : ComprobantesDePago::puedeAprobar($yo, $s->venta); @endphp
         <div class="cp-fila es-{{ $s->estado }}">
             <div class="cp-txt">
                 <div class="cp-top">
@@ -76,7 +78,7 @@
             </div>
             @if ($s->estado === CobroSolicitud::PENDIENTE)
                 <div class="cp-acc">
-                    @if ($aprueba)
+                    @if ($apruebaEsta)
                         <button type="button" class="erp-btn sm" data-cp-sol="{{ $s->id }}" data-cp-aprobar="{{ route('commercial.comprobantes.aprobar', $s) }}"
                                 data-cp-desc="${{ number_format((float) $s->monto, 2) }} · {{ $s->metodoLabel() }}{{ $s->venta ? ' · '.$s->venta->folio : '' }}">Aprobar</button>
                         <button type="button" class="erp-btn ghost sm" data-cp-rechazar="{{ route('commercial.comprobantes.rechazar', $s) }}">Rechazar</button>
@@ -93,7 +95,7 @@
                             </form>
                         @endif
                     @endif
-                    @if ((int) $s->subido_por === (int) $yo->id || $aprueba)
+                    @if ((int) $s->subido_por === (int) $yo->id || $apruebaEsta)
                         <form method="POST" action="{{ route('commercial.comprobantes.destroy', $s) }}" data-confirm="¿Quitar este pago por aprobar?" style="margin:0;">
                             @csrf @method('DELETE')
                             <button type="submit" class="erp-btn ghost sm" title="Quitar">Quitar</button>
@@ -147,10 +149,10 @@
                 </div>
                 <label>Referencia o folio <small>(opcional)</small><input type="text" name="referencia" maxlength="255" value="{{ old('referencia') }}"></label>
                 <label>Nota <small>(opcional)</small><input type="text" name="nota" maxlength="255" value="{{ old('nota') }}" placeholder="Ej. lo depositó la secretaria del doctor"></label>
-                <label><span data-cp-arch-t>Comprobante</span> <small data-cp-arch-s>(foto o PDF, hasta 5)</small>
-                    <input type="file" name="archivos[]" multiple accept="image/*,application/pdf" data-cp-archivos>
+                <label><span data-cp-arch-t>Comprobante</span> <small data-cp-arch-s>(obligatorio · foto o PDF, hasta 5)</small>
+                    <input type="file" name="archivos[]" multiple accept="image/*,application/pdf" data-cp-archivos required>
                 </label>
-                <p class="cp-nota" style="margin:4px 0 0;">Queda <b>por aprobar</b>: no se suma al saldo hasta que alguien con NIP lo confirme.</p>
+                <p class="cp-nota" style="margin:4px 0 0;">Queda <b>por aprobar</b>: no se suma al saldo hasta que lo valide {{ ComprobantesDePago::quienValida($venta) }}, a quien le llega el aviso.</p>
             </div>
             <div class="cp-df">
                 <button type="button" class="erp-btn ghost" data-cp-cerrar>Cancelar</button>
@@ -247,13 +249,13 @@
         if (e.target.closest('[data-cp-cerrar]')) e.target.closest('dialog').close();
         if (e.target.matches('dialog.cp-dlg')) e.target.close();
     });
-    // En efectivo la foto del recibo es opcional.
+    // El comprobante siempre es obligatorio; en efectivo es la foto del recibo.
     document.addEventListener('change', function (e) {
         if (!e.target.matches('[data-cp-metodo]')) return;
         const f = e.target.closest('form'), ef = e.target.value === 'efectivo';
         f.querySelector('[data-cp-arch-t]').textContent = ef ? 'Foto del recibo' : 'Comprobante';
-        f.querySelector('[data-cp-arch-s]').textContent = ef ? '(opcional)' : '(foto o PDF, hasta 5)';
-        f.querySelector('[data-cp-archivos]').required = !ef;
+        f.querySelector('[data-cp-arch-s]').textContent = '(obligatorio · foto o PDF, hasta 5)';
+        f.querySelector('[data-cp-archivos]').required = true;
     });
     document.querySelectorAll('[data-cp-metodo]').forEach(s => s.dispatchEvent(new Event('change', { bubbles: true })));
     @if ($errors->comprobante->any()) document.getElementById('cpSubir')?.showModal(); @endif

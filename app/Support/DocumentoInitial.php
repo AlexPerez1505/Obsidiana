@@ -23,8 +23,11 @@ class DocumentoInitial
                 'correo' => $cliente->gmail,
                 'rfc' => $cliente->rfc,
                 'conocido' => $cliente->comoConocio(),
+                'congreso_id' => $cliente->congreso_id,
             ] : null,
             'congreso_id' => $doc->congreso_id ?? '',
+            // Documento nuevo: el congreso puede tomarse del cliente.
+            'es_nuevo' => $doc === null,
             'garantia_meses' => $doc->garantia_meses ?? 6,
             'nota_cliente' => $doc->nota_cliente ?? '',
             'modalidad' => $doc->modalidad ?? 'contado',

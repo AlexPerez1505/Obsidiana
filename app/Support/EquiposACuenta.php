@@ -4,7 +4,9 @@ namespace App\Support;
 
 /**
  * El equipo que el cliente entrega a cuenta en una cotización o venta:
- * una lista de renglones con tipo, subtipo, marca, modelo y serie.
+ * una lista de renglones con tipo, subtipo, marca, modelo, serie y el
+ * valor en que se toma cada uno. La suma es el "valor a cuenta" que se
+ * resta del total para sacar el contrato.
  *
  * Aquí viven las reglas de validación, la limpieza de lo que llega del
  * formulario y cómo se escribe cada renglón, para que cotización, venta,
@@ -29,25 +31,50 @@ class EquiposACuenta
         foreach (self::CAMPOS as $c) {
             $r["equipos_a_cuenta.*.{$c}"] = ['nullable', 'string', 'max:150'];
         }
+        $r['equipos_a_cuenta.*.valor'] = ['nullable', 'numeric', 'min:0', 'max:99999999'];
 
         return $r;
     }
 
     /**
      * Lo que llegó, sin renglones vacíos y con texto recortado en mayúsculas
-     * (el catálogo de equipo se guarda así).
+     * (el catálogo de equipo se guarda así). Cada renglón trae su valor.
      *
-     * @return array<int, array<string, string>>
+     * @return array<int, array<string, string|float>>
      */
     public static function limpiar(mixed $renglones): array
     {
         return collect(is_array($renglones) ? $renglones : [])
-            ->map(fn ($r) => collect(self::CAMPOS)
-                ->mapWithKeys(fn ($c) => [$c => mb_strtoupper(trim((string) (is_array($r) ? ($r[$c] ?? '') : '')))])
-                ->all())
-            ->filter(fn ($r) => implode('', $r) !== '')
+            ->map(function ($r) {
+                $r = is_array($r) ? $r : [];
+                $fila = collect(self::CAMPOS)
+                    ->mapWithKeys(fn ($c) => [$c => mb_strtoupper(trim((string) ($r[$c] ?? '')))])
+                    ->all();
+                $fila['valor'] = round(max(0, (float) ($r['valor'] ?? 0)), 2);
+
+                return $fila;
+            })
+            ->filter(fn ($r) => implode('', array_intersect_key($r, array_flip(self::CAMPOS))) !== '' || $r['valor'] > 0)
             ->values()
             ->all();
+    }
+
+    /** Lo que vale todo el equipo a cuenta: la suma de cada renglón. */
+    public static function total(?array $renglones): float
+    {
+        return round(collect($renglones ?? [])->sum(fn ($r) => (float) ($r['valor'] ?? 0)), 2);
+    }
+
+    /**
+     * El valor a cuenta que vale para el documento: si los equipos traen su
+     * valor, la suma de ellos; si no (documentos de antes o la API vieja),
+     * el valor general que se mandó.
+     */
+    public static function valorDocumento(array $data): float
+    {
+        $suma = array_key_exists('equipos_a_cuenta', $data) ? self::total(self::limpiar($data['equipos_a_cuenta'])) : 0.0;
+
+        return $suma > 0 ? $suma : (float) ($data['valor_a_cuenta'] ?? 0);
     }
 
     /** "LAPAROSCOPIA · TORRE · STORZ IMAGE1 · Serie 123" */

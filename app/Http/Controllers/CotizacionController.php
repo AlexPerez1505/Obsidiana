@@ -141,6 +141,8 @@ class CotizacionController extends Controller
                     'categoria' => $c->tipoEquipo?->name,
                     'asesor' => $c->asesor?->name,
                     'conocido' => $c->comoConocio(),
+                    // Si lo conocimos en un congreso, la propuesta toma ese congreso sola.
+                    'congreso_id' => $c->congreso_id,
                     'activo' => (bool) $c->activo,
                     'comentarios' => $c->comentarios,
 

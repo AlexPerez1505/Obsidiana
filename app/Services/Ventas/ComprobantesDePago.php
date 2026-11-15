@@ -20,13 +20,14 @@ use Illuminate\Validation\ValidationException;
 /**
  * Pagos por aprobar.
  *
- *   • El vendedor sube el pago: comprobante (transferencia, depósito…) o
- *     aviso de efectivo (la foto del recibo es opcional). Queda PENDIENTE y
+ *   • El vendedor sube el pago SIEMPRE con su comprobante (transferencia,
+ *     depósito… o la foto del recibo si fue en efectivo). Queda PENDIENTE y
  *     no cuenta en el saldo.
- *   • Solo un administrador o alguien con NIP de aprobación lo aprueba,
- *     escribiendo su NIP (el administrador sin NIP, su contraseña), cuando
- *     ve el dinero reflejado o lo recibe en mano. Ahí nace el cobro real con
- *     su recibo, con la misma lógica de siempre (CobrosDeVenta).
+ *   • Lo valida una sola persona según la venta (config medibuy.cobranza):
+ *     la de ventas sin IVA o la de ventas con IVA, escribiendo su NIP (o su
+ *     contraseña). Sin esa configuración, como antes: administradores o
+ *     quien tenga NIP. Ahí nace el cobro real con su recibo, con la misma
+ *     lógica de siempre (CobrosDeVenta).
  *   • O lo rechaza con un motivo; el vendedor lo ve y puede volver a subirlo.
  */
 class ComprobantesDePago
@@ -37,9 +38,65 @@ class ComprobantesDePago
     {
     }
 
-    public static function puedeAprobar(?User $user): bool
+    /**
+     * ¿Puede validar pagos? Con $venta: los de esa venta. Sin ella: los de
+     * alguna venta (para enseñar o no la lista de "por aprobar").
+     */
+    public static function puedeAprobar(?User $user, ?Venta $venta = null): bool
     {
-        return $user !== null && ($user->isAdmin() || filled($user->approval_pin_hash));
+        if ($user === null) {
+            return false;
+        }
+
+        if (self::hayValidadores()) {
+            return $venta
+                ? (int) $user->id === (int) self::validadorDe($venta)
+                : in_array((int) $user->id, array_map('intval', array_filter(self::validadores())), true);
+        }
+
+        return $user->isAdmin() || filled($user->approval_pin_hash);
+    }
+
+    /** @return array{sin_iva: ?int, con_iva: ?int} */
+    public static function validadores(): array
+    {
+        $c = config('medibuy.cobranza', []);
+
+        return [
+            'sin_iva' => filled($c['valida_sin_iva'] ?? null) ? (int) $c['valida_sin_iva'] : null,
+            'con_iva' => filled($c['valida_con_iva'] ?? null) ? (int) $c['valida_con_iva'] : null,
+        ];
+    }
+
+    public static function hayValidadores(): bool
+    {
+        return (bool) array_filter(self::validadores());
+    }
+
+    /** Quién valida los pagos de esta venta: la de "con IVA" o la de "sin IVA". */
+    public static function validadorDe(Venta $venta): ?int
+    {
+        $v = self::validadores();
+
+        return $venta->cobraConIva() ? ($v['con_iva'] ?? $v['sin_iva']) : ($v['sin_iva'] ?? $v['con_iva']);
+    }
+
+    /** "Gabriela (ventas sin IVA)": para los avisos en pantalla. */
+    public static function quienValida(Venta $venta): string
+    {
+        if (! self::hayValidadores()) {
+            return 'un administrador o alguien con NIP';
+        }
+
+        $nombre = User::whereKey(self::validadorDe($venta))->value('name') ?? 'quien valida';
+
+        return $nombre.' (ventas '.($venta->cobraConIva() ? 'con' : 'sin').' IVA)';
+    }
+
+    /** El aviso cuando alguien que no valida intenta aprobar o registrar directo. */
+    public static function soloValida(Venta $venta): string
+    {
+        return 'Solo '.self::quienValida($venta).' valida los pagos de esta venta. Sube el pago con su comprobante para que lo valide.';
     }
 
     public static function reglas(Venta $venta): array
@@ -51,14 +108,15 @@ class ComprobantesDePago
             'metodo' => ['required', Rule::in(array_keys(Cobro::METODOS))],
             'referencia' => ['nullable', 'string', 'max:255'],
             'nota' => ['nullable', 'string', 'max:255'],
-            // Sin comprobante solo el efectivo (la foto del recibo es opcional).
-            'archivos' => ['required_unless:metodo,efectivo', 'array', 'max:5'],
+            // Sin comprobante no se registra ningún pago (en efectivo, la foto del recibo).
+            'archivos' => ['required', 'array', 'min:1', 'max:5'],
             'archivos.*' => ['file', 'mimes:jpg,jpeg,png,webp,heic,pdf', 'max:15360'],
         ];
     }
 
     public const MENSAJES = [
-        'archivos.required_unless' => 'Sube la foto o el PDF del comprobante (solo el efectivo puede ir sin comprobante).',
+        'archivos.required' => 'Sube la foto o el PDF del comprobante: sin comprobante no se puede registrar el pago (en efectivo, la foto del recibo).',
+        'archivos.min' => 'Sube la foto o el PDF del comprobante: sin comprobante no se puede registrar el pago (en efectivo, la foto del recibo).',
         'fecha.before_or_equal' => 'La fecha del pago no puede ser futura.',
     ];
 
@@ -108,12 +166,17 @@ class ComprobantesDePago
     }
 
     /**
-     * Quienes pueden aprobar este pago: administradores y personas con NIP
-     * que ven esa venta, con la cuenta activa. Nunca quien lo subió.
+     * Quienes pueden aprobar este pago. Con validadores configurados, solo
+     * el de esa venta (sin IVA o con IVA). Si no, administradores y personas
+     * con NIP que ven esa venta, con la cuenta activa. Nunca quien lo subió.
      */
     public function aprobadores(CobroSolicitud $sol): Collection
     {
         $venta = $sol->venta;
+
+        if (self::hayValidadores()) {
+            return User::whereKey(self::validadorDe($venta))->where('status', User::STATUS_APPROVED)->get();
+        }
 
         return User::query()
             ->where('status', User::STATUS_APPROVED)
@@ -148,8 +211,8 @@ class ComprobantesDePago
     /** @return string mensaje para el usuario */
     public function aprobar(CobroSolicitud $sol, User $user, ?string $nip): string
     {
-        if (! self::puedeAprobar($user)) {
-            throw ValidationException::withMessages(['nip' => 'Solo un administrador o alguien con NIP de aprobación puede aprobar pagos.']);
+        if (! self::puedeAprobar($user, $sol->venta)) {
+            throw ValidationException::withMessages(['nip' => self::soloValida($sol->venta)]);
         }
         $this->verificarNip($user, $nip);
 
@@ -242,8 +305,8 @@ class ComprobantesDePago
      */
     public function ligar(CobroSolicitud $sol, Cobro $cobro, User $user): string
     {
-        if (! self::puedeAprobar($user)) {
-            throw ValidationException::withMessages(['cobro_id' => 'Solo un administrador o alguien con NIP de aprobación puede hacerlo.']);
+        if (! self::puedeAprobar($user, $sol->venta)) {
+            throw ValidationException::withMessages(['cobro_id' => self::soloValida($sol->venta)]);
         }
 
         return DB::transaction(function () use ($sol, $cobro, $user) {
@@ -273,8 +336,8 @@ class ComprobantesDePago
 
     public function rechazar(CobroSolicitud $sol, User $user, string $motivo): string
     {
-        if (! self::puedeAprobar($user)) {
-            throw ValidationException::withMessages(['motivo' => 'Solo un administrador o alguien con NIP de aprobación puede rechazar pagos.']);
+        if (! self::puedeAprobar($user, $sol->venta)) {
+            throw ValidationException::withMessages(['motivo' => self::soloValida($sol->venta)]);
         }
         if ($sol->estado !== CobroSolicitud::PENDIENTE) {
             throw ValidationException::withMessages(['motivo' => 'Este pago ya no está por aprobar.']);
@@ -290,7 +353,7 @@ class ComprobantesDePago
     /** El vendedor puede quitar un pago suyo mientras siga por aprobar. */
     public function retirar(CobroSolicitud $sol, User $user): string
     {
-        if ($sol->estado !== CobroSolicitud::PENDIENTE || ((int) $sol->subido_por !== (int) $user->id && ! self::puedeAprobar($user))) {
+        if ($sol->estado !== CobroSolicitud::PENDIENTE || ((int) $sol->subido_por !== (int) $user->id && ! self::puedeAprobar($user, $sol->venta))) {
             throw ValidationException::withMessages(['monto' => 'Ese pago ya no se puede quitar.']);
         }
         Storage::disk('public')->delete(collect($sol->archivos ?? [])->pluck('archivo')->all());

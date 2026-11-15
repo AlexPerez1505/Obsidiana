@@ -104,7 +104,7 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                             </button>
 
-                            @if ($p->saldo() > 0 && ! $venta->cancelada() && \App\Services\Ventas\ComprobantesDePago::puedeAprobar(auth()->user()))
+                            @if ($p->saldo() > 0 && ! $venta->cancelada() && \App\Services\Ventas\ComprobantesDePago::puedeAprobar(auth()->user(), $venta))
                                 <button type="button" class="cb-mini cb-mini--ok" title="Registrar pago"
                                         data-cobrar
                                         data-parcialidad="{{ $p->id }}"
@@ -168,8 +168,8 @@
             <div class="erp-card pad" style="margin-top:18px;">
                 <div class="cb-head">
                     <h3>Pagos recibidos</h3>
-                    {{-- Registrar directo es aprobarlo: solo con NIP o administrador. --}}
-                    @if (! $venta->cancelada() && \App\Services\Ventas\ComprobantesDePago::puedeAprobar(auth()->user()))
+                    {{-- Registrar directo es validarlo: solo quien valida esta venta (con o sin IVA). --}}
+                    @if (! $venta->cancelada() && \App\Services\Ventas\ComprobantesDePago::puedeAprobar(auth()->user(), $venta))
                         <button type="button" class="erp-btn sm" data-cobrar>Registrar pago</button>
                     @endif
                 </div>

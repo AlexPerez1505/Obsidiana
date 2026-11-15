@@ -2,8 +2,13 @@
 
 namespace App\Services\Inventario;
 
+use App\Models\FichaObservacion;
 use App\Models\FichaTecnica;
 use App\Models\Producto;
+use App\Models\User;
+use App\Notifications\ObservacionDeFicha;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -25,12 +30,38 @@ class FichasTecnicas
         'archivo.required' => 'Sube el PDF de la ficha técnica.',
         'archivo.mimetypes' => 'El archivo debe ser un PDF.',
         'archivo.uploaded' => 'El archivo no se pudo subir: pasa del límite del servidor.',
+        'equipment_type_id.required' => 'Elige el tipo de equipo.',
+        'subtype_id.required' => 'Elige el subtipo.',
+        'brand_id.required' => 'Elige la marca.',
+        'equipment_model_id.required' => 'Elige el modelo.',
     ];
 
-    /** Al editar, el PDF es opcional: si no mandan uno nuevo se conserva. */
-    public static function reglas(bool $obligaArchivo): array
+    /** Reglas de una nota u observación dirigida a un usuario. */
+    public const REGLAS_OBSERVACION = [
+        'para_id' => ['required', 'exists:users,id'],
+        'texto' => ['required', 'string', 'max:2000'],
+    ];
+
+    public const MENSAJES_OBSERVACION = [
+        'para_id.required' => 'Elige a quién le llega la observación.',
+        'texto.required' => 'Escribe la observación.',
+    ];
+
+    /**
+     * Al editar, el PDF es opcional: si no mandan uno nuevo se conserva.
+     * En la pantalla el catálogo del equipo es obligatorio ($exigeCatalogo);
+     * la API lo acepta pero no lo exige, para no romper a quien ya la usa.
+     */
+    public static function reglas(bool $obligaArchivo, bool $exigeCatalogo = false): array
     {
+        $catalogo = $exigeCatalogo ? 'required' : 'nullable';
+
         return [
+            'equipment_type_id' => [$catalogo, 'exists:equipment_types,id'],
+            'subtype_id' => [$catalogo, 'exists:subtypes,id'],
+            'brand_id' => [$catalogo, 'exists:brands,id'],
+            'equipment_model_id' => [$catalogo, 'exists:equipment_models,id'],
+            'paquete_id' => ['nullable', 'exists:paquetes,id'],
             'titulo' => ['required', 'string', 'max:255'],
             'item' => ['nullable', 'string'],
             'contenido' => ['nullable', 'string', 'max:5000'],
@@ -62,7 +93,7 @@ class FichasTecnicas
      *
      * @throws ValidationException sobre $campo si ese producto ya tiene otra
      */
-    public function exigirUnicaPorProducto(?int $productoId, ?FichaTecnica $ficha = null, string $campo = 'item'): void
+    public function exigirUnicaPorProducto(?int $productoId, ?FichaTecnica $ficha = null, string $campo = 'item', ?string $mensaje = null): void
     {
         if (! $productoId) {
             return;
@@ -74,9 +105,74 @@ class FichasTecnicas
 
         if ($yaTieneFicha) {
             throw ValidationException::withMessages([
-                $campo => 'Ese producto ya tiene otra ficha técnica asignada.',
+                $campo => $mensaje ?? 'Ese producto ya tiene otra ficha técnica asignada.',
             ]);
         }
+    }
+
+    /**
+     * El producto del inventario que corresponde a ese modelo (cada modelo
+     * vive en un solo producto), o null si todavía no hay ninguno.
+     */
+    public static function productoDelModelo(?int $modeloId): ?Producto
+    {
+        return $modeloId ? Producto::where('equipment_model_id', $modeloId)->first() : null;
+    }
+
+    /**
+     * Fichas con catálogo pero sin producto: si ya se dio de alta el
+     * producto de ese modelo (y no tiene otra ficha), se ligan solas.
+     */
+    public function ligarPendientes(): int
+    {
+        $ligadas = 0;
+
+        FichaTecnica::whereNull('producto_id')->whereNotNull('equipment_model_id')->get()
+            ->each(function (FichaTecnica $f) use (&$ligadas) {
+                $producto = self::productoDelModelo($f->equipment_model_id);
+                if ($producto && ! FichaTecnica::where('producto_id', $producto->id)->exists()) {
+                    $f->update(['producto_id' => $producto->id]);
+                    $ligadas++;
+                }
+            });
+
+        return $ligadas;
+    }
+
+    /** Deja la observación y avisa a quien va dirigida (campana y, si hay, correo). */
+    public function observar(FichaTecnica $ficha, User $autor, array $data): FichaObservacion
+    {
+        $obs = $ficha->observaciones()->create([
+            'autor_id' => $autor->id,
+            'para_id' => (int) $data['para_id'],
+            'texto' => trim($data['texto']),
+        ]);
+
+        if ($para = $obs->para) {
+            try {
+                $para->notify(new ObservacionDeFicha($obs->load(['ficha', 'autor'])));
+            } catch (\Throwable $e) {
+                // La observación ya quedó guardada; el aviso es un extra.
+                Log::warning('Observación de ficha: no se pudo avisar', ['obs' => $obs->id, 'error' => $e->getMessage()]);
+            }
+        }
+
+        return $obs;
+    }
+
+    /** Solo quien la recibió o quien puede editar fichas la da por atendida. */
+    public function puedeAtender(FichaObservacion $obs, User $u): bool
+    {
+        return (int) $obs->para_id === (int) $u->id || $u->can('inventario.editar');
+    }
+
+    public function atender(FichaObservacion $obs, User $u): void
+    {
+        $obs->update(['atendida_en' => now(), 'atendida_por' => $u->id]);
+
+        // La campana del aviso deja de estar pendiente.
+        DB::table('notifications')->whereNull('read_at')
+            ->where('data->observacion_id', $obs->id)->update(['read_at' => now()]);
     }
 
     public function crear(array $data, UploadedFile $archivo): FichaTecnica
