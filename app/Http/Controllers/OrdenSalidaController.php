@@ -176,11 +176,32 @@ class OrdenSalidaController extends Controller
             abort(409, $razon);
         }
 
-        $data = $request->validate(EvidenciaDeSalida::REGLAS_FOTO, EvidenciaDeSalida::MENSAJES);
+        $data = $request->validate(EvidenciaDeSalida::reglasFoto(), EvidenciaDeSalida::MENSAJES);
 
-        $nueva = $this->evidencia->guardarFoto($orden, $data['foto'], $request->user()->id);
+        $nueva = filled($data['foto_path'] ?? null)
+            ? $this->evidencia->guardarFotoArmada($orden, $data['foto_path'], $data['nombre'] ?? null, $request->user()->id)
+            : $this->evidencia->guardarFoto($orden, $request->file('foto'), $request->user()->id);
 
         return $this->evidenciaSubida($request, $orden, $nueva, 'Foto agregada.');
+    }
+
+    /**
+     * Un pedazo de foto: cualquier formato y sin tope de tamaño (se manda
+     * en pedazos de 4MB). Al armarse, la pantalla la registra con foto_path.
+     */
+    public function evidenciaFotoChunk(Request $request, OrdenSalida $orden, \App\Services\Inventario\FotoPorPedazos $fotos): JsonResponse
+    {
+        if ($razon = $this->evidencia->razonParaNoSubir($orden)) {
+            abort(409, $razon);
+        }
+
+        $data = $request->validate(\App\Services\Inventario\FotoPorPedazos::reglas());
+
+        try {
+            return response()->json($fotos->recibir($request->file('chunk'), $data['upload_id'], (int) $data['index'], (int) $data['total'], $data['extension']));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
+        }
     }
 
     /**

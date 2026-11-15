@@ -65,6 +65,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             Route::post('/{orden}/entregar', [OrdenSalidaController::class, 'entregar'])->name('entregar');
             // Evidencia: una foto por petición (sin tope de cuántas) y el video por pedazos.
             Route::post('/{orden}/evidencias/foto', [OrdenSalidaController::class, 'evidenciaFoto'])->name('evidencias.foto');
+            Route::post('/{orden}/evidencias/foto-chunk', [OrdenSalidaController::class, 'evidenciaFotoChunk'])->name('evidencias.fotoChunk');
             Route::post('/{orden}/evidencias/video-chunk', [OrdenSalidaController::class, 'evidenciaVideo'])->name('evidencias.videoChunk');
         });
     });

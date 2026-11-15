@@ -305,6 +305,7 @@
                  la lista plegable. --}}
             <x-ui.card id="evidencia" data-medios="{{ $medios->toJson() }}"
                        data-ev-foto-url="{{ $puedeSubirEvidencia ? route('inventory.salidas.evidencias.foto', $orden) : '' }}"
+                       data-ev-foto-chunk="{{ $puedeSubirEvidencia ? route('inventory.salidas.evidencias.fotoChunk', $orden) : '' }}"
                        data-ev-video-url="{{ $puedeSubirEvidencia ? route('inventory.salidas.evidencias.videoChunk', $orden) : '' }}">
                 <div class="ev-cab">
                     <x-ui.section-title style="margin:0;">Evidencia</x-ui.section-title>
@@ -319,8 +320,14 @@
                         @if ($medios->isEmpty())
                             <span class="ev-portada-vacia">Sin evidencia</span>
                         @else
-                            @if ($evFotos->isNotEmpty())
-                                <img src="{{ $evFotos->first()->url() }}" alt="" loading="lazy">
+                            @php
+                                // La portada es la primera foto que el navegador puede pintar (TIFF, RAW… no).
+                                $portadaFoto = $evFotos->first(fn ($ev) => in_array(strtolower(pathinfo((string) $ev->path, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp', 'jfif', 'heic', 'heif', ''], true));
+                            @endphp
+                            @if ($portadaFoto)
+                                <img src="{{ $portadaFoto->url() }}" alt="" loading="lazy">
+                            @elseif ($evFotos->isNotEmpty())
+                                <span class="ev-portada-video" aria-hidden="true" style="font-size:12px; font-weight:700;">{{ strtoupper(pathinfo((string) $evFotos->first()->path, PATHINFO_EXTENSION)) }}</span>
                             @else
                                 <span class="ev-portada-video" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
                             @endif
@@ -350,7 +357,7 @@
                         {{-- Sin "capture": el teléfono ofrece cámara o galería y deja elegir varias. --}}
                         <label class="btn ev-boton">
                             <x-ui.icon name="plus"/> Agregar fotos
-                            <input type="file" accept="image/*" multiple class="ev-input" data-ev-fotos>
+                            <input type="file" accept="image/*,.heic,.heif,.tif,.tiff,.dng,.cr2,.cr3,.nef,.arw,.orf,.rw2,.raf,.srw,.pef,.avif,.jxl,.jfif,.webp,.bmp,.psd" multiple class="ev-input" data-ev-fotos>
                         </label>
                         {{-- Directo a la cámara trasera; en computadora no se enseña. --}}
                         <label class="btn btn--ghost ev-boton ev-solo-tactil">
@@ -363,7 +370,7 @@
                         </label>
                     </div>
                     <p class="muted ev-nota">
-                        Sube todas las que hagan falta: cada foto se suma a las anteriores (hasta 10MB cada una).
+                        Sube todas las que hagan falta, en cualquier formato y de cualquier tamaño: cada foto se suma a las anteriores.
                         Videos MP4, MOV o WEBM de hasta 150MB.
                     </p>
                 @elseif ($ordenCancelada)
@@ -402,6 +409,7 @@
     </div>
 
     @include('partials.galeria')
+    @include('structure.gestion_Inventario._subir_fotos')
 
     <style>
         /* Encabezado: estado y acciones arriba, datos y avance abajo */
@@ -647,6 +655,7 @@
 
             const csrf = document.querySelector('meta[name="csrf-token"]')?.content || @json(csrf_token());
             const urlFoto = tarjeta.dataset.evFotoUrl;
+            const urlFotoChunk = tarjeta.dataset.evFotoChunk;
             const urlVideo = tarjeta.dataset.evVideoUrl;
             const cola = tarjeta.querySelector('[data-ev-cola]');
             const cuenta = tarjeta.querySelector('[data-ev-cuenta]');
@@ -656,7 +665,6 @@
                 video: tarjeta.querySelector('[data-ev-galeria="video"]'),
             };
 
-            const FOTO_MAX = 10 * 1024 * 1024;
             const VIDEO_MAX = 150 * 1024 * 1024;
             const CHUNK = 4 * 1024 * 1024;
             const EXT_VIDEO = ['mp4', 'mov', 'm4v', 'webm'];
@@ -698,11 +706,16 @@
                     portada.innerHTML = '<span class="ev-portada-vacia">Sin evidencia</span>';
                     return;
                 }
-                if (fotos.length) {
+                const SE_VEN = /\.(jpe?g|png|gif|webp|avif|bmp|jfif|heic|heif)(\?|#|$)/i;
+                const visible = fotos.find(f => SE_VEN.test(f.url));
+                if (visible) {
                     const img = document.createElement('img');
-                    img.src = fotos[0].url;
+                    img.src = visible.url;
                     img.alt = '';
                     portada.appendChild(img);
+                } else if (fotos.length) {
+                    const ext = (fotos[0].url.split('?')[0].split('.').pop() || '').toUpperCase();
+                    portada.insertAdjacentHTML('beforeend', '<span class="ev-portada-video" aria-hidden="true" style="font-size:12px; font-weight:700;">' + ext + '</span>');
                 } else {
                     portada.insertAdjacentHTML('beforeend', '<span class="ev-portada-video" aria-hidden="true">' + ICONO_PLAY + '</span>');
                 }
@@ -851,44 +864,26 @@
             }
 
             /*
-            | Una foto de más de 10MB (cámaras de muchos megapíxeles) se achica
-            | en el teléfono antes de mandarla, en vez de rechazarla. Las que
-            | caben se mandan tal cual, sin perder calidad.
+            | Cualquier formato de foto y de cualquier tamaño: se manda en
+            | pedazos (ObsFotos). Las HEIC del iPhone se convierten a JPG aquí
+            | para que se vean en cualquier pantalla; lo demás va tal cual.
             */
-            async function reducir(archivo) {
-                try {
-                    const imagen = await createImageBitmap(archivo);
-                    const escala = Math.min(1, 3200 / Math.max(imagen.width, imagen.height));
-                    const lienzo = document.createElement('canvas');
-                    lienzo.width = Math.round(imagen.width * escala);
-                    lienzo.height = Math.round(imagen.height * escala);
-                    lienzo.getContext('2d').drawImage(imagen, 0, 0, lienzo.width, lienzo.height);
-                    if (imagen.close) imagen.close();
-
-                    const blob = await new Promise(r => lienzo.toBlob(r, 'image/jpeg', 0.85));
-                    if (!blob) return archivo;
-
-                    return new File([blob], (archivo.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
-                } catch (e) {
-                    return archivo;
-                }
-            }
-
             async function subirFoto(tarea) {
-                if (tarea.archivo.type && !tarea.archivo.type.startsWith('image/')) {
-                    throw new Error('No es una imagen.');
+                if (tarea.archivo.type && /^(video|audio|text)\//.test(tarea.archivo.type)) {
+                    throw new Error('No es una foto.');
                 }
 
-                if (tarea.archivo.size > FOTO_MAX) {
-                    avance(tarea.fila, 0, 'Reduciendo...');
-                    tarea.archivo = await reducir(tarea.archivo);
-                    if (tarea.archivo.size > FOTO_MAX) throw new Error('Pesa más de 10MB.');
-                }
+                avance(tarea.fila, 0, 'Preparando...');
+                tarea.archivo = await ObsFotos.preparar(tarea.archivo);
+
+                const armada = await conReintentos(() => ObsFotos.subir(tarea.archivo, urlFotoChunk,
+                    pct => avance(tarea.fila, pct / 100 * 0.95, 'Subiendo... ' + pct + '%')));
 
                 const datos = new FormData();
-                datos.append('foto', tarea.archivo, tarea.archivo.name || 'foto.jpg');
+                datos.append('foto_path', armada.foto_path);
+                datos.append('nombre', tarea.archivo.name || 'foto');
 
-                return enviar(urlFoto, datos, f => avance(tarea.fila, f, 'Subiendo... ' + Math.round(f * 100) + '%'));
+                return enviar(urlFoto, datos, () => avance(tarea.fila, 0.98, 'Guardando...'));
             }
 
             async function subirVideo(tarea) {

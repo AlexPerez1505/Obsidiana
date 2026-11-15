@@ -15,6 +15,9 @@
     $quien = $evidencia->subidoPor?->name ?? 'Usuario eliminado';
     $cuando = $evidencia->created_at?->format('d/m/Y H:i');
     $esVideo = $evidencia->esVideo();
+    // TIFF, RAW, PSD… el navegador no los pinta: se ve su formato y se descargan desde el visor.
+    $ext = strtolower(pathinfo((string) $evidencia->path, PATHINFO_EXTENSION));
+    $seVe = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp', 'jfif', 'heic', 'heif', ''], true);
 @endphp
 <figure class="ev-item {{ $esVideo ? 'ev-item--video' : 'ev-item--foto' }}" data-evidencia="{{ $evidencia->id }}"
         data-tipo="{{ $evidencia->tipo }}" data-url="{{ $evidencia->url() }}">
@@ -26,8 +29,10 @@
             <span class="ev-mini-play" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
             </span>
-        @else
+        @elseif ($seVe)
             <img src="{{ $evidencia->url() }}" alt="Foto de evidencia subida por {{ $quien }}" loading="lazy" decoding="async">
+        @else
+            <span class="ev-mini-play" style="font-size:11px; font-weight:700;">{{ strtoupper($ext) }}</span>
         @endif
     </button>
 
