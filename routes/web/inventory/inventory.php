@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\EscaneoController;
+use App\Http\Controllers\EtapaSalidaController;
 use App\Http\Controllers\Inventory\ComponenteController;
 use App\Http\Controllers\Inventory\FichaTecnicaController;
 use App\Http\Controllers\InventoryMovementController;
@@ -42,6 +43,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-inventario/entrada-salida/checklist-ia', [InventoryMovementController::class, 'checklistIa'])
         ->middleware('can:inventario.registrar')->name('inventory.movimientos.checklistIa');
 
+    // En qué va la salida: para quien vendió, los admins y almacén (lo revisa el controlador).
+    Route::get('/salidas/{orden}/seguimiento', [EtapaSalidaController::class, 'seguimiento'])->name('salidas.seguimiento');
+    Route::get('/salidas/{orden}/expediente', [EtapaSalidaController::class, 'expediente'])->name('salidas.expediente');
+
     /*
     | Órdenes de salida: lo que almacén prepara, emplaya y firma cuando
     | se vende. Nacen solas al registrar la venta.
@@ -56,6 +61,15 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         // Quién prepara: le llega el aviso por correo y en la campana.
         Route::post('/{orden}/asignar', [OrdenSalidaController::class, 'asignar'])
             ->middleware('can:salidas.asignar')->name('asignar');
+
+        // Etapas: Ingeniería → Empaque → Entrega, cada una con su responsable.
+        // Quién puede trabajar cada etapa lo revisa EtapasDeSalida (asignado, admin o quien asigna).
+        Route::post('/{orden}/etapas/asignar', [EtapaSalidaController::class, 'asignar'])
+            ->middleware('can:salidas.asignar')->name('etapas.asignar');
+        Route::get('/{orden}/etapas/{etapa}', [EtapaSalidaController::class, 'show'])->name('etapas.show');
+        Route::get('/{orden}/etapas/{etapa}/checklist-ia', [EtapaSalidaController::class, 'checklistIa'])->name('etapas.checklistIa');
+        Route::post('/{orden}/etapas/{etapa}', [EtapaSalidaController::class, 'guardar'])->name('etapas.guardar');
+        Route::post('/{orden}/etapas/{etapa}/desbloquear', [EtapaSalidaController::class, 'desbloquear'])->name('etapas.desbloquear');
 
         Route::middleware('can:salidas.preparar')->group(function () {
             Route::post('/{orden}/partidas/{item}', [OrdenSalidaController::class, 'item'])->name('item');

@@ -48,3 +48,24 @@
         </button>
     @endif
 </figure>
+
+{{-- Los estilos viajan con el cuadro: lo usan la orden y cada etapa. --}}
+@once
+    <style>
+        .ev-item { position:relative; margin:0; min-width:0; }
+        .ev-mini { position:relative; display:block; width:100%; aspect-ratio:1 / 1; padding:0; border:1px solid var(--border); border-radius:9px;
+                   overflow:hidden; background:var(--surface-2); cursor:zoom-in; }
+        .ev-mini img, .ev-mini video { display:block; width:100%; height:100%; object-fit:cover; pointer-events:none; background:#000; }
+        .ev-mini img { background:none; }
+        .ev-mini:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+        .ev-mini-play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; background:rgba(0,0,0,.3); }
+        .ev-mini-play svg { width:22px; height:22px; }
+        .ev-pie { display:flex; flex-direction:column; margin-top:3px; font-size:11px; line-height:1.3; min-width:0; }
+        .ev-quien { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .ev-cuando { color:var(--muted); }
+        .ev-quitar { position:absolute; top:4px; right:4px; width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center;
+                     border:none; border-radius:7px; background:rgba(17,24,39,.62); color:#fff; cursor:pointer; }
+        .ev-quitar:hover { background:var(--danger); }
+        .ev-item.is-borrando { opacity:.45; pointer-events:none; }
+    </style>
+@endonce

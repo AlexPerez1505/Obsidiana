@@ -405,6 +405,41 @@
                         {{ $user->is_admin ? 'Quitar admin' : 'Hacer admin' }}
                     </button>
                 </form>
+
+                {{-- NIP de aprobación: solo lo asigna un administrador. --}}
+                <div class="nip-box" id="nip">
+                    <div class="nip-cab">
+                        <span>NIP de aprobación</span>
+                        <span class="nip-estado {{ $user->approval_pin_hash ? 'si' : '' }}">{{ $user->approval_pin_hash ? 'Asignado' : 'Sin NIP' }}</span>
+                    </div>
+                    <p class="nip-nota">Lo pide el sistema para corregir etapas de salida después de 72 h y otras acciones delicadas.</p>
+                    @error('nip')<p class="nip-err">{{ $message }}</p>@enderror
+                    <form method="POST" action="{{ route('admin.users.nip', $user) }}" class="nip-form">
+                        @csrf
+                        <input type="password" name="nip" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" placeholder="NIP (4 a 6 números)" autocomplete="new-password" required data-no-mayus>
+                        <input type="password" name="nip_confirmation" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" placeholder="Repite el NIP" autocomplete="new-password" required data-no-mayus>
+                        <button type="submit" class="btn-ghost">{{ $user->approval_pin_hash ? 'Cambiar NIP' : 'Asignar NIP' }}</button>
+                    </form>
+                    @if ($user->approval_pin_hash)
+                        <form method="POST" action="{{ route('admin.users.nip.quitar', $user) }}"
+                              data-confirm="{{ $user->name }} ya no podrá aprobar ni corregir con NIP." data-confirm-title="Quitar NIP" data-confirm-ok="Quitar">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="nip-quitar">Quitar NIP</button>
+                        </form>
+                    @endif
+                </div>
+                <style>
+                    .nip-box { margin-top:12px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--surface-2); text-align:left; }
+                    .nip-cab { display:flex; justify-content:space-between; align-items:center; gap:8px; font-weight:700; font-size:13.5px; }
+                    .nip-estado { font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--surface); color:var(--muted); }
+                    .nip-estado.si { background:var(--green-soft); color:var(--green); }
+                    .nip-nota { margin:6px 0 8px; font-size:12px; color:var(--muted); }
+                    .nip-err { margin:0 0 6px; font-size:12.5px; color:var(--danger); }
+                    .nip-form { display:flex; flex-direction:column; gap:6px; }
+                    .nip-form input { padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text); letter-spacing:.2em; }
+                    .nip-quitar { margin-top:6px; padding:0; border:0; background:none; color:var(--danger); font-size:12.5px; cursor:pointer; }
+                </style>
                 @endif
             </div>
         </aside>

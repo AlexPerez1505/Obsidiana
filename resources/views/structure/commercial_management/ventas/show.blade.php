@@ -90,6 +90,11 @@
                     <span class="val">{{ $venta->ordenSalida->estadoLabel() }}</span>
                 </span>
             @endcan
+            {{-- En qué etapa va (ingeniería, empaque, entrega): para el asesor y los admins. --}}
+            <a href="{{ route('salidas.seguimiento', $venta->ordenSalida) }}" class="pill-dato" title="Ver en qué etapa va la salida">
+                <span class="et">Etapa</span>
+                <span class="val">¿En qué va? →</span>
+            </a>
         @endif
 
         {{-- Las garantías nacen solas de la venta: una por equipo o componente. --}}

@@ -249,7 +249,7 @@ class PreparacionDeSalida
      * El stock ya se había descontado al vender; lo que se registra aquí es
      * la fecha en que el equipo de verdad dejó el almacén.
      */
-    private function marcarSalidasEntregadas(OrdenSalida $orden, Carbon $entregadaEn): void
+    public function marcarSalidasEntregadas(OrdenSalida $orden, Carbon $entregadaEn): void
     {
         $itemIds = $orden->venta?->items()->pluck('id') ?? collect();
 

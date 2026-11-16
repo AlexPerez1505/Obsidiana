@@ -23,7 +23,7 @@ class OrdenSalidaEvidencia extends Model
     public const TIPOS = [self::FOTO, self::VIDEO];
 
     protected $fillable = [
-        'orden_salida_id', 'tipo', 'path', 'nombre_original', 'tamano', 'subido_por',
+        'orden_salida_id', 'tipo', 'etapa', 'path', 'nombre_original', 'tamano', 'subido_por',
     ];
 
     protected function casts(): array

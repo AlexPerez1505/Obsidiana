@@ -193,6 +193,33 @@ class UserController extends Controller
     }
 
     /**
+     * Asigna (o cambia) el NIP de aprobación de un usuario. Solo admins: lo
+     * piden las acciones delicadas, como corregir una etapa de salida
+     * después de 72 horas.
+     */
+    public function asignarNip(User $user, Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'nip' => ['required', 'digits_between:4,6', 'confirmed'],
+        ], [
+            'nip.required' => 'Escribe el NIP.',
+            'nip.digits_between' => 'El NIP es de 4 a 6 números.',
+            'nip.confirmed' => 'La confirmación no coincide con el NIP.',
+        ]);
+
+        $user->setApprovalPin($data['nip']);
+
+        return back()->with('status', "NIP asignado a {$user->name}. Díselo en persona: no se puede volver a ver.");
+    }
+
+    public function quitarNip(User $user): RedirectResponse
+    {
+        $user->forceFill(['approval_pin_hash' => null])->save();
+
+        return back()->with('status', "Se quitó el NIP de {$user->name}.");
+    }
+
+    /**
      * Aprueba una cuenta pendiente para darle acceso.
      */
     public function approve(User $user): RedirectResponse

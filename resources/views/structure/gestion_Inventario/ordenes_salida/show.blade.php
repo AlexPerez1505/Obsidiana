@@ -67,6 +67,8 @@
         </div>
     </x-ui.card>
 
+    @include('structure.gestion_Inventario.ordenes_salida._etapas')
+
     @php
         $ordenCancelada = $orden->estado === \App\Models\OrdenSalida::CANCELADA;
         $puedeSubirEvidencia = $puedePreparar && ! $ordenCancelada;
@@ -227,6 +229,16 @@
                         orden lista y se va; la firma la hace quien entregue, que
                         puede ser otra persona y otro día.
                     --}}
+                    @elseif ($porEtapas && ! $orden->listaParaFirmar())
+                        <p class="muted" style="margin:0; font-size:13px;">
+                            Esta orden va por etapas: queda lista al terminar
+                            <a href="{{ route('inventory.salidas.etapas.show', [$orden, 'empaque']) }}">Empaque</a>.
+                        </p>
+                    @elseif ($porEtapas)
+                        <p class="muted" style="margin:0 0 10px; font-size:13px;">
+                            Lista para salir. La salida se firma en la etapa de entrega, con su evidencia.
+                        </p>
+                        <a href="{{ route('inventory.salidas.etapas.show', [$orden, 'entrega']) }}" class="btn">Ir a Entrega</a>
                     @elseif ($orden->puedeConfirmarPreparacion())
                         @if ($puedePreparar)
                             <div class="os-lista-aviso">
