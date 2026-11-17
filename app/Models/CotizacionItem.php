@@ -42,6 +42,11 @@ class CotizacionItem extends Model
         return $this->belongsTo(Cotizacion::class);
     }
 
+    public function equipo(): BelongsTo
+    {
+        return $this->belongsTo(Equipo::class);
+    }
+
     public function producto(): BelongsTo
     {
         return $this->belongsTo(Producto::class);

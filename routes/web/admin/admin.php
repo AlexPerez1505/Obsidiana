@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AgendaEventController;
 use App\Http\Controllers\Admin\GuiaEntregaController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\MaterialRequestController;
+use App\Http\Controllers\Admin\PaqueteriaController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\TripController;
 use App\Http\Controllers\Admin\UserController;
@@ -31,7 +32,10 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admi
     Route::get('/materiales', [MaterialRequestController::class, 'index'])->name('materials.index');
     Route::post('/materiales', [MaterialRequestController::class, 'store'])->name('materials.store');
     Route::get('/reportes', [ReportController::class, 'index'])->name('reports.index');
-    Route::view('/paqueteria', 'admin.paqueteria.index')->name('paqueteria.index');
+    Route::get('/paqueteria', [PaqueteriaController::class, 'index'])->name('paqueteria.index');
+    Route::post('/paqueteria', [PaqueteriaController::class, 'store'])->name('paqueteria.store');
+    Route::get('/paqueteria/{paqueteriaEnvio}', [PaqueteriaController::class, 'show'])->name('paqueteria.show');
+    Route::put('/paqueteria/{paqueteriaEnvio}', [PaqueteriaController::class, 'update'])->name('paqueteria.update');
 
     // Línea de tiempo de actividad de todos los usuarios
     Route::get('/actividad', [\App\Http\Controllers\Admin\ActividadController::class, 'index'])
