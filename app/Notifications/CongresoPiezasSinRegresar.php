@@ -2,6 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Canales\WhatsAppCanal;
+use App\Support\WhatsApp\AvisoInterno;
+use App\Support\WhatsApp\MensajePlantilla;
 use App\Models\Congress;
 use Illuminate\Notifications\Notification;
 
@@ -23,7 +26,7 @@ class CongresoPiezasSinRegresar extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', WhatsAppCanal::class];
     }
 
     public function toDatabase(object $notifiable): array
@@ -40,5 +43,11 @@ class CongresoPiezasSinRegresar extends Notification
             'congress_id' => $this->congress->id,
             'piezas' => $this->piezas,
         ];
+    }
+
+    public function toWhatsApp(object $notifiable): ?MensajePlantilla
+    {
+        return AvisoInterno::mensaje($notifiable, 'congreso_piezas', [$this->piezas, $this->congress->nombre],
+            route('inventory.congresos.index', ['congreso' => $this->congress->id]), 'congreso:'.$this->congress->id);
     }
 }

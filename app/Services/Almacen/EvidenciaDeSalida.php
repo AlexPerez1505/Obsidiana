@@ -4,6 +4,7 @@ namespace App\Services\Almacen;
 
 use App\Models\OrdenSalida;
 use App\Models\OrdenSalidaEvidencia;
+use App\Services\Inventario\FotoPorPedazos;
 use App\Services\Inventario\VideoPorPedazos;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -23,18 +24,51 @@ use Illuminate\Validation\ValidationException;
  */
 class EvidenciaDeSalida
 {
-    public const FOTO_MAX_KB = 10240; // 10MB por foto
+    /** Tope por archivo cuando la foto llega entera (la API). La pantalla la manda por pedazos, sin tope. */
+    public const FOTO_MAX_KB = 51200; // 50MB
 
-    /** Una foto por petición: lo que manda la pantalla. */
-    public const REGLAS_FOTO = [
-        'foto' => ['required', 'image', 'max:'.self::FOTO_MAX_KB],
-    ];
+    /**
+     * Una foto por petición: lo que manda la pantalla. Llega ya armada por
+     * pedazos (foto_path) en cualquier formato (HEIC, TIFF, RAW, AVIF…), o
+     * como archivo entero. Solo se rechaza lo que no es foto (texto,
+     * ejecutables, SVG…).
+     */
+    /**
+     * ¿Es una foto? Todo lo que el servidor reconoce como imagen, más lo que
+     * no reconoce (RAW de cámara, algunos HEIC): un PDF o un Word no pasan.
+     */
+    public static function esFoto(string $mime): bool
+    {
+        return str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml'
+            || in_array($mime, ['application/octet-stream', ''], true);
+    }
 
-    /** Una o varias por petición: la API. */
-    public const REGLAS_FOTOS = [
-        'fotos' => ['required', 'array', 'min:1'],
-        'fotos.*' => ['required', 'image', 'max:'.self::FOTO_MAX_KB],
-    ];
+    private static function reglaEsFoto(): \Closure
+    {
+        return function (string $campo, $archivo, \Closure $falla) {
+            if (! self::esFoto((string) $archivo?->getMimeType())) {
+                $falla('Ese archivo no es una foto.');
+            }
+        };
+    }
+
+    public static function reglasFoto(): array
+    {
+        return [
+            'foto' => ['required_without:foto_path', 'nullable', 'file', 'max:'.self::FOTO_MAX_KB, FotoPorPedazos::reglaArchivo(), self::reglaEsFoto()],
+            'foto_path' => ['required_without:foto', 'nullable', 'string', 'max:255'],
+            'nombre' => ['nullable', 'string', 'max:255'],
+        ];
+    }
+
+    /** Una o varias por petición: la API. Mismos formatos que la pantalla. */
+    public static function reglasFotos(): array
+    {
+        return [
+            'fotos' => ['required', 'array', 'min:1'],
+            'fotos.*' => ['required', 'file', 'max:'.self::FOTO_MAX_KB, FotoPorPedazos::reglaArchivo(), self::reglaEsFoto()],
+        ];
+    }
 
     /** Lo que acompaña a los pedazos del video, además de VideoPorPedazos::reglas(). */
     public const REGLAS_VIDEO = [
@@ -42,13 +76,11 @@ class EvidenciaDeSalida
     ];
 
     public const MENSAJES = [
-        'foto.required' => 'Elige una foto.',
-        'foto.image' => 'El archivo no es una imagen (JPG, PNG o WEBP).',
-        'foto.max' => 'Cada foto puede pesar hasta 10MB.',
+        'foto.required_without' => 'Elige una foto.',
+        'foto.max' => 'Cada foto puede pesar hasta 50MB.',
         'fotos.required' => 'Manda al menos una foto en fotos[].',
         'fotos.array' => 'Las fotos van en fotos[] (una o varias).',
-        'fotos.*.image' => 'Alguno de los archivos no es una imagen (JPG, PNG o WEBP).',
-        'fotos.*.max' => 'Cada foto puede pesar hasta 10MB.',
+        'fotos.*.max' => 'Cada foto puede pesar hasta 50MB.',
     ];
 
     public function __construct(private readonly VideoPorPedazos $videos)
@@ -74,9 +106,43 @@ class EvidenciaDeSalida
             : null;
     }
 
+    /**
+     * Una foto que ya se armó por pedazos (FotoPorPedazos): se pasa a la
+     * carpeta de la orden y queda como evidencia.
+     */
+    public function guardarFotoArmada(OrdenSalida $orden, string $ruta, ?string $nombreOriginal, ?int $usuarioId): OrdenSalidaEvidencia
+    {
+        $ruta = app(FotoPorPedazos::class)->resolver($ruta, $this->disco());
+        if (! $ruta) {
+            throw ValidationException::withMessages(['foto' => 'La foto no terminó de subir. Vuelve a intentarlo.']);
+        }
+
+        $disco = Storage::disk($this->disco());
+        if (! self::esFoto((string) (new \finfo(FILEINFO_MIME_TYPE))->file($disco->path($ruta)))) {
+            $disco->delete($ruta);
+            throw ValidationException::withMessages(['foto' => 'Ese archivo no es una foto.']);
+        }
+        $extension = strtolower(pathinfo($ruta, PATHINFO_EXTENSION)) ?: 'jpg';
+        $path = $this->carpeta($orden).'/foto_'.Str::lower((string) Str::ulid()).'.'.$extension;
+        $tamano = $disco->size($ruta);
+
+        if (! $disco->move($ruta, $path)) {
+            throw ValidationException::withMessages(['foto' => 'No se pudo guardar la foto. Vuelve a intentarlo.']);
+        }
+
+        return $orden->evidencias()->create([
+            'tipo' => OrdenSalidaEvidencia::FOTO,
+            'path' => $path,
+            'nombre_original' => Str::limit((string) ($nombreOriginal ?: basename($path)), 250, ''),
+            'tamano' => $tamano ?: null,
+            'subido_por' => $usuarioId,
+        ]);
+    }
+
     public function guardarFoto(OrdenSalida $orden, UploadedFile $foto, ?int $usuarioId): OrdenSalidaEvidencia
     {
-        $extension = strtolower($foto->guessExtension() ?: $foto->getClientOriginalExtension() ?: 'jpg');
+        // La extensión del nombre manda: el servidor no reconoce HEIC, RAW y otros.
+        $extension = strtolower(preg_replace('/[^a-z0-9]/i', '', $foto->getClientOriginalExtension()) ?: $foto->guessExtension() ?: 'jpg');
         $nombre = 'foto_'.Str::lower((string) Str::ulid()).'.'.$extension;
 
         $path = $foto->storeAs($this->carpeta($orden), $nombre, $this->disco());

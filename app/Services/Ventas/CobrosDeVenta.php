@@ -30,6 +30,8 @@ class CobrosDeVenta
     public const MENSAJES_COBRO = [
         'monto.min' => 'El monto debe ser mayor a cero.',
         'evidencias.*.mimes' => 'La evidencia debe ser una imagen o un PDF.',
+        'evidencias.required' => 'Sube el comprobante del pago (en efectivo, la foto del recibo): sin comprobante no se puede registrar.',
+        'evidencias.min' => 'Sube el comprobante del pago (en efectivo, la foto del recibo): sin comprobante no se puede registrar.',
     ];
 
     public const REGLAS_PARCIALIDAD_NUEVA = [
@@ -57,7 +59,8 @@ class CobrosDeVenta
             'metodo' => ['required', Rule::in(array_keys(Cobro::METODOS))],
             'referencia' => ['nullable', 'string', 'max:255'],
             'nota' => ['nullable', 'string', 'max:255'],
-            'evidencias' => ['nullable', 'array', 'max:5'],
+            // Sin comprobante no se registra ningún pago.
+            'evidencias' => ['required', 'array', 'min:1', 'max:5'],
             'evidencias.*' => ['file', 'mimes:jpg,jpeg,png,webp,pdf'],
         ];
     }

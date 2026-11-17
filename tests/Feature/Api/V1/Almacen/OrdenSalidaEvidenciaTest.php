@@ -194,7 +194,7 @@ class OrdenSalidaEvidenciaTest extends TestCase
             'fotos' => [UploadedFile::fake()->create('nota.txt', 5, 'text/plain')],
         ])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['fotos.0' => 'Alguno de los archivos no es una imagen (JPG, PNG o WEBP).']);
+            ->assertJsonValidationErrors(['fotos.0' => 'Ese archivo no es una foto.']);
 
         $api->post("/api/v1/ordenes-salida/{$orden->id}/evidencias/video", $this->pedazo('api-video-mala', 0, 1, 'X', 'avi'))
             ->assertStatus(422)

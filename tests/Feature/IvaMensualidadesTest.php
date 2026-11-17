@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\User;
 use App\Models\Venta;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Concerns\UsaApi;
 use Tests\TestCase;
@@ -37,7 +38,7 @@ class IvaMensualidadesTest extends TestCase
         }
         // Se cobra el primero completo y la mitad del segundo.
         $this->actingAs($this->admin)->post(route('commercial.ventas.cobros.store', $this->venta),
-            ['monto' => 1500, 'fecha' => now()->toDateString(), 'metodo' => 'efectivo'])->assertSessionHasNoErrors();
+            ['monto' => 1500, 'fecha' => now()->toDateString(), 'metodo' => 'efectivo', 'evidencias' => [UploadedFile::fake()->image('recibo.jpg')]])->assertSessionHasNoErrors();
     }
 
     private function pagos()
@@ -108,7 +109,7 @@ class IvaMensualidadesTest extends TestCase
         $this->actingAs($this->admin)->post(route('commercial.ventas.cobros.iva.agregar', $this->venta), ['pagos' => [$p2->id, $p3->id]]);
         // Se cobra el resto del segundo con su IVA (580).
         $this->actingAs($this->admin)->post(route('commercial.ventas.cobros.store', $this->venta),
-            ['monto' => 580, 'fecha' => now()->toDateString(), 'metodo' => 'efectivo', 'venta_pago_id' => $p2->id])->assertSessionHasNoErrors();
+            ['monto' => 580, 'fecha' => now()->toDateString(), 'metodo' => 'efectivo', 'venta_pago_id' => $p2->id, 'evidencias' => [UploadedFile::fake()->image('recibo.jpg')]])->assertSessionHasNoErrors();
 
         $this->actingAs($this->admin)->post(route('commercial.ventas.cobros.iva.quitar', $this->venta))->assertSessionHasNoErrors();
 

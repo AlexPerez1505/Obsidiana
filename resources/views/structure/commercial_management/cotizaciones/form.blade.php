@@ -23,5 +23,6 @@
         'titulo' => $esEdicion ? 'Editar cotización '.$cotizacion->folio : 'Nueva cotización',
         'subtitulo' => 'Equipo médico · individual o en paquete',
         'textoGuardar' => 'Guardar cotización',
+        'mostrarStock' => false,
     ])
 @endsection

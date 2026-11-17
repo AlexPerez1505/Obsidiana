@@ -294,16 +294,56 @@ class OrdenSalidaEvidenciaTest extends TestCase
 
         $this->actingAs($user)->postJson(route('inventory.salidas.evidencias.foto', $orden), [
             'foto' => UploadedFile::fake()->create('contrato.pdf', 20, 'application/pdf'),
-        ])->assertStatus(422)->assertJsonPath('errors.foto.0', 'El archivo no es una imagen (JPG, PNG o WEBP).');
+        ])->assertStatus(422)->assertJsonPath('errors.foto.0', 'Ese archivo no es una foto.');
 
         $this->actingAs($user)->postJson(route('inventory.salidas.evidencias.foto', $orden), [
-            'foto' => UploadedFile::fake()->image('enorme.jpg')->size(10241),
-        ])->assertStatus(422)->assertJsonPath('errors.foto.0', 'Cada foto puede pesar hasta 10MB.');
+            'foto' => UploadedFile::fake()->createWithContent('nota.txt', 'hola'),
+        ])->assertStatus(422);
+
+        $this->actingAs($user)->postJson(route('inventory.salidas.evidencias.foto', $orden), [
+            'foto' => UploadedFile::fake()->image('enorme.jpg')->size(51201),
+        ])->assertStatus(422)->assertJsonPath('errors.foto.0', 'Cada foto puede pesar hasta 50MB.');
 
         $this->actingAs($user)->postJson(route('inventory.salidas.evidencias.foto', $orden), [])
             ->assertStatus(422)->assertJsonPath('errors.foto.0', 'Elige una foto.');
 
         $this->assertSame(0, $orden->evidencias()->count());
+    }
+
+    public function test_cualquier_formato_de_foto_y_de_cualquier_tamano(): void
+    {
+        $orden = $this->orden();
+        $user = $this->almacenista();
+        $url = route('inventory.salidas.evidencias.foto', $orden);
+
+        // HEIC del iPhone, TIFF, RAW de cámara y una foto de 20MB, enteras.
+        foreach ([
+            UploadedFile::fake()->createWithContent('IMG_0001.HEIC', random_bytes(2048)),
+            UploadedFile::fake()->createWithContent('escaneo.tiff', "II*\0".random_bytes(2048)),
+            UploadedFile::fake()->createWithContent('DSC_0042.NEF', random_bytes(4096)),
+            UploadedFile::fake()->image('camara.jpg')->size(20480),
+        ] as $archivo) {
+            $this->actingAs($user)->postJson($url, ['foto' => $archivo])->assertCreated();
+        }
+        $this->assertSame(['heic', 'tiff', 'nef', 'jpg'], $orden->evidencias()->orderBy('id')->pluck('path')->map(fn ($p) => pathinfo($p, PATHINFO_EXTENSION))->all());
+
+        // Por pedazos (lo que manda la pantalla): se arma y luego se registra.
+        $chunk = route('inventory.salidas.evidencias.fotoChunk', $orden);
+        $contenido = random_bytes(3000);
+        $this->actingAs($user)->postJson($chunk, ['chunk' => UploadedFile::fake()->createWithContent('chunk', substr($contenido, 0, 1500)), 'upload_id' => 'prueba-salida-1', 'index' => 0, 'total' => 2, 'extension' => 'cr3'])
+            ->assertOk()->assertJsonPath('status', 'chunk_recibido');
+        $ruta = $this->actingAs($user)->postJson($chunk, ['chunk' => UploadedFile::fake()->createWithContent('chunk', substr($contenido, 1500)), 'upload_id' => 'prueba-salida-1', 'index' => 1, 'total' => 2, 'extension' => 'cr3'])
+            ->assertOk()->assertJsonPath('status', 'listo')->json('foto_path');
+
+        $this->actingAs($user)->postJson($url, ['foto_path' => $ruta, 'nombre' => 'IMG_9.CR3'])->assertCreated();
+        $nueva = $orden->evidencias()->reorder('id', 'desc')->firstOrFail();
+        $this->assertStringEndsWith('.cr3', $nueva->path);
+        $this->assertSame('IMG_9.CR3', $nueva->nombre_original);
+        Storage::disk($this->disco)->assertExists($nueva->path);
+        Storage::disk($this->disco)->assertMissing($ruta);   // se movió a la carpeta de la orden
+
+        // Una ruta que no salió de la subida por pedazos no se acepta.
+        $this->actingAs($user)->postJson($url, ['foto_path' => '../../.env'])->assertStatus(422);
     }
 
     public function test_al_borrar_la_orden_se_van_los_archivos(): void

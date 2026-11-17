@@ -503,7 +503,7 @@ class RegistroDeVentas
             'es_regalo' => (bool) ($i['es_regalo'] ?? false),
         ], $data['items']);
 
-        $valorACuenta = (float) ($data['valor_a_cuenta'] ?? 0);
+        $valorACuenta = \App\Support\EquiposACuenta::valorDocumento($data);
 
         $d = $this->calc->desglose(
             $items,
@@ -553,7 +553,7 @@ class RegistroDeVentas
         $descValor = (float) ($data['descuento_valor'] ?? 0);
         $envio = (float) ($data['envio'] ?? 0);
         $aplicaIva = (bool) ($data['aplica_iva'] ?? false);
-        $valorACuenta = (float) ($data['valor_a_cuenta'] ?? 0);
+        $valorACuenta = \App\Support\EquiposACuenta::valorDocumento($data);
 
         $d = $this->calc->desglose($items, $descTipo, $descValor, $envio, $aplicaIva, $valorACuenta, (float) ($data['_cupon_monto'] ?? 0));
 

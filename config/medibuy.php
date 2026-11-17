@@ -102,4 +102,15 @@ return [
         'Para emitir factura (IVA), será necesario que nos proporcione sus datos fiscales completos.',
     ],
 
+    /*
+    | Quién valida los pagos de Cobranza (id del usuario). Cada venta tiene
+    | una sola persona que valida: la de "sin IVA" o la de "con IVA". Solo
+    | ella aprueba, rechaza o registra directo, y a ella le llega el aviso.
+    | Vacíos = como antes (administradores o quien tenga NIP).
+    */
+    'cobranza' => [
+        'valida_sin_iva' => env('COBRANZA_VALIDA_SIN_IVA'),
+        'valida_con_iva' => env('COBRANZA_VALIDA_CON_IVA'),
+    ],
+
 ];

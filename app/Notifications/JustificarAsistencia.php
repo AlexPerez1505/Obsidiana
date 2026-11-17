@@ -2,6 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Canales\WhatsAppCanal;
+use App\Support\WhatsApp\AvisoInterno;
+use App\Support\WhatsApp\MensajePlantilla;
 use App\Mail\JustificarAsistenciaMail;
 use App\Models\AsistenciaJustificacion;
 use Illuminate\Notifications\Notification;
@@ -21,7 +24,7 @@ class JustificarAsistencia extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return ['database', 'mail', WhatsAppCanal::class];
     }
 
     public function toDatabase(object $notifiable): array
@@ -41,5 +44,14 @@ class JustificarAsistencia extends Notification
     {
         return (new JustificarAsistenciaMail($this->justificacion, $notifiable->name))
             ->to($notifiable->email);
+    }
+
+    public function toWhatsApp(object $notifiable): ?MensajePlantilla
+    {
+        $j = $this->justificacion;
+
+        return AvisoInterno::mensaje($notifiable, 'asistencia_justificar',
+            [$j->work_date->translatedFormat('l d/m'), rtrim((string) $j->detalle, ' .')],
+            route('asistencia.justificar', $j), 'justificacion:'.$j->id);
     }
 }

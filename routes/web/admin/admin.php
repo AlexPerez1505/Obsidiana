@@ -57,6 +57,9 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admi
 Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     // Otorgar o quitar el rol de administrador: acción crítica, solo admins.
     Route::post('/usuarios/{user}/admin', [UserController::class, 'toggleAdmin'])->name('users.toggleAdmin');
+    // NIP de aprobación (corregir etapas después de 72 h, eliminar, cancelar…): solo lo asigna un admin.
+    Route::post('/usuarios/{user}/nip', [UserController::class, 'asignarNip'])->name('users.nip');
+    Route::delete('/usuarios/{user}/nip', [UserController::class, 'quitarNip'])->name('users.nip.quitar');
     Route::post('/reportes', [ReportController::class, 'store'])->name('reports.store');
     Route::patch('/materiales/{materialRequest}/revision', [MaterialRequestController::class, 'review'])->name('materials.review');
 

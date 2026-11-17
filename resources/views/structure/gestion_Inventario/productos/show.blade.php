@@ -231,6 +231,9 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php
+                            $resumenComp = \App\Models\PiezaComponente::resumenPara($piezas->pluck('id'));
+                        @endphp
                         @forelse ($piezas as $pieza)
                             @php
                                 // Fotos y video de la pieza, en el orden del visor.
@@ -288,6 +291,7 @@
                                     @endif
                                 </td>
                                 <td style="text-align:right; white-space:nowrap;">
+                                    @include('structure.gestion_Inventario._componentes_boton', ['pieza' => $pieza, 'resumen' => $resumenComp])
                                     @if ($pieza->urlPublica())
                                         <a href="{{ $pieza->urlPublica() }}" target="_blank" class="tbl-link">Ficha</a>
                                     @endif
@@ -363,6 +367,7 @@
     </div>
 
     @include('partials.galeria')
+    @include('structure.gestion_Inventario._componentes')
 
     @push('scripts')
         <script>

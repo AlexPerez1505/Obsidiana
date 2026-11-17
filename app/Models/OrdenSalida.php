@@ -96,6 +96,13 @@ class OrdenSalida extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /** Las tres etapas (ingeniería, empaque, entrega), en orden. */
+    public function etapas(): HasMany
+    {
+        return $this->hasMany(OrdenSalidaEtapa::class)
+            ->orderByRaw("FIELD(etapa, 'ingenieria', 'empaque', 'entrega')");
+    }
+
     /** Fotos y videos del equipo preparado, emplayado o entregado. */
     public function evidencias(): HasMany
     {

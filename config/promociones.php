@@ -33,8 +33,13 @@ return [
 
         // El texto del cuerpo TAL COMO se aprobó en Meta, solo para la vista
         // previa del panel. Variables: {{1}} nombre, {{2}} oferta, {{3}} código, {{4}} vence.
-        'plantilla_texto' => env('WHATSAPP_PLANTILLA_TEXTO', 'Hola {{1}}, tenemos algo para ti: {{2}} Tu código es {{3}} y es válido hasta el {{4}}. Toca el botón para ver la oferta.'),
+        'plantilla_texto' => env('WHATSAPP_PLANTILLA_TEXTO', 'Hola {{1}}, tenemos algo para ti: {{2}} Usa el cupón {{3}}, válido hasta el {{4}}. Toca el botón para ver la oferta.'),
         'plantilla_boton_texto' => env('WHATSAPP_PLANTILLA_BOTON_TEXTO', 'Ver oferta'),
+
+        // Avisos internos para el equipo (agenda, salidas, pagos, asistencia,
+        // garantías, congresos, solicitudes web) con plantillas de Servicio.
+        // Solo a quien tiene teléfono en su perfil.
+        'avisos_internos' => (bool) env('WHATSAPP_AVISOS', true),
 
         'timeout' => 15,
     ],

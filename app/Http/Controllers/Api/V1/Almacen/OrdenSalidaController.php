@@ -217,8 +217,8 @@ class OrdenSalidaController extends Controller
     /**
      * Subir fotos de evidencia.
      *
-     * Multipart con `fotos[]`: una o varias por petición, de hasta 10MB cada
-     * una (JPG, PNG, GIF, BMP o WEBP). No hay tope de cuántas junta la
+     * Multipart con `fotos[]`: una o varias por petición, de hasta 50MB cada
+     * una, en cualquier formato de foto (JPG, PNG, HEIC, TIFF, RAW, AVIF…). No hay tope de cuántas junta la
      * orden: siempre se suman a las que ya tiene. Para no chocar con el
      * tamaño máximo de una petición, mándalas de una en una o de pocas en
      * pocas. Se puede subir aunque la orden ya se haya entregado; si está
@@ -230,7 +230,7 @@ class OrdenSalidaController extends Controller
             abort(409, $razon);
         }
 
-        $data = $request->validate(EvidenciaDeSalida::REGLAS_FOTOS, EvidenciaDeSalida::MENSAJES);
+        $data = $request->validate(EvidenciaDeSalida::reglasFotos(), EvidenciaDeSalida::MENSAJES);
 
         $nuevas = collect($data['fotos'])
             ->map(fn ($foto) => $this->evidencia->guardarFoto($orden, $foto, $request->user()->id)->load('subidoPor'));

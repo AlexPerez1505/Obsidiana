@@ -2,6 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Canales\WhatsAppCanal;
+use App\Support\WhatsApp\AvisoInterno;
+use App\Support\WhatsApp\MensajePlantilla;
 use App\Mail\OrdenSalidaAsignadaMail;
 use App\Models\OrdenSalida;
 use Illuminate\Notifications\Notification;
@@ -16,7 +19,7 @@ class OrdenSalidaAsignada extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return ['database', 'mail', WhatsAppCanal::class];
     }
 
     public function toDatabase(object $notifiable): array
@@ -37,5 +40,14 @@ class OrdenSalidaAsignada extends Notification
     public function toMail(object $notifiable): OrdenSalidaAsignadaMail
     {
         return (new OrdenSalidaAsignadaMail($this->orden, $notifiable->name))->to($notifiable->email);
+    }
+
+    public function toWhatsApp(object $notifiable): ?MensajePlantilla
+    {
+        $o = $this->orden;
+
+        return AvisoInterno::mensaje($notifiable, 'orden_salida_asignada',
+            [$o->asignadaPor?->name ?? 'Alguien', $o->folio, $o->venta?->folio ?? 'sin folio'],
+            route('inventory.salidas.show', $o), 'salida:'.$o->id);
     }
 }

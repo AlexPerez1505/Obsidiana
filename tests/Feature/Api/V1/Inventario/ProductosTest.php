@@ -224,7 +224,8 @@ class ProductosTest extends TestCase
             ->assertJsonPath('data.existe', true)
             ->assertJsonPath('data.tiene_precio', true)
             ->assertJsonPath('data.pide_precio', false)
-            ->assertJsonPath('data.no_serie_sugerido', '23A0100')
+            // Sugiere el consecutivo compartido del equipo, no el número de fábrica + 1.
+            ->assertJsonPath('data.no_serie_sugerido', 'CV190-0001')
             ->assertJsonPath('data.producto.id', $producto->id);
         $this->assertArrayNotHasKey('precio', $res->json('data.producto'));
 

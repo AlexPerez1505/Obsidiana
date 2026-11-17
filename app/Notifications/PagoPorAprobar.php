@@ -2,6 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Canales\WhatsAppCanal;
+use App\Support\WhatsApp\AvisoInterno;
+use App\Support\WhatsApp\MensajePlantilla;
 use App\Mail\PagoPorAprobarMail;
 use App\Models\CobroSolicitud;
 use Illuminate\Notifications\Notification;
@@ -17,7 +20,7 @@ class PagoPorAprobar extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return ['database', 'mail', WhatsAppCanal::class];
     }
 
     public function toDatabase(object $notifiable): array
@@ -36,5 +39,14 @@ class PagoPorAprobar extends Notification
     public function toMail(object $notifiable): PagoPorAprobarMail
     {
         return (new PagoPorAprobarMail($this->solicitud, $notifiable->name))->to($notifiable->email);
+    }
+
+    public function toWhatsApp(object $notifiable): ?MensajePlantilla
+    {
+        $s = $this->solicitud;
+
+        return AvisoInterno::mensaje($notifiable, 'pago_por_aprobar',
+            [$s->venta?->folio ?? 'sin folio', $s->metodoLabel(), '$'.number_format((float) $s->monto, 2), $s->subidoPor?->name ?? 'un vendedor'],
+            route('commercial.ventas.cobros.index', $s->venta_id).'#pagos-por-aprobar', 'cobro:'.$s->id);
     }
 }

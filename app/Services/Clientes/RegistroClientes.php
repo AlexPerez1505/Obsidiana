@@ -44,7 +44,9 @@ class RegistroClientes
         }
 
         $request->merge([
-            'telefono' => trim((string) $request->input('telefono')),
+            // Solo los números: "729 694-5790" se guarda como 7296945790 y
+            // así se valida que sean exactamente 10 dígitos.
+            'telefono' => preg_replace('/\D+/', '', (string) $request->input('telefono')),
             'rfc' => $rfc !== '' ? $rfc : null,
             'categoria_id' => $request->filled('categoria_id') ? $request->input('categoria_id') : null,
             'congreso_id' => $congresoId,
@@ -88,7 +90,7 @@ class RegistroClientes
         return [
             'nombre' => ['required', 'string', 'max:255'],
             'apellido' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')],
+            'telefono' => ['required', 'digits:10', Rule::unique('clientes', 'telefono')],
             'rfc' => ['nullable', 'string', 'max:13', Rule::unique('clientes', 'rfc')],
             'gmail' => ['nullable', 'email', 'max:255'],
             'direccion' => ['required', 'string', 'max:255'],
@@ -116,6 +118,8 @@ class RegistroClientes
     {
         return [
             'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
+            'telefono.required' => 'Escribe el teléfono a 10 dígitos.',
+            'telefono.digits' => 'El teléfono debe tener exactamente 10 dígitos (sin lada internacional).',
             'rfc.unique' => 'Este RFC ya está registrado en otro cliente.',
             'estado.in' => 'Elige un estado de la lista.',
             'estado.required_with' => 'Elige el estado.',
@@ -131,7 +135,7 @@ class RegistroClientes
         return [
             'nombre' => ['required', 'string', 'max:255'],
             'apellido' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')->ignore($cliente->id)],
+            'telefono' => ['required', 'digits:10', Rule::unique('clientes', 'telefono')->ignore($cliente->id)],
             'rfc' => ['nullable', 'string', 'max:13', Rule::unique('clientes', 'rfc')->ignore($cliente->id)],
             'gmail' => ['nullable', 'email', 'max:255'],
             'direccion' => ['required', 'string', 'max:255'],
@@ -154,6 +158,8 @@ class RegistroClientes
     {
         return [
             'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
+            'telefono.required' => 'Escribe el teléfono a 10 dígitos.',
+            'telefono.digits' => 'El teléfono debe tener exactamente 10 dígitos (sin lada internacional).',
             'rfc.unique' => 'Este RFC ya está registrado en otro cliente.',
             'estado.in' => 'Elige un estado de la lista.',
             'estado.required_with' => 'Elige el estado.',

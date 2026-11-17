@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\V1\Ventas;
 use App\Models\Cobro;
 use App\Models\Factura;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\UsaApi;
 use Tests\Feature\Api\V1\Ventas\Concerns\DatosDeVentas;
@@ -32,11 +33,11 @@ class WebSigueIgualTest extends TestCase
         $pantalla = route('commercial.ventas.cobros.index', $venta);
 
         $this->actingAs($admin)->from($pantalla)->post(route('commercial.ventas.cobros.store', $venta), [
-            'fecha' => now()->toDateString(), 'monto' => 1500, 'metodo' => 'efectivo',
+            'fecha' => now()->toDateString(), 'monto' => 1500, 'metodo' => 'efectivo', 'evidencias' => [UploadedFile::fake()->image('recibo.jpg')],
         ])->assertRedirect($pantalla)->assertSessionHas('status', 'Cobro registrado correctamente. Se aplicó a 2 pagos: Pago inicial $1,000.00 (liquidado), Primer pago $500.00 (restan $500.00).');
 
         $this->actingAs($admin)->from($pantalla)->post(route('commercial.ventas.cobros.store', $venta), [
-            'fecha' => now()->toDateString(), 'monto' => 99999, 'metodo' => 'efectivo',
+            'fecha' => now()->toDateString(), 'monto' => 99999, 'metodo' => 'efectivo', 'evidencias' => [UploadedFile::fake()->image('recibo.jpg')],
         ])->assertRedirect($pantalla)->assertSessionHasErrors(['monto' => 'El monto supera el saldo pendiente ($1,500.00).']);
 
         $this->actingAs($admin)->get($pantalla)->assertOk();

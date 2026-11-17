@@ -42,8 +42,8 @@ class CobroController extends Controller
 
     public function store(Request $request, Venta $venta): RedirectResponse
     {
-        if (! \App\Services\Ventas\ComprobantesDePago::puedeAprobar($request->user())) {
-            return back()->withErrors(['monto' => 'Solo un administrador o alguien con NIP registra cobros directo. Sube el pago como comprobante para que lo aprueben.']);
+        if (! \App\Services\Ventas\ComprobantesDePago::puedeAprobar($request->user(), $venta)) {
+            return back()->withErrors(['monto' => \App\Services\Ventas\ComprobantesDePago::soloValida($venta)]);
         }
 
         try {

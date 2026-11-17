@@ -46,7 +46,9 @@ class EquiposACuentaTest extends TestCase
         $this->actingAs($this->admin)->post(route('commercial.cotizaciones.store'), $this->base)->assertSessionHasNoErrors();
         $cot = Cotizacion::latest('id')->firstOrFail();
 
-        $this->assertEquals([['tipo' => 'LAPAROSCOPIA', 'subtipo' => 'TORRE', 'marca' => 'STORZ', 'modelo' => 'IMAGE1 S', 'no_serie' => 'AB-123']], $cot->equipos_a_cuenta);
+        $this->assertEquals([['tipo' => 'LAPAROSCOPIA', 'subtipo' => 'TORRE', 'marca' => 'STORZ', 'modelo' => 'IMAGE1 S', 'no_serie' => 'AB-123', 'valor' => 0]], $cot->equipos_a_cuenta);
+        // Sin valor por equipo se respeta el valor general que se mandó.
+        $this->assertEquals(15000, (float) $cot->valor_a_cuenta);
 
         $this->actingAs($this->admin)->get(route('commercial.cotizaciones.show', $cot))->assertOk()
             ->assertSee('Equipo a cuenta')->assertSee('LAPAROSCOPIA · TORRE')->assertSee('STORZ IMAGE1 S')->assertSee('Serie AB-123');
@@ -77,6 +79,51 @@ class EquiposACuentaTest extends TestCase
         $contrato = view('structure.commercial_management.ventas.contrato', ['venta' => $venta->load(['customer', 'seller', 'items', 'pagos'])])->render();
         $contrato = preg_replace('/\s+/u', ' ', $contrato);
         $this->assertStringContainsString('correspondientes al equipo entregado a cuenta (LAPAROSCOPIA · TORRE · STORZ IMAGE1 S · Serie AB-123)', $contrato);
+    }
+
+    public function test_cada_equipo_trae_su_valor_y_la_suma_se_resta_del_contrato(): void
+    {
+        $datos = ['valor_a_cuenta' => 0, 'equipos_a_cuenta' => [
+            ['tipo' => 'Laparoscopia', 'subtipo' => 'Torre', 'marca' => 'Storz', 'modelo' => 'Image1 S', 'no_serie' => '', 'valor' => 10000],
+            ['tipo' => 'Endoscopia', 'subtipo' => 'Gastroscopio', 'marca' => 'Olympus', 'modelo' => 'GIF-H190', 'no_serie' => '', 'valor' => 5000.5],
+        ]] + $this->base;
+        $datos['pagos'] = [];
+
+        $this->actingAs($this->admin)->post(route('commercial.cotizaciones.store'), $datos)->assertSessionHasNoErrors();
+        $cot = Cotizacion::latest('id')->firstOrFail();
+
+        $this->assertEquals(15000.5, (float) $cot->valor_a_cuenta);
+        $this->assertEquals([10000, 5000.5], array_column($cot->equipos_a_cuenta, 'valor'));
+        $this->assertEquals(round((float) $cot->total - 15000.5, 2), round((float) $cot->total_contrato, 2));
+
+        $this->actingAs($this->admin)->get(route('commercial.cotizaciones.show', $cot))->assertOk()
+            ->assertSee('$10,000.00')->assertSee('$5,000.50');
+        $html = view('structure.commercial_management.cotizaciones.pdf', ['cotizacion' => $cot->load(['customer', 'seller', 'items', 'pagos', 'fichas'])])->render();
+        $this->assertStringContainsString('$5,000.50', $html);
+    }
+
+    public function test_la_venta_tambien_guarda_el_valor_de_cada_equipo(): void
+    {
+        $datos = ['valor_a_cuenta' => 0, 'equipos_a_cuenta' => [
+            ['tipo' => 'Laparoscopia', 'subtipo' => 'Torre', 'marca' => 'Storz', 'modelo' => 'Image1 S', 'no_serie' => 'AB-1', 'valor' => 8000],
+            ['tipo' => 'Endoscopia', 'subtipo' => 'Gastroscopio', 'marca' => 'Olympus', 'modelo' => 'GIF-H190', 'no_serie' => '', 'valor' => 2500],
+        ]] + $this->base;
+        $datos['pagos'] = [];
+
+        $this->actingAs($this->admin)->post(route('commercial.ventas.store'), $datos)->assertSessionHasNoErrors();
+        $venta = Venta::latest('id')->firstOrFail();
+
+        $this->assertEquals(10500, (float) $venta->valor_a_cuenta);
+        $this->assertEquals([8000, 2500], array_column($venta->equipos_a_cuenta, 'valor'));
+        $this->assertEquals(round((float) $venta->total - 10500, 2), round((float) $venta->total_contrato, 2));
+
+        $this->actingAs($this->admin)->get(route('commercial.ventas.show', $venta))->assertOk()
+            ->assertSee('$8,000.00')->assertSee('$2,500.00');
+        // Al editar, cada equipo trae su valor.
+        $this->actingAs($this->admin)->get(route('commercial.ventas.edit', $venta))->assertOk()->assertSee('"valor":8000', false);
+
+        $contrato = preg_replace('/\s+/u', ' ', view('structure.commercial_management.ventas.contrato', ['venta' => $venta->load(['customer', 'seller', 'items', 'pagos'])])->render());
+        $this->assertStringContainsString('10,500.00', $contrato);
     }
 
     public function test_se_puede_quitar_al_editar(): void

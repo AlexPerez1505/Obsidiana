@@ -89,8 +89,8 @@ class CobroController extends Controller
     public function store(Request $request, Venta $venta): JsonResponse
     {
         // Registrar un cobro directo es aprobarlo: solo con NIP o administrador.
-        abort_unless(\App\Services\Ventas\ComprobantesDePago::puedeAprobar($request->user()), 403,
-            'Solo un administrador o alguien con NIP registra cobros directo. Sube el pago como comprobante para que lo aprueben.');
+        abort_unless(\App\Services\Ventas\ComprobantesDePago::puedeAprobar($request->user(), $venta), 403,
+            \App\Services\Ventas\ComprobantesDePago::soloValida($venta));
 
         $this->cobros->asegurarCobrable($venta);
 

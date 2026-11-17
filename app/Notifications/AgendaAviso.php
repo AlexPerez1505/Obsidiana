@@ -2,6 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Canales\WhatsAppCanal;
+use App\Support\WhatsApp\AvisoInterno;
+use App\Support\WhatsApp\MensajePlantilla;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -26,7 +29,7 @@ class AgendaAviso extends Notification
 
     public function via(object $notifiable): array
     {
-        return $this->porCorreo && filled($notifiable->email) ? ['database', 'mail'] : ['database'];
+        return $this->porCorreo && filled($notifiable->email) ? ['database', 'mail', WhatsAppCanal::class] : ['database', WhatsAppCanal::class];
     }
 
     public function toDatabase(object $notifiable): array
@@ -49,5 +52,25 @@ class AgendaAviso extends Notification
             ->line($this->texto)
             ->action('Abrir en la agenda', $this->url)
             ->line('Este aviso es interno; no se envió nada a clientes.');
+    }
+
+    /**
+     * Un seguimiento de cliente sale con su plantilla (tipo, cliente y
+     * fecha); lo demás de la agenda, con la de recordatorio.
+     */
+    public function toWhatsApp(object $notifiable): ?MensajePlantilla
+    {
+        $ref = 'agenda:'.$this->tipo.':'.($this->item ?? '-');
+
+        if ($this->item && str_starts_with($this->item, 's-')
+            && in_array($this->tipo, ['recordatorio', 'vencido', 'asignada', 'reasignada', 'reprogramada'], true)
+            && ($s = \App\Models\ClienteSeguimiento::with('customer')->find((int) substr($this->item, 2)))) {
+            $cliente = trim(($s->customer->nombre ?? '').' '.($s->customer->apellido ?? '')) ?: 'Cliente';
+            $cuando = trim(($s->fecha?->format('d/m/Y') ?? '').' '.substr((string) $s->hora, 0, 5));
+
+            return AvisoInterno::mensaje($notifiable, 'seguimiento_cliente', [$s->tipoLabel(), $cliente, $cuando ?: 'sin fecha'], $this->url, $ref);
+        }
+
+        return AvisoInterno::mensaje($notifiable, 'agenda_recordatorio', [rtrim($this->titulo, ' .'), rtrim($this->texto, ' .')], $this->url, $ref);
     }
 }

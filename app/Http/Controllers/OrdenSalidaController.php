@@ -65,12 +65,17 @@ class OrdenSalidaController extends Controller
         ]);
 
         $puedeAsignar = auth()->user()->can('salidas.asignar');
+        $etapasDeSalida = app(\App\Services\Almacen\EtapasDeSalida::class);
+        $etapas = $etapasDeSalida->asegurar($orden);
 
         return view('structure.gestion_Inventario.ordenes_salida.show', [
             'orden' => $orden,
             'puedePreparar' => auth()->user()->can('salidas.preparar'),
             'puedeAsignar' => $puedeAsignar,
             'preparadores' => $puedeAsignar ? app(AsignacionDeSalida::class)->candidatos() : collect(),
+            'etapas' => $etapas,
+            // Ya se trabaja por etapas: la preparación y la firma se hacen en ellas.
+            'porEtapas' => $etapasDeSalida->activas($orden),
         ]);
     }
 
@@ -176,11 +181,37 @@ class OrdenSalidaController extends Controller
             abort(409, $razon);
         }
 
-        $data = $request->validate(EvidenciaDeSalida::REGLAS_FOTO, EvidenciaDeSalida::MENSAJES);
+        $data = $request->validate(EvidenciaDeSalida::reglasFoto() + ['etapa' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Models\OrdenSalidaEtapa::ETAPAS))]], EvidenciaDeSalida::MENSAJES);
+        $this->exigirEtapaAbierta($request, $orden, $data['etapa'] ?? null);
 
-        $nueva = $this->evidencia->guardarFoto($orden, $data['foto'], $request->user()->id);
+        $nueva = filled($data['foto_path'] ?? null)
+            ? $this->evidencia->guardarFotoArmada($orden, $data['foto_path'], $data['nombre'] ?? null, $request->user()->id)
+            : $this->evidencia->guardarFoto($orden, $request->file('foto'), $request->user()->id);
+
+        if (! empty($data['etapa'])) {
+            $nueva->update(['etapa' => $data['etapa']]);
+        }
 
         return $this->evidenciaSubida($request, $orden, $nueva, 'Foto agregada.');
+    }
+
+    /**
+     * Un pedazo de foto: cualquier formato y sin tope de tamaño (se manda
+     * en pedazos de 4MB). Al armarse, la pantalla la registra con foto_path.
+     */
+    public function evidenciaFotoChunk(Request $request, OrdenSalida $orden, \App\Services\Inventario\FotoPorPedazos $fotos): JsonResponse
+    {
+        if ($razon = $this->evidencia->razonParaNoSubir($orden)) {
+            abort(409, $razon);
+        }
+
+        $data = $request->validate(\App\Services\Inventario\FotoPorPedazos::reglas());
+
+        try {
+            return response()->json($fotos->recibir($request->file('chunk'), $data['upload_id'], (int) $data['index'], (int) $data['total'], $data['extension']));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
+        }
     }
 
     /**
@@ -193,12 +224,17 @@ class OrdenSalidaController extends Controller
             abort(409, $razon);
         }
 
-        $data = $request->validate([...VideoPorPedazos::reglas(), ...EvidenciaDeSalida::REGLAS_VIDEO]);
+        $data = $request->validate([...VideoPorPedazos::reglas(), ...EvidenciaDeSalida::REGLAS_VIDEO, 'etapa' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Models\OrdenSalidaEtapa::ETAPAS))]]);
+        $this->exigirEtapaAbierta($request, $orden, $data['etapa'] ?? null);
 
         $resultado = $this->evidencia->recibirPedazoDeVideo($orden, $request->file('chunk'), $data, $request->user()->id);
 
         if (! isset($resultado['evidencia'])) {
             return response()->json(['status' => $resultado['status']]);
+        }
+
+        if (! empty($data['etapa'])) {
+            $resultado['evidencia']->update(['etapa' => $data['etapa']]);
         }
 
         return $this->evidenciaSubida($request, $orden, $resultado['evidencia'], 'Video agregado.');
@@ -225,6 +261,23 @@ class OrdenSalidaController extends Controller
             'message' => $tipo,
             'conteo' => $orden->conteoEvidencias(),
         ]);
+    }
+
+    /** La evidencia de una etapa se sube mientras se trabaja, o al corregirla (desbloqueada). */
+    private function exigirEtapaAbierta(Request $request, OrdenSalida $orden, ?string $etapa): void
+    {
+        if (! $etapa) {
+            return;
+        }
+
+        $e = $orden->etapas()->where('etapa', $etapa)->first();
+        $etapas = app(\App\Services\Almacen\EtapasDeSalida::class);
+
+        if ($e && ! $etapas->puedeEditar($request->user(), $e->setRelation('orden', $orden))) {
+            abort(409, $e->terminada()
+                ? 'Esta etapa ya se terminó: pulsa «Editar» para corregirla.'
+                : ($etapas->razonParaNoTrabajar($request->user(), $e) ?? 'No puedes subir evidencia a esta etapa.'));
+        }
     }
 
     private function evidenciaSubida(Request $request, OrdenSalida $orden, OrdenSalidaEvidencia $nueva, string $mensaje): JsonResponse

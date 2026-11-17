@@ -104,6 +104,18 @@ class GeneradorDeSeries
     }
 
     /**
+     * La serie que sigue con ese prefijo, sin apartarla: es solo para
+     * enseñarla ("Seguir consecutivo desde CAM-STR-1588-0006"). Al generar
+     * de verdad se aparta con generar(), que es la que evita choques.
+     */
+    public static function siguiente(string $prefijo): string
+    {
+        $desde = max(static::ultimoConsecutivo($prefijo), static::ultimaReserva($prefijo));
+
+        return $prefijo.'-'.str_pad((string) ($desde + 1), self::DIGITOS, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * El consecutivo más alto ya usado con ese prefijo, en todas las piezas
      * (no solo las de un producto): el prefijo describe al equipo, así que
      * dos filas del mismo modelo no deben repetir número. Solo cuenta lo que
@@ -111,7 +123,10 @@ class GeneradorDeSeries
      */
     private static function ultimoConsecutivo(string $prefijo): int
     {
-        return static::mayorNumero(ProductoSerial::query()->where('no_serie', 'like', static::comoLike($prefijo).'-%')->pluck('no_serie'), $prefijo);
+        // Se busca en cualquier parte de la serie porque las viejas llevaban
+        // el tipo al frente (END-GAS-OLY-GIT-0005): siguen siendo del mismo
+        // subtipo, marca y modelo y el consecutivo debe continuar tras ellas.
+        return static::mayorNumero(ProductoSerial::query()->where('no_serie', 'like', '%'.static::comoLike($prefijo).'-%')->pluck('no_serie'), $prefijo);
     }
 
     private static function ultimaReserva(string $prefijo): int
@@ -121,7 +136,11 @@ class GeneradorDeSeries
 
     private static function mayorNumero($series, string $prefijo): int
     {
-        $patron = '/^'.preg_quote(mb_strtoupper($prefijo), '/').'-(\d+)$/u';
+        // Con subtipo, marca y modelo completos se acepta además un tramo
+        // delante (la abreviatura del tipo que llevaban las series viejas).
+        // Con un prefijo incompleto no: GEY-CLI no debe seguir a INS-GEY-CLI.
+        $completo = substr_count($prefijo, '-') >= 2;
+        $patron = '/^'.($completo ? '(?:[A-Z0-9]+-)?' : '').preg_quote(mb_strtoupper($prefijo), '/').'-(\d+)$/u';
 
         return (int) collect($series)
             ->map(fn ($serie) => preg_match($patron, mb_strtoupper(trim((string) $serie)), $m) ? (int) $m[1] : 0)

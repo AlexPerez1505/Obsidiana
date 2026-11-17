@@ -280,11 +280,13 @@
                 <div class="generar-series">
                     <div class="txt">
                         <b>Cada pieza lleva su propio número de serie.</b>
-                        <span>Escríbelo en cada una. Si no traen, genera las que falten
+                        <span>Escríbelo en cada una. Si no traen, sigue el consecutivo
                             (<span data-generar-nota>con el subtipo, marca y modelo</span>).</span>
                     </div>
-                    <button type="button" class="btn btn--ghost" data-usar-sugeridas hidden></button>
-                    <button type="button" class="btn btn--ghost" data-generar-series>Generar las que faltan</button>
+                    {{-- Un solo botón: llena las piezas vacías con el consecutivo
+                         que comparten todos los equipos del mismo subtipo, marca
+                         y modelo (aunque sean otros productos). --}}
+                    <button type="button" class="btn btn--ghost" data-generar-series>Seguir consecutivo</button>
                 </div>
 
                 {{-- Los errores de cada pieza vienen con su índice

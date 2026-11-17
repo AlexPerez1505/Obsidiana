@@ -22,6 +22,14 @@ return [
     'string'               => 'El campo :attribute debe ser una cadena de caracteres.',
     'unique'               => 'El :attribute ya ha sido registrado.',
 
+    // Mensajes de un campo en particular (sirven en web y API por igual).
+    'custom' => [
+        // Cotizaciones y ventas: el sobreprecio solo sube el precio.
+        'items.*.sobreprecio' => [
+            'min' => 'El sobreprecio solo acepta cantidades positivas. Para bajar el precio usa el campo Descuento.',
+        ],
+    ],
+
     // Nombres legibles de los campos
     'attributes' => [
         'name'                  => 'nombre',

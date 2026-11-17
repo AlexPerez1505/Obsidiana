@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Mail\TiendaSolicitudMail;
 use App\Models\Customer;
 use App\Models\TiendaSolicitud;
+use App\Models\User;
+use App\Support\WhatsApp\AvisoInterno;
 use App\Services\Tienda\CatalogoTienda;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -178,11 +180,41 @@ class TiendaController extends Controller
             }
         }
 
+        $this->avisarPorWhatsApp($solicitud);
+
         return response()->json([
             'folio' => $solicitud->folio,
             'message' => $esContacto
                 ? 'Recibimos tu mensaje. Te responderemos muy pronto.'
                 : 'Recibimos tu solicitud. Un asesor te contactará muy pronto.',
         ], 201);
+    }
+
+    /**
+     * Avisa por WhatsApp (plantilla prospecto_nuevo) a quienes atienden las
+     * solicitudes web, para que el prospecto no espere a que alguien abra
+     * el correo.
+     */
+    private function avisarPorWhatsApp(TiendaSolicitud $s): void
+    {
+        if (! config('promociones.whatsapp.avisos_internos')) {
+            return;
+        }
+
+        try {
+            $url = route('commercial.solicitudes-web.show', $s);
+            $mensaje = trim(($s->resumen() ?: '').(filled($s->mensaje) ? '. '.$s->mensaje : ''), ' .') ?: 'sin mensaje';
+            $nombre = trim($s->nombre.($s->empresa ? ' ('.$s->empresa.')' : ''));
+
+            User::where('status', User::STATUS_APPROVED)->whereNotNull('phone')->get()
+                ->filter(fn (User $u) => $u->can('tienda.atender') && AvisoInterno::puede($u))
+                ->each(function (User $u) use ($s, $url, $mensaje, $nombre) {
+                    if ($m = AvisoInterno::mensaje($u, 'prospecto_nuevo', [$s->folio, $nombre, $s->telefono, $mensaje], $url, 'tienda:'.$s->id, false)) {
+                        AvisoInterno::enviar($m);
+                    }
+                });
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo avisar por WhatsApp la solicitud web '.$s->folio.': '.$e->getMessage());
+        }
     }
 }

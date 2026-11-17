@@ -2,6 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Canales\WhatsAppCanal;
+use App\Support\WhatsApp\AvisoInterno;
+use App\Support\WhatsApp\MensajePlantilla;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -18,7 +21,7 @@ class AvisoDeGarantia extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', WhatsAppCanal::class];
     }
 
     public function toDatabase(object $notifiable): array
@@ -29,5 +32,19 @@ class AvisoDeGarantia extends Notification
             'url' => $this->url,
             'icono' => 'garantia',
         ];
+    }
+
+    /**
+     * Los títulos traen el folio al final ("Nueva reclamación · GAR-..."):
+     * el folio va como {{2}} y el motivo, con el detalle, como {{3}}.
+     */
+    public function toWhatsApp(object $notifiable): ?MensajePlantilla
+    {
+        [$motivo, $folio] = str_contains($this->titulo, ' · ')
+            ? array_map('trim', explode(' · ', $this->titulo, 2))
+            : [$this->titulo, null];
+
+        return AvisoInterno::mensaje($notifiable, 'garantia_aviso',
+            [$folio ?? $motivo, ($folio ? $motivo.'. ' : '').rtrim($this->texto, ' .')], $this->url, 'garantia');
     }
 }

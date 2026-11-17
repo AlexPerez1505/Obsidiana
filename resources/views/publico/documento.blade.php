@@ -212,7 +212,7 @@
             @endif
             <div class="grande"><span>Total</span><b>${{ number_format($doc->total, 2) }}</b></div>
             @foreach ($doc->equipos_a_cuenta ?? [] as $r)
-                <div><span>Equipo a cuenta</span><b style="text-align:right;">{{ \App\Support\EquiposACuenta::texto($r) }}</b></div>
+                <div><span>Equipo a cuenta</span><b style="text-align:right;">{{ \App\Support\EquiposACuenta::texto($r) }}@if ((float) ($r['valor'] ?? 0) > 0) · ${{ number_format((float) $r['valor'], 2) }}@endif</b></div>
             @endforeach
         </div>
     </div>
