@@ -131,7 +131,6 @@
 
     {{-- ===================== Búsqueda y filtros ===================== --}}
     <form method="GET" id="filtrosMovimientos" data-live="off" class="f-toolbar">
-        <input type="hidden" name="estado" value="{{ $filters['estado'] ?? '' }}">
         <div class="f-search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="fBuscar" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar, o escanea / escribe la etiqueta (MB-000123) + Enter" autocomplete="off">
@@ -140,20 +139,71 @@
         {{-- Catálogo del equipo en una sola fila de selectores compactos:
              el texto del label queda oculto a la vista (lo usan los lectores
              de pantalla y los chips), y se aplica en cuanto se elige. --}}
-        <div class="mov-cat">
-            @include('partials.inventario-filtros-catalogo')
-        </div>
-
         <div class="flt" data-flt>
             <button type="button" class="flt-btn" data-flt-toggle aria-expanded="false">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                Filtros
+                <span class="flt-heading"><strong>Filtros avanzados</strong><small>Refina la búsqueda de movimientos en el inventario</small></span>
                 <span class="flt-count" data-flt-count hidden>0</span>
+                <span class="flt-chevron">⌄</span>
             </button>
 
             <div class="flt-panel" data-flt-panel hidden>
-                <div class="flt-group">
-                    <h4>Tipo de movimiento</h4>
+                <div class="mov-cat">
+                    @include('partials.inventario-filtros-catalogo')
+                    @php($movTypesSeleccionados = $filters['movement_types'] ?? [])
+                    <details class="flt-state-box">
+                        <summary>
+                            <span class="flt-state-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+                            Estado
+                            </span>
+                            <span class="flt-state-chevron">⌄</span>
+                        </summary>
+                        <div class="flt-state-options">
+                            @foreach ([
+                                'entrada' => 'Entradas',
+                                'vendido' => 'Vendidas sin entregar',
+                                'salida' => 'Salidas entregadas',
+                                'transferencia' => 'Transferencias',
+                            ] as $valor => $texto)
+                                <label class="flt-opt">
+                                    <span class="flt-opt-txt">{{ $texto }}</span>
+                                    <input type="checkbox" data-f="tipo" name="movement_types[]" value="{{ $valor }}" @checked(in_array($valor, $movTypesSeleccionados, true))>
+                                </label>
+                            @endforeach
+                        </div>
+                    </details>
+                    <div class="flt-group flt-date-group">
+                        <h4>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M16 2.5v4M8 2.5v4M3 9h18"/></svg>
+                            Rango de fechas
+                        </h4>
+                        <div class="flt-fechas">
+                            <label class="flt-date-input">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M16 2.5v4M8 2.5v4M3 9h18"/></svg>
+                                <input type="date" data-f="desde" name="desde" value="{{ $filters['desde'] ?? '' }}" aria-label="Fecha del movimiento">
+                            </label>
+                        </div>
+                    </div>
+                    @php($condicionesSeleccionadas = $filters['condiciones'] ?? [])
+                    <label class="inv-filter-field flt-condition-field">
+                        <span class="inv-filter-label">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+                            Condición
+                        </span>
+                        <select id="mov-condicion-filtro" aria-label="Condición">
+                            <option value="" @selected(empty($condicionesSeleccionadas))>Todas las condiciones</option>
+                            <option value="nuevo" @selected(in_array('nuevo', $condicionesSeleccionadas, true))>Equipo nuevo</option>
+                            <option value="usado" @selected(in_array('usado', $condicionesSeleccionadas, true))>Equipo usado</option>
+                        </select>
+                    </label>
+                    <div class="flt-actions">
+                        <button type="submit" class="btn flt-apply">Aplicar filtros</button>
+                        <button type="button" class="btn flt-clear" data-limpiar-filtros>Limpiar</button>
+                    </div>
+                </div>
+                <div class="flt-group legacy-movement-types-group" hidden>
+                    <h4 class="legacy-movement-types">Tipo de movimiento</h4>
                     {{-- "Vendidas sin entregar" es la lista que le sirve a
                          almacén: ya se vendieron, pero el equipo sigue aquí. --}}
                     @foreach ([
@@ -164,23 +214,14 @@
                     ] as $valor => $texto)
                         <label class="flt-opt">
                             <span class="flt-opt-txt">{{ $texto }}</span>
-                            <input type="checkbox" data-f="tipo" name="movement_types[]" value="{{ $valor }}" @checked(in_array($valor, $filters['movement_types'] ?? []))>
+                            {{-- Los estados se muestran dentro del desplegable Estado. --}}
                         </label>
                     @endforeach
                 </div>
 
                 <div class="flt-group">
                     <h4>Condición</h4>
-                    <label class="flt-opt">
-                        <span class="flt-opt-txt">Equipo nuevo</span>
-                        <input type="checkbox" data-f="condicion" name="condiciones[]" value="nuevo" @checked(in_array('nuevo', $filters['condiciones'] ?? []))>
-                    </label>
-                    <label class="flt-opt">
-                        <span class="flt-opt-txt">Equipo usado</span>
-                        <input type="checkbox" data-f="condicion" name="condiciones[]" value="usado" @checked(in_array('usado', $filters['condiciones'] ?? []))>
-                    </label>
                 </div>
-
                 @if ($almacenes->count() > 1)
                     <div class="flt-group">
                         <h4>Almacén</h4>
@@ -205,14 +246,6 @@
                     </div>
                 @endif
 
-                <div class="flt-group">
-                    <h4>Fecha del movimiento</h4>
-                    <div class="flt-fechas">
-                        <input type="date" data-f="desde" name="desde" value="{{ $filters['desde'] ?? '' }}" aria-label="Movimiento desde">
-                        <input type="date" data-f="hasta" name="hasta" value="{{ $filters['hasta'] ?? '' }}" aria-label="Movimiento hasta">
-                    </div>
-                </div>
-                <button type="submit" class="btn">Aplicar filtros</button>
             </div>
         </div>
 
@@ -250,8 +283,9 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse ($filas as $fila)
-                    @php $m = $fila['modelo']; @endphp
+                <?php if ($filas->isNotEmpty()): ?>
+                    <?php foreach ($filas as $fila): ?>
+                    <?php $m = $fila['modelo']; ?>
 
                     {{-- Toda la fila abre el detalle del movimiento: ahí está
                          todo lo registrado (unidades, evidencia de cada una,
@@ -307,7 +341,8 @@
                             @include('structure.gestion_Inventario.entrada_salida._acciones', ['movimiento' => $m])
                         </td>
                     </tr>
-                @empty
+                    <?php endforeach; ?>
+                <?php else: ?>
                     <tr>
                         <td colspan="7">
                             <div class="empty-state">
@@ -320,15 +355,16 @@
                             </div>
                         </td>
                     </tr>
-                @endforelse
+                <?php endif; ?>
             </tbody>
         </table>
     </div>
 
     {{-- ===================== Vista tarjetas ===================== --}}
     <div class="data-cards" data-view-cards style="display:none;">
-        @forelse ($filas as $fila)
-            @php $m = $fila['modelo']; @endphp
+        <?php if ($filas->isNotEmpty()): ?>
+            <?php foreach ($filas as $fila): ?>
+            <?php $m = $fila['modelo']; ?>
 
             <article class="data-card f-row mv-clic" tabindex="0" role="link"
                      aria-label="Ver detalle de {{ $m->folio }}"
@@ -374,7 +410,8 @@
                     @include('structure.gestion_Inventario.entrada_salida._acciones', ['movimiento' => $m])
                 </div>
             </article>
-        @empty
+            <?php endforeach; ?>
+        <?php else: ?>
             <div class="card">
                 <div class="empty-state">
                     <span class="ico">
@@ -385,7 +422,7 @@
                     <a href="{{ route('inventory.movimientos.create') }}" class="btn">Nueva entrada</a>
                 </div>
             </div>
-        @endforelse
+        <?php endif; ?>
     </div>
 
     {{-- Aviso cuando los filtros no dejan nada visible --}}
@@ -463,13 +500,77 @@
         /* Búsqueda arriba a lo ancho; debajo, una sola fila con el catálogo
            y los demás controles. */
         .f-toolbar > .f-search { flex:1 0 100%; }
-        .mov-cat { flex:1 1 520px; min-width:0; }
-        .mov-cat [data-catalogo-filtros] { gap:8px !important; flex-wrap:nowrap !important; }
+        .f-toolbar > .flt { flex:1 0 100%; min-width:0; }
+        /* Los controles secundarios comparten una sola fila debajo del panel. */
+        .f-toolbar > .flt-toggles,
+        .f-toolbar > #fLimpiar,
+        .f-toolbar > .view-switch { flex:0 0 auto !important; width:auto; }
+        .f-toolbar > .view-switch { margin-left:auto; }
+        .flt-btn { width:100%; justify-content:flex-start; padding:14px 18px; border-radius:16px 16px 0 0; background:linear-gradient(135deg, color-mix(in srgb, var(--surface) 92%, var(--primary)), var(--surface)); }
+        .flt-btn[aria-expanded="false"] { border-radius:16px; }
+        .flt-heading { display:flex; flex-direction:column; align-items:flex-start; gap:2px; flex:1; text-align:left; }
+        .flt-heading strong { font-size:16px; color:var(--text); }
+        .flt-heading small { color:var(--muted); font-size:12px; font-weight:500; }
+        .flt-chevron { margin-left:auto; font-size:22px; line-height:1; color:var(--muted); transition:transform .18s; }
+        .flt-btn[aria-expanded="true"] .flt-chevron { transform:rotate(180deg); }
+        .flt-panel { position:static; align-self:stretch; width:100%; max-height:none; overflow:visible; columns:1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 24px; padding:18px; border-radius:0 0 16px 16px; border-top:0; box-shadow:0 12px 28px rgba(0,0,0,.12); }
+        .flt-panel[hidden] { display:none; }
+        .flt-panel .mov-cat { grid-column:1 / -1; }
+        .flt-panel .flt-group { margin:0; }
+        .flt-panel > .btn { justify-self:start; }
+        .mov-cat { min-width:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 24px; }
+        .mov-cat [data-catalogo-filtros] { grid-column:1 / -1; }
+        .flt-state-field { position:relative; padding-top:18px; }
+        .flt-condition-field { position:relative; padding-top:18px; }
+        .flt-panel .mov-cat [data-catalogo-filtros] { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 24px !important; }
+        .flt-panel .mov-cat [data-catalogo-filtros] label { flex:none !important; }
+        .flt-panel .mov-cat .inv-filter-label { display:flex !important; }
+        /* Este panel debe crecer dentro del flujo; sobrescribe el panel
+           flotante general de tablas filtrables, que es angosto y desplazable. */
+        .f-toolbar > .flt > .flt-panel { position:static !important; display:grid !important; width:100% !important; max-width:none !important; max-height:none !important; overflow:visible !important; }
+        .f-toolbar > .flt > .flt-panel[hidden] { display:none !important; }
+        .f-toolbar > .flt > .flt-btn[aria-expanded="false"] + .flt-panel { display:none !important; visibility:hidden !important; }
+        .f-toolbar > .flt > .flt-panel .mov-cat [data-catalogo-filtros] { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+        .mov-cat [data-catalogo-filtros] { display:flex !important; gap:8px !important; flex-wrap:nowrap !important; width:100%; }
         .mov-cat [data-catalogo-filtros] label { position:relative; flex:1 1 0 !important; min-width:0 !important;
-            font-size:0; line-height:0; }
+            padding-top:18px; font-size:0; line-height:0; }
+        .flt-panel .mov-cat .inv-filter-label { position:absolute; top:0; left:0; height:17px; display:flex !important; align-items:center; pointer-events:none; }
+        .flt-panel .mov-cat [data-catalogo-filtros] .inv-filter-label {
+            font-size:12px !important;
+            line-height:16px !important;
+            font-weight:600;
+            color:var(--text);
+            z-index:3;
+        }
+        .flt-panel .mov-cat .inv-filter-label svg { position:absolute; left:12px; top:30px; width:16px !important; height:16px !important; color:#a7bddb; z-index:2; }
+        .flt-panel .mov-cat select { padding-left:42px !important; }
+        .flt-state-box { min-width:0; border:1px solid var(--border); border-radius:12px; background:var(--surface); overflow:hidden; }
+        .flt-state-box summary { display:flex; align-items:center; justify-content:space-between; min-height:42px; padding:0 13px; color:var(--text); font-size:13px; font-weight:600; cursor:pointer; list-style:none; }
+        .flt-state-box summary::-webkit-details-marker { display:none; }
+        .flt-state-title { display:flex; align-items:center; gap:8px; }
+        .flt-state-title svg { width:17px; height:17px; color:#a7bddb; }
+        .flt-state-chevron { color:var(--muted); font-size:20px; line-height:1; transition:transform .18s; }
+        .flt-state-box[open] .flt-state-chevron { transform:rotate(180deg); }
+        .flt-state-options { padding:4px 8px 8px; border-top:1px solid var(--border); }
+        .flt-state-options .flt-opt { margin:2px 0; }
+        .flt-panel > .flt-group:has(.legacy-movement-types) { display:none; }
+        .flt-panel .flt-group:has(> h4:only-child) { display:none !important; }
+        .flt-date-group h4 { display:flex; align-items:center; gap:7px; }
+        .flt-date-group h4 svg { width:16px; height:16px; color:#a7bddb; }
+        .flt-panel .flt-date-group .flt-fechas { margin-top:8px; }
+        .flt-date-input { position:relative; display:block; }
+        .flt-date-input svg { position:absolute; left:13px; top:50%; width:17px; height:17px; color:#a7bddb; transform:translateY(-50%); pointer-events:none; }
+        .flt-panel .flt-date-group .flt-fechas input { height:42px; padding:0 13px 0 42px; border-radius:12px; font-size:13px; }
+        .flt-actions { display:flex; align-items:flex-end; gap:10px; align-self:end; }
+        .flt-actions .btn { min-height:42px; padding:10px 16px; border-radius:11px; font-size:13px; }
+        .flt-actions .flt-apply { background:var(--primary); color:#fff; }
+        .flt-actions .flt-clear { background:transparent; border:1px solid var(--border); color:var(--text); }
+        .flt-actions .flt-clear:hover { border-color:var(--primary); color:var(--primary); background:var(--primary-soft); }
         .mov-cat [data-catalogo-filtros] label::after { content:''; position:absolute; right:13px; top:50%;
             width:6px; height:6px; border-right:1.6px solid var(--muted); border-bottom:1.6px solid var(--muted);
             transform:translateY(-70%) rotate(45deg); pointer-events:none; }
+        .mov-cat .inv-filter-label { display:none !important; }
+        .mov-cat .inv-filter-label svg { width:15px !important; height:15px !important; }
         .mov-cat select { -webkit-appearance:none; appearance:none; width:100%; height:38px; padding:0 32px 0 14px;
             border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--muted);
             font:inherit; font-size:13px; line-height:38px; cursor:pointer; text-overflow:ellipsis;
@@ -482,11 +583,54 @@
         .mov-cat label:has(select:not(:has(option[value=""]:checked)))::after { border-color:var(--primary); }
         .mov-cat select option { color:var(--text); background:var(--surface); font-weight:400; }
         @media (max-width:760px) {
-            .mov-cat { flex-basis:100%; }
-            .mov-cat [data-catalogo-filtros] { flex-wrap:wrap !important; }
-            .mov-cat [data-catalogo-filtros] label { flex:1 1 calc(50% - 4px) !important; }
+            .flt-panel { width:100%; }
+            .flt-panel { grid-template-columns:1fr; }
+            .flt-panel .mov-cat { grid-column:auto; }
+            .f-toolbar > .flt > .flt-panel .mov-cat [data-catalogo-filtros] { grid-template-columns:1fr !important; }
+            .mov-cat { grid-template-columns:1fr; }
+            .mov-cat [data-catalogo-filtros] { grid-column:auto; }
         }
         .f-toolbar > .flt .flt-panel { left:0; right:auto; }
+        .f-toolbar > .flt > .flt-panel[hidden] { display:none !important; visibility:hidden !important; }
+        .flt-condition-field .inv-filter-label { position:absolute; top:0; left:0; display:flex !important; align-items:center; }
+        :root[data-theme="light"] .f-toolbar > .flt > .flt-panel {
+            border:1px solid #d7dee8 !important;
+            background:#ffffff !important;
+            box-shadow:0 8px 22px rgba(15,23,42,.08);
+        }
+        :root[data-theme="light"] .flt-panel .mov-cat select,
+        :root[data-theme="light"] .flt-panel .flt-date-input input {
+            border:1px solid #cbd5e1 !important;
+            background:#ffffff !important;
+            color:#334155 !important;
+        }
+        :root[data-theme="light"] .flt-panel .mov-cat select:hover,
+        :root[data-theme="light"] .flt-panel .flt-date-input input:hover,
+        :root[data-theme="light"] .flt-panel .mov-cat select:focus,
+        :root[data-theme="light"] .flt-panel .flt-date-input input:focus {
+            border-color:#64748b !important;
+        }
+        :root[data-theme="light"] .flt-panel .mov-cat .inv-filter-label,
+        :root[data-theme="light"] .flt-panel .flt-date-group h4,
+        :root[data-theme="light"] .flt-panel .flt-state-title,
+        :root[data-theme="light"] .flt-panel .flt-condition-field .inv-filter-label {
+            color:#334155 !important;
+        }
+        :root[data-theme="light"] .flt-panel .mov-cat .inv-filter-label svg,
+        :root[data-theme="light"] .flt-panel .flt-date-group h4 svg,
+        :root[data-theme="light"] .flt-panel .flt-date-input svg,
+        :root[data-theme="light"] .flt-panel .flt-state-title svg,
+        :root[data-theme="light"] .flt-panel .flt-condition-field .inv-filter-label svg {
+            color:#475569 !important;
+            stroke:#475569 !important;
+        }
+        :root[data-theme="light"] .flt-panel .flt-state-box {
+            border:1px solid #cbd5e1 !important;
+            background:#ffffff !important;
+        }
+        :root[data-theme="light"] .flt-panel .flt-state-options { border-top-color:#e2e8f0 !important; }
+        :root[data-theme="light"] .flt-panel .flt-state-chevron,
+        :root[data-theme="light"] .flt-panel .mov-cat label::after { color:#475569 !important; border-color:#475569 !important; }
         @media (max-width:520px) { .mv-modal-pie .btn { flex:1; justify-content:center; } }
     </style>
 
@@ -575,6 +719,27 @@
                     setTimeout(function () { document.getElementById('filtrosMovimientos').requestSubmit(); }, 0);
                 });
             });
+
+            // El selector de Estado representa el mismo filtro que el grupo
+            // de movimientos, pero conserva una sola selección visible.
+            const filtrosForm = document.getElementById('filtrosMovimientos');
+            const condicionFiltro = document.getElementById('mov-condicion-filtro');
+            if (filtrosForm) {
+                filtrosForm.addEventListener('submit', function () {
+                    filtrosForm.querySelectorAll('[data-condicion-filtro-hidden]').forEach(function (input) {
+                        input.remove();
+                    });
+
+                    if (condicionFiltro && condicionFiltro.value) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'condiciones[]';
+                        input.value = condicionFiltro.value;
+                        input.dataset.condicionFiltroHidden = 'true';
+                        filtrosForm.appendChild(input);
+                    }
+                });
+            }
 
             // Con el teclado: Enter sobre la fila enfocada hace lo mismo.
             document.addEventListener('keydown', function (e) {

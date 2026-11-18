@@ -156,9 +156,13 @@
         .eq-card { margin-top:22px; }
         .eq-intro { margin:0 0 18px; color:var(--muted); font-size:13.5px; }
         .eq-filters { display:flex; flex-wrap:wrap; gap:12px; align-items:end; margin-bottom:16px; }
-        .eq-filters label { display:flex; flex:1 1 180px; flex-direction:column; gap:6px; color:var(--text); font-size:13px; }
-        .eq-filters select { width:100%; padding:10px; border:1px solid var(--border); border-radius:9px;
-                             background:var(--surface); color:var(--text); font:inherit; }
+        .eq-filters label { display:flex; flex:1 1 180px; flex-direction:column; gap:7px; color:var(--text); font-size:13px; }
+        .eq-filter-label { display:flex; align-items:center; gap:7px; font-weight:600; }
+        .eq-filter-label svg { width:16px; height:16px; color:#9bb8dd; flex:0 0 auto; }
+        .eq-filters select { width:100%; padding:10px 36px 10px 13px; border:1px solid color-mix(in srgb, var(--primary) 22%, var(--border)); border-radius:10px;
+                             background:var(--surface); color:var(--text); font:inherit; outline:none; cursor:pointer; transition:border-color .18s, box-shadow .18s; }
+        .eq-filters select:hover { border-color:var(--muted); }
+        .eq-filters select:focus { border-color:var(--primary); box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent); }
         .eq-filters select:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
         .eq-search { display:flex; flex-direction:column; gap:6px; margin-bottom:18px; }
         .eq-search label { color:var(--text); font-size:13px; font-weight:500; }

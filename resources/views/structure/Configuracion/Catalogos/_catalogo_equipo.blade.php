@@ -52,20 +52,20 @@
     </p>
 
     <div class="eq-filters">
-        <label>Tipo de equipo
+        <label><span class="eq-filter-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>Tipo de equipo</span>
             <select id="eq-filtro-tipo" aria-controls="eq-resultados"><option value="">Todos los tipos</option>
                 @foreach ($equipmentTypes as $tipo)<option value="{{ $tipo->id }}">{{ $tipo->name }}</option>@endforeach
             </select>
         </label>
-        <label>Subtipo
+        <label><span class="eq-filter-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="m4 12 8 4 8-4M4 17l8 4 8-4"/></svg>Subtipo</span>
             <select id="eq-filtro-subtipo" aria-controls="eq-resultados"><option value="">Todos los subtipos</option>
                 @foreach ($subtypes as $sub)<option value="{{ $sub->id }}" data-tipo="{{ $sub->equipment_type_id }}">{{ $sub->name }}</option>@endforeach
             </select>
         </label>
-        <label>Marca
+        <label><span class="eq-filter-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m20 13-7 7-9-9V4h7l9 9Z"/><circle cx="7.5" cy="7.5" r="1"/></svg>Marca</span>
             <select id="eq-filtro-marca" aria-controls="eq-resultados"><option value="">Todas las marcas</option></select>
         </label>
-        <label>Modelo
+        <label><span class="eq-filter-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>Modelo</span>
             <select id="eq-filtro-modelo" aria-controls="eq-resultados"><option value="">Todos los modelos</option></select>
         </label>
         <button type="button" class="btn btn--ghost" id="eq-limpiar">Limpiar filtros</button>
