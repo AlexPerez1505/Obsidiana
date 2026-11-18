@@ -1,419 +1,60 @@
 @extends('layouts.dashboard')
-@section('title', 'Nuevo Viático')
-@section('page-title', 'Nuevo Viático')
-@section('page-sub', 'Registra los gastos de viaje')
+
+@section('title', 'Nuevo viaje')
+@section('page-title', 'Nuevo viaje')
+@section('page-sub', 'Registra los gastos y participantes del viaje')
+
+@php($personasSeleccionadas = old('personas_viaje', ''))
 
 @push('head')
 <style>
-    .vt-page {
-        max-width: 100%; margin: 0; padding: 0 4px;
-    }
-
-    /* Header */
-    .vt-header {
-        display: flex; align-items: center; gap: 12px;
-        margin-bottom: 20px;
-    }
-    .vt-back {
-        display: inline-flex; align-items: center; justify-content: center;
-        width: 42px; height: 42px; border-radius: 12px;
-        border: 1.5px solid #94a3b8; background: var(--surface);
-        color: var(--text); text-decoration: none; flex: 0 0 auto;
-        transition: all .15s;
-    }
-    .vt-back:hover { background: var(--surface-2); border-color: var(--primary); color: var(--primary); }
-    .vt-back svg { width: 20px; height: 20px; }
-    .vt-header-title {
-        font-size: 22px; font-weight: 800; color: var(--primary);
-        margin: 0; line-height: 1.2;
-    }
-
-    /* Vehicle selector chips */
-    .vt-chip-row {
-        display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
-    }
-    .vt-chip {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 10px 22px; border-radius: 999px;
-        border: 2px solid #94a3b8; background: var(--surface);
-        font-size: 14px; font-weight: 700; color: var(--text);
-        cursor: pointer; transition: all .15s; font-family: inherit;
-    }
-    .vt-chip svg { width: 18px; height: 18px; }
-    .vt-chip:hover { border-color: var(--primary); }
-    .vt-chip.selected {
-        background: var(--primary); color: #fff;
-        border-color: var(--primary);
-        box-shadow: 0 4px 14px rgba(0,122,255,.25);
-    }
-    .vt-chip.selected svg { color: #fff; }
-
-    /* Form card */
-    .vt-form-card {
-        background: var(--surface); border: 1.5px solid #94a3b8;
-        border-radius: 18px; padding: 20px;
-        box-shadow: 0 2px 10px rgba(0,0,0,.04);
-        margin-bottom: 20px;
-    }
-
-    .vt-field { margin-bottom: 16px; }
-    .vt-field:last-child { margin-bottom: 0; }
-    .vt-label {
-        display: block; font-size: 12px; font-weight: 700;
-        text-transform: uppercase; letter-spacing: .04em;
-        color: var(--muted); margin: 0 0 7px;
-    }
-    .vt-input-wrap {
-        position: relative; display: flex; align-items: center;
-    }
-    .vt-input-wrap .vt-input-icon {
-        position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-        width: 20px; height: 20px; color: var(--muted);
-        pointer-events: none; flex: 0 0 auto; display: block;
-    }
-    /* La descripción es un textarea alto: el ícono se queda fijo arriba,
-       no centrado verticalmente como en los inputs de una sola línea. */
-    .vt-input-wrap .vt-input-icon--top {
-        top: 14px; transform: none;
-    }
-    .vt-input-wrap .vt-prefix {
-        position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-        font-size: 16px; font-weight: 700; color: var(--muted);
-        pointer-events: none;
-    }
-    /*
-       El layout general (layouts/dashboard) ya trae un estilo genérico
-       para "input[type=text], input[type=number], textarea..." que, por
-       especificidad CSS, le gana a una sola clase como ".vt-input" (el
-       selector con atributo+elemento pesa más que una sola clase). Por
-       eso se escribe siempre calificado con ".vt-form-card" por delante:
-       dos clases juntas sí superan esa especificidad y el padding-left
-       que deja espacio para el ícono se respeta de verdad.
-    */
-    .vt-form-card .vt-input {
-        width: 100%; padding: 14px 14px 14px 44px;
-        border: 2px solid #94a3b8; border-radius: 12px;
-        font-size: 16px; font-family: inherit;
-        background: var(--surface); color: var(--text);
-        outline: none; transition: border .15s, box-shadow .15s;
-        -webkit-appearance: none; appearance: none;
-    }
-    .vt-form-card .vt-input:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(0,122,255,.12);
-    }
-    .vt-form-card .vt-input::placeholder { color: #cbd5e1; }
-
-    .vt-form-card textarea.vt-input {
-        resize: vertical; min-height: 90px; padding-top: 14px;
-        line-height: 1.5;
-    }
-
-    .vt-row-2 {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-    }
-
-    /* Desktop responsive */
-    @media (min-width: 768px) {
-        .vt-page { max-width: 100%; }
-        .vt-header-title { font-size: 26px; }
-        .vt-form-card { padding: 28px 32px; }
-        .vt-field { margin-bottom: 20px; }
-        .vt-label { font-size: 13px; }
-        .vt-form-card .vt-input { padding: 16px 16px 16px 48px; font-size: 17px; }
-        .vt-row-2 { gap: 16px; }
-        .vt-chip { padding: 12px 28px; font-size: 15px; }
-        .vt-submit { max-width: 400px; margin: 0 auto; padding: 18px; font-size: 17px; }
-        .vt-upload { max-width: 400px; margin: 0 auto 20px; }
-    }
-    @media (min-width: 1024px) {
-        .vt-form-grid-desktop {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
-        }
-    }
-
-    /* Upload zone */
-    .vt-upload {
-        border: 2.5px dashed #94a3b8; border-radius: 14px;
-        padding: 28px 20px; text-align: center; cursor: pointer;
-        transition: border-color .15s, background .15s;
-        background: var(--surface-2);
-    }
-    .vt-upload:hover { border-color: var(--primary); background: var(--primary-soft); }
-    .vt-upload-icon {
-        width: 52px; height: 52px; border-radius: 14px;
-        background: var(--primary-soft); color: var(--primary);
-        display: flex; align-items: center; justify-content: center;
-        margin: 0 auto 10px;
-        border: 1.5px solid #94a3b8;
-    }
-    .vt-upload-icon svg { width: 26px; height: 26px; }
-    .vt-upload p { margin: 0; font-size: 14px; font-weight: 700; color: var(--text); }
-    .vt-upload span { font-size: 12px; color: var(--muted); display: block; margin-top: 3px; }
-
-    /* Fotos del ticket ya elegidas */
-    .vt-photo-previews {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-        margin-bottom: 20px;
-    }
-    .vt-photo-thumb {
-        position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden;
-        border: 1.5px solid #94a3b8; background: var(--surface-2);
-    }
-    .vt-photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .vt-photo-remove {
-        position: absolute; top: 6px; right: 6px;
-        width: 24px; height: 24px; border-radius: 50%;
-        background: rgba(15,23,42,.65); color: #fff; border: none;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer;
-    }
-    .vt-photo-remove svg { width: 13px; height: 13px; }
-    @media (min-width: 768px) {
-        .vt-photo-previews { grid-template-columns: repeat(4, 1fr); }
-    }
-
-    /* Submit button */
-    .vt-submit {
-        display: flex; align-items: center; justify-content: center; gap: 8px;
-        width: 100%; padding: 16px; border: none; border-radius: 14px;
-        background: var(--primary); color: #fff;
-        font-size: 16px; font-weight: 800; cursor: pointer;
-        font-family: inherit; transition: background .15s;
-        box-shadow: 0 4px 16px rgba(0,122,255,.25);
-    }
-    .vt-submit:hover { background: var(--primary-strong); }
-    .vt-submit svg { width: 20px; height: 20px; }
-
-    .vt-total { display:flex; align-items:center; justify-content:space-between; gap:16px;
-        padding:16px 18px; margin:0 0 20px; border:1.5px solid var(--primary);
-        border-radius:14px; background:var(--primary-soft); color:var(--text); }
-    .vt-total strong { font-size:13px; text-transform:uppercase; letter-spacing:.04em; }
-    .vt-total-value { color:var(--primary); font-size:24px; font-weight:800; }
-
-    @media (min-width: 768px) {
-        .vt-page { max-width: 100%; }
-    }
+.trip-page{max-width:980px;margin:0 auto;padding:4px 0 36px}.trip-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}.trip-title{margin:0;color:var(--text);font-size:30px}.trip-cancel{border:0;border-radius:999px;background:var(--surface-2);color:var(--text);padding:11px 22px;font:inherit;font-weight:750;text-decoration:none}.trip-progress{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:28px}.trip-progress span{height:6px;border-radius:99px;background:var(--surface-2)}.trip-progress span.active{background:var(--primary)}.trip-step{display:none}.trip-step.active{display:block}.trip-step-label{margin:0 0 8px;color:var(--muted);font-size:15px}.trip-question{margin:0 0 14px;color:var(--text);font-size:28px}.trip-card{margin-bottom:12px;padding:24px;border-radius:22px;background:var(--surface);border:1px solid var(--border)}.trip-card h3{margin:0 0 16px;color:var(--text);font-size:16px}.trip-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.trip-field{display:grid;gap:7px}.trip-field.full{grid-column:1/-1}.trip-field label{color:var(--muted);font-size:13px;font-weight:750}.trip-field input,.trip-field select,.trip-field textarea{width:100%;min-height:48px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);padding:0 14px;font:inherit}.trip-field textarea{padding-top:12px;min-height:90px}.trip-chips{display:flex;flex-wrap:wrap;gap:10px}.trip-chip{border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text);padding:11px 18px;font:inherit;font-weight:700;cursor:pointer}.trip-chip:hover,.trip-chip.selected{border-color:var(--primary);background:var(--primary);color:#fff}.trip-help{color:var(--muted);font-size:12px}.trip-counter{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:20px;color:var(--text);font-weight:700}.trip-counter-controls{display:flex;align-items:center;gap:12px}.trip-counter button{width:38px;height:38px;border:0;border-radius:50%;background:var(--surface-2);color:var(--text);font-size:20px;cursor:pointer}.trip-counter strong{font-size:22px}.trip-total{display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);color:var(--text)}.trip-total strong{font-size:24px}.trip-footer{display:flex;justify-content:space-between;gap:12px;margin-top:22px}.trip-btn{border:1px solid var(--border);border-radius:12px;background:transparent;color:var(--text);padding:12px 22px;font:inherit;font-weight:750;cursor:pointer}.trip-btn.primary{border-color:var(--primary);background:var(--primary);color:#fff}.trip-error{margin-top:14px;color:#ef4444;font-size:13px}.trip-review{display:grid;gap:10px;color:var(--text)}.trip-review div{display:flex;justify-content:space-between;gap:20px;padding-bottom:10px;border-bottom:1px solid var(--border)}.trip-review span{color:var(--muted)}@media(max-width:700px){.trip-header{align-items:flex-start}.trip-title{font-size:24px}.trip-question{font-size:23px}.trip-fields{grid-template-columns:1fr}.trip-field.full{grid-column:auto}.trip-card{padding:18px}.trip-footer{position:sticky;bottom:0;padding:12px 0;background:var(--bg)}}
+</style>
+<style>
+.trip-page{max-width:1150px;padding:10px 0 42px}.trip-header{justify-content:center;position:relative;margin-bottom:30px}.trip-header .trip-cancel{position:absolute;right:0}.trip-title{font-size:34px;letter-spacing:-.02em}.trip-progress{position:relative;gap:0;margin:0 auto 34px;max-width:820px}.trip-progress:before{content:'';position:absolute;left:12.5%;right:12.5%;top:17px;height:2px;background:#334155;z-index:0}.trip-progress span{position:relative;z-index:1;height:auto;background:transparent!important;text-align:center;color:var(--muted);padding-top:42px;font-size:13px;font-weight:750}.trip-progress span:before{content:counter(step);counter-increment:step;display:grid;place-items:center;width:32px;height:32px;margin:0 auto;border:2px solid #64748b;border-radius:50%;background:#0d1a32;color:#dbeafe;font-weight:800}.trip-progress{counter-reset:step}.trip-progress span.active:before{border-color:#1683f7;background:#1683f7;box-shadow:0 0 0 4px rgba(22,131,247,.18)}.trip-progress span:nth-child(1):after{content:'Datos del viaje'}.trip-progress span:nth-child(2):after{content:'Gastos y viáticos'}.trip-progress span:nth-child(3):after{content:'Confirmación'}.trip-progress span:nth-child(4):after{content:'Finalizado'}.trip-progress span:after{display:block;margin-top:8px}.trip-step-label{display:none}.trip-question{font-size:0;margin:0}.trip-card{padding:24px 26px;border-radius:16px;background:linear-gradient(135deg,#101f3b,#0d1a32);border-color:#24538a;box-shadow:0 8px 24px rgba(0,0,0,.16)}.trip-card h3{font-size:18px}.trip-card h3:before{content:'✦';display:inline-grid;place-items:center;width:34px;height:34px;margin-right:12px;border-radius:10px;background:rgba(22,131,247,.22);color:#55a9ff}.trip-field input,.trip-field select,.trip-field textarea{background:#0d1a32;border-color:#527196}.trip-chip{border-color:#28548b;background:transparent}.trip-chip.selected{box-shadow:0 0 0 2px rgba(22,131,247,.15)}.trip-footer{margin-top:22px}.trip-btn{min-width:116px}.trip-btn.primary{box-shadow:0 7px 16px rgba(22,131,247,.25)}
+.trip-step[data-step="1"] .trip-card:has(#tripDescription){display:none}
+.trip-step[data-step="1"] .trip-card{border-color:#2467a8;background:linear-gradient(135deg,#10264a,#0c1c38);padding:24px 34px}.trip-step[data-step="1"] .trip-card:first-of-type h3:before{content:'🚗';font-size:20px}.trip-step[data-step="1"] .trip-card:nth-of-type(2){position:relative}.trip-step[data-step="1"] .trip-card:nth-of-type(2):before{content:'◉';display:inline-grid;place-items:center;width:38px;height:38px;margin-bottom:14px;border-radius:10px;background:rgba(22,131,247,.2);color:#36a0ff;font-size:23px}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-counter{margin-top:0}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-counter strong{font-size:20px}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-chips{gap:0;border:1px solid #315985;border-radius:999px;padding:3px;background:#0b1932}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-chips .trip-chip{border:0;border-radius:999px;padding:10px 24px}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-chips .trip-chip.selected{background:#1683f7}.trip-step[data-step="1"] .trip-card:nth-of-type(2) select{min-height:50px;border-color:#6c8fb4}.trip-step[data-step="1"] .trip-chip{font-size:16px;padding:12px 26px}
 </style>
 @endpush
 
 @section('content')
-<div class="vt-page">
-
-    {{-- Header --}}
-    <div class="vt-header">
-        <a href="{{ route('admin.viatics.index') }}" class="vt-back">
-            <x-gravityui-arrow-chevron-left />
-        </a>
-        <h1 class="vt-header-title">Nuevo Viático</h1>
-    </div>
-
-    {{-- Vehicle selector chips --}}
-    <div class="vt-chip-row">
-        @foreach($vehicles as $v)
-            <button type="button" class="vt-chip {{ $loop->first ? 'selected' : '' }}"
-                    data-vehicle-id="{{ $v->id }}"
-                    onclick="vtSelectVehicle(this, {{ $v->id }})">
-                <x-gravityui-car />
-                {{ $v->model ?: $v->brand ?: 'Vehículo' }}
-            </button>
-        @endforeach
-        <button type="button" class="vt-chip" data-vehicle-id="" data-vehicle-name="Nissan y Versa"
-                onclick="vtSelectVehicle(this, '', 'Nissan y Versa')">
-            <x-gravityui-car />
-            Ambos carros
-        </button>
-        @if($vehicles->isEmpty())
-            <button type="button" class="vt-chip selected" data-vehicle-id="">
-                <x-gravityui-car />
-                Sin vehículo
-            </button>
-        @endif
-    </div>
-
-    {{-- Form --}}
-    <form method="POST" action="{{ route('admin.viatics.store') }}" enctype="multipart/form-data" id="vtForm">
+<div class="trip-page">
+    <div class="trip-header"><a class="trip-cancel" href="{{ route('admin.viatics.index') }}">Cancelar</a><h1 class="trip-title">Nuevo viaje</h1><span></span></div>
+    <div class="trip-progress"><span class="active"></span><span></span><span></span><span></span></div>
+    <form method="POST" action="{{ route('admin.viatics.store') }}" enctype="multipart/form-data" id="tripForm">
         @csrf
-        <input type="hidden" name="vehicle_id" id="vtVehicleId" value="{{ $vehicles->first()?->id ?? '' }}">
-        <input type="hidden" name="vehicle_name" id="vtVehicleName" value="">
-        <input type="hidden" name="expense_date" value="{{ now()->format('Y-m-d') }}">
+        <input type="hidden" name="vehicle_id" id="vehicleId" value="{{ old('vehicle_id', $vehicles->first()?->id) }}"><input type="hidden" name="vehicle_name" id="vehicleName" value="{{ old('vehicle_name') }}"><input type="hidden" name="personas_viaje" id="travelers" value="{{ $personasSeleccionadas }}"><input type="hidden" name="expense_date" value="{{ old('expense_date', now()->format('Y-m-d')) }}">
 
-        <div class="vt-form-card">
-            {{-- Lugar --}}
-            <div class="vt-field">
-                <label class="vt-label">Lugar</label>
-                <div class="vt-input-wrap">
-                    <x-gravityui-map-pin class="vt-input-icon" />
-                    <input type="text" name="place" class="vt-input" placeholder="Ej. Guadalajara, Jalisco">
-                </div>
-            </div>
+        <section class="trip-step active" data-step="0">
+            <p class="trip-step-label">Paso 1 de 4</p><h2 class="trip-question">¿A dónde van y quién va?</h2>
+            <div class="trip-card"><h3>Motivo del viaje</h3><div class="trip-chips" id="motives">@foreach(['Entrega','Instalación','Visita a cliente','Congreso / Expo','Servicio técnico','Recolección'] as $motivo)<button type="button" class="trip-chip" data-motive="{{ $motivo }}">{{ $motivo }}</button>@endforeach</div><input type="hidden" name="description" id="description" value="{{ old('description') }}"></div>
+            <div class="trip-card"><div class="trip-fields"><div class="trip-field"><label for="place">Ciudad</label><select id="place" name="place"><option value="">Selecciona una ciudad</option>@foreach(['Acapulco','Ario','Chapala','Chilpancingo','Córdoba','Guadalajara','León','Monterrey','Oaxaca','Querétaro','San Felipe del Progreso','San Miguel de Allende','Tlaxcala','Toluca','Tuxtla Gutiérrez','Uruapan','Veracruz','Xalapa','Ciudad de México'] as $ciudad)<option value="{{ $ciudad }}" @selected(old('place') === $ciudad)>{{ $ciudad }}</option>@endforeach</select></div><div class="trip-field"><label for="state">Estado</label><select id="state"><option>Se llena solo</option>@foreach(['CDMX','Chiapas','Estado de México','Guanajuato','Guerrero','Jalisco','Michoacán','Nuevo León','Oaxaca','Puebla','Querétaro','Tlaxcala','Veracruz','Otro'] as $estado)<option>{{ $estado }}</option>@endforeach</select></div><div class="trip-field"><label for="fecha_ida">Salida</label><input id="fecha_ida" type="date" name="fecha_ida" value="{{ old('fecha_ida') }}"></div><div class="trip-field"><label for="fecha_regreso">Regreso</label><input id="fecha_regreso" type="date" name="fecha_regreso" value="{{ old('fecha_regreso') }}"></div></div></div>
+            <div class="trip-card"><h3>¿Quién viaja del equipo?</h3><div class="trip-chips" id="users">@foreach($users as $user)<button type="button" class="trip-chip {{ str_contains($personasSeleccionadas, $user->name) ? 'selected' : '' }}" data-user="{{ $user->name }}">{{ $user->name }}</button>@endforeach</div><p class="trip-help">Selecciona uno o varios usuarios del sistema.</p><div class="trip-counter"><span>Acompañantes externos <small class="trip-help">(clientes, técnicos)</small></span><div class="trip-counter-controls"><button type="button" data-external="-1">−</button><strong id="externalCount">0</strong><button type="button" data-external="1">+</button></div></div></div>
+        </section>
 
-            {{-- Fechas y personas --}}
-            <div class="vt-row-2">
-                <div class="vt-field">
-                    <label class="vt-label">Fecha de ida</label>
-                    <input type="date" name="fecha_ida" class="vt-input" value="{{ old('fecha_ida', now()->format('Y-m-d')) }}">
-                </div>
-                <div class="vt-field">
-                    <label class="vt-label">Fecha de regreso</label>
-                    <input type="date" name="fecha_regreso" class="vt-input" value="{{ old('fecha_regreso') }}">
-                </div>
-            </div>
-            <div class="vt-field">
-                <label class="vt-label">Quiénes fueron</label>
-                <input type="text" name="personas_viaje" class="vt-input" placeholder="Nombres de las personas que viajaron" value="{{ old('personas_viaje') }}">
-            </div>
+        <section class="trip-step" data-step="1"><p class="trip-step-label">Paso 2 de 4</p><h2 class="trip-question">Vehículo y dinero del viaje</h2><div class="trip-card"><h3>Vehículo</h3><div class="trip-chips" id="vehicles">@foreach(['Crafter','Caddy','BMW','Transporte público'] as $vehiculo)<button type="button" class="trip-chip" data-vehicle-id="" data-vehicle-name="{{ $vehiculo }}">{{ $vehiculo }}</button>@endforeach</div></div><div class="trip-card"><div class="trip-counter"><strong>¿Les dieron dinero para el viaje?</strong><div class="trip-chips"><button type="button" class="trip-chip selected" data-money="no">No</button><button type="button" class="trip-chip" data-money="si">Sí</button></div></div><div class="trip-field" style="margin-top:18px"><label for="payer">¿Quién pagó los gastos?</label><select id="payer"><option value="">Elige</option>@foreach($users as $user)<option value="{{ $user->name }}">{{ $user->name }}</option>@endforeach</select></div></div></section>
 
-            {{-- Casetas & Gasolina --}}
-            <div class="vt-row-2">
-                <div class="vt-field">
-                    <label class="vt-label">Casetas</label>
-                    <div class="vt-input-wrap">
-                        <span class="vt-prefix">$</span>
-                        <input type="number" name="tolls" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
-                    </div>
-                </div>
-                <div class="vt-field">
-                    <label class="vt-label">Gasolina</label>
-                    <div class="vt-input-wrap">
-                        <span class="vt-prefix">$</span>
-                        <input type="number" name="fuel" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
-                    </div>
-                </div>
-            </div>
+        <section class="trip-step" data-step="2"><p class="trip-step-label">Paso 3 de 4</p><h2 class="trip-question">¿Qué gastaron?</h2><p class="trip-help" id="tripSummary">Registra los gastos del viaje</p><div class="trip-card"><h3>Carretera</h3><div class="trip-fields"><div class="trip-field"><label>Casetas (ida y vuelta)</label><input class="expense" type="number" min="0" step="0.01" name="tolls" value="{{ old('tolls', 0) }}" placeholder="$0.00"></div><div class="trip-field"><label>Gasolina</label><input class="expense" type="number" min="0" step="0.01" name="fuel" value="{{ old('fuel', 0) }}" placeholder="$0.00"></div></div></div><div class="trip-card"><h3>Comidas</h3><div class="trip-fields"><div class="trip-field"><label>Total de comidas</label><input class="expense" id="meals" type="number" min="0" step="0.01" name="meals" value="{{ old('meals', 0) }}" placeholder="$0.00"></div><div class="trip-field"><label>&nbsp;</label><button type="button" class="trip-btn" id="calculateMeals">Calcular comida</button></div></div></div><div class="trip-card"><div class="trip-counter"><strong>¿Hubo hospedaje?</strong><div class="trip-chips"><button type="button" class="trip-chip selected" data-toggle-expense="lodging" data-value="no">No</button><button type="button" class="trip-chip" data-toggle-expense="lodging" data-value="si">Sí</button></div></div><div class="trip-fields trip-extra-fields" data-extra-fields="lodging" hidden><div class="trip-field"><label>Noches</label><input type="number" min="0" name="dias_hospedaje" value="{{ old('dias_hospedaje', 0) }}"></div><div class="trip-field"><label>Total hospedaje</label><input class="expense" type="number" min="0" step="0.01" name="lodging" value="{{ old('lodging', 0) }}" placeholder="$0.00"></div></div></div><div class="trip-card"><div class="trip-counter"><strong>¿Pagaron estacionamiento?</strong><div class="trip-chips"><button type="button" class="trip-chip selected" data-toggle-expense="parking" data-value="no">No</button><button type="button" class="trip-chip" data-toggle-expense="parking" data-value="si">Sí</button></div></div><div class="trip-field trip-extra-fields" data-extra-fields="parking" hidden><label>Total estacionamiento</label><input class="expense" type="number" min="0" step="0.01" placeholder="$0.00"></div></div><div class="trip-card"><div class="trip-counter"><strong>¿Usaron taxi o Uber?</strong><div class="trip-chips"><button type="button" class="trip-chip selected" data-toggle-expense="taxi" data-value="no">No</button><button type="button" class="trip-chip" data-toggle-expense="taxi" data-value="si">Sí</button></div></div><div class="trip-field trip-extra-fields" data-extra-fields="taxi" hidden><label>Total de taxis/Uber</label><input class="expense" type="number" min="0" step="0.01" placeholder="$0.00"></div></div><div class="trip-card"><div class="trip-counter"><strong>Otros gastos <span class="trip-help">(material, propinas, etc.)</span></strong><button type="button" class="trip-btn" id="addOther">+ Agregar</button></div><div id="otherRows"></div></div><div class="trip-card"><div class="trip-total"><label><input type="checkbox" id="fixedFund" checked> Fondo fijo de viaje ($500)</label><strong id="total">$500.00</strong></div><p class="trip-help">El total se actualiza conforme agregas gastos.</p></div></section>
 
-            {{-- Viáticos & Hospedaje --}}
-            <div class="vt-row-2">
-                <div class="vt-field">
-                    <label class="vt-label">Comida</label>
-                    <div class="vt-input-wrap">
-                        <span class="vt-prefix">$</span>
-                        <input type="number" name="meals" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
-                    </div>
-                </div>
-                <div class="vt-field">
-                    <label class="vt-label">Hospedaje</label>
-                    <div class="vt-input-wrap">
-                        <span class="vt-prefix">$</span>
-                        <input type="number" name="lodging" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
-                    </div>
-                </div>
-            </div>
+        <section class="trip-step" data-step="3"><p class="trip-step-label">Paso 4 de 4</p><h2 class="trip-question">Revisa y guarda</h2><div class="trip-card"><div class="trip-review"><div><span>Destino</span><strong id="reviewPlace">—</strong></div><div><span>Fechas</span><strong id="reviewDates">—</strong></div><div><span>Participantes</span><strong id="reviewUsers">—</strong></div><div><span>Vehículo</span><strong id="reviewVehicle">—</strong></div><div><span>Total</span><strong id="reviewTotal">$0.00</strong></div></div></div><div class="trip-card"><div class="trip-field"><label for="ticket_photos">Fotos de tickets</label><input id="ticket_photos" type="file" name="ticket_photos[]" accept="image/*" multiple></div></div></section>
 
-            {{-- Adicional --}}
-            <div class="vt-field">
-                <label class="vt-label">Días de hospedaje</label>
-                <input type="number" name="dias_hospedaje" class="vt-input" placeholder="0" min="0" max="3650" step="1" value="{{ old('dias_hospedaje', 0) }}">
-            </div>
-
-            {{-- Extras --}}
-            <div class="vt-field">
-                <label class="vt-label">Costo de extras</label>
-                <div class="vt-input-wrap">
-                    <span class="vt-prefix">$</span>
-                    <input type="number" name="additional" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
-                </div>
-            </div>
-            <div class="vt-field">
-                <label class="vt-label">Detalle de extras</label>
-                <textarea name="extras" class="vt-input" placeholder="Ej. Galletas, agua o material adicional...">{{ old('extras') }}</textarea>
-            </div>
-
-            {{-- Descripción --}}
-            <div class="vt-field">
-                <label class="vt-label">Descripción</label>
-                <div class="vt-input-wrap">
-                    <x-gravityui-file-text class="vt-input-icon vt-input-icon--top" />
-                    <textarea name="description" class="vt-input" placeholder="Describe el motivo del viaje o gastos adicionales..."></textarea>
-                </div>
-            </div>
-        </div>
-
-        <div class="vt-total">
-            <strong>Total estimado</strong>
-            <span class="vt-total-value" id="vtTotal">$0.00</span>
-        </div>
-
-        {{-- Fotos del ticket --}}
-        <div class="vt-photo-previews" id="vtPhotoPreviews"></div>
-        <div class="vt-upload" onclick="document.getElementById('vtPhotosInput').click()" style="margin-bottom:20px;">
-            <div class="vt-upload-icon">
-                <x-gravityui-camera />
-            </div>
-            <p>Agregar fotos del ticket</p>
-            <span>Toca para tomar o seleccionar una o varias fotos</span>
-        </div>
-        <input type="file" id="vtPhotosInput" name="ticket_photos[]" accept="image/*" multiple hidden>
-
-        {{-- Submit --}}
-        <button type="submit" class="vt-submit">
-            <x-gravityui-floppy-disk />
-            Guardar Viático
-        </button>
+        <div class="trip-error" id="stepError" hidden></div>
+        @if($errors->any())<div class="trip-error">{{ $errors->first() }}</div>@endif
+        <div class="trip-footer"><button type="button" class="trip-btn" id="back" hidden>Atrás</button><button type="button" class="trip-btn primary" id="next">Siguiente</button></div>
     </form>
-
 </div>
 
 <script>
-    function vtSelectVehicle(btn, id, nombre = '') {
-        document.querySelectorAll('.vt-chip').forEach(c => c.classList.remove('selected'));
-        btn.classList.add('selected');
-        document.getElementById('vtVehicleId').value = id;
-        document.getElementById('vtVehicleName').value = nombre;
-    }
-
-    (function () {
-        const campos = ['tolls', 'fuel', 'meals', 'lodging', 'additional'];
-        const total = document.getElementById('vtTotal');
-        function actualizarTotal() {
-            const suma = campos.reduce((acc, nombre) => {
-                const campo = document.querySelector('[name="' + nombre + '"]');
-                return acc + (parseFloat(campo?.value || 0) || 0);
-            }, 0);
-            total.textContent = new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN' }).format(suma);
-        }
-        document.querySelectorAll('[name="tolls"], [name="fuel"], [name="meals"], [name="lodging"], [name="additional"]')
-            .forEach(campo => campo.addEventListener('input', actualizarTotal));
-        actualizarTotal();
-    })();
-
-    (function () {
-        const input = document.getElementById('vtPhotosInput');
-        const previews = document.getElementById('vtPhotoPreviews');
-        let archivos = [];
-
-        function sincronizarInput() {
-            const dt = new DataTransfer();
-            archivos.forEach(archivo => dt.items.add(archivo));
-            input.files = dt.files;
-        }
-
-        function render() {
-            previews.innerHTML = '';
-            archivos.forEach((archivo, index) => {
-                const reader = new FileReader();
-                reader.onload = function (event) {
-                    const thumb = document.createElement('div');
-                    thumb.className = 'vt-photo-thumb';
-                    thumb.innerHTML = '<img src="' + event.target.result + '" alt="Foto del ticket">' +
-                        '<button type="button" class="vt-photo-remove" aria-label="Quitar foto">' +
-                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button>';
-                    thumb.querySelector('.vt-photo-remove').addEventListener('click', function () {
-                        archivos.splice(index, 1);
-                        sincronizarInput();
-                        render();
-                    });
-                    previews.appendChild(thumb);
-                };
-                reader.readAsDataURL(archivo);
-            });
-        }
-
-        input.addEventListener('change', function () {
-            archivos = archivos.concat(Array.from(input.files));
-            sincronizarInput();
-            render();
-        });
-    })();
+(()=>{let step=0,external=0;const steps=[...document.querySelectorAll('[data-step]')],bars=[...document.querySelectorAll('.trip-progress span')],$=id=>document.getElementById(id),money=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n||0),users=()=>[...document.querySelectorAll('[data-user].selected')].map(x=>x.dataset.user),sync=()=>$('travelers').value=users().join(', '),total=()=>[...document.querySelectorAll('.expense')].reduce((s,x)=>s+(parseFloat(x.value)||0),0),refresh=()=>{steps.forEach((x,i)=>x.classList.toggle('active',i===step));bars.forEach((x,i)=>x.classList.toggle('active',i<=step));$('back').hidden=step===0;$('next').textContent=step===3?'Guardar viaje':'Siguiente';$('total').textContent=money(total());$('reviewPlace').textContent=$('place').value||'Sin destino';$('reviewDates').textContent=[$('fecha_ida').value,$('fecha_regreso').value].filter(Boolean).join(' → ')||'Sin fechas';$('reviewUsers').textContent=$('travelers').value||'Sin participantes';$('reviewVehicle').textContent=$('vehicleName').value||'Sin vehículo';$('reviewTotal').textContent=money(total())};const error=message=>{const box=$('stepError');box.textContent=message;box.hidden=false};const validate=()=>{if(step===0){if(!$('description').value)return 'Selecciona el motivo del viaje.';if(!$('place').value.trim())return 'Escribe la ciudad del viaje.';if(!$('fecha_ida').value)return 'Selecciona la fecha de salida.';if(!$('fecha_regreso').value)return 'Selecciona la fecha de regreso.';if(!$('travelers').value)return 'Selecciona al menos una persona del equipo.'}if(step===1&&!$('vehicleName').value)return 'Selecciona el vehículo del viaje.';return ''};document.querySelectorAll('[data-motive]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-motive]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('description').value=b.dataset.motive;$('tripDescription').value=b.dataset.motive;$('stepError').hidden=true}));document.querySelectorAll('[data-user]').forEach(b=>b.addEventListener('click',()=>{b.classList.toggle('selected');sync();$('stepError').hidden=true;refresh()}));document.querySelectorAll('[data-vehicle-id]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-vehicle-id]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('vehicleId').value=b.dataset.vehicleId;$('vehicleName').value=b.dataset.vehicleName;$('stepError').hidden=true;refresh()}));document.querySelectorAll('[data-money]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-money]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')}));document.querySelectorAll('[data-external]').forEach(b=>b.addEventListener('click',()=>{external=Math.max(0,external+Number(b.dataset.external));$('externalCount').textContent=external}));document.querySelectorAll('.expense').forEach(x=>x.addEventListener('input',refresh));$('tripDescription').addEventListener('input',e=>$('description').value=e.target.value);$('next').addEventListener('click',()=>{if(step<3){const message=validate();if(message){error(message);return}$('stepError').hidden=true;step++;refresh()}else $('tripForm').submit()});$('back').addEventListener('click',()=>{if(step>0){step--;refresh()}});refresh()})();
+</script>
+<script>
+const ciudadesEstados={Acapulco:'Guerrero',Ario:'Michoacán',Chapala:'Jalisco',Chilpancingo:'Guerrero',Córdoba:'Veracruz',Guadalajara:'Jalisco',León:'Guanajuato',Monterrey:'Nuevo León',Oaxaca:'Oaxaca',Querétaro:'Querétaro','San Felipe del Progreso':'Estado de México','San Miguel de Allende':'Guanajuato',Tlaxcala:'Tlaxcala',Toluca:'Estado de México','Tuxtla Gutiérrez':'Chiapas',Uruapan:'Michoacán',Veracruz:'Veracruz',Xalapa:'Veracruz','Ciudad de México':'CDMX'};
+document.getElementById('place')?.addEventListener('change',function(){document.getElementById('state').value=ciudadesEstados[this.value]||'Otro';document.getElementById('stepError').hidden=true});
+const payer=document.getElementById('payer');const selectedTraveler=()=>document.querySelector('[data-user].selected')?.dataset.user;if(payer&&!payer.value&&selectedTraveler()){const option=[...payer.options].find(x=>x.value===selectedTraveler());if(option)payer.value=option.value}document.querySelectorAll('[data-user]').forEach(button=>button.addEventListener('click',()=>{const option=[...payer?.options||[]].find(x=>x.value===selectedTraveler());if(payer&&option&&!payer.value)payer.value=option.value}));
+document.querySelectorAll('[data-toggle-expense]').forEach(button=>button.addEventListener('click',()=>{const key=button.dataset.toggleExpense;document.querySelectorAll('[data-toggle-expense="'+key+'"]').forEach(x=>x.classList.remove('selected'));button.classList.add('selected');const fields=document.querySelector('[data-extra-fields="'+key+'"]');if(fields)fields.hidden=button.dataset.value!=='si'}));
+document.getElementById('calculateMeals')?.addEventListener('click',()=>{const people=Math.max(1,document.querySelectorAll('[data-user].selected').length);const from=new Date(document.getElementById('fecha_ida').value||new Date()),to=new Date(document.getElementById('fecha_regreso').value||from);const days=Math.max(1,Math.round((to-from)/86400000)+1);document.getElementById('meals').value=people*days*250;document.getElementById('meals').dispatchEvent(new Event('input',{bubbles:true}))});
+document.getElementById('addOther')?.addEventListener('click',()=>{const row=document.createElement('div');row.className='trip-fields';row.style.marginTop='14px';row.innerHTML='<div class="trip-field"><label>¿Qué fue?</label><input class="expense" type="text" placeholder="Material, propina... "></div><div class="trip-field"><label>Monto</label><input class="expense other-amount" type="number" min="0" step="0.01" placeholder="$0.00"></div>';document.getElementById('otherRows').appendChild(row);row.querySelector('.other-amount').addEventListener('input',()=>{const total=[...document.querySelectorAll('.expense')].reduce((s,x)=>s+(parseFloat(x.value)||0),0)+(document.getElementById('fixedFund').checked?500:0);document.getElementById('total').textContent=new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(total)});});
+document.getElementById('fixedFund')?.addEventListener('change',()=>{const total=[...document.querySelectorAll('.expense')].reduce((s,x)=>s+(parseFloat(x.value)||0),0)+(document.getElementById('fixedFund').checked?500:0);document.getElementById('total').textContent=new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(total)});
+const updateTripTotal=()=>{const total=[...document.querySelectorAll('.expense')].reduce((s,x)=>s+(parseFloat(x.value)||0),0)+(document.getElementById('fixedFund')?.checked?500:0);document.getElementById('total').textContent=new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(total)};document.querySelectorAll('.expense').forEach(x=>x.addEventListener('input',updateTripTotal));updateTripTotal();
 </script>
 @endsection

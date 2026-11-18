@@ -1,739 +1,82 @@
 @extends('layouts.dashboard')
-@section('title', 'Viaticos')
-@section('page-title', 'Viaticos')
-@section('page-sub', 'Gestion Administrativa > Viaticos')
+@section('title', 'Viáticos y viajes')
+@section('page-title', 'Viáticos y viajes')
+@section('page-sub', 'Control de gastos y viajes de la empresa')
 
 @php
-    $requests = [
-        ['folio' => 'VT-0307', 'client' => 'Ricardo', 'destination' => 'Puebla', 'date' => '05 Ago 2026', 'amount' => '$3,850.00', 'status' => 'sent', 'reason' => 'Visita con cliente para entrega y capacitacion de equipo.'],
-        ['folio' => 'VT-0304', 'client' => 'Marina Sherlyn', 'destination' => 'CDMX', 'date' => '02 Ago 2026', 'amount' => '$2,200.00', 'status' => 'approved', 'reason' => 'Reunion comercial y seguimiento de propuesta.'],
-        ['folio' => 'VT-0299', 'client' => 'Jose Alex', 'destination' => 'Toluca', 'date' => '28 Jul 2026', 'amount' => '$1,480.00', 'status' => 'review', 'reason' => 'Servicio tecnico fuera de oficina con observacion de comprobantes.'],
-    ];
-
-    $statusMeta = [
-        'draft' => ['label' => 'Borrador', 'class' => 'draft'],
-        'sent' => ['label' => 'En revision', 'class' => 'sent'],
-        'review' => ['label' => 'Observacion', 'class' => 'review'],
+    $total = $viatics->sum(fn ($v) => (float) $v->total_computed);
+    $promedio = $viatics->count() ? $total / $viatics->count() : 0;
+    $pendientes = $viatics->where('status', 'pending')->count();
+    $vehiculos = $viatics->pluck('vehicle_name')->filter()->unique()->sort()->values();
+    $sinVehiculo = $viatics->filter(fn ($v) => blank($v->vehicle_name))->count();
+    $gasolina = $viatics->sum(fn ($v) => (float) $v->fuel);
+    $viajeCaro = $viatics->sortByDesc(fn ($v) => (float) $v->total_computed)->first();
+    $estadoMeta = [
+        'pending' => ['label' => 'Pendiente', 'class' => 'pending'],
         'approved' => ['label' => 'Aprobado', 'class' => 'approved'],
+        'rejected' => ['label' => 'Rechazado', 'class' => 'rejected'],
     ];
+    $porMes = $viatics->groupBy(fn ($v) => ($v->fecha_ida ?: $v->expense_date ?: $v->created_at)?->format('Y-m') ?: 'Sin fecha')
+        ->map(fn ($items) => $items->sum(fn ($v) => (float) $v->total_computed))->sortKeys();
+    $porLugar = $viatics->groupBy(fn ($v) => $v->place ?: 'Sin destino')
+        ->map(fn ($items) => $items->sum(fn ($v) => (float) $v->total_computed))->sortDesc();
+    $porVehiculo = $viatics->groupBy(fn ($v) => $v->vehicle_name ?: 'Sin vehículo')
+        ->map(fn ($items) => $items->sum(fn ($v) => (float) $v->total_computed))->sortDesc();
+    $porGasto = collect([
+        'Casetas' => $viatics->sum(fn ($v) => (float) $v->tolls),
+        'Gasolina' => $viatics->sum(fn ($v) => (float) $v->fuel),
+        'Comidas' => $viatics->sum(fn ($v) => (float) $v->meals),
+        'Hospedaje' => $viatics->sum(fn ($v) => (float) $v->lodging),
+        'Adicional' => $viatics->sum(fn ($v) => (float) $v->additional),
+    ])->filter(fn ($amount) => $amount > 0)->sortDesc();
+    $maxMes = max((float) ($porMes->max() ?: 1), 1);
+    $maxGasto = max((float) ($porGasto->max() ?: 1), 1);
+    $maxLugar = max((float) ($porLugar->max() ?: 1), 1);
+    $gastosMeta = [
+        'tolls' => ['label' => 'Casetas', 'color' => '#1683f7'],
+        'fuel' => ['label' => 'Gasolina', 'color' => '#ff9f0a'],
+        'meals' => ['label' => 'Comidas', 'color' => '#30d158'],
+        'lodging' => ['label' => 'Hospedaje', 'color' => '#bf5af2'],
+        'additional' => ['label' => 'Otros', 'color' => '#a1a1aa'],
+    ];
+    $mesesGasto = $viatics->groupBy(fn ($v) => ($v->fecha_ida ?: $v->expense_date ?: $v->created_at)?->format('Y-m') ?: 'Sin fecha')
+        ->map(fn ($items) => collect($gastosMeta)->mapWithKeys(fn ($meta, $campo) => [$campo => $items->sum(fn ($v) => (float) $v->{$campo})]));
+    $maxMesGasto = max((float) ($mesesGasto->map(fn ($mes) => $mes->sum())->max() ?: 1), 1);
+    $totalPorCategoria = collect($gastosMeta)->mapWithKeys(fn ($meta, $campo) => [$campo => $viatics->sum(fn ($v) => (float) $v->{$campo})]);
+    $totalCategorias = max((float) $totalPorCategoria->sum(), 1);
+    $donutStops = [];
+    $donutAcumulado = 0;
+    foreach ($gastosMeta as $campo => $meta) {
+        $siguiente = $donutAcumulado + (($totalPorCategoria[$campo] / $totalCategorias) * 100);
+        $donutStops[] = $meta['color'] . ' ' . $donutAcumulado . '% ' . $siguiente . '%';
+        $donutAcumulado = $siguiente;
+    }
 @endphp
 
 @push('head')
 <style>
-    .viatics-page {
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-    }
-
-    .viatics-crumb {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        color: var(--muted);
-        font-size: 13px;
-        font-weight: 700;
-    }
-
-    .viatics-crumb a {
-        color: var(--primary);
-        text-decoration: none;
-    }
-
-    .viatics-header,
-    .viatics-actions,
-    .viatics-panel-head,
-    .request-top,
-    .request-meta {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-    }
-
-    .viatics-heading {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 0;
-    }
-
-    .viatics-heading svg {
-        width: 34px;
-        height: 34px;
-        color: var(--primary);
-        flex: 0 0 auto;
-    }
-
-    .viatics-heading h2 {
-        margin: 0;
-        font-size: 24px;
-        line-height: 1.12;
-        color: var(--text);
-    }
-
-    .viatics-heading p,
-    .viatics-panel-head p {
-        margin: 3px 0 0;
-        color: var(--muted);
-        font-size: 13.5px;
-        font-weight: 600;
-    }
-
-    .viatics-primary,
-    .viatics-secondary,
-    .viatics-action {
-        font: inherit;
-        font-weight: 800;
-        cursor: pointer;
-    }
-
-    .viatics-primary {
-        min-height: 44px;
-        padding: 0 18px;
-        border: 0;
-        border-radius: 7px;
-        background: #2563eb;
-        color: #fff;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 9px;
-        box-shadow: 0 10px 22px rgba(37, 99, 235, .22);
-        white-space: nowrap;
-    }
-
-    .viatics-primary:hover {
-        background: #1d4ed8;
-    }
-
-    .viatics-secondary {
-        min-height: 40px;
-        padding: 0 14px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: var(--surface);
-        color: var(--primary);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-    }
-
-    .viatics-secondary:hover {
-        background: var(--primary-soft);
-        border-color: rgba(37, 99, 235, .35);
-    }
-
-    .viatics-primary svg,
-    .viatics-secondary svg,
-    .viatics-icon svg,
-    .review-icon svg {
-        width: 19px;
-        height: 19px;
-        flex: 0 0 auto;
-    }
-
-    .viatics-flow {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(150px, 1fr));
-        gap: 12px;
-    }
-
-    .viatics-step {
-        display: grid;
-        grid-template-columns: 38px 1fr;
-        gap: 10px;
-        align-items: center;
-        min-height: 74px;
-        padding: 12px;
-        border: 1px solid var(--border);
-        border-radius: 9px;
-        background: var(--surface);
-        box-shadow: var(--shadow);
-    }
-
-    .viatics-step.is-current {
-        border-color: rgba(37, 99, 235, .48);
-        box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .25), var(--shadow);
-    }
-
-    .viatics-step strong,
-    .review-item strong,
-    .request-top strong {
-        display: block;
-        color: var(--text);
-    }
-
-    .viatics-step strong {
-        font-size: 13.5px;
-    }
-
-    .viatics-step span span,
-    .review-item span,
-    .request-top small {
-        display: block;
-        margin-top: 2px;
-        color: var(--muted);
-        font-size: 12px;
-        font-weight: 700;
-        line-height: 1.35;
-    }
-
-    .viatics-icon,
-    .review-icon {
-        width: 38px;
-        height: 38px;
-        border-radius: 10px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .viatics-icon {
-        background: var(--primary-soft);
-        color: var(--primary);
-    }
-
-    .viatics-layout {
-        display: grid;
-        grid-template-columns: minmax(0, 1.3fr) minmax(320px, .7fr);
-        gap: 18px;
-        align-items: start;
-    }
-
-    .viatics-panel {
-        min-width: 0;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        box-shadow: var(--shadow);
-    }
-
-    .viatics-panel-head {
-        padding: 18px 20px;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .viatics-panel-head h3 {
-        margin: 0;
-        color: var(--text);
-        font-size: 17px;
-    }
-
-    .viatics-form {
-        display: grid;
-        gap: 14px;
-        padding: 18px 20px 20px;
-    }
-
-    .viatics-form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px;
-    }
-
-    .viatics-field label {
-        margin: 0 0 7px;
-    }
-
-    .viatics-field input,
-    .viatics-field select,
-    .viatics-field textarea {
-        width: 100%;
-        padding: 11px 12px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: var(--surface);
-        color: var(--text);
-        font: inherit;
-        outline: none;
-    }
-
-    .viatics-field textarea {
-        min-height: 92px;
-        resize: vertical;
-    }
-
-    .viatics-field input:focus,
-    .viatics-field select:focus,
-    .viatics-field textarea:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, .12);
-    }
-
-    .expense-list {
-        display: grid;
-        gap: 9px;
-    }
-
-    .expense-row {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 120px 38px;
-        gap: 9px;
-        align-items: end;
-    }
-
-    .expense-remove {
-        width: 38px;
-        height: 38px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: var(--surface);
-        color: var(--danger);
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .expense-remove:hover {
-        background: var(--danger-soft);
-    }
-
-    .expense-remove svg {
-        width: 17px;
-        height: 17px;
-    }
-
-    .status-pill {
-        display: inline-flex;
-        align-items: center;
-        min-height: 26px;
-        padding: 0 9px;
-        border-radius: 999px;
-        font-size: 11.5px;
-        font-weight: 900;
-        white-space: nowrap;
-    }
-
-    .status-pill.draft { color: #6b4f00; background: #fff4c2; }
-    .status-pill.sent { color: #075985; background: #dff3ff; }
-    .status-pill.review { color: #b45309; background: #ffedd5; }
-    .status-pill.approved { color: #166534; background: #dcfce7; }
-
-    .viatics-side {
-        display: grid;
-        gap: 18px;
-    }
-
-    .admin-review {
-        padding: 18px 20px;
-        display: grid;
-        gap: 14px;
-    }
-
-    .review-item {
-        display: grid;
-        grid-template-columns: 38px 1fr;
-        gap: 10px;
-        align-items: start;
-    }
-
-    .review-icon {
-        background: var(--surface-2);
-        color: var(--muted);
-        border: 1px solid var(--border);
-    }
-
-    .review-item.is-ready .review-icon {
-        background: var(--green-soft);
-        color: var(--green);
-    }
-
-    .decision-box {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        padding-top: 4px;
-    }
-
-    .viatics-action {
-        min-height: 40px;
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        background: var(--surface);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .viatics-action.approve {
-        color: var(--green);
-        background: var(--green-soft);
-    }
-
-    .viatics-action.reject {
-        color: var(--danger);
-        background: var(--danger-soft);
-    }
-
-    .request-list {
-        display: grid;
-        gap: 10px;
-        padding: 12px;
-    }
-
-    .request-card {
-        border: 1px solid var(--border);
-        border-radius: 9px;
-        padding: 13px;
-        background: var(--surface);
-    }
-
-    .request-top {
-        align-items: flex-start;
-        margin-bottom: 8px;
-    }
-
-    .request-card p {
-        margin: 0 0 8px;
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.35;
-    }
-
-    .request-meta {
-        color: var(--text);
-        font-size: 12.5px;
-        font-weight: 900;
-    }
-
-    :root[data-theme="dark"] .status-pill.draft {
-        background: rgba(245, 158, 11, .18);
-        color: #facc15;
-    }
-
-    :root[data-theme="dark"] .status-pill.sent {
-        background: rgba(14, 165, 233, .16);
-        color: #7dd3fc;
-    }
-
-    :root[data-theme="dark"] .status-pill.review {
-        background: rgba(217, 119, 6, .18);
-        color: #fdba74;
-    }
-
-    :root[data-theme="dark"] .status-pill.approved {
-        background: rgba(34, 197, 94, .15);
-        color: #86efac;
-    }
-
-    @media (max-width: 1100px) {
-        .viatics-layout,
-        .viatics-flow {
-            grid-template-columns: 1fr 1fr;
-        }
-    }
-
-    @media (max-width: 760px) {
-        .viatics-header,
-        .viatics-actions,
-        .viatics-panel-head {
-            align-items: stretch;
-            flex-direction: column;
-        }
-
-        .viatics-primary,
-        .viatics-secondary {
-            width: 100%;
-        }
-
-        .viatics-layout,
-        .viatics-flow,
-        .viatics-form-grid,
-        .expense-row,
-        .decision-box {
-            grid-template-columns: 1fr;
-        }
-
-        .expense-row {
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 9px;
-        }
-
-        .expense-remove {
-            width: 100%;
-        }
-    }
+    .vt-page{display:grid;gap:18px;padding-bottom:28px}.vt-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:22px 24px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(135deg,var(--surface),color-mix(in srgb,var(--surface) 82%,var(--primary)));box-shadow:var(--shadow)}.vt-kicker{margin:0 0 5px;color:var(--primary);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.vt-hero h1{margin:0;color:var(--text);font-size:clamp(25px,3vw,38px);line-height:1.05}.vt-hero p{margin:8px 0 0;color:var(--muted);font-size:14px}.vt-hero-total{color:var(--text);font-size:clamp(26px,3vw,42px);font-weight:850;text-align:right}.vt-hero-total small{display:block;color:var(--muted);font-size:12px;font-weight:600}.vt-primary,.vt-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 14px;border-radius:10px;font:inherit;font-weight:750;text-decoration:none;cursor:pointer}.vt-primary{border:1px solid var(--primary);background:var(--primary);color:#fff}.vt-ghost{border:1px solid var(--border);background:var(--surface);color:var(--text)}.vt-primary svg,.vt-ghost svg,.vt-icon svg{width:17px;height:17px}.vt-tabs{display:flex;gap:8px;border-bottom:1px solid var(--border)}.vt-tab{border:0;border-bottom:2px solid transparent;padding:10px 16px;background:transparent;color:var(--muted);font:inherit;font-weight:750;cursor:pointer}.vt-tab[aria-selected=true]{border-color:var(--primary);color:var(--primary)}.vt-panel[hidden]{display:none}.vt-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.vt-kpi,.vt-card,.vt-row{border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:var(--shadow)}.vt-kpi{padding:16px}.vt-kpi-label{color:var(--muted);font-size:12px;font-weight:700}.vt-kpi-value{margin-top:7px;color:var(--text);font-size:25px;font-weight:850}.vt-kpi-note{margin-top:4px;color:var(--muted);font-size:11px}.vt-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.vt-card{padding:18px}.vt-card h2{margin:0;color:var(--text);font-size:16px}.vt-card-sub{margin:4px 0 16px;color:var(--muted);font-size:12px}.vt-bars{display:grid;gap:12px}.vt-bar-line{display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:10px;color:var(--muted);font-size:12px}.vt-bar-track{height:9px;overflow:hidden;border-radius:99px;background:var(--surface-2)}.vt-bar-track span{display:block;height:100%;border-radius:inherit;background:var(--primary)}.vt-amount{color:var(--text);font-size:12px;font-weight:750;white-space:nowrap}.vt-filter{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(170px,1fr)) auto;gap:12px;align-items:end;padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}.vt-field{display:grid;gap:6px;color:var(--text);font-size:12px;font-weight:700}.vt-field input,.vt-field select{width:100%;min-height:42px;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);padding:0 12px;font:inherit;outline:none}.vt-field input:focus,.vt-field select:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 16%,transparent)}.vt-list{display:grid;gap:10px}.vt-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(130px,.7fr) minmax(140px,.8fr) auto auto;align-items:center;gap:14px;padding:15px 16px}.vt-row:hover{border-color:var(--primary)}.vt-row-title{color:var(--text);font-size:15px;font-weight:800}.vt-row-meta{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:5px;color:var(--muted);font-size:12px}.vt-row-total{color:var(--text);font-size:16px;font-weight:850}.vt-status{display:inline-flex;width:max-content;padding:4px 9px;border:1px solid transparent;border-radius:999px;font-size:11px;font-weight:800}.vt-status.pending{background:#fef3c7;border-color:#f59e0b;color:#92400e}.vt-status.approved{background:#dcfce7;border-color:#22c55e;color:#166534}.vt-status.rejected{background:#fee2e2;border-color:#ef4444;color:#991b1b}.vt-actions{display:flex;gap:7px}.vt-icon{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--muted)}.vt-icon:hover{border-color:var(--primary);color:var(--primary)}.vt-empty{padding:42px 20px;border:1px dashed var(--border);border-radius:14px;color:var(--muted);text-align:center}@media(max-width:900px){.vt-kpis{grid-template-columns:repeat(2,1fr)}.vt-filter{grid-template-columns:repeat(2,minmax(0,1fr))}.vt-filter .vt-primary{grid-column:1/-1}.vt-row{grid-template-columns:1fr auto auto}.vt-row-vehicle,.vt-row-date{display:none}}@media(max-width:620px){.vt-hero{display:grid;padding:18px}.vt-hero-total{text-align:left}.vt-tabs{overflow:auto}.vt-kpis,.vt-grid-2,.vt-filter{grid-template-columns:1fr}.vt-filter .vt-primary{grid-column:auto}.vt-row{grid-template-columns:1fr auto;gap:9px}.vt-row-total{grid-column:1}.vt-status{grid-column:2;grid-row:1}.vt-actions{grid-column:1/-1}.vt-actions .vt-icon{flex:1}}
+    .vt-kpis{grid-template-columns:repeat(6,minmax(0,1fr))}.vt-kpi{min-height:126px}.vt-chart{height:290px;display:flex;align-items:flex-end;gap:clamp(8px,2vw,24px);padding:22px 10px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}.vt-chart-col{display:flex;flex:1;min-width:28px;height:100%;flex-direction:column;align-items:center;justify-content:flex-end;gap:7px}.vt-stack{position:relative;width:min(46px,78%);height:230px}.vt-stack span{position:absolute;left:0;width:100%;min-height:1px;border-radius:3px 3px 0 0}.vt-chart-total{color:var(--text);font-size:10px;font-weight:800}.vt-chart-label{color:var(--muted);font-size:11px}.vt-legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:14px;color:var(--muted);font-size:12px}.vt-legend i{display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:3px}.vt-donut-layout{display:grid;grid-template-columns:170px 1fr;align-items:center;gap:18px}.vt-donut{width:160px;height:160px;border-radius:50%;position:relative}.vt-donut:after{content:'Total';position:absolute;inset:32px;border-radius:50%;display:grid;place-content:center;text-align:center;background:var(--surface);color:var(--muted);font-size:12px;font-weight:700}.vt-donut-list{display:grid;gap:10px}.vt-donut-item{display:grid;grid-template-columns:12px 1fr auto;gap:7px;align-items:center;color:var(--muted);font-size:12px}.vt-donut-item i{width:10px;height:10px;border-radius:3px}.vt-donut-item strong{color:var(--text);font-size:13px}@media(max-width:1100px){.vt-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:900px){.vt-kpis{grid-template-columns:repeat(2,1fr)}.vt-donut-layout{grid-template-columns:1fr;justify-items:center}.vt-donut-list{width:100%}}@media(max-width:620px){.vt-kpis{grid-template-columns:1fr}.vt-chart{gap:4px;padding-left:0;padding-right:0}.vt-chart-label{font-size:9px}}
 </style>
 @endpush
 
 @section('content')
-    <section class="viatics-page">
-        <nav class="viatics-crumb" aria-label="Ruta">
-            <a href="{{ route('dashboard') }}">Gestion Administrativa</a>
-            <span>&gt;</span>
-            <strong>Viaticos</strong>
-        </nav>
+<div class="vt-page">
+    <section class="vt-hero">
+        <div><p class="vt-kicker">Gestión administrativa · Viáticos</p><h1>Viáticos y viajes</h1><p>Consulta el gasto acumulado, revisa viajes y controla los comprobantes.</p></div>
+        <div><div class="vt-hero-total">${{ number_format($total, 2) }}<small>Gasto acumulado</small></div><a class="vt-primary" href="{{ route('admin.viatics.create') }}"><x-gravityui-plus /> Nuevo viaje</a></div>
+    </section>
+    <nav class="vt-tabs" role="tablist" aria-label="Secciones de viáticos"><button class="vt-tab" type="button" role="tab" aria-selected="true" data-vt-tab="resumen">Resumen</button><button class="vt-tab" type="button" role="tab" aria-selected="false" data-vt-tab="viajes">Viajes</button><button class="vt-tab" type="button" role="tab" aria-selected="false" data-vt-tab="vehiculos">Camionetas</button></nav>
 
-        <div class="viatics-header">
-            <div class="viatics-heading">
-                <x-gravityui-layout-rows-3 />
-                <div>
-                    <h2>Solicitud de viaticos</h2>
-                    <p>El cliente envia la solicitud y el administrador la revisa para aprobarla.</p>
-                </div>
-            </div>
-
-            <button class="viatics-primary" type="button" onclick="document.getElementById('viatics-reason').focus();">
-                <x-gravityui-plus />
-                Nueva solicitud
-            </button>
-        </div>
-
-        <div class="viatics-flow" aria-label="Flujo de viaticos">
-            <div class="viatics-step is-current">
-                <span class="viatics-icon">
-                    <x-gravityui-person />
-                </span>
-                <span><strong>Cliente</strong><span>Captura motivo e importe</span></span>
-            </div>
-            <div class="viatics-step">
-                <span class="viatics-icon">
-                    <x-gravityui-paper-plane />
-                </span>
-                <span><strong>Envio</strong><span>Llega al administrador</span></span>
-            </div>
-            <div class="viatics-step">
-                <span class="viatics-icon">
-                    <x-gravityui-shield-check />
-                </span>
-                <span><strong>Revision</strong><span>Admin valida datos</span></span>
-            </div>
-            <div class="viatics-step">
-                <span class="viatics-icon">
-                    <x-gravityui-check />
-                </span>
-                <span><strong>Aprobacion</strong><span>Se libera el viatico</span></span>
-            </div>
-        </div>
-
-        <div class="viatics-layout">
-            <div class="viatics-panel">
-                <div class="viatics-panel-head">
-                    <div>
-                        <h3>Captura de solicitud</h3>
-                        <p>Informacion que envia el cliente al administrador.</p>
-                    </div>
-                    <span class="status-pill draft">Borrador</span>
-                </div>
-
-                <form class="viatics-form" onsubmit="event.preventDefault(); sendViaticsRequest();">
-                    <div class="viatics-form-grid">
-                        <div class="viatics-field">
-                            <label for="viatics-client">Cliente / solicitante</label>
-                            <input id="viatics-client" type="text" value="Ricardo">
-                        </div>
-                        <div class="viatics-field">
-                            <label for="viatics-area">Area</label>
-                            <select id="viatics-area">
-                                <option>Gestion Administrativa</option>
-                                <option>Comercial</option>
-                                <option>Servicios</option>
-                                <option>Inventario</option>
-                                <option>Marketing</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="viatics-form-grid">
-                        <div class="viatics-field">
-                            <label for="viatics-destination">Destino</label>
-                            <input id="viatics-destination" type="text" value="Puebla">
-                        </div>
-                        <div class="viatics-field">
-                            <label for="viatics-priority">Prioridad</label>
-                            <select id="viatics-priority">
-                                <option>Normal</option>
-                                <option>Urgente</option>
-                                <option>Programada</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="viatics-form-grid">
-                        <div class="viatics-field">
-                            <label for="viatics-start">Salida</label>
-                            <input id="viatics-start" type="date" value="2026-08-05">
-                        </div>
-                        <div class="viatics-field">
-                            <label for="viatics-end">Regreso</label>
-                            <input id="viatics-end" type="date" value="2026-08-06">
-                        </div>
-                    </div>
-
-                    <div class="viatics-field">
-                        <label for="viatics-reason">Motivo del viatico</label>
-                        <textarea id="viatics-reason">Visita con cliente para entrega de equipo, capacitacion y validacion del servicio contratado.</textarea>
-                    </div>
-
-                    <div class="expense-list" id="expenseList">
-                        <div class="expense-row">
-                            <div class="viatics-field">
-                                <label>Concepto</label>
-                                <select>
-                                    <option>Transporte</option>
-                                    <option>Alimentos</option>
-                                    <option>Hospedaje</option>
-                                    <option>Casetas</option>
-                                    <option>Otro</option>
-                                </select>
-                            </div>
-                            <div class="viatics-field">
-                                <label>Monto</label>
-                                <input type="text" value="$1,200.00">
-                            </div>
-                            <button class="expense-remove" type="button" aria-label="Quitar concepto" onclick="removeExpenseRow(this)">
-                                <x-gravityui-xmark />
-                            </button>
-                        </div>
-
-                        <div class="expense-row">
-                            <div class="viatics-field">
-                                <label>Concepto</label>
-                                <select>
-                                    <option>Alimentos</option>
-                                    <option>Transporte</option>
-                                    <option>Hospedaje</option>
-                                    <option>Casetas</option>
-                                    <option>Otro</option>
-                                </select>
-                            </div>
-                            <div class="viatics-field">
-                                <label>Monto</label>
-                                <input type="text" value="$650.00">
-                            </div>
-                            <button class="expense-remove" type="button" aria-label="Quitar concepto" onclick="removeExpenseRow(this)">
-                                <x-gravityui-xmark />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="viatics-actions">
-                        <button class="viatics-secondary" type="button" onclick="addExpenseRow()">
-                            <x-gravityui-plus />
-                            Agregar concepto
-                        </button>
-
-                        <button class="viatics-primary" type="submit">
-                            <x-gravityui-paper-plane />
-                            Enviar al administrador
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <aside class="viatics-side">
-                <div class="viatics-panel">
-                    <div class="viatics-panel-head">
-                        <div>
-                            <h3>Revision del administrador</h3>
-                            <p>Panel visual para decidir la solicitud.</p>
-                        </div>
-                    </div>
-                    <div class="admin-review">
-                        <div class="review-item is-ready">
-                            <span class="review-icon">
-                                <x-gravityui-check />
-                            </span>
-                            <span><strong>Solicitud recibida</strong><span>El administrador revisa destino, motivo y fechas.</span></span>
-                        </div>
-                        <div class="review-item is-ready">
-                            <span class="review-icon">
-                                <x-gravityui-layout-rows-3 />
-                            </span>
-                            <span><strong>Validacion de presupuesto</strong><span>Se compara el monto estimado con el gasto permitido.</span></span>
-                        </div>
-                        <div class="review-item">
-                            <span class="review-icon">
-                                <x-gravityui-check />
-                            </span>
-                            <span><strong>Decision final</strong><span>El administrador aprueba o rechaza la solicitud.</span></span>
-                        </div>
-
-                        <div class="decision-box">
-                            <button class="viatics-action approve" type="button" onclick="approveViatics()">Aprobar</button>
-                            <button class="viatics-action reject" type="button" onclick="rejectViatics()">Rechazar</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="viatics-panel">
-                    <div class="viatics-panel-head">
-                        <div>
-                            <h3>Solicitudes recientes</h3>
-                            <p>Seguimiento del flujo.</p>
-                        </div>
-                    </div>
-
-                    <div class="request-list">
-                        @foreach ($requests as $request)
-                            @php($meta = $statusMeta[$request['status']])
-                            <article class="request-card">
-                                <div class="request-top">
-                                    <span>
-                                        <strong>{{ $request['folio'] }} - {{ $request['client'] }}</strong>
-                                        <small>{{ $request['destination'] }} - {{ $request['date'] }}</small>
-                                    </span>
-                                    <span class="status-pill {{ $meta['class'] }}">{{ $meta['label'] }}</span>
-                                </div>
-                                <p>{{ $request['reason'] }}</p>
-                                <div class="request-meta">
-                                    <span>{{ $request['amount'] }}</span>
-                                    <span>Admin</span>
-                                </div>
-                            </article>
-                        @endforeach
-                    </div>
-                </div>
-            </aside>
-        </div>
+    <section class="vt-panel" data-vt-panel="resumen">
+        <div class="vt-kpis"><div class="vt-kpi"><div class="vt-kpi-label">Por reembolsar</div><div class="vt-kpi-value">$0</div><div class="vt-kpi-note">Anticipos no registrados</div></div><div class="vt-kpi"><div class="vt-kpi-label">Por devolver</div><div class="vt-kpi-value">$0</div><div class="vt-kpi-note">Sin saldos pendientes</div></div><div class="vt-kpi"><div class="vt-kpi-label">Por comprobar</div><div class="vt-kpi-value">{{ $pendientes }}</div><div class="vt-kpi-note">Viajes esperando tickets</div></div><div class="vt-kpi"><div class="vt-kpi-label">Gasolina</div><div class="vt-kpi-value">${{ number_format($gasolina, 2) }}</div><div class="vt-kpi-note">Del gasto registrado</div></div><div class="vt-kpi"><div class="vt-kpi-label">Viaje más caro</div><div class="vt-kpi-value">${{ number_format($viajeCaro?->total_computed ?? 0, 2) }}</div><div class="vt-kpi-note">{{ $viajeCaro?->place ?: 'Sin destino' }}</div></div><div class="vt-kpi"><div class="vt-kpi-label">Sin camioneta</div><div class="vt-kpi-value">{{ $sinVehiculo }}</div><div class="vt-kpi-note">Registros por corregir</div></div></div>
+        <section class="vt-card" style="margin-top:16px"><h2>Gasto por mes</h2><p class="vt-card-sub">Cada barra representa un mes y se divide por tipo de gasto.</p><div class="vt-chart">@forelse($mesesGasto as $mes => $categorias)<div class="vt-chart-col"><b class="vt-chart-total">${{ number_format($categorias->sum()/1000, 1) }}k</b><div class="vt-stack">@php($acum=0)@foreach($gastosMeta as $campo => $meta)@php($valor=(float) $categorias[$campo])<span style="height:{{ ($valor/$maxMesGasto)*100 }}%;bottom:{{ $acum }}%;background:{{ $meta['color'] }}"></span>@php($acum += ($valor/$maxMesGasto)*100)@endforeach</div><span class="vt-chart-label">{{ substr($mes, 5) }}</span></div>@empty<span class="vt-card-sub">Todavía no hay datos.</span>@endforelse</div><div class="vt-legend">@foreach($gastosMeta as $meta)<span><i style="background:{{ $meta['color'] }}"></i>{{ $meta['label'] }}</span>@endforeach</div></section>
+        <div class="vt-grid-2" style="margin-top:16px"><section class="vt-card"><h2>En qué se gasta</h2><p class="vt-card-sub">Reparto del total por tipo.</p><div class="vt-donut-layout"><div class="vt-donut" style="background:conic-gradient({{ implode(',', $donutStops) }})"></div><div class="vt-donut-list">@foreach($gastosMeta as $campo => $meta)<div class="vt-donut-item"><i style="background:{{ $meta['color'] }}"></i><span>{{ $meta['label'] }}</span><strong>${{ number_format($totalPorCategoria[$campo], 2) }}</strong></div>@endforeach</div></div></section><section class="vt-card"><h2>Destinos que más cuestan</h2><p class="vt-card-sub">Total acumulado por ciudad.</p><div class="vt-bars">@forelse($porLugar->take(8) as $nombre => $monto)<div class="vt-bar-line"><span>{{ $nombre }}</span><div class="vt-bar-track"><span style="width:{{ min(100, ($monto / $maxLugar) * 100) }}%"></span></div><b class="vt-amount">${{ number_format($monto, 2) }}</b></div>@empty<span class="vt-card-sub">Todavía no hay destinos.</span>@endforelse</div></section></div>
     </section>
 
-    <script>
-        function addExpenseRow() {
-            const container = document.getElementById('expenseList');
-            const template = container.querySelector('.expense-row').cloneNode(true);
+    <section class="vt-panel" data-vt-panel="viajes" hidden><form class="vt-filter" method="GET"><label class="vt-field">Buscar viaje<input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Ciudad, persona o vehículo"></label><label class="vt-field">Vehículo<select name="vehicle"><option value="">Todos los vehículos</option>@foreach($vehiculos as $vehiculo)<option value="{{ $vehiculo }}" @selected(($filters['vehicle'] ?? '') === $vehiculo)>{{ $vehiculo }}</option>@endforeach</select></label><label class="vt-field">Estatus<select name="status"><option value="">Todos los estatus</option>@foreach(\App\Services\Administracion\Viaticos::ESTADOS as $valor => $texto)<option value="{{ $valor }}" @selected(($filters['status'] ?? '') === $valor)>{{ $texto }}</option>@endforeach</select></label><button class="vt-primary" type="submit">Aplicar filtros</button></form><div class="vt-list" style="margin-top:16px">@forelse($viatics as $viatic)@php($estado = $estadoMeta[$viatic->status] ?? ['label' => ucfirst($viatic->status), 'class' => 'pending'])<article class="vt-row"><div><div class="vt-row-title">{{ $viatic->place ?: 'Sin destino' }}</div><div class="vt-row-meta"><span>{{ $viatic->fecha_ida?->format('d/m/Y') ?: $viatic->expense_date?->format('d/m/Y') ?: 'Sin fecha' }}</span><span>{{ $viatic->user?->name ?: 'Sin usuario' }}</span></div></div><div class="vt-row-vehicle">{{ $viatic->vehicle_name ?: 'Sin vehículo' }}</div><div class="vt-row-date">{{ $viatic->description ?: 'Sin descripción' }}</div><div><div class="vt-row-total">${{ $viatic->total }}</div><span class="vt-status {{ $estado['class'] }}">{{ $estado['label'] }}</span></div><div class="vt-actions"><a class="vt-icon" href="{{ route('admin.viatics.show', $viatic) }}" aria-label="Ver"><x-gravityui-eye /></a><a class="vt-icon" href="{{ route('admin.viatics.edit', $viatic) }}" aria-label="Editar"><x-gravityui-pencil /></a></div></article>@empty<div class="vt-empty">No hay viáticos con esos filtros.</div>@endforelse</div></section>
 
-            template.querySelectorAll('input').forEach((input) => {
-                input.value = '';
-            });
-
-            template.querySelector('select').selectedIndex = 0;
-            container.appendChild(template);
-            template.querySelector('input').focus();
-        }
-
-        function removeExpenseRow(button) {
-            const rows = document.querySelectorAll('.expense-row');
-            if (rows.length === 1) {
-                rows[0].querySelectorAll('input').forEach((input) => {
-                    input.value = '';
-                });
-                return;
-            }
-
-            button.closest('.expense-row').remove();
-        }
-
-        function sendViaticsRequest() {
-            if (typeof window.showToast === 'function') {
-                window.showToast('Solicitud enviada al administrador para revision.');
-            }
-        }
-
-        function approveViatics() {
-            if (typeof window.showToast === 'function') {
-                window.showToast('Solicitud de viaticos aprobada.');
-            }
-        }
-
-        function rejectViatics() {
-            if (typeof window.showToast === 'function') {
-                window.showToast('Solicitud marcada para correccion.', 'warn');
-            }
-        }
-    </script>
+    <section class="vt-panel" data-vt-panel="vehiculos" hidden><div class="vt-grid-2">@forelse($porVehiculo as $nombre => $monto)<article class="vt-card"><h2>{{ $nombre }}</h2><p class="vt-card-sub">{{ $viatics->filter(fn ($v) => ($v->vehicle_name ?: 'Sin vehículo') === $nombre)->count() }} viajes registrados</p><div class="vt-row-total">${{ number_format($monto, 2) }}</div></article>@empty<div class="vt-empty">No hay datos de vehículos.</div>@endforelse</div></section>
+</div>
+<script>document.querySelectorAll('[data-vt-tab]').forEach(function(tab){tab.addEventListener('click',function(){document.querySelectorAll('[data-vt-tab]').forEach(t=>t.setAttribute('aria-selected',t===tab?'true':'false'));document.querySelectorAll('[data-vt-panel]').forEach(panel=>{panel.hidden=panel.dataset.vtPanel!==tab.dataset.vtTab});})});</script>
 @endsection

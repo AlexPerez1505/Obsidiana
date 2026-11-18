@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Viatic;
 use App\Models\ViaticExpense;
 use App\Models\Vehicle;
+use App\Models\User;
 use App\Services\Administracion\GastosDeViaje;
 use App\Services\Administracion\Viaticos;
 use Illuminate\Http\JsonResponse;
@@ -30,7 +31,12 @@ class ViaticController extends Controller
     {
         $viatics = $this->viaticos
             ->visiblesPara($request->user(), $request->get('search'), $request->get('status'))
+            ->with('expenses')
             ->get();
+
+        if ($request->filled('vehicle')) {
+            $viatics = $viatics->filter(fn (Viatic $viatic) => $viatic->vehicle_name === $request->get('vehicle'))->values();
+        }
 
         $porLugar = $viatics->groupBy(fn (Viatic $v) => $v->place ?: 'Sin lugar')
             ->map(fn ($items) => $items->sum(fn (Viatic $v) => (float) $v->total_computed))
@@ -41,7 +47,7 @@ class ViaticController extends Controller
 
         return view('admin.viatics.index', [
             'viatics'  => $viatics,
-            'filters'  => $request->only(['search', 'status']),
+            'filters'  => $request->only(['search', 'status', 'vehicle']),
             'porLugar' => $porLugar,
             'porVehiculo' => $porVehiculo,
         ]);
@@ -53,6 +59,10 @@ class ViaticController extends Controller
             ->visiblesPara($request->user(), $request->get('search'), $request->get('status'))
             ->get();
 
+        if ($request->filled('vehicle')) {
+            $viatics = $viatics->filter(fn (Viatic $viatic) => $viatic->vehicle_name === $request->get('vehicle'))->values();
+        }
+
         return Pdf::loadView('admin.viatics.pdf', [
             'viatics' => $viatics,
             'total' => $viatics->sum(fn (Viatic $v) => (float) $v->total_computed),
@@ -62,9 +72,13 @@ class ViaticController extends Controller
     public function create(): View
     {
         $vehicles = Vehicle::orderBy('brand')->get();
+        $users = User::where(function ($query) {
+            $query->whereNull('status')->orWhere('status', '!=', User::STATUS_DELETED);
+        })->orderBy('name')->get(['id', 'name']);
 
         return view('admin.viatics.create', [
             'vehicles' => $vehicles,
+            'users' => $users,
         ]);
     }
 
