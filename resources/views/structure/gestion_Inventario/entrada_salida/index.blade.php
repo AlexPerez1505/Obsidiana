@@ -16,6 +16,8 @@
             */
             $tipo = $m->tipoVista();
 
+            $series = $m->seriales->pluck('no_serie')->filter()->values();
+
             return [
                 'modelo' => $m,
                 'tipo' => $tipo,
@@ -26,11 +28,17 @@
                 'fecha' => $m->movement_date?->format('Y-m-d') ?? '',
                 'fechaVista' => $m->movement_date?->format('d/m/Y') ?? '—',
                 'nombre' => $m->item_name ?: 'Sin nombre',
+                'series' => $series,
+                // En la tabla no caben 5 series completas: se ven las dos
+                // primeras y el total; la lista completa queda en el tooltip.
+                'seriesVista' => $series->count() <= 2
+                    ? $series->implode(', ')
+                    : $series->take(2)->implode(', ').'… (+'.($series->count() - 2).')',
             ];
         });
 
-        $almacenes = $filas->pluck('almacen')->filter()->unique()->sort()->values();
-        $quienes = $filas->pluck('quien')->filter()->unique()->sort()->values();
+        $almacenes = $opcionesAlmacenes;
+        $quienes = $opcionesQuienes;
 
         // Cómo se pinta cada tipo de movimiento. "Vendido" va en ámbar: no es
         // una salida todavía, es un pendiente de entrega.
@@ -43,7 +51,7 @@
 
         $datos = function (array $fila) {
             return [
-                'data-buscar' => mb_strtolower($fila['modelo']->folio.' '.$fila['nombre'].' '.$fila['almacen'].' '.$fila['quien']),
+                'data-buscar' => mb_strtolower($fila['modelo']->folio.' '.$fila['nombre'].' '.$fila['almacen'].' '.$fila['quien'].' '.$fila['series']->implode(' ')),
                 'data-tipo' => $fila['tipo'],
                 'data-almacen' => $fila['almacen'],
                 'data-condicion' => $fila['condicion'],
@@ -54,6 +62,17 @@
     @endphp
 
     <div class="content-actions">
+        {{-- Status del equipo con la pistola, la cámara o tecleando la etiqueta. --}}
+        <button type="button" class="btn btn--ghost" data-scan-abrir title="También puedes disparar la pistola en cualquier momento">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+            Escanear
+        </button>
+        {{-- Etiquetas de las entradas marcadas con la casilla, de un jalón. --}}
+        <button type="button" class="btn btn--ghost" id="mvEtiquetas" disabled style="opacity:.5; cursor:not-allowed;"
+                title="Marca entradas con la casilla para imprimir sus etiquetas">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Imprimir etiquetas (<span id="mvEtqN">0</span>)
+        </button>
         @can('inventario.registrar')
         <a href="{{ route('inventory.movimientos.create') }}" class="btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -111,22 +130,80 @@
     </div>
 
     {{-- ===================== Búsqueda y filtros ===================== --}}
-    <div class="f-toolbar">
+    <form method="GET" id="filtrosMovimientos" data-live="off" class="f-toolbar">
         <div class="f-search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="fBuscar" placeholder="Buscar por folio, equipo, almacén o quien registró" autocomplete="off">
+            <input type="text" id="fBuscar" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar, o escanea / escribe la etiqueta (MB-000123) + Enter" autocomplete="off">
         </div>
 
+        {{-- Catálogo del equipo en una sola fila de selectores compactos:
+             el texto del label queda oculto a la vista (lo usan los lectores
+             de pantalla y los chips), y se aplica en cuanto se elige. --}}
         <div class="flt" data-flt>
             <button type="button" class="flt-btn" data-flt-toggle aria-expanded="false">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                Filtros
+                <span class="flt-heading"><strong>Filtros avanzados</strong><small>Refina la búsqueda de movimientos en el inventario</small></span>
                 <span class="flt-count" data-flt-count hidden>0</span>
+                <span class="flt-chevron">⌄</span>
             </button>
 
             <div class="flt-panel" data-flt-panel hidden>
-                <div class="flt-group">
-                    <h4>Tipo de movimiento</h4>
+                <div class="mov-cat">
+                    @include('partials.inventario-filtros-catalogo')
+                    @php($movTypesSeleccionados = $filters['movement_types'] ?? [])
+                    <details class="flt-state-box">
+                        <summary>
+                            <span class="flt-state-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+                            Estado
+                            </span>
+                            <span class="flt-state-chevron">⌄</span>
+                        </summary>
+                        <div class="flt-state-options">
+                            @foreach ([
+                                'entrada' => 'Entradas',
+                                'vendido' => 'Vendidas sin entregar',
+                                'salida' => 'Salidas entregadas',
+                                'transferencia' => 'Transferencias',
+                            ] as $valor => $texto)
+                                <label class="flt-opt">
+                                    <span class="flt-opt-txt">{{ $texto }}</span>
+                                    <input type="checkbox" data-f="tipo" name="movement_types[]" value="{{ $valor }}" @checked(in_array($valor, $movTypesSeleccionados, true))>
+                                </label>
+                            @endforeach
+                        </div>
+                    </details>
+                    <div class="flt-group flt-date-group">
+                        <h4>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M16 2.5v4M8 2.5v4M3 9h18"/></svg>
+                            Rango de fechas
+                        </h4>
+                        <div class="flt-fechas">
+                            <label class="flt-date-input">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M16 2.5v4M8 2.5v4M3 9h18"/></svg>
+                                <input type="date" data-f="desde" name="desde" value="{{ $filters['desde'] ?? '' }}" aria-label="Fecha del movimiento">
+                            </label>
+                        </div>
+                    </div>
+                    @php($condicionesSeleccionadas = $filters['condiciones'] ?? [])
+                    <label class="inv-filter-field flt-condition-field">
+                        <span class="inv-filter-label">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+                            Condición
+                        </span>
+                        <select id="mov-condicion-filtro" aria-label="Condición">
+                            <option value="" @selected(empty($condicionesSeleccionadas))>Todas las condiciones</option>
+                            <option value="nuevo" @selected(in_array('nuevo', $condicionesSeleccionadas, true))>Equipo nuevo</option>
+                            <option value="usado" @selected(in_array('usado', $condicionesSeleccionadas, true))>Equipo usado</option>
+                        </select>
+                    </label>
+                    <div class="flt-actions">
+                        <button type="submit" class="btn flt-apply">Aplicar filtros</button>
+                        <button type="button" class="btn flt-clear" data-limpiar-filtros>Limpiar</button>
+                    </div>
+                </div>
+                <div class="flt-group legacy-movement-types-group" hidden>
+                    <h4 class="legacy-movement-types">Tipo de movimiento</h4>
                     {{-- "Vendidas sin entregar" es la lista que le sirve a
                          almacén: ya se vendieron, pero el equipo sigue aquí. --}}
                     @foreach ([
@@ -137,30 +214,21 @@
                     ] as $valor => $texto)
                         <label class="flt-opt">
                             <span class="flt-opt-txt">{{ $texto }}</span>
-                            <input type="checkbox" data-f="tipo" value="{{ $valor }}">
+                            {{-- Los estados se muestran dentro del desplegable Estado. --}}
                         </label>
                     @endforeach
                 </div>
 
                 <div class="flt-group">
                     <h4>Condición</h4>
-                    <label class="flt-opt">
-                        <span class="flt-opt-txt">Equipo nuevo</span>
-                        <input type="checkbox" data-f="condicion" value="nuevo">
-                    </label>
-                    <label class="flt-opt">
-                        <span class="flt-opt-txt">Equipo usado</span>
-                        <input type="checkbox" data-f="condicion" value="usado">
-                    </label>
                 </div>
-
                 @if ($almacenes->count() > 1)
                     <div class="flt-group">
                         <h4>Almacén</h4>
                         @foreach ($almacenes as $almacen)
                             <label class="flt-opt">
                                 <span class="flt-opt-txt">{{ $almacen }}</span>
-                                <input type="checkbox" data-f="almacen" value="{{ $almacen }}">
+                                <input type="checkbox" data-f="almacen" name="almacenes[]" value="{{ $almacen }}" @checked(in_array($almacen, $filters['almacenes'] ?? []))>
                             </label>
                         @endforeach
                     </div>
@@ -172,28 +240,21 @@
                         @foreach ($quienes as $quien)
                             <label class="flt-opt">
                                 <span class="flt-opt-txt">{{ $quien }}</span>
-                                <input type="checkbox" data-f="quien" value="{{ $quien }}">
+                                <input type="checkbox" data-f="quien" name="quienes[]" value="{{ $quien }}" @checked(in_array($quien, $filters['quienes'] ?? []))>
                             </label>
                         @endforeach
                     </div>
                 @endif
 
-                <div class="flt-group">
-                    <h4>Fecha del movimiento</h4>
-                    <div class="flt-fechas">
-                        <input type="date" data-f="desde" aria-label="Movimiento desde">
-                        <input type="date" data-f="hasta" aria-label="Movimiento hasta">
-                    </div>
-                </div>
             </div>
         </div>
 
         {{-- Accesos rápidos: lo que entra / lo que sale --}}
         <div class="flt-toggles" role="group" aria-label="Tipo de movimiento">
-            <button type="button" class="flt-tgl" data-f="estado" data-valor="entrada" title="Ver solo entradas" aria-pressed="false">
+            <button type="button" @class(['flt-tgl', 'is-on' => ($filters['estado'] ?? '') === 'entrada']) data-f="estado" data-valor="entrada" title="Ver solo entradas" aria-pressed="{{ ($filters['estado'] ?? '') === 'entrada' ? 'true' : 'false' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
             </button>
-            <button type="button" class="flt-tgl" data-f="estado" data-valor="salida" title="Ver solo salidas" aria-pressed="false">
+            <button type="button" @class(['flt-tgl', 'is-on' => ($filters['estado'] ?? '') === 'salida']) data-f="estado" data-valor="salida" title="Ver solo salidas" aria-pressed="{{ ($filters['estado'] ?? '') === 'salida' ? 'true' : 'false' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
             </button>
         </div>
@@ -203,7 +264,7 @@
         </button>
 
         <x-ui.view-switch key="movimientos" />
-    </div>
+    </form>
 
     <div class="flt-chips" id="fChips" hidden></div>
 
@@ -212,6 +273,7 @@
         <table class="mv-table">
             <thead>
                 <tr>
+                    <th style="width:36px;"><input type="checkbox" id="mvEtqTodas" aria-label="Marcar todas las entradas de la página" style="width:16px; height:16px; cursor:pointer;"></th>
                     <th>Movimiento</th>
                     <th>Equipo</th>
                     <th>Cantidad</th>
@@ -221,8 +283,9 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse ($filas as $fila)
-                    @php $m = $fila['modelo']; @endphp
+                <?php if ($filas->isNotEmpty()): ?>
+                    <?php foreach ($filas as $fila): ?>
+                    <?php $m = $fila['modelo']; ?>
 
                     {{-- Toda la fila abre el detalle del movimiento: ahí está
                          todo lo registrado (unidades, evidencia de cada una,
@@ -232,6 +295,11 @@
                         aria-label="Ver detalle de {{ $m->folio }}"
                         data-ver="{{ route('inventory.movimientos.show', $m) }}"
                         @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
+                        <td>
+                            @if ($fila['tipo'] === 'entrada')
+                                <input type="checkbox" class="mv-etq" value="{{ $m->id }}" aria-label="Imprimir etiquetas de {{ $m->folio }}" style="width:16px; height:16px; cursor:pointer;">
+                            @endif
+                        </td>
                         <td>
                             <div class="cell-id">
                                 <span class="mv-ico {{ $fila['tipo'] }}">
@@ -259,7 +327,12 @@
                         </td>
                         <td>
                             <div class="t">{{ $fila['nombre'] }}</div>
-                            <div class="s">{{ ucfirst($m->item_type) }} · {{ ucfirst($fila['condicion']) }}</div>
+                            <div class="s">
+                                {{ ucfirst($m->item_type) }} · {{ ucfirst($fila['condicion']) }}
+                                @if ($fila['series']->isNotEmpty())
+                                    <br><span title="{{ $fila['series']->implode(', ') }}">Serie: {{ $fila['seriesVista'] }}</span>
+                                @endif
+                            </div>
                         </td>
                         <td style="white-space:nowrap;">{{ $m->quantity }} {{ $m->unit }}</td>
                         <td>{{ $fila['almacen'] }}</td>
@@ -268,9 +341,10 @@
                             @include('structure.gestion_Inventario.entrada_salida._acciones', ['movimiento' => $m])
                         </td>
                     </tr>
-                @empty
+                    <?php endforeach; ?>
+                <?php else: ?>
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="empty-state">
                                 <span class="ico">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
@@ -281,15 +355,16 @@
                             </div>
                         </td>
                     </tr>
-                @endforelse
+                <?php endif; ?>
             </tbody>
         </table>
     </div>
 
     {{-- ===================== Vista tarjetas ===================== --}}
     <div class="data-cards" data-view-cards style="display:none;">
-        @forelse ($filas as $fila)
-            @php $m = $fila['modelo']; @endphp
+        <?php if ($filas->isNotEmpty()): ?>
+            <?php foreach ($filas as $fila): ?>
+            <?php $m = $fila['modelo']; ?>
 
             <article class="data-card f-row mv-clic" tabindex="0" role="link"
                      aria-label="Ver detalle de {{ $m->folio }}"
@@ -320,7 +395,11 @@
                 </div>
 
                 <dl>
-                    <div><dt>Equipo</dt><dd>{{ $fila['nombre'] }}</dd></div>
+                    <div><dt>Equipo</dt><dd>{{ $fila['nombre'] }}
+                        @if ($fila['series']->isNotEmpty())
+                            <span class="s" title="{{ $fila['series']->implode(', ') }}">Serie: {{ $fila['seriesVista'] }}</span>
+                        @endif
+                    </dd></div>
                     <div><dt>Cantidad</dt><dd>{{ $m->quantity }} {{ $m->unit }}</dd></div>
                     <div><dt>Condición</dt><dd>{{ ucfirst($fila['condicion']) }}</dd></div>
                     <div><dt>Almacén</dt><dd>{{ $fila['almacen'] }}</dd></div>
@@ -331,7 +410,8 @@
                     @include('structure.gestion_Inventario.entrada_salida._acciones', ['movimiento' => $m])
                 </div>
             </article>
-        @empty
+            <?php endforeach; ?>
+        <?php else: ?>
             <div class="card">
                 <div class="empty-state">
                     <span class="ico">
@@ -342,7 +422,7 @@
                     <a href="{{ route('inventory.movimientos.create') }}" class="btn">Nueva entrada</a>
                 </div>
             </div>
-        @endforelse
+        <?php endif; ?>
     </div>
 
     {{-- Aviso cuando los filtros no dejan nada visible --}}
@@ -357,7 +437,7 @@
         </div>
     </div>
 
-    <p class="f-conteo" id="fConteo"></p>
+    <p class="f-conteo" id="fConteo">Mostrando {{ $movements->count() }} de {{ $movements->total() }} movimientos</p>
 
     @include('partials._paginacion', ['paginator' => $movements])
 
@@ -373,16 +453,11 @@
 
             <h3>Eliminar movimiento</h3>
             <p class="campo-nota">
-                Se va a eliminar <b data-folio-eliminar></b> y las piezas que dio de alta.
-                Escribe tu PIN para confirmarlo.
+                Se va a eliminar <b data-folio-eliminar></b> y las piezas que dio de alta,
+                con sus fotos y su video. No se puede deshacer.
             </p>
 
-            <x-ui.form-group label="PIN" for="pinEliminar">
-                <input id="pinEliminar" name="password" type="password" inputmode="numeric" required
-                       placeholder="Tu PIN de aprobación" autocomplete="off">
-            </x-ui.form-group>
-
-            @error('password')<p class="err">{{ $message }}</p>@enderror
+            @error('movimiento')<p class="err">{{ $message }}</p>@enderror
 
             <div class="mv-modal-pie">
                 <button type="button" class="btn btn--ghost" data-cerrar-modal>Cancelar</button>
@@ -422,12 +497,147 @@
                         background:var(--danger-soft); color:var(--danger); }
         .mv-modal-ico svg { width:24px; height:24px; }
         .mv-modal-pie { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+        /* Búsqueda arriba a lo ancho; debajo, una sola fila con el catálogo
+           y los demás controles. */
+        .f-toolbar > .f-search { flex:1 0 100%; }
+        .f-toolbar > .flt { flex:1 0 100%; min-width:0; }
+        /* Los controles secundarios comparten una sola fila debajo del panel. */
+        .f-toolbar > .flt-toggles,
+        .f-toolbar > #fLimpiar,
+        .f-toolbar > .view-switch { flex:0 0 auto !important; width:auto; }
+        .f-toolbar > .view-switch { margin-left:auto; }
+        .flt-btn { width:100%; justify-content:flex-start; padding:14px 18px; border-radius:16px 16px 0 0; background:linear-gradient(135deg, color-mix(in srgb, var(--surface) 92%, var(--primary)), var(--surface)); }
+        .flt-btn[aria-expanded="false"] { border-radius:16px; }
+        .flt-heading { display:flex; flex-direction:column; align-items:flex-start; gap:2px; flex:1; text-align:left; }
+        .flt-heading strong { font-size:16px; color:var(--text); }
+        .flt-heading small { color:var(--muted); font-size:12px; font-weight:500; }
+        .flt-chevron { margin-left:auto; font-size:22px; line-height:1; color:var(--muted); transition:transform .18s; }
+        .flt-btn[aria-expanded="true"] .flt-chevron { transform:rotate(180deg); }
+        .flt-panel { position:static; align-self:stretch; width:100%; max-height:none; overflow:visible; columns:1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 24px; padding:18px; border-radius:0 0 16px 16px; border-top:0; box-shadow:0 12px 28px rgba(0,0,0,.12); }
+        .flt-panel[hidden] { display:none; }
+        .flt-panel .mov-cat { grid-column:1 / -1; }
+        .flt-panel .flt-group { margin:0; }
+        .flt-panel > .btn { justify-self:start; }
+        .mov-cat { min-width:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 24px; }
+        .mov-cat [data-catalogo-filtros] { grid-column:1 / -1; }
+        .flt-state-field { position:relative; padding-top:18px; }
+        .flt-condition-field { position:relative; padding-top:18px; }
+        .flt-panel .mov-cat [data-catalogo-filtros] { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 24px !important; }
+        .flt-panel .mov-cat [data-catalogo-filtros] label { flex:none !important; }
+        .flt-panel .mov-cat .inv-filter-label { display:flex !important; }
+        /* Este panel debe crecer dentro del flujo; sobrescribe el panel
+           flotante general de tablas filtrables, que es angosto y desplazable. */
+        .f-toolbar > .flt > .flt-panel { position:static !important; display:grid !important; width:100% !important; max-width:none !important; max-height:none !important; overflow:visible !important; }
+        .f-toolbar > .flt > .flt-panel[hidden] { display:none !important; }
+        .f-toolbar > .flt > .flt-btn[aria-expanded="false"] + .flt-panel { display:none !important; visibility:hidden !important; }
+        .f-toolbar > .flt > .flt-panel .mov-cat [data-catalogo-filtros] { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+        .mov-cat [data-catalogo-filtros] { display:flex !important; gap:8px !important; flex-wrap:nowrap !important; width:100%; }
+        .mov-cat [data-catalogo-filtros] label { position:relative; flex:1 1 0 !important; min-width:0 !important;
+            padding-top:18px; font-size:0; line-height:0; }
+        .flt-panel .mov-cat .inv-filter-label { position:absolute; top:0; left:0; height:17px; display:flex !important; align-items:center; pointer-events:none; }
+        .flt-panel .mov-cat [data-catalogo-filtros] .inv-filter-label {
+            font-size:12px !important;
+            line-height:16px !important;
+            font-weight:600;
+            color:var(--text);
+            z-index:3;
+        }
+        .flt-panel .mov-cat .inv-filter-label svg { position:absolute; left:12px; top:30px; width:16px !important; height:16px !important; color:#a7bddb; z-index:2; }
+        .flt-panel .mov-cat select { padding-left:42px !important; }
+        .flt-state-box { min-width:0; border:1px solid var(--border); border-radius:12px; background:var(--surface); overflow:hidden; }
+        .flt-state-box summary { display:flex; align-items:center; justify-content:space-between; min-height:42px; padding:0 13px; color:var(--text); font-size:13px; font-weight:600; cursor:pointer; list-style:none; }
+        .flt-state-box summary::-webkit-details-marker { display:none; }
+        .flt-state-title { display:flex; align-items:center; gap:8px; }
+        .flt-state-title svg { width:17px; height:17px; color:#a7bddb; }
+        .flt-state-chevron { color:var(--muted); font-size:20px; line-height:1; transition:transform .18s; }
+        .flt-state-box[open] .flt-state-chevron { transform:rotate(180deg); }
+        .flt-state-options { padding:4px 8px 8px; border-top:1px solid var(--border); }
+        .flt-state-options .flt-opt { margin:2px 0; }
+        .flt-panel > .flt-group:has(.legacy-movement-types) { display:none; }
+        .flt-panel .flt-group:has(> h4:only-child) { display:none !important; }
+        .flt-date-group h4 { display:flex; align-items:center; gap:7px; }
+        .flt-date-group h4 svg { width:16px; height:16px; color:#a7bddb; }
+        .flt-panel .flt-date-group .flt-fechas { margin-top:8px; }
+        .flt-date-input { position:relative; display:block; }
+        .flt-date-input svg { position:absolute; left:13px; top:50%; width:17px; height:17px; color:#a7bddb; transform:translateY(-50%); pointer-events:none; }
+        .flt-panel .flt-date-group .flt-fechas input { height:42px; padding:0 13px 0 42px; border-radius:12px; font-size:13px; }
+        .flt-actions { display:flex; align-items:flex-end; gap:10px; align-self:end; }
+        .flt-actions .btn { min-height:42px; padding:10px 16px; border-radius:11px; font-size:13px; }
+        .flt-actions .flt-apply { background:var(--primary); color:#fff; }
+        .flt-actions .flt-clear { background:transparent; border:1px solid var(--border); color:var(--text); }
+        .flt-actions .flt-clear:hover { border-color:var(--primary); color:var(--primary); background:var(--primary-soft); }
+        .mov-cat [data-catalogo-filtros] label::after { content:''; position:absolute; right:13px; top:50%;
+            width:6px; height:6px; border-right:1.6px solid var(--muted); border-bottom:1.6px solid var(--muted);
+            transform:translateY(-70%) rotate(45deg); pointer-events:none; }
+        .mov-cat .inv-filter-label { display:none !important; }
+        .mov-cat .inv-filter-label svg { width:15px !important; height:15px !important; }
+        .mov-cat select { -webkit-appearance:none; appearance:none; width:100%; height:38px; padding:0 32px 0 14px;
+            border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--muted);
+            font:inherit; font-size:13px; line-height:38px; cursor:pointer; text-overflow:ellipsis;
+            transition:border-color .15s, background-color .15s, color .15s; }
+        .mov-cat select:hover { border-color:var(--muted); color:var(--text); }
+        .mov-cat select:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+        /* Con algo elegido se nota de un vistazo qué está filtrando. */
+        .mov-cat select:not(:has(option[value=""]:checked)) { border-color:var(--primary); background:var(--primary-soft);
+            color:var(--primary); font-weight:600; }
+        .mov-cat label:has(select:not(:has(option[value=""]:checked)))::after { border-color:var(--primary); }
+        .mov-cat select option { color:var(--text); background:var(--surface); font-weight:400; }
+        @media (max-width:760px) {
+            .flt-panel { width:100%; }
+            .flt-panel { grid-template-columns:1fr; }
+            .flt-panel .mov-cat { grid-column:auto; }
+            .f-toolbar > .flt > .flt-panel .mov-cat [data-catalogo-filtros] { grid-template-columns:1fr !important; }
+            .mov-cat { grid-template-columns:1fr; }
+            .mov-cat [data-catalogo-filtros] { grid-column:auto; }
+        }
+        .f-toolbar > .flt .flt-panel { left:0; right:auto; }
+        .f-toolbar > .flt > .flt-panel[hidden] { display:none !important; visibility:hidden !important; }
+        .flt-condition-field .inv-filter-label { position:absolute; top:0; left:0; display:flex !important; align-items:center; }
+        :root[data-theme="light"] .f-toolbar > .flt > .flt-panel {
+            border:1px solid #d7dee8 !important;
+            background:#ffffff !important;
+            box-shadow:0 8px 22px rgba(15,23,42,.08);
+        }
+        :root[data-theme="light"] .flt-panel .mov-cat select,
+        :root[data-theme="light"] .flt-panel .flt-date-input input {
+            border:1px solid #cbd5e1 !important;
+            background:#ffffff !important;
+            color:#334155 !important;
+        }
+        :root[data-theme="light"] .flt-panel .mov-cat select:hover,
+        :root[data-theme="light"] .flt-panel .flt-date-input input:hover,
+        :root[data-theme="light"] .flt-panel .mov-cat select:focus,
+        :root[data-theme="light"] .flt-panel .flt-date-input input:focus {
+            border-color:#64748b !important;
+        }
+        :root[data-theme="light"] .flt-panel .mov-cat .inv-filter-label,
+        :root[data-theme="light"] .flt-panel .flt-date-group h4,
+        :root[data-theme="light"] .flt-panel .flt-state-title,
+        :root[data-theme="light"] .flt-panel .flt-condition-field .inv-filter-label {
+            color:#334155 !important;
+        }
+        :root[data-theme="light"] .flt-panel .mov-cat .inv-filter-label svg,
+        :root[data-theme="light"] .flt-panel .flt-date-group h4 svg,
+        :root[data-theme="light"] .flt-panel .flt-date-input svg,
+        :root[data-theme="light"] .flt-panel .flt-state-title svg,
+        :root[data-theme="light"] .flt-panel .flt-condition-field .inv-filter-label svg {
+            color:#475569 !important;
+            stroke:#475569 !important;
+        }
+        :root[data-theme="light"] .flt-panel .flt-state-box {
+            border:1px solid #cbd5e1 !important;
+            background:#ffffff !important;
+        }
+        :root[data-theme="light"] .flt-panel .flt-state-options { border-top-color:#e2e8f0 !important; }
+        :root[data-theme="light"] .flt-panel .flt-state-chevron,
+        :root[data-theme="light"] .flt-panel .mov-cat label::after { color:#475569 !important; border-color:#475569 !important; }
         @media (max-width:520px) { .mv-modal-pie .btn { flex:1; justify-content:center; } }
     </style>
 
     @include('partials.tabla-filtrable.estilos')
 
     @include('partials.tabla-filtrable.script', [
+        'formServidor' => 'filtrosMovimientos',
         'singular' => 'movimiento',
         'plural' => 'movimientos',
         'estadoCampo' => 'tipo',
@@ -465,7 +675,6 @@
                     const form = document.getElementById('formEliminar');
                     form.action = boton.dataset.url;
                     modal.querySelector('[data-folio-eliminar]').textContent = boton.dataset.folio;
-                    modal.querySelector('#pinEliminar').value = '';
                     modal.showModal();
 
                     return;
@@ -489,7 +698,7 @@
                 const fila = e.target.closest('[data-ver]');
                 if (! fila) return;
 
-                if (e.target.closest('a, button, input, select, textarea, [data-row-menu]')) return;
+                if (e.target.closest('a, button, input, select, textarea, label, [data-row-menu]')) return;
                 if ((window.getSelection()?.toString() || '').trim() !== '') return;
 
                 // Clic con la rueda o con Ctrl/Cmd: en pestaña nueva.
@@ -502,6 +711,36 @@
                 window.location = fila.dataset.ver;
             });
 
+            // El catálogo se aplica en cuanto se elige (ya no hay botón
+            // "Aplicar"); se espera un turno para que el tipo termine de
+            // rellenar subtipo, marca y modelo.
+            document.querySelectorAll('#filtrosMovimientos [data-catalogo]').forEach(function (select) {
+                select.addEventListener('change', function () {
+                    setTimeout(function () { document.getElementById('filtrosMovimientos').requestSubmit(); }, 0);
+                });
+            });
+
+            // El selector de Estado representa el mismo filtro que el grupo
+            // de movimientos, pero conserva una sola selección visible.
+            const filtrosForm = document.getElementById('filtrosMovimientos');
+            const condicionFiltro = document.getElementById('mov-condicion-filtro');
+            if (filtrosForm) {
+                filtrosForm.addEventListener('submit', function () {
+                    filtrosForm.querySelectorAll('[data-condicion-filtro-hidden]').forEach(function (input) {
+                        input.remove();
+                    });
+
+                    if (condicionFiltro && condicionFiltro.value) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'condiciones[]';
+                        input.value = condicionFiltro.value;
+                        input.dataset.condicionFiltroHidden = 'true';
+                        filtrosForm.appendChild(input);
+                    }
+                });
+            }
+
             // Con el teclado: Enter sobre la fila enfocada hace lo mismo.
             document.addEventListener('keydown', function (e) {
                 if (e.key !== 'Enter') return;
@@ -512,11 +751,32 @@
                 window.location = fila.dataset.ver;
             });
 
-            @if ($errors->has('password'))
-                // El PIN salió mal: se vuelve a abrir con el error a la vista.
-                document.getElementById('modalEliminar')?.showModal();
-            @endif
         })();
         </script>
     @endpush
+    <script>
+        /* Etiquetas de varias entradas a la vez. */
+        (function () {
+            const boton = document.getElementById('mvEtiquetas'), n = document.getElementById('mvEtqN'), todas = document.getElementById('mvEtqTodas');
+            const marcadas = () => [...document.querySelectorAll('.mv-etq:checked')].map(c => c.value);
+            function pintar() {
+                const k = marcadas().length;
+                n.textContent = k; boton.disabled = !k;
+                boton.style.opacity = k ? '1' : '.5'; boton.style.cursor = k ? 'pointer' : 'not-allowed';
+                const visibles = [...document.querySelectorAll('.mv-etq')];
+                todas.checked = visibles.length > 0 && visibles.every(c => c.checked);
+                todas.indeterminate = k > 0 && !todas.checked;
+            }
+            document.addEventListener('change', e => {
+                if (e.target === todas) document.querySelectorAll('.mv-etq').forEach(c => { if (!c.closest('[hidden]') && c.closest('tr')?.style.display !== 'none') c.checked = todas.checked; });
+                if (e.target === todas || e.target.matches('.mv-etq')) pintar();
+            });
+            boton.addEventListener('click', () => {
+                const ids = marcadas();
+                if (ids.length) window.open(@json(route('inventory.etiquetas.lote')) + '?' + ids.map(id => 'movimientos[]=' + id).join('&'), '_blank');
+            });
+            pintar();
+        })();
+    </script>
+    @include('structure.gestion_Inventario.entrada_salida._escaner_estatus')
 @endsection

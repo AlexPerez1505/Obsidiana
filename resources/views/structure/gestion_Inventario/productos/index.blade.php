@@ -6,26 +6,160 @@
 @push('head')
     <style>
         .unidades-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:1000; padding:20px; }
-        .unidades-modal { background:var(--surface); border-radius:12px; max-width:560px; width:100%; max-height:80vh; overflow-y:auto; padding:20px; }
-        .unidades-modal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
-        .unidad-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
-        .unidad-item:last-child { border-bottom:none; }
-        .unidad-item img { width:54px; height:54px; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:pointer; }
-        .unidad-item .unidad-sin-foto { width:54px; height:54px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; text-align:center; }
+        .unidades-modal { background:var(--surface); border-radius:14px; max-width:840px; width:100%; max-height:86vh; overflow-y:auto; padding:22px; }
+        .unidades-modal-head { display:flex; align-items:center; justify-content:space-between; gap:12px;
+                               margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--border);
+                               position:sticky; top:-22px; background:var(--surface); z-index:2; }
         .producto-row { cursor:pointer; }
         .producto-row:hover { background:var(--surface-2); }
+
+        /* ===================== Una tarjeta por unidad =====================
+           La evidencia de cómo llegó cada pieza se ve de entrada: sus fotos
+           y su video, sin tener que abrir nada. */
+        /* Vista en tarjetas */
+        .prod-card { cursor:pointer; padding:0; overflow:hidden; display:flex; flex-direction:column; }
+        .prod-card > :not(.prod-card-foto) { margin-left:16px; margin-right:16px; }
+        .prod-card .data-card-foot { margin-bottom:14px; }
+        .prod-card-foto { position:relative; aspect-ratio:4/3; background:var(--surface-2);
+                          display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:13px;
+                          border-bottom:1px solid var(--border); }
+        .prod-card-foto img { width:100%; height:100%; object-fit:cover; display:block; }
+        .prod-card-check { position:absolute; top:10px; left:10px; display:flex; padding:6px; border-radius:7px;
+                           background:var(--surface); border:1px solid var(--border); cursor:pointer; }
+        .prod-card-check input { width:16px; height:16px; margin:0; cursor:pointer; }
+
+        .unidad-card { border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:12px; }
+        .unidad-card:last-child { margin-bottom:0; }
+        .unidad-card-head { display:flex; align-items:flex-start; gap:12px; margin-bottom:12px; }
+        .unidad-serie { font-family:ui-monospace, Consolas, monospace; font-size:14.5px; font-weight:700; }
+        .unidad-serie.sin { font-family:inherit; font-weight:600; color:var(--muted); }
+        .unidad-meta { margin-top:3px; color:var(--muted); font-size:12.5px; line-height:1.5; }
+        .unidad-meta .cod { font-family:ui-monospace, Consolas, monospace; }
+        .unidad-card-head .der { margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex:0 0 auto; }
+
+        .unidad-medios { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:10px; }
+        .medio { position:relative; padding:0; border:1px solid var(--border); border-radius:10px;
+                 overflow:hidden; background:var(--surface-2); cursor:pointer; display:block; }
+        .medio img, .medio video { width:100%; height:112px; object-fit:cover; display:block; background:#000; }
+        .medio:hover { border-color:var(--primary); }
+        .medio--video { cursor:default; }
+        .medio--video video { object-fit:contain; }
+        .medio-etiqueta { position:absolute; left:0; right:0; bottom:0; padding:3px 6px; font-size:10.5px;
+                          font-weight:600; color:#fff; background:rgba(0,0,0,.6); text-align:center; }
+        .unidad-sin-medios { margin:0; padding:10px 12px; border-radius:9px; background:var(--surface-2);
+                             color:var(--muted); font-size:12.5px; }
+        /* Está vendible, pero no en el anaquel. */
+        .unidad-en-congreso { background:var(--warn-soft, rgba(217,119,6,.12)) !important;
+                              color:var(--warn, #b45309) !important; border-color:transparent !important; }
+
+        .ver-evidencia { border:none; background:transparent; padding:0;
+                         color:var(--primary); font-size:11.5px; font-weight:600; cursor:pointer; white-space:nowrap; }
+        .ver-evidencia:hover { text-decoration:underline; }
+
+        /* ===================== Agrupado por tipo ===================== */
+        .tipo-chips { display:flex; gap:6px; flex-wrap:wrap; margin:-6px 0 14px; }
+        .tipo-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border:1px solid var(--border); border-radius:999px;
+                     background:var(--surface); color:var(--text); font-size:12.5px; font-weight:600; text-decoration:none; }
+        .tipo-chip span { color:var(--muted); font-weight:500; }
+        .tipo-chip.on { background:var(--primary); border-color:var(--primary); color:#fff; }
+        .tipo-chip.on span { color:#fff; opacity:.8; }
+        .grupo-fila td { background:var(--surface-2); padding:9px 12px !important; cursor:pointer; user-select:none; }
+        .grupo-cab { display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+        .grupo-cab .n { font-weight:600; color:var(--muted); letter-spacing:0; text-transform:none; }
+        .grupo-cab svg { width:14px; height:14px; transition:transform .18s ease; }
+        .grupo-cerrado .grupo-cab svg { transform:rotate(-90deg); }
+        .grupo-titulo-cards { grid-column:1 / -1; margin:8px 0 -2px; font-size:12.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+
+        /* ===================== Filtros del inventario ===================== */
+        .inv-toolbar { display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
+        .inv-filter-wrap { flex:1 0 100%; min-width:0; order:2; }
+        .inv-filter-toggle { width:100%; display:flex; align-items:center; gap:10px; padding:13px 16px; border:1px solid var(--primary); border-radius:14px; background:var(--surface); color:var(--text); cursor:pointer; text-align:left; }
+        .inv-filter-toggle svg { width:18px; height:18px; color:var(--primary); flex:0 0 auto; }
+        .inv-filter-toggle span { display:flex; flex-direction:column; gap:2px; }
+        .inv-filter-toggle strong { font-size:15px; }
+        .inv-filter-toggle small { color:var(--muted); font-size:12px; }
+        .inv-filter-toggle .chev { margin-left:auto; font-size:18px; color:var(--muted); }
+        .inv-filter-toggle[aria-expanded="true"] { border-radius:14px 14px 0 0; }
+        .inv-filter-toggle[aria-expanded="true"] .chev { transform:rotate(180deg); }
+        .inv-filter-panel { flex:1 1 100%; display:grid !important; grid-template-columns:minmax(250px,1.45fr) repeat(4,minmax(145px,1fr)) auto auto; gap:12px; align-items:end; padding:16px; border:1px solid var(--border); border-radius:16px; background:var(--surface); box-shadow:0 8px 24px rgba(15,23,42,.05); }
+        .inv-filter-panel[hidden] { display:none !important; }
+        .inv-filter-wrap .inv-filter-panel { border-top:0; border-radius:0 0 16px 16px; }
+        .inv-filter-field { display:flex; flex-direction:column; gap:7px; min-width:0; color:var(--muted); font-size:11px; font-weight:750; letter-spacing:.06em; text-transform:uppercase; }
+        .inv-filter-label { display:flex; align-items:center; gap:7px; color:var(--text); font-size:11px; font-weight:650; letter-spacing:.02em; text-transform:none; }
+        .inv-filter-label svg { width:15px; height:15px; flex:0 0 auto; color:#9bb8dd; stroke-width:1.8; }
+        .inv-filter-field input, .inv-filter-field select { width:100%; min-height:42px; box-sizing:border-box; padding:10px 12px; border:1px solid color-mix(in srgb, var(--primary) 16%, var(--border)); border-radius:10px; background:color-mix(in srgb, var(--surface-2) 88%, #071b38); color:var(--text); font:inherit; font-size:13px; letter-spacing:normal; text-transform:none; outline:none; transition:border-color .18s, box-shadow .18s, background .18s; }
+        .inv-filter-field input::placeholder { color:var(--muted); opacity:.8; }
+        .inv-filter-field input:focus, .inv-filter-field select:focus { border-color:var(--primary); box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent); background:var(--surface); }
+        .inv-filter-search { position:relative; }
+        .inv-filter-search input { padding-left:39px; }
+        .inv-filter-search svg { position:absolute; left:12px; bottom:13px; width:17px; height:17px; color:var(--muted); pointer-events:none; }
+        .inv-filter-actions { display:flex; align-items:center; gap:8px; height:42px; }
+        .inv-filter-actions .btn { white-space:nowrap; height:42px; }
+        .inv-filter-panel [data-catalogo-filtros] { display:contents !important; }
+        .tipo-chips { gap:8px; margin:0 0 16px; padding:4px; }
+        .tipo-chip { padding:8px 13px; border-radius:10px; background:transparent; font-size:12.5px; transition:background .18s, border-color .18s, color .18s, transform .18s; }
+        .tipo-chip:hover { border-color:var(--primary); color:var(--primary); transform:translateY(-1px); }
+        .tipo-chip.on { box-shadow:0 4px 12px color-mix(in srgb, var(--primary) 20%, transparent); }
+        .tipo-chip span { padding:2px 6px; border-radius:999px; background:var(--surface-2); font-size:11px; }
+        .tipo-chip.on span { background:rgba(255,255,255,.16); }
+        .inv-actions { flex:1 0 100%; display:flex; align-items:center; justify-content:flex-end; gap:12px; flex-wrap:wrap; order:1; }
+        .inv-actions .inv-filter-toggle { width:auto; padding:10px 14px; }
+        .inv-actions .inv-filter-toggle small { display:none; }
+        .inv-actions .inv-spacer { flex:1; }
+        @media (max-width: 1100px) { .inv-filter-panel { grid-template-columns:repeat(2,minmax(180px,1fr)); } .inv-filter-search { grid-column:1 / -1; } .inv-filter-actions { justify-content:flex-start; } }
+        @media (max-width: 600px) { .inv-filter-panel { grid-template-columns:1fr; padding:12px; } .inv-filter-search { grid-column:auto; } .inv-filter-actions { width:100%; } .inv-filter-actions .btn { flex:1; justify-content:center; } .inv-actions > * { flex:1 1 100%; justify-content:center; } .inv-actions .inv-spacer { display:none; } }
+
+        /* ===================== Paquetes con su contenido ===================== */
+        .paq-sec > summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px; }
+        .paq-sec > summary::-webkit-details-marker { display:none; }
+        .paq-sec > summary h3 { margin:0; font-size:15px; font-weight:650; flex:1; }
+        .paq-sec > summary .flecha { width:16px; height:16px; transition:transform .18s ease; color:var(--muted); }
+        .paq-sec[open] > summary .flecha { transform:rotate(180deg); }
+        .paq-grupo { margin-top:14px; }
+        .paq-grupo-t { font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin:0 0 8px; }
+        .paq-lista { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px; }
+        .paq-item { border:1px solid var(--border); border-radius:10px; background:var(--surface); }
+        .paq-item > summary { list-style:none; cursor:pointer; padding:11px 13px; display:flex; align-items:center; gap:10px; }
+        .paq-item > summary::-webkit-details-marker { display:none; }
+        .paq-item > summary b { flex:1; min-width:0; font-size:13.5px; }
+        .paq-item > summary small { color:var(--muted); font-size:12px; white-space:nowrap; }
+        .paq-item ul { margin:0; padding:0 13px 12px 30px; font-size:12.5px; line-height:1.65; color:var(--muted); }
+        .paq-item ul b { color:var(--text); }
+        @media (prefers-reduced-motion: reduce) { .grupo-cab svg, .paq-sec > summary .flecha { transition:none; } }
+
     </style>
 @endpush
 
 @section('content')
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap;">
-        <form method="GET" style="flex:1; min-width:220px; max-width:380px;">
-            <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por tipo, marca, modelo o serie..."
-                   style="width:100%; padding:11px 14px; border:1px solid var(--border); border-radius:9px; font-size:14.5px; background:var(--surface); color:var(--text);">
+    @if (request()->query('from') === 'dashboard')
+        <x-ui.page-header title="Inventario" :back="route('dashboard')" />
+    @endif
+
+    <div class="inv-toolbar">
+        <div class="inv-filter-wrap">
+        <form method="GET" id="filtrosProductos" data-live="off" class="inv-filter-panel" hidden>
+            <label class="inv-filter-field inv-filter-search">Buscar en inventario
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por tipo, marca, modelo o serie..."
+                       autocomplete="off">
+            </label>
+            @include('partials.inventario-filtros-catalogo')
             @if (($filters['ubicacion'] ?? '') === 'congreso')
                 <input type="hidden" name="ubicacion" value="congreso">
             @endif
+            <div class="inv-filter-actions">
+                <button type="submit" class="btn">Aplicar</button>
+                <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost">Limpiar</a>
+            </div>
         </form>
+        </div>
+
+        <div class="inv-actions">
+        <button type="button" class="inv-filter-toggle" id="toggleFiltrosProductos" aria-expanded="false" aria-controls="filtrosProductos">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            <span><strong>Filtros avanzados</strong><small>Refina la búsqueda de productos del inventario</small></span>
+            <b class="chev">⌄</b>
+        </button>
 
         {{-- Lo que está fuera del almacén, de un jalón: sigue siendo stock
              (allá se puede vender) pero no está en el anaquel. --}}
@@ -36,8 +170,8 @@
         --}}
         @if ($enCongreso > 0)
             <a href="{{ ($filters['ubicacion'] ?? '') === 'congreso'
-                    ? route('inventory.productos.index', array_filter(['search' => $filters['search'] ?? null]))
-                    : route('inventory.productos.index', array_filter(['search' => $filters['search'] ?? null, 'ubicacion' => 'congreso'])) }}"
+                    ? route('inventory.productos.index', array_filter(\Illuminate\Support\Arr::except($filters, ['ubicacion'])))
+                    : route('inventory.productos.index', array_filter(array_merge($filters, ['ubicacion' => 'congreso']))) }}"
                class="btn {{ ($filters['ubicacion'] ?? '') === 'congreso' ? '' : 'btn--ghost' }}"
                style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;"
                title="{{ ($filters['ubicacion'] ?? '') === 'congreso' ? 'Quitar el filtro' : 'Ver solo lo que está en congresos' }}">
@@ -46,32 +180,97 @@
             </a>
         @endif
 
-        <div style="flex:1;"></div>
+        <div class="inv-spacer"></div>
+        <x-ui.view-switch key="productos" />
         <a href="{{ route('inventory.paquetes.index') }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"/></svg>
             Paquetes
         </a>
+        {{-- Etiquetas de todas las piezas de los productos marcados, de un jalón. --}}
+        <button type="button" id="btn-etiquetas" class="btn btn--ghost" disabled
+                style="display:inline-flex; align-items:center; gap:7px; opacity:.5; cursor:not-allowed;"
+                onclick="imprimirEtiquetas()" title="Marca productos con la casilla para imprimir sus etiquetas">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Imprimir etiquetas (<span id="contador-etiquetas">0</span>)
+        </button>
         <button type="button" id="btn-agrupar-paquete" class="btn" disabled
                 style="display:inline-flex; align-items:center; gap:7px; opacity:.5; cursor:not-allowed;"
                 onclick="agruparEnPaquete()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             Agrupar en paquete (<span id="contador-seleccionados">0</span>)
         </button>
+        @can('inventario.registrar')
         <a href="{{ route('inventory.movimientos.create') }}" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
             Registrar entrada
         </a>
+        @endcan
+        </div>
     </div>
 
+    @php
+        $tipoSel = $filters['tipo'] ?? '';
+        $base = array_filter(['search' => $filters['search'] ?? null, 'ubicacion' => $filters['ubicacion'] ?? null]);
+    @endphp
+    @if ($porTipo->count() > 1 || $tipoSel !== '')
+        <nav class="tipo-chips" aria-label="Filtrar por tipo">
+            <a href="{{ route('inventory.productos.index', $base) }}" class="tipo-chip {{ $tipoSel === '' ? 'on' : '' }}">Todos <span>{{ $porTipo->sum() }}</span></a>
+            @foreach ($porTipo as $t => $n)
+                <a href="{{ route('inventory.productos.index', $base + ['tipo' => $t]) }}" class="tipo-chip {{ $tipoSel === $t ? 'on' : '' }}">{{ $t }} <span>{{ $n }}</span></a>
+            @endforeach
+        </nav>
+    @endif
+
+    {{-- Paquetes agrupados por el tipo que más traen; cada uno se abre y
+         dice qué contiene. --}}
+    @if ($paquetesPorTipo->isNotEmpty())
+        <x-ui.card style="margin-bottom:16px;">
+            <details class="paq-sec" @if (! request()->has('page')) open @endif>
+                <summary>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"/></svg>
+                    <h3>Paquetes <span class="muted" style="font-weight:500; font-size:13px;">{{ $paquetesPorTipo->flatten()->count() }}</span></h3>
+                    <a href="{{ route('inventory.paquetes.index') }}" class="tbl-link" onclick="event.stopPropagation();" style="font-size:13px;">Administrar</a>
+                    <svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </summary>
+                @foreach ($paquetesPorTipo as $tipoPaq => $lista)
+                    <div class="paq-grupo">
+                        <p class="paq-grupo-t">{{ $tipoPaq }} · {{ $lista->count() }}</p>
+                        <div class="paq-lista">
+                            @foreach ($lista as $paq)
+                                @php $contenido = $paq->contenido(); @endphp
+                                <details class="paq-item">
+                                    <summary>
+                                        <b>{{ $paq->nombre }}</b>
+                                        <small>{{ count($contenido) }} {{ count($contenido) === 1 ? 'artículo' : 'artículos' }}</small>
+                                        @if (! $paq->activo)<span class="badge" style="font-size:11px;">Inactivo</span>@endif
+                                    </summary>
+                                    @if (empty($contenido))
+                                        <p class="muted" style="margin:0; padding:0 13px 12px; font-size:12.5px;">Sin productos.</p>
+                                    @else
+                                        <ul>
+                                            @foreach ($contenido as $l)
+                                                <li><b>{{ $l['cantidad'] }}×</b> {{ $l['nombre'] }}{{ $l['marca'] ? ' · '.$l['marca'] : '' }}{{ $l['modelo'] ? ' · '.$l['modelo'] : '' }}</li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
+                                </details>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            </details>
+        </x-ui.card>
+    @endif
+
     <x-ui.card>
-        <div style="overflow-x:auto;">
+        <div style="overflow-x:auto;" data-view-list>
             <table>
                 <thead>
                     <tr>
-                        <th style="width:36px;"></th>
+                        <th style="width:36px;"><input type="checkbox" id="sel-todos" aria-label="Marcar todos los productos de la página" style="width:16px; height:16px; cursor:pointer;" onclick="event.stopPropagation()"></th>
                         <th>Imagen</th>
-                        <th>Equipo</th>
-                        <th>Marca / Modelo</th>
+                        <th>Producto</th>
+                        <th>Modelo / Marca</th>
                         {{-- El precio es dato de administración: la columna
                              no se dibuja para quien no puede verlo. --}}
                         @if (\App\Support\PrecioVisible::para())
@@ -82,8 +281,23 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @php $tipoPrevio = null; @endphp
                     @forelse($productos as $producto)
-                        <tr class="producto-row" title="Ver unidades disponibles"
+                        @php $tipoFila = $producto->tipo_equipo ?: 'Sin tipo'; @endphp
+                        @if ($tipoFila !== $tipoPrevio)
+                            @php $tipoPrevio = $tipoFila; @endphp
+                            <tr class="grupo-fila" data-grupo-toggle="{{ $tipoFila }}" tabindex="0" aria-expanded="true">
+                                <td colspan="8">
+                                    <span class="grupo-cab">
+                                        <input type="checkbox" data-sel-grupo="{{ $tipoFila }}" aria-label="Marcar todo {{ $tipoFila }}"
+                                               style="width:15px; height:15px; cursor:pointer; margin:0 2px 0 0;" onclick="event.stopPropagation()">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
+                                        {{ $tipoFila }} <span class="n">{{ $porTipo[$tipoFila] ?? '' }} {{ ($porTipo[$tipoFila] ?? 0) === 1 ? 'producto' : 'productos' }}</span>
+                                    </span>
+                                </td>
+                            </tr>
+                        @endif
+                        <tr class="producto-row" data-grupo="{{ $tipoFila }}" title="Ver unidades disponibles"
                             onclick="if (!event.target.closest('.row-menu') && event.target.tagName !== 'INPUT') { document.getElementById('unidades-modal-{{ $producto->id }}').style.display='flex'; }">
                             <td onclick="event.stopPropagation();">
                                 <input type="checkbox" class="producto-checkbox" value="{{ $producto->id }}" onchange="actualizarSeleccionPaquete()" style="width:16px; height:16px; cursor:pointer;">
@@ -95,13 +309,26 @@
                                     <div style="width:50px; height:50px; background:var(--surface); border:1px solid var(--border); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:20px;">—</div>
                                 @endif
                             </td>
+                            {{-- Primero el nombre del producto (su subtipo) y abajo el tipo;
+                                 primero el modelo y abajo la marca. --}}
                             <td>
-                                <div style="font-weight:700;">{{ $producto->tipo_equipo }}</div>
-                                @if($producto->subtipo)
-                                    <div class="muted" style="font-size:12.5px;">{{ $producto->subtipo }}</div>
+                                <div style="font-weight:700;">
+                                    {{ $producto->nombreVisible() }}
+                                    @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'etiqueta'])
+                                </div>
+                                @if ($producto->subtipo && $producto->tipo_equipo)
+                                    <div class="muted" style="font-size:12.5px;">{{ $producto->tipo_equipo }}</div>
                                 @endif
                             </td>
-                            <td>{{ $producto->marca ?: '—' }} {{ $producto->modelo }}</td>
+                            <td>
+                                <div style="font-weight:600;">{{ $producto->modelo ?: '—' }}</div>
+                                @if ($producto->marca)
+                                    <div class="muted" style="font-size:12.5px;">{{ $producto->marca }}</div>
+                                @endif
+                                @if ($producto->referencia)
+                                    <div class="muted" style="font-size:12.5px;">Ref. {{ $producto->referencia }}</div>
+                                @endif
+                            </td>
                             @if (\App\Support\PrecioVisible::para())
                                 <td>{{ \App\Support\PrecioVisible::texto($producto) }}</td>
                             @endif
@@ -127,19 +354,27 @@
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                                             Ver ficha
                                         </a>
-                                        <a href="{{ route('inventory.productos.edit', $producto) }}" role="menuitem">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                                            Editar
-                                        </a>
-                                        <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}"
-                                              onsubmit="return confirm('¿Eliminar este producto?');" style="margin:0;">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="es-danger" role="menuitem">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
-                                                Eliminar
-                                            </button>
-                                        </form>
+                                        {{-- Editar: con permiso, o si es suyo y está dentro de
+                                             sus primeras horas (el producto o alguna pieza). --}}
+                                        @if (\App\Support\EdicionPropia::puedeEditarProducto(auth()->user(), $producto)
+                                             || $producto->serialesDisponibles->contains(fn ($s) => \App\Support\EdicionPropia::puedeEditarPieza(auth()->user(), $s)))
+                                            <a href="{{ route('inventory.productos.edit', $producto) }}" role="menuitem">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                                Editar
+                                            </a>
+                                        @endif
+                                        @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'menu'])
+                                        @if (\App\Support\EdicionPropia::puedeEliminarProducto(auth()->user(), $producto))
+                                            <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}"
+                                                  data-confirm="¿Eliminar este producto?" style="margin:0;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="es-danger" role="menuitem">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                                                    Eliminar
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </div>
                             </td>
@@ -154,6 +389,65 @@
                 </tbody>
             </table>
         </div>
+
+        {{-- ===================== Vista en tarjetas =====================
+             Misma información que la tabla. Tocar la tarjeta abre las
+             unidades disponibles, igual que la fila. --}}
+        <div class="data-cards" data-view-cards style="display:none;">
+            @php $tipoPrevioC = null; @endphp
+            @forelse ($productos as $producto)
+                @php $tipoCard = $producto->tipo_equipo ?: 'Sin tipo'; @endphp
+                @if ($tipoCard !== $tipoPrevioC)
+                    @php $tipoPrevioC = $tipoCard; @endphp
+                    <h3 class="grupo-titulo-cards">{{ $tipoCard }} · {{ $porTipo[$tipoCard] ?? '' }}</h3>
+                @endif
+                <article class="data-card prod-card" title="Ver unidades disponibles"
+                         onclick="if (!event.target.closest('a, input, label')) { document.getElementById('unidades-modal-{{ $producto->id }}').style.display='flex'; }">
+                    <div class="prod-card-foto">
+                        @if ($producto->imagen_path)
+                            <img src="{{ asset('storage/' . $producto->imagen_path) }}" alt="{{ $producto->nombreVisible() }}" loading="lazy">
+                        @else
+                            <span>Sin foto</span>
+                        @endif
+                        <label class="prod-card-check" title="Agrupar en paquete" onclick="event.stopPropagation();">
+                            <input type="checkbox" value="{{ $producto->id }}" onchange="espejoPaquete(this)"
+                                   aria-label="Seleccionar {{ $producto->nombreVisible() }} para un paquete">
+                        </label>
+                    </div>
+
+                    <div class="data-card-top" style="padding-top:12px;">
+                        <div style="min-width:0; flex:1;">
+                            <div class="t">
+                                {{ $producto->nombreVisible() }}
+                                @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'etiqueta'])
+                            </div>
+                            @if ($producto->subtipo && $producto->tipo_equipo)
+                                <div class="s">{{ $producto->tipo_equipo }}</div>
+                            @endif
+                        </div>
+                        <span class="badge {{ $producto->stock > 0 ? 'badge--ok' : 'badge--danger' }}">{{ $producto->stock }} u.</span>
+                    </div>
+
+                    <dl>
+                        <div><dt>Modelo</dt><dd>{{ $producto->modelo ?: '—' }}</dd></div>
+                        <div><dt>Marca</dt><dd>{{ $producto->marca ?: '—' }}</dd></div>
+                        @if ($producto->referencia)
+                            <div><dt>Referencia</dt><dd>{{ $producto->referencia }}</dd></div>
+                        @endif
+                        @if (\App\Support\PrecioVisible::para())
+                            <div><dt>Precio de venta</dt><dd>{{ \App\Support\PrecioVisible::texto($producto) }}</dd></div>
+                        @endif
+                    </dl>
+
+                    <div class="data-card-foot" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                        @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'boton'])
+                        <a class="tbl-link" href="{{ route('inventory.productos.show', $producto) }}" style="margin-left:auto;">Ver ficha</a>
+                    </div>
+                </article>
+            @empty
+                <p class="muted" style="text-align:center; padding:32px; grid-column:1/-1;">No hay productos registrados.</p>
+            @endforelse
+        </div>
         @include('partials._paginacion', ['paginator' => $productos])
     </x-ui.card>
 
@@ -163,37 +457,141 @@
             <div class="unidades-modal">
                 <div class="unidades-modal-head">
                     <div>
-                        <strong>{{ trim($producto->marca.' '.$producto->modelo) ?: $producto->tipo_equipo }}</strong>
+                        <strong>{{ $producto->nombreVisible() }}{{ $producto->modelo ? ' · '.trim($producto->modelo.' '.$producto->marca) : '' }}</strong>
                         <div class="muted" style="font-size:12.5px;">Unidades disponibles ({{ $producto->serialesDisponibles->count() }})</div>
                     </div>
                     <button type="button" class="btn btn--ghost" style="padding:5px 10px;" onclick="document.getElementById('unidades-modal-{{ $producto->id }}').style.display='none'">Cerrar</button>
                 </div>
 
+                {{-- Con muchas piezas del mismo equipo, buscar la que se
+                     necesita en vez de recorrerlas todas. --}}
+                @if ($producto->serialesDisponibles->count() > 4)
+                    <div style="display:flex; gap:10px; align-items:center; margin:0 0 12px;">
+                        <input type="search" data-unidades-buscar placeholder="Buscar por serie o etiqueta…"
+                               aria-label="Buscar unidad" style="flex:1; min-width:0;">
+                        <span class="muted" style="font-size:12.5px; white-space:nowrap;" data-unidades-conteo></span>
+                    </div>
+                @endif
+
                 @forelse ($producto->serialesDisponibles as $serial)
-                    <div class="unidad-item">
-                        @if ($serial->fotoUrl())
-                            <img src="{{ $serial->fotoUrl() }}" alt="Foto de la unidad" onclick="window.open('{{ $serial->fotoUrl() }}', '_blank')">
-                        @else
-                            <div class="unidad-sin-foto">Sin foto</div>
-                        @endif
-                        <div style="flex:1;">
-                            <div style="font-weight:600; font-size:13.5px;">{{ $serial->no_serie ?: '— (sin serial capturado)' }}</div>
-                            <span class="badge badge--ok" style="font-size:11px;">Disponible</span>
+                    @php
+                        $evidencias = $serial->evidenceUrls();
+                        $video = $serial->videoUrl();
+
+                        // Todo lo que documenta cómo llegó esta pieza, en el
+                        // orden en que se ve en la galería grande.
+                        $medios = collect($evidencias)->map(fn ($url) => ['tipo' => 'foto', 'url' => $url]);
+                        if ($video) {
+                            $medios->push(['tipo' => 'video', 'url' => $video]);
+                        }
+
+                        $nFotos = count($evidencias);
+                        $etiquetaMedios = $nFotos.' '.($nFotos === 1 ? 'foto' : 'fotos').($video ? ' + video' : '');
+                        $modelo = trim($producto->modelo.' '.$producto->marca) ?: $producto->nombreVisible();
+                    @endphp
+                    <div class="unidad-card" data-buscar="{{ mb_strtolower(trim($serial->no_serie.' '.$serial->codigo)) }}"
+                         @if ($medios->isNotEmpty()) data-medios="{{ $medios->toJson() }}" @endif>
+                        <div class="unidad-card-head">
+                            <div style="min-width:0;">
+                                <div class="unidad-serie {{ $serial->no_serie ? '' : 'sin' }}">
+                                    {{ $serial->no_serie ?: 'Sin número de serie del fabricante' }}
+                                </div>
+                                <div class="unidad-meta">
+                                    {{ $modelo }}
+                                    @if ($serial->codigo)
+                                        · <span class="cod">{{ $serial->codigo }}</span>
+                                    @endif
+                                    @if ($serial->condicion)
+                                        · {{ ucfirst($serial->condicion) }}
+                                    @endif
+                                    @if ($serial->entrada?->movement_date)
+                                        · Llegó el {{ $serial->entrada->movement_date->format('d/m/Y') }}
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="der">
+                                {{-- Si se la llevaron a un congreso sigue
+                                     contando como stock, pero no está en el
+                                     almacén: eso hay que decirlo aquí. --}}
+                                @if ($serial->enCongreso())
+                                    <span class="badge unidad-en-congreso" style="font-size:11px;"
+                                          title="Esta pieza no está en el almacén">
+                                        En congreso: {{ $serial->congress?->nombre }}
+                                    </span>
+                                @else
+                                    <span class="badge badge--ok" style="font-size:11px;">Disponible</span>
+                                @endif
+                                @if ($medios->isNotEmpty())
+                                    <button type="button" class="ver-evidencia" onclick="abrirGaleria(this)"
+                                            title="Abrir en grande">
+                                        Ver evidencia ({{ $etiquetaMedios }})
+                                    </button>
+                                @endif
+                            </div>
                         </div>
+
+                        @if ($medios->isEmpty())
+                            <p class="unidad-sin-medios">Esta unidad se registró sin evidencia de entrada.</p>
+                        @else
+                            <div class="unidad-medios">
+                                @foreach ($evidencias as $i => $url)
+                                    <button type="button" class="medio" data-indice="{{ $i }}"
+                                            onclick="abrirGaleria(this)" title="Ver en grande">
+                                        <img src="{{ $url }}" loading="lazy" alt="Foto {{ $i + 1 }} de cómo llegó la unidad">
+                                        <span class="medio-etiqueta">Foto {{ $i + 1 }} de {{ $nFotos }}</span>
+                                    </button>
+                                @endforeach
+
+                                @if ($video)
+                                    {{-- El video se reproduce aquí mismo; preload
+                                         metadata para no descargarlo completo. --}}
+                                    <div class="medio medio--video">
+                                        <video src="{{ $video }}" controls preload="metadata" playsinline></video>
+                                        <span class="medio-etiqueta">Video de entrada</span>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 @empty
                     <p class="muted" style="padding:16px 0; text-align:center;">No hay unidades disponibles.</p>
                 @endforelse
+                <p class="muted" data-unidades-vacio hidden style="padding:16px 0; text-align:center;">Ninguna unidad coincide con la búsqueda.</p>
             </div>
         </div>
     @endforeach
 
+    {{-- Visor de la evidencia de una pieza: compartido con el detalle de Entrada / Salida. --}}
+    @include('partials.galeria')
+
     <script>
+        (function () {
+            const toggle = document.getElementById('toggleFiltrosProductos');
+            const panel = document.getElementById('filtrosProductos');
+            if (!toggle || !panel) return;
+            toggle.addEventListener('click', function () {
+                const abierto = toggle.getAttribute('aria-expanded') === 'true';
+                toggle.setAttribute('aria-expanded', abierto ? 'false' : 'true');
+                panel.hidden = abierto;
+            });
+        })();
+
+        function espejoPaquete(casilla) {
+            document.querySelectorAll('.producto-checkbox[value="' + casilla.value + '"]').forEach(c => { c.checked = casilla.checked; });
+            actualizarSeleccionPaquete();
+        }
+
         function actualizarSeleccionPaquete() {
             const marcados = document.querySelectorAll('.producto-checkbox:checked');
             const boton = document.getElementById('btn-agrupar-paquete');
 
             document.getElementById('contador-seleccionados').textContent = marcados.length;
+
+            const etq = document.getElementById('btn-etiquetas');
+            document.getElementById('contador-etiquetas').textContent = marcados.length;
+            etq.disabled = marcados.length === 0;
+            etq.style.opacity = marcados.length ? '1' : '.5';
+            etq.style.cursor = marcados.length ? 'pointer' : 'not-allowed';
 
             if (marcados.length > 0) {
                 boton.disabled = false;
@@ -206,6 +604,12 @@
             }
         }
 
+        function imprimirEtiquetas() {
+            const ids = [...new Set(Array.from(document.querySelectorAll('.producto-checkbox:checked')).map(c => c.value))];
+            if (!ids.length) return;
+            window.open(@json(route('inventory.etiquetas.lote')) + '?' + ids.map(id => 'productos[]=' + encodeURIComponent(id)).join('&'), '_blank');
+        }
+
         function agruparEnPaquete() {
             const marcados = Array.from(document.querySelectorAll('.producto-checkbox:checked')).map(c => c.value);
 
@@ -214,6 +618,63 @@
             const params = marcados.map(id => 'productos[]=' + encodeURIComponent(id)).join('&');
             window.location.href = @json(route('inventory.paquetes.create')) + '?' + params;
         }
+
+        /* Tocar el encabezado de un tipo lo pliega o despliega. */
+        function alternarGrupo(cab) {
+            const abierto = cab.getAttribute('aria-expanded') !== 'false';
+            cab.setAttribute('aria-expanded', abierto ? 'false' : 'true');
+            cab.classList.toggle('grupo-cerrado', abierto);
+            document.querySelectorAll('tr[data-grupo]').forEach(function (tr) {
+                if (tr.dataset.grupo === cab.dataset.grupoToggle) tr.hidden = abierto;
+            });
+        }
+        document.addEventListener('click', function (e) {
+            if (e.target.matches('input')) return;
+            const cab = e.target.closest('[data-grupo-toggle]');
+            if (cab) alternarGrupo(cab);
+        });
+
+        /* Marcar todos / todo un tipo (para etiquetas o para un paquete). */
+        document.addEventListener('change', function (e) {
+            let casillas = null;
+            if (e.target.id === 'sel-todos') casillas = document.querySelectorAll('tr[data-grupo] .producto-checkbox');
+            if (e.target.dataset.selGrupo) casillas = document.querySelectorAll('tr[data-grupo="' + CSS.escape(e.target.dataset.selGrupo) + '"] .producto-checkbox');
+            if (!casillas) return;
+            casillas.forEach(c => { c.checked = e.target.checked; });
+            document.querySelectorAll('.prod-card-check input').forEach(c => {
+                c.checked = !!document.querySelector('.producto-checkbox[value="' + c.value + '"]:checked');
+            });
+            actualizarSeleccionPaquete();
+        });
+        document.addEventListener('keydown', function (e) {
+            const cab = e.target.closest && e.target.closest('[data-grupo-toggle]');
+            if (cab && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); alternarGrupo(cab); }
+        });
+
+        /* ===================== Buscar dentro de las unidades =====================
+           Cien piezas del mismo modelo salen todas en el modal: el buscador
+           deja a la vista solo las que coinciden con la serie o la etiqueta. */
+        document.addEventListener('input', function (e) {
+            const campo = e.target.closest('[data-unidades-buscar]');
+            if (!campo) return;
+
+            const modal = campo.closest('.unidades-modal');
+            const q = campo.value.trim().toLowerCase();
+            const tarjetas = Array.from(modal.querySelectorAll('.unidad-card'));
+            let visibles = 0;
+
+            tarjetas.forEach(function (t) {
+                const coincide = !q || (t.dataset.buscar || '').includes(q);
+                t.hidden = !coincide;
+                if (coincide) visibles++;
+            });
+
+            const conteo = modal.querySelector('[data-unidades-conteo]');
+            if (conteo) conteo.textContent = q ? visibles + ' de ' + tarjetas.length : '';
+
+            const vacio = modal.querySelector('[data-unidades-vacio]');
+            if (vacio) vacio.hidden = visibles > 0;
+        });
     </script>
 
     @include('partials.row-menu')

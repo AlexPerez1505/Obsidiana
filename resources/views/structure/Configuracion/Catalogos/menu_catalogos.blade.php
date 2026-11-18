@@ -4,89 +4,8 @@
 @section('page-title', 'Catálogos')
 
 @section('configuracion_content')
-    @php
-        $categoryColors = [
-            ['background' => 'rgba(236, 72, 153, .13)', 'color' => '#ec4899'],
-            ['background' => 'rgba(99, 102, 241, .13)', 'color' => '#6366f1'],
-            ['background' => 'rgba(34, 197, 94, .13)', 'color' => '#22c55e'],
-            ['background' => 'rgba(245, 158, 11, .14)', 'color' => '#f59e0b'],
-            ['background' => 'rgba(6, 182, 212, .13)', 'color' => '#06b6d4'],
-        ];
-    @endphp
-
-    <div class="card catalog-card">
-        <div class="catalog-header">
-            <h2 class="page-title">Categorías</h2>
-            <div class="catalog-header-actions">
-                <span class="catalog-count">{{ $categories->count() }} {{ $categories->count() === 1 ? 'categoría' : 'categorías' }}</span>
-                <button type="button" class="catalog-search-btn" id="catalogSearchBtn" aria-label="Buscar categorías" aria-expanded="false">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="11" cy="11" r="7"/>
-                        <path d="m21 21-4.3-4.3"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-        <div class="catalog-search-wrap" id="catalogSearchWrap">
-            <div class="catalog-search">
-                <span class="search-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-                </span>
-                <input type="text" id="catalogSearchInput" placeholder="Buscar categoría por nombre o ID..." autocomplete="off">
-            </div>
-        </div>
-        {{-- Las confirmaciones salen por el toast global del layout. --}}
-
-        @if ($categories->isEmpty())
-            <div class="catalog-empty">Todavía no hay categorías registradas.</div>
-        @else
-            <div class="category-list" id="categoryList">
-                @foreach ($categories as $category)
-                    @php $color = $categoryColors[$loop->index % count($categoryColors)]; @endphp
-                    <div class="category-item" data-search="{{ strtolower($category->nombre . ' ' . $category->id) }}">
-                        <div class="category-icon" style="background:{{ $color['background'] }}; color:{{ $color['color'] }};">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/>
-                                <path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>
-                            </svg>
-                        </div>
-                        <div class="category-info">
-                            <span class="category-name">{{ $category->nombre }}</span>
-                            <span class="category-meta">Categoría registrada · ID {{ $category->id }}</span>
-                        </div>
-                        <div class="congress-menu">
-                            <button type="button" class="congress-menu-trigger" aria-label="Acciones de la categoría" aria-expanded="false">
-                                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
-                            </button>
-                            <div class="congress-menu-dropdown">
-                                <a href="{{ route('configuracion.categorias.edit', $category) }}" class="congress-menu-item" title="Editar" aria-label="Editar categoría" style="text-decoration:none;"
-                                   data-cat-editar
-                                   data-url="{{ route('configuracion.categorias.update', $category) }}"
-                                   data-nombre="{{ $category->nombre }}">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                                    <span>Editar</span>
-                                </a>
-                                <a href="{{ route('configuracion.categorias.delete', $category) }}" class="congress-menu-item danger" title="Eliminar" aria-label="Eliminar categoría" style="text-decoration:none;"
-                                   data-cat-eliminar
-                                   data-url="{{ route('configuracion.categorias.destroy', $category) }}"
-                                   data-nombre="{{ $category->nombre }}">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
-                                    <span>Eliminar</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-            <div class="catalog-search-noresult" id="catalogNoResult">No se encontraron categorías.</div>
-        @endif
-
-        <a href="{{ route('configuracion.categorias.create') }}" class="catalog-create" data-cat-crear>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-            Crear nueva categoría
-        </a>
-    </div>
-
+    {{-- Las categorías sueltas se retiraron: clientes, congresos y promociones
+         se clasifican con el catálogo de equipo (tipo de equipo). --}}
 
     @include('structure.Configuracion.Catalogos._catalogo_equipo')
 
@@ -236,6 +155,21 @@
         /* ===== Catálogo de equipo ===== */
         .eq-card { margin-top:22px; }
         .eq-intro { margin:0 0 18px; color:var(--muted); font-size:13.5px; }
+        .eq-filters { display:flex; flex-wrap:wrap; gap:12px; align-items:end; margin-bottom:16px; }
+        .eq-filters label { display:flex; flex:1 1 180px; flex-direction:column; gap:7px; color:var(--text); font-size:13px; }
+        .eq-filter-label { display:flex; align-items:center; gap:7px; font-weight:600; }
+        .eq-filter-label svg { width:16px; height:16px; color:#9bb8dd; flex:0 0 auto; }
+        .eq-filters select { width:100%; padding:10px 36px 10px 13px; border:1px solid color-mix(in srgb, var(--primary) 22%, var(--border)); border-radius:10px;
+                             background:var(--surface); color:var(--text); font:inherit; outline:none; cursor:pointer; transition:border-color .18s, box-shadow .18s; }
+        .eq-filters select:hover { border-color:var(--muted); }
+        .eq-filters select:focus { border-color:var(--primary); box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent); }
+        .eq-filters select:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+        .eq-search { display:flex; flex-direction:column; gap:6px; margin-bottom:18px; }
+        .eq-search label { color:var(--text); font-size:13px; font-weight:500; }
+        .eq-search input { width:100%; box-sizing:border-box; padding:10px 12px; border:1px solid var(--border);
+                           border-radius:9px; background:var(--surface); color:var(--text); font:inherit; }
+        .eq-search input:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+        .eq-item[hidden], .eq-vacio[hidden] { display:none; }
 
         .eq-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; align-items:start; }
         .eq-col { display:flex; flex-direction:column; min-width:0;
@@ -308,6 +242,7 @@
             function cerrarMenus() {
                 document.querySelectorAll('.congress-menu.open').forEach(function (m) {
                     m.classList.remove('open');
+                    m.classList.remove('open-up');
                     var t = m.querySelector('.congress-menu-trigger');
                     if (t) t.setAttribute('aria-expanded', 'false');
                 });
@@ -336,11 +271,14 @@
 
                 var lista = marcasPorSubtipo[selSub.value] || [];
                 selMarca.innerHTML = '';
+                if (modal.id === 'modalModeloCrear') {
+                    modal.querySelector('button[type="submit"]').disabled = !lista.length;
+                }
 
                 if (!lista.length) {
                     var vacio = document.createElement('option');
                     vacio.value = '';
-                    vacio.textContent = 'Ese subtipo aún no tiene marcas';
+                    vacio.textContent = selSub.value ? 'Ese subtipo aún no tiene marcas' : 'Primero selecciona un subtipo';
                     selMarca.appendChild(vacio);
                     selMarca.disabled = true;
                     return;
@@ -494,6 +432,18 @@
 
             // ---- Menú de tres puntos (acciones de categoría) ----
             var menus = document.querySelectorAll('.congress-menu');
+            function posicionarMenu(menu) {
+                var trigger = menu.querySelector('.congress-menu-trigger');
+                var dropdown = menu.querySelector('.congress-menu-dropdown');
+                var rect = trigger.getBoundingClientRect();
+                var altura = dropdown.getBoundingClientRect().height;
+                var top = rect.bottom + 4;
+                if (top + altura > window.innerHeight && rect.top - altura - 4 >= 0) {
+                    top = rect.top - altura - 4;
+                }
+                menu.style.setProperty('--menu-top', top + 'px');
+                menu.style.setProperty('--menu-right', (window.innerWidth - rect.right) + 'px');
+            }
             menus.forEach(function (menu) {
                 var trigger = menu.querySelector('.congress-menu-trigger');
                 trigger.addEventListener('click', function (e) {
@@ -502,24 +452,40 @@
                     menus.forEach(function (m) {
                         if (m !== menu) {
                             m.classList.remove('open');
+                            m.classList.remove('open-up');
                             m.querySelector('.congress-menu-trigger').setAttribute('aria-expanded', 'false');
                         }
                     });
                     // Posición fija para menús dentro de listas con scroll propio,
                     // que si no los recortarían.
-                    if (menu.closest('.category-list, .eq-list')) {
+                    var open = !menu.classList.contains('open');
+                    menu.classList.toggle('open', open);
+                    trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    if (open && menu.closest('.eq-list')) {
+                        posicionarMenu(menu);
+                    } else if (open && menu.closest('.category-list')) {
                         var rect = trigger.getBoundingClientRect();
-                        menu.style.setProperty('--menu-top', (rect.bottom + 4) + 'px');
+                        var dropdown = menu.querySelector('.congress-menu-dropdown');
+                        var altura = dropdown.getBoundingClientRect().height;
+                        var top = rect.bottom + 4;
+                        if (top + altura > window.innerHeight && rect.top - altura - 4 >= 0) {
+                            top = rect.top - altura - 4;
+                        }
+                        menu.style.setProperty('--menu-top', top + 'px');
                         menu.style.setProperty('--menu-right', (window.innerWidth - rect.right) + 'px');
                     }
-                    var open = menu.classList.toggle('open');
-                    trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
                 });
             });
+            window.addEventListener('scroll', function () {
+                menus.forEach(function (menu) {
+                    if (menu.classList.contains('open') && menu.closest('.eq-list')) posicionarMenu(menu);
+                });
+            }, true);
             // Cerrar menú al hacer clic fuera
             document.addEventListener('click', function () {
                 menus.forEach(function (m) {
                     m.classList.remove('open');
+                    m.classList.remove('open-up');
                     m.querySelector('.congress-menu-trigger').setAttribute('aria-expanded', 'false');
                 });
             });
