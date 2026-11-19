@@ -22,6 +22,9 @@ class GastosDeViaje
         'meal' => 'Viático',
         'lodging' => 'Hospedaje',
         'other' => 'Adicional',
+        'parking' => 'Estacionamiento',
+        'taxi' => 'Taxi o Uber',
+        'fixed_fund' => 'Fondo fijo de viaje',
     ];
 
     public const ICONOS = [
@@ -30,10 +33,13 @@ class GastosDeViaje
         'meal' => 'receipt',
         'lodging' => 'lodging',
         'other' => 'receipt',
+        'parking' => 'parking',
+        'taxi' => 'car',
+        'fixed_fund' => 'wallet',
     ];
 
     public const REGLAS = [
-        'type' => ['required', 'string', 'in:toll,fuel,meal,lodging,other'],
+        'type' => ['required', 'string', 'in:toll,fuel,meal,lodging,other,parking,taxi,fixed_fund'],
         'label' => ['nullable', 'string', 'max:255'],
         'amount' => ['required', 'numeric', 'min:0'],
     ];
