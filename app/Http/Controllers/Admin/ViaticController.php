@@ -73,7 +73,8 @@ class ViaticController extends Controller
     {
         $vehicles = Vehicle::orderBy('brand')->get();
         $users = User::where(function ($query) {
-            $query->whereNull('status')->orWhere('status', '!=', User::STATUS_DELETED);
+            $query->whereNull('status')
+                ->orWhereIn('status', [User::STATUS_PENDING, User::STATUS_APPROVED]);
         })->orderBy('name')->get(['id', 'name']);
 
         return view('admin.viatics.create', [
