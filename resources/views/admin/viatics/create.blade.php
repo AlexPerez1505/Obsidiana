@@ -161,6 +161,15 @@
 :root:not([data-theme="dark"]) .trip-step[data-step="2"] .trip-card .trip-btn{background:#fff;color:#243447;border-color:#9eb5cc}
 :root:not([data-theme="dark"]) .trip-step[data-step="2"] .trip-card .trip-btn:hover{background:#edf5fc}
 </style>
+<style>
+/* Corrección de legibilidad de chips en modo claro */
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-chip{color:#243447!important;background:#fff!important;border-color:#8eaccb}
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-chip:hover,
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-chip.selected{color:#fff!important;background:#1683f7!important;border-color:#1683f7!important}
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-chip:before{color:#1683f7}
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-chip:hover:before,
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-chip.selected:before{filter:brightness(0) invert(1)}
+</style>
 @endpush
 
 @section('content')
