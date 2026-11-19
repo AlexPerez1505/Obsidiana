@@ -245,6 +245,8 @@
 </style>
 <style>
 .trip-duration{margin:0 24px 16px;font-size:16px}
+.trip-step[data-step="2"] .trip-question{display:block;margin:0 0 4px;font-size:28px;line-height:1.1;color:var(--text)}
+.trip-step[data-step="2"] #tripSummary{margin:0 0 14px;font-size:16px}
 .trip-step[data-step="1"] .trip-chip[data-vehicle-name]{color:#e8eef8!important}
 .trip-step[data-step="1"] .trip-chip[data-vehicle-name]:before{filter:brightness(0) invert(1);opacity:1}
 .trip-step[data-step="1"] .trip-chip[data-vehicle-name].selected:before,.trip-step[data-step="1"] .trip-chip[data-vehicle-name]:hover:before{filter:brightness(0) invert(1);opacity:1}
