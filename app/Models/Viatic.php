@@ -15,6 +15,7 @@ class Viatic extends Model
 
     protected $fillable = [
         'user_id', 'vehicle_id', 'vehicle_name', 'place',
+        'personas_viaje', 'dias_hospedaje', 'fecha_ida', 'fecha_regreso', 'extras',
         'tolls', 'fuel', 'meals', 'lodging', 'additional',
         'start_date', 'end_date', 'state', 'external_companions', 'money_given',
         'fixed_fund', 'shortfall_payer_user_id',
@@ -28,6 +29,9 @@ class Viatic extends Model
         'lodging'       => 'decimal:2',
         'additional'    => 'decimal:2',
         'expense_date'  => 'date',
+        'fecha_ida'     => 'date',
+        'fecha_regreso' => 'date',
+        'dias_hospedaje' => 'integer',
         'start_date'    => 'date',
         'end_date'      => 'date',
         'external_companions' => 'integer',

@@ -114,6 +114,7 @@ class Viaticos
             $data = $this->conNombreDeVehiculo($data);
             $data['start_date'] = $data['fecha_ida'] ?? null;
             $data['end_date'] = $data['fecha_regreso'] ?? null;
+            $data['personas_viaje'] = $data['personas_viaje'] ?? null;
             $data['money_given'] = filter_var($data['money_given'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
             $users = User::query()->get(['id', 'name']);
@@ -126,6 +127,7 @@ class Viaticos
 
             $viatic = Viatic::create(collect($data)->only([
                 'user_id', 'vehicle_id', 'vehicle_name', 'place', 'state',
+                'personas_viaje', 'dias_hospedaje', 'fecha_ida', 'fecha_regreso', 'extras',
                 'start_date', 'end_date', 'external_companions', 'money_given',
                 'fixed_fund', 'shortfall_payer_user_id', 'tolls', 'fuel',
                 'meals', 'lodging', 'additional', 'description', 'ticket_photo',
