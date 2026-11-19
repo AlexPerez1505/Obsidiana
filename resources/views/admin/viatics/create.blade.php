@@ -187,6 +187,9 @@
 :root:not([data-theme="dark"]) .trip-step .trip-chip{border-color:#83a5c8!important}
 :root:not([data-theme="dark"]) .trip-step .trip-card .trip-btn{border-color:#83a5c8!important}
 </style>
+<style>
+  .trip-step[data-step="2"] .trip-extra-fields[hidden]{display:none!important}
+</style>
 @endpush
 
 @section('content')
