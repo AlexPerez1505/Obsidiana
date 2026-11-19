@@ -73,6 +73,37 @@
 .trip-step[data-step="1"] .trip-card:first-of-type .trip-chip{min-height:48px;padding:0 26px;font-size:17px}
 @media(max-width:700px){.trip-step[data-step="1"] .trip-card{padding:22px}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-counter{align-items:flex-start;flex-direction:column}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-chips{margin-left:0}}
 </style>
+<style>
+/* Diseño compacto del paso 3 */
+.trip-step[data-step="2"]{gap:10px}
+.trip-step[data-step="2"]>.trip-help{margin:0 0 2px;font-size:13px}
+.trip-step[data-step="2"] .trip-card{padding:14px 28px;border-color:#2467a8;background:linear-gradient(135deg,#10264a,#0c1c38)}
+.trip-step[data-step="2"] .trip-card h3{display:flex;align-items:center;gap:12px;margin:0 0 8px;font-size:18px}
+.trip-step[data-step="2"] .trip-card h3:before,.trip-step[data-step="2"] .trip-counter:before{content:'';display:inline-block;flex:0 0 36px;width:36px;height:36px;border-radius:9px;background:rgba(22,131,247,.2) center/22px no-repeat}
+.trip-step[data-step="2"] .trip-card:nth-of-type(1) h3:before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2336a0ff' stroke-width='2'%3E%3Cpath d='m13 2-10 12h9l-1 8 10-12h-9l1-8Z'/%3E%3C/svg%3E")}
+.trip-step[data-step="2"] .trip-card:nth-of-type(2) h3:before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2336a0ff' stroke-width='2'%3E%3Cpath d='M3 2v7c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3M21 15v7'/%3E%3C/svg%3E")}
+.trip-step[data-step="2"] .trip-card:nth-of-type(3) .trip-counter:before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2336a0ff' stroke-width='2'%3E%3Cpath d='M3 10V5h18v5M5 10v9m14-9v9M3 19h18M5 10h14'/%3E%3C/svg%3E")}
+.trip-step[data-step="2"] .trip-card:nth-of-type(4) .trip-counter:before,.trip-step[data-step="2"] .trip-card:nth-of-type(5) .trip-counter:before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2336a0ff' stroke-width='2'%3E%3Cpath d='M5 17h14M6 17V9.5l2-4h8l2 4V17M4 10h16M7 17v2m10-2v2M7.5 13h.01M16.5 13h.01'/%3E%3C/svg%3E")}
+.trip-step[data-step="2"] .trip-card:nth-of-type(6) .trip-counter:before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2336a0ff' stroke-width='2'%3E%3Cpath d='m12 2 9 5-9 5-9-5 9-5Z'/%3E%3Cpath d='m3 12 9 5 9-5M3 17l9 5 9-5'/%3E%3C/svg%3E")}
+.trip-step[data-step="2"] .trip-fields{gap:16px}
+.trip-step[data-step="2"] .trip-field label{font-size:12px;margin-bottom:4px}
+.trip-step[data-step="2"] .trip-field input{min-height:36px;padding:0 12px}
+.trip-step[data-step="2"] .trip-card:nth-of-type(2) .trip-fields{align-items:end}
+.trip-step[data-step="2"] #calculateMeals{width:100%;min-height:36px;margin:0}
+.trip-step[data-step="2"] .trip-counter{display:flex;align-items:center;gap:14px;margin:0}
+.trip-step[data-step="2"] .trip-counter>strong{font-size:17px;line-height:1.2}
+.trip-step[data-step="2"] .trip-counter>.trip-chips{margin-left:auto}
+.trip-step[data-step="2"] .trip-extra-fields{grid-column:1/-1;margin-top:8px}
+.trip-step[data-step="2"] .trip-card:nth-of-type(3) .trip-extra-fields{display:grid;grid-template-columns:1fr 1fr}
+.trip-step[data-step="2"] .trip-card:nth-of-type(4) .trip-extra-fields,.trip-step[data-step="2"] .trip-card:nth-of-type(5) .trip-extra-fields{display:block}
+.trip-step[data-step="2"] .trip-card:nth-of-type(6) .trip-counter{justify-content:space-between}
+.trip-step[data-step="2"] .trip-card:nth-of-type(6) .trip-counter .trip-btn{min-height:38px;padding:0 22px}
+.trip-step[data-step="2"] .trip-card:last-of-type{padding:16px 28px}
+.trip-step[data-step="2"] .trip-total{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.trip-step[data-step="2"] .trip-total label{font-size:16px;font-weight:700}
+.trip-step[data-step="2"] .trip-total strong{font-size:22px}
+@media(max-width:700px){.trip-step[data-step="2"] .trip-card{padding:14px 18px}.trip-step[data-step="2"] .trip-card:nth-of-type(3) .trip-extra-fields{grid-template-columns:1fr}.trip-step[data-step="2"] .trip-counter{align-items:flex-start;flex-wrap:wrap}.trip-step[data-step="2"] .trip-counter>.trip-chips{margin-left:auto}}
+</style>
 @endpush
 
 @section('content')
