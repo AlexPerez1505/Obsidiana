@@ -132,7 +132,7 @@ class ViaticController extends Controller
     {
         $this->authorizeViatic($viatic);
 
-        $viatic->load('expenses');
+        $viatic->load(['expenses', 'participants', 'moneyDeliveries.recipient', 'shortfallPayer']);
 
         return view('admin.viatics.show', [
             'viatic' => $viatic,

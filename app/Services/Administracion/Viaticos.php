@@ -7,6 +7,7 @@ use App\Models\Vehicle;
 use App\Models\Viatic;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -24,6 +25,9 @@ class Viaticos
         'meal' => 'meals',
         'lodging' => 'lodging',
         'other' => 'additional',
+        'parking' => 'parking',
+        'taxi' => 'taxi',
+        'fixed_fund' => 'fixed_fund',
     ];
 
     public const ESTADOS = [
@@ -36,11 +40,25 @@ class Viaticos
         'vehicle_id' => ['nullable', 'exists:vehicles,id'],
         'vehicle_name' => ['nullable', 'string', 'max:100'],
         'place' => ['nullable', 'string', 'max:255'],
+        'state' => ['nullable', 'string', 'max:100'],
+        'fecha_ida' => ['nullable', 'date'],
+        'fecha_regreso' => ['nullable', 'date', 'after_or_equal:fecha_ida'],
+        'personas_viaje' => ['nullable', 'string', 'max:2000'],
+        'external_companions' => ['nullable', 'integer', 'min:0'],
         'tolls' => ['nullable', 'numeric', 'min:0'],
         'fuel' => ['nullable', 'numeric', 'min:0'],
         'meals' => ['nullable', 'numeric', 'min:0'],
         'lodging' => ['nullable', 'numeric', 'min:0'],
         'additional' => ['nullable', 'numeric', 'min:0'],
+        'parking' => ['nullable', 'numeric', 'min:0'],
+        'taxi' => ['nullable', 'numeric', 'min:0'],
+        'fixed_fund' => ['nullable', 'numeric', 'min:0'],
+        'money_given' => ['nullable', 'boolean'],
+        'money_deliveries' => ['nullable', 'array'],
+        'money_deliveries.*.source' => ['nullable', 'string', 'max:100'],
+        'money_deliveries.*.recipient' => ['nullable', 'string', 'max:255'],
+        'money_deliveries.*.amount' => ['nullable', 'numeric', 'min:0'],
+        'shortfall_payer' => ['nullable', 'string', 'max:255'],
         'description' => ['nullable', 'string', 'max:1000'],
         'expense_date' => ['nullable', 'date'],
         'ticket_photos' => ['nullable', 'array'],
@@ -91,29 +109,71 @@ class Viaticos
      */
     public function registrar(array $data, User $quien, array $fotos = []): Viatic
     {
-        $data['user_id'] = $quien->id;
-        $data = $this->conNombreDeVehiculo($data);
+        return DB::transaction(function () use ($data, $quien, $fotos) {
+            $data['user_id'] = $quien->id;
+            $data = $this->conNombreDeVehiculo($data);
+            $data['start_date'] = $data['fecha_ida'] ?? null;
+            $data['end_date'] = $data['fecha_regreso'] ?? null;
+            $data['money_given'] = filter_var($data['money_given'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        $data['ticket_photos'] = collect($fotos)
-            ->map(fn (UploadedFile $archivo) => $archivo->store(self::CARPETA_TICKETS, 'public'))
-            ->all();
+            $users = User::query()->get(['id', 'name']);
+            $shortfallPayer = $users->first(fn (User $user) => strcasecmp($user->name, (string) ($data['shortfall_payer'] ?? '')) === 0);
+            $data['shortfall_payer_user_id'] = $shortfallPayer?->id;
 
-        $viatic = Viatic::create($data);
+            $data['ticket_photos'] = collect($fotos)
+                ->map(fn (UploadedFile $archivo) => $archivo->store(self::CARPETA_TICKETS, 'public'))
+                ->all();
 
-        foreach (self::TOTALES as $tipo => $campo) {
-            $monto = (float) ($data[$campo] ?? 0);
+            $viatic = Viatic::create(collect($data)->only([
+                'user_id', 'vehicle_id', 'vehicle_name', 'place', 'state',
+                'start_date', 'end_date', 'external_companions', 'money_given',
+                'fixed_fund', 'shortfall_payer_user_id', 'tolls', 'fuel',
+                'meals', 'lodging', 'additional', 'description', 'ticket_photo',
+                'ticket_photos', 'expense_date', 'status',
+            ])->all());
 
-            if ($monto > 0) {
-                $viatic->expenses()->create([
-                    'type' => $tipo,
-                    'label' => GastosDeViaje::TIPOS[$tipo],
-                    'amount' => $monto,
-                    'icon' => GastosDeViaje::ICONOS[$tipo],
+            $participantNames = collect(explode(',', (string) ($data['personas_viaje'] ?? '')))
+                ->map(fn (string $name) => trim($name))
+                ->filter()
+                ->values();
+            $participantIds = $users
+                ->filter(fn (User $user) => $participantNames->contains(fn (string $name) => strcasecmp($name, $user->name) === 0))
+                ->pluck('id');
+            $viatic->participants()->sync($participantIds);
+
+            foreach (self::TOTALES as $tipo => $campo) {
+                $monto = (float) ($data[$campo] ?? 0);
+
+                if ($tipo === 'fixed_fund' && (float) ($data['fixed_fund'] ?? 0) <= 0) {
+                    continue;
+                }
+
+                if ($monto > 0) {
+                    $viatic->expenses()->create([
+                        'type' => $tipo,
+                        'label' => GastosDeViaje::TIPOS[$tipo],
+                        'amount' => $monto,
+                        'icon' => GastosDeViaje::ICONOS[$tipo],
+                    ]);
+                }
+            }
+
+            foreach ($data['money_deliveries'] ?? [] as $delivery) {
+                $amount = (float) ($delivery['amount'] ?? 0);
+                if ($amount <= 0) {
+                    continue;
+                }
+
+                $recipient = $users->first(fn (User $user) => strcasecmp($user->name, (string) ($delivery['recipient'] ?? '')) === 0);
+                $viatic->moneyDeliveries()->create([
+                    'source' => $delivery['source'] ?? 'Sin especificar',
+                    'recipient_user_id' => $recipient?->id,
+                    'amount' => $amount,
                 ]);
             }
-        }
 
-        return $viatic;
+            return $viatic;
+        });
     }
 
     /**

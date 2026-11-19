@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
 
 class Viatic extends Model
@@ -15,6 +16,8 @@ class Viatic extends Model
     protected $fillable = [
         'user_id', 'vehicle_id', 'vehicle_name', 'place',
         'tolls', 'fuel', 'meals', 'lodging', 'additional',
+        'start_date', 'end_date', 'state', 'external_companions', 'money_given',
+        'fixed_fund', 'shortfall_payer_user_id',
         'description', 'ticket_photo', 'ticket_photos', 'expense_date', 'status',
     ];
 
@@ -25,6 +28,11 @@ class Viatic extends Model
         'lodging'       => 'decimal:2',
         'additional'    => 'decimal:2',
         'expense_date'  => 'date',
+        'start_date'    => 'date',
+        'end_date'      => 'date',
+        'external_companions' => 'integer',
+        'money_given'   => 'boolean',
+        'fixed_fund'    => 'decimal:2',
         'ticket_photos' => 'array',
     ];
 
@@ -47,13 +55,28 @@ class Viatic extends Model
         return $this->hasMany(ViaticExpense::class);
     }
 
+    public function participants(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'viatic_participants')->withTimestamps();
+    }
+
+    public function moneyDeliveries(): HasMany
+    {
+        return $this->hasMany(ViaticMoneyDelivery::class);
+    }
+
+    public function shortfallPayer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'shortfall_payer_user_id');
+    }
+
     public function getTotalComputedAttribute(): float
     {
         $expensesTotal = (float) $this->expenses()->sum('amount');
         if ($expensesTotal > 0) {
             return $expensesTotal;
         }
-        return (float) $this->tolls + (float) $this->fuel + (float) $this->meals + (float) $this->lodging + (float) $this->additional;
+        return (float) $this->tolls + (float) $this->fuel + (float) $this->meals + (float) $this->lodging + (float) $this->additional + (float) $this->fixed_fund;
     }
 
     public function getTotalAttribute(): string

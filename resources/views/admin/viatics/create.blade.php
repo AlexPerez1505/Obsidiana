@@ -272,7 +272,7 @@
     <div class="trip-progress"><span class="active"></span><span></span><span></span><span></span></div>
     <form method="POST" action="{{ route('admin.viatics.store') }}" enctype="multipart/form-data" id="tripForm">
         @csrf
-        <input type="hidden" name="vehicle_id" id="vehicleId" value="{{ old('vehicle_id', $vehicles->first()?->id) }}"><input type="hidden" name="vehicle_name" id="vehicleName" value="{{ old('vehicle_name') }}"><input type="hidden" name="personas_viaje" id="travelers" value="{{ $personasSeleccionadas }}"><input type="hidden" name="expense_date" value="{{ old('expense_date', now()->format('Y-m-d')) }}">
+        <input type="hidden" name="vehicle_id" id="vehicleId" value="{{ old('vehicle_id', $vehicles->first()?->id) }}"><input type="hidden" name="vehicle_name" id="vehicleName" value="{{ old('vehicle_name') }}"><input type="hidden" name="personas_viaje" id="travelers" value="{{ $personasSeleccionadas }}"><input type="hidden" name="expense_date" value="{{ old('expense_date', now()->format('Y-m-d')) }}"><input type="hidden" name="external_companions" id="externalCompanions" value="0"><input type="hidden" name="money_given" id="moneyGiven" value="0"><input type="hidden" name="additional" id="additionalTotal" value="0">
 
         <section class="trip-step active" data-step="0">
             <p class="trip-step-label">Paso 1 de 4</p><h2 class="trip-question">¿A dónde van y quién va?</h2>
@@ -396,6 +396,32 @@ const updateTripTotal=()=>{const total=[...document.querySelectorAll('.expense')
 (()=>{
   const button=document.getElementById('copyWhatsApp');if(!button)return;const money=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(Number(n)||0),amount=selector=>Number(document.querySelector(selector)?.value)||0,days=()=>{const a=document.getElementById('fecha_ida')?.value,b=document.getElementById('fecha_regreso')?.value;return a&&b?Math.max(1,Math.round((new Date(`${b}T00:00:00`)-new Date(`${a}T00:00:00`))/86400000)+1):1};
   button.addEventListener('click',async()=>{const people=[...document.querySelectorAll('[data-user].selected')].map(x=>x.dataset.user),count=Math.max(1,people.length),duration=days(),place=document.getElementById('place')?.value||'Sin destino',state=document.getElementById('state')?.value||'',motive=document.getElementById('description')?.value||'Sin motivo',vehicle=document.getElementById('vehicleName')?.value||'Sin vehículo',tolls=amount('[name="tolls"]'),fuel=amount('[name="fuel"]'),meals=amount('[name="meals"]'),lodging=amount('[data-extra-fields="lodging"] input.expense'),parking=amount('[data-extra-fields="parking"] input.expense'),taxi=amount('[data-extra-fields="taxi"] input.expense'),fund=document.getElementById('fixedFund')?.checked?500:0,total=tolls+fuel+meals+lodging+parking+taxi+fund,deliveries=[...document.querySelectorAll('.trip-money-delivery')].map(row=>({source:row.querySelector('select')?.value||'Sin origen',recipient:row.querySelectorAll('select')[1]?.value||'Sin destinatario',amount:Number(row.querySelector('input')?.value)||0})).filter(row=>row.amount>0),delivered=deliveries.reduce((sum,row)=>sum+row.amount,0),difference=delivered-total;let text=`*Viáticos · ${place}${state&&state!=='Se llena solo'?', '+state:''}*\n${motive} · ${duration} ${duration===1?'día':'días'} · ${vehicle}\nViajan: ${count} ${count===1?'persona':'personas'}${people.length?` (${people.join(', ')})`:''}\n\n`;[['Casetas',tolls],['Gasolina',fuel],['Comidas',meals],['Hospedaje',lodging],['Estacionamiento',parking],['Taxi / Uber',taxi],['Fondo fijo de viaje',fund]].forEach(([name,value])=>{if(value>0)text+=`• ${name}: ${money(value)}${name==='Comidas'?` (${count} ${count===1?'persona':'personas'} · ${duration} ${duration===1?'día':'días'})`:''}\n`});text+=`\n*Total gastado: ${money(total)}*\nPor persona por día: ${money(total/(count*duration))}\n\n*Dinero del viaje*\n`;if(delivered){deliveries.forEach(row=>text+=`• ${row.source} → ${row.recipient}: ${money(row.amount)}\n`);text+=`*Total entregado: ${money(delivered)}*\n${difference>=0?'Sobró':'Faltan'}: ${money(Math.abs(difference))}\n*${difference>=0?`${deliveries[0]?.recipient||'La persona responsable'} debe devolver ${money(difference)}`:`Faltan ${money(Math.abs(difference))}`}*`;}else{text+='• No se entregó dinero.\n*Reembolsar '+money(total)+'*'}text+='\n\n— Grupo MediBuy';try{await navigator.clipboard.writeText(text)}catch(e){const area=document.createElement('textarea');area.value=text;document.body.appendChild(area);area.select();document.execCommand('copy');area.remove()}button.textContent='Copiado ✓';setTimeout(()=>button.textContent='Copiar para WhatsApp',2200)});
+})();
+</script>
+<script>
+(()=>{
+  const form=document.getElementById('tripForm');
+  const state=document.getElementById('state');
+  const payer=document.getElementById('payer');
+  const fund=document.getElementById('fixedFund');
+  const external=document.getElementById('externalCompanions');
+  const moneyGiven=document.getElementById('moneyGiven');
+  const additional=document.getElementById('additionalTotal');
+  if(state)state.name='state';
+  if(payer)payer.name='shortfall_payer';
+  if(fund){fund.name='fixed_fund';fund.value='500';}
+  document.querySelector('[data-extra-fields="parking"] input')?.setAttribute('name','parking');
+  document.querySelector('[data-extra-fields="taxi"] input')?.setAttribute('name','taxi');
+  document.querySelectorAll('[data-external]').forEach(button=>button.addEventListener('click',()=>{if(external)external.value=document.getElementById('externalCount')?.textContent||'0';}));
+  const syncTotals=()=>{
+    if(moneyGiven)moneyGiven.value=document.querySelector('[data-money].selected')?.dataset.money==='si'?'1':'0';
+    if(additional)additional.value=[...document.querySelectorAll('#otherRows .other-amount')].reduce((sum,input)=>sum+(Number(input.value)||0),0).toFixed(2);
+    if(external)external.value=document.getElementById('externalCount')?.textContent||'0';
+  };
+  form?.addEventListener('submit',syncTotals);
+  document.querySelectorAll('[data-money],[data-toggle-expense],#fixedFund').forEach(element=>element.addEventListener('change',syncTotals));
+  document.addEventListener('input',event=>{if(event.target.matches('.other-amount'))syncTotals();});
+  syncTotals();
 })();
 </script>
 @endsection
