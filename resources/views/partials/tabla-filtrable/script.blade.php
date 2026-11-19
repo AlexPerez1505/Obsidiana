@@ -114,7 +114,8 @@
         grupos().forEach(function (g) { seleccion[g] = marcados(g); });
 
         if (formServidor) {
-            formServidor.querySelector('[name="estado"]').value = estados[0] || '';
+            var estadoInput = formServidor.querySelector('[name="estado"]');
+            if (estadoInput) estadoInput.value = estados[0] || '';
             pintarContadores(fDesde, fHasta);
             pintarChips(seleccion, prefs, estados, fDesde, fHasta, texto, porTexto);
             formServidor.querySelectorAll('[data-catalogo]').forEach(function (select) {
