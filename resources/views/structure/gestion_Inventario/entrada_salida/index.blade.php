@@ -716,6 +716,11 @@
             // rellenar subtipo, marca y modelo.
             document.querySelectorAll('#filtrosMovimientos [data-catalogo]').forEach(function (select) {
                 select.addEventListener('change', function () {
+                    const bloque = document.querySelector('#filtrosMovimientos [data-flt]');
+                    const panel = bloque && bloque.querySelector('[data-flt-panel]');
+                    if (panel && !panel.hidden) {
+                        try { sessionStorage.setItem('filtros-abiertos:filtrosMovimientos', '1'); } catch (e) {}
+                    }
                     setTimeout(function () { document.getElementById('filtrosMovimientos').requestSubmit(); }, 0);
                 });
             });
