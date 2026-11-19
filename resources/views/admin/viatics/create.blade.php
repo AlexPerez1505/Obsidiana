@@ -18,6 +18,13 @@
 .trip-step[data-step="1"] .trip-card:has(#tripDescription){display:none}
 .trip-step[data-step="1"] .trip-card{border-color:#2467a8;background:linear-gradient(135deg,#10264a,#0c1c38);padding:24px 34px}.trip-step[data-step="1"] .trip-card:first-of-type h3:before{content:'🚗';font-size:20px}.trip-step[data-step="1"] .trip-card:nth-of-type(2){position:relative}.trip-step[data-step="1"] .trip-card:nth-of-type(2):before{content:'◉';display:inline-grid;place-items:center;width:38px;height:38px;margin-bottom:14px;border-radius:10px;background:rgba(22,131,247,.2);color:#36a0ff;font-size:23px}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-counter{margin-top:0}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-counter strong{font-size:20px}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-chips{gap:0;border:1px solid #315985;border-radius:999px;padding:3px;background:#0b1932}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-chips .trip-chip{border:0;border-radius:999px;padding:10px 24px}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-chips .trip-chip.selected{background:#1683f7}.trip-step[data-step="1"] .trip-card:nth-of-type(2) select{min-height:50px;border-color:#6c8fb4}.trip-step[data-step="1"] .trip-chip{font-size:16px;padding:12px 26px}
 </style>
+<style>
+/* Iconos finales del paso 2: SVG alineados con los títulos */
+.trip-step[data-step="1"] .trip-card:first-of-type h3:before{content:''!important;display:inline-block;width:38px;height:38px;margin-right:14px;vertical-align:middle;border-radius:10px;background:rgba(22,131,247,.2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2336a0ff' stroke-width='1.8'%3E%3Cpath d='M5 17h14M6 17V9.5l2-4h8l2 4V17M4 10h16M7 17v2m10-2v2M7.5 13h.01M16.5 13h.01M8 5h8'/%3E%3C/svg%3E") center/23px no-repeat!important}
+.trip-step[data-step="1"] .trip-card:nth-of-type(2):before{display:none!important;content:none!important}
+.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-counter>strong{display:flex;align-items:center;gap:14px}
+.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-counter>strong:before{content:'';display:inline-block;flex:0 0 38px;width:38px;height:38px;border-radius:10px;background:rgba(22,131,247,.2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2336a0ff' stroke-width='1.7'%3E%3Cellipse cx='9' cy='7' rx='5' ry='2.5'/%3E%3Cpath d='M4 7v4c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V7M4 11v4c0 1.4 2.2 2.5 5 2.5 1.2 0 2.3-.2 3.3-.7M14 10.5c2.8 0 5-1.1 5-2.5s-2.2-2.5-5-2.5M14 10.5v4c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V8'/%3E%3C/svg%3E") center/24px no-repeat}
+</style>
 @endpush
 
 @section('content')
