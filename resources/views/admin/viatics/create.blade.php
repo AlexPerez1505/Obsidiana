@@ -251,6 +251,14 @@
 :root:not([data-theme="dark"]) .trip-step[data-step="1"] .trip-chip[data-vehicle-name]{color:#243447!important}
 :root:not([data-theme="dark"]) .trip-step[data-step="1"] .trip-chip[data-vehicle-name]:before{filter:none;opacity:1}
 :root:not([data-theme="dark"]) .trip-step[data-step="1"] .trip-chip[data-vehicle-name].selected:before,:root:not([data-theme="dark"]) .trip-step[data-step="1"] .trip-chip[data-vehicle-name]:hover:before{filter:brightness(0) invert(1)}
+/* Controles Sí / No consistentes en todos los pasos */
+.trip-step .trip-chips:has(> [data-money]),.trip-step .trip-chips:has(> [data-toggle-expense]){display:inline-flex;align-items:center;gap:0;padding:3px;border:1px solid #46719c;border-radius:999px;background:#08172f}
+.trip-step .trip-chips:has(> [data-money]) .trip-chip,.trip-step .trip-chips:has(> [data-toggle-expense]) .trip-chip{min-width:58px;height:38px;padding:0 16px;border:0!important;border-radius:999px;background:transparent;color:#dbeafe;font-size:15px;line-height:38px}
+.trip-step .trip-chips:has(> [data-money]) .trip-chip:hover,.trip-step .trip-chips:has(> [data-toggle-expense]) .trip-chip:hover{background:rgba(65,154,255,.2);color:#fff}
+.trip-step .trip-chips:has(> [data-money]) .trip-chip.selected,.trip-step .trip-chips:has(> [data-toggle-expense]) .trip-chip.selected{background:#1683f7!important;color:#fff!important;box-shadow:0 2px 7px rgba(22,131,247,.35)}
+:root:not([data-theme="dark"]) .trip-step .trip-chips:has(> [data-money]),:root:not([data-theme="dark"]) .trip-step .trip-chips:has(> [data-toggle-expense]){border-color:#86a9cb;background:#eef4fa}
+:root:not([data-theme="dark"]) .trip-step .trip-chips:has(> [data-money]) .trip-chip,:root:not([data-theme="dark"]) .trip-step .trip-chips:has(> [data-toggle-expense]) .trip-chip{color:#243447!important;background:transparent!important}
+:root:not([data-theme="dark"]) .trip-step .trip-chips:has(> [data-money]) .trip-chip.selected,:root:not([data-theme="dark"]) .trip-step .trip-chips:has(> [data-toggle-expense]) .trip-chip.selected{background:#1683f7!important;color:#fff!important}
 </style>
 @endpush
 
