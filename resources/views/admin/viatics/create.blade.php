@@ -138,6 +138,29 @@
 :root:not([data-theme="dark"]) .trip-footer .trip-btn{color:#25364a}
 :root:not([data-theme="dark"]) .trip-footer .trip-btn.primary{color:#fff}
 </style>
+<style>
+/* Modo claro: tarjetas blancas y contenido oscuro */
+:root:not([data-theme="dark"]) .trip-step .trip-card{background:#fff!important;border-color:#d7e1ed;color:#243447;box-shadow:0 8px 22px rgba(31,55,85,.08)}
+:root:not([data-theme="dark"]) .trip-step .trip-card h3,
+:root:not([data-theme="dark"]) .trip-step .trip-card strong,
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-counter{color:#243447}
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-help,
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-field label{color:#63748a}
+:root:not([data-theme="dark"]) .trip-step .trip-card h3:before,
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-counter:before,
+:root:not([data-theme="dark"]) .trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-counter>strong:before{background-color:#e8f3ff}
+:root:not([data-theme="dark"]) .trip-step .trip-chip{background:#fff;color:#243447;border-color:#a9bdd3}
+:root:not([data-theme="dark"]) .trip-step .trip-chip:hover,
+:root:not([data-theme="dark"]) .trip-step .trip-chip.selected{background:#1683f7;color:#fff;border-color:#1683f7}
+:root:not([data-theme="dark"]) .trip-step .trip-counter button{background:#eef3f8;color:#243447}
+:root:not([data-theme="dark"]) .trip-step .trip-counter button:hover{background:#dce9f6}
+:root:not([data-theme="dark"]) .trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-chips{background:#fff;border-color:#a9bdd3}
+:root:not([data-theme="dark"]) .trip-progress span:before{background:#fff;color:#243447;border-color:#91a5bc}
+:root:not([data-theme="dark"]) .trip-progress span.active:before{background:#1683f7;color:#fff;border-color:#1683f7}
+:root:not([data-theme="dark"]) .trip-progress:before{background:#c7d4e2}
+:root:not([data-theme="dark"]) .trip-step[data-step="2"] .trip-card .trip-btn{background:#fff;color:#243447;border-color:#9eb5cc}
+:root:not([data-theme="dark"]) .trip-step[data-step="2"] .trip-card .trip-btn:hover{background:#edf5fc}
+</style>
 @endpush
 
 @section('content')
