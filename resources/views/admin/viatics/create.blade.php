@@ -245,6 +245,12 @@
 </style>
 <style>
 .trip-duration{margin:0 24px 16px;font-size:16px}
+.trip-step[data-step="1"] .trip-chip[data-vehicle-name]{color:#e8eef8!important}
+.trip-step[data-step="1"] .trip-chip[data-vehicle-name]:before{filter:brightness(0) invert(1);opacity:1}
+.trip-step[data-step="1"] .trip-chip[data-vehicle-name].selected:before,.trip-step[data-step="1"] .trip-chip[data-vehicle-name]:hover:before{filter:brightness(0) invert(1);opacity:1}
+:root:not([data-theme="dark"]) .trip-step[data-step="1"] .trip-chip[data-vehicle-name]{color:#243447!important}
+:root:not([data-theme="dark"]) .trip-step[data-step="1"] .trip-chip[data-vehicle-name]:before{filter:none;opacity:1}
+:root:not([data-theme="dark"]) .trip-step[data-step="1"] .trip-chip[data-vehicle-name].selected:before,:root:not([data-theme="dark"]) .trip-step[data-step="1"] .trip-chip[data-vehicle-name]:hover:before{filter:brightness(0) invert(1)}
 </style>
 @endpush
 
