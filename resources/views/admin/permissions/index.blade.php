@@ -31,8 +31,15 @@
                                 <td>{{ $p->label }}</td>
                                 <td class="muted">{{ $p->description ?? '-' }}</td>
                                 <td>{{ $p->users_count }}</td>
-                                <td>
+                                <td style="white-space:nowrap;">
                                     <a class="link" href="{{ route('admin.permissions.edit', $p) }}">Editar</a>
+                                    <form method="POST" action="{{ route('admin.permissions.destroy', $p) }}" style="display:inline; margin-left:12px;"
+                                          data-confirm="Los usuarios perderán el permiso {{ $p->label ?: $p->name }}. No se puede deshacer."
+                                          data-confirm-title="Eliminar permiso">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="link" style="background:none; border:0; padding:0; color:var(--danger); cursor:pointer;">Eliminar</button>
+                                    </form>
                                 </td>
                             </tr>
                         @endforeach

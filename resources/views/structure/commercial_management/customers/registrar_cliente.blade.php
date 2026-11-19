@@ -38,7 +38,17 @@
                             </select>
                         </x-ui.form-group>
                         <x-ui.form-group for="seguimiento_fecha" label="Cuándo">
-                            <input type="date" id="seguimiento_fecha" name="seguimiento_fecha" value="{{ old('seguimiento_fecha') }}" min="{{ now()->toDateString() }}">
+                            <input type="date" id="seguimiento_fecha" name="seguimiento_fecha" value="{{ old('seguimiento_fecha') }}" min="{{ \App\Models\ClienteSeguimiento::hoy()->toDateString() }}">
+                        </x-ui.form-group>
+                        <x-ui.form-group for="seguimiento_hora" label="Hora (opcional)">
+                            <input type="time" id="seguimiento_hora" name="seguimiento_hora" value="{{ old('seguimiento_hora') }}">
+                        </x-ui.form-group>
+                        <x-ui.form-group for="seguimiento_prioridad" label="Prioridad">
+                            <select id="seguimiento_prioridad" name="seguimiento_prioridad">
+                                @foreach (\App\Models\ClienteSeguimiento::PRIORIDADES as $valor => $texto)
+                                    <option value="{{ $valor }}" @selected(old('seguimiento_prioridad', 'normal') === $valor)>{{ $texto }}</option>
+                                @endforeach
+                            </select>
                         </x-ui.form-group>
                         <div style="grid-column:1 / -1;">
                             <x-ui.form-group for="seguimiento_nota" label="Nota del seguimiento">
@@ -47,7 +57,7 @@
                             </x-ui.form-group>
                         </div>
                     </div>
-                    <small style="color:var(--muted);">Ese día te llega el aviso en la campana del sistema y por correo.</small>
+                    <small style="color:var(--muted);">Aparece en tu agenda. Sin hora se avisa ese día; con hora, antes de la cita.</small>
                 </div>
             </x-ui.card>
 
@@ -57,7 +67,8 @@
                 <div class="rgrid-2">
                     <x-ui.form-group label="Nombre *" name="nombre" placeholder="Ingrese el nombre" :required="true" />
                     <x-ui.form-group label="Apellido *" name="apellido" placeholder="Ingrese el apellido" :required="true" />
-                    <x-ui.form-group label="Teléfono *" name="telefono" type="tel" placeholder="Ingrese el teléfono" inputmode="tel" maxlength="20" :required="true" />
+                    <x-ui.form-group label="Teléfono *" name="telefono" type="tel" placeholder="10 dígitos" inputmode="numeric" maxlength="10" autocomplete="tel-national" :required="true" />
+                    @include('structure.commercial_management.customers._telefono_10')
                     <x-ui.form-group label="RFC" name="rfc" placeholder="Ingrese el RFC (opcional)" maxlength="13" />
                     <x-ui.form-group label="Correo (Gmail)" name="gmail" type="email" placeholder="Ingrese el correo" />
                 </div>
@@ -70,11 +81,11 @@
                     <x-ui.form-group for="asesor" label="Asesor de Ventas">
                         <input id="asesor" type="text" value="{{ auth()->user()?->name }}" readonly />
                     </x-ui.form-group>
-                    <x-ui.form-group for="categoria_id" label="Categoría">
+                    <x-ui.form-group for="categoria_id" label="Tipo de equipo">
                         <select id="categoria_id" name="categoria_id">
-                            <option value="" @selected(! old('categoria_id'))>Sin categoría</option>
+                            <option value="" @selected(! old('categoria_id'))>Sin tipo de equipo</option>
                             @foreach ($categories as $category)
-                                <option value="{{ $category->id }}" @selected(old('categoria_id') == $category->id)>{{ $category->nombre }}</option>
+                                <option value="{{ $category->id }}" @selected(old('categoria_id') == $category->id)>{{ $category->name }}</option>
                             @endforeach
                         </select>
                     </x-ui.form-group>
@@ -104,12 +115,15 @@
                 </div>
             </x-ui.card>
 
+            {{-- Dirección por partes --}}
+            <x-ui.card style="margin-bottom:18px;">
+                <x-ui.section-title style="margin:0 0 16px;">Dirección</x-ui.section-title>
+                @include('structure.commercial_management.customers._direccion')
+            </x-ui.card>
+
             {{-- Información adicional --}}
             <x-ui.card>
                 <x-ui.section-title style="margin:0 0 16px;">Información Adicional</x-ui.section-title>
-                <div style="margin-bottom:16px;">
-                    <x-ui.form-group label="Dirección *" name="direccion" placeholder="Dirección del cliente" :required="true" />
-                </div>
                 <x-ui.form-group label="Comentarios" for="comentarios">
                     <textarea id="comentarios" name="comentarios" rows="4" placeholder="Comentarios">{{ old('comentarios') }}</textarea>
                 </x-ui.form-group>
@@ -124,13 +138,13 @@
                     <x-ui.section-title style="margin:0;">Información</x-ui.section-title>
                 </div>
                 <p class="muted" style="margin:0; font-size:14px;">Completa los datos básicos del cliente.</p>
-                <p class="muted" style="margin:8px 0 0; font-size:14px;">RFC, correo, categoría, congreso y comentarios son opcionales.</p>
+                <p class="muted" style="margin:8px 0 0; font-size:14px;">RFC, correo, tipo de equipo, congreso y comentarios son opcionales.</p>
             </x-ui.card>
 
             <x-ui.card>
                 <x-ui.section-title style="margin:0 0 12px;">Consejos</x-ui.section-title>
                 <ul style="margin:0; padding-left:18px; font-size:14px; color:var(--text); line-height:1.7;">
-                    <li>Asigna una categoría para segmentar promociones.</li>
+                    <li>Elige el tipo de equipo que le interesa (sale del catálogo de equipo) para segmentar promociones.</li>
                     <li>El asesor se asigna automáticamente (usuario actual).</li>
                     <li>Agrega notas relevantes en comentarios.</li>
                 </ul>

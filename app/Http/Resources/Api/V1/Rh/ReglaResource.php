@@ -20,7 +20,7 @@ class ReglaResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'kind' => $this->kind,
-            // [{metric, scope: periodo|mes, op, value}] — todas deben cumplirse
+            // [{metric, scope: periodo|mes|anio, op, value}] — todas deben cumplirse
             'conditions' => $this->conditions ?? [],
             'repeat_mode' => $this->repeat_mode,
             'repeat_metric' => $this->repeat_metric,
@@ -28,7 +28,9 @@ class ReglaResource extends JsonResource
             'repeat_max' => $this->repeat_max,
             'calc' => $this->calc,
             'amount' => (float) $this->amount,
-            'timing' => $this->timing,
+            'timing' => $this->timing,   // periodo | cierre_mes | fecha
+            'pay_date' => $this->pay_date?->toDateString(),
+            'yearly' => (bool) $this->yearly,
             'scope' => $this->scope,
             'user_ids' => $this->user_ids ? array_map('intval', $this->user_ids) : null,
             'active' => (bool) $this->active,

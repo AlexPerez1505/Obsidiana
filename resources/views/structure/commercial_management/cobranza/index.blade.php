@@ -7,6 +7,11 @@
                       subtitle="Quién debe, quién está atrasado y cómo va el mes"
                       :back="route('commercial.ventas.index')" />
 
+    {{-- Pagos por aprobar (solo aparece si hay alguno). --}}
+    @if ($porAprobar->isNotEmpty())
+        @include('structure.commercial_management.cobros._comprobantes', ['solicitudes' => $porAprobar])
+    @endif
+
     {{-- ===================== Indicadores ===================== --}}
     <div class="cg-kpis">
         <div class="cg-kpi">

@@ -12,7 +12,6 @@ class Service extends Model
         'service_type',
         'internal_technician_id',
         'external_technician_id',
-        'external_recipient_user_id',
         'registered_by',
         'current_step_id',
         'qr_token',
@@ -24,9 +23,9 @@ class Service extends Model
         'mano_obra',
         'started_at',
         'finished_at',
-        'external_reception_notes',
-        'external_reception_evidence',
-        'external_received_at',
+        'garantia_documento_id',
+        'documentos',
+        'reporte_data',
     ];
 
     protected function casts(): array
@@ -37,21 +36,14 @@ class Service extends Model
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
             'mano_obra' => 'decimal:2',
-            'external_reception_evidence' => 'array',
-            'external_received_at' => 'datetime',
+            'documentos' => 'array',
+            'reporte_data' => 'array',
         ];
     }
 
-    /** URLs públicas de las fotos de cómo llegó el equipo al técnico externo. */
-    public function externalReceptionEvidenceUrls(): array
+    public function garantiaDocumento()
     {
-        $disco = config('filesystems.fotos_disk', 'public');
-
-        return collect($this->external_reception_evidence ?? [])
-            ->filter()
-            ->map(fn (string $path) => \Illuminate\Support\Facades\Storage::disk($disco)->url($path))
-            ->values()
-            ->all();
+        return $this->belongsTo(GarantiaDocumento::class);
     }
 
     public function serviceEquipment()
@@ -88,12 +80,6 @@ class Service extends Model
     public function externalTechnician()
     {
         return $this->belongsTo(ExternalTechnician::class, 'external_technician_id');
-    }
-
-    /** A qué cuenta de Mantenimiento Externo se le mandó este equipo. */
-    public function externalRecipient()
-    {
-        return $this->belongsTo(User::class, 'external_recipient_user_id');
     }
 
     public function spareParts(): \Illuminate\Database\Eloquent\Relations\HasMany

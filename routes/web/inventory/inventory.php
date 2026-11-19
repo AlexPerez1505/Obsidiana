@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\EscaneoController;
+use App\Http\Controllers\EtapaSalidaController;
+use App\Http\Controllers\Inventory\ComponenteController;
 use App\Http\Controllers\Inventory\FichaTecnicaController;
 use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\OrdenSalidaController;
@@ -17,12 +19,33 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-inventario/entrada-salida', [InventoryMovementController::class, 'index'])
         ->middleware('can:inventario.ver')->name('inventory.movimientos.index');
+    // Status rápido del equipo con la pistola o la cámara.
+    Route::post('/gestion-inventario/entrada-salida/estatus', [InventoryMovementController::class, 'estatus'])
+        ->middleware('can:inventario.ver')->name('inventory.movimientos.estatus');
     Route::get('/gestion-inventario/entrada-salida/crear', [InventoryMovementController::class, 'create'])
         ->middleware('can:inventario.registrar')->name('inventory.movimientos.create');
     Route::post('/gestion-inventario/entrada-salida', [InventoryMovementController::class, 'store'])
         ->middleware('can:inventario.registrar')->name('inventory.movimientos.store');
     Route::post('/gestion-inventario/entrada-salida/video-chunk', [InventoryMovementController::class, 'subirVideoChunk'])
         ->middleware('can:inventario.registrar')->name('inventory.movimientos.videoChunk');
+    Route::post('/gestion-inventario/entrada-salida/foto-chunk', [InventoryMovementController::class, 'subirFotoChunk'])
+        ->middleware('can:inventario.registrar')->name('inventory.movimientos.fotoChunk');
+
+    // Componentes de una pieza (set completo o partes que llegan después).
+    Route::get('/gestion-inventario/piezas/{pieza}/componentes', [ComponenteController::class, 'index'])
+        ->middleware('can:inventario.ver')->name('inventory.componentes.index');
+    Route::post('/gestion-inventario/piezas/{pieza}/componentes', [ComponenteController::class, 'store'])
+        ->middleware('can:inventario.registrar')->name('inventory.componentes.store');
+    Route::put('/gestion-inventario/componentes/{componente}', [ComponenteController::class, 'update'])
+        ->middleware('can:inventario.registrar')->name('inventory.componentes.update');
+    Route::delete('/gestion-inventario/componentes/{componente}', [ComponenteController::class, 'destroy'])
+        ->middleware('can:inventario.ver')->name('inventory.componentes.destroy');
+    Route::get('/gestion-inventario/entrada-salida/checklist-ia', [InventoryMovementController::class, 'checklistIa'])
+        ->middleware('can:inventario.registrar')->name('inventory.movimientos.checklistIa');
+
+    // En qué va la salida: para quien vendió, los admins y almacén (lo revisa el controlador).
+    Route::get('/salidas/{orden}/seguimiento', [EtapaSalidaController::class, 'seguimiento'])->name('salidas.seguimiento');
+    Route::get('/salidas/{orden}/expediente', [EtapaSalidaController::class, 'expediente'])->name('salidas.expediente');
 
     /*
     | Órdenes de salida: lo que almacén prepara, emplaya y firma cuando
@@ -32,6 +55,21 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::get('/', [OrdenSalidaController::class, 'index'])->name('index');
         Route::get('/{orden}', [OrdenSalidaController::class, 'show'])->name('show');
         Route::get('/{orden}/pdf', [OrdenSalidaController::class, 'pdf'])->name('pdf');
+        // Quitar evidencia: quien la subió o quien prepara salidas (lo revisa el controlador).
+        Route::delete('/{orden}/evidencias/{evidencia}', [OrdenSalidaController::class, 'borrarEvidencia'])->middleware('can:salidas.eliminar')->name('evidencias.destroy');
+
+        // Quién prepara: le llega el aviso por correo y en la campana.
+        Route::post('/{orden}/asignar', [OrdenSalidaController::class, 'asignar'])
+            ->middleware('can:salidas.asignar')->name('asignar');
+
+        // Etapas: Ingeniería → Empaque → Entrega, cada una con su responsable.
+        // Quién puede trabajar cada etapa lo revisa EtapasDeSalida (asignado, admin o quien asigna).
+        Route::post('/{orden}/etapas/asignar', [EtapaSalidaController::class, 'asignar'])
+            ->middleware('can:salidas.asignar')->name('etapas.asignar');
+        Route::get('/{orden}/etapas/{etapa}', [EtapaSalidaController::class, 'show'])->name('etapas.show');
+        Route::get('/{orden}/etapas/{etapa}/checklist-ia', [EtapaSalidaController::class, 'checklistIa'])->name('etapas.checklistIa');
+        Route::post('/{orden}/etapas/{etapa}', [EtapaSalidaController::class, 'guardar'])->name('etapas.guardar');
+        Route::post('/{orden}/etapas/{etapa}/desbloquear', [EtapaSalidaController::class, 'desbloquear'])->name('etapas.desbloquear');
 
         Route::middleware('can:salidas.preparar')->group(function () {
             Route::post('/{orden}/partidas/{item}', [OrdenSalidaController::class, 'item'])->name('item');
@@ -39,6 +77,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
             // Cierra la preparación: queda lista, esperando firma.
             Route::post('/{orden}/preparada', [OrdenSalidaController::class, 'preparada'])->name('preparada');
             Route::post('/{orden}/entregar', [OrdenSalidaController::class, 'entregar'])->name('entregar');
+            // Evidencia: una foto por petición (sin tope de cuántas) y el video por pedazos.
+            Route::post('/{orden}/evidencias/foto', [OrdenSalidaController::class, 'evidenciaFoto'])->name('evidencias.foto');
+            Route::post('/{orden}/evidencias/foto-chunk', [OrdenSalidaController::class, 'evidenciaFotoChunk'])->name('evidencias.fotoChunk');
+            Route::post('/{orden}/evidencias/video-chunk', [OrdenSalidaController::class, 'evidenciaVideo'])->name('evidencias.videoChunk');
         });
     });
     /*
@@ -52,6 +94,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->middleware('can:procesos.trabajar')->name('inventory.procesos.iniciar');
     Route::post('/gestion-inventario/procesos/{paso}/terminar', [ProcesoController::class, 'terminar'])
         ->middleware('can:procesos.trabajar')->name('inventory.procesos.terminar');
+    Route::post('/gestion-inventario/procesos/{paso}/avance', [ProcesoController::class, 'avance'])
+        ->middleware('can:procesos.trabajar')->name('inventory.procesos.avance');
+    Route::post('/gestion-inventario/procesos/foto-chunk', [ProcesoController::class, 'subirFotoChunk'])
+        ->middleware('can:procesos.trabajar')->name('inventory.procesos.fotoChunk');
     Route::post('/gestion-inventario/procesos/{paso}/omitir', [ProcesoController::class, 'omitir'])
         ->middleware('can:procesos.descartar')->name('inventory.procesos.omitir');
     Route::post('/gestion-inventario/procesos/pieza/{pieza}/agregar', [ProcesoController::class, 'agregar'])
@@ -70,13 +116,25 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/gestion-inventario/escanear/buscar', [EscaneoController::class, 'buscar'])
         ->middleware('can:inventario.escanear')->name('inventory.escaneo.buscar');
 
+    // Varias etiquetas de un jalón: de los productos o entradas que se marcaron.
+    Route::get('/gestion-inventario/etiquetas', [\App\Http\Controllers\EtiquetasController::class, 'lote'])
+        ->middleware('can:inventario.ver')->name('inventory.etiquetas.lote');
+
     // Antes que /{movimiento}: si no, "etiquetas" se leería como un id.
     Route::get('/gestion-inventario/entrada-salida/{movimiento}/etiquetas', [InventoryMovementController::class, 'etiquetas'])
         ->middleware('can:inventario.ver')->name('inventory.movimientos.etiquetas');
+    // Quién puede editar lo decide EdicionPropia dentro del controlador
+    // (permiso de edición, o quien la registró en sus primeras horas).
+    Route::get('/gestion-inventario/entrada-salida/{movimiento}/editar', [InventoryMovementController::class, 'edit'])
+        ->middleware('can:inventario.ver')->name('inventory.movimientos.edit');
+    Route::put('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'update'])
+        ->middleware('can:inventario.ver')->name('inventory.movimientos.update');
     Route::get('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'show'])
         ->middleware('can:inventario.ver')->name('inventory.movimientos.show');
     Route::delete('/gestion-inventario/entrada-salida/{movimiento}', [InventoryMovementController::class, 'destroy'])
-        ->middleware('can:inventario.eliminar')->name('inventory.movimientos.destroy');
+        // Sin can: aquí: lo revisa el controlador con EdicionPropia
+        // (inventario.eliminar, o las 8 horas de quien la registró).
+        ->name('inventory.movimientos.destroy');
 
     // Productos (stock real, contra base de datos)
     Route::get('/gestion-inventario/productos', [ProductoController::class, 'index'])
@@ -91,20 +149,29 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/gestion-inventario/productos', [ProductoController::class, 'store'])
         ->middleware('can:inventario.registrar')->name('inventory.productos.store');
     // La ficha del producto: qué entró, cuándo y cuánto hay.
+    // Mostrar u ocultar el producto en la tienda en línea. Quién puede lo
+    // decide EdicionPropia en el controlador (igual que editar el producto).
+    Route::patch('/gestion-inventario/productos/{producto}/tienda', [ProductoController::class, 'tienda'])
+        ->middleware('can:inventario.ver')->name('inventory.productos.tienda');
     Route::get('/gestion-inventario/productos/{producto}', [ProductoController::class, 'show'])
         ->middleware('can:inventario.ver')->name('inventory.productos.show');
+    // Editar y borrar: quien tiene inventario.editar / inventario.eliminar, o
+    // quien lo registró durante sus primeras 8 horas. Por eso estas rutas no
+    // llevan can:, lo revisa el controlador con EdicionPropia.
     Route::get('/gestion-inventario/productos/{producto}/editar', [ProductoController::class, 'edit'])
-        ->middleware('can:inventario.editar')->name('inventory.productos.edit');
+        ->name('inventory.productos.edit');
     Route::put('/gestion-inventario/productos/{producto}', [ProductoController::class, 'update'])
-        ->middleware('can:inventario.editar')->name('inventory.productos.update');
+        ->name('inventory.productos.update');
     Route::delete('/gestion-inventario/productos/{producto}', [ProductoController::class, 'destroy'])
-        ->middleware('can:inventario.eliminar')->name('inventory.productos.destroy');
+        ->name('inventory.productos.destroy');
     Route::post('/gestion-inventario/productos/{producto}/seriales', [ProductoController::class, 'agregarSeriales'])
-        ->middleware('can:inventario.editar')->name('inventory.productos.seriales.store');
+        ->name('inventory.productos.seriales.store');
+    Route::put('/gestion-inventario/productos/{producto}/seriales', [ProductoController::class, 'seriesEnLote'])
+        ->name('inventory.productos.seriales.lote');
     Route::put('/gestion-inventario/productos/seriales/{serial}', [ProductoController::class, 'actualizarSerial'])
-        ->middleware('can:inventario.editar')->name('inventory.productos.seriales.update');
+        ->name('inventory.productos.seriales.update');
     Route::delete('/gestion-inventario/productos/seriales/{serial}', [ProductoController::class, 'eliminarSerial'])
-        ->middleware('can:inventario.eliminar')->name('inventory.productos.seriales.destroy');
+        ->name('inventory.productos.seriales.destroy');
 
     // Fichas técnicas (nombre + PDF)
     Route::get('/gestion-inventario/fichas-tecnicas', [FichaTecnicaController::class, 'index'])
@@ -121,6 +188,11 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->middleware('can:inventario.eliminar')->name('inventory.fichas.destroy');
     Route::get('/gestion-inventario/fichas-tecnicas/{ficha}/descargar', [FichaTecnicaController::class, 'download'])
         ->middleware('can:inventario.ver')->name('inventory.fichas.download');
+    // Notas y observaciones dirigidas a un usuario ("te equivocaste en…").
+    Route::post('/gestion-inventario/fichas-tecnicas/{ficha}/observaciones', [FichaTecnicaController::class, 'observar'])
+        ->middleware('can:inventario.ver')->name('inventory.fichas.observar');
+    Route::post('/gestion-inventario/fichas-tecnicas/observaciones/{observacion}/atendida', [FichaTecnicaController::class, 'atender'])
+        ->middleware('can:inventario.ver')->name('inventory.fichas.observacion.atender');
 
     // Paquetes (armados desde productos)
     Route::get('/gestion-inventario/paquetes', [PaqueteController::class, 'index'])

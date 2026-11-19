@@ -27,6 +27,8 @@ class OrdenSalidaResource extends JsonResource
             'estado_label' => $this->estadoLabel(),
             'notas' => $this->notas,
             'preparada_por' => $this->preparada_por,
+            'asignada_a' => $this->asignada_a,
+            'asignada_en' => $this->asignada_en?->toIso8601String(),
             'preparada_en' => $this->preparada_en,
             'entregada_por' => $this->entregada_por,
             'entregada_en' => $this->entregada_en,
@@ -60,8 +62,13 @@ class OrdenSalidaResource extends JsonResource
                     : null,
             ] : null),
             'preparada_por_usuario' => new UsuarioResource($this->whenLoaded('preparadaPor')),
+            'asignada_a_usuario' => new UsuarioResource($this->whenLoaded('asignadaA')),
             'entregada_por_usuario' => new UsuarioResource($this->whenLoaded('entregadaPor')),
             'items' => OrdenSalidaItemResource::collection($this->whenLoaded('items')),
+
+            // Fotos y videos del equipo preparado, emplayado o entregado.
+            'evidencias' => OrdenSalidaEvidenciaResource::collection($this->whenLoaded('evidencias')),
+            'conteo_evidencias' => $this->when($this->relationLoaded('evidencias'), fn () => $this->conteoEvidencias()),
         ];
     }
 }

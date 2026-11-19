@@ -37,7 +37,7 @@ class GestionDeCongresos
     public const REGLAS = [
         'nombre' => ['required', 'string', 'max:255'],
         'descripcion' => ['nullable', 'string', 'max:5000'],
-        'categoria_id' => ['required', 'exists:categorias,id'],
+        'categoria_id' => ['required', 'exists:equipment_types,id'],
         'fecha_inicio' => ['required', 'date'],
         'fecha_finalizacion' => ['required', 'date', 'after_or_equal:fecha_inicio'],
         'fecha_montaje' => ['nullable', 'date', 'before_or_equal:fecha_inicio'],

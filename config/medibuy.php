@@ -37,6 +37,16 @@ return [
     ],
 
     /*
+    | Tienda en línea (sitio público en React que lee /api/v1/tienda).
+    | avisar_a: correos (separados por coma) que reciben cada solicitud web.
+    */
+    'tienda' => [
+        'whatsapp' => env('MB_TIENDA_WHATSAPP', ''),
+        'correo' => env('MB_TIENDA_CORREO', ''),
+        'avisar_a' => env('MB_TIENDA_AVISAR_A', ''),
+    ],
+
+    /*
     | Cuentas para transferencia. Se elige el bloque según el IVA del documento:
     | con IVA (requiere factura) va la cuenta de Anahí Téllez; sin IVA van las
     | cuentas de Gabriela Díaz García. El bloque sin IVA admite varias cuentas.
@@ -56,20 +66,23 @@ return [
         ],
 
         // Sin IVA → Gabriela Díaz García (puede llevar varias cuentas).
+        // En estas cuentas se imprime el número de cuenta y no la tarjeta.
         'sin_iva' => [
             [
                 'nombre' => env('MB_BANCO_SIVA_A', ''),
                 'beneficiario' => env('MB_BANCO_SIVA_A_BENEFICIARIO', ''),
                 'cuenta' => env('MB_BANCO_SIVA_A_CUENTA', ''),
                 'clabe' => env('MB_BANCO_SIVA_A_CLABE', ''),
-                'tarjeta' => env('MB_BANCO_SIVA_A_TARJETA', ''),
+                'sucursal' => env('MB_BANCO_SIVA_A_SUCURSAL', ''),
+                'tarjeta' => '',
             ],
             [
                 'nombre' => env('MB_BANCO_SIVA_B', ''),
                 'beneficiario' => env('MB_BANCO_SIVA_B_BENEFICIARIO', ''),
                 'cuenta' => env('MB_BANCO_SIVA_B_CUENTA', ''),
                 'clabe' => env('MB_BANCO_SIVA_B_CLABE', ''),
-                'tarjeta' => env('MB_BANCO_SIVA_B_TARJETA', ''),
+                'sucursal' => env('MB_BANCO_SIVA_B_SUCURSAL', ''),
+                'tarjeta' => '',
             ],
         ],
     ],
@@ -85,7 +98,19 @@ return [
         'La garantía del equipo es de 6 meses a partir de la fecha de entrega.',
         'Los precios pueden cambiar sin previo aviso. Los productos están sujetos a disponibilidad.',
         'Cualquier ajuste a las condiciones de pago deberá ser autorizado por escrito por la empresa.',
-        'En caso de requerir factura, el monto será más IVA. Para su emisión, será necesario que nos proporcione sus datos fiscales completos.',
+        // El texto real de esta línea lo arma el PDF según si el documento lleva IVA.
+        'Para emitir factura (IVA), será necesario que nos proporcione sus datos fiscales completos.',
+    ],
+
+    /*
+    | Quién valida los pagos de Cobranza (id del usuario). Cada venta tiene
+    | una sola persona que valida: la de "sin IVA" o la de "con IVA". Solo
+    | ella aprueba, rechaza o registra directo, y a ella le llega el aviso.
+    | Vacíos = como antes (administradores o quien tenga NIP).
+    */
+    'cobranza' => [
+        'valida_sin_iva' => env('COBRANZA_VALIDA_SIN_IVA'),
+        'valida_con_iva' => env('COBRANZA_VALIDA_CON_IVA'),
     ],
 
 ];

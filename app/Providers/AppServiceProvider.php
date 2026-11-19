@@ -27,7 +27,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // WhatsApp: log (simulado, desarrollo) o meta (API oficial). Ver config/promociones.php.
+        $this->app->bind(\App\Contracts\WhatsAppSender::class, fn () => config('promociones.whatsapp.driver') === 'meta'
+            ? new \App\Services\WhatsApp\MetaCloudSender()
+            : new \App\Services\WhatsApp\LogWhatsAppSender());
     }
 
     public function boot(): void
@@ -35,6 +38,69 @@ class AppServiceProvider extends ServiceProvider
         $this->registrarPermisos();
         $this->limitarDocumentosPorAsesor();
         $this->configurarApi();
+        $this->sincronizarGarantias();
+        $this->configurarPromociones();
+        \App\Support\ObsVivo::escuchar();
+
+        // Agenda: historial, recordatorios, comentarios y checklist apuntan a
+        // un seguimiento de Clientes o a una actividad, con nombres cortos.
+        \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
+            'seguimiento' => \App\Models\ClienteSeguimiento::class,
+            'actividad' => \App\Models\AgendaActividad::class,
+        ]);
+    }
+
+    /**
+     * Promociones: ritmo de envío a WhatsApp, límites de la oferta pública
+     * y el cupón que sigue a la venta (cancelar o borrar lo devuelve).
+     */
+    private function configurarPromociones(): void
+    {
+        RateLimiter::for('whatsapp', fn () => Limit::perMinute(max(1, (int) config('promociones.mensajes_por_minuto'))));
+        RateLimiter::for('promo-publica', fn (Request $request) => Limit::perMinute(60)->by('promo:'.$request->ip()));
+        RateLimiter::for('promo-confirmar', fn (Request $request) => Limit::perMinutes(10, 8)->by('promo-conf:'.$request->route('token').'|'.$request->ip()));
+
+        $cupones = fn () => app(\App\Services\Promociones\MotorDeCupones::class);
+
+        Venta::updated(function (Venta $v) use ($cupones) {
+            if ($v->wasChanged('estado') && $v->estado === 'cancelada') {
+                $cupones()->revertirDeVenta($v, 'Venta cancelada');
+            }
+        });
+        Venta::deleting(fn (Venta $v) => $cupones()->revertirDeVenta($v, 'Venta eliminada'));
+        \App\Models\Cotizacion::deleting(fn ($c) => $cupones()->liberarDeCotizacion($c, 'Cotización eliminada'));
+    }
+
+    /**
+     * Las garantías siguen a la venta: al registrarla, editarla, cancelarla
+     * o entregar su equipo se recalculan sus expedientes. Corre al terminar
+     * la transacción (ya con renglones y seriales) y nunca tumba la venta.
+     * Respaldo diario: `garantias:sincronizar`.
+     */
+    private function sincronizarGarantias(): void
+    {
+        $programar = fn (?int $ventaId) => \App\Services\Garantias\GeneradorDeGarantias::programar($ventaId);
+
+        Venta::saved(fn (Venta $v) => $programar($v->id));
+        Venta::deleting(function (Venta $v) {
+            try {
+                app(\App\Services\Garantias\GeneradorDeGarantias::class)->ventaEliminada($v);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        });
+        \App\Models\VentaItem::saved(fn ($i) => $programar($i->venta_id));
+        \App\Models\VentaItem::deleted(fn ($i) => $programar($i->venta_id));
+        \App\Models\OrdenSalida::saved(function ($o) use ($programar) {
+            if ($o->wasChanged('estado') || $o->wasRecentlyCreated) {
+                $programar($o->venta_id);
+            }
+        });
+        \App\Models\ProductoSerial::saved(function ($s) use ($programar) {
+            foreach (array_filter([$s->venta_item_id, $s->getOriginal('venta_item_id')]) as $itemId) {
+                $programar(\App\Models\VentaItem::whereKey($itemId)->value('venta_id'));
+            }
+        });
     }
 
     /**
@@ -51,6 +117,10 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('api-login', fn (Request $request) => Limit::perMinute(config('api.limite_login_por_minuto'))
             ->by('api-login:'.Str::lower((string) $request->input('email')).'|'.$request->ip()));
+
+        // Tienda en línea (pública): cada límite con su propia cuenta por IP.
+        RateLimiter::for('tienda', fn (Request $request) => Limit::perMinute(120)->by('tienda:'.$request->ip()));
+        RateLimiter::for('tienda-solicitudes', fn (Request $request) => Limit::perMinutes(10, 5)->by('tienda-sol:'.$request->ip()));
 
         // La documentación (/docs/api) la ve cualquier usuario con acceso.
         Gate::define('viewApiDocs', fn (?User $user = null) => (bool) $user?->isApproved());

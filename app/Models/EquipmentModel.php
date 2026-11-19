@@ -16,6 +16,11 @@ class EquipmentModel extends Model
     /** El nombre del modelo se guarda siempre en mayúsculas. */
     protected array $mayusculas = ['name'];
 
+    protected function casts(): array
+    {
+        return ['checklist_recepcion_adicional' => 'array'];
+    }
+
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);

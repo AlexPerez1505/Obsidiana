@@ -46,6 +46,9 @@
         </div>
     </div>
 
+    {{-- Pagos que subieron los vendedores y esperan a alguien con NIP. --}}
+    @include('structure.commercial_management.cobros._comprobantes', ['venta' => $venta, 'enCobranza' => true])
+
     <div class="cb-grid">
         {{-- ===================== Calendario ===================== --}}
         <div>
@@ -55,13 +58,24 @@
                     <div class="cb-head-acc">
                         <button type="button" class="erp-btn ghost sm" data-abrir="modalRecorrer">Recorrer fechas</button>
                         <button type="button" class="erp-btn ghost sm" data-abrir="modalParcialidad">Agregar</button>
+                        {{-- Venta que salió sin IVA: agregarlo a lo que falta de las mensualidades. --}}
+                        @can('cobranza.ajustar')
+                            @if ($ivaCandidatas->isNotEmpty())
+                                <button type="button" class="erp-btn ghost sm" data-abrir="modalIva">Agregar IVA</button>
+                            @endif
+                        @endcan
                     </div>
                 </div>
 
                 @forelse ($venta->pagos as $p)
                     <div class="cb-fila">
                         <div class="cb-fila-txt">
-                            <div class="t">{{ $p->nombre }}</div>
+                            <div class="t">
+                                {{ $p->nombre }}
+                                @if ((float) $p->iva_monto > 0)
+                                    <span class="cb-iva" title="IVA agregado a esta mensualidad">+IVA ${{ number_format((float) $p->iva_monto, 2) }}</span>
+                                @endif
+                            </div>
                             <div class="s">
                                 {{ optional($p->fecha)->format('d/m/Y') ?: 'Sin fecha' }}
                                 @if ($p->cobrado() > 0)
@@ -90,7 +104,7 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                             </button>
 
-                            @if ($p->saldo() > 0 && ! $venta->cancelada())
+                            @if ($p->saldo() > 0 && ! $venta->cancelada() && \App\Services\Ventas\ComprobantesDePago::puedeAprobar(auth()->user(), $venta))
                                 <button type="button" class="cb-mini cb-mini--ok" title="Registrar pago"
                                         data-cobrar
                                         data-parcialidad="{{ $p->id }}"
@@ -102,7 +116,7 @@
                             @unless ($p->tieneCobros())
                                 <form method="POST" action="{{ route('commercial.ventas.cobros.parcialidad.eliminar', [$venta, $p]) }}" style="display:inline;">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="cb-mini cb-mini--danger" title="Eliminar">
+                                    <button type="submit" class="cb-mini cb-mini--danger" title="Eliminar" @disabled(auth()->user()->cannot('cobranza.eliminar'))>
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                                     </button>
                                 </form>
@@ -112,6 +126,19 @@
                 @empty
                     <p class="cb-vacio">Esta venta no tiene calendario de pagos.</p>
                 @endforelse
+
+                @can('cobranza.ajustar')
+                    @if ($venta->pagos->contains(fn ($p) => (float) $p->iva_monto > 0))
+                        <div class="cb-nota-iva">
+                            Esta venta salió sin IVA y se le agregó ${{ number_format((float) $venta->pagos->sum('iva_monto'), 2) }} de IVA en sus mensualidades.
+                            <form method="POST" action="{{ route('commercial.ventas.cobros.iva.quitar', $venta) }}" style="display:inline;"
+                                  data-confirmar="Se quitará el IVA agregado de las mensualidades donde todavía no se ha cobrado. ¿Continuar?">
+                                @csrf
+                                <button type="submit" class="cb-enlace">Quitar IVA</button>
+                            </form>
+                        </div>
+                    @endif
+                @endcan
 
                 @php $planeado = (float) $venta->pagos->sum('monto'); @endphp
                 @if ($venta->pagos->isNotEmpty() && abs($planeado - $venta->montoExigible()) > 0.01)
@@ -141,9 +168,10 @@
             <div class="erp-card pad" style="margin-top:18px;">
                 <div class="cb-head">
                     <h3>Pagos recibidos</h3>
-                    @unless ($venta->cancelada())
+                    {{-- Registrar directo es validarlo: solo quien valida esta venta (con o sin IVA). --}}
+                    @if (! $venta->cancelada() && \App\Services\Ventas\ComprobantesDePago::puedeAprobar(auth()->user(), $venta))
                         <button type="button" class="erp-btn sm" data-cobrar>Registrar pago</button>
-                    @endunless
+                    @endif
                 </div>
 
                 @forelse ($venta->cobros as $c)
@@ -183,7 +211,7 @@
                             <form method="POST" action="{{ route('commercial.ventas.cobros.destroy', [$venta, $c]) }}"
                                   style="display:inline;" data-confirmar="Se cancelará el cobro {{ $c->folio }} y se borrarán sus evidencias.">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="cb-mini cb-mini--danger" title="Cancelar cobro">
+                                <button type="submit" class="cb-mini cb-mini--danger" title="Cancelar cobro" @disabled(auth()->user()->cannot('cobranza.eliminar'))>
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                                 </button>
                             </form>

@@ -6,6 +6,7 @@ use App\Models\Congress;
 use App\Models\Cotizacion;
 use App\Models\Customer;
 use App\Models\Venta;
+use App\Services\Cotizaciones\BuscadorCotizador;
 use App\Services\Ventas\DocumentosDeVenta;
 use App\Services\Ventas\OperacionRechazada;
 use App\Services\Ventas\RegistroDeVentas;
@@ -68,6 +69,8 @@ class VentaController extends Controller
             'venta' => null,
             'initial' => $this->registro->inicial($origen, $clientePre),
             'congresos' => Congress::orderBy('nombre')->get(),
+            // Los mismos filtros del catálogo que en la cotización.
+            'filtrosProductos' => app(BuscadorCotizador::class)->filtrosProductos(),
             'origenId' => $origen?->id,
             'avisosStock' => $origen ? $this->registro->avisosStock($origen->items) : [],
         ]);
@@ -92,7 +95,7 @@ class VentaController extends Controller
         ]);
     }
 
-    public function edit(Venta $venta): View
+    public function edit(Venta $venta): View|RedirectResponse
     {
         $venta->load(['customer', 'items', 'pagos', 'fichas']);
 
@@ -105,6 +108,7 @@ class VentaController extends Controller
             'venta' => $venta,
             'initial' => DocumentoInitial::build($venta, $venta->customer),
             'congresos' => Congress::orderBy('nombre')->get(),
+            'filtrosProductos' => app(BuscadorCotizador::class)->filtrosProductos(),
             'origenId' => null,
             // Con dinero cobrado sobre alguna parcialidad, el plan se congela
             // en el formulario: se ajusta desde Cobranza, no desde aquí.
@@ -163,14 +167,35 @@ class VentaController extends Controller
      * Eliminar del todo solo se permite cuando la venta no tiene ningún
      * cobro: si ya entró dinero, se cancela (y el historial se queda).
      */
-    public function destroy(Venta $venta): RedirectResponse
+    public function destroy(Request $request, Venta $venta): RedirectResponse
     {
+        // Pasadas 72 horas desde que se registró, pide el NIP.
+        \App\Support\EliminarConNip::exigir($venta, $request->user(), $request->input('nip'));
+
         try {
             $mensaje = $this->registro->eliminar($venta);
         } catch (OperacionRechazada $e) {
             return redirect()->route('commercial.ventas.show', $venta)
                 ->withErrors([$e->campo => $e->getMessage()]);
         }
+
+        return redirect()->route('commercial.ventas.index')
+            ->with('status', $mensaje);
+    }
+
+    /**
+     * Borrado definitivo de una venta de prueba, con todo su historial:
+     * cobros, pagos, facturas, garantías, orden de salida y bitácora.
+     * Solo administradores o quien traiga ventas.eliminar_definitivo.
+     */
+    public function destroyDefinitivo(Request $request, Venta $venta): RedirectResponse
+    {
+        abort_unless(
+            $request->user()->can('ventas.ver_todas') || (int) $venta->seller_id === (int) $request->user()->id,
+            404
+        );
+
+        $mensaje = $this->registro->eliminarDefinitivo($venta);
 
         return redirect()->route('commercial.ventas.index')
             ->with('status', $mensaje);

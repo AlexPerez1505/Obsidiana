@@ -13,7 +13,10 @@
             return [
                 'paso' => $paso,
                 'pieza' => $pieza,
-                'equipo' => trim(collect([$prod?->tipo_equipo, $prod?->marca, $prod?->modelo])->filter()->implode(' ')) ?: 'Equipo',
+                'equipo' => trim(collect([$prod?->tipo_equipo, $prod?->subtipo, $prod?->marca, $prod?->modelo])->filter()->implode(' ')) ?: 'Equipo',
+                // Para la tarjeta: tipo-subtipo, marca y modelo por separado.
+                'tipo' => collect([$prod?->tipo_equipo, $prod?->subtipo])->filter()->implode(' - ') ?: 'Sin tipo',
+                'marca_modelo' => collect([$prod?->marca, $prod?->modelo])->filter()->implode(' · ') ?: 'Sin marca ni modelo',
                 'responsable' => $paso->responsable?->name ?: 'Sin asignar',
                 'dias' => $paso->diasDetenida(),
                 'fecha' => ($paso->iniciado_en ?? $paso->created_at)?->format('Y-m-d') ?? '',
@@ -206,8 +209,12 @@
                     <article class="data-card f-row" @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
                         <div class="data-card-top">
                             <div style="min-width:0; flex:1;">
-                                <div class="t" style="font-family:ui-monospace,Consolas,monospace; font-size:13px;">{{ $pieza->codigo }}</div>
-                                <div class="s">{{ $fila['equipo'] }}</div>
+                                {{-- Lo importante es la serie del fabricante; luego tipo-subtipo,
+                                     marca y modelo, y la etiqueta interna MB- en letra chica. --}}
+                                <div class="t" style="font-family:ui-monospace,Consolas,monospace; font-size:14px;">{{ $pieza->no_serie ?: 'Sin serie' }}</div>
+                                <div class="pr-eq-tipo">{{ $fila['tipo'] }}</div>
+                                <div class="s">{{ $fila['marca_modelo'] }}</div>
+                                <div class="s" style="font-family:ui-monospace,Consolas,monospace;">{{ $pieza->codigo }}</div>
                             </div>
 
                             <span class="badge {{ $paso->estado === 'en_curso' ? 'badge--info' : '' }}">
@@ -236,7 +243,8 @@
                             </div>
                         </dl>
 
-                        <div class="data-card-foot">
+                        <div class="data-card-foot" style="align-items:center;">
+                            <span style="font-family:ui-monospace,Consolas,monospace; font-size:11px; color:var(--muted);">{{ $pieza->codigo }}</span>
                             <a href="{{ route('inventory.procesos.show', $paso) }}" class="btn">
                                 {{ $paso->estado === 'en_curso' ? 'Continuar' : 'Trabajar esta pieza' }}
                             </a>
@@ -273,31 +281,54 @@
                 Pasaron su verificación y ya cuentan como stock disponible.
             </p>
 
+            {{-- En rejilla: una lista de una sola columna dejaba media
+                 pantalla vacía y alargaba la página. --}}
+            <div class="pr-listos">
             @foreach ($listas as $pieza)
                 <div class="pr-listo">
-                    <span style="font-family:ui-monospace,Consolas,monospace; font-weight:700; font-size:13px;">{{ $pieza->codigo }}</span>
+                    <span style="font-family:ui-monospace,Consolas,monospace; font-weight:700; font-size:13px;">{{ $pieza->no_serie ?: $pieza->codigo }}
+                        <span style="font-weight:400; font-size:11px; color:var(--muted);">{{ $pieza->codigo }}</span></span>
                     <span style="flex:1; min-width:0; color:var(--muted); font-size:13.5px;">
                         {{ trim(collect([$pieza->producto?->tipo_equipo, $pieza->producto?->marca, $pieza->producto?->modelo])->filter()->implode(' ')) ?: 'Equipo' }}
                     </span>
                     <span class="badge badge--ok">Disponible</span>
                 </div>
             @endforeach
+            </div>
         </x-ui.card>
     @endif
 
     <style>
-        .pr-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-bottom:16px; }
+        /* Métricas en tiras bajas: dicen un número, no necesitan altura. */
+        .pr-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:16px; }
+        .pr-stats .stat { padding:13px 15px; gap:12px; }
+        .pr-stats .stat-ico { width:38px; height:38px; }
+        .pr-stats .stat-num { font-size:23px; }
 
         /* Una cola por proceso, lado a lado en escritorio y apiladas en el
            teléfono. Se ve de un vistazo dónde está el cuello de botella. */
         .pr-colas { display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:16px; align-items:start; }
-        .pr-cola { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; }
-        .pr-cola-cab { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+        .pr-cola { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px; min-width:0; }
+        .pr-cola-cab { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
         .pr-cola-cab h3 { flex:1; margin:0; font-size:15px; font-weight:600; }
         .pr-cola-n { padding:2px 9px; border-radius:999px; background:var(--surface-2);
                      border:1px solid var(--border); font-size:12.5px; font-weight:700;
                      font-variant-numeric:tabular-nums; }
-        .pr-cola .data-card + .data-card { margin-top:12px; }
+        .pr-cola .data-card + .data-card { margin-top:10px; }
+        .pr-eq-tipo { font-size:13.5px; font-weight:600; margin-top:3px; overflow-wrap:anywhere; }
+        .pr-eq-serie { font-family:ui-monospace,Consolas,monospace; font-weight:600; color:var(--text); overflow-wrap:anywhere; }
+
+        /* Tarjeta de pieza más compacta dentro de la cola: los datos en dos
+           columnas (detenida | responsable) y "al terminar" abajo a lo
+           ancho, en lugar de tres renglones con etiqueta a un lado. */
+        .pr-cola .data-card { padding:13px 14px; }
+        .pr-cola .data-card-top { padding-bottom:10px; }
+        .pr-cola .data-card dl { margin-top:10px; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px 14px; }
+        .pr-cola .data-card dl > div { display:block; min-width:0; }
+        .pr-cola .data-card dl > div:last-child { grid-column:1 / -1; }
+        .pr-cola .data-card dt { font-size:12px; }
+        .pr-cola .data-card dd { margin-top:1px; text-align:left; font-weight:600; }
+        .pr-cola .data-card-foot { margin-top:10px; padding-top:10px; }
         .pr-cola-vacia { margin:0; color:var(--muted); font-size:13.5px; }
 
         .pr-ico { display:flex; align-items:center; justify-content:center; width:36px; height:36px;
@@ -307,13 +338,13 @@
         .pr-ico.azul { background:var(--primary-soft); color:var(--primary); }
         .pr-ico.verde { background:var(--green-soft); color:var(--green); }
 
-        .pr-motivo { margin:12px 0 0; padding:9px 11px; border-radius:8px; background:var(--surface-2);
+        .pr-motivo { margin:10px 0 0; padding:8px 11px; border-radius:8px; background:var(--surface-2);
                      color:var(--muted); font-size:12.5px; line-height:1.45; }
         .pr-alerta { color:var(--danger); font-weight:700; }
 
-        .pr-listo { display:flex; align-items:center; gap:10px; padding:10px 0;
-                    border-bottom:1px solid var(--border); }
-        .pr-listo:last-child { border-bottom:none; }
+        .pr-listos { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap:8px; }
+        .pr-listo { display:flex; align-items:center; gap:10px; padding:8px 11px; min-width:0;
+                    border:1px solid var(--border); border-radius:9px; }
     </style>
 
     @include('partials.tabla-filtrable.estilos')

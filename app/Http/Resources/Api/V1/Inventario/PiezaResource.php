@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1\Inventario;
 
 use App\Http\Resources\Api\V1\UsuarioResource;
 use App\Models\ProductoSerial;
+use App\Support\EdicionPropia;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -36,6 +37,10 @@ class PiezaResource extends JsonResource
             'enviado_a_congreso_en' => $this->enviado_a_congreso_en,
             'capturado_por' => $this->capturado_por,
             'editado_por' => $this->editado_por,
+            'puede_editar' => EdicionPropia::puedeEditarPieza($request->user(), $this->resource),
+            'puede_eliminar' => ! $this->vendido && EdicionPropia::puedeEliminarPieza($request->user(), $this->resource),
+            // Rutas tal cual, para mandarlas en quitar_fotos[] al corregir la pieza.
+            'evidence_paths' => array_values(array_filter($this->evidence_paths ?: [$this->foto_path])),
             'foto_url' => $this->fotoUrl(),
             'evidence_urls' => $this->evidenceUrls(),
             'video_url' => $this->videoUrl(),

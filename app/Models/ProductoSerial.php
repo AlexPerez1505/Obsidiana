@@ -114,6 +114,12 @@ class ProductoSerial extends Model
         return $this->hasMany(PiezaProceso::class)->orderBy('orden')->orderBy('id');
     }
 
+    /** Lo que trae dentro: procesador, fuente, pigtail, interfaz… */
+    public function componentes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PiezaComponente::class, 'producto_serial_id')->orderBy('id');
+    }
+
     /** Lo que le falta para poder venderse. */
     public function procesosPendientes(): \Illuminate\Database\Eloquent\Relations\HasMany
     {

@@ -12,10 +12,13 @@
     {{-- Pestañas por estado --}}
     <div class="os-tabs">
         @foreach (['abiertas' => 'Por preparar', 'lista' => 'Listas para salir', 'entregada' => 'Entregadas'] as $valor => $texto)
-            <a href="{{ route('inventory.salidas.index', ['estado' => $valor]) }}" class="os-tab {{ $estado === $valor ? 'is-on' : '' }}">
+            <a href="{{ route('inventory.salidas.index', ['estado' => $valor]) }}" class="os-tab {{ ! $mias && $estado === $valor ? 'is-on' : '' }}">
                 {{ $texto }} <span class="os-num">{{ $conteos[$valor] ?? 0 }}</span>
             </a>
         @endforeach
+        <a href="{{ route('inventory.salidas.index', ['mias' => 1]) }}" class="os-tab {{ $mias ? 'is-on' : '' }}">
+            Asignadas a mí <span class="os-num">{{ $conteos['mias'] ?? 0 }}</span>
+        </a>
     </div>
 
     <div class="card" style="padding:0; overflow-x:auto;">
@@ -27,6 +30,7 @@
                     <th>Equipo</th>
                     <th>Avance</th>
                     <th>Estado</th>
+                    <th>Prepara</th>
                     <th>Asesor</th>
                     <th></th>
                 </tr>
@@ -65,6 +69,13 @@
                                 <div class="os-por-cerrar" style="color:var(--primary);">Esperando firma de salida</div>
                             @endif
                         </td>
+                        <td>
+                            @if ($o->asignadaA)
+                                <span style="font-weight:600;">{{ $o->asignadaA->name }}</span>
+                            @else
+                                <span style="color:var(--muted);">Sin asignar</span>
+                            @endif
+                        </td>
                         <td style="color:var(--muted);">{{ $o->venta?->seller?->name ?? '—' }}</td>
                         <td style="text-align:right; white-space:nowrap;">
                             <a href="{{ route('inventory.salidas.pdf', $o) }}" target="_blank" class="btn btn--ghost" style="padding:6px 10px;" title="Hoja de salida en PDF">PDF</a>
@@ -75,7 +86,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7">
+                        <td colspan="8">
                             <div class="empty-state">
                                 <span class="ico">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>

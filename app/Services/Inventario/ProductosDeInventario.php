@@ -14,6 +14,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Support\SeriesUnicas;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -35,18 +36,39 @@ class ProductosDeInventario
         'subtype_id' => ['nullable', 'exists:subtypes,id'],
         'brand_id' => ['nullable', 'exists:brands,id'],
         'equipment_model_id' => ['nullable', 'exists:equipment_models,id'],
-        'cantidad' => ['required', 'integer', 'min:1', 'max:5000'],
+        'cantidad' => ['required_unless:solo_ver,1,true', 'integer', 'min:1', 'max:5000'],
+        'solo_ver' => ['nullable', 'boolean'],
     ];
 
     public const REGLAS_AGREGAR_UNIDADES = [
         'cantidad' => ['required', 'integer', 'min:1'],
-        'series_texto' => ['nullable', 'string'],
+        'series_texto' => ['required', 'string'],
     ];
 
+    /** Cuántas fotos de evidencia lleva cada pieza, como en la entrada. */
+    public const MAX_FOTOS_PIEZA = 3;
+
+    /*
+    | Ya no pide PIN ni contraseña: quién puede corregir lo decide
+    | EdicionPropia (permiso, o el plazo de quien la registró).
+    |
+    | `fotos` se SUMAN a las que ya tiene la pieza (hasta 3 en total) y
+    | `quitar_fotos` dice cuáles de las actuales se van. `foto` (una sola)
+    | se sigue aceptando por compatibilidad y cuenta como una foto más.
+    */
     public const REGLAS_ACTUALIZAR_SERIAL = [
-        'password' => ['required', 'string'],
         'no_serie' => ['nullable', 'string', 'max:255'],
         'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        'fotos' => ['nullable', 'array', 'max:3'],
+        'fotos.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        'quitar_fotos' => ['nullable', 'array'],
+        'quitar_fotos.*' => ['string'],
+    ];
+
+    /** Varias series a la vez: [id de la pieza => número de serie]. */
+    public const REGLAS_SERIES_EN_LOTE = [
+        'series' => ['required', 'array', 'min:1', 'max:1000'],
+        'series.*' => ['nullable', 'string', 'max:255'],
     ];
 
     /** Datos generales del producto (alta y edición). */
@@ -58,26 +80,42 @@ class ProductosDeInventario
             'brand_id' => ['nullable', 'exists:brands,id'],
             'equipment_model_id' => ['nullable', 'exists:equipment_models,id'],
             'precio' => ['nullable', 'numeric', 'min:0'],
-            'stock' => ['required', 'integer', 'min:0'],
+            'stock' => ['required', 'integer', 'min:1'],
             'descripcion' => ['nullable', 'string', 'max:1000'],
+            // Opcional: la REF o número de parte del fabricante.
+            'referencia' => ['nullable', 'string', 'max:120'],
             'no_serie' => ['nullable', 'string', 'max:255'],
             'imagen' => ['nullable', 'image', 'max:5120'], // max 5MB
             'es_serializado' => ['sometimes', 'boolean'],
         ];
     }
 
+    public const REGLAS_FILTROS_CATALOGO = [
+        'equipment_type_id' => ['nullable', 'integer', 'min:1'],
+        'subtype_id' => ['nullable', 'integer', 'min:1'],
+        'brand_id' => ['nullable', 'integer', 'min:1'],
+        'equipment_model_id' => ['nullable', 'integer', 'min:1'],
+    ];
+
     /**
      * Búsqueda del listado (tipo, marca, modelo o serie) y, si se pide, solo
      * lo que se llevaron a congresos: piezas que siguen contando como stock
      * (allá se pueden vender), pero que no están físicamente en el anaquel.
      */
-    public function filtrar(Builder $query, ?string $busqueda, ?string $ubicacion): Builder
+    public function filtrar(Builder $query, ?string $busqueda, ?string $ubicacion, array $catalogo = []): Builder
     {
-        if ($busqueda) {
+        foreach (array_keys(self::REGLAS_FILTROS_CATALOGO) as $campo) {
+            if (! empty($catalogo[$campo])) {
+                $query->where($campo, $catalogo[$campo]);
+            }
+        }
+        if ($busqueda !== null && $busqueda !== '') {
             $query->where(function ($q) use ($busqueda) {
                 $q->where('tipo_equipo', 'like', "%{$busqueda}%")
+                    ->orWhere('subtipo', 'like', "%{$busqueda}%")
                     ->orWhere('marca', 'like', "%{$busqueda}%")
                     ->orWhere('modelo', 'like', "%{$busqueda}%")
+                    ->orWhere('referencia', 'like', "%{$busqueda}%")
                     ->orWhere('no_serie', 'like', "%{$busqueda}%");
             });
         }
@@ -111,14 +149,8 @@ class ProductosDeInventario
      */
     public function registrar(array $data, ?string $seriesTexto, ?UploadedFile $imagen): array
     {
-        $series = $this->parsearSeries($seriesTexto ?? '');
-        $series = $this->autocompletarSecuencia($series, (int) $data['stock']);
-
-        if ($series->isNotEmpty() && $series->count() !== (int) $data['stock']) {
-            throw ValidationException::withMessages([
-                'series_texto' => 'Capturaste '.$series->count()." número(s) de serie, pero el stock dice {$data['stock']}. Deben coincidir, o deja el campo vacío si no vas a registrar series.",
-            ]);
-        }
+        $series = $this->seriesObligatorias($seriesTexto, (int) $data['stock']);
+        SeriesUnicas::exigir($series, 'series_texto');
 
         if ($imagen) {
             $data['imagen_path'] = $imagen->store('productos', 'public');
@@ -148,7 +180,7 @@ class ProductosDeInventario
             // Si sigue fallando, ya no es una carrera: el serial de verdad
             // está repetido para ese producto.
             throw ValidationException::withMessages([
-                'series_texto' => 'Uno de esos números de serie ya existe para este producto. Revísalos y vuelve a intentar.',
+                'series_texto' => SeriesUnicas::MENSAJE_INDICE,
             ]);
         }
     }
@@ -180,14 +212,8 @@ class ProductosDeInventario
      */
     public function agregarUnidades(Producto $producto, int $cantidad, ?string $seriesTexto): void
     {
-        $series = $this->parsearSeries($seriesTexto ?? '');
-        $series = $this->autocompletarSecuencia($series, $cantidad);
-
-        if ($series->isNotEmpty() && $series->count() !== $cantidad) {
-            throw ValidationException::withMessages([
-                'series_texto' => 'Capturaste '.$series->count()." número(s) de serie, pero la cantidad dice {$cantidad}. Deben coincidir, o deja el campo vacío.",
-            ]);
-        }
+        $series = $this->seriesObligatorias($seriesTexto, $cantidad);
+        SeriesUnicas::exigir($series, 'series_texto');
 
         try {
             $producto->agregarUnidades($cantidad, $series->all());
@@ -197,50 +223,151 @@ class ProductosDeInventario
             }
 
             throw ValidationException::withMessages([
-                'series_texto' => 'Uno de esos números de serie ya existe para este producto. Revísalos y vuelve a intentar.',
+                'series_texto' => SeriesUnicas::MENSAJE_INDICE,
             ]);
         }
     }
 
     /**
-     * Corrige el número de serie y/o la foto de una unidad ya guardada. Quien
-     * llama ya confirmó el PIN (PinDeAprobacion): altera un dato que quedó
-     * como evidencia.
+     * Corrige el número de serie y las fotos de una pieza ya guardada.
      *
-     * @throws ValidationException si el serial ya existe para ese producto
+     * Las fotos nuevas se suman a las que tiene (no las reemplazan) hasta
+     * MAX_FOTOS_PIEZA; para cambiar una se quita la vieja y se sube otra.
+     * Quién puede hacerlo lo revisa quien llama (EdicionPropia).
+     *
+     * @param  array<int, UploadedFile>  $fotos
+     * @param  array<int, string>  $quitar  rutas de las fotos actuales que se van
+     *
+     * @throws ValidationException si el serial ya existe o pasan de 3 fotos
      */
-    public function actualizarSerial(ProductoSerial $serial, ?string $noSerie, ?UploadedFile $foto): void
+    public function actualizarSerial(ProductoSerial $serial, ?string $noSerie, array $fotos = [], array $quitar = []): void
     {
         $nuevaSerie = trim((string) ($noSerie ?? '')) ?: null;
         $disco = config('filesystems.fotos_disk', 'public');
 
+        $actuales = array_values(array_filter($serial->evidence_paths ?: [$serial->foto_path]));
+
+        // Solo se quita lo que de verdad es de esta pieza: una ruta ajena
+        // que llegara en la petición no debe borrar archivos de otros.
+        $quitar = array_values(array_intersect($actuales, $quitar));
+        $quedan = array_values(array_diff($actuales, $quitar));
+
+        if (count($quedan) + count($fotos) > self::MAX_FOTOS_PIEZA) {
+            throw ValidationException::withMessages([
+                'fotos' => 'Cada pieza lleva máximo '.self::MAX_FOTOS_PIEZA.' fotos. Ya tiene '.count($quedan)
+                    .'; quita alguna antes de subir otra.',
+            ]);
+        }
+
+        if ($nuevaSerie !== null && SeriesUnicas::normalizar($nuevaSerie) !== SeriesUnicas::normalizar($serial->no_serie)) {
+            SeriesUnicas::exigir([$nuevaSerie], 'no_serie', [$serial->id]);
+        }
+
+        $subidas = [];
+
         try {
-            DB::transaction(function () use ($serial, $nuevaSerie, $foto, $disco) {
+            DB::transaction(function () use ($serial, $nuevaSerie, $fotos, $quedan, $quitar, $disco, &$subidas) {
                 $cambios = ['editado_por' => auth()->id()];
 
                 if ($nuevaSerie !== $serial->no_serie) {
                     $cambios['no_serie'] = $nuevaSerie;
                 }
 
-                if ($foto) {
-                    $fotoAnterior = $serial->foto_path;
-                    $cambios['foto_path'] = $foto->store('productos/seriales', $disco);
-
-                    if ($fotoAnterior) {
-                        Storage::disk($disco)->delete($fotoAnterior);
+                if ($fotos || $quitar) {
+                    foreach ($fotos as $foto) {
+                        $subidas[] = $foto->store('productos/seriales', $disco);
                     }
+
+                    $todas = array_values(array_merge($quedan, $subidas));
+                    $cambios['evidence_paths'] = $todas ?: null;
+                    $cambios['foto_path'] = $todas[0] ?? null;
                 }
 
                 $serial->update($cambios);
                 $serial->producto->recalcularStock();
             });
         } catch (QueryException $e) {
+            Storage::disk($disco)->delete($subidas);
+
             if (! $this->esErrorDeDuplicado($e)) {
                 throw $e;
             }
 
-            throw ValidationException::withMessages(['no_serie' => 'Ese número de serie ya existe para este producto.']);
+            throw ValidationException::withMessages(['no_serie' => SeriesUnicas::MENSAJE_INDICE]);
         }
+
+        // Ya guardado el cambio, se borran del disco las que se quitaron.
+        if ($quitar) {
+            Storage::disk($disco)->delete($quitar);
+        }
+    }
+
+    /**
+     * Corrige muchas series de un mismo producto de una sola vez.
+     *
+     * Con 100 piezas del mismo equipo no tiene sentido abrir una por una:
+     * se mandan solo las que cambiaron ([id => serie]) y se guardan juntas.
+     * Antes de tocar nada se revisa que no queden dos piezas del producto
+     * con la misma serie (también entre las que se están cambiando), y se
+     * guardan en dos pasos para que intercambiar series entre dos piezas no
+     * choque con el índice único a medio camino.
+     *
+     * Quién puede tocar cada pieza lo revisa quien llama (EdicionPropia).
+     *
+     * @param  array<int|string, string|null>  $series
+     * @return int cuántas piezas cambiaron
+     *
+     * @throws ValidationException si alguna pieza no es del producto o hay repetidas
+     */
+    public function actualizarSeriesEnLote(Producto $producto, array $series): int
+    {
+        $nuevas = collect($series)
+            ->mapWithKeys(fn ($serie, $id) => [(int) $id => trim((string) ($serie ?? '')) ?: null]);
+
+        $piezas = $producto->seriales()->get()->keyBy('id');
+
+        if ($nuevas->keys()->reject(fn (int $id) => $piezas->has($id))->isNotEmpty()) {
+            throw ValidationException::withMessages(['series' => 'Alguna de esas piezas no es de este producto.']);
+        }
+
+        // Solo lo que de verdad cambió.
+        $cambios = $nuevas->filter(fn ($serie, int $id) => $serie !== $piezas[$id]->no_serie);
+
+        if ($cambios->isEmpty()) {
+            return 0;
+        }
+
+        $finales = $piezas
+            ->map(fn (ProductoSerial $p) => $cambios->has($p->id) ? $cambios[$p->id] : $p->no_serie)
+            ->filter();
+
+        $repetidas = SeriesUnicas::repetidasEnLista($finales);
+
+        if ($repetidas->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'series' => 'Quedarían piezas con la misma serie: '.$repetidas->implode(', ').'. Cada pieza debe tener la suya.',
+            ]);
+        }
+
+        // Contra las piezas de OTROS productos (las de este ya se revisaron arriba).
+        $usadas = SeriesUnicas::enUso($cambios->filter()->values(), $piezas->keys()->all());
+        if ($usadas->isNotEmpty()) {
+            throw ValidationException::withMessages(['series' => SeriesUnicas::mensaje($usadas)]);
+        }
+
+        DB::transaction(function () use ($producto, $cambios) {
+            $usuario = auth()->id();
+
+            ProductoSerial::whereIn('id', $cambios->keys())->update(['no_serie' => null]);
+
+            foreach ($cambios as $id => $serie) {
+                ProductoSerial::whereKey($id)->update(['no_serie' => $serie, 'editado_por' => $usuario]);
+            }
+
+            $producto->recalcularStock();
+        });
+
+        return $cambios->count();
     }
 
     /**
@@ -269,9 +396,16 @@ class ProductosDeInventario
     }
 
     /** El serial que seguiría para este producto, si sus series terminan en dígitos. */
+    /**
+     * La serie que sigue para este equipo. Es el mismo consecutivo para todo
+     * lo que comparte subtipo, marca y modelo (aunque sea otro producto), no
+     * el de este producto solo.
+     */
     public function siguienteSerial(Producto $producto): ?string
     {
-        return $this->sugerirSiguienteSerial($producto->id);
+        return \App\Support\GeneradorDeSeries::siguiente(\App\Support\GeneradorDeSeries::prefijo(
+            $producto->equipment_type_id, $producto->subtype_id, $producto->brand_id, $producto->equipment_model_id,
+        ));
     }
 
     /**
@@ -357,6 +491,24 @@ class ProductosDeInventario
         ]);
     }
 
+    private function seriesObligatorias(?string $texto, int $cantidad): Collection
+    {
+        $series = $this->autocompletarSecuencia($this->parsearSeries($texto ?? ''), $cantidad);
+
+        if ($series->isEmpty()) {
+            throw ValidationException::withMessages([
+                'series_texto' => 'Captura los números de serie de las piezas para continuar.',
+            ]);
+        }
+        if ($series->count() !== $cantidad) {
+            throw ValidationException::withMessages([
+                'series_texto' => 'Capturaste '.$series->count()." número(s) de serie, pero la cantidad dice {$cantidad}. Cada pieza debe tener su número de serie.",
+            ]);
+        }
+
+        return $series;
+    }
+
     /**
      * Busca (con bloqueo) si el modelo ya tiene fila en productos; si es
      * así, le suma las unidades nuevas, y si no, crea la fila. El lock
@@ -402,6 +554,7 @@ class ProductosDeInventario
         }
 
         $existente->descripcion = $data['descripcion'] ?? $existente->descripcion;
+        $existente->referencia = ($data['referencia'] ?? null) ?: $existente->referencia;
 
         if (! empty($data['imagen_path'])) {
             $existente->imagen_path = $data['imagen_path'];

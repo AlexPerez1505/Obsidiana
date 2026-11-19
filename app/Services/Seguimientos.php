@@ -16,43 +16,18 @@ use Illuminate\Support\Facades\Log;
  */
 class Seguimientos
 {
-    private const CADA_MINUTOS = 10;
+    private const CADA_MINUTOS = 1;
 
-    /** @return int Cuántos avisos se mandaron. */
+    /**
+     * @return int Cuántos avisos se mandaron.
+     *
+     * Desde la agenda, los avisos de seguimiento salen del mismo motor que
+     * todos los recordatorios (App\Services\Agenda\Recordatorios), así no
+     * hay dos sistemas mandando el mismo aviso.
+     */
     public function recordarPendientes(): int
     {
-        $enviados = 0;
-
-        $pendientes = ClienteSeguimiento::porAvisar()
-            ->with(['customer', 'responsable'])
-            ->orderBy('fecha')
-            ->get();
-
-        foreach ($pendientes as $seguimiento) {
-            $responsable = $seguimiento->responsable;
-
-            if (! $responsable || ! $seguimiento->customer) {
-                continue;
-            }
-
-            try {
-                $responsable->notify(new SeguimientoRecordatorio($seguimiento));
-            } catch (\Throwable $e) {
-                // Si el correo no sale (servidor de correo caído), la
-                // notificación del sistema ya quedó guardada: se registra
-                // el problema y se sigue con los demás.
-                Log::warning('No se pudo mandar el recordatorio de seguimiento por correo', [
-                    'seguimiento_id' => $seguimiento->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
-            $seguimiento->notificado_en = now();
-            $seguimiento->save();
-            $enviados++;
-        }
-
-        return $enviados;
+        return app(\App\Services\Agenda\Recordatorios::class)->despachar();
     }
 
     /** Disparo de respaldo desde el sistema: solo si ya pasó el intervalo. */

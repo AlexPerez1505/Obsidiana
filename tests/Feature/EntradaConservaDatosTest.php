@@ -57,8 +57,8 @@ class EntradaConservaDatosTest extends TestCase
         $video = $this->subirVideoDePrueba($user);
         $firma = $this->firmaValida();
 
-        // Se envía todo menos las fotos de evidencia del envío; el servidor
-        // rechaza por faltar la evidencia fotográfica general.
+        // Las fotos de la segunda y tercera pieza faltan a propósito: el
+        // servidor rechaza, porque cada pieza necesita la suya.
         $respuesta = $this->actingAs($user)
             ->from(route('inventory.movimientos.create'))
             ->post(route('inventory.movimientos.store'), [
@@ -68,18 +68,20 @@ class EntradaConservaDatosTest extends TestCase
                 'movement_date' => now()->format('Y-m-d'),
                 'descripcion' => 'Llegó en caja sellada',
                 'notas' => 'Se abrió para inspección',
-                'modo_identificacion' => 'unidades',
                 'firma' => $firma,
-                'video_path' => $video,
                 'unidades' => [
-                    ['no_serie' => '23A00010'],
-                    ['no_serie' => '23A00011'],
-                    ['no_serie' => '23A00012'],
+                    [
+                        'no_serie' => '23A00010',
+                        'video_path' => $video,
+                        'evidencias' => [UploadedFile::fake()->create('p1.jpg', 40, 'image/jpeg')],
+                    ],
+                    ['no_serie' => '23A00011', 'evidencias' => []],
+                    ['no_serie' => '23A00012', 'evidencias' => []],
                 ],
             ]);
 
         $respuesta->assertRedirect(route('inventory.movimientos.create'));
-        $respuesta->assertSessionHasErrors(['evidencias']);
+        $respuesta->assertSessionHasErrors(['unidades.1.evidencias']);
 
         // El formulario se vuelve a dibujar con lo que ya se había capturado.
         $pagina = $this->actingAs($user)->get(route('inventory.movimientos.create'));
@@ -92,11 +94,13 @@ class EntradaConservaDatosTest extends TestCase
         $pagina->assertSee('23A00010', false);
         $pagina->assertSee('23A00012', false);
         // La firma regresa como valor del input: el lienzo la re-dibuja.
-        $pagina->assertSee($firma);
-        // El video ya vive en el servidor: no se vuelve a subir.
-        $pagina->assertSee($video);
-        // Se muestra el error de evidencia faltante.
-        $pagina->assertSee('Sube al menos una foto', false);
+        $pagina->assertSee($firma, false);
+        // El video de esa pieza ya vive en el servidor: no se vuelve a subir.
+        $pagina->assertSee(str_replace('/', '\/', $video), false);
+        // Y se avisa qué se conservó para volver a registrar.
+        $pagina->assertSee('Se conservó lo que ya habías llenado', false);
+        // El error de cada pieza se muestra con su número.
+        $pagina->assertSee('foto de cómo llegó ella', false);
     }
 
     public function test_la_condicion_elegida_sigue_marcada(): void

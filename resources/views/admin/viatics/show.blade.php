@@ -520,7 +520,7 @@
                     <x-gravityui-floppy-disk />
                     <span id="vpBtnSaveEditText">Guardar cambios</span>
                 </button>
-                <button type="button" class="vp-btn-delete" onclick="vpApp.deleteExpense()">
+                <button type="button" class="vp-btn-delete" onclick="vpApp.deleteExpense()" @disabled(auth()->user()->cannot('viaticos.eliminar'))>
                     <x-gravityui-trash-bin />
                     Eliminar
                 </button>

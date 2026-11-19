@@ -142,6 +142,7 @@ class MotorDeNomina
 
         $periodo = $this->metricas($u, $desde, $hasta);
         $mes = null;   // se calcula solo si alguna regla lo necesita
+        $anio = null;  // del 1 de enero al fin de la quincena, igual
 
         $sueldo = (float) ($u->sueldo_quincenal ?? 0);
         $diaSueldo = $sueldo / PayrollSetting::diasSueldo();
@@ -154,13 +155,22 @@ class MotorDeNomina
                 continue;
             }
 
+            // Reglas con fecha (bono anual o único): solo en la quincena que trae ese día
+            $conFecha = $regla->timing === 'fecha';
+            if ($conFecha && ! $regla->fechaEn($desde, $hasta)) {
+                continue;
+            }
+
             $esDeMes = $regla->timing === 'cierre_mes' || $regla->usaMes();
 
             if ($esDeMes && $mes === null) {
                 $mes = $this->metricas($u, $desde->copy()->startOfMonth(), $desde->copy()->endOfMonth());
             }
+            if (($conFecha || collect($regla->conditions ?? [])->contains('scope', 'anio')) && $anio === null) {
+                $anio = $this->metricas($u, $desde->copy()->startOfYear(), $hasta);
+            }
 
-            $valor = fn (string $m, string $scope) => ($scope === 'mes' ? $mes : $periodo)[$m] ?? null;
+            $valor = fn (string $m, string $scope) => (match ($scope) { 'mes' => $mes, 'anio' => $anio, default => $periodo })[$m] ?? null;
 
             // Todas las condiciones deben cumplirse
             $cumple = true;
@@ -172,7 +182,7 @@ class MotorDeNomina
             // Cuántas veces se aplica
             $veces = 1;
             if ($regla->repeat_mode === 'por_cada' && $regla->repeat_every) {
-                $base = $valor((string) $regla->repeat_metric, $esDeMes ? 'mes' : 'periodo') ?? 0;
+                $base = $valor((string) $regla->repeat_metric, $conFecha ? 'anio' : ($esDeMes ? 'mes' : 'periodo')) ?? 0;
                 $veces = (int) floor($base / $regla->repeat_every);
                 if ($regla->repeat_max) {
                     $veces = min($veces, $regla->repeat_max);

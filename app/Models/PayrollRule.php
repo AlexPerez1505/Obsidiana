@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * Una regla de nómina que define RH: "cuando pase esto, bonificar o descontar
@@ -35,7 +36,7 @@ class PayrollRule extends Model
 
     protected $fillable = [
         'name', 'description', 'kind', 'conditions', 'repeat_mode', 'repeat_metric', 'repeat_every', 'repeat_max',
-        'calc', 'amount', 'timing', 'scope', 'user_ids', 'active', 'sort', 'system_key', 'created_by',
+        'calc', 'amount', 'timing', 'pay_date', 'yearly', 'scope', 'user_ids', 'active', 'sort', 'system_key', 'created_by',
     ];
 
     protected function casts(): array
@@ -43,6 +44,7 @@ class PayrollRule extends Model
         return [
             'conditions' => 'array', 'user_ids' => 'array', 'active' => 'boolean',
             'amount' => 'float', 'repeat_every' => 'integer', 'repeat_max' => 'integer',
+            'pay_date' => 'date', 'yearly' => 'boolean',
         ];
     }
 
@@ -69,6 +71,43 @@ class PayrollRule extends Model
         return collect($this->conditions ?? [])->contains(fn ($c) => ($c['scope'] ?? 'periodo') === 'mes');
     }
 
+    /** Dónde se mide una condición. */
+    public const ALCANCES = ['periodo' => 'en la quincena', 'mes' => 'en el mes', 'anio' => 'en el año'];
+
+    /**
+     * Si la regla se paga en una fecha y esa fecha cae dentro de la quincena,
+     * la devuelve (con el año de la quincena cuando se repite cada año).
+     */
+    public function fechaEn(Carbon $desde, Carbon $hasta): ?Carbon
+    {
+        if ($this->timing !== 'fecha' || ! $this->pay_date) {
+            return null;
+        }
+
+        foreach (array_unique([$desde->year, $hasta->year]) as $anio) {
+            // Un 29 de febrero en año no bisiesto se paga el 28
+            $f = $this->yearly
+                ? Carbon::create($anio, $this->pay_date->month, min($this->pay_date->day, Carbon::create($anio, $this->pay_date->month, 1)->daysInMonth))
+                : $this->pay_date->copy();
+
+            if ($f->between($desde->copy()->startOfDay(), $hasta->copy()->endOfDay())) {
+                return $f->startOfDay();
+            }
+        }
+
+        return null;
+    }
+
+    /** "el 15 de diciembre de cada año" · "el 15 de diciembre de 2026" */
+    public function textoFecha(): string
+    {
+        if (! $this->pay_date) {
+            return 'en una fecha sin definir';
+        }
+
+        return 'el '.$this->pay_date->translatedFormat('j \d\e F').($this->yearly ? ' de cada año' : ' de '.$this->pay_date->year);
+    }
+
     /** "por cada falta" · "por cada 3 retardos" */
     public function textoPorCada(): string
     {
@@ -87,7 +126,7 @@ class PayrollRule extends Model
     public function condicionTexto(array $c): string
     {
         $m = self::METRICAS[$c['metric']] ?? [$c['metric'], ''];
-        $donde = ($c['scope'] ?? 'periodo') === 'mes' ? 'en el mes' : 'en la quincena';
+        $donde = self::ALCANCES[$c['scope'] ?? 'periodo'] ?? 'en la quincena';
         $v = rtrim(rtrim(number_format((float) $c['value'], 2, '.', ''), '0'), '.');
 
         return strtolower($m[0]).' '.$donde.' '.(self::OPERADORES[$c['op']] ?? $c['op']).' '.$v;
@@ -110,8 +149,13 @@ class PayrollRule extends Model
             ? ' '.$this->textoPorCada().($this->repeat_max ? ' (máx. '.$this->repeat_max.' veces)' : '')
             : '';
 
-        $cuando = $cuando ?: 'siempre';
-        $momento = $this->timing === 'cierre_mes' ? ' · se aplica al cerrar el mes' : ' · cada quincena';
+        // Un bono con fecha sin condiciones se lee directo: "Bonificar $5,000 · se paga el 15 de diciembre…"
+        $inicio = $cuando ? "Cuando {$cuando}: " : ($this->timing === 'fecha' ? '' : 'Cuando siempre: ');
+        $momento = match ($this->timing) {
+            'cierre_mes' => ' · se aplica al cerrar el mes',
+            'fecha' => ' · se paga '.$this->textoFecha(),
+            default => ' · cada quincena',
+        };
 
         $quien = match ($this->scope) {
             'incluir' => ' · solo a personas elegidas',
@@ -119,6 +163,6 @@ class PayrollRule extends Model
             default => '',
         };
 
-        return "Cuando {$cuando}: {$verbo} {$que}{$cuanto}{$momento}{$quien}.";
+        return "{$inicio}{$verbo} {$que}{$cuanto}{$momento}{$quien}.";
     }
 }

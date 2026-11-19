@@ -10,6 +10,7 @@ use App\Services\SessionManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
@@ -27,7 +28,9 @@ class UserController extends Controller
      */
     public function index(SessionManager $sessions, Request $request): View
     {
-        $query = User::withCount('loginLogs')->with('roles', 'employeeDocuments');
+        // Los eliminados con historial ya no aparecen
+        $query = User::withCount('loginLogs')->with('roles', 'employeeDocuments')
+            ->where('status', '!=', User::STATUS_DELETED);
 
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -83,6 +86,22 @@ class UserController extends Controller
 
         $user = User::findOrFail($data['user_id']);
 
+        // La foto nueva reemplaza a la anterior; el archivo viejo se borra
+        // para no llenar el disco de retratos que ya no se usan.
+        $guardarFoto = function () use ($request, $user) {
+            if (! $request->hasFile('avatar')) {
+                return;
+            }
+            $disco = Storage::disk(config('filesystems.fotos_disk', 'public'));
+            $anterior = $user->avatar;
+            $path = $request->file('avatar')->store("avatars/{$user->id}", config('filesystems.fotos_disk', 'public'));
+            abort_unless($path, 500, 'No se pudo guardar la foto.');
+            $user->forceFill(['avatar' => $path])->save();
+            if ($anterior && $anterior !== $path) {
+                DB::afterCommit(fn () => $disco->delete($anterior));
+            }
+        };
+
         // El formulario es completo: lo que no viene se limpia.
         $rh = [];
         foreach (CuentasDeUsuario::CAMPOS_RH as $campo) {
@@ -96,6 +115,14 @@ class UserController extends Controller
             $this->cuentas->actualizarPerfilRh($user, $rh);
             $this->cuentas->sincronizarRoles($user, $data['roles'] ?? [], $request->user());
         });
+
+        $guardarFoto();
+
+        // El punto de enfoque se puede ajustar sin volver a subir la foto.
+        $foco = $request->input('avatar_foco');
+        if (is_string($foco) && preg_match('/^\d{1,3},\d{1,3}$/', $foco)) {
+            $user->forceFill(['avatar_foco' => $foco])->save();
+        }
 
         foreach (CuentasDeUsuario::DOCUMENTOS as $field => $documentName) {
             if ($request->hasFile($field)) {
@@ -128,6 +155,29 @@ class UserController extends Controller
         ]);
     }
 
+    public function documento(User $user, int $documento, Request $request)
+    {
+        $doc = $user->employeeDocuments()->findOrFail($documento);
+        $disk = Storage::disk('local');
+        if (! $doc->file_path || ! $disk->exists($doc->file_path)) {
+            $disk = Storage::disk('public');
+        }
+        abort_unless($doc->file_path && $disk->exists($doc->file_path), 404);
+
+        $extension = pathinfo($doc->file_path, PATHINFO_EXTENSION);
+        $nombre = \Illuminate\Support\Str::slug($doc->name) ?: 'documento';
+        $nombre .= $extension ? '.'.$extension : '';
+        $mime = $disk->mimeType($doc->file_path);
+        $inline = ! $request->boolean('descargar')
+            && in_array($mime, ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'], true);
+
+        return $disk->response($doc->file_path, $nombre, [
+            'Content-Type' => $mime ?: 'application/octet-stream',
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ], $inline ? 'inline' : 'attachment');
+    }
+
     /**
      * Da o quita el rol de administrador.
      */
@@ -140,6 +190,33 @@ class UserController extends Controller
         $this->cuentas->alternarAdmin($user);
 
         return back()->with('status', 'Rol actualizado para '.$user->name.'.');
+    }
+
+    /**
+     * Asigna (o cambia) el NIP de aprobación de un usuario. Solo admins: lo
+     * piden las acciones delicadas, como corregir una etapa de salida
+     * después de 72 horas.
+     */
+    public function asignarNip(User $user, Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'nip' => ['required', 'digits_between:4,6', 'confirmed'],
+        ], [
+            'nip.required' => 'Escribe el NIP.',
+            'nip.digits_between' => 'El NIP es de 4 a 6 números.',
+            'nip.confirmed' => 'La confirmación no coincide con el NIP.',
+        ]);
+
+        $user->setApprovalPin($data['nip']);
+
+        return back()->with('status', "NIP asignado a {$user->name}. Díselo en persona: no se puede volver a ver.");
+    }
+
+    public function quitarNip(User $user): RedirectResponse
+    {
+        $user->forceFill(['approval_pin_hash' => null])->save();
+
+        return back()->with('status', "Se quitó el NIP de {$user->name}.");
     }
 
     /**
@@ -169,6 +246,24 @@ class UserController extends Controller
         $this->cuentas->banear($user, $data['banned_reason'] ?? null);
 
         return back()->with('status', "Desactivaste la cuenta de {$user->name}. Se le notificó por correo.");
+    }
+
+    /**
+     * Elimina una cuenta. Sin historial se borra por completo; con historial
+     * se retira (sale del sistema) y lo que registró conserva su nombre.
+     */
+    public function destroy(User $user, Request $request): RedirectResponse
+    {
+        if ($rechazo = $this->cuentas->rechazoAlEliminar($user, $request->user())) {
+            return back()->withErrors(['usuario' => $rechazo]);
+        }
+
+        $nombre = $user->name;
+        $completo = $this->cuentas->eliminar($user, $request->user());
+
+        return redirect()->route('admin.users.index')->with('status', $completo
+            ? "Eliminaste la cuenta de {$nombre}."
+            : "Eliminaste la cuenta de {$nombre}. Ya no puede entrar ni aparece en el sistema; sus ventas, checadas y demás registros conservan su nombre.");
     }
 
     /**

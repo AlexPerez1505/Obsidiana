@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\Congress;
 use App\Models\CongresoParticipante;
 use App\Models\Producto;
@@ -140,7 +140,7 @@ class CongresoController extends Controller
     public function create(): View
     {
         return view('structure.gestion_Inventario.congresos.create', [
-            'categories' => Category::query()->orderBy('nombre')->get(),
+            'categories' => \App\Models\EquipmentType::query()->orderBy('name')->get(),
             'productosDisponibles' => Producto::orderBy('tipo_equipo')->get(),
             'usuarios' => User::orderBy('name')->get(['id', 'name', 'email']),
         ]);
@@ -148,7 +148,16 @@ class CongresoController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $this->congresos->normalizar($request, $request->validate(GestionDeCongresos::REGLAS, GestionDeCongresos::MENSAJES));
+        $reglas = GestionDeCongresos::REGLAS;
+        if (! $request->user()->isAdmin()) {
+            unset($reglas['costo'], $reglas['pagado']);
+        }
+
+        $data = $this->congresos->normalizar($request, $request->validate($reglas, GestionDeCongresos::MENSAJES));
+        if (! $request->user()->isAdmin()) {
+            $data['costo'] = null;
+            $data['pagado'] = 0;
+        }
 
         $request->validate(GestionDeCongresos::REGLAS_ALTA_INICIAL);
 
@@ -169,13 +178,22 @@ class CongresoController extends Controller
     {
         return view('structure.gestion_Inventario.congresos.edit', [
             'congress' => $congress,
-            'categories' => Category::query()->orderBy('nombre')->get(),
+            'categories' => \App\Models\EquipmentType::query()->orderBy('name')->get(),
         ]);
     }
 
     public function update(Request $request, Congress $congress): RedirectResponse
     {
-        $data = $this->congresos->normalizar($request, $request->validate(GestionDeCongresos::REGLAS, GestionDeCongresos::MENSAJES));
+        $reglas = GestionDeCongresos::REGLAS;
+        if (! $request->user()->isAdmin()) {
+            unset($reglas['costo'], $reglas['pagado']);
+        }
+
+        $data = $this->congresos->normalizar($request, $request->validate($reglas, GestionDeCongresos::MENSAJES));
+        if (! $request->user()->isAdmin()) {
+            $data['costo'] = $congress->costo;
+            $data['pagado'] = $congress->pagado;
+        }
 
         $this->congresos->actualizar($congress, $data, (array) $request->file('archivos', []), (array) $request->input('quitar_archivos', []));
 

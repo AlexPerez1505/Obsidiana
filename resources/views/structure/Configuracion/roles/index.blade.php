@@ -95,7 +95,7 @@
                     <span class="usuarios">
                         {{ $role->users->count() }} usuario(s)
                         @if ($role->users->isNotEmpty())
-                            · {{ $role->users->take(2)->pluck('name')->implode(', ') }}{{ $role->users->count() > 2 ? '…' : '' }}
+                            · @foreach ($role->users->take(2) as $u)<a href="{{ route('configuracion.roles.usuario.edit', [$role, $u]) }}" class="link">{{ $u->name }}</a>{{ ! $loop->last ? ', ' : '' }}@endforeach{{ $role->users->count() > 2 ? '…' : '' }}
                         @endif
                     </span>
 
@@ -106,7 +106,7 @@
                               data-confirm="¿Eliminar el rol {{ $role->label }}?" style="margin:0;">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn-icono" title="Eliminar rol" aria-label="Eliminar rol">
+                            <button type="submit" class="btn-icono" title="Eliminar rol" aria-label="Eliminar rol" @disabled(auth()->user()->cannot('roles.eliminar'))>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                             </button>
                         </form>
@@ -117,7 +117,16 @@
     </div>
 
     <x-ui.card style="margin-top:18px;">
-        <x-ui.section-title style="margin:0 0 6px;">Cómo se asigna</x-ui.section-title>
+        <x-ui.section-title style="margin:0 0 6px;">Permisos por cuenta</x-ui.section-title>
+        <p class="campo-nota">Para permitir eliminar solo a una persona, selecciona su cuenta. Para aplicarlo a todo un rol, usa Configurar en el rol correspondiente.</p>
+        <label for="permisosCuenta">Seleccionar cuenta</label>
+        <select id="permisosCuenta" onchange="if (this.value) window.location.href = this.value;">
+            <option value="">Selecciona una cuenta…</option>
+            @foreach($usuarios as $usuario)
+                <option value="{{ route('configuracion.usuarios.permisos', $usuario) }}">{{ $usuario->name }}</option>
+            @endforeach
+        </select>
+        <x-ui.section-title style="margin:16px 0 6px;">Cómo se asigna</x-ui.section-title>
         <p class="campo-nota" style="margin:0;">
             Aquí defines qué puede hacer cada rol. A quién le toca cada rol se elige en
             <a href="{{ route('admin.users.index') }}" class="link">Panel de usuarios</a>.
@@ -139,9 +148,10 @@
 
             <x-ui.form-group label="Clave *" name="name" for="name">
                 <input id="name" type="text" name="name" value="{{ old('name') }}" placeholder="jefe_almacen"
-                       pattern="[a-z][a-z0-9_]*" required
+                       pattern="[A-Za-z][A-Za-z0-9_]*" required
+                       oninput="this.value = this.value.toLowerCase()"
                        style="font-family:ui-monospace, Consolas, monospace;">
-                <small class="campo-nota">Minúsculas, sin espacios ni acentos. No se puede cambiar después.</small>
+                <small class="campo-nota">Sin espacios ni acentos; se guarda en minúsculas. No se puede cambiar después.</small>
             </x-ui.form-group>
 
             <x-ui.form-group label="Para qué es" for="description">

@@ -107,6 +107,7 @@ class ProductosTest extends TestCase
             'equipment_type_id' => $cat['tipo']->id,
             'equipment_model_id' => $cat['modelo']->id,
             'stock' => 2,
+            'series_texto' => "SER-0010\nSER-0011",
         ])->assertCreated()
             ->assertJsonPath('data.id', $producto->id)
             ->assertJsonPath('data.stock', 5)
@@ -123,7 +124,8 @@ class ProductosTest extends TestCase
         $this->conToken($user)->post('/api/v1/productos', [
             'equipment_type_id' => $cat['tipo']->id,
             'precio' => 1234.5,
-            'stock' => 0,
+            'stock' => 1,
+            'series_texto' => 'IMG-0001',
             'imagen' => UploadedFile::fake()->image('foto.jpg'),
         ])->assertCreated()->assertJsonPath('data.precio', 1234.5);
 
@@ -142,7 +144,7 @@ class ProductosTest extends TestCase
             'stock' => 3,
             'series_texto' => "A\nB",
         ])->assertStatus(422)
-            ->assertJsonPath('errors.series_texto.0', 'Capturaste 2 número(s) de serie, pero el stock dice 3. Deben coincidir, o deja el campo vacío si no vas a registrar series.');
+            ->assertJsonPath('errors.series_texto.0', 'Capturaste 2 número(s) de serie, pero la cantidad dice 3. Cada pieza debe tener su número de serie.');
 
         $this->conToken($user)->postJson('/api/v1/productos', ['stock' => 1])
             ->assertStatus(422)->assertJsonValidationErrors('equipment_type_id');
@@ -212,6 +214,8 @@ class ProductosTest extends TestCase
     {
         $cat = $this->catalogo();
         $producto = $this->productoConPiezas(['23A0099'], ['equipment_model_id' => $cat['modelo']->id]);
+        // Un número de fábrica como 2105-4774 no debe contaminar la secuencia global.
+        $this->productoConPiezas(['2105-4774']);
 
         $user = $this->usuarioApi(['inventario.ver', 'inventario.registrar']);
 
@@ -220,7 +224,8 @@ class ProductosTest extends TestCase
             ->assertJsonPath('data.existe', true)
             ->assertJsonPath('data.tiene_precio', true)
             ->assertJsonPath('data.pide_precio', false)
-            ->assertJsonPath('data.no_serie_sugerido', '23A0100')
+            // Sugiere el consecutivo compartido del equipo, no el número de fábrica + 1.
+            ->assertJsonPath('data.no_serie_sugerido', 'CV190-0001')
             ->assertJsonPath('data.producto.id', $producto->id);
         $this->assertArrayNotHasKey('precio', $res->json('data.producto'));
 
@@ -232,8 +237,24 @@ class ProductosTest extends TestCase
             'equipment_model_id' => $cat['modelo']->id,
             'cantidad' => 2,
         ])->assertOk()
-            ->assertJsonPath('data.prefijo', 'TOR-CV190')
-            ->assertJsonPath('data.series', ['TOR-CV190-0001', 'TOR-CV190-0002']);
+            // El tipo ya no va al frente de la serie.
+            ->assertJsonPath('data.prefijo', 'CV190')
+            ->assertJsonPath('data.series', ['CV190-0001', 'CV190-0002']);
+
+        $this->conToken($user)->postJson('/api/v1/productos/generar-series', [
+            'equipment_type_id' => $cat['tipo']->id,
+            'equipment_model_id' => $cat['modelo']->id,
+            'cantidad' => 1,
+        ])->assertOk()
+            ->assertJsonPath('data.series', ['CV190-0003']);
+
+        // Cada combinación de catálogo tiene su propia secuencia.
+        $this->conToken($user)->postJson('/api/v1/productos/generar-series', [
+            'equipment_type_id' => $cat['tipo']->id,
+            'cantidad' => 1,
+        ])->assertOk()
+            ->assertJsonPath('data.prefijo', 'EQ')
+            ->assertJsonPath('data.series', ['EQ-0001']);
     }
 
     public function test_catalogos_piden_registrar_o_editar(): void
@@ -266,27 +287,23 @@ class ProductosTest extends TestCase
             'cantidad' => 1,
             'series' => ['P-1'],
         ])->assertStatus(422)
-            ->assertJsonPath('errors.series_texto.0', 'Uno de esos números de serie ya existe para este producto. Revísalos y vuelve a intentar.');
+            ->assertJsonPath('errors.series_texto.0', fn (string $m) => str_contains($m, 'ya está registrado en el inventario'));
 
         $this->assertSame(3, $producto->fresh()->stock);
     }
 
-    public function test_corregir_una_pieza_pide_pin_y_respeta_la_serie_si_no_se_manda(): void
+    public function test_corregir_una_pieza_sin_pin_y_respeta_la_serie_si_no_se_manda(): void
     {
         $producto = $this->productoConPiezas(['C-1', 'C-2']);
         $pieza = $producto->seriales()->where('no_serie', 'C-1')->firstOrFail();
         $user = $this->usuarioApi(['inventario.editar']);
         $url = "/api/v1/productos/{$producto->id}/seriales/{$pieza->id}";
 
-        $this->conToken($user)->putJson($url, ['password' => 'mala', 'no_serie' => 'NUEVA'])
-            ->assertStatus(422)->assertJsonPath('errors.password.0', 'PIN o contraseña incorrecta.');
-
-        $this->conToken($user)->putJson($url, ['password' => 'password', 'no_serie' => 'C-2'])
-            ->assertStatus(422)->assertJsonPath('errors.no_serie.0', 'Ese número de serie ya existe para este producto.');
+        $this->conToken($user)->putJson($url, ['no_serie' => 'C-2'])
+            ->assertStatus(422)->assertJsonPath('errors.no_serie.0', fn (string $m) => str_contains($m, 'ya está registrado en el inventario'));
 
         $this->conToken($user)->post($url, [
             '_method' => 'PUT',
-            'password' => 'password',
             'foto' => UploadedFile::fake()->image('pieza.jpg'),
         ])->assertOk()
             ->assertJsonPath('message', 'Unidad actualizada correctamente.')
@@ -296,7 +313,7 @@ class ProductosTest extends TestCase
         $this->assertNotNull($pieza->foto_path);
         $this->assertSame($user->id, $pieza->editado_por);
 
-        $this->conToken($user)->putJson($url, ['password' => 'password', 'no_serie' => 'C-9'])
+        $this->conToken($user)->putJson($url, ['no_serie' => 'C-9'])
             ->assertOk()->assertJsonPath('data.no_serie', 'C-9');
         $this->assertStringContainsString('C-9', $producto->fresh()->no_serie);
     }

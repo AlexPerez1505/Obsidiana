@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\Comercial\CategoriaClienteResource;
 use App\Http\Resources\Api\V1\Comercial\ClienteResource;
 use App\Http\Resources\Api\V1\UsuarioResource;
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\ClienteSeguimiento;
 use App\Models\Congress;
 use App\Models\Customer;
@@ -67,7 +67,7 @@ class ClienteController extends Controller
         ]);
 
         $query = Customer::visiblesPara($request->user())
-            ->with(['asesor', 'category', 'congress', 'seguimientos'])
+            ->with(['asesor', 'tipoEquipo', 'congress', 'seguimientos'])
             ->when(filled($filtros['buscar'] ?? null), function (Builder $q) use ($filtros) {
                 $texto = '%'.$filtros['buscar'].'%';
 
@@ -114,7 +114,7 @@ class ClienteController extends Controller
             ->values();
 
         return response()->json(['data' => [
-            'categorias' => CategoriaClienteResource::collection(Category::query()->orderBy('nombre')->get()),
+            'categorias' => CategoriaClienteResource::collection(EquipmentType::query()->orderBy('name')->get()),
             'congresos' => Congress::query()->latest()->get()->map(fn (Congress $c) => [
                 'id' => $c->id,
                 'nombre' => $c->nombre,
@@ -287,7 +287,7 @@ class ClienteController extends Controller
 
     private function conDetalle(Request $request, Customer $cliente): Customer
     {
-        $cliente->load(['asesor', 'category', 'congress', 'seguimientos.responsable', 'seguimientos.hechoPor']);
+        $cliente->load(['asesor', 'tipoEquipo', 'congress', 'seguimientos.responsable', 'seguimientos.hechoPor']);
 
         // Las cotizaciones del cliente son de otro permiso: sin él no se
         // asoman, y sin ver_todas solo las del propio asesor.

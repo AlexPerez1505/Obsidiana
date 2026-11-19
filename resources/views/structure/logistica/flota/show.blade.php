@@ -48,7 +48,7 @@
                             <b>{{ $c->fecha->format('d/m/Y') }}</b> · {{ rtrim(rtrim(number_format($c->litros, 2), '0'), '.') }} L · ${{ number_format($c->monto, 2) }}
                             <div class="fs-s">{{ $c->odometro_km ? number_format($c->odometro_km).' km · ' : '' }}{{ $c->estacion }} {{ $c->usuario?->name }}@if ($c->ruta_id) · desde ruta @endif @if ($c->ticketUrl())· <a href="{{ $c->ticketUrl() }}" target="_blank">ticket</a>@endif</div>
                         </div>
-                        <form method="POST" action="{{ route('logistica.flota.combustible.destroy', $c) }}" data-confirm="Se elimina esta carga." data-confirm-title="Eliminar carga">@csrf @method('DELETE')<button class="fs-x" type="submit" title="Eliminar" aria-label="Eliminar"><x-ui.icon name="x" :size="14" /></button></form>
+                        <form method="POST" action="{{ route('logistica.flota.combustible.destroy', $c) }}" data-confirm="Se elimina esta carga." data-confirm-title="Eliminar carga">@csrf @method('DELETE')<button class="fs-x" type="submit" title="Eliminar" aria-label="Eliminar" @disabled(auth()->user()->cannot('rutas.flota_eliminar'))><x-ui.icon name="x" :size="14" /></button></form>
                     </div>
                 @empty
                     <div class="fs-s" style="padding:14px 16px;">Sin cargas registradas.</div>
@@ -93,7 +93,7 @@
                                 @if ($m->comprobanteUrl()) · <a href="{{ $m->comprobanteUrl() }}" target="_blank">comprobante</a>@endif
                             </div>
                         </div>
-                        <form method="POST" action="{{ route('logistica.flota.mantenimiento.destroy', $m) }}" data-confirm="Se elimina este registro." data-confirm-title="Eliminar servicio">@csrf @method('DELETE')<button class="fs-x" type="submit" title="Eliminar" aria-label="Eliminar"><x-ui.icon name="x" :size="14" /></button></form>
+                        <form method="POST" action="{{ route('logistica.flota.mantenimiento.destroy', $m) }}" data-confirm="Se elimina este registro." data-confirm-title="Eliminar servicio">@csrf @method('DELETE')<button class="fs-x" type="submit" title="Eliminar" aria-label="Eliminar" @disabled(auth()->user()->cannot('rutas.flota_eliminar'))><x-ui.icon name="x" :size="14" /></button></form>
                     </div>
                 @empty
                     <div class="fs-s" style="padding:14px 16px;">Sin servicios registrados.</div>

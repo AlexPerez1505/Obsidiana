@@ -17,6 +17,6 @@ Route::middleware(['auth', 'verified', 'approved'])
         Route::post('/', [FacturaController::class, 'store'])->middleware('can:facturacion.crear')->name('store');
 
         Route::get('/{factura}', [FacturaController::class, 'show'])->middleware('can:facturacion.ver')->name('show');
-        Route::delete('/{factura}', [FacturaController::class, 'destroy'])->middleware('can:facturacion.crear')->name('destroy');
+        Route::delete('/{factura}', [FacturaController::class, 'destroy'])->middleware('can:facturacion.eliminar')->name('destroy');
         Route::get('/{factura}/pdf', [FacturaController::class, 'pdf'])->middleware('can:facturacion.ver')->name('pdf');
     });

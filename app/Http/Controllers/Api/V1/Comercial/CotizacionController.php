@@ -198,8 +198,11 @@ class CotizacionController extends Controller
      * Se borra con sus renglones, plan y fichas adjuntas. Si ya se había
      * convertido en venta, la venta se queda (solo pierde la referencia).
      */
-    public function destroy(Cotizacion $cotizacion): JsonResponse
+    public function destroy(Request $request, Cotizacion $cotizacion): JsonResponse
     {
+        // Pasadas 72 horas desde que se creó, se manda "nip" (o la contraseña).
+        \App\Support\EliminarConNip::exigir($cotizacion, $request->user(), $request->input('nip'));
+
         $folio = $cotizacion->folio;
         $cotizacion->delete();
 

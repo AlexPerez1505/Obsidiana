@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Un paso de la ruta de una pieza.
@@ -77,6 +78,22 @@ class PiezaProceso extends Model
     public function cerradoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cerrado_por');
+    }
+
+    /** Lo que se fue haciendo, día por día, del más reciente al primero. */
+    public function avances(): HasMany
+    {
+        return $this->hasMany(PiezaProcesoAvance::class, 'pieza_proceso_id')->latest()->latest('id');
+    }
+
+    /**
+     * Cuántas fotos respaldan este paso: las del cierre más las de todos
+     * sus avances. Al cerrar basta con que haya al menos una en total.
+     */
+    public function totalFotos(): int
+    {
+        return count($this->evidencias ?? [])
+            + $this->avances()->get(['evidencias'])->sum(fn (PiezaProcesoAvance $a) => count($a->evidencias ?? []));
     }
 
     /** URLs de las fotos de que quedó funcionando. */

@@ -16,33 +16,33 @@
         ->flatten(1)->unique('id')->sortBy('name')->values();
 @endphp
 
-<div data-catalogo-filtros>
-    <label class="inv-filter-field"><span class="inv-filter-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>Tipo</span>
-        <select name="equipment_type_id" data-catalogo="tipo">
+<div data-catalogo-filtros style="display:flex;gap:10px;flex-wrap:wrap;">
+    <label style="flex:1;min-width:160px;">Tipo de equipo
+        <select name="equipment_type_id" data-catalogo="tipo" style="width:100%;">
             <option value="">Todos los tipos</option>
             @foreach ($catalogo['tipos'] as $tipo)
                 <option value="{{ $tipo->id }}" @selected($tipoFiltro === (string) $tipo->id)>{{ $tipo->name }}</option>
             @endforeach
         </select>
     </label>
-    <label class="inv-filter-field"><span class="inv-filter-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="m4 12 8 4 8-4M4 17l8 4 8-4"/></svg>Subtipo</span>
-        <select name="subtype_id" data-catalogo="subtipo">
+    <label style="flex:1;min-width:160px;">Subtipo
+        <select name="subtype_id" data-catalogo="subtipo" style="width:100%;">
             <option value="">Todos los subtipos</option>
             @foreach ($subtiposFiltro as $subtipo)
                 <option value="{{ $subtipo['id'] }}" @selected($subtipoFiltro === (string) $subtipo['id'])>{{ $subtipo['name'] }}</option>
             @endforeach
         </select>
     </label>
-    <label class="inv-filter-field"><span class="inv-filter-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m20 13-7 7-9-9V4h7l9 9Z"/><circle cx="7.5" cy="7.5" r="1"/></svg>Marca</span>
-        <select name="brand_id" data-catalogo="marca">
+    <label style="flex:1;min-width:160px;">Marca
+        <select name="brand_id" data-catalogo="marca" style="width:100%;">
             <option value="">Todas las marcas</option>
             @foreach ($marcasFiltro as $marca)
                 <option value="{{ $marca['id'] }}" @selected((string) ($filters['brand_id'] ?? '') === (string) $marca['id'])>{{ $marca['name'] }}</option>
             @endforeach
         </select>
     </label>
-    <label class="inv-filter-field"><span class="inv-filter-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>Modelo</span>
-        <select name="equipment_model_id" data-catalogo="modelo">
+    <label style="flex:1;min-width:160px;">Modelo
+        <select name="equipment_model_id" data-catalogo="modelo" style="width:100%;">
             <option value="">Todos los modelos</option>
             @foreach ($modelosFiltro as $modelo)
                 <option value="{{ $modelo['id'] }}" @selected((string) ($filters['equipment_model_id'] ?? '') === (string) $modelo['id'])>{{ $modelo['name'] }}</option>

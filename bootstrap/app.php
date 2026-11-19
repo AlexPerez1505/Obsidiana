@@ -30,6 +30,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\RestrictMarketingFromServicios::class,
             \App\Http\Middleware\RestrictMantenimientoExternoAccess::class,
         ]);
+
+        // Tiempo real: todo cambio que salió bien avisa a las pantallas
+        // abiertas de todos (ver App\Support\ObsVivo).
+        $middleware->web(append: \App\Http\Middleware\ObsVivoTocar::class);
+        $middleware->api(append: \App\Http\Middleware\ObsVivoTocar::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // En /api todo error sale como JSON en español (ver la clase).

@@ -53,6 +53,7 @@ class CotizacionController extends Controller
         return view('structure.commercial_management.cotizaciones.form', [
             'cotizacion' => null,
             'congresos' => Congress::orderBy('nombre')->get(),
+            'filtrosProductos' => $this->buscador->filtrosProductos(),
             'clientePre' => $request->filled('cliente')
                 ? Customer::find($request->integer('cliente'))
                 : null,
@@ -85,6 +86,7 @@ class CotizacionController extends Controller
         return view('structure.commercial_management.cotizaciones.form', [
             'cotizacion' => $cotizacion,
             'congresos' => Congress::orderBy('nombre')->get(),
+            'filtrosProductos' => $this->buscador->filtrosProductos(),
             'clientePre' => $cotizacion->customer,
         ]);
     }
@@ -99,8 +101,11 @@ class CotizacionController extends Controller
             ->with('status', "Cotización {$cotizacion->folio} actualizada.");
     }
 
-    public function destroy(Cotizacion $cotizacion): RedirectResponse
+    public function destroy(Request $request, Cotizacion $cotizacion): RedirectResponse
     {
+        // Pasadas 72 horas desde que se creó, pide el NIP.
+        \App\Support\EliminarConNip::exigir($cotizacion, $request->user(), $request->input('nip'));
+
         $folio = $cotizacion->folio;
         $cotizacion->delete();
 
@@ -133,9 +138,11 @@ class CotizacionController extends Controller
                     'telefono' => $c->telefono,
                     'rfc' => $c->rfc,
                     'direccion' => $c->direccion,
-                    'categoria' => $c->category?->nombre,
+                    'categoria' => $c->tipoEquipo?->name,
                     'asesor' => $c->asesor?->name,
                     'conocido' => $c->comoConocio(),
+                    // Si lo conocimos en un congreso, la propuesta toma ese congreso sola.
+                    'congreso_id' => $c->congreso_id,
                     'activo' => (bool) $c->activo,
                     'comentarios' => $c->comentarios,
 
@@ -154,8 +161,14 @@ class CotizacionController extends Controller
     public function buscarProductos(Request $request): JsonResponse
     {
         $q = trim($request->get('q', ''));
+        $filtros = $request->validate([
+            'equipment_type_id' => ['nullable', 'integer', 'min:1'],
+            'subtype_id' => ['nullable', 'integer', 'min:1'],
+            'brand_id' => ['nullable', 'integer', 'min:1'],
+            'equipment_model_id' => ['nullable', 'integer', 'min:1'],
+        ]);
 
-        $productos = $this->buscador->productos($q)
+        $productos = $this->buscador->productos($q, $filtros)
             ->map(fn (Producto $p) => [
                 'id' => $p->id,
                 'tipo_item' => 'producto',
@@ -185,7 +198,7 @@ class CotizacionController extends Controller
                 'ficha' => $p->fichaTecnica ? ['id' => $p->fichaTecnica->id, 'titulo' => $p->fichaTecnica->titulo] : null,
             ]);
 
-        $paquetes = $this->buscador->paquetes($q)
+        $paquetes = $this->buscador->paquetes($q, $filtros)
             ->map(fn (Paquete $p) => [
                 'id' => $p->id,
                 'tipo_item' => 'paquete',
@@ -194,6 +207,8 @@ class CotizacionController extends Controller
                 'marca' => $this->buscador->marcasDe($p),
                 'precio' => $p->precioCalculado(),
                 'imagen' => $p->imagen ? asset('storage/'.$p->imagen) : null,
+                // Lo que trae, para verlo antes de agregarlo y en el renglón.
+                'contenido' => $p->contenido(),
             ]);
 
         return response()->json($paquetes->concat($productos)->values());

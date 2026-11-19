@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
 use App\Models\Congress;
+use App\Models\EquipmentType;
 use App\Models\Producto;
 use App\Models\User;
 use App\Notifications\CongresoPiezasSinRegresar;
@@ -33,7 +33,7 @@ class AvisoRegresoCongresoTest extends TestCase
 
     private function congresoTerminado(): Congress
     {
-        $categoria = Category::firstOrCreate(['nombre' => 'Endoscopia']);
+        $categoria = EquipmentType::firstOrCreate(['name' => 'ENDOSCOPIA']);
 
         return Congress::create([
             'nombre' => 'Congreso de Endoscopia 2026',
@@ -119,7 +119,7 @@ class AvisoRegresoCongresoTest extends TestCase
     {
         Notification::fake();
 
-        $categoria = Category::firstOrCreate(['nombre' => 'Endoscopia']);
+        $categoria = EquipmentType::firstOrCreate(['name' => 'ENDOSCOPIA']);
         $congress = Congress::create([
             'nombre' => 'Congreso que viene',
             'categoria_id' => $categoria->id,

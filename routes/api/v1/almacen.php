@@ -27,17 +27,22 @@ use Illuminate\Support\Facades\Route;
 | firma.
 */
 Route::middleware('can:salidas.ver')->prefix('ordenes-salida')->name('ordenes-salida.')
-    ->whereNumber(['orden', 'item'])
+    ->whereNumber(['orden', 'item', 'evidencia'])
     ->group(function () {
         Route::get('/', [OrdenSalidaController::class, 'index'])->name('index');
         Route::get('/{orden}', [OrdenSalidaController::class, 'show'])->name('show');
         Route::get('/{orden}/pdf', [OrdenSalidaController::class, 'pdf'])->name('pdf');
+        Route::get('/{orden}/evidencias', [OrdenSalidaController::class, 'evidencias'])->name('evidencias.index');
+        // Quien la subió o quien prepara salidas: lo revisa el controlador.
+        Route::delete('/{orden}/evidencias/{evidencia}', [OrdenSalidaController::class, 'borrarEvidencia'])->middleware('can:salidas.eliminar')->name('evidencias.destroy');
 
         Route::middleware('can:salidas.preparar')->group(function () {
             Route::patch('/{orden}/partidas/{item}', [OrdenSalidaController::class, 'partida'])->name('partida');
             Route::put('/{orden}/notas', [OrdenSalidaController::class, 'notas'])->name('notas');
             Route::post('/{orden}/confirmar-preparacion', [OrdenSalidaController::class, 'confirmarPreparacion'])->name('confirmar-preparacion');
             Route::post('/{orden}/entregar', [OrdenSalidaController::class, 'entregar'])->name('entregar');
+            Route::post('/{orden}/evidencias/fotos', [OrdenSalidaController::class, 'subirFotos'])->name('evidencias.fotos');
+            Route::post('/{orden}/evidencias/video', [OrdenSalidaController::class, 'subirVideo'])->name('evidencias.video');
         });
     });
 
@@ -76,17 +81,17 @@ Route::middleware('can:congresos.ver')->prefix('congresos')->name('congresos.')
             Route::get('/catalogos', [CongresoController::class, 'catalogos'])->name('catalogos');
             Route::post('/', [CongresoController::class, 'store'])->name('store');
             Route::put('/{congreso}', [CongresoController::class, 'update'])->name('update');
-            Route::delete('/{congreso}', [CongresoController::class, 'destroy'])->name('destroy');
+            Route::delete('/{congreso}', [CongresoController::class, 'destroy'])->withoutMiddleware('can:congresos.editar')->middleware('can:congresos.eliminar')->name('destroy');
 
             Route::post('/{congreso}/unidades', [CongresoController::class, 'agregarUnidades'])->name('unidades.store');
-            Route::delete('/{congreso}/unidades/{serial}', [CongresoController::class, 'quitarUnidad'])->name('unidades.destroy');
+            Route::delete('/{congreso}/unidades/{serial}', [CongresoController::class, 'quitarUnidad'])->withoutMiddleware('can:congresos.editar')->middleware('can:congresos.eliminar')->name('unidades.destroy');
             Route::post('/{congreso}/regresar-todas', [CongresoController::class, 'regresarTodas'])->name('unidades.regresar-todas');
 
             Route::post('/{congreso}/participantes', [CongresoController::class, 'agregarParticipante'])->name('participantes.store');
-            Route::delete('/{congreso}/participantes/{participante}', [CongresoController::class, 'quitarParticipante'])->name('participantes.destroy');
+            Route::delete('/{congreso}/participantes/{participante}', [CongresoController::class, 'quitarParticipante'])->withoutMiddleware('can:congresos.editar')->middleware('can:congresos.eliminar')->name('participantes.destroy');
 
             Route::post('/{congreso}/usuarios', [CongresoController::class, 'agregarUsuario'])->name('usuarios.store');
-            Route::delete('/{congreso}/usuarios/{user}', [CongresoController::class, 'quitarUsuario'])->name('usuarios.destroy');
+            Route::delete('/{congreso}/usuarios/{user}', [CongresoController::class, 'quitarUsuario'])->withoutMiddleware('can:congresos.editar')->middleware('can:congresos.eliminar')->name('usuarios.destroy');
         });
     });
 
@@ -96,14 +101,19 @@ Route::middleware('can:congresos.ver')->prefix('congresos')->name('congresos.')
 Route::prefix('catalogo')->name('catalogo.')->group(function () {
     Route::middleware('can:inventario.catalogo')->group(function () {
         Route::apiResource('categorias', CategoriaController::class)
+            ->middlewareFor('destroy', 'can:inventario.catalogo_eliminar')
             ->parameters(['categorias' => 'categoria'])->whereNumber('categoria');
         Route::apiResource('tipos', TipoEquipoController::class)
+            ->middlewareFor('destroy', 'can:inventario.catalogo_eliminar')
             ->parameters(['tipos' => 'tipo'])->whereNumber('tipo');
         Route::apiResource('subtipos', SubtipoController::class)
+            ->middlewareFor('destroy', 'can:inventario.catalogo_eliminar')
             ->parameters(['subtipos' => 'subtipo'])->whereNumber('subtipo');
         Route::apiResource('marcas', MarcaController::class)
+            ->middlewareFor('destroy', 'can:inventario.catalogo_eliminar')
             ->parameters(['marcas' => 'marca'])->whereNumber('marca');
         Route::apiResource('modelos', ModeloController::class)
+            ->middlewareFor('destroy', 'can:inventario.catalogo_eliminar')
             ->parameters(['modelos' => 'modelo'])->whereNumber('modelo');
 
         Route::get('/equipos', [EquipoController::class, 'index'])->name('equipos.index');

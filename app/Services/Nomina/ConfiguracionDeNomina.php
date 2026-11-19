@@ -48,9 +48,10 @@ class ConfiguracionDeNomina
             'name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string', 'max:500'],
             'kind' => ['required', 'in:bono,descuento'],
-            'conditions' => ['required', 'array', 'min:1', 'max:5'],
+            // Un bono con fecha (anual o único) puede no tener condiciones: se paga a quien aplique
+            'conditions' => ['required_unless:timing,fecha', 'nullable', 'array', 'max:5'],
             'conditions.*.metric' => ['required', 'in:'.implode(',', array_keys(PayrollRule::METRICAS))],
-            'conditions.*.scope' => ['required', 'in:periodo,mes'],
+            'conditions.*.scope' => ['required', 'in:'.implode(',', array_keys(PayrollRule::ALCANCES))],
             'conditions.*.op' => ['required', 'in:'.implode(',', array_keys(PayrollRule::OPERADORES))],
             'conditions.*.value' => ['required', 'numeric', 'min:0', 'max:100000'],
             'repeat_mode' => ['required', 'in:una_vez,por_cada'],
@@ -59,7 +60,9 @@ class ConfiguracionDeNomina
             'repeat_max' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'calc' => ['required', 'in:'.implode(',', array_keys(PayrollRule::CALCULOS))],
             'amount' => ['required', 'numeric', 'min:0.01', 'max:1000000'],
-            'timing' => ['required', 'in:periodo,cierre_mes'],
+            'timing' => ['required', 'in:periodo,cierre_mes,fecha'],
+            'pay_date' => ['required_if:timing,fecha', 'nullable', 'date'],
+            'yearly' => ['nullable', 'boolean'],
             'scope' => ['required', 'in:todos,incluir,excluir'],
             'user_ids' => ['required_unless:scope,todos', 'nullable', 'array'],
             'user_ids.*' => ['integer', 'exists:users,id'],
@@ -71,7 +74,8 @@ class ConfiguracionDeNomina
     {
         return [
             'name.required' => 'Ponle un nombre a la regla.',
-            'conditions.required' => 'Agrega al menos una condición.',
+            'conditions.required_unless' => 'Agrega al menos una condición.',
+            'pay_date.required_if' => 'Elige la fecha en que se paga.',
             'conditions.*.value.required' => 'Falta el valor de una condición.',
             'repeat_every.required_if' => 'Indica cada cuántas veces se repite.',
             'repeat_metric.required_if' => 'Elige qué se cuenta para repetir la regla.',
@@ -89,9 +93,11 @@ class ConfiguracionDeNomina
     public function guardarRegla(array $data, ?PayrollRule $regla, int $creadoPor): array
     {
         // Una condición que mira el mes completo solo se puede decidir cuando el mes termina
-        $conds = array_values(array_map(fn ($c) => ['metric' => $c['metric'], 'scope' => $c['scope'], 'op' => $c['op'], 'value' => (float) $c['value']], $data['conditions']));
+        $conds = array_values(array_map(fn ($c) => ['metric' => $c['metric'], 'scope' => $c['scope'], 'op' => $c['op'], 'value' => (float) $c['value']], $data['conditions'] ?? []));
         $usaMes = collect($conds)->contains(fn ($c) => $c['scope'] === 'mes');
-        $timing = $usaMes ? 'cierre_mes' : $data['timing'];
+        // Con fecha se paga ese día aunque alguna condición mire el mes (el mes de la fecha)
+        $conFecha = $data['timing'] === 'fecha';
+        $timing = $conFecha ? 'fecha' : ($usaMes ? 'cierre_mes' : $data['timing']);
 
         if ($data['calc'] === 'pct_sueldo' && $data['amount'] > 100) {
             throw ValidationException::withMessages(['amount' => 'Un porcentaje no puede pasar de 100.']);
@@ -105,6 +111,8 @@ class ConfiguracionDeNomina
             'repeat_every' => $data['repeat_mode'] === 'por_cada' ? $data['repeat_every'] : null,
             'repeat_max' => $data['repeat_mode'] === 'por_cada' ? ($data['repeat_max'] ?? null) : null,
             'calc' => $data['calc'], 'amount' => $data['amount'], 'timing' => $timing,
+            'pay_date' => $conFecha ? $data['pay_date'] : null,
+            'yearly' => $conFecha ? (bool) ($data['yearly'] ?? false) : true,
             'scope' => $data['scope'], 'user_ids' => $data['scope'] === 'todos' ? null : array_map('intval', $data['user_ids'] ?? []),
             'active' => (bool) ($data['active'] ?? false),
         ];
@@ -117,6 +125,6 @@ class ConfiguracionDeNomina
             $regla->update($campos);
         }
 
-        return [$regla, $nueva, $usaMes && $data['timing'] !== 'cierre_mes'];
+        return [$regla, $nueva, $usaMes && $data['timing'] === 'periodo'];
     }
 }

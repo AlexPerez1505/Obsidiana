@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
 use App\Models\User;
+use App\Services\Administracion\RolesYPermisos;
+use App\Support\CatalogoPermisos;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -88,32 +91,31 @@ class PermissionController extends Controller
      */
     public function userPermissions(User $user): View
     {
-        $permissions = Permission::orderBy('label')->get();
-        $userPermissions = $user->permissions->pluck('pivot.level', 'id')->toArray();
+        Gate::authorize('roles.gestionar');
+        abort_if($user->isAdmin(), 403, RolesYPermisos::MENSAJE_INTOCABLE);
 
         return view('admin.users.permissions', [
-            'user'            => $user,
-            'permissions'     => $permissions,
-            'userPermissions' => $userPermissions,
+            'user' => $user,
+            'grupos' => CatalogoPermisos::grupos(),
+            'concedidos' => $user->permissions()->pluck('name')->all(),
+            'heredados' => $user->roles()->where('is_active', true)->with('permissions')->get()
+                ->flatMap(fn ($role) => $role->permissions->pluck('name'))->unique()->values()->all(),
         ]);
     }
 
     /**
      * Sincroniza los permisos de un usuario.
      */
-    public function updateUserPermissions(Request $request, User $user): RedirectResponse
+    public function updateUserPermissions(Request $request, User $user, RolesYPermisos $roles): RedirectResponse
     {
+        Gate::authorize('roles.gestionar');
+        abort_if($user->isAdmin(), 403, RolesYPermisos::MENSAJE_INTOCABLE);
         $data = $request->validate([
-            'permissions'         => ['array'],
-            'permissions.*.id'    => ['required', 'exists:permissions,id'],
-            'permissions.*.level' => ['required', 'in:enabled,read_only,edit,admin'],
+            'permisos' => ['nullable', 'array'],
+            'permisos.*' => ['string'],
         ]);
 
-        $sync = [];
-        foreach ($data['permissions'] ?? [] as $perm) {
-            $sync[$perm['id']] = ['level' => $perm['level']];
-        }
-        $user->permissions()->sync($sync);
+        $roles->sincronizarDeUsuario($user, $data['permisos'] ?? []);
 
         return back()->with('status', 'Permisos de '.$user->name.' actualizados.');
     }

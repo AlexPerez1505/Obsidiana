@@ -12,7 +12,7 @@
     $comprador = trim(($c->nombre ?? '') . ' ' . ($c->apellido ?? '')) ?: '—';
     // El vendedor es el titular de la cuenta que recibe el pago: con IVA es
     // Anahí Téllez; sin IVA, Gabriela Díaz García.
-    $vendedor = \App\Support\DatosBancarios::beneficiario((bool) $venta->aplica_iva) ?: $emp['nombre'];
+    $vendedor = \App\Support\DatosBancarios::beneficiario($venta->cobraConIva()) ?: $emp['nombre'];
 
     $logoUri = \App\Support\LogoPdf::dataUri();
 
@@ -163,9 +163,10 @@
         <b>${{ $enLetra($venta->montoExigible()) }} MXN</b>
         @if ($venta->valor_a_cuenta > 0)
             resultante de un valor total de ${{ $enLetra($venta->total) }} menos
-            ${{ $enLetra($venta->valor_a_cuenta) }} correspondientes al equipo entregado a cuenta
+            ${{ $enLetra($venta->valor_a_cuenta) }} correspondientes al equipo entregado a cuenta @if (count($venta->equipos_a_cuenta ?? [])) ({{ \App\Support\EquiposACuenta::frase($venta->equipos_a_cuenta) }})@endif
         @endif
-        @if ($venta->aplica_iva) e incluye el Impuesto al Valor Agregado @endif.
+        @if ($venta->aplica_iva) e incluye el Impuesto al Valor Agregado
+        @elseif ($venta->ivaAgregadoDespues()) e incluye ${{ $enLetra($venta->iva_monto) }} de Impuesto al Valor Agregado agregado a las mensualidades pendientes @endif.
     </li>
 
     <li>

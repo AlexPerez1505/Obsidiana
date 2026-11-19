@@ -41,20 +41,20 @@
                                  :value="$v('nombre')" :required="true" :autofocus="true" />
 
                 <div style="margin-top:16px;">
-                    <x-ui.form-group for="categoria_id" label="Categoría *">
+                    <x-ui.form-group for="categoria_id" label="Tipo de equipo *">
                         <select id="categoria_id" name="categoria_id" required>
-                            <option value="">Selecciona una categoría</option>
+                            <option value="">Selecciona un tipo de equipo</option>
                             @foreach ($categories as $categoria)
                                 <option value="{{ $categoria->id }}"
                                     @selected((string) $v('categoria_id') === (string) $categoria->id)>
-                                    {{ $categoria->nombre }}
+                                    {{ $categoria->name }}
                                 </option>
                             @endforeach
                         </select>
                         @if ($categories->isEmpty())
                             <p class="cg-hint">
-                                No hay categorías todavía.
-                                <a href="{{ route('configuracion.catalogos.index') }}">Da de alta una en Catálogos</a>.
+                                No hay tipos de equipo todavía.
+                                <a href="{{ route('configuracion.catalogos.index') }}">Da de alta uno en el catálogo de equipo</a>.
                             </p>
                         @endif
                     </x-ui.form-group>
@@ -140,6 +140,7 @@
                 </p>
             </x-ui.card>
 
+            @if (auth()->user()?->isAdmin())
             <x-ui.card>
                 <div class="cg-head"><x-ui.section-title style="margin:0;">Costos</x-ui.section-title></div>
 
@@ -166,6 +167,7 @@
                     Pendiente por pagar: <b data-pendiente>$0.00</b>
                 </p>
             </x-ui.card>
+            @endif
 
             <x-ui.card>
                 <div class="cg-head"><x-ui.section-title style="margin:0;">Accesos</x-ui.section-title></div>

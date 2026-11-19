@@ -52,7 +52,7 @@ Route::prefix('ventas')->name('ventas.')->group(function () {
             Route::get('/', [CobroController::class, 'index'])->middleware('can:cobranza.ver')->name('index');
             Route::post('/', [CobroController::class, 'store'])->middleware('can:cobranza.registrar')->name('store');
             Route::get('/{cobro}', [CobroController::class, 'show'])->whereNumber('cobro')->middleware('can:cobranza.ver')->name('show');
-            Route::delete('/{cobro}', [CobroController::class, 'destroy'])->whereNumber('cobro')->middleware('can:cobranza.registrar')->name('destroy');
+            Route::delete('/{cobro}', [CobroController::class, 'destroy'])->whereNumber('cobro')->middleware('can:cobranza.eliminar')->name('destroy');
             Route::get('/{cobro}/recibo', [CobroController::class, 'recibo'])->whereNumber('cobro')->middleware('can:cobranza.ver')->name('recibo');
         });
 
@@ -66,7 +66,7 @@ Route::prefix('ventas')->name('ventas.')->group(function () {
                 Route::post('/rebalancear', [ParcialidadController::class, 'rebalancear'])->name('rebalancear');
                 Route::post('/absorber-excedente', [ParcialidadController::class, 'absorberExcedente'])->name('absorber-excedente');
                 Route::put('/{parcialidad}', [ParcialidadController::class, 'update'])->whereNumber('parcialidad')->name('update');
-                Route::delete('/{parcialidad}', [ParcialidadController::class, 'destroy'])->whereNumber('parcialidad')->name('destroy');
+                Route::delete('/{parcialidad}', [ParcialidadController::class, 'destroy'])->whereNumber('parcialidad')->withoutMiddleware('can:cobranza.ajustar')->middleware('can:cobranza.eliminar')->name('destroy');
             });
         });
     });
@@ -93,7 +93,7 @@ Route::middleware('can:comisiones.ver')->prefix('comisiones')->name('comisiones.
     Route::middleware('can:comisiones.gestionar')->group(function () {
         Route::put('/asesores/{asesor}/porcentaje', [ComisionController::class, 'porcentaje'])->whereNumber('asesor')->name('porcentaje');
         Route::post('/pagos', [ComisionController::class, 'pagar'])->name('pagar');
-        Route::delete('/pagos/{pago}', [ComisionController::class, 'eliminarPago'])->whereNumber('pago')->name('pagos.destroy');
+        Route::delete('/pagos/{pago}', [ComisionController::class, 'eliminarPago'])->whereNumber('pago')->withoutMiddleware('can:comisiones.gestionar')->middleware('can:comisiones.eliminar')->name('pagos.destroy');
     });
 });
 
@@ -108,6 +108,6 @@ Route::prefix('facturas')->name('facturas.')->group(function () {
     Route::post('/', [FacturaController::class, 'store'])->middleware('can:facturacion.crear')->name('store');
 
     Route::get('/{factura}', [FacturaController::class, 'show'])->whereNumber('factura')->middleware('can:facturacion.ver')->name('show');
-    Route::delete('/{factura}', [FacturaController::class, 'destroy'])->whereNumber('factura')->middleware('can:facturacion.crear')->name('destroy');
+    Route::delete('/{factura}', [FacturaController::class, 'destroy'])->whereNumber('factura')->middleware('can:facturacion.eliminar')->name('destroy');
     Route::get('/{factura}/pdf', [FacturaController::class, 'pdf'])->whereNumber('factura')->middleware('can:facturacion.ver')->name('pdf');
 });

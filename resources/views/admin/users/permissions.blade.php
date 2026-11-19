@@ -254,8 +254,8 @@
 
 @section('content')
     <div class="perm-overlay">
-        <div class="perm-modal" style="position:relative;">
-            <a href="{{ route('admin.users.index') }}" class="perm-close" title="Cerrar">
+        <div class="perm-modal" style="position:relative;" data-live="off">
+            <a href="{{ route('configuracion.roles.index') }}" class="perm-close" title="Cerrar">
                 <x-gravityui-xmark />
             </a>
 
@@ -287,50 +287,29 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ route('admin.users.permissions.update', $user) }}">
+                <form method="POST" action="{{ route('configuracion.usuarios.permisos.update', $user) }}">
                     @csrf
 
                     {{-- Permissions matrix --}}
+                    <p class="perm-row-desc" style="margin-bottom:16px;">Marca los permisos adicionales de esta cuenta. Los permisos recibidos por rol se cambian en Configuración → Roles.</p>
                     <div class="perm-matrix">
-                        @foreach($permissions as $p)
-                            @php
-                                $iconKey = strtolower(str_replace(' ', '_', $p->name));
-                                $iconPath = $moduleIcons[$iconKey] ?? $moduleIcons['configuracion'];
-                                $currentLevel = $userPermissions[$p->id] ?? null;
-                            @endphp
-                            <div class="perm-row">
-                                <div class="perm-row-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{!! $iconPath !!}</svg>
-                                </div>
-                                <div class="perm-row-info">
-                                    <p class="perm-row-label">{{ $p->label }}</p>
-                                    @if($p->description)
-                                        <p class="perm-row-desc">{{ $p->description }}</p>
-                                    @endif
-                                </div>
-                                <div class="perm-row-toggles">
-                                    @foreach(['enabled', 'read_only', 'edit', 'admin'] as $level)
-                                        <label class="perm-toggle">
-                                            <input type="radio" name="permissions[{{ $p->id }}][level]" value="{{ $level }}"
-                                                {{ $currentLevel === $level ? 'checked' : '' }}
-                                                {{ $currentLevel === null ? 'disabled' : '' }}>
-                                            <span class="{{ $level === 'read_only' ? 'read-only' : ($level === 'edit' ? 'edit' : ($level === 'admin' ? 'admin' : '')) }}">
-                                                @if($level === 'enabled')
-                                                    <x-gravityui-check />
-                                                @elseif($level === 'read_only')
-                                                    <x-gravityui-eye />
-                                                @elseif($level === 'edit')
-                                                    <x-gravityui-pencil />
-                                                @else
-                                                    <x-gravityui-star />
-                                                @endif
-                                                {{ $levelLabels[$level] }}
-                                            </span>
-                                        </label>
-                                    @endforeach
-                                    <input type="hidden" name="permissions[{{ $p->id }}][id]" value="{{ $p->id }}">
-                                </div>
-                            </div>
+                        @foreach($grupos as $grupo)
+                            <fieldset style="border:1px solid var(--border); border-radius:12px; padding:12px;">
+                                <legend style="font-weight:700;">{{ $grupo['titulo'] }}</legend>
+                                @foreach($grupo['permisos'] as $llave => $texto)
+                                    @php
+                                        $directo = in_array($llave, old('permisos', $concedidos), true);
+                                        $porRol = in_array($llave, $heredados, true);
+                                    @endphp
+                                    <label style="display:flex; align-items:start; gap:10px; padding:8px;">
+                                        <input type="checkbox" name="permisos[]" value="{{ $llave }}"
+                                               @checked($directo || $porRol) @disabled($porRol && !$directo)>
+                                        <span>{{ $texto }}
+                                            <small style="display:block; color:var(--muted);">{{ $llave }}{{ $porRol ? ' · También concedido por rol' : '' }}</small>
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </fieldset>
                         @endforeach
                     </div>
 
@@ -338,7 +317,7 @@
                         @if(session('status'))
                             <span class="perm-status-msg">{{ session('status') }}</span>
                         @endif
-                        <a href="{{ route('admin.users.index') }}" class="perm-btn perm-btn-cancel">Cancelar</a>
+                        <a href="{{ route('configuracion.roles.index') }}" class="perm-btn perm-btn-cancel">Cancelar</a>
                         <button type="submit" class="perm-btn perm-btn-save">
                             <x-gravityui-floppy-disk width="18" height="18" />
                             Guardar Cambios

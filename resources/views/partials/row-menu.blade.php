@@ -78,9 +78,13 @@
             pop.style.left = left + 'px';
         }
 
-        document.querySelectorAll('[data-row-menu]').forEach(function (menu) {
+        // Se equipa cada menú una sola vez; las filas que llegan en tiempo
+        // real (evento obs:vivo) traen menús nuevos que también se equipan.
+        function equipar() {
+        document.querySelectorAll('[data-row-menu]:not([data-row-menu-listo])').forEach(function (menu) {
             var boton = menu.querySelector('[data-row-menu-toggle]');
             var pop = menu.querySelector('[data-row-menu-pop]');
+            menu.setAttribute('data-row-menu-listo', '');
 
             boton.addEventListener('click', function (e) {
                 e.stopPropagation();
@@ -96,6 +100,10 @@
 
             pop.addEventListener('click', function (e) { e.stopPropagation(); });
         });
+        }
+
+        equipar();
+        document.addEventListener('obs:vivo', equipar);
 
         document.addEventListener('click', cerrar);
 

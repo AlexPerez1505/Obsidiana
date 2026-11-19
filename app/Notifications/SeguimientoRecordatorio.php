@@ -2,6 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Canales\WhatsAppCanal;
+use App\Support\WhatsApp\AvisoInterno;
+use App\Support\WhatsApp\MensajePlantilla;
 use App\Mail\SeguimientoRecordatorioMail;
 use App\Models\ClienteSeguimiento;
 use Illuminate\Notifications\Notification;
@@ -20,7 +23,7 @@ class SeguimientoRecordatorio extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return ['database', 'mail', WhatsAppCanal::class];
     }
 
     public function toDatabase(object $notifiable): array
@@ -42,5 +45,15 @@ class SeguimientoRecordatorio extends Notification
     {
         return (new SeguimientoRecordatorioMail($this->seguimiento, $notifiable->name))
             ->to($notifiable->email);
+    }
+
+    public function toWhatsApp(object $notifiable): ?MensajePlantilla
+    {
+        $s = $this->seguimiento;
+        $cliente = trim(($s->customer->nombre ?? '').' '.($s->customer->apellido ?? '')) ?: 'Cliente';
+        $cuando = trim(($s->fecha?->format('d/m/Y') ?? '').' '.substr((string) $s->hora, 0, 5));
+
+        return AvisoInterno::mensaje($notifiable, 'seguimiento_cliente', [$s->tipoLabel(), $cliente, $cuando ?: 'sin fecha'],
+            route('commercial.clientes.show', $s->customer_id).'#seguimientos', 'seguimiento:'.$s->id);
     }
 }

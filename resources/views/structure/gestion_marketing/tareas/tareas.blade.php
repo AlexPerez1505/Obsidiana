@@ -574,7 +574,7 @@
         </div>
 
         <div class="task-footer">
-            <button type="button" class="task-delete" id="btnEliminar" style="display:none;" onclick="eliminarTarea()">
+            <button type="button" class="task-delete" id="btnEliminar" style="display:none;" onclick="eliminarTarea()" @disabled(auth()->user()->cannot('marketing.eliminar'))>
                 Eliminar
             </button>
             <button type="button" class="task-review" id="btnEnviarRevision" style="display:none;" onclick="enviarARevision()">

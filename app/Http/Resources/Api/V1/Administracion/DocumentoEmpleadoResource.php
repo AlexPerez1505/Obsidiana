@@ -4,7 +4,6 @@ namespace App\Http\Resources\Api\V1\Administracion;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Un documento del expediente del empleado (INE, CURP, acta, licencia…).
@@ -20,7 +19,7 @@ class DocumentoEmpleadoResource extends JsonResource
             'name' => $this->name,
             'file_type' => $this->file_type,
             'file_size' => $this->file_size !== null ? (int) $this->file_size : null,
-            'file_url' => $this->file_path ? Storage::disk('public')->url($this->file_path) : null,
+            'file_url' => $this->file_path ? route('api.v1.usuarios.documentos.show', ['user' => $this->user_id, 'documento' => $this->id]) : null,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

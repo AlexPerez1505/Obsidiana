@@ -5,7 +5,7 @@
 
     $c = $venta->customer;
     $cliente = trim(($c->nombre ?? '') . ' ' . ($c->apellido ?? '')) ?: '—';
-    $firmante = $con['nombre'] ?: (\App\Support\DatosBancarios::beneficiario((bool) $venta->aplica_iva) ?: $emp['nombre']);
+    $firmante = $con['nombre'] ?: (\App\Support\DatosBancarios::beneficiario($venta->cobraConIva()) ?: $emp['nombre']);
 
     $meses = $venta->garantia_meses ?: 6;
     $hasta = $venta->garantiaHasta();
@@ -20,7 +20,7 @@
         @page { margin: 96px 52px 62px; }
 
         * { font-family: Helvetica, Arial, sans-serif; }
-        body { margin: 0; color: #3d4450; font-size: 10px; line-height: 1.65; }
+        body { margin: 0; color: #3d4450; font-size: 10px; line-height: 1.5; }
 
         table { border-collapse: collapse; width: 100%; }
         td { vertical-align: top; }
@@ -38,34 +38,38 @@
         .pie .num:after { content: counter(page); }
 
         h1.t { margin: 0 0 4px; color: #1a1d23; font-size: 19px; font-weight: bold; letter-spacing: -.4px; }
-        .sub { margin: 0 0 24px; color: #a8aeb8; font-size: 9.5px; }
+        .sub { margin: 0 0 14px; color: #a8aeb8; font-size: 9.5px; }
 
-        .rot { margin: 22px 0 8px; color: #a8aeb8; font-size: 7.5px; font-weight: bold;
+        .rot { margin: 14px 0 6px; color: #a8aeb8; font-size: 7.5px; font-weight: bold;
                letter-spacing: 1.6px; text-transform: uppercase; }
 
         p { margin: 0 0 9px; }
         b { color: #1a1d23; }
 
         /* El plazo es el dato que la gente busca al abrir la carta. */
-        .plazo { margin: 22px 0; padding: 16px 0; border-top: 1px solid #1a1d23; border-bottom: 1px solid #ededf0; }
+        .plazo { margin: 14px 0 4px; padding: 10px 0; border-top: 1px solid #1a1d23; border-bottom: 1px solid #ededf0; }
         .plazo .e { color: #a8aeb8; font-size: 8px; font-weight: bold; letter-spacing: 1.6px; text-transform: uppercase; }
-        .plazo .n { margin-top: 2px; color: #1a1d23; font-size: 26px; font-weight: bold; letter-spacing: -.8px; }
+        .plazo .n { margin-top: 1px; color: #1a1d23; font-size: 22px; font-weight: bold; letter-spacing: -.8px; }
         .plazo .d { margin-top: 2px; color: #6b7280; font-size: 9.5px; }
 
         .par td { padding: 0 0 3px; font-size: 9.5px; }
         .par .k { width: 92px; color: #a8aeb8; }
         .par .v { color: #4b5563; }
 
-        .equipo td { padding: 8px 0; border-bottom: 1px solid #f0f0f2; font-size: 9.5px; }
+        .equipo td { padding: 5px 0; border-bottom: 1px solid #f0f0f2; font-size: 9.5px; }
         .equipo tr:last-child td { border-bottom: 0; }
         .equipo .nom { color: #1a1d23; font-weight: bold; }
         .equipo .det { color: #a8aeb8; font-size: 8.5px; }
 
         ul { margin: 0; padding-left: 15px; }
-        ul li { margin-bottom: 5px; font-size: 9.5px; }
+        ul li { margin-bottom: 3px; font-size: 9.5px; }
 
-        .firma { margin-top: 50px; page-break-inside: avoid; }
-        .firma td { width: 50%; padding-top: 40px; text-align: center; font-size: 9px; color: #a8aeb8; }
+        /* Lo que cubre y lo que no, lado a lado: así la carta cabe en una hoja. */
+        .cubre td { width: 50%; }
+        .cubre td:first-child { padding-right: 18px; }
+
+        .firma { margin-top: 16px; page-break-inside: avoid; }
+        .firma td { width: 50%; padding-top: 34px; text-align: center; font-size: 9px; color: #a8aeb8; }
         .firma td:first-child { padding-right: 26px; border: 0; }
         .firma .linea { border-top: 1px solid #a8aeb8; padding-top: 7px; }
         .firma .quien { color: #1a1d23; font-size: 9.5px; font-weight: bold; }
@@ -134,13 +138,17 @@
     @if ($c?->direccion)<tr><td class="k">Domicilio</td><td class="v">{{ $c->direccion }}</td></tr>@endif
 </table>
 
+<table class="cubre">
+<tr>
+<td>
 <p class="rot">Qué cubre</p>
 <ul>
     <li>Defectos de fabricación y fallas de funcionamiento no atribuibles al uso.</li>
     <li>Mano de obra y refacciones necesarias para corregir dichas fallas.</li>
     <li>Diagnóstico técnico sin costo durante la vigencia.</li>
 </ul>
-
+</td>
+<td>
 <p class="rot">Qué no cubre</p>
 <ul>
     <li>Daños por mal uso, descuido, caídas, derrames o conexión a instalaciones eléctricas inadecuadas.</li>
@@ -148,6 +156,9 @@
     <li>Desgaste natural de consumibles y accesorios de uso rutinario.</li>
     <li>Daños por siniestro, transporte realizado por el cliente o causas de fuerza mayor.</li>
 </ul>
+</td>
+</tr>
+</table>
 
 <p class="rot">Cómo hacerla válida</p>
 <p>

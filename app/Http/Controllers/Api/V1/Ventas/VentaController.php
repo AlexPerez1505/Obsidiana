@@ -239,8 +239,11 @@ class VentaController extends Controller
      * hay que cancelarla). Regresa el stock, cancela la orden de salida y,
      * si venía de una cotización, la borra también.
      */
-    public function destroy(Venta $venta): JsonResponse
+    public function destroy(Request $request, Venta $venta): JsonResponse
     {
+        // Pasadas 72 horas desde que se registró, se manda "nip" (o la contraseña).
+        \App\Support\EliminarConNip::exigir($venta, $request->user(), $request->input('nip'));
+
         return response()->json(['message' => $this->registro->eliminar($venta)]);
     }
 

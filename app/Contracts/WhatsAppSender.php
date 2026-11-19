@@ -2,24 +2,21 @@
 
 namespace App\Contracts;
 
+use App\Support\WhatsApp\MensajePlantilla;
 use App\Support\WhatsApp\WhatsAppEnvioResultado;
 
 /**
- * Lo que necesita cualquier proveedor de WhatsApp para conectarse al
- * sistema: mandar un mensaje a un teléfono y decir si se pudo o no.
+ * Quien manda los mensajes de WhatsApp. Se elige con WHATSAPP_DRIVER:
+ *   log  → LogWhatsAppSender: no manda nada, lo registra como simulado.
+ *   meta → MetaCloudSender: API oficial de WhatsApp Business (Cloud API).
  *
- * Hoy solo existe LogWhatsAppSender (no manda nada de verdad, solo lo
- * registra). El día que se conecte una cuenta real de WhatsApp Business
- * API (Meta Cloud API, Twilio, 360dialog...), se agrega una clase nueva
- * que implemente esto y se cambia el "driver" en config/services.php:
- * el resto del flujo (confirmaciones, campañas, jobs) no se toca.
+ * Las promociones solo se mandan como plantilla aprobada: fuera de la
+ * ventana de 24 h, WhatsApp no permite otro tipo de mensaje.
  */
 interface WhatsAppSender
 {
-    /**
-     * Manda un mensaje. $contexto sirve para pasar datos propios del
-     * proveedor si algún día hacen falta (ej. id de plantilla aprobada),
-     * sin tener que cambiar la firma del método para todos.
-     */
-    public function enviar(string $telefono, string $mensaje, array $contexto = []): WhatsAppEnvioResultado;
+    public function enviarPlantilla(MensajePlantilla $mensaje): WhatsAppEnvioResultado;
+
+    /** true si de verdad sale a WhatsApp. */
+    public function esReal(): bool;
 }

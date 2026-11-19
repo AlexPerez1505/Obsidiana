@@ -55,7 +55,7 @@ trait DatosDeInventario
     protected function unidad(array $overrides = []): array
     {
         return array_merge([
-            'no_serie' => null,
+            'no_serie' => 'SN-'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(10)), // cada pieza lleva su serie (es obligatoria y única)
             'evidencias' => [UploadedFile::fake()->create('u.jpg', 50, 'image/jpeg')],
         ], $overrides);
     }

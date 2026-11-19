@@ -17,7 +17,29 @@ Route::get('/', function () {
         : redirect()->route('login');
 })->name('home');
 
+// Corrector ortográfico (español de México) para todo lo que se escribe.
+Route::post('/_ortografia', function (\Illuminate\Http\Request $request, \App\Services\Ortografia\CorrectorOrtografico $corrector) {
+    $data = $request->validate(['texto' => ['required', 'string', 'max:'.\App\Services\Ortografia\CorrectorOrtografico::MAXIMO]]);
+
+    return response()->json($corrector->corregir($data['texto']));
+})->middleware(['auth', 'throttle:120,1'])->name('ortografia.corregir');
+
 // Consulta publica del cliente (QR del PDF), sin sesion
+// Tiempo real: las pantallas preguntan cada pocos segundos si algo cambió.
+// Es solo un número, así que va sin sesión ni cookies (no toca la base).
+Route::get('/_vivo', fn () => response()->json(['rev' => \App\Support\ObsVivo::rev()])
+    ->header('Cache-Control', 'no-store'))
+    ->withoutMiddleware([
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+        \Illuminate\Cookie\Middleware\EncryptCookies::class,
+        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+        \App\Http\Middleware\RestrictMantenimientoAccess::class,
+        \App\Http\Middleware\ObsVivoTocar::class,
+    ])
+    ->name('vivo');
+
 require __DIR__.'/web/publico.php';
 
 // Autenticacion y cuenta
@@ -27,9 +49,16 @@ require __DIR__.'/web/mantenimiento/mantenimiento.php';
 
 // Gestion comercial
 require __DIR__.'/web/commercial/commercial.php';
+
+// Agenda empresarial y personal (seguimientos de Clientes + eventos)
+require __DIR__.'/web/agenda.php';
 require __DIR__.'/web/cotizaciones.php';
 require __DIR__.'/web/ventas.php';
 require __DIR__.'/web/facturas.php';
+require __DIR__.'/web/commercial/solicitudes-web.php';
+
+// Marketing y promociones (campañas por WhatsApp, cupones, oferta pública y webhook)
+require __DIR__.'/web/promociones.php';
 
 // Inventario
 require __DIR__.'/web/inventory/inventory.php';
@@ -37,6 +66,9 @@ require __DIR__.'/web/inventory/congresos.php';
 
 // Logistica y rutas
 require __DIR__.'/web/logistica.php';
+
+// Calendarios principales del sistema
+require __DIR__.'/web/calendarios.php';
 
 // Recursos humanos: asistencia con lector de huella
 require __DIR__.'/web/asistencia.php';
@@ -58,6 +90,9 @@ require __DIR__.'/web/services/registro.php';
 require __DIR__.'/web/services/servicio_externo.php';
 require __DIR__.'/web/services/endoscopia.php';
 require __DIR__.'/web/services/refacciones.php';
+
+// Garantías
+require __DIR__.'/web/garantias.php';
 
 // Administracion
 require __DIR__.'/web/admin/admin.php';

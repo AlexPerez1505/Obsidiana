@@ -21,6 +21,16 @@ use Illuminate\Validation\ValidationException;
  */
 class CatalogoDeEquipo
 {
+    /*
+    | El catálogo se lleva en mayúsculas: así se escriba, el nombre se
+    | guarda siempre igual ("stryker" y "STRYKER" son la misma marca y
+    | no quedan duplicados con distinta letra).
+    */
+    private static function mayusculas(string $nombre): string
+    {
+        return mb_strtoupper(trim($nombre));
+    }
+
     // ===================== Tipos de equipo =====================
 
     public static function reglasTipo(?EquipmentType $ignorar = null): array
@@ -35,12 +45,12 @@ class CatalogoDeEquipo
 
     public function crearTipo(string $nombre, bool $requiereEmplayado): EquipmentType
     {
-        return EquipmentType::create(['name' => $nombre, 'requiere_emplayado' => $requiereEmplayado]);
+        return EquipmentType::create(['name' => self::mayusculas($nombre), 'requiere_emplayado' => $requiereEmplayado]);
     }
 
     public function actualizarTipo(EquipmentType $type, string $nombre, bool $requiereEmplayado): void
     {
-        $type->update(['name' => $nombre, 'requiere_emplayado' => $requiereEmplayado]);
+        $type->update(['name' => self::mayusculas($nombre), 'requiere_emplayado' => $requiereEmplayado]);
     }
 
     // ===================== Subtipos =====================
@@ -53,6 +63,7 @@ class CatalogoDeEquipo
     /** @throws ValidationException si ya existe dentro de ese tipo */
     public function crearSubtipo(array $data): Subtype
     {
+        $data['name'] = self::mayusculas($data['name']);
         $this->exigirSubtipoNuevo($data['equipment_type_id'], $data['name']);
 
         return Subtype::create($data);
@@ -61,6 +72,7 @@ class CatalogoDeEquipo
     /** @throws ValidationException si ya existe dentro de ese tipo */
     public function actualizarSubtipo(Subtype $subtype, array $data): void
     {
+        $data['name'] = self::mayusculas($data['name']);
         $this->exigirSubtipoNuevo($data['equipment_type_id'], $data['name'], $subtype->id);
 
         $subtype->update($data);
@@ -109,7 +121,7 @@ class CatalogoDeEquipo
      */
     public function crearMarca(int|string $subtypeId, string $nombre): Brand
     {
-        $brand = Brand::firstOrCreate(['name' => $nombre]);
+        $brand = Brand::firstOrCreate(['name' => self::mayusculas($nombre)]);
         $subtype = Subtype::findOrFail($subtypeId);
 
         if ($subtype->brands()->where('brands.id', $brand->id)->exists()) {
@@ -124,7 +136,7 @@ class CatalogoDeEquipo
     /** Renombra la marca en todo el sistema, o la mueve de subtipo. */
     public function actualizarMarca(Brand $brand, string $nombre, int|string $subtypeId, int|string $subtypeAnterior): void
     {
-        $brand->update(['name' => $nombre]);
+        $brand->update(['name' => self::mayusculas($nombre)]);
 
         if ((int) $subtypeId !== (int) $subtypeAnterior) {
             $brand->subtypes()->detach($subtypeAnterior);
@@ -170,6 +182,7 @@ class CatalogoDeEquipo
     /** @throws ValidationException si ya existe para esa marca y subtipo */
     public function crearModelo(array $data): EquipmentModel
     {
+        $data['name'] = self::mayusculas($data['name']);
         $this->exigirModeloNuevo($data);
 
         // Alta del modelo implica que la marca se ofrece en ese subtipo.
@@ -181,6 +194,7 @@ class CatalogoDeEquipo
     /** @throws ValidationException si ya existe para esa marca y subtipo */
     public function actualizarModelo(EquipmentModel $model, array $data): void
     {
+        $data['name'] = self::mayusculas($data['name']);
         $this->exigirModeloNuevo($data, $model->id);
 
         Subtype::find($data['subtype_id'])?->brands()->syncWithoutDetaching([$data['brand_id']]);
@@ -221,22 +235,22 @@ class CatalogoDeEquipo
     public function altaRapida(array $data): Equipment
     {
         $equipmentType = EquipmentType::firstOrCreate(
-            ['name' => $data['equipment_type_name']],
+            ['name' => self::mayusculas($data['equipment_type_name'])],
             ['description' => $data['type_description'] ?? null]
         );
 
         $subtype = Subtype::firstOrCreate(
-            ['equipment_type_id' => $equipmentType->id, 'name' => $data['subtype_name']],
+            ['equipment_type_id' => $equipmentType->id, 'name' => self::mayusculas($data['subtype_name'])],
             ['description' => $data['subtype_description'] ?? null]
         );
 
         $brand = Brand::firstOrCreate(
-            ['name' => $data['brand_name']],
+            ['name' => self::mayusculas($data['brand_name'])],
             ['description' => $data['brand_description'] ?? null]
         );
 
         $model = EquipmentModel::firstOrCreate(
-            ['brand_id' => $brand->id, 'name' => $data['equipment_model_name']],
+            ['brand_id' => $brand->id, 'name' => self::mayusculas($data['equipment_model_name'])],
             ['description' => $data['model_description'] ?? null]
         );
 

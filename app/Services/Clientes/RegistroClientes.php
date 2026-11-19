@@ -2,10 +2,11 @@
 
 namespace App\Services\Clientes;
 
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\ClienteSeguimiento;
 use App\Models\Customer;
 use App\Models\User;
+use App\Support\Mexico;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -22,7 +23,7 @@ class RegistroClientes
     /**
      * Limpia la entrada antes de validar.
      *
-     * RFC, categoría y congreso son opcionales: cuando llegan vacíos se
+     * RFC, tipo de equipo y congreso son opcionales: cuando llegan vacíos se
      * guardan como NULL para no chocar con el índice único del RFC ni con
      * las llaves foráneas.
      */
@@ -32,8 +33,20 @@ class RegistroClientes
 
         $congresoId = $request->filled('congreso_id') ? $request->input('congreso_id') : null;
 
+        // Dirección por partes: el texto completo se arma con ellas. Si solo
+        // llega `direccion` (API o clientes viejos), se respeta tal cual.
+        $partes = [];
+        foreach (['estado', 'municipio', 'colonia', 'codigo_postal', 'calle'] as $campo) {
+            $partes[$campo] = trim((string) $request->input($campo)) ?: null;
+        }
+        if (array_filter($partes)) {
+            $request->merge($partes + ['direccion' => $this->armarDireccion($partes)]);
+        }
+
         $request->merge([
-            'telefono' => trim((string) $request->input('telefono')),
+            // Solo los números: "729 694-5790" se guarda como 7296945790 y
+            // así se valida que sean exactamente 10 dígitos.
+            'telefono' => preg_replace('/\D+/', '', (string) $request->input('telefono')),
             'rfc' => $rfc !== '' ? $rfc : null,
             'categoria_id' => $request->filled('categoria_id') ? $request->input('categoria_id') : null,
             'congreso_id' => $congresoId,
@@ -77,20 +90,27 @@ class RegistroClientes
         return [
             'nombre' => ['required', 'string', 'max:255'],
             'apellido' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')],
+            'telefono' => ['required', 'digits:10', Rule::unique('clientes', 'telefono')],
             'rfc' => ['nullable', 'string', 'max:13', Rule::unique('clientes', 'rfc')],
             'gmail' => ['nullable', 'email', 'max:255'],
             'direccion' => ['required', 'string', 'max:255'],
+            'estado' => ['nullable', Rule::in(Mexico::ESTADOS), 'required_with:municipio,calle'],
+            'municipio' => ['nullable', 'string', 'max:120', 'required_with:estado'],
+            'colonia' => ['nullable', 'string', 'max:150'],
+            'codigo_postal' => ['nullable', 'digits:5'],
+            'calle' => ['nullable', 'string', 'max:200'],
             'comentarios' => ['nullable', 'string'],
-            'categoria_id' => ['nullable', 'exists:categorias,id'],
+            'categoria_id' => ['nullable', 'exists:equipment_types,id'],
             'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
             'como_conocio' => ['nullable', 'string', 'max:255'],
             'recibe_promocion' => ['nullable', 'boolean'],
             'etapa' => ['nullable', Rule::in(array_keys(Customer::ETAPAS))],
             // Primer seguimiento, opcional: "cotizarle en un mes", etc.
             'seguimiento_tipo' => ['nullable', Rule::in(array_keys(ClienteSeguimiento::TIPOS))],
-            'seguimiento_fecha' => ['nullable', 'date', 'after_or_equal:today', 'required_with:seguimiento_tipo'],
+            'seguimiento_fecha' => ['nullable', 'date', 'after_or_equal:'.ClienteSeguimiento::hoy()->toDateString(), 'required_with:seguimiento_tipo'],
             'seguimiento_nota' => ['nullable', 'string', 'max:500'],
+            'seguimiento_hora' => ['nullable', 'date_format:H:i'],
+            'seguimiento_prioridad' => ['nullable', Rule::in(array_keys(ClienteSeguimiento::PRIORIDADES))],
         ];
     }
 
@@ -98,7 +118,13 @@ class RegistroClientes
     {
         return [
             'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
+            'telefono.required' => 'Escribe el teléfono a 10 dígitos.',
+            'telefono.digits' => 'El teléfono debe tener exactamente 10 dígitos (sin lada internacional).',
             'rfc.unique' => 'Este RFC ya está registrado en otro cliente.',
+            'estado.in' => 'Elige un estado de la lista.',
+            'estado.required_with' => 'Elige el estado.',
+            'municipio.required_with' => 'Elige el municipio.',
+            'codigo_postal.digits' => 'El código postal son 5 números.',
             'seguimiento_fecha.after_or_equal' => 'La fecha del seguimiento no puede ser anterior a hoy.',
             'seguimiento_fecha.required_with' => 'Indica la fecha del seguimiento.',
         ];
@@ -109,12 +135,17 @@ class RegistroClientes
         return [
             'nombre' => ['required', 'string', 'max:255'],
             'apellido' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'max:20', Rule::unique('clientes', 'telefono')->ignore($cliente->id)],
+            'telefono' => ['required', 'digits:10', Rule::unique('clientes', 'telefono')->ignore($cliente->id)],
             'rfc' => ['nullable', 'string', 'max:13', Rule::unique('clientes', 'rfc')->ignore($cliente->id)],
             'gmail' => ['nullable', 'email', 'max:255'],
             'direccion' => ['required', 'string', 'max:255'],
+            'estado' => ['nullable', Rule::in(Mexico::ESTADOS), 'required_with:municipio,calle'],
+            'municipio' => ['nullable', 'string', 'max:120', 'required_with:estado'],
+            'colonia' => ['nullable', 'string', 'max:150'],
+            'codigo_postal' => ['nullable', 'digits:5'],
+            'calle' => ['nullable', 'string', 'max:200'],
             'comentarios' => ['nullable', 'string'],
-            'categoria_id' => ['nullable', 'exists:categorias,id'],
+            'categoria_id' => ['nullable', 'exists:equipment_types,id'],
             'congreso_id' => ['nullable', 'exists:congresos_eventos,id'],
             'como_conocio' => ['nullable', 'string', 'max:255'],
             'recibe_promocion' => ['nullable', 'boolean'],
@@ -127,7 +158,13 @@ class RegistroClientes
     {
         return [
             'telefono.unique' => 'Este teléfono ya está registrado en otro cliente.',
+            'telefono.required' => 'Escribe el teléfono a 10 dígitos.',
+            'telefono.digits' => 'El teléfono debe tener exactamente 10 dígitos (sin lada internacional).',
             'rfc.unique' => 'Este RFC ya está registrado en otro cliente.',
+            'estado.in' => 'Elige un estado de la lista.',
+            'estado.required_with' => 'Elige el estado.',
+            'municipio.required_with' => 'Elige el municipio.',
+            'codigo_postal.digits' => 'El código postal son 5 números.',
         ];
     }
 
@@ -146,19 +183,24 @@ class RegistroClientes
             'user_id' => $asesor->id,
             'tipo' => $data['seguimiento_tipo'] ?? 'llamada',
             'fecha' => $data['seguimiento_fecha'],
+            'hora' => $data['seguimiento_hora'] ?? null,
+            'prioridad' => $data['seguimiento_prioridad'] ?? 'normal',
             'nota' => $data['seguimiento_nota'] ?? null,
-            'created_by' => $asesor->id,
         ] : null;
 
-        unset($data['seguimiento_tipo'], $data['seguimiento_fecha'], $data['seguimiento_nota']);
+        unset($data['seguimiento_tipo'], $data['seguimiento_fecha'], $data['seguimiento_nota'], $data['seguimiento_hora'], $data['seguimiento_prioridad']);
 
-        $customer = Customer::create($data);
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($data, $seguimiento, $asesor) {
+            $customer = Customer::create($data);
 
-        if ($seguimiento) {
-            $customer->seguimientos()->create($seguimiento);
-        }
+            // Por el mismo camino que la ficha y la agenda: así ya nace en la
+            // agenda del responsable, con historial y recordatorios.
+            if ($seguimiento) {
+                app(SeguimientosCliente::class)->programar($customer, $seguimiento, $asesor);
+            }
 
-        return $customer;
+            return $customer;
+        });
     }
 
     /**
@@ -177,16 +219,29 @@ class RegistroClientes
         return $cliente;
     }
 
+    /** Alta rápida de un tipo de equipo desde el formulario del cliente. */
     public function reglasCategoria(): array
     {
         return [
-            'nombre' => ['required', 'string', 'max:255', 'unique:categorias,nombre'],
+            'nombre' => ['required', 'string', 'max:255', 'unique:equipment_types,name'],
         ];
     }
 
-    public function registrarCategoria(array $data): Category
+    public function registrarCategoria(array $data): EquipmentType
     {
-        return Category::create($data);
+        return EquipmentType::create(['name' => $data['nombre']]);
+    }
+
+    /** "Av. Juárez 12, Col. Centro, C.P. 50000, Toluca, México" */
+    public function armarDireccion(array $p): string
+    {
+        return mb_substr(collect([
+            $p['calle'] ?? null,
+            filled($p['colonia'] ?? null) ? 'Col. '.$p['colonia'] : null,
+            filled($p['codigo_postal'] ?? null) ? 'C.P. '.$p['codigo_postal'] : null,
+            $p['municipio'] ?? null,
+            $p['estado'] ?? null,
+        ])->filter()->implode(', '), 0, 255);
     }
 
     /** Igual que $request->boolean(): "1", "true", "on" y "yes" cuentan como sí. */

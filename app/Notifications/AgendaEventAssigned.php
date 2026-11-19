@@ -2,6 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Canales\WhatsAppCanal;
+use App\Support\WhatsApp\AvisoInterno;
+use App\Support\WhatsApp\MensajePlantilla;
 use App\Models\AgendaEvent;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
@@ -16,7 +19,7 @@ class AgendaEventAssigned extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', WhatsAppCanal::class];
     }
 
     public function toArray(object $notifiable): array
@@ -32,5 +35,14 @@ class AgendaEventAssigned extends Notification
             'created_by' => $this->event->creator?->name,
             'url' => route('admin.agenda.index'),
         ];
+    }
+
+    public function toWhatsApp(object $notifiable): ?MensajePlantilla
+    {
+        $e = $this->event;
+        $cuando = trim(($e->start_date?->format('d/m/Y') ?? '').' '.substr((string) $e->start_time, 0, 5));
+
+        return AvisoInterno::mensaje($notifiable, 'agenda_evento_asignado', [$e->title, $cuando ?: 'sin fecha'],
+            route('admin.agenda.index'), 'evento:'.$e->id);
     }
 }

@@ -84,7 +84,7 @@ class Customer extends Model
                         : "REGEXP_REPLACE(telefono, '[^0-9]', '') = ?",
                     [$digitos]
                 )
-                ->with(['asesor', 'category', 'congress'])
+                ->with(['asesor', 'tipoEquipo', 'congress'])
                 ->first();
 
             if ($porTelefono) {
@@ -99,7 +99,7 @@ class Customer extends Model
                 ->when($user, fn ($q) => $q->visiblesPara($user))
                 ->when($ignorarId, fn ($q) => $q->whereKeyNot($ignorarId))
                 ->whereRaw('LOWER(gmail) = ?', [$correo])
-                ->with(['asesor', 'category', 'congress'])
+                ->with(['asesor', 'tipoEquipo', 'congress'])
                 ->first();
 
             if ($porCorreo) {
@@ -123,7 +123,7 @@ class Customer extends Model
             'telefono' => $this->telefono,
             'correo' => $this->gmail,
             'direccion' => $this->direccion,
-            'categoria' => $this->category?->nombre,
+            'categoria' => $this->tipoEquipo?->name,
             'conocido' => $this->comoConocio(),
             'asesor' => $this->asesor?->name,
             'activo' => (bool) $this->activo,
@@ -141,6 +141,11 @@ class Customer extends Model
         'rfc',
         'gmail',
         'direccion',
+        'estado',
+        'municipio',
+        'colonia',
+        'codigo_postal',
+        'calle',
         'comentarios',
         'congreso_id',
         'como_conocio',
@@ -203,12 +208,15 @@ class Customer extends Model
     /** El siguiente seguimiento que falta por hacer, si hay. */
     public function proximoSeguimiento(): ?ClienteSeguimiento
     {
-        return $this->seguimientos->first(fn (ClienteSeguimiento $s) => ! $s->hecho());
+        return $this->seguimientos->first(fn (ClienteSeguimiento $s) => $s->abierto());
     }
 
     protected $casts = [
         'recibe_promocion' => 'boolean',
         'activo' => 'boolean',
+        'promocion_autorizada_en' => 'datetime',
+        'promocion_confirmada_en' => 'datetime',
+        'promocion_revocada_en' => 'datetime',
     ];
 
     public function asesor(): BelongsTo
@@ -216,9 +224,13 @@ class Customer extends Model
         return $this->belongsTo(User::class, 'asesor_id');
     }
 
-    public function category(): BelongsTo
+    /**
+     * Tipo de equipo del catálogo (Configuración > Catálogos). La columna
+     * conserva el nombre `categoria_id`, pero ya apunta a equipment_types.
+     */
+    public function tipoEquipo(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'categoria_id');
+        return $this->belongsTo(EquipmentType::class, 'categoria_id');
     }
 
     public function congress(): BelongsTo
@@ -270,5 +282,39 @@ class Customer extends Model
     public function pagos(): HasMany
     {
         return $this->hasMany(Pago::class, 'cliente_id');
+    }
+
+    // ===================== Marketing y promociones =====================
+
+    /**
+     * ¿Se le pueden mandar promociones? Solo con consentimiento confirmado
+     * y sin baja posterior. Nunca al "Público en general".
+     */
+    public function puedeRecibirPromociones(): bool
+    {
+        return $this->promocion_confirmada_en !== null
+            && $this->promocion_revocada_en === null
+            && ! $this->esPublicoEnGeneral();
+    }
+
+    /** Teléfono para WhatsApp en E.164 sin "+" (México por omisión), o null si no sirve. */
+    public function telefonoWhatsapp(): ?string
+    {
+        return \App\Services\WhatsApp\Telefono::e164($this->telefono);
+    }
+
+    public function consentimientos(): HasMany
+    {
+        return $this->hasMany(MktConsentimiento::class, 'cliente_id')->latest('id');
+    }
+
+    public function promocionesRecibidas(): HasMany
+    {
+        return $this->hasMany(CampanaDestinatario::class, 'cliente_id')->where('es_prueba', false);
+    }
+
+    public function usosDeCupon(): HasMany
+    {
+        return $this->hasMany(CuponUso::class, 'cliente_id');
     }
 }

@@ -69,5 +69,22 @@
             </form>
         @endif
         @endcan
+
+        {{-- Cualquier cuenta menos la propia. Si tiene historial, sale del
+             sistema y sus registros conservan su nombre. --}}
+        @can('usuarios.eliminar')
+        @if ($u->id !== auth()->id())
+            <form method="POST" action="{{ route('admin.users.destroy', $u) }}"
+                  data-confirm="Se elimina la cuenta de {{ $u->name }}: ya no podrá entrar ni aparecerá en el sistema. Lo que registró (ventas, checadas, nóminas…) se conserva con su nombre. No se puede deshacer."
+                  data-confirm-title="Eliminar usuario" data-confirm-ok="Eliminar" data-confirm-danger>
+                @csrf
+                @method('DELETE')
+                <button type="submit" role="menuitem" class="danger">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                    Eliminar
+                </button>
+            </form>
+        @endif
+        @endcan
     </div>
 </div>

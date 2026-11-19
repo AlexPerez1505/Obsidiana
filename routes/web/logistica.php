@@ -46,9 +46,9 @@ Route::middleware(['auth', 'verified', 'approved'])
             Route::get('/', [FlotaController::class, 'index'])->name('index');
             Route::get('/{vehicle}', [FlotaController::class, 'show'])->name('show');
             Route::post('/{vehicle}/combustible', [FlotaController::class, 'guardarCombustible'])->name('combustible.store');
-            Route::delete('/combustible/{carga}', [FlotaController::class, 'eliminarCombustible'])->name('combustible.destroy');
+            Route::delete('/combustible/{carga}', [FlotaController::class, 'eliminarCombustible'])->middleware('can:rutas.flota_eliminar')->name('combustible.destroy');
             Route::post('/{vehicle}/mantenimiento', [FlotaController::class, 'guardarMantenimiento'])->name('mantenimiento.store');
-            Route::delete('/mantenimiento/{mantenimiento}', [FlotaController::class, 'eliminarMantenimiento'])->name('mantenimiento.destroy');
+            Route::delete('/mantenimiento/{mantenimiento}', [FlotaController::class, 'eliminarMantenimiento'])->middleware('can:rutas.flota_eliminar')->name('mantenimiento.destroy');
         });
 
         Route::get('/analytics', [AnalyticsController::class, 'index'])->middleware('can:rutas.analytics')->name('analytics');

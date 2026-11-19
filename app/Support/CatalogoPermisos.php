@@ -31,9 +31,16 @@ class CatalogoPermisos
                 'descripcion' => 'El directorio comercial.',
                 'permisos' => [
                     'clientes.ver' => 'Ver clientes y su detalle',
+                    // Sin este permiso el usuario solo ve los clientes que
+                    // él mismo registró (los que tienen su nombre de asesor).
+                    'clientes.ver_todos' => 'Ver los clientes de todos los asesores',
                     'clientes.crear' => 'Registrar clientes nuevos',
                     'clientes.editar' => 'Editar datos de un cliente',
                     'clientes.eliminar' => 'Eliminar clientes',
+                    // Borra al cliente con TODO su historial (ventas,
+                    // cotizaciones, pagos, servicios, garantías). Solo se
+                    // presta para limpiar registros de prueba.
+                    'clientes.eliminar_definitivo' => 'Eliminar clientes con todo su historial',
                 ],
             ],
 
@@ -42,7 +49,8 @@ class CatalogoPermisos
                 'descripcion' => 'Propuestas antes de cerrar la venta.',
                 'permisos' => [
                     'cotizaciones.ver' => 'Ver cotizaciones',
-                    'cotizaciones.ver_todas' => 'Ver cotizaciones de cualquier asesor',
+                    // Sin este permiso solo ve las cotizaciones que él mismo hizo.
+                    'cotizaciones.ver_todas' => 'Ver las cotizaciones de todos los asesores',
                     'cotizaciones.crear' => 'Crear cotizaciones',
                     'cotizaciones.editar' => 'Editar cotizaciones',
                     'cotizaciones.eliminar' => 'Eliminar cotizaciones',
@@ -54,10 +62,22 @@ class CatalogoPermisos
                 'descripcion' => 'Cierre de venta, contratos y garantías.',
                 'permisos' => [
                     'ventas.ver' => 'Ver ventas',
-                    'ventas.ver_todas' => 'Ver ventas de cualquier asesor',
+                    // Sin este permiso solo ve sus propias ventas, también
+                    // en Cobranza y en las tarjetas del tablero.
+                    'ventas.ver_todas' => 'Ver las ventas y la cobranza de todos los asesores',
                     'ventas.crear' => 'Registrar ventas',
                     'ventas.editar' => 'Editar ventas ya registradas',
                     'ventas.eliminar' => 'Eliminar ventas',
+                    'ventas.eliminar_definitivo' => 'Eliminar ventas con todo su historial',
+                ],
+            ],
+
+            'tienda' => [
+                'titulo' => 'Tienda en línea',
+                'descripcion' => 'Solicitudes de cotización que llegan desde la página web.',
+                'permisos' => [
+                    'tienda.ver' => 'Ver las solicitudes de la tienda en línea',
+                    'tienda.atender' => 'Cambiar el estado de las solicitudes y anotar seguimiento',
                 ],
             ],
 
@@ -66,8 +86,10 @@ class CatalogoPermisos
                 'descripcion' => 'Lo que deben y los pagos que entran.',
                 'permisos' => [
                     'cobranza.ver' => 'Ver saldos y quién debe',
-                    'cobranza.registrar' => 'Registrar pagos y emitir recibos',
+                    'cobranza.registrar' => 'Registrar pagos y emitir recibos (además necesita NIP o ser administrador)',
+                    'cobranza.comprobantes' => 'Subir comprobantes de pago y efectivo de sus ventas (quedan por aprobar)',
                     'cobranza.ajustar' => 'Mover fechas y montos del plan de pagos',
+                    'cobranza.eliminar' => 'Eliminar cobros y parcialidades',
                 ],
             ],
 
@@ -77,6 +99,7 @@ class CatalogoPermisos
                 'permisos' => [
                     'facturacion.ver' => 'Ver facturas',
                     'facturacion.crear' => 'Crear borradores de factura',
+                    'facturacion.eliminar' => 'Eliminar borradores de factura',
                 ],
             ],
 
@@ -90,15 +113,18 @@ class CatalogoPermisos
                     'inventario.eliminar' => 'Eliminar entradas y productos',
                     'inventario.escanear' => 'Usar la pistola lectora',
                     'inventario.catalogo' => 'Administrar el catálogo (tipos, marcas, modelos)',
+                    'inventario.catalogo_eliminar' => 'Eliminar categorías, tipos, subtipos, marcas y modelos',
                 ],
             ],
 
             'salidas' => [
                 'titulo' => 'Órdenes de salida',
-                'descripcion' => 'Equipos que salen del almacén.',
+                'descripcion' => 'Preparar, emplayar y firmar lo que sale por una venta.',
                 'permisos' => [
                     'salidas.ver' => 'Ver las órdenes de salida',
-                    'salidas.preparar' => 'Preparar y cerrar órdenes de salida',
+                    'salidas.preparar' => 'Marcar preparado / emplayado y firmar la salida',
+                    'salidas.asignar' => 'Asignar quién prepara el equipo vendido',
+                    'salidas.eliminar' => 'Eliminar evidencias de las órdenes de salida',
                 ],
             ],
 
@@ -114,6 +140,7 @@ class CatalogoPermisos
                     'rutas.eliminar' => 'Eliminar rutas',
                     'rutas.incidencias' => 'Ver y resolver las incidencias reportadas en ruta',
                     'rutas.flota' => 'Gestionar combustible, kilometraje y mantenimiento de los vehículos',
+                    'rutas.flota_eliminar' => 'Eliminar registros de combustible y mantenimiento de la flota',
                     'rutas.analytics' => 'Ver los indicadores de logística',
                     // Quien lo tiene recibe rutas y reporta su GPS y entregas
                     'rutas.chofer' => 'Ser chofer: ver sus rutas, reportar GPS y cerrar entregas',
@@ -126,9 +153,22 @@ class CatalogoPermisos
                 'permisos' => [
                     'asistencia.ver' => 'Ver el panel de asistencia, las checadas y los indicadores',
                     'asistencia.gestionar' => 'Horarios, festivos, incidencias del día, checadas manuales y anulaciones',
-                    'asistencia.biometria' => 'Administrar lectores y registrar o borrar huellas',
+                    'asistencia.biometria' => 'Administrar lectores y registrar huellas',
+                    'asistencia.eliminar' => 'Eliminar eventos, festivos e incidencias de asistencia',
+                    'asistencia.biometria_eliminar' => 'Eliminar huellas registradas',
+                    'asistencia.nomina_eliminar' => 'Eliminar conceptos y reglas de nómina',
                     // Aparte: incluye sueldos
                     'asistencia.nomina' => 'Ver la prenómina y editar sueldos',
+                ],
+            ],
+
+            'comisiones' => [
+                'titulo' => 'Comisiones',
+                'descripcion' => 'Quién vendió más y cuánto le toca.',
+                'permisos' => [
+                    'comisiones.ver' => 'Ver el ranking de asesores y sus comisiones',
+                    'comisiones.gestionar' => 'Definir porcentajes y registrar pagos de comisión',
+                    'comisiones.eliminar' => 'Eliminar pagos de comisión',
                 ],
             ],
 
@@ -158,6 +198,19 @@ class CatalogoPermisos
                     'marketing.ver' => 'Entrar a Marketing',
                     'marketing.editar' => 'Editar contenido de Marketing',
                     'marketing.aprobar' => 'Aprobar flyers',
+                    'marketing.eliminar' => 'Eliminar tareas y eventos de Marketing',
+                ],
+            ],
+
+            'promociones' => [
+                'titulo' => 'Marketing y promociones',
+                'descripcion' => 'Campañas por WhatsApp, cupones de descuento y sus resultados.',
+                'permisos' => [
+                    'promociones.ver' => 'Ver campañas, cupones y resultados',
+                    'promociones.gestionar' => 'Crear, editar, duplicar y cancelar campañas',
+                    'promociones.enviar' => 'Mandar pruebas, programar, enviar y pausar campañas',
+                    'cupones.gestionar' => 'Crear, editar y pausar cupones',
+                    'promociones.consentimiento' => 'Registrar o quitar el consentimiento de un cliente',
                 ],
             ],
 
@@ -167,17 +220,34 @@ class CatalogoPermisos
                 'permisos' => [
                     'servicios.ver' => 'Ver historial de servicios',
                     'servicios.crear' => 'Crear órdenes de servicio',
+                    'servicios.eliminar' => 'Eliminar órdenes de servicio, cartas de garantía y refacciones',
                 ],
             ],
 
-            'vehiculos_viaticos' => [
-                'titulo' => 'Vehículos y viáticos',
-                'descripcion' => 'Unidades de la empresa y los viáticos de cada viaje.',
+            'garantias' => [
+                'titulo' => 'Garantías',
+                'descripcion' => 'Pólizas por equipo, reclamaciones, costos y recuperaciones.',
                 'permisos' => [
-                    'vehiculos.ver' => 'Ver vehículos',
-                    'vehiculos.editar' => 'Registrar y editar vehículos',
-                    'viaticos.ver' => 'Ver viáticos y sus gastos',
-                    'viaticos.editar' => 'Crear, editar y eliminar viáticos y gastos',
+                    'garantias.ver' => 'Ver garantías, reclamaciones e indicadores',
+                    'garantias.gestionar' => 'Registrar y atender reclamaciones, gastos y préstamos',
+                    'garantias.dictaminar' => 'Dictaminar si una garantía procede o no',
+                    // Excepciones: aceptar garantías vencidas, aprobar gastos
+                    // arriba del límite, corregir fechas y anular pólizas.
+                    'garantias.aprobar' => 'Autorizar excepciones, gastos grandes, cambios de fechas y anulaciones',
+                    'garantias.configurar' => 'Configurar coberturas y regenerar garantías desde las ventas',
+                ],
+            ],
+
+            'agenda' => [
+                'titulo' => 'Agenda',
+                'descripcion' => 'Mi agenda, seguimientos de clientes y eventos de la empresa.',
+                'permisos' => [
+                    'agenda.ver' => 'Usar la agenda (sus actividades, seguimientos y los eventos que le tocan)',
+                    'agenda.ver_todos' => 'Consultar la agenda de cualquier usuario (lo privado sale como "Ocupado")',
+                    'agenda.reasignar' => 'Asignar y reasignar actividades y seguimientos a otras personas de su equipo',
+                    'agenda.empresa' => 'Publicar y modificar eventos para la empresa, departamentos o equipos',
+                    'agenda.equipos' => 'Administrar los equipos de trabajo de la agenda',
+                    'agenda.carga' => 'Ver la carga de trabajo por responsable',
                 ],
             ],
 
@@ -188,9 +258,18 @@ class CatalogoPermisos
                     'usuarios.ver' => 'Ver el panel de usuarios',
                     'usuarios.aprobar' => 'Aprobar o rechazar cuentas nuevas',
                     'usuarios.editar' => 'Editar usuarios y asignarles roles',
+                    'usuarios.eliminar' => 'Eliminar cuentas que no tienen historial (de prueba o que nunca se usaron)',
                     'roles.gestionar' => 'Crear roles y definir qué puede cada uno',
+                    'roles.eliminar' => 'Eliminar roles sin usuarios asignados',
+                    'agenda.eliminar' => 'Eliminar eventos de la agenda administrativa',
+                    'viaticos.ver' => 'Consultar viáticos, viajes y sus gastos',
+                    'viaticos.eliminar' => 'Eliminar viáticos y gastos de viajes',
+                    'entregas_guias.ver' => 'Consultar entregas de guías y sus equipos vinculados',
+                    'entregas_guias.crear' => 'Registrar entregas de guías con firma y evidencia',
                     'congresos.ver' => 'Ver congresos',
                     'congresos.editar' => 'Crear y editar congresos',
+                    'congresos.eliminar' => 'Eliminar congresos y retirar unidades o participantes',
+                    'actividad.ver' => 'Ver la línea de tiempo de actividad de todos los usuarios',
                 ],
             ],
 

@@ -31,6 +31,7 @@ class OrdenSalida extends Model
 
     protected $fillable = [
         'folio', 'venta_id', 'estado', 'notas',
+        'asignada_a', 'asignada_por', 'asignada_en',
         'preparada_por', 'preparada_en',
         'entregada_por', 'entregada_en', 'recibe_nombre',
         'firma_entrega_path', 'firma_recibe_path',
@@ -41,8 +42,21 @@ class OrdenSalida extends Model
     {
         return [
             'preparada_en' => 'datetime',
+            'asignada_en' => 'datetime',
             'entregada_en' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        /*
+        | La llave foránea borra los registros de evidencia solos, pero no
+        | sus archivos. Se borran uno por uno para que cada evidencia se
+        | lleve el suyo (ver OrdenSalidaEvidencia::booted).
+        */
+        static::deleting(function (OrdenSalida $orden) {
+            $orden->evidencias()->get()->each->delete();
+        });
     }
 
     public function venta(): BelongsTo
@@ -60,6 +74,17 @@ class OrdenSalida extends Model
         return $this->belongsTo(User::class, 'preparada_por');
     }
 
+    /** Quien va a preparar el equipo (se le avisa por correo y en la campana). */
+    public function asignadaA(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'asignada_a');
+    }
+
+    public function asignadaPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'asignada_por');
+    }
+
     public function entregadaPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'entregada_por');
@@ -69,6 +94,44 @@ class OrdenSalida extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** Las tres etapas (ingeniería, empaque, entrega), en orden. */
+    public function etapas(): HasMany
+    {
+        return $this->hasMany(OrdenSalidaEtapa::class)
+            ->orderByRaw("FIELD(etapa, 'ingenieria', 'empaque', 'entrega')");
+    }
+
+    /** Fotos y videos del equipo preparado, emplayado o entregado. */
+    public function evidencias(): HasMany
+    {
+        return $this->hasMany(OrdenSalidaEvidencia::class)->orderBy('id');
+    }
+
+    /**
+     * Cuántas fotos y videos tiene, con lo ya cargado si se cargó.
+     *
+     * @return array{fotos: int, videos: int}
+     */
+    public function conteoEvidencias(): array
+    {
+        $porTipo = $this->relationLoaded('evidencias')
+            ? $this->evidencias->countBy('tipo')
+            : $this->evidencias()->reorder()->selectRaw('tipo, COUNT(*) as n')->groupBy('tipo')->pluck('n', 'tipo');
+
+        return [
+            'fotos' => (int) ($porTipo[OrdenSalidaEvidencia::FOTO] ?? 0),
+            'videos' => (int) ($porTipo[OrdenSalidaEvidencia::VIDEO] ?? 0),
+        ];
+    }
+
+    /** "3 fotos, 1 video", para la hoja impresa y la pantalla. */
+    public function resumenEvidencias(): string
+    {
+        ['fotos' => $fotos, 'videos' => $videos] = $this->conteoEvidencias();
+
+        return $fotos.($fotos === 1 ? ' foto' : ' fotos').', '.$videos.($videos === 1 ? ' video' : ' videos');
     }
 
     public static function siguienteFolio(): string

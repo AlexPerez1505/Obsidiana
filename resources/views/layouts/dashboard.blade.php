@@ -94,7 +94,16 @@
         .app.collapsed .collapse-btn svg { transform:rotate(180deg); }
         .app.collapsed .collapse-btn span { display:none; }
 
-        .nav { display:flex; flex-direction:column; gap:4px; margin-top:6px; }
+        /* La lista es la que se desplaza, no la barra: con un apartado abierto
+           no cabía en la pantalla y las últimas opciones quedaban cortadas.
+           Contraída no se desplaza, porque el scroll recortaría los
+           tooltips y los paneles flotantes. */
+        .nav { display:flex; flex-direction:column; gap:4px; margin-top:6px; flex:1 1 auto; min-height:0; }
+        .app:not(.collapsed) .nav { overflow-y:auto; overscroll-behavior:contain;
+                                    margin-right:-8px; padding-right:8px; padding-bottom:12px;
+                                    scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+        .app:not(.collapsed) .nav::-webkit-scrollbar { width:6px; }
+        .app:not(.collapsed) .nav::-webkit-scrollbar-thumb { background:var(--border); border-radius:6px; }
         .nav-item { position:relative; display:flex; align-items:center; gap:13px; padding:11px 13px; border-radius:12px;
                     color:var(--muted); text-decoration:none; font-weight:600; font-size:14.5px; white-space:nowrap;
                     transition:background .16s ease, color .16s ease; }
@@ -326,6 +335,14 @@
                      background:color-mix(in srgb, var(--bg) 88%, transparent);
                      backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
         .page-foot .btn { display:inline-flex; align-items:center; gap:6px; }
+        /* Rejillas de página: contenido + columna lateral, o dos columnas
+           iguales. En pantallas chicas todo va en una columna. Las usaban
+           varias vistas pero nunca se habían definido. */
+        .rgrid-sidebar, .rgrid-2 { display:grid; grid-template-columns:minmax(0, 1fr); gap:18px; align-items:start; }
+        @media (min-width:1000px) {
+            .rgrid-sidebar { grid-template-columns:minmax(0, 1fr) 320px; }
+            .rgrid-2 { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+        }
         /* Si el formulario esta en rejilla, el pie ocupa todo el ancho. */
         .rgrid-sidebar > .page-foot, .rgrid-2 > .page-foot { grid-column:1 / -1; }
 
@@ -489,21 +506,29 @@
             background:rgba(6,12,23,.55); opacity:0; transition:opacity .18s ease; }
         .cm-overlay[hidden]{ display:none; }
         .cm-overlay.show{ opacity:1; }
-        .cm-box{ width:100%; max-width:420px; background:var(--card,#fff); color:var(--text,#1f2733); border-radius:16px;
-            box-shadow:0 24px 60px rgba(0,0,0,.28); padding:26px 24px 20px; text-align:center;
+        /* Con los tokens del tema (--surface, --text…): antes el fondo usaba
+           --card, que este layout no define, y en modo oscuro quedaba una caja
+           blanca con el título y el botón de cancelar en texto claro. */
+        .cm-box{ width:100%; max-width:420px; background:var(--surface); color:var(--text); border-radius:16px;
+            border:1px solid var(--border); box-shadow:var(--shadow), 0 24px 60px rgba(0,0,0,.22);
+            padding:26px 24px 20px; text-align:center;
             transform:translateY(8px) scale(.98); transition:transform .18s ease; }
         .cm-overlay.show .cm-box{ transform:none; }
         .cm-ico{ width:52px; height:52px; border-radius:14px; margin:0 auto 14px; display:flex; align-items:center; justify-content:center;
-            background:var(--indigo-soft,#eef2ff); color:var(--indigo,#4f46e5); }
+            background:var(--primary-soft); color:var(--primary); }
         .cm-ico svg{ width:26px; height:26px; }
-        .cm-box.danger .cm-ico{ background:var(--danger-soft,#fee2e2); color:var(--danger,#ef4444); }
-        .cm-title{ font-size:18px; font-weight:800; margin:0 0 6px; }
-        .cm-msg{ font-size:14px; color:var(--muted,#6b7280); margin:0 0 20px; line-height:1.45; white-space:pre-line; }
+        .cm-box.danger .cm-ico{ background:var(--danger-soft); color:var(--danger); }
+        .cm-title{ font-size:18px; font-weight:700; margin:0 0 6px; color:var(--text); }
+        .cm-msg{ font-size:14px; color:var(--muted); margin:0 0 20px; line-height:1.45; white-space:pre-line; }
         .cm-actions{ display:flex; gap:10px; justify-content:center; }
-        .cm-btn{ flex:1; max-width:180px; padding:11px 16px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; border:1px solid transparent; }
-        .cm-cancel{ background:transparent; border-color:var(--border,#e5e7eb); color:var(--text,#374151); }
-        .cm-ok{ background:var(--indigo,#4f46e5); color:#fff; }
-        .cm-box.danger .cm-ok{ background:var(--danger,#ef4444); }
+        .cm-btn{ flex:1; max-width:180px; padding:11px 16px; border-radius:10px; font:inherit; font-size:14px; font-weight:700;
+            cursor:pointer; border:1px solid transparent; transition:background .15s ease, border-color .15s ease; }
+        .cm-cancel{ background:var(--surface); border-color:var(--border); color:var(--text); }
+        .cm-cancel:hover{ background:var(--surface-2); }
+        .cm-ok{ background:var(--primary); color:#fff; }
+        .cm-ok:hover{ background:var(--primary-strong); }
+        .cm-box.danger .cm-ok{ background:var(--danger); }
+        .cm-box.danger .cm-ok:hover{ filter:brightness(.95); }
         .cm-btn:active{ transform:translateY(1px); }
 
         .nav-group { display:flex; flex-direction:column; gap:4px; }
@@ -554,8 +579,15 @@
         @media (max-width:1024px) {
             .hamburger { display:flex; }
             .app { grid-template-columns:1fr; }
-            .sidebar { position:fixed; left:0; top:0; z-index:60; width:var(--sidebar-w);
+            /* 100dvh: en el teléfono 100vh incluye la barra del navegador y
+               el final del menú quedaba debajo de ella. */
+            .sidebar { position:fixed; left:0; top:0; z-index:60; width:min(var(--sidebar-w), 86vw);
+                       height:100vh; height:100dvh;
                        transform:translateX(-100%); transition:transform .25s; }
+            .app.sidebar-open .sidebar { box-shadow:0 10px 40px rgba(2,6,23,.3); }
+            /* En el cajón siempre se desplaza, aunque en escritorio se haya dejado contraído. */
+            .app.collapsed .nav { overflow-y:auto; overscroll-behavior:contain; padding-bottom:12px; }
+            body.menu-abierto { overflow:hidden; }
             .app.sidebar-open .sidebar { transform:translateX(0); }
             .app.sidebar-open .overlay { display:block; }
             .app.collapsed { grid-template-columns:1fr; }
@@ -653,12 +685,25 @@
         </button>
 
         <nav class="nav">
-            <a class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}" data-tip="Dashboard">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
-                <span class="nav-label">Dashboard</span>
-            </a>
+            @php
+                // El rol Mantenimiento solo ve su tablero y Órdenes de servicio.
+                $soloMantenimiento = auth()->user()->hasRole('mantenimiento') && ! auth()->user()->isAdmin();
+            @endphp
+            @unless ($soloMantenimiento)
+                <a class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}" data-tip="Dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+            @endunless
+            @if (auth()->user()->isAdmin() || auth()->user()->hasRole('mantenimiento'))
+                <a class="nav-item {{ request()->routeIs('mantenimiento.*') ? 'active' : '' }}" href="{{ route('mantenimiento.dashboard') }}" data-tip="Mantenimiento">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                    <span class="nav-label">Mantenimiento</span>
+                </a>
+            @endif
+            @unless ($soloMantenimiento)
             <div class="nav-section">Operación</div>
-            <div class="nav-group {{ request()->routeIs('commercial.*') ? 'open' : '' }}">
+            <div class="nav-group {{ request()->routeIs('commercial.*') && ! request()->routeIs('commercial.comisiones.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Comercial">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M17 5a3 3 0 0 1 0 6"/><path d="M20 20c0-2.5-1.3-4.2-3.5-5"/></svg>
                     <span class="nav-label">Gestión Comercial</span>
@@ -675,6 +720,12 @@
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.cotizaciones.*') ? 'active' : '' }}" href="{{ route('commercial.cotizaciones.index') }}" data-tip="Cotizaciones">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Cotizaciones</span>
+                    </a>
+                    @endcan
+                    @can('tienda.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.solicitudes-web.*') ? 'active' : '' }}" href="{{ route('commercial.solicitudes-web.index') }}" data-tip="Solicitudes web">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Solicitudes web</span>
                     </a>
                     @endcan
                     @can('ventas.ver')
@@ -695,12 +746,6 @@
                         <span class="nav-label">Cobranza</span>
                     </a>
                     @endcan
-                    @can('comisiones.ver')
-                        <a class="nav-item nav-sub {{ request()->routeIs('commercial.comisiones.*') ? 'active' : '' }}" href="{{ route('commercial.comisiones.index') }}" data-tip="Comisiones">
-                            <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                            <span class="nav-label">Comisiones</span>
-                        </a>
-                    @endcan
                     @can('facturacion.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('commercial.facturas.*') ? 'active' : '' }}" href="{{ route('commercial.facturas.index') }}" data-tip="Facturación">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
@@ -713,7 +758,7 @@
                     </a>
                 </div>
             </div>
-            <div class="nav-group {{ request()->routeIs('inventory.*') || request()->routeIs('configuracion.catalogos.*') ? 'open' : '' }}">
+            <div class="nav-group {{ (request()->routeIs('inventory.*') && ! request()->routeIs('inventory.congresos.*')) || request()->routeIs('configuracion.catalogos.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Inventario">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                     <span class="nav-label">Gestión de Inventario</span>
@@ -754,12 +799,6 @@
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.fichas.*') ? 'active' : '' }}" href="{{ route('inventory.fichas.index') }}" data-tip="Fichas técnicas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Fichas técnicas</span>
-                    </a>
-                    @endcan
-                    @can('congresos.ver')
-                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.congresos.*') ? 'active' : '' }}" href="{{ route('inventory.congresos.index') }}" data-tip="Congresos">
-                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Congresos</span>
                     </a>
                     @endcan
                     @can('inventario.catalogo')
@@ -817,8 +856,8 @@
                 </div>
             </div>
             @endcanany
-            @canany(['asistencia.ver', 'asistencia.biometria', 'asistencia.nomina'])
-            <div class="nav-group {{ request()->routeIs('asistencia.*') ? 'open' : '' }}">
+            @canany(['asistencia.ver', 'asistencia.biometria', 'asistencia.nomina', 'comisiones.ver'])
+            <div class="nav-group {{ request()->routeIs('asistencia.*', 'nomina.*', 'commercial.comisiones.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Recursos Humanos">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 11c0-1.1.9-2 2-2m-6 4a6 6 0 0 1 12 0M6 9a8 8 0 0 1 16 0M4 14c0-4.4 3.6-8 8-8"/><path d="M9 20c1 .6 2 1 3 1M12 17v1"/></svg>
                     <span class="nav-label">Asistencia (RH)</span>
@@ -855,6 +894,13 @@
                         <span class="nav-label">Nómina</span>
                     </a>
                     @endcan
+                    {{-- Comisiones de los vendedores: se pagan con RH, junto a la nómina. --}}
+                    @can('comisiones.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('commercial.comisiones.*') ? 'active' : '' }}" href="{{ route('commercial.comisiones.index') }}" data-tip="Comisiones">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Comisiones</span>
+                    </a>
+                    @endcan
                     @can('asistencia.biometria')
                     <a class="nav-item nav-sub {{ request()->routeIs('asistencia.biometria.*') ? 'active' : '' }}" href="{{ route('asistencia.biometria.index') }}" data-tip="Lectores y huellas">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
@@ -864,6 +910,7 @@
                 </div>
             </div>
             @endcanany
+            @endunless
             <div class="nav-group {{ request()->routeIs('gestion.servicios.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Servicios">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
@@ -876,39 +923,127 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Historial de Servicios</span>
                     </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.refacciones.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.refacciones.index') }}" data-tip="Refacciones">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Refacciones</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.garantia.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.garantia.index') }}" data-tip="Cartas de Garantía">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Cartas de Garantía</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.mantenimiento.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.mantenimiento.index') }}" data-tip="Mantenimiento">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Mantenimiento</span>
+                    </a>
                     @endcan
                     @can('servicios.crear')
                     <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.historial.nueva_orden') ? 'active' : '' }}" href="{{ route('gestion.servicios.historial.nueva_orden') }}" data-tip="Nueva Orden">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Nueva Orden</span>
                     </a>
-                    @endcan
-                    @can('servicios.ver')
-                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.garantia.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.garantia.index') }}" data-tip="Cartas de Garantía">
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.registro') ? 'active' : '' }}" href="{{ route('gestion.servicios.registro') }}" data-tip="Registro Externo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Cartas de Garantía</span>
+                        <span class="nav-label">Registro Externo</span>
                     </a>
                     @endcan
                     @can('servicios.ver')
-                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.mantenimiento.*') ? 'active' : '' }}" href="{{ route('gestion.servicios.mantenimiento.index') }}" data-tip="Mantenimiento">
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.area_endoscopia') ? 'active' : '' }}" href="{{ route('gestion.servicios.area_endoscopia') }}" data-tip="Área de Endoscopia">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Mantenimiento</span>
+                        <span class="nav-label">Área de Endoscopia</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.area') ? 'active' : '' }}" href="{{ route('gestion.servicios.area') }}" data-tip="Área General">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Área General</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.externo') ? 'active' : '' }}" href="{{ route('gestion.servicios.externo') }}" data-tip="Mantenimiento Externo">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Externo</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.servicio_externo.interno') ? 'active' : '' }}" href="{{ route('gestion.servicios.servicio_externo.interno') }}" data-tip="Servicio Externo Interno">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Servicio externo interno</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('gestion.servicios.servicio_externo.externo') ? 'active' : '' }}" href="{{ route('gestion.servicios.servicio_externo.externo') }}" data-tip="Servicio Externo Externo">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Servicio externo externo</span>
                     </a>
                     @endcan
                 </div>
             </div>
+            @unless ($soloMantenimiento)
+            @can('garantias.ver')
+            <div class="nav-group {{ request()->routeIs('garantias.*') ? 'open' : '' }}">
+                <a class="nav-item nav-toggle" href="#" data-tip="Garantías">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                    <span class="nav-label">Garantías</span>
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+                </a>
+                <div class="submenu">
+                    <a class="nav-item nav-sub {{ request()->routeIs('garantias.tablero') ? 'active' : '' }}" href="{{ route('garantias.tablero') }}" data-tip="Centro de garantías">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Centro de garantías</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('garantias.reclamaciones.*') ? 'active' : '' }}" href="{{ route('garantias.reclamaciones.index') }}" data-tip="Reclamaciones">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Reclamaciones</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('garantias.index', 'garantias.show', 'garantias.create', 'garantias.serie') ? 'active' : '' }}" href="{{ route('garantias.index') }}" data-tip="Garantías por equipo">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Garantías por equipo</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('garantias.reportes') ? 'active' : '' }}" href="{{ route('garantias.reportes') }}" data-tip="Reportes">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Reportes</span>
+                    </a>
+                    @can('garantias.configurar')
+                    <a class="nav-item nav-sub {{ request()->routeIs('garantias.coberturas.*') ? 'active' : '' }}" href="{{ route('garantias.coberturas.index') }}" data-tip="Pólizas y coberturas">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Pólizas y coberturas</span>
+                    </a>
+                    @endcan
+                </div>
+            </div>
+            @endcan
+            {{-- Agenda: un solo módulo para la agenda personal y la de la empresa
+                 (los antiguos "Calendarios" redirigen aquí). --}}
+            @can('agenda.ver')
+            <div class="nav-group {{ request()->routeIs('calendarios.*', 'agenda.*') ? 'open' : '' }}">
+                <a class="nav-item nav-toggle" href="#" data-tip="Agenda">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="17" rx="2"></rect>
+                        <path d="M16 2v4M8 2v4M3 10h18"></path>
+                        <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"></path>
+                    </svg>
+                    <span class="nav-label">Agenda</span>
+                    <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </a>
+                <div class="submenu">
+                    <a class="nav-item nav-sub {{ request()->routeIs('agenda.*') && request('ambito') !== 'empresa' ? 'active' : '' }}" href="{{ route('agenda.index', ['ambito' => 'mia']) }}" data-tip="Mi agenda">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Mi agenda</span>
+                    </a>
+                    <a class="nav-item nav-sub {{ request()->routeIs('agenda.*') && request('ambito') === 'empresa' ? 'active' : '' }}" href="{{ route('agenda.index', ['ambito' => 'empresa']) }}" data-tip="Agenda de la empresa">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Agenda de la empresa</span>
+                    </a>
+                </div>
+            </div>
+            @endcan
             <div class="nav-section">Administración</div>
-            <div class="nav-group {{ request()->routeIs('admin.*') ? 'open' : '' }}">
+            <div class="nav-group {{ request()->routeIs('admin.*', 'inventory.congresos.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión Administrativa">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                     <span class="nav-label">Gestión Administrativa</span>
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-                    <a class="nav-item nav-sub {{ request()->routeIs('admin.agenda.index') ? 'active' : '' }}" href="{{ route('admin.agenda.index') }}" data-tip="Agenda">
+                    {{-- Congresos: eventos de la empresa (quién va, equipo enviado, ventas de congreso). --}}
+                    @can('congresos.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.congresos.*') ? 'active' : '' }}" href="{{ route('inventory.congresos.index') }}" data-tip="Congresos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                        <span class="nav-label">Agenda</span>
+                        <span class="nav-label">Congresos</span>
                     </a>
+                    @endcan
                     @can('actividad.ver')
                         <a class="nav-item nav-sub {{ request()->routeIs('admin.actividad.*') ? 'active' : '' }}" href="{{ route('admin.actividad.index') }}" data-tip="Actividad">
                             <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
@@ -926,11 +1061,23 @@
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Vehículos</span>
                     </a>
+                    @endif
+                    @can('viaticos.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.viatics.*') ? 'active' : '' }}" href="{{ route('admin.viatics.index') }}" data-tip="Viáticos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Viáticos</span>
                     </a>
-                    @endif
+                    @endcan
+                    <a class="nav-item nav-sub {{ request()->routeIs('admin.paqueteria.*') ? 'active' : '' }}" href="{{ route('admin.paqueteria.index') }}" data-tip="Paquetería">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Paquetería</span>
+                    </a>
+                    @can('entregas_guias.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('admin.guia_entregas.*') ? 'active' : '' }}" href="{{ route('admin.guia_entregas.index') }}" data-tip="Entregas de guías">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Entregas de guías</span>
+                    </a>
+                    @endcan
                     <a class="nav-item nav-sub {{ request()->routeIs('admin.materials.*') ? 'active' : '' }}" href="{{ route('admin.materials.index') }}" data-tip="Materiales">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Materiales</span>
@@ -947,19 +1094,17 @@
                     --}}
                 </div>
             </div>
-            <div class="nav-group {{ request()->routeIs('marketing.*') ? 'open' : '' }}">
+            <div class="nav-group {{ request()->routeIs('marketing.*', 'promociones.*') ? 'open' : '' }}">
                 <a class="nav-item nav-toggle" href="#" data-tip="Gestión de Marketing">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                     <span class="nav-label">Gestión de Marketing</span>
                     <svg class="nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </a>
                 <div class="submenu">
-                    @can('marketing.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.inicio') ? 'active' : '' }}" href="{{ route('marketing.inicio') }}" data-tip="Inicio">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Inicio</span>
                     </a>
-                    @endcan
                     @can('marketing.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.guia_de_marca.index') ? 'active' : '' }}" href="{{ route('marketing.guia_de_marca.index') }}" data-tip="Guía de marca">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
@@ -982,6 +1127,12 @@
                     <a class="nav-item nav-sub {{ request()->routeIs('marketing.biblioteca_catalogo.index') ? 'active' : '' }}" href="{{ route('marketing.biblioteca_catalogo.index') }}" data-tip="Biblioteca & catálogo">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Biblioteca & catálogo</span>
+                    </a>
+                    @endcan
+                    @can('promociones.ver')
+                    <a class="nav-item nav-sub {{ request()->routeIs('promociones.*') ? 'active' : '' }}" href="{{ route('promociones.campanas.index') }}" data-tip="Promociones y cupones">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Promociones y cupones</span>
                     </a>
                     @endcan
                     <div class="submenu-label">Datos</div>
@@ -1016,6 +1167,7 @@
                     @endcan
                 </div>
             </div>
+            @endunless
         </nav>
 
     </aside>
@@ -1038,6 +1190,10 @@
                 @endif
             </div>
             <div class="topbar-spacer"></div>
+
+            <a class="icon-btn" href="{{ route('calendarios.mio') }}" aria-label="Mi calendario" title="Mi calendario">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+            </a>
 
             {{-- Tema --}}
             <button class="icon-btn" id="theme-toggle" type="button" aria-label="Cambiar tema">
@@ -1095,7 +1251,12 @@
             {{-- Usuario --}}
             <div class="dd" id="dd-user">
                 <button class="user-btn" type="button" data-dd="dd-user">
-                    <span class="avatar">{{ Str::upper($initials) }}</span>
+                    <span class="avatar" style="position:relative;overflow:hidden;">
+                        {{ Str::upper($initials) }}
+                        @if ($u->avatarUrl())
+                            <img src="{{ $u->avatarUrl() }}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:{{ $u->avatarFoco() }};" onerror="this.remove()">
+                        @endif
+                    </span>
                     <span class="user-name">{{ $u->name }}</span>
                     <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
@@ -1132,6 +1293,12 @@
         <main class="content">
             @yield('content')
         </main>
+        {{-- Tiempo real: la pantalla se actualiza sola con los cambios de otros. --}}
+        @include('partials.vivo')
+        {{-- Todo lo que se escribe se guarda en MAYÚSCULAS, con corrector. --}}
+        @include('partials.mayusculas')
+        {{-- Autocorrector ortográfico (español de México) al salir de cada campo. --}}
+        @include('partials.ortografia')
     </div>
 </div>
 
@@ -1284,9 +1451,15 @@
         }
 
         // Colapsar sidebar (escritorio) / abrir-cerrar (móvil)
+        // Con el cajón abierto la página de atrás no se desplaza.
+        function cerrarCajon() {
+            app.classList.remove('sidebar-open');
+            document.body.classList.remove('menu-abierto');
+        }
         function toggleSidebar() {
             if (isMobile()) {
-                app.classList.toggle('sidebar-open');
+                var abierto = app.classList.toggle('sidebar-open');
+                document.body.classList.toggle('menu-abierto', abierto);
             } else {
                 app.classList.toggle('collapsed');
                 try { localStorage.setItem('sidebar-collapsed', app.classList.contains('collapsed') ? '1' : '0'); } catch (e) {}
@@ -1303,7 +1476,22 @@
         syncCollapseLabel();
         document.getElementById('hamburger').addEventListener('click', toggleSidebar);
         document.getElementById('collapse-btn').addEventListener('click', toggleSidebar);
-        document.getElementById('overlay').addEventListener('click', function () { app.classList.remove('sidebar-open'); });
+        document.getElementById('overlay').addEventListener('click', cerrarCajon);
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && app.classList.contains('sidebar-open')) cerrarCajon();
+        });
+        // La opción activa queda a la vista aunque esté al fondo de la lista.
+        (function () {
+            var nav = document.querySelector('.sidebar .nav');
+            var activo = nav && nav.querySelector('.nav-item.active');
+            if (!activo) return;
+            var delta = activo.getBoundingClientRect().top - nav.getBoundingClientRect().top;
+            if (delta > nav.clientHeight - 60) nav.scrollTop = delta - nav.clientHeight / 2;
+        })();
+        // Si la ventana crece a escritorio con el cajón abierto, no queda la página bloqueada.
+        window.addEventListener('resize', function () {
+            if (!isMobile() && app.classList.contains('sidebar-open')) cerrarCajon();
+        });
 
         // Tema claro / oscuro
         document.getElementById('theme-toggle').addEventListener('click', function () {

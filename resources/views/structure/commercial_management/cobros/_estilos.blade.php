@@ -77,7 +77,38 @@
     .cb-x svg { width:17px; height:17px; }
     .cb-x:hover { background:var(--surface-2); color:var(--text); }
 
-    .cb-modal-body { flex:1; min-height:0; overflow-y:auto; padding:20px; }
+    .cb-modal-body { position:relative; flex:1; min-height:0; overflow-y:auto; padding:20px; }
+    /* Ya subieron un pago: aprobarlo en vez de capturarlo otra vez */
+    .cb-dup { margin:0 0 16px; padding:12px 14px; border:1px solid color-mix(in srgb, #f59e0b 45%, var(--border)); border-radius:12px;
+              background:color-mix(in srgb, #f59e0b 9%, var(--surface, #fff)); }
+    .cb-dup-t { font-weight:700; font-size:14px; }
+    .cb-dup p { margin:2px 0 10px; color:var(--muted); font-size:13px; }
+    .cb-dup-fila { display:flex; align-items:center; justify-content:space-between; gap:8px 12px; flex-wrap:wrap;
+                   padding:8px 10px; margin-bottom:6px; border-radius:9px; background:var(--surface, #fff); font-size:13px; }
+    .cb-dup-fila.is-igual { outline:2px solid #f59e0b; }
+    .cb-dup-nip { display:flex; gap:6px; align-items:center; }
+
+    /* IVA agregado a mensualidades de una venta sin IVA */
+    .cb-iva { display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px; font-size:11.5px; font-weight:600;
+              background:var(--primary-soft, rgba(0,122,255,.12)); color:var(--primary); vertical-align:middle; }
+    .cb-nota-iva { margin-top:12px; padding:10px 12px; border-radius:10px; background:var(--primary-soft, rgba(0,122,255,.10)); font-size:13px; }
+    .cb-iva-intro { margin:0 0 12px; font-size:13.5px; color:var(--muted); line-height:1.5; }
+    .cb-iva-intro b { color:var(--text); }
+    .cb-iva-lista { display:flex; flex-direction:column; gap:6px; }
+    .cb-modal-body .cb-iva-fila { display:grid; grid-template-columns:auto 1fr auto auto; align-items:center; gap:10px; margin:0;
+                   padding:10px 12px; border:1px solid var(--border); border-radius:10px; cursor:pointer; color:var(--text); font-size:14px; }
+    .cb-iva-fila input { width:16px; height:16px; margin:0; }
+    .cb-iva-nom small { display:block; color:var(--muted); font-size:12px; }
+    .cb-iva-mas { color:var(--primary); font-weight:600; }
+    .cb-iva-nuevo { font-weight:700; min-width:90px; text-align:right; }
+    .cb-iva-total { display:flex; justify-content:space-between; margin-top:12px; padding-top:10px; border-top:1px solid var(--border); font-size:14px; }
+    @media (max-width:520px) { .cb-modal-body .cb-iva-fila { grid-template-columns:auto 1fr auto; } .cb-iva-nuevo { display:none; } }
+    .cb-dup-nip[hidden], .cb-dup [hidden] { display:none !important; }
+    .cb-modal, .cb-modal-box { color:var(--text); }
+    .cb-dup-nip input { width:130px; padding:7px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface, #fff); color:var(--text); }
+    .cb-dup .cb-dup-aviso { color:#b45309; font-weight:600; margin:8px 0 4px; }
+    .cb-modal-body .cb-dup-check { display:flex; align-items:center; gap:8px; margin:8px 0 0; color:var(--text); font-size:13px; cursor:pointer; }
+    .cb-dup-check input { width:16px; height:16px; margin:0; }
     .cb-modal-body label { display:block; margin-bottom:6px; color:var(--muted); font-size:13px; }
     .cb-modal-body input[type="text"],
     .cb-modal-body input[type="date"],
@@ -92,7 +123,7 @@
     .cb-explica { margin:0; color:var(--muted); font-size:13px; line-height:1.55; }
     .cb-explica b { color:var(--text); }
 
-    .cb-file { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+    .cb-file { position:absolute; left:0; top:0; width:1px; height:1px; opacity:0; pointer-events:none; overflow:hidden; }
     .cb-drop { display:flex !important; flex-direction:column; align-items:center; gap:4px;
                padding:20px; border:1.5px dashed var(--border); border-radius:11px;
                background:var(--surface-2); cursor:pointer; text-align:center;

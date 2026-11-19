@@ -28,6 +28,11 @@ class ComisionFilaResource extends JsonResource
             // Lo vendido o lo cobrado, según la base que se pidió.
             'base_monto' => (float) $f['base_monto'],
             'comision' => (float) $f['comision'],
+            // Desglose con las reglas de config/comisiones.php.
+            'comision_endoscopia' => (float) ($f['comision_endoscopia'] ?? 0),
+            'comision_otros' => (float) ($f['comision_otros'] ?? 0),
+            'comision_congreso' => (float) ($f['comision_congreso'] ?? 0),
+            'ventas_congreso' => (int) ($f['ventas_congreso'] ?? 0),
             'pagado' => (float) $f['pagado'],
             'pendiente' => (float) $f['pendiente'],
         ];

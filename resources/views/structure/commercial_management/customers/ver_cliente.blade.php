@@ -25,7 +25,7 @@
             <div class="vc-id">
                 <h2 class="vc-name">{{ $nombreCompleto ?: 'Sin nombre' }}</h2>
                 <p class="vc-meta">
-                    {{ $customer->category?->nombre ?? 'Sin categoría' }}
+                    {{ $customer->tipoEquipo?->name ?? 'Sin tipo de equipo' }}
                     <span class="vc-sep">·</span>
                     {{ $customer->asesor?->name ?? 'Sin asesor' }}
                 </p>
@@ -126,8 +126,8 @@
                         <dd class="{{ $customer->asesor ? '' : 'vc-empty' }}">{{ $customer->asesor?->name ?? 'Sin asesor' }}</dd>
                     </div>
                     <div>
-                        <dt>Categoría</dt>
-                        <dd class="{{ $customer->category ? '' : 'vc-empty' }}">{{ $customer->category?->nombre ?? 'Sin categoría' }}</dd>
+                        <dt>Tipo de equipo</dt>
+                        <dd class="{{ $customer->tipoEquipo ? '' : 'vc-empty' }}">{{ $customer->tipoEquipo?->name ?? 'Sin tipo de equipo' }}</dd>
                     </div>
                     <div>
                         <dt>Congreso conocido</dt>
@@ -157,20 +157,33 @@
                     <p class="vc-text vc-pre {{ $customer->comentarios ? '' : 'vc-empty' }}">{{ $customer->comentarios ?: 'Sin comentarios' }}</p>
                 </div>
             </x-ui.card>
+
+            {{-- Marketing y promociones: consentimiento, campañas recibidas y cupones --}}
+            @include('structure.promociones._perfil_cliente', ['customer' => $customer])
         </div>
 
         <div class="vc-col">
-            {{-- ===================== Seguimientos ===================== --}}
+            {{-- ===================== Seguimientos =====================
+                 Es la misma fila que ve el responsable en su agenda: lo que se
+                 hace aquí (completar, mover, reasignar, cancelar) se ve allá. --}}
             @php
-                $pendientes = $customer->seguimientos->filter(fn ($s) => ! $s->hecho());
-                $hechos = $customer->seguimientos->filter(fn ($s) => $s->hecho())->sortByDesc('hecho_en');
+                $pendientes = $customer->seguimientos->filter(fn ($s) => $s->abierto());
+                $hechos = $customer->seguimientos->reject(fn ($s) => $s->abierto())->sortByDesc(fn ($s) => $s->hecho_en ?? $s->cancelado_en ?? $s->updated_at);
+                $hoyEmpresa = \App\Models\ClienteSeguimiento::hoy()->toDateString();
+                $puedeAgenda = auth()->user()->can('agenda.ver');
+                $acceso = app(\App\Services\Agenda\Acceso::class);
             @endphp
             <x-ui.card id="seguimientos">
                 <div class="vc-head">
                     <x-ui.section-title style="margin:0;">Seguimientos</x-ui.section-title>
-                    @if ($pendientes->isNotEmpty())
-                        <span class="vc-count">{{ $pendientes->count() }} pendiente(s)</span>
-                    @endif
+                    <span style="display:flex; gap:8px; align-items:center;">
+                        @if ($pendientes->isNotEmpty())
+                            <span class="vc-count">{{ $pendientes->count() }} pendiente(s)</span>
+                        @endif
+                        @if ($puedeAgenda)
+                            <a href="{{ route('agenda.index') }}" class="sg-link">Abrir agenda</a>
+                        @endif
+                    </span>
                 </div>
 
                 @if (session('status'))
@@ -185,29 +198,77 @@
                 @forelse ($pendientes as $s)
                     <div class="sg-item {{ $s->vencido() ? 'is-vencido' : ($s->esHoy() ? 'is-hoy' : '') }}">
                         <div class="sg-txt">
-                            <div class="sg-t">{{ $s->tipoLabel() }} <span class="sg-cuando">{{ $s->cuando() }} · {{ $s->fecha?->format('d/m/Y') }}</span></div>
+                            <div class="sg-t">
+                                {{ $s->tipoLabel() }}
+                                <span class="sg-cuando">{{ $s->cuando() }} · {{ $s->fecha?->format('d/m/Y') }}{{ $s->horaCorta() ? ' '.$s->horaCorta() : ' (sin hora)' }}</span>
+                                @if ($s->prioridad === 'alta')<span class="sg-tag is-alta">Prioridad alta</span>@endif
+                                @if ($s->estado === 'en_proceso')<span class="sg-tag">En proceso</span>@endif
+                            </div>
                             @if ($s->nota)<div class="sg-s">{{ $s->nota }}</div>@endif
-                            <div class="sg-s">Responsable: {{ $s->responsable?->name ?? '—' }}{{ $s->notificado_en ? ' · avisado el '.$s->notificado_en->format('d/m H:i') : '' }}</div>
+                            <div class="sg-s">
+                                Responsable: {{ $s->responsable?->name ?? '—' }}
+                                {{ $s->origen === 'agenda' ? ' · creado desde la agenda' : '' }}
+                                @if ($puedeAgenda && $acceso->nivelSeguimiento($s, auth()->user()) === 'completo')
+                                    · <a href="{{ route('agenda.index', ['item' => $s->llaveAgenda()]) }}">Ver en agenda</a>
+                                @endif
+                            </div>
                         </div>
                         <div class="sg-acc">
-                            <form method="POST" action="{{ route('commercial.clientes.seguimientos.hecho', [$customer, $s]) }}" class="sg-hecho">
-                                @csrf
-                                <input type="text" name="resultado" maxlength="500" placeholder="¿Cómo salió? (opcional)" aria-label="Resultado">
-                                <button type="submit" class="btn" style="padding:6px 12px;">Hecho</button>
-                            </form>
-                            <form method="POST" action="{{ route('commercial.clientes.seguimientos.reprogramar', [$customer, $s]) }}" class="sg-mover">
-                                @csrf
-                                <input type="date" name="fecha" required min="{{ now()->toDateString() }}" value="{{ $s->fecha?->toDateString() }}" aria-label="Nueva fecha">
-                                <button type="submit" class="btn btn--ghost" style="padding:6px 10px;">Mover</button>
-                            </form>
-                            <form method="POST" action="{{ route('commercial.clientes.seguimientos.destroy', [$customer, $s]) }}" data-confirm="¿Eliminar este seguimiento?">
+                            <details class="sg-det">
+                                <summary class="btn" style="padding:6px 12px;">Completar</summary>
+                                <form method="POST" action="{{ route('commercial.clientes.seguimientos.hecho', [$customer, $s]) }}" class="sg-form">
+                                    @csrf
+                                    <input type="text" name="resultado" maxlength="500" placeholder="¿Cómo salió? (opcional)" aria-label="Resultado">
+                                    <span class="sg-sub">Siguiente contacto (opcional)</span>
+                                    <div class="sg-fila">
+                                        <input type="date" name="siguiente_fecha" min="{{ $hoyEmpresa }}" aria-label="Fecha del siguiente contacto">
+                                        <input type="time" name="siguiente_hora" aria-label="Hora del siguiente contacto">
+                                        <select name="siguiente_tipo" aria-label="Tipo del siguiente contacto">
+                                            @foreach ($tiposSeguimiento as $valor => $texto)
+                                                <option value="{{ $valor }}" @selected($valor === $s->tipo)>{{ $texto }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn" style="padding:6px 12px;">Guardar</button>
+                                </form>
+                            </details>
+                            <details class="sg-det">
+                                <summary class="btn btn--ghost" style="padding:6px 10px;">Mover</summary>
+                                <form method="POST" action="{{ route('commercial.clientes.seguimientos.reprogramar', [$customer, $s]) }}" class="sg-form">
+                                    @csrf
+                                    <div class="sg-fila">
+                                        <input type="date" name="fecha" required min="{{ $hoyEmpresa }}" value="{{ $s->fecha?->toDateString() }}" aria-label="Nueva fecha">
+                                        <input type="time" name="hora" value="{{ $s->horaCorta() }}" aria-label="Nueva hora (opcional)">
+                                    </div>
+                                    <input type="text" name="motivo" maxlength="255" placeholder="Motivo (opcional)" aria-label="Motivo">
+                                    <button type="submit" class="btn btn--ghost" style="padding:6px 10px;">Mover</button>
+                                </form>
+                            </details>
+                            @if ($usuarios->isNotEmpty() && $acceso->puedeReasignarSeguimiento($s, auth()->user()))
+                                <details class="sg-det">
+                                    <summary class="btn btn--ghost" style="padding:6px 10px;">Reasignar</summary>
+                                    <form method="POST" action="{{ route('commercial.clientes.seguimientos.reasignar', [$customer, $s]) }}" class="sg-form">
+                                        @csrf
+                                        <select name="user_id" aria-label="Nuevo responsable">
+                                            @foreach ($usuarios as $usr)
+                                                @if ($usr->id !== $s->user_id)<option value="{{ $usr->id }}">{{ $usr->name }}</option>@endif
+                                            @endforeach
+                                        </select>
+                                        <input type="text" name="motivo" maxlength="255" placeholder="Motivo (opcional)" aria-label="Motivo">
+                                        <button type="submit" class="btn btn--ghost" style="padding:6px 10px;">Reasignar</button>
+                                    </form>
+                                </details>
+                            @endif
+                            <form method="POST" action="{{ route('commercial.clientes.seguimientos.destroy', [$customer, $s]) }}" data-confirm="¿Cancelar este seguimiento? Queda en el historial.">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="sg-x" title="Eliminar">×</button>
+                                <button type="submit" class="sg-x" title="Cancelar seguimiento" aria-label="Cancelar seguimiento">×</button>
                             </form>
                         </div>
                     </div>
                 @empty
-                    <p class="vc-text vc-empty" style="margin:12px 0 0;">Sin seguimientos pendientes.</p>
+                    <p class="vc-text vc-empty" style="margin:12px 0 0;">
+                        Sin seguimientos pendientes.{{ $customer->esProspecto() ? ' Este prospecto aparece en la agenda como "sin seguimiento programado".' : '' }}
+                    </p>
                 @endforelse
 
                 {{-- Programar uno nuevo --}}
@@ -219,7 +280,13 @@
                                 <option value="{{ $valor }}" @selected(old('tipo', 'llamada') === $valor)>{{ $texto }}</option>
                             @endforeach
                         </select>
-                        <input type="date" name="fecha" required min="{{ now()->toDateString() }}" value="{{ old('fecha') }}" aria-label="Cuándo">
+                        <input type="date" name="fecha" required min="{{ $hoyEmpresa }}" value="{{ old('fecha') }}" aria-label="Cuándo">
+                        <input type="time" name="hora" value="{{ old('hora') }}" aria-label="Hora (opcional)" title="Hora (opcional)">
+                        <select name="prioridad" aria-label="Prioridad">
+                            @foreach (\App\Models\ClienteSeguimiento::PRIORIDADES as $valor => $texto)
+                                <option value="{{ $valor }}" @selected(old('prioridad', 'normal') === $valor)>Prioridad {{ mb_strtolower($texto) }}</option>
+                            @endforeach
+                        </select>
                         @if ($usuarios->isNotEmpty())
                             <select name="user_id" aria-label="Responsable">
                                 @foreach ($usuarios as $usr)
@@ -227,10 +294,10 @@
                                 @endforeach
                             </select>
                         @endif
-                        <input type="text" name="nota" maxlength="500" value="{{ old('nota') }}" placeholder="Nota (ej. quiere cotización en un mes)" aria-label="Nota" style="grid-column:1 / -1;">
+                        <input type="text" name="nota" maxlength="500" value="{{ old('nota') }}" placeholder="Motivo (ej. confirmar propuesta de torre de endoscopia)" aria-label="Motivo" style="grid-column:1 / -1;">
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap;">
-                        <small style="color:var(--muted);">Ese día llega el aviso en la campana y por correo al responsable.</small>
+                        <small style="color:var(--muted);">Aparece en la agenda del responsable. Sin hora, se avisa ese día; con hora, antes de la cita.</small>
                         <button type="submit" class="btn btn--ghost">Programar seguimiento</button>
                     </div>
                 </form>
@@ -241,9 +308,19 @@
                         @foreach ($hechos as $s)
                             <div class="sg-item is-hecho">
                                 <div class="sg-txt">
-                                    <div class="sg-t">{{ $s->tipoLabel() }} <span class="sg-cuando">{{ $s->fecha?->format('d/m/Y') }} · hecho el {{ $s->hecho_en->format('d/m/Y') }} por {{ $s->hechoPor?->name ?? '—' }}</span></div>
+                                    <div class="sg-t">{{ $s->tipoLabel() }}
+                                        <span class="sg-cuando">
+                                            {{ $s->fecha?->format('d/m/Y') }}{{ $s->horaCorta() ? ' '.$s->horaCorta() : '' }} ·
+                                            @if ($s->cancelado())
+                                                cancelado el {{ $s->cancelado_en?->format('d/m/Y') }}
+                                            @else
+                                                hecho el {{ $s->hecho_en?->format('d/m/Y') }} por {{ $s->hechoPor?->name ?? '—' }}
+                                            @endif
+                                        </span>
+                                    </div>
                                     @if ($s->nota)<div class="sg-s">{{ $s->nota }}</div>@endif
                                     @if ($s->resultado)<div class="sg-s"><b>Resultado:</b> {{ $s->resultado }}</div>@endif
+                                    @if ($s->motivo_cancelacion)<div class="sg-s"><b>Motivo:</b> {{ $s->motivo_cancelacion }}</div>@endif
                                 </div>
                             </div>
                         @endforeach
@@ -381,6 +458,17 @@
         .sg-nuevo-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; }
         .sg-nuevo-grid select, .sg-nuevo-grid input { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:13.5px; background:var(--surface); color:var(--text); font-family:inherit; }
         .sg-hist { margin-top:12px; }
+        .sg-link { font-size:12.5px; font-weight:600; color:var(--primary); text-decoration:none; }
+        .sg-tag { display:inline-block; margin-left:6px; padding:1px 7px; border-radius:20px; font-size:11px; font-weight:600; background:var(--surface-2); color:var(--muted); border:1px solid var(--border); }
+        .sg-tag.is-alta { color:var(--accent); background:var(--accent-soft); border-color:transparent; }
+        .sg-det { position:relative; }
+        .sg-det > summary { list-style:none; cursor:pointer; display:inline-block; }
+        .sg-det > summary::-webkit-details-marker { display:none; }
+        .sg-form { display:flex; flex-direction:column; gap:6px; margin-top:8px; padding:10px; border:1px solid var(--border); border-radius:10px; background:var(--surface-2); min-width:240px; }
+        .sg-form input, .sg-form select { padding:6px 9px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:var(--surface); color:var(--text); font-family:inherit; }
+        .sg-fila { display:flex; gap:6px; flex-wrap:wrap; }
+        .sg-fila > * { flex:1 1 110px; }
+        .sg-sub { font-size:12px; color:var(--muted); font-weight:600; }
         .sg-hist summary { cursor:pointer; color:var(--muted); font-size:13px; }
 
         /* ===== Adaptable ===== */

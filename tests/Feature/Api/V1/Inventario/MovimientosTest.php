@@ -64,11 +64,12 @@ class MovimientosTest extends TestCase
         $this->assertEquals(750, $producto->precio);
         $this->assertTrue($producto->es_serializado);
 
-        // Un solo serial base con cantidad 3: la secuencia se completa sola.
-        $this->assertSame(
-            ['23A00001', '23A00002', '23A00003'],
-            ProductoSerial::orderBy('no_serie')->pluck('no_serie')->all(),
-        );
+        // Cada pieza se queda con la serie que se le capturó: ya no se arma
+        // una secuencia a partir de la primera.
+        $series = $producto->seriales()->orderBy('id')->pluck('no_serie')->all();
+        $this->assertSame('23A00001', $series[0]);
+        $this->assertNotContains('23A00002', $series);
+        $this->assertNotContains(null, $series);
 
         $primera = ProductoSerial::where('no_serie', '23A00001')->first();
         $this->assertCount(2, $primera->evidence_paths);
@@ -159,7 +160,7 @@ class MovimientosTest extends TestCase
             ->assertJsonPath('errors', ['unidades.0.evidencias' => ['Cada pieza necesita al menos una foto de cómo llegó ella.']]);
     }
 
-    public function test_serie_repetida_se_guarda_vacia_y_se_avisa(): void
+    public function test_serie_repetida_rechaza_la_entrada_y_dice_quien_la_tiene(): void
     {
         $user = $this->usuarioApi(['inventario.registrar']);
 
@@ -167,15 +168,14 @@ class MovimientosTest extends TestCase
             'unidades' => [$this->unidad(['no_serie' => 'DUP-1'])],
         ]))->assertCreated();
 
+        // Ninguna serie se repite en el inventario: la segunda entrada no se guarda.
         $this->conToken($user)->post('/api/v1/movimientos', $this->datosEntrada([
-            'unidades' => [$this->unidad(['no_serie' => 'DUP-1'])],
-        ]))->assertCreated()
-            ->assertJsonPath('advertencias.0', 'Estos números de serie ya existían para este producto y se guardaron sin serie (la evidencia y la unidad sí se conservaron): DUP-1.');
+            'unidades' => [$this->unidad(['no_serie' => 'dup-1'])],
+        ]))->assertStatus(422)
+            ->assertJsonPath('errors.unidades.0', fn (string $m) => str_contains($m, 'DUP-1') && str_contains($m, 'ya está registrado en el inventario'));
 
-        // Las dos entradas cayeron en el mismo producto.
-        $this->assertDatabaseCount('productos', 1);
-        $this->assertSame(2, Producto::firstOrFail()->stock);
-        $this->assertSame(1, ProductoSerial::whereNull('no_serie')->count());
+        $this->assertSame(1, Producto::firstOrFail()->stock);
+        $this->assertSame(1, ProductoSerial::count());
     }
 
     public function test_video_por_pedazos_se_ensambla_y_se_liga_a_la_pieza(): void
@@ -267,12 +267,13 @@ class MovimientosTest extends TestCase
             ->assertJsonPath('data.orden_salida', null)
             ->assertJsonPath('data.movement_date', now()->toDateString());
 
-        $codigo = ProductoSerial::firstOrFail()->codigo;
+        // La etiqueta impresa muestra la serie; el código interno va dentro del QR.
+        $serie = ProductoSerial::firstOrFail()->no_serie;
 
         $html = $this->conToken($user)->get("/api/v1/movimientos/{$movimiento->id}/etiquetas");
         $html->assertOk();
         $this->assertStringContainsString('text/html', $html->headers->get('Content-Type'));
-        $html->assertSee($codigo);
+        $html->assertSee($serie);
 
         $this->conToken($user)->getJson('/api/v1/movimientos/99999')
             ->assertNotFound()->assertJsonPath('codigo', 'no_encontrado');
@@ -289,13 +290,13 @@ class MovimientosTest extends TestCase
             ->assertJsonPath('data.procesos.hojalateria', 'Hojalatería')
             ->assertJsonPath('data.puede_definir_precio', false)
             ->assertJsonPath('data.firma_registrada', null)
-            ->assertJsonStructure(['data' => ['checklist' => ['funcionamiento' => ['titulo', 'puntos']], 'estados_generales', 'video']]);
+            ->assertJsonStructure(['data' => ['checklist' => ['fisico' => ['titulo', 'puntos']], 'estados_generales', 'video']]);
 
         $this->conToken($this->usuarioApi(['inventario.ver']))->getJson('/api/v1/movimientos/catalogos')
             ->assertForbidden();
     }
 
-    public function test_eliminar_pide_pin_y_borra_piezas_y_evidencia(): void
+    public function test_eliminar_ya_no_pide_pin_y_borra_piezas_y_evidencia(): void
     {
         $user = $this->usuarioApi(['inventario.registrar', 'inventario.eliminar']);
 
@@ -303,11 +304,7 @@ class MovimientosTest extends TestCase
         $movimiento = InventoryMovement::firstOrFail();
         $evidencia = ProductoSerial::firstOrFail()->evidence_paths[0];
 
-        $this->conToken($user)->deleteJson("/api/v1/movimientos/{$movimiento->id}", ['password' => 'otra'])
-            ->assertStatus(422)
-            ->assertJsonPath('errors.password.0', 'PIN o contraseña incorrecta.');
-
-        $this->conToken($user)->deleteJson("/api/v1/movimientos/{$movimiento->id}", ['password' => 'password'])
+        $this->conToken($user)->deleteJson("/api/v1/movimientos/{$movimiento->id}")
             ->assertOk()
             ->assertJsonPath('message', "Movimiento {$movimiento->folio} eliminado.");
 
@@ -321,17 +318,12 @@ class MovimientosTest extends TestCase
     public function test_no_se_elimina_una_entrada_con_piezas_vendidas(): void
     {
         $user = $this->usuarioApi(['inventario.registrar', 'inventario.eliminar']);
-        $user->setApprovalPin('1234');
 
         $this->conToken($user)->post('/api/v1/movimientos', $this->datosEntrada())->assertCreated();
         $movimiento = InventoryMovement::firstOrFail();
         ProductoSerial::query()->update(['vendido' => true, 'vendido_en' => now()]);
 
-        // Con PIN configurado, la contraseña ya no sirve: va el PIN.
-        $this->conToken($user)->deleteJson("/api/v1/movimientos/{$movimiento->id}", ['password' => 'password'])
-            ->assertStatus(422);
-
-        $this->conToken($user)->deleteJson("/api/v1/movimientos/{$movimiento->id}", ['password' => '1234'])
+        $this->conToken($user)->deleteJson("/api/v1/movimientos/{$movimiento->id}")
             ->assertStatus(409)
             ->assertJsonPath('message', 'No se puede eliminar: alguna unidad de esta entrada ya se vendió.')
             ->assertJsonPath('codigo', 'conflicto');

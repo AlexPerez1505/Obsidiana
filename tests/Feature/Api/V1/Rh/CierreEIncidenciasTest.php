@@ -59,7 +59,7 @@ class CierreEIncidenciasTest extends TestCase
 
     public function test_una_incidencia_justifica_la_falta_y_al_borrarla_regresa(): void
     {
-        $rh = $this->usuarioApi(['asistencia.ver', 'asistencia.gestionar']);
+        $rh = $this->usuarioApi(['asistencia.ver', 'asistencia.gestionar', 'asistencia.eliminar']);
         $emp = $this->empleado(['name' => 'Luis Mora']);
         $otro = $this->empleado();
         $this->checada($otro, '2026-10-12 09:00:00');

@@ -35,6 +35,11 @@ class CobranzaController extends Controller
             'asesorId' => $asesorId,
             'buscar' => $buscar,
             'conteos' => $this->panorama->conteos($filas),
+            // Pagos que subieron los vendedores y esperan a alguien con NIP.
+            'porAprobar' => \App\Models\CobroSolicitud::with(['venta.customer:id,nombre,apellido', 'subidoPor:id,name', 'parcialidad:id,nombre'])
+                ->where('estado', \App\Models\CobroSolicitud::PENDIENTE)
+                ->whereHas('venta', fn ($v) => $v->visiblesPara($request->user()))
+                ->oldest('id')->get(),
         ]);
     }
 }

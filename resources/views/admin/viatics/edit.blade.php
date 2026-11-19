@@ -219,6 +219,12 @@
                 {{ $v->model ?: $v->brand ?: 'Vehículo' }}
             </button>
         @endforeach
+        <button type="button" class="vt-chip {{ !$viatic->vehicle_id && $viatic->vehicle_name === 'Nissan y Versa' ? 'selected' : '' }}"
+                data-vehicle-id="" data-vehicle-name="Nissan y Versa"
+                onclick="vtSelectVehicle(this, '', 'Nissan y Versa')">
+            <x-gravityui-car />
+            Ambos carros
+        </button>
         @if($vehicles->isEmpty())
             <button type="button" class="vt-chip selected" data-vehicle-id="">
                 <x-gravityui-car />
@@ -232,6 +238,7 @@
         @csrf
         @method('PATCH')
         <input type="hidden" name="vehicle_id" id="vtVehicleId" value="{{ $viatic->vehicle_id ?? '' }}">
+        <input type="hidden" name="vehicle_name" id="vtVehicleName" value="{{ $viatic->vehicle_id ? '' : ($viatic->vehicle_name ?? '') }}">
         <input type="hidden" name="expense_date" value="{{ $viatic->expense_date?->format('Y-m-d') ?? now()->format('Y-m-d') }}">
 
         <div class="vt-form-card">
@@ -242,6 +249,22 @@
                     <x-gravityui-map-pin class="vt-input-icon" />
                     <input type="text" name="place" class="vt-input" placeholder="Ej. Guadalajara, Jalisco" value="{{ old('place', $viatic->place) }}">
                 </div>
+            </div>
+
+            {{-- Fechas y personas --}}
+            <div class="vt-row-2">
+                <div class="vt-field">
+                    <label class="vt-label">Fecha de ida</label>
+                    <input type="date" name="fecha_ida" class="vt-input" value="{{ old('fecha_ida', $viatic->fecha_ida?->format('Y-m-d')) }}">
+                </div>
+                <div class="vt-field">
+                    <label class="vt-label">Fecha de regreso</label>
+                    <input type="date" name="fecha_regreso" class="vt-input" value="{{ old('fecha_regreso', $viatic->fecha_regreso?->format('Y-m-d')) }}">
+                </div>
+            </div>
+            <div class="vt-field">
+                <label class="vt-label">Quiénes fueron</label>
+                <input type="text" name="personas_viaje" class="vt-input" placeholder="Nombres de las personas que viajaron" value="{{ old('personas_viaje', $viatic->personas_viaje) }}">
             </div>
 
             {{-- Casetas & Gasolina --}}
@@ -265,7 +288,7 @@
             {{-- Viáticos & Hospedaje --}}
             <div class="vt-row-2">
                 <div class="vt-field">
-                    <label class="vt-label">Viáticos</label>
+                    <label class="vt-label">Comida</label>
                     <div class="vt-input-wrap">
                         <span class="vt-prefix">$</span>
                         <input type="number" name="meals" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal" value="{{ old('meals', $viatic->meals) }}">
@@ -282,11 +305,21 @@
 
             {{-- Adicional --}}
             <div class="vt-field">
-                <label class="vt-label">Adicional</label>
+                <label class="vt-label">Días de hospedaje</label>
+                <input type="number" name="dias_hospedaje" class="vt-input" placeholder="0" min="0" max="3650" step="1" value="{{ old('dias_hospedaje', $viatic->dias_hospedaje ?? 0) }}">
+            </div>
+
+            {{-- Extras --}}
+            <div class="vt-field">
+                <label class="vt-label">Costo de extras</label>
                 <div class="vt-input-wrap">
                     <span class="vt-prefix">$</span>
                     <input type="number" name="additional" class="vt-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal" value="{{ old('additional', $viatic->additional) }}">
                 </div>
+            </div>
+            <div class="vt-field">
+                <label class="vt-label">Detalle de extras</label>
+                <textarea name="extras" class="vt-input" placeholder="Ej. Galletas, agua o material adicional...">{{ old('extras', $viatic->extras) }}</textarea>
             </div>
 
             {{-- Descripción --}}
@@ -332,7 +365,7 @@
     <form method="POST" action="{{ route('admin.viatics.destroy', $viatic) }}" data-confirm="¿Eliminar este viático? Esta acción no se puede deshacer.">
         @csrf
         @method('DELETE')
-        <button type="submit" class="vt-delete-btn">
+        <button type="submit" class="vt-delete-btn" @disabled(auth()->user()->cannot('viaticos.eliminar'))>
             <x-gravityui-trash-bin />
             Eliminar Viático
         </button>
@@ -341,10 +374,11 @@
 </div>
 
 <script>
-    function vtSelectVehicle(btn, id) {
+    function vtSelectVehicle(btn, id, nombre = '') {
         document.querySelectorAll('.vt-chip').forEach(c => c.classList.remove('selected'));
         btn.classList.add('selected');
         document.getElementById('vtVehicleId').value = id;
+        document.getElementById('vtVehicleName').value = nombre;
     }
 
     function vtQuitarFotoExistente(btn, ruta) {

@@ -14,7 +14,7 @@ use App\Models\Subtype;
  */
 trait ConstruyeCatalogoEquipo
 {
-    private function catalogoEquipo(): array
+    private function catalogoEquipo(bool $conModelos = true): array
     {
         $subtipos = Subtype::with('brands')->orderBy('name')->get();
 
@@ -33,10 +33,10 @@ trait ConstruyeCatalogoEquipo
                 ->all(),
 
             // La llave es "subtipo-marca": el modelo depende de las dos cosas.
-            'modelos' => EquipmentModel::orderBy('name')->get(['id', 'name', 'brand_id', 'subtype_id'])
+            'modelos' => $conModelos ? EquipmentModel::orderBy('name')->get(['id', 'name', 'brand_id', 'subtype_id'])
                 ->groupBy(fn ($m) => $m->subtype_id.'-'.$m->brand_id)
                 ->map(fn ($lista) => $lista->map(fn ($m) => ['id' => $m->id, 'name' => $m->name])->values())
-                ->all(),
+                ->all() : [],
         ];
     }
 }

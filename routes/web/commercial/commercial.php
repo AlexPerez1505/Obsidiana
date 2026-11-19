@@ -20,6 +20,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/gestion-comercial/clientes/registrar', [CustomerController::class, 'store'])
         ->middleware('can:clientes.crear')->name('commercial.clientes.store');
 
+    // Municipios del estado elegido en la dirección (catálogo INEGI).
+    Route::get('/gestion-comercial/clientes/municipios', [CustomerController::class, 'municipios'])
+        ->middleware('can:clientes.ver')->name('commercial.clientes.municipios');
+
     // Va antes de {cliente} para que "similar" no se tome como un id.
     Route::get('/gestion-comercial/clientes/similar', [CustomerController::class, 'similar'])
         ->middleware('can:clientes.ver')->name('commercial.clientes.similar');
@@ -34,16 +38,33 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::put('/gestion-comercial/clientes/{cliente}', [CustomerController::class, 'update'])
         ->middleware('can:clientes.editar')->name('commercial.clientes.update');
 
+    // No se borra (tiene ventas/servicios ligados): solo se desactiva.
+    Route::patch('/gestion-comercial/clientes/{cliente}/activo', [CustomerController::class, 'toggleActivo'])
+        ->middleware('can:clientes.editar')->name('commercial.clientes.toggleActivo');
+
+    // Eliminar de verdad: solo si no tiene ventas/cotizaciones/servicios ligados.
+    Route::delete('/gestion-comercial/clientes/{cliente}', [CustomerController::class, 'destroy'])
+        ->middleware('can:clientes.eliminar')->name('commercial.clientes.destroy');
+
+    // Borra al cliente con todo su historial: solo para depurar pruebas.
+    Route::delete('/gestion-comercial/clientes/{cliente}/definitivo', [CustomerController::class, 'destroyDefinitivo'])
+        ->middleware('can:clientes.eliminar_definitivo')->name('commercial.clientes.destroyDefinitivo');
+
     Route::post('/gestion-comercial/clientes/categorias', [CustomerController::class, 'storeCategory'])
         ->middleware('can:clientes.crear')->name('commercial.clientes.categories.store');
 
     // Seguimientos de clientes y prospectos (recordatorios)
+    // Historial completo de seguimientos (modal de la lista de clientes).
+    Route::get('/gestion-comercial/clientes/{cliente}/seguimientos', [SeguimientoController::class, 'historial'])
+        ->middleware('can:clientes.ver')->name('commercial.clientes.seguimientos.historial');
     Route::post('/gestion-comercial/clientes/{cliente}/seguimientos', [SeguimientoController::class, 'store'])
         ->middleware('can:clientes.editar')->name('commercial.clientes.seguimientos.store');
     Route::post('/gestion-comercial/clientes/{cliente}/seguimientos/{seguimiento}/hecho', [SeguimientoController::class, 'hecho'])
         ->middleware('can:clientes.editar')->name('commercial.clientes.seguimientos.hecho');
     Route::post('/gestion-comercial/clientes/{cliente}/seguimientos/{seguimiento}/reprogramar', [SeguimientoController::class, 'reprogramar'])
         ->middleware('can:clientes.editar')->name('commercial.clientes.seguimientos.reprogramar');
+    Route::post('/gestion-comercial/clientes/{cliente}/seguimientos/{seguimiento}/reasignar', [SeguimientoController::class, 'reasignar'])
+        ->middleware('can:clientes.editar')->name('commercial.clientes.seguimientos.reasignar');
     Route::delete('/gestion-comercial/clientes/{cliente}/seguimientos/{seguimiento}', [SeguimientoController::class, 'destroy'])
         ->middleware('can:clientes.editar')->name('commercial.clientes.seguimientos.destroy');
     Route::post('/gestion-comercial/clientes/{cliente}/convertir', [SeguimientoController::class, 'convertir'])
@@ -73,7 +94,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/gestion-comercial/remisiones/{cotizacion}/pdf', [CotizacionController::class, 'descargarRemisionPdf'])
         ->middleware('can:cotizaciones.ver')->name('commercial.remisiones.pdf');
 
-    Route::get('/gestion-comercial/promociones', function () {
-        return view('structure.commercial_management.placeholder', ['titulo' => 'Promociones']);
-    })->name('commercial.promociones.index');
+    // La pantalla vieja (de relleno) ahora lleva al módulo Marketing y promociones.
+    Route::get('/gestion-comercial/promociones', fn () => redirect()->route('promociones.campanas.index'))
+        ->name('commercial.promociones.index');
 });

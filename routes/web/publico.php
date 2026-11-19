@@ -39,6 +39,22 @@ Route::prefix('consulta')->name('publico.')->group(function () {
 | lo que teclea una pistola lectora. No lleva nada comercial, así que no
 | importa que se pueda escribir a mano.
 */
+/*
+|--------------------------------------------------------------------------
+| Mi garantía (portal del cliente)
+|--------------------------------------------------------------------------
+| El enlace o QR de la póliza. Se entra por UUID, como la consulta de
+| ventas; reportar una falla tiene límite para que no se use como buzón.
+*/
+Route::prefix('consulta/garantia/{token}')->name('publico.garantia')
+    ->where(['token' => '[0-9a-fA-F-]{36}'])
+    ->group(function () {
+        Route::get('/', [\App\Http\Controllers\GarantiaPublicaController::class, 'show']);
+        Route::get('/poliza', [\App\Http\Controllers\GarantiaPublicaController::class, 'poliza'])->name('.poliza');
+        Route::post('/reclamar', [\App\Http\Controllers\GarantiaPublicaController::class, 'reclamar'])
+            ->middleware('throttle:5,60')->name('.reclamar');
+    });
+
 Route::get('/equipo/{codigo}', FichaEquipoPublicaController::class)
     ->name('publico.equipo')
     ->where('codigo', '[A-Za-z]{2,6}-[0-9]{4,10}');

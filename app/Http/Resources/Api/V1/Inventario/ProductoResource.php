@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1\Inventario;
 
 use App\Models\Producto;
+use App\Support\EdicionPropia;
 use App\Support\PrecioVisible;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -39,11 +40,18 @@ class ProductoResource extends JsonResource
             ),
             'stock' => (int) $this->stock,
             'descripcion' => $this->descripcion,
+            // Opcional: la REF o número de parte del fabricante.
+            'referencia' => $this->referencia,
             'proveedor' => $this->proveedor,
             // Caché de búsqueda: las series de las piezas sin vender.
             'no_serie' => $this->no_serie,
             'es_serializado' => (bool) $this->es_serializado,
             'imagen_url' => $this->imagen_path ? Storage::disk('public')->url($this->imagen_path) : null,
+            'created_by' => $this->created_by,
+            // Lo que este usuario (con este token) puede hacer ahora: con
+            // permiso, o porque lo dio de alta hace menos de 8 horas.
+            'puede_editar' => EdicionPropia::puedeEditarProducto($request->user(), $this->resource),
+            'puede_eliminar' => EdicionPropia::puedeEliminarProducto($request->user(), $this->resource),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'piezas' => PiezaResource::collection($this->whenLoaded('seriales')),

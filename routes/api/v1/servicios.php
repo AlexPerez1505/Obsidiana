@@ -82,7 +82,7 @@ Route::prefix('marketing')->name('marketing.')->middleware('can:marketing.ver')-
     Route::put('/tareas/{task}', [TareaController::class, 'update'])
         ->whereNumber('task')->middleware('can:marketing.editar')->name('tareas.update');
     Route::delete('/tareas/{task}', [TareaController::class, 'destroy'])
-        ->whereNumber('task')->middleware('can:marketing.editar')->name('tareas.destroy');
+        ->whereNumber('task')->middleware('can:marketing.eliminar')->name('tareas.destroy');
     Route::post('/tareas/{task}/enviar-revision', [TareaController::class, 'enviarRevision'])
         ->whereNumber('task')->middleware('can:marketing.editar')->name('tareas.enviar_revision');
     Route::post('/tareas/{task}/aprobar', [TareaController::class, 'aprobar'])

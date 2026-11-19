@@ -15,6 +15,10 @@
 @php
     $textoGuardar = $textoGuardar ?? 'Guardar';
     $avisosStock = $avisosStock ?? [];
+    // La cotización no aparta ni entrega piezas: ahí no se muestra el stock
+    // ni se eligen números de serie (eso se decide al hacer la venta).
+    $mostrarStock = $mostrarStock ?? true;
+    $columnas = $mostrarStock ? 10 : 9;
 @endphp
 
 {{-- Cabecera estandar del sistema. El guardado vive al pie del formulario. --}}
@@ -64,14 +68,22 @@
             <div class="cot-panel">
                 <div class="cot-panel-head">Detalles de la propuesta</div>
                 <div class="cot-panel-body">
-                    <label class="cot-lbl">Congreso</label>
-                    <select id="congreso_id" class="cot-input">
-                        <option value="">Sin congreso</option>
-                        @foreach ($congresos as $congresoOpcion)
-                            <option value="{{ $congresoOpcion->id }}">{{ $congresoOpcion->nombre }}</option>
-                        @endforeach
-                    </select>
-                    <p class="cot-hint">Déjalo en «Sin congreso» si no se levantó en uno; entonces no aparece en el PDF.</p>
+                    {{-- Si el cliente se conoció en un congreso, se toma solo y el
+                         selector queda escondido tras "Cambiar". --}}
+                    <div class="cot-congreso-resumen" id="congresoResumen" hidden>
+                        <span>Congreso <b id="congresoNombre"></b></span>
+                        <button type="button" class="cot-link" id="congresoCambiar">Cambiar</button>
+                    </div>
+                    <div id="congresoCampo">
+                        <label class="cot-lbl">Congreso</label>
+                        <select id="congreso_id" class="cot-input">
+                            <option value="">Sin congreso</option>
+                            @foreach ($congresos as $congresoOpcion)
+                                <option value="{{ $congresoOpcion->id }}">{{ $congresoOpcion->nombre }}</option>
+                            @endforeach
+                        </select>
+                        <p class="cot-hint" id="congresoHint">Déjalo en «Sin congreso» si no se levantó en uno; entonces no aparece en el PDF.</p>
+                    </div>
 
                     <label class="cot-lbl" style="margin-top:14px;">Garantía del equipo</label>
                     <select id="garantia_meses" class="cot-input">
@@ -106,6 +118,28 @@
                     <span style="font-size:12px; color:var(--muted); font-weight:500;">Marca <b style="color:var(--green);">Regalo</b> para excluir del total.</span>
                 </div>
                 <div class="cot-panel-body" style="padding-bottom:6px;">
+                    @isset($filtrosProductos)
+                        {{-- Catálogo en una fila de selectores compactos (como en
+                             Inventario): el texto del label se queda para los
+                             lectores de pantalla, la opción ya dice qué es. --}}
+                        <div class="cot-filtros">
+                            <label>Tipo de equipo
+                                <select id="prodFilterType"><option value="">Todos los tipos</option></select>
+                            </label>
+                            <label>Subtipo
+                                <select id="prodFilterSubtype"><option value="">Todos los subtipos</option></select>
+                            </label>
+                            <label>Marca
+                                <select id="prodFilterBrand"><option value="">Todas las marcas</option></select>
+                            </label>
+                            <label>Modelo
+                                <select id="prodFilterModel"><option value="">Todos los modelos</option></select>
+                            </label>
+                            <button type="button" id="prodFilterClear" class="cot-filtros-x" title="Limpiar filtros" aria-label="Limpiar filtros">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 3H2l8 9.46V19l4 2v-8.54"/><line x1="16" y1="5" x2="22" y2="11"/><line x1="22" y1="5" x2="16" y2="11"/></svg>
+                            </button>
+                        </div>
+                    @endisset
                     <div style="position:relative;">
                         <svg style="position:absolute; left:13px; top:50%; transform:translateY(-50%); width:17px; height:17px; color:var(--muted); pointer-events:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         <input type="text" id="prodSearch" class="cot-input" placeholder="Buscar producto o paquete para agregar..." autocomplete="off" style="padding-left:40px;">
@@ -117,11 +151,11 @@
                         <thead>
                             <tr>
                                 <th>Imagen</th><th>Equipo</th><th>Modelo</th><th>Marca</th>
-                                <th>Stock</th><th>Cantidad</th><th>Subtotal</th><th>Sobreprecio</th><th>Regalo</th><th>Acción</th>
+                                @if ($mostrarStock)<th>Stock</th>@endif<th>Cantidad</th><th>Subtotal</th><th>Sobreprecio</th><th>Regalo</th><th>Acción</th>
                             </tr>
                         </thead>
                         <tbody id="itemsBody">
-                            <tr id="itemsEmpty"><td colspan="10" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>
+                            <tr id="itemsEmpty"><td colspan="{{ $columnas }}" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -132,7 +166,7 @@
                     <div class="cot-totes">
                         <div class="cot-tote-row">
                             <label>Envío</label>
-                            <input type="text" id="envio" class="cot-input cot-num" inputmode="decimal" value="0">
+                            <input type="text" id="envio" class="cot-input cot-num" inputmode="decimal" value="" placeholder="0">
                         </div>
                         <div class="cot-tote-row">
                             <label>Descuento</label>
@@ -141,23 +175,46 @@
                                     <option value="porcentaje">%</option>
                                     <option value="monto">$ monto</option>
                                 </select>
-                                <input type="text" id="descuento_valor" class="cot-input cot-num" inputmode="decimal" value="0">
+                                <input type="text" id="descuento_valor" class="cot-input cot-num" inputmode="decimal" value="" placeholder="0">
                             </div>
+                        </div>
+                        {{-- Cupón de promoción: aquí solo se escribe el código; el descuento lo calcula el servidor. --}}
+                        <div class="cot-tote-row">
+                            <label for="cupon_codigo">Cupón</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="cupon_codigo" class="cot-input" placeholder="Código de promoción" autocomplete="off" style="text-transform:uppercase;">
+                                <button type="button" class="btn btn--ghost" id="cuponAplicar" style="white-space:nowrap;">Aplicar</button>
+                            </div>
+                            <div id="cuponMsg" style="font-size:12px; margin-top:4px; color:var(--muted);"></div>
                         </div>
                         <label style="display:flex; align-items:center; gap:8px; margin:6px 0;">
                             <input type="checkbox" id="aplica_iva"> Aplicar IVA (16%)
                         </label>
                         <div class="cot-line"><span>Subtotal</span><b id="tSubtotal">$0.00</b></div>
                         <div class="cot-line"><span>Descuento</span><b id="tDescuento">-$0.00</b></div>
+                        <div class="cot-line" id="tCuponLinea" style="display:none; color:var(--green, #15803d);"><span>Cupón <span id="tCuponCodigo"></span></span><b id="tCupon">-$0.00</b></div>
                         <div class="cot-line"><span>IVA</span><b id="tIva">$0.00</b></div>
                         <div class="cot-line cot-line-strong"><span>Total</span><b id="tTotal">$0.00</b></div>
 
-                        <div class="cot-tote-row" style="margin-top:12px;">
-                            <label>Valor a cuenta (equipos / mercancía a cuenta)</label>
-                            <input type="text" id="valor_a_cuenta" class="cot-input cot-num" inputmode="decimal" value="0">
+                        {{-- Qué equipo entrega el cliente a cuenta, cada uno con su
+                             valor: la suma se resta del total para el contrato.
+                             Sale en la cotización, la venta, el PDF y el contrato. --}}
+                        @php $sugCuenta = \App\Support\EquiposACuenta::sugerencias(); @endphp
+                        <div class="cot-cuenta">
+                            <div class="cot-cuenta-head">
+                                <span>Equipo a cuenta</span>
+                                <button type="button" class="btn btn--ghost cot-cuenta-add" id="cuentaAgregar">+ Agregar equipo</button>
+                            </div>
+                            <div id="cuentaLista"></div>
                         </div>
-                        <p style="font-size:12px; color:var(--muted); margin:6px 0 0;">Se resta del total para calcular el contrato.</p>
+
+                        <div class="cot-line" id="tCuentaLinea" style="display:none;"><span>Valor a cuenta</span><b id="tCuenta">-$0.00</b></div>
                         <div class="cot-line cot-line-strong"><span>Total del contrato</span><b id="tContrato">$0.00</b></div>
+                        @foreach (['tipo', 'subtipo', 'marca', 'modelo'] as $campo)
+                            <datalist id="dlCuenta-{{ $campo }}">
+                                @foreach ($sugCuenta[$campo] as $v)<option value="{{ $v }}"></option>@endforeach
+                            </datalist>
+                        @endforeach
                     </div>
                 </div>
             </div>
@@ -248,6 +305,10 @@
     .cli-alcorriente { margin:10px 0 0; color:var(--green); font-size:12.5px; font-weight:600; }
 
     /* Elegir cuáles piezas se entregan */
+    .cot-congreso-resumen { display:flex; align-items:center; justify-content:space-between; gap:10px;
+        padding:10px 12px; border:1px solid var(--border); border-radius:9px; font-size:14px; color:var(--muted); }
+    .cot-congreso-resumen[hidden] { display:none; }
+    .cot-congreso-resumen b { color:var(--text); margin-left:4px; }
     .cot-link { padding:0; border:0; background:none; color:var(--primary); font-family:inherit;
                 font-size:12px; font-weight:600; cursor:pointer; text-decoration:underline; }
     .cot-piezas { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:8px; }
@@ -261,6 +322,22 @@
     .cot-pieza .det { color:var(--muted); font-size:11.5px; }
     .cot-totes label { font-weight:600; }
     .cot-tote-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:8px 0; }
+
+    /* Equipo a cuenta */
+    .cot-cuenta { margin-top:12px; padding-top:12px; border-top:1px dashed var(--border); }
+    .cot-cuenta-head { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:13px; font-weight:600; }
+    .cot-cuenta-add { padding:5px 10px !important; font-size:12.5px !important; }
+    .cot-cuenta-vacio { margin:6px 0 0; font-size:12px; color:var(--muted); }
+    .cot-cuenta-fila { position:relative; display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px; padding:10px 34px 10px 10px;
+                       border:1px solid var(--border); border-radius:10px; background:var(--surface-2, transparent); }
+    .cot-cuenta-fila .cot-input { padding:8px 10px; font-size:13.5px; }
+    .cot-cuenta-valor { position:relative; }
+    .cot-cuenta-valor span { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:13px; pointer-events:none; }
+    .cot-cuenta-valor .cot-input { padding-left:22px; text-align:right; }
+    .cot-cuenta-quitar { position:absolute; top:8px; right:6px; width:24px; height:24px; border:0; border-radius:6px; cursor:pointer;
+                         background:transparent; color:var(--muted); font-size:18px; line-height:1; }
+    .cot-cuenta-quitar:hover { color:var(--danger, #dc2626); }
+    @media (max-width:520px) { .cot-cuenta-fila { grid-template-columns:1fr; } }
     .cot-line { display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:14px; color:var(--text); border-top:1px dashed var(--border); }
     .cot-line-strong { font-size:17px; font-weight:800; border-top:1px solid var(--border); margin-top:4px; padding-top:12px; }
     .cot-pay { border:1px solid var(--border); border-radius:14px; padding:14px; background:var(--surface); }
@@ -269,6 +346,31 @@
     .cot-pay-date { color:var(--muted); font-size:13px; margin-top:2px; }
     .cot-pay-amt { font-weight:800; font-size:16px; }
     .cot-pay-controls { display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap; }
+    /* Filtros del catálogo: una fila de selectores redondeados. */
+    .cot-filtros { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+    .cot-filtros label { position:relative; flex:1 1 0; min-width:0; font-size:0; line-height:0; }
+    .cot-filtros label::after { content:''; position:absolute; right:13px; top:50%; width:6px; height:6px;
+        border-right:1.6px solid var(--muted); border-bottom:1.6px solid var(--muted);
+        transform:translateY(-70%) rotate(45deg); pointer-events:none; }
+    .cot-filtros select { -webkit-appearance:none; appearance:none; width:100%; height:38px; padding:0 32px 0 14px;
+        border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--muted);
+        font:inherit; font-size:13px; line-height:38px; cursor:pointer; text-overflow:ellipsis;
+        transition:border-color .15s, background-color .15s, color .15s; }
+    .cot-filtros select:hover { border-color:var(--muted); color:var(--text); }
+    .cot-filtros select:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+    .cot-filtros select:not(:has(option[value=""]:checked)) { border-color:var(--primary); background:var(--primary-soft);
+        color:var(--primary); font-weight:600; }
+    .cot-filtros label:has(select:not(:has(option[value=""]:checked)))::after { border-color:var(--primary); }
+    .cot-filtros select option { color:var(--text); background:var(--surface); font-weight:400; }
+    .cot-filtros-x { flex:0 0 38px; height:38px; display:inline-flex; align-items:center; justify-content:center;
+        border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--muted); cursor:pointer; }
+    .cot-filtros-x:hover { background:var(--danger-soft); color:var(--danger); border-color:transparent; }
+    .cot-filtros-x svg { width:16px; height:16px; }
+    @media (max-width:760px) {
+        .cot-filtros { flex-wrap:wrap; }
+        .cot-filtros label { flex:1 1 calc(50% - 4px); }
+    }
+    .cot-prow-fecha { width:auto; padding:5px 8px; font-size:12.5px; margin-top:4px; }
     .cot-btn-x { background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:9px; padding:6px 11px; cursor:pointer; font-weight:600; font-size:13px;
                  transition:background .14s ease, color .14s ease, border-color .14s ease, transform .12s var(--erp-ease); }
     .cot-btn-x:hover { background:var(--danger-soft); color:var(--danger); border-color:transparent; }
@@ -357,9 +459,18 @@
 (function () {
     const ROUTES = { clientes: @json($rClientes), productos: @json($rProductos), fichas: @json($rFichas) };
     const INITIAL = @json($initial);
+    const MOSTRAR_STOCK = @json($mostrarStock);
+    const COLUMNAS = MOSTRAR_STOCK ? 10 : 9;
     // Con cobros aplicados a alguna parcialidad, el plan no se toca desde aquí.
     const PLAN_BLOQUEADO = @json((bool) ($planBloqueado ?? false));
     const IVA = 0.16;
+    // Cupones: el servidor valida y calcula (MotorDeCupones). Aquí solo se muestra.
+    const CUPON = {
+        url: @json(route('promociones.cupones.comprobar')),
+        cotizacion_id: @json(optional(request()->route('cotizacion'))->id ?? (request()->integer('cotizacion') ?: null)),
+        venta_id: @json(optional(request()->route('venta'))->id),
+        csrf: @json(csrf_token()),
+    };
 
     const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
     const ICON_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
@@ -367,6 +478,7 @@
     const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
     const state = {
+        cuenta: (INITIAL.equipos_a_cuenta || []).map(r => ({ tipo: r.tipo || '', subtipo: r.subtipo || '', marca: r.marca || '', modelo: r.modelo || '', no_serie: r.no_serie || '', valor: +r.valor || 0 })),
         customer: INITIAL.customer,
         items: (INITIAL.items || []).map(i => ({
             tipo_item: i.tipo_item, equipo_id: i.equipo_id, paquete_id: i.paquete_id, producto_id: i.producto_id,
@@ -378,15 +490,18 @@
         pagos: (INITIAL.pagos || []).map(p => ({ ...p, porcentaje:+p.porcentaje, monto:+p.monto, bloqueado:!!p.bloqueado })),
         fichas: INITIAL.fichas || [],
         meses: (+INITIAL.num_meses > 0 ? +INITIAL.num_meses : 2),
-        // Automático: las fechas se calculan solas cada "frecuenciaDias" días.
-        // Manual: cada pago tiene su propia fecha, editable libremente.
-        modoPagos: 'automatico',
+        // Solo hay modo manual: cada pago tiene su propia fecha, editable.
+        // La frecuencia solo propone la fecha del pago que se agrega.
+        modoPagos: 'manual',
         frecuenciaDias: 30,
     };
 
     const money = n => '$' + (Math.round((+n || 0) * 100) / 100).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const $ = id => document.getElementById(id);
     const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g, '')); return isNaN(n) ? 0 : n; };
+    // Los campos de importes no arrancan con un 0 escrito (estorba al
+    // capturar): si vale 0 se muestran vacíos, con el 0 solo de guía.
+    const sinCero = v => (num(v) === 0 ? '' : v);
     const MESES_ABBR = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
     const fmtFecha = s => { if (!s) return ''; const d = new Date(s + 'T00:00:00'); return `${String(d.getDate()).padStart(2,'0')} ${MESES_ABBR[d.getMonth()]} ${d.getFullYear()}`; };
 
@@ -432,7 +547,7 @@
         const sobran = elegidas.length > it.cantidad;
 
         tr.innerHTML = `
-            <td colspan="10" style="background:var(--surface-2); padding:14px 16px;">
+            <td colspan="${COLUMNAS}" style="background:var(--surface-2); padding:14px 16px;">
                 <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
                     <b style="font-size:13px;">¿Cuáles piezas se entregan?</b>
                     <span style="color:${sobran ? 'var(--danger)' : 'var(--muted)'}; font-size:12.5px;">
@@ -450,15 +565,30 @@
         return tr;
     }
 
-    function bindAutocomplete(inputEl, resultsEl, url, onPick, render) {
-        let timer = null;
+    function bindAutocomplete(inputEl, resultsEl, url, onPick, render, opciones = {}) {
+        let timer = null, revision = 0;
+        const mensaje = texto => {
+            const el = document.createElement('div');
+            el.className = 'cot-ac-item';
+            el.textContent = texto;
+            resultsEl.replaceChildren(el);
+            resultsEl.classList.add('open');
+        };
         const run = () => {
-            const q = inputEl.value.trim();
-            fetch(url + '?q=' + encodeURIComponent(q), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(r => r.json())
+            clearTimeout(timer);
+            const actual = ++revision;
+            const params = new URLSearchParams({ q: inputEl.value.trim(), ...(opciones.parametros?.() || {}) });
+            if (opciones.sinResultados) mensaje('Buscando…');
+            fetch(url + '?' + params, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => { if (!r.ok) throw new Error('No se pudieron cargar los resultados.'); return r.json(); })
                 .then(data => {
+                    if (actual !== revision) return;
                     resultsEl.innerHTML = '';
-                    if (!data.length) { resultsEl.classList.remove('open'); return; }
+                    if (!data.length) {
+                        if (opciones.sinResultados) mensaje(opciones.sinResultados);
+                        else resultsEl.classList.remove('open');
+                        return;
+                    }
                     data.forEach(d => {
                         const el = document.createElement('div');
                         el.className = 'cot-ac-item';
@@ -467,11 +597,12 @@
                         resultsEl.appendChild(el);
                     });
                     resultsEl.classList.add('open');
-                });
+                }).catch(() => { if (actual === revision) mensaje('No se pudieron cargar los resultados. Intenta de nuevo.'); });
         };
-        inputEl.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 220); });
+        inputEl.addEventListener('input', () => { revision++; clearTimeout(timer); timer = setTimeout(run, 220); });
         inputEl.addEventListener('focus', run);
         document.addEventListener('click', e => { if (!resultsEl.contains(e.target) && e.target !== inputEl) resultsEl.classList.remove('open'); });
+        return run;
     }
 
     function renderCliente() {
@@ -520,17 +651,51 @@
                 ? `<p class="cli-debe">Debe <b>${money(saldo)}</b> de compras anteriores.</p>`
                 : (c.compras ? '<p class="cli-alcorriente">Al corriente con sus pagos.</p>' : '')}`;
 
-        $('clienteClear').addEventListener('click', () => { state.customer = null; $('clienteSearch').focus(); renderCliente(); });
+        $('clienteClear').addEventListener('click', () => { state.customer = null; $('clienteSearch').focus(); renderCliente(); mostrarSelectorCongreso(true); });
     }
+    /*
+    | Si al cliente lo conocimos en un congreso, la propuesta toma ese
+    | congreso sola y el selector se esconde: queda una línea con el nombre
+    | y un botón "Cambiar" por si hace falta otro.
+    */
+    function mostrarSelectorCongreso(ver) {
+        $('congresoCampo').hidden = !ver;
+        $('congresoResumen').hidden = ver;
+    }
+    function congresoDelCliente(c) {
+        const select = $('congreso_id');
+        const opcion = c && c.congreso_id ? select.querySelector(`option[value="${c.congreso_id}"]`) : null;
+
+        if (opcion) {
+            select.value = String(c.congreso_id);
+            $('congresoNombre').textContent = opcion.textContent.trim();
+            mostrarSelectorCongreso(false);
+        } else {
+            mostrarSelectorCongreso(true);
+        }
+    }
+    $('congresoCambiar').addEventListener('click', () => {
+        mostrarSelectorCongreso(true);
+        $('congreso_id').focus();
+    });
+
     bindAutocomplete($('clienteSearch'), $('clienteResults'), ROUTES.clientes,
-        d => { state.customer = d; $('clienteSearch').value = ''; renderCliente(); },
+        d => { state.customer = d; $('clienteSearch').value = ''; renderCliente(); congresoDelCliente(d); },
         d => `<b>${d.nombre}</b><small>${[d.telefono, d.rfc, d.correo].filter(Boolean).join(' · ')}</small>`);
+
+    // Un solo aviso aunque se insista con el signo de menos.
+    let avisoSobreprecio = 0;
+    function avisarSobreprecioNegativo() {
+        if (Date.now() - avisoSobreprecio < 2500) return;
+        avisoSobreprecio = Date.now();
+        window.showToast?.('El sobreprecio solo acepta cantidades positivas. Para bajar el precio usa el campo Descuento.', 'warn');
+    }
 
     function renderItems() {
         const body = $('itemsBody');
         body.innerHTML = '';
         if (!state.items.length) {
-            body.innerHTML = '<tr id="itemsEmpty"><td colspan="10" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>';
+            body.innerHTML = `<tr id="itemsEmpty"><td colspan="${COLUMNAS}" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>`;
             recalc(); return;
         }
         state.items.forEach((it, idx) => {
@@ -541,19 +706,19 @@
                 : `<div class="cot-thumb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
             tr.innerHTML = `
                 <td>${thumb}</td>
-                <td style="font-weight:600;">${it.nombre}</td>
+                <td style="font-weight:600;">${it.nombre}${contenidoPaquete(it)}</td>
                 <td>${it.modelo || '—'}</td>
                 <td>${it.marca || '—'}</td>
-                <td>${celdaStock(it, idx)}</td>
+                ${MOSTRAR_STOCK ? `<td>${celdaStock(it, idx)}</td>` : ''}
                 <td><input type="number" min="1" class="cot-input cot-cell-num" data-k="cantidad" data-i="${idx}" value="${it.cantidad}"></td>
                 <td>${it.es_regalo ? '<span style="color:var(--green); font-weight:700;">Regalo</span>' : money(sub)}</td>
-                <td><input type="text" inputmode="decimal" class="cot-input cot-cell-num" data-k="sobreprecio" data-i="${idx}" value="${it.sobreprecio}"></td>
+                <td><input type="text" inputmode="decimal" class="cot-input cot-cell-num" data-k="sobreprecio" data-i="${idx}" value="${sinCero(it.sobreprecio)}" placeholder="0"></td>
                 <td><label class="cot-switch"><input type="checkbox" data-k="es_regalo" data-i="${idx}" ${it.es_regalo ? 'checked' : ''}><span class="track"></span></label></td>
                 <td style="text-align:right;"><button type="button" class="cot-ico-btn danger" data-del="${idx}" title="Eliminar" aria-label="Eliminar">${ICON_TRASH}</button></td>`;
             body.appendChild(tr);
 
             // Renglón desplegable para elegir cuáles piezas se entregan.
-            if (it.abierto && (it.piezas || []).length) {
+            if (MOSTRAR_STOCK && it.abierto && (it.piezas || []).length) {
                 body.appendChild(filaDePiezas(it, idx));
             }
         });
@@ -562,6 +727,14 @@
                 const i = +e.target.dataset.i, k = e.target.dataset.k;
                 if (k === 'es_regalo') state.items[i][k] = e.target.checked;
                 else if (k === 'cantidad') state.items[i][k] = Math.max(1, parseInt(e.target.value) || 1);
+                else if (k === 'sobreprecio') {
+                    // Solo cantidades positivas: para bajar el precio está Descuento.
+                    if (e.target.value.includes('-')) {
+                        e.target.value = e.target.value.replace(/-/g, '');
+                        avisarSobreprecioNegativo();
+                    }
+                    state.items[i][k] = Math.max(0, num(e.target.value));
+                }
                 else state.items[i][k] = num(e.target.value);
                 if (k === 'es_regalo' || k === 'cantidad') renderItems();
                 else recalc();
@@ -595,12 +768,22 @@
 
         recalc();
     }
+    // Lo que trae un paquete, multiplicado por cuántos paquetes lleva el renglón.
+    function contenidoPaquete(it) {
+        const lineas = (it.tipo_item === 'paquete' && Array.isArray(it.contenido)) ? it.contenido : [];
+        if (!lineas.length) return '';
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const n = Math.max(1, parseInt(it.cantidad) || 1);
+        return `<details style="margin-top:4px; font-weight:400;"><summary style="cursor:pointer; font-size:12px; color:var(--primary);">Incluye ${lineas.length} ${lineas.length === 1 ? 'artículo' : 'artículos'}</summary>
+            <ul style="margin:4px 0 0; padding-left:16px; font-size:12px; color:var(--muted); line-height:1.55;">${lineas.map(l =>
+                `<li><b style="color:var(--text);">${l.cantidad * n}×</b> ${esc(l.nombre)}${l.marca ? ' · ' + esc(l.marca) : ''}${l.modelo ? ' · ' + esc(l.modelo) : ''}</li>`).join('')}</ul></details>`;
+    }
     function addItem(d) {
         state.items.push({
             tipo_item: d.tipo_item, equipo_id: d.tipo_item === 'equipo' ? d.id : null,
             paquete_id: d.tipo_item === 'paquete' ? d.id : null,
             producto_id: d.tipo_item === 'producto' ? d.id : null,
-            nombre: d.nombre, modelo: d.modelo, marca: d.marca, imagen: d.imagen,
+            nombre: d.nombre, modelo: d.modelo, marca: d.marca, imagen: d.imagen, contenido: d.contenido || [],
             cantidad: 1, precio_unitario: +d.precio || 0, sobreprecio: 0, es_regalo: false,
             // Cuánto hay y cuáles piezas se pueden entregar.
             stock: +d.stock || 0, piezas: d.piezas || [], seriales: [], abierto: false,
@@ -612,9 +795,55 @@
             renderFichas();
         }
     }
-    bindAutocomplete($('prodSearch'), $('prodResults'), ROUTES.productos,
+    const filtroTipo = $('prodFilterType'), filtroSubtipo = $('prodFilterSubtype'), filtroMarca = $('prodFilterBrand'), filtroModelo = $('prodFilterModel');
+    const buscarProductos = bindAutocomplete($('prodSearch'), $('prodResults'), ROUTES.productos,
         d => { addItem(d); $('prodSearch').value = ''; },
-        d => `<b>${d.nombre}</b> <span style="color:var(--muted);">${d.modelo || ''}</span><small>${d.marca || ''} · ${money(d.precio)}</small>`);
+        d => `<b>${d.nombre}</b> <span style="color:var(--muted);">${d.modelo || ''}</span><small>${d.marca || ''} · ${money(d.precio)}</small>`
+            + (d.tipo_item === 'paquete' && (d.contenido || []).length
+                ? `<small style="display:block; color:var(--muted);">Incluye: ${d.contenido.map(l => l.cantidad + '× ' + l.nombre + (l.modelo ? ' ' + l.modelo : '')).join(' · ')}</small>` : ''), {
+            parametros: () => Object.fromEntries([
+                ['equipment_type_id', filtroTipo?.value], ['subtype_id', filtroSubtipo?.value], ['brand_id', filtroMarca?.value], ['equipment_model_id', filtroModelo?.value],
+            ].filter(([, valor]) => valor)),
+            sinResultados: 'No hay productos o paquetes que coincidan con estos filtros.',
+        });
+    if (filtroTipo) {
+        const catalogo = @json($filtrosProductos ?? []);
+        const orden = new Intl.Collator('es', { sensitivity: 'base', numeric: true });
+        const llenar = (select, opciones, titulo) => {
+            select.replaceChildren(new Option(titulo, ''));
+            opciones.sort((a, b) => orden.compare(a.nombre, b.nombre)).forEach(opcion => select.add(new Option(opcion.nombre, opcion.id)));
+            select.value = '';
+        };
+        const subtipos = () => catalogo.filter(tipo => !filtroTipo.value || String(tipo.id) === filtroTipo.value).flatMap(tipo => tipo.subtipos);
+        const llenarMarcas = () => {
+            const marcas = new Map(subtipos().filter(sub => !filtroSubtipo.value || String(sub.id) === filtroSubtipo.value)
+                .flatMap(sub => sub.marcas).map(marca => [marca.id, marca]));
+            llenar(filtroMarca, Array.from(marcas.values()), 'Todas las marcas');
+        };
+        const llenarModelos = () => {
+            const modelos = new Map(subtipos().filter(sub => !filtroSubtipo.value || String(sub.id) === filtroSubtipo.value)
+                .flatMap(sub => sub.marcas).filter(marca => !filtroMarca.value || String(marca.id) === filtroMarca.value)
+                .flatMap(marca => marca.modelos || []).map(modelo => [modelo.id, modelo]));
+            llenar(filtroModelo, Array.from(modelos.values()), 'Todos los modelos');
+        };
+        const llenarSubtipos = () => {
+            llenar(filtroSubtipo, subtipos(), 'Todos los subtipos');
+            llenarMarcas();
+            llenarModelos();
+        };
+        llenar(filtroTipo, catalogo, 'Todos los tipos');
+        llenarSubtipos();
+        filtroTipo.addEventListener('change', () => { llenarSubtipos(); buscarProductos(); });
+        filtroSubtipo.addEventListener('change', () => { llenarMarcas(); llenarModelos(); buscarProductos(); });
+        filtroMarca.addEventListener('change', () => { llenarModelos(); buscarProductos(); });
+        filtroModelo.addEventListener('change', buscarProductos);
+        $('prodFilterClear').addEventListener('click', () => {
+            filtroTipo.value = '';
+            $('prodSearch').value = '';
+            llenarSubtipos();
+            buscarProductos();
+        });
+    }
 
     function renderFichas() {
         const box = $('fichasSelected');
@@ -640,25 +869,88 @@
         if (dVal > 0) descuento = dTipo === 'porcentaje' ? subtotal * Math.min(dVal, 100) / 100 : Math.min(dVal, subtotal);
         descuento = Math.round(descuento * 100) / 100;
         const envio = num($('envio').value);
-        const base = Math.max(0, subtotal - descuento) + envio;
+        const cupon = (state.cupon && state.cupon.valido) ? Math.min(state.cupon.monto, Math.max(0, subtotal - descuento)) : 0;
+        const base = Math.max(0, subtotal - descuento - cupon) + envio;
         const iva = $('aplica_iva').checked ? Math.round(base * IVA * 100) / 100 : 0;
         const total = Math.round((base + iva) * 100) / 100;
-        const valorACuenta = num($('valor_a_cuenta').value);
+        const valorACuenta = valorCuenta();
         const contrato = Math.round(Math.max(0, total - valorACuenta) * 100) / 100;
-        return { subtotal, descuento, iva, total, contrato };
+        return { subtotal, descuento, cupon, iva, total, valorACuenta, contrato };
+    }
+    // Lo que vale todo el equipo a cuenta: la suma de cada renglón.
+    function valorCuenta() {
+        return Math.round(state.cuenta.reduce((a, r) => a + num(r.valor), 0) * 100) / 100;
     }
     function recalc() {
         const d = calcDesglose();
         $('tSubtotal').textContent = money(d.subtotal);
         $('tDescuento').textContent = '-' + money(d.descuento);
+        $('tCuponLinea').style.display = d.cupon > 0 ? '' : 'none';
+        $('tCupon').textContent = '-' + money(d.cupon);
+        $('tCuponCodigo').textContent = state.cupon && state.cupon.valido ? '(' + state.cupon.codigo + ')' : '';
+        revisarCupon();
         $('tIva').textContent = money(d.iva);
         $('tTotal').textContent = money(d.total);
+        $('tCuentaLinea').style.display = d.valorACuenta > 0 ? '' : 'none';
+        $('tCuenta').textContent = '-' + money(d.valorACuenta);
         $('tContrato').textContent = money(d.contrato);
         if ($('modalidad').value === 'financiamiento') renderPagos();
     }
-    ['envio', 'descuento_valor', 'valor_a_cuenta'].forEach(id => $(id).addEventListener('input', recalc));
+    ['envio', 'descuento_valor'].forEach(id => $(id).addEventListener('input', recalc));
     $('descuento_tipo').addEventListener('change', recalc);
     $('aplica_iva').addEventListener('change', recalc);
+
+    // ---------- Cupón ----------
+    let cuponFirma = '', cuponTimer;
+    function cuponDatos() {
+        return {
+            codigo: (state.cupon && state.cupon.codigo) || '',
+            customer_id: state.customer ? state.customer.id : null,
+            descuento_tipo: $('descuento_tipo').value,
+            descuento_valor: num($('descuento_valor').value),
+            cotizacion_id: CUPON.cotizacion_id, venta_id: CUPON.venta_id,
+            items: state.items.map(it => ({ tipo_item: it.tipo_item, producto_id: it.producto_id, paquete_id: it.paquete_id, equipo_id: it.equipo_id,
+                                           cantidad: it.cantidad, precio_unitario: it.precio_unitario, sobreprecio: it.sobreprecio, es_regalo: it.es_regalo ? 1 : 0 })),
+        };
+    }
+    function pintarCupon(msg, ok) {
+        const box = $('cuponMsg');
+        box.textContent = msg || '';
+        box.style.color = ok ? 'var(--green, #15803d)' : (msg ? 'var(--danger)' : 'var(--muted)');
+    }
+    async function validarCupon() {
+        const datos = cuponDatos();
+        if (!datos.codigo) { state.cupon = null; pintarCupon(''); recalc(); return; }
+        if (!datos.customer_id) { pintarCupon('Elige primero al cliente.'); return; }
+        if (!datos.items.length) { pintarCupon('Agrega productos para calcular el cupón.'); return; }
+        cuponFirma = JSON.stringify(datos);
+        try {
+            const r = await fetch(CUPON.url, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': CUPON.csrf }, body: JSON.stringify(datos) });
+            const j = await r.json();
+            if (!r.ok) { pintarCupon(j.message || 'No se pudo revisar el cupón.'); return; }
+            state.cupon = { codigo: datos.codigo, valido: !!j.valido, monto: +j.descuento || 0 };
+            pintarCupon(j.valido ? (j.descripcion + ' · descuento de ' + money(j.descuento)) : j.mensaje, j.valido);
+        } catch (e) { pintarCupon('No se pudo revisar el cupón.'); }
+        recalc();
+    }
+    // Si cambian cliente, renglones o descuento, el servidor vuelve a calcular el cupón.
+    function revisarCupon() {
+        if (!state.cupon || !state.cupon.codigo) return;
+        if (JSON.stringify(cuponDatos()) === cuponFirma) return;
+        clearTimeout(cuponTimer);
+        cuponTimer = setTimeout(validarCupon, 400);
+    }
+    $('cuponAplicar').addEventListener('click', () => {
+        const codigo = $('cupon_codigo').value.trim().toUpperCase();
+        $('cupon_codigo').value = codigo;
+        state.cupon = codigo ? { codigo, valido: false, monto: 0 } : null;
+        cuponFirma = '';
+        validarCupon();
+    });
+    $('cupon_codigo').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('cuponAplicar').click(); } });
+    $('cupon_codigo').addEventListener('input', () => {
+        if (!$('cupon_codigo').value.trim() && state.cupon) { state.cupon = null; pintarCupon(''); recalc(); }
+    });
 
     function addMonths(dateStr, m) {
         const base = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
@@ -680,12 +972,10 @@
         const hoy = new Date().toISOString().slice(0, 10);
         const prev = state.pagos;
 
-        // En automático, cuántos pagos salen depende de la frecuencia: cada
-        // "frecuenciaDias" días, dentro del plazo en meses (30 días = 1 mes).
+        // Se conservan los pagos que ya hay; si no hay, se proponen el
+        // inicial más uno por mes del plazo guardado.
         const frecuencia = Math.max(1, parseInt(state.frecuenciaDias) || 30);
-        const count = state.modoPagos === 'automatico'
-            ? Math.max(1, Math.round((meses * 30) / frecuencia)) + 1
-            : Math.max(1, prev.length || meses + 1);
+        const count = Math.max(1, prev.length || meses + 1);
 
         state.pagos = [];
         for (let i = 0; i < count; i++) {
@@ -706,7 +996,8 @@
         state.pagos.forEach((p, i) => { if (p.bloqueado) sumBloq += p.monto; else libres.push(i); });
         const restante = Math.round((contrato - sumBloq) * 100) / 100;
         if (libres.length) {
-            const cuota = Math.floor((restante / libres.length) * 100) / 100;
+            // Cuotas en pesos cerrados; el último libre se lleva lo que sobra.
+            const cuota = Math.floor(restante / libres.length);
             libres.forEach((idx, pos) => {
                 state.pagos[idx].monto = pos === libres.length - 1
                     ? Math.round((restante - cuota * (libres.length - 1)) * 100) / 100
@@ -714,7 +1005,23 @@
                 if (state.pagos[idx].monto < 0) state.pagos[idx].monto = 0;
             });
         }
+        // Pesos cerrados: todos los centavos (también los de montos capturados
+        // a mano o por porcentaje) se juntan en el último pago. Igual que el servidor.
+        cerrarCentavos(state.pagos);
         state.pagos.forEach(p => { p.porcentaje = contrato > 0 ? Math.round(p.monto / contrato * 10000) / 100 : 0; });
+    }
+    function cerrarCentavos(pagos) {
+        if (pagos.length < 2) return;
+        let sobrante = 0;
+        pagos.forEach((p, i) => {
+            if (i === pagos.length - 1) return;
+            const c = Math.round((+p.monto || 0) * 100);
+            const cerrado = Math.floor(Math.max(0, c) / 100) * 100;
+            sobrante += c - cerrado;
+            p.monto = cerrado / 100;
+        });
+        const u = pagos[pagos.length - 1];
+        u.monto = (Math.round((+u.monto || 0) * 100) + sobrante) / 100;
     }
     function addPago() {
         const frecuencia = Math.max(1, parseInt(state.frecuenciaDias) || 30);
@@ -729,42 +1036,11 @@
         const suma = Math.round(state.pagos.reduce((a, p) => a + (+p.monto || 0), 0) * 100) / 100;
         const cuadra = Math.abs(suma - contrato) < 0.5;
 
-        const esAutomatico = state.modoPagos === 'automatico';
-        const frecuenciasFijas = [15, 30];
-        const esFrecuenciaFija = frecuenciasFijas.includes(+state.frecuenciaDias);
-
         let html = `<div class="cot-plan">
-            <div class="cot-plan-head" style="flex-wrap:wrap; gap:10px;">
+            <div class="cot-plan-head">
                 <b>Plan de pagos</b>
-                <div class="cot-seg" role="tablist" style="height:32px;">
-                    <button type="button" class="cot-seg-btn ${esAutomatico ? 'on' : ''}" data-modo-pagos="automatico" style="padding:0 14px; font-size:12.5px;">Automático</button>
-                    <button type="button" class="cot-seg-btn ${!esAutomatico ? 'on' : ''}" data-modo-pagos="manual" style="padding:0 14px; font-size:12.5px;">Manual</button>
-                </div>
+                <span class="cot-lbl" style="margin:0;">Elige la fecha de cada pago</span>
             </div>`;
-
-        if (esAutomatico) {
-            html += `
-            <div class="cot-plan-head" style="border-top:0; padding-top:0;">
-                <div style="display:flex; align-items:center; gap:9px;">
-                    <span class="cot-lbl" style="margin:0;">Diferir a</span>
-                    <div class="cot-step">
-                        <button type="button" id="mesMinus" aria-label="Menos meses">−</button>
-                        <span class="val">${state.meses}</span>
-                        <button type="button" id="mesPlus" aria-label="Más meses">+</button>
-                    </div>
-                    <span class="cot-lbl" style="margin:0;">meses</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:9px;">
-                    <span class="cot-lbl" style="margin:0;">Cobrar cada</span>
-                    <select id="frecuenciaSelect" class="cot-input" style="width:auto; padding:6px 10px;">
-                        <option value="15" ${+state.frecuenciaDias === 15 ? 'selected' : ''}>15 días</option>
-                        <option value="30" ${+state.frecuenciaDias === 30 ? 'selected' : ''}>30 días</option>
-                        <option value="personalizado" ${!esFrecuenciaFija ? 'selected' : ''}>Personalizado</option>
-                    </select>
-                    ${!esFrecuenciaFija ? `<input type="number" min="1" id="frecuenciaPersonalizada" class="cot-input" style="width:70px; padding:6px 8px;" value="${state.frecuenciaDias}"><span class="cot-lbl" style="margin:0;">días</span>` : ''}
-                </div>
-            </div>`;
-        }
 
         state.pagos.forEach((p, idx) => {
             html += `
@@ -772,14 +1048,12 @@
                     <span class="cot-prow-num">${idx + 1}</span>
                     <div class="cot-prow-info">
                         <div class="cot-prow-name">${p.nombre}</div>
-                        ${esAutomatico
-                            ? `<div class="cot-prow-date">${fmtFecha(p.fecha)}</div>`
-                            : `<input type="date" data-fecha="${idx}" value="${p.fecha}" class="cot-input" style="width:auto; padding:5px 8px; font-size:12.5px; margin-top:4px;">`}
+                        <input type="date" data-fecha="${idx}" value="${p.fecha}" class="cot-input cot-prow-fecha" aria-label="Fecha de ${p.nombre}">
                     </div>
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                         <button type="button" class="cot-lock ${p.bloqueado ? 'on' : ''}" data-lock="${idx}" title="Fijo: conserva su monto. Auto: se reparte solo.">${p.bloqueado ? ICON_LOCK : ICON_UNLOCK}${p.bloqueado ? 'Fijo' : 'Auto'}</button>
-                        <div class="cot-pay-mini"><input type="text" inputmode="decimal" data-pct="${idx}" value="${p.porcentaje}"><span>%</span></div>
-                        <div class="cot-pay-mini"><input type="text" inputmode="decimal" data-monto="${idx}" value="${p.monto}" style="width:100px;"><span>MXN</span></div>
+                        <div class="cot-pay-mini"><input type="text" inputmode="decimal" data-pct="${idx}" value="${sinCero(p.porcentaje)}" placeholder="0"><span>%</span></div>
+                        <div class="cot-pay-mini"><input type="text" inputmode="decimal" data-monto="${idx}" value="${sinCero(p.monto)}" placeholder="0" style="width:100px;"><span>MXN</span></div>
                         <button type="button" class="cot-ico-btn danger" data-delp="${idx}" title="Eliminar" aria-label="Eliminar">${ICON_TRASH}</button>
                     </div>
                 </div>`;
@@ -794,24 +1068,6 @@
 
         wrap.innerHTML = html;
 
-        wrap.querySelectorAll('button[data-modo-pagos]').forEach(b => b.addEventListener('click', () => {
-            state.modoPagos = b.dataset.modoPagos;
-            if (state.modoPagos === 'automatico') rebuildPagos();
-            renderPagos();
-        }));
-        if (esAutomatico) {
-            $('mesMinus').addEventListener('click', () => { state.meses = Math.max(1, state.meses - 1); rebuildPagos(); renderPagos(); });
-            $('mesPlus').addEventListener('click', () => { state.meses = Math.min(60, state.meses + 1); rebuildPagos(); renderPagos(); });
-            $('frecuenciaSelect').addEventListener('change', e => {
-                state.frecuenciaDias = e.target.value === 'personalizado' ? 45 : parseInt(e.target.value);
-                rebuildPagos(); renderPagos();
-            });
-            const personalizada = document.getElementById('frecuenciaPersonalizada');
-            if (personalizada) personalizada.addEventListener('change', e => {
-                state.frecuenciaDias = Math.max(1, parseInt(e.target.value) || 30);
-                rebuildPagos(); renderPagos();
-            });
-        }
         wrap.querySelectorAll('input[data-fecha]').forEach(c => c.addEventListener('change', e => {
             const i = +e.target.dataset.fecha;
             state.pagos[i].fecha = e.target.value;
@@ -860,8 +1116,18 @@
         add('descuento_tipo', $('descuento_tipo').value);
         add('descuento_valor', num($('descuento_valor').value));
         add('envio', num($('envio').value));
-        add('valor_a_cuenta', num($('valor_a_cuenta').value));
-        add('num_meses', $('modalidad').value === 'financiamiento' ? (parseInt(state.meses) || 0) : 0);
+        add('valor_a_cuenta', valorCuenta());
+        // Siempre se manda: vacío = se quitó el equipo a cuenta.
+        const cuenta = state.cuenta.filter(r => Object.values(r).some(v => String(v).trim() !== ''));
+        if (!cuenta.length) add('equipos_a_cuenta', '');
+        cuenta.forEach((r, i) => {
+            CAMPOS_CUENTA.forEach(([c]) => add(`equipos_a_cuenta[${i}][${c}]`, r[c]));
+            add(`equipos_a_cuenta[${i}][valor]`, num(r.valor));
+        });
+        add('cupon_codigo', (state.cupon && state.cupon.codigo) || '');
+        // El plazo sale de los pagos capturados (inicial + uno por mes): así
+        // el servidor no vuelve a agregar los que se borraron.
+        add('num_meses', $('modalidad').value === 'financiamiento' ? Math.max(0, state.pagos.length - 1) : 0);
 
         state.items.forEach((it, i) => {
             add(`items[${i}][tipo_item]`, it.tipo_item);
@@ -894,18 +1160,77 @@
         state.fichas.forEach((f, i) => add(`fichas[${i}]`, f.id));
     });
 
+    // ---------- Equipo a cuenta ----------
+    const CAMPOS_CUENTA = [['tipo', 'Tipo'], ['subtipo', 'Subtipo'], ['marca', 'Marca'], ['modelo', 'Modelo'], ['no_serie', 'Núm. de serie']];
+    function renderCuenta() {
+        const box = $('cuentaLista');
+        box.innerHTML = '';
+        if (!state.cuenta.length) {
+            box.innerHTML = '<p class="cot-cuenta-vacio">Si el cliente entrega equipo, agrégalo con su tipo, subtipo, marca y modelo.</p>';
+            return;
+        }
+        state.cuenta.forEach((r, i) => {
+            const fila = document.createElement('div');
+            fila.className = 'cot-cuenta-fila';
+            CAMPOS_CUENTA.forEach(([c, et]) => {
+                const inp = document.createElement('input');
+                inp.type = 'text'; inp.className = 'cot-input' + (c === 'no_serie' ? ' cot-cuenta-serie' : '');
+                inp.placeholder = et; inp.setAttribute('aria-label', et + ' del equipo a cuenta ' + (i + 1));
+                inp.value = r[c] || ''; inp.maxLength = 150;
+                if (c !== 'no_serie') inp.setAttribute('list', 'dlCuenta-' + c);
+                inp.addEventListener('input', () => { r[c] = inp.value; });
+                fila.appendChild(inp);
+            });
+            const valor = document.createElement('div');
+            valor.className = 'cot-cuenta-valor';
+            valor.innerHTML = '<span>$</span>';
+            const vInp = document.createElement('input');
+            vInp.type = 'text'; vInp.inputMode = 'decimal'; vInp.className = 'cot-input cot-num';
+            vInp.placeholder = 'Valor'; vInp.setAttribute('aria-label', 'Valor del equipo a cuenta ' + (i + 1));
+            vInp.value = sinCero(r.valor);
+            vInp.addEventListener('input', () => { r.valor = num(vInp.value); recalc(); });
+            valor.appendChild(vInp);
+            fila.appendChild(valor);
+            const q = document.createElement('button');
+            q.type = 'button'; q.className = 'cot-cuenta-quitar'; q.title = 'Quitar'; q.setAttribute('aria-label', 'Quitar equipo a cuenta ' + (i + 1));
+            q.textContent = '×';
+            q.addEventListener('click', () => { state.cuenta.splice(i, 1); renderCuenta(); recalc(); });
+            fila.appendChild(q);
+            box.appendChild(fila);
+        });
+    }
+    $('cuentaAgregar').addEventListener('click', () => {
+        state.cuenta.push({ tipo: '', subtipo: '', marca: '', modelo: '', no_serie: '', valor: 0 });
+        renderCuenta();
+        const filas = $('cuentaLista').querySelectorAll('.cot-cuenta-fila');
+        filas[filas.length - 1]?.querySelector('input')?.focus();
+    });
+    // Documentos de antes guardaban un solo valor para todo: pasa al primer
+    // equipo (o a un renglón nuevo) para que no se pierda al editar.
+    if (+INITIAL.valor_a_cuenta > 0 && valorCuenta() === 0) {
+        if (!state.cuenta.length) state.cuenta.push({ tipo: '', subtipo: '', marca: '', modelo: '', no_serie: '', valor: 0 });
+        state.cuenta[0].valor = +INITIAL.valor_a_cuenta;
+    }
+    renderCuenta();
+
     // Init
     $('congreso_id').value = INITIAL.congreso_id || '';
+    // Nuevo con el cliente ya elegido (p. ej. desde su ficha): su congreso.
+    if (INITIAL.es_nuevo && !INITIAL.congreso_id && state.customer) congresoDelCliente(state.customer);
     // 0 es un valor válido ("sin garantía"): solo se cae a 6 si no viene nada.
     $('garantia_meses').value = (INITIAL.garantia_meses === null || INITIAL.garantia_meses === undefined || INITIAL.garantia_meses === '') ? 6 : INITIAL.garantia_meses;
     $('nota_cliente').value = INITIAL.nota_cliente || '';
     $('modalidad').value = INITIAL.modalidad || 'contado';
     $('aplica_iva').checked = !!INITIAL.aplica_iva;
-    $('envio').value = INITIAL.envio || 0;
+    $('envio').value = sinCero(INITIAL.envio);
     $('descuento_tipo').value = INITIAL.descuento_tipo || 'porcentaje';
-    $('descuento_valor').value = INITIAL.descuento_valor || 0;
-    $('valor_a_cuenta').value = INITIAL.valor_a_cuenta || 0;
+    $('descuento_valor').value = sinCero(INITIAL.descuento_valor);
+    if (INITIAL.cupon_codigo) {
+        $('cupon_codigo').value = INITIAL.cupon_codigo;
+        state.cupon = { codigo: INITIAL.cupon_codigo, valido: false, monto: 0 };
+    }
     renderCliente(); renderItems(); renderFichas(); toggleModalidad();
+    if (state.cupon) validarCupon();
 
     if (PLAN_BLOQUEADO) {
         // Se ve el plan, pero no se edita: modalidad, meses y montos quedan

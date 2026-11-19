@@ -17,15 +17,15 @@
             <pre id="cfg-agente" class="bm-cfg">{
   "api_url": "{{ url('/api/checador') }}",
   "api_key": "{{ $llaveNueva['llave'] }}",
-  "verificar_ssl": false,
-  "lector": { "tipo": "simulador" },
+  "verificar_ssl": {{ filter_var(request()->getHost(), FILTER_VALIDATE_IP) ? 'false' : 'true' }},
+  "lector": { "tipo": "uareu" },
   "pantalla_url": "{{ $llaveNueva['pantalla'] ?? '' }}"
 }</pre>
             <div class="rh-actions">
                 <button class="btn btn--ghost" type="button" onclick="navigator.clipboard.writeText(document.getElementById('cfg-agente').textContent); window.showToast && showToast('Configuración copiada')"><x-ui.icon name="file" /> Copiar config.json</button>
                 <button class="btn btn--ghost" type="button" onclick="navigator.clipboard.writeText(document.getElementById('llave').textContent); window.showToast && showToast('Llave copiada')"><x-ui.icon name="key" /> Copiar solo la llave</button>
             </div>
-            <p class="rh-sub" style="margin-top:10px;">Cambia <b>"tipo": "simulador"</b> por <b>"zkfinger"</b> cuando conectes un lector ZKTeco. La guía completa está en el README del agente.</p>
+            <p class="rh-sub" style="margin-top:10px;"><b>"uareu"</b> = lector DigitalPersona U.are.U 4500. Para probar sin lector usa <b>"simulador"</b>; para ZKTeco, <b>"zkfinger"</b>. La guía completa está en el README del agente.</p>
         </div>
     @endif
 
@@ -105,7 +105,7 @@
                     <div class="bm-dedos">
                         @foreach ($activas as $h)
                             <form method="POST" action="{{ route('asistencia.biometria.huellas.destroy', $h) }}" data-confirm="{{ $u->name }} tendrá que volver a registrar este dedo." data-confirm-title="Borrar huella" style="margin:0;">@csrf @method('DELETE')
-                                <span class="bm-dedo" title="Registrada {{ $h->registered_at?->format('d/m/Y') }}"><x-ui.icon name="fingerprint" :size="14" /> {{ $h->dedoLabel() }} <button type="submit" title="Borrar" aria-label="Borrar huella"><x-ui.icon name="x" :size="13" /></button></span>
+                                <span class="bm-dedo" title="Registrada {{ $h->registered_at?->format('d/m/Y') }}"><x-ui.icon name="fingerprint" :size="14" /> {{ $h->dedoLabel() }} @can('asistencia.biometria_eliminar')<button type="submit" title="Borrar" aria-label="Borrar huella"><x-ui.icon name="x" :size="13" /></button>@endcan</span>
                             </form>
                         @endforeach
                     </div>

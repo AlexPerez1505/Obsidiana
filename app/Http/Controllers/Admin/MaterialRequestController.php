@@ -65,6 +65,10 @@ class MaterialRequestController extends Controller
             'unit' => $materialRequest->unit,
             'required_date' => $materialRequest->required_date?->format('Y-m-d') ?: 'Sin fecha',
             'urgency' => $materialRequest->urgency,
+            // La tabla de aprobaciones los muestra; sin ellos la pantalla
+            // tronaba con "Undefined array key requester".
+            'requester' => $materialRequest->requester?->name ?? 'Sin usuario',
+            'registered_at' => ($materialRequest->submitted_at ?? $materialRequest->created_at)?->format('Y-m-d H:i') ?? '—',
             'status' => $materialRequest->status,
             'status_label' => SolicitudesDeMaterial::etiquetaEstado($materialRequest->status),
             'status_class' => match ($materialRequest->status) {

@@ -103,7 +103,9 @@
                 @forelse ($festivos as $f)
                     <div class="hr-festitem">
                         <span><b>{{ $f->date->translatedFormat('D d M Y') }}</b> · {{ $f->name }}</span>
+                        @can('asistencia.eliminar')
                         <form method="POST" action="{{ route('asistencia.festivos.destroy', $f) }}" data-confirm="Ese día volverá a ser laborable." data-confirm-title="Quitar festivo">@csrf @method('DELETE')<button class="rh-x" type="submit" aria-label="Quitar {{ $f->name }}"><x-ui.icon name="x" /></button></form>
+                        @endcan
                     </div>
                 @empty
                     <div class="rh-sub">Sin festivos registrados este año.</div>

@@ -6,6 +6,23 @@
 
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
         const cantidadInput = document.getElementById('cantidad');
+        const fotoCompartida = form.querySelector('[data-foto-compartida]');
+        const panelCompartido = form.querySelector('[data-foto-compartida-panel]');
+        const usaFotoCompartida = () => fotoCompartida.checked;
+        const hayFotoCompartida = () => usaFotoCompartida() && panelCompartido.querySelector('[data-foto-path]') !== null;
+
+        function sincronizarFotoCompartida() {
+            panelCompartido.hidden = !usaFotoCompartida();
+            form.querySelectorAll('[data-fotos-individuales]').forEach(zona => { zona.hidden = usaFotoCompartida(); });
+            form.querySelectorAll('.pieza-card').forEach(card => {
+                const n = card.querySelectorAll('[data-foto-path]').length;
+                const estado = card.querySelector('[data-estado]');
+                estado.textContent = usaFotoCompartida() ? (hayFotoCompartida() ? 'Fotos compartidas' : 'Faltan las fotos compartidas')
+                    : (n ? `${n} foto(s)` : 'Falta su foto');
+                estado.classList.toggle('listo', usaFotoCompartida() ? hayFotoCompartida() : n > 0);
+            });
+            actualizarResumen();
+        }
 
         const CHUNK_SIZE = 4 * 1024 * 1024;
         const EXTENSIONES_VIDEO = ['mp4', 'mov', 'm4v', 'webm'];
@@ -26,86 +43,140 @@
         const PREVIAS = @json(array_values((array) old('unidades', [])));
 
         /* ==========================================================
-           Zona para soltar archivos
-
-           Recibe la zona ya creada (cada pieza tiene la suya) en vez de
-           buscarla por nombre: en esta pantalla hay una por cada pieza que
-           llegó, no una sola del lote.
+           Fotos: se suben al elegirlas, en pedazos (ObsFotos, compartido
+           con los procesos). Sin límite de tamaño y en cualquier formato;
+           el formulario solo manda la ruta de cada foto ya subida, así no
+           se pierden si el servidor lo regresa con algún error.
         ========================================================== */
-        function zonaDeArchivos(zona, minis, { max = null, alCambiar = null } = {}) {
-            if (!zona) return null;
+        const URL_FOTO = @json(route('inventory.movimientos.fotoChunk'));
+        const URL_DISCO = ObsFotos.urlDisco;
+        const ACEPTA_FOTOS = ObsFotos.ACEPTA;
+        const extensionDe = ObsFotos.extension;
+        const seVe = ObsFotos.seVe;
+        const prepararFoto = ObsFotos.preparar;
+        const subirFoto = (archivo, alAvanzar) => ObsFotos.subir(archivo, URL_FOTO, alAvanzar);
 
+        /*
+        | Zona para soltar fotos de una pieza. Las fotos se SUMAN hasta el
+        | máximo: en el celular, cada foto nueva no borra la anterior.
+        | Cada foto subida deja un oculto con su ruta (data-foto-path).
+        */
+        function zonaDeFotos(zona, minis, nombreCampo, { max = null, previas = [], alCambiar = null } = {}) {
             const input = zona.querySelector('input[type=file]');
             const cuenta = zona.querySelector('[data-cuenta]');
             const textoBase = cuenta ? cuenta.textContent : '';
 
+            // [{ path, url, nombre, subiendo, progreso, error }]
+            let fotos = previas.map(path => ({ path, url: URL_DISCO + path, nombre: path.split('/').pop() }));
+
             function pintar() {
-                if (minis) minis.innerHTML = '';
+                minis.innerHTML = '';
 
-                Array.from(input.files || []).forEach(function (archivo, i) {
-                    if (!minis) return;
-
+                fotos.forEach(function (f, i) {
                     const caja = document.createElement('div');
-                    caja.className = 'mini';
+                    caja.className = 'mini' + (f.subiendo ? ' subiendo' : '') + (f.error ? ' con-error' : '');
 
-                    const esVideo = archivo.type.startsWith('video/');
-                    const medio = document.createElement(esVideo ? 'video' : 'img');
-                    medio.src = URL.createObjectURL(archivo);
-                    if (esVideo) { medio.muted = true; medio.playsInline = true; }
+                    const ext = extensionDe(f.nombre);
+                    if (f.url && seVe(f.nombre)) {
+                        const img = document.createElement('img');
+                        img.src = f.url;
+                        img.alt = f.nombre;
+                        caja.appendChild(img);
+                    } else {
+                        // TIFF, RAW...: el navegador no las dibuja, pero sí se guardan.
+                        const etiqueta = document.createElement('span');
+                        etiqueta.className = 'mini-ext';
+                        etiqueta.textContent = ext.toUpperCase();
+                        caja.appendChild(etiqueta);
+                    }
+
+                    if (f.subiendo || f.error) {
+                        const estado = document.createElement('span');
+                        estado.className = 'mini-estado';
+                        estado.textContent = f.error ? 'Error' : (f.progreso ? f.progreso + '%' : 'Subiendo');
+                        if (f.error) estado.title = f.error;
+                        caja.appendChild(estado);
+                    }
+
+                    if (f.path) {
+                        const oculto = document.createElement('input');
+                        oculto.type = 'hidden';
+                        oculto.name = nombreCampo;
+                        oculto.value = f.path;
+                        oculto.dataset.fotoPath = '';
+                        caja.appendChild(oculto);
+                    }
 
                     const quitar = document.createElement('button');
                     quitar.type = 'button';
                     quitar.className = 'quitar';
                     quitar.textContent = '×';
                     quitar.title = 'Quitar';
-                    quitar.setAttribute('aria-label', 'Quitar ' + archivo.name);
+                    quitar.setAttribute('aria-label', 'Quitar ' + f.nombre);
                     quitar.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.stopPropagation();
-                        quitarArchivo(i);
+                        fotos.splice(i, 1);
+                        pintar();
                     });
 
-                    caja.append(medio, quitar);
+                    caja.appendChild(quitar);
                     minis.appendChild(caja);
                 });
 
-                const n = input.files ? input.files.length : 0;
-                zona.classList.toggle('lleno', n > 0);
+                const listas = fotos.filter(f => f.path).length;
+                const n = fotos.length;
+                zona.classList.toggle('lleno', listas > 0);
 
                 if (cuenta) {
-                    cuenta.textContent = n === 0
-                        ? textoBase
-                        : (n === 1 ? '1 foto elegida' : n + ' fotos elegidas')
-                          + (max ? ' de ' + max : '') + ' · toca para cambiar';
+                    if (n === 0) {
+                        cuenta.textContent = textoBase;
+                    } else if (max && n >= max) {
+                        cuenta.textContent = n + ' de ' + max + ' fotos · quita una para cambiarla';
+                    } else {
+                        cuenta.textContent = (n === 1 ? '1 foto' : n + ' fotos')
+                            + (max ? ' de ' + max : '') + ' · toca para agregar otra';
+                    }
                 }
 
-                if (alCambiar) alCambiar(n);
+                if (alCambiar) alCambiar(listas, fotos.some(f => f.subiendo));
             }
 
-            // Un FileList no se puede editar: se arma uno nuevo sin el que
-            // se quitó y se le asigna al input.
-            function quitarArchivo(indice) {
-                const dt = new DataTransfer();
-                Array.from(input.files).forEach((a, i) => { if (i !== indice) dt.items.add(a); });
-                input.files = dt.files;
+            async function subirUna(f, archivo) {
+                try {
+                    const lista = await prepararFoto(archivo);
+                    f.nombre = lista.name;
+                    if (seVe(lista.name)) f.url = URL.createObjectURL(lista);
+                    pintar();
+
+                    const json = await subirFoto(lista, function (pct) { f.progreso = pct; pintar(); });
+                    f.path = json.foto_path;
+                    f.subiendo = false;
+                } catch (e) {
+                    f.subiendo = false;
+                    f.error = e.message || 'No se pudo subir.';
+                    if (window.showToast) window.showToast(f.error, 'err');
+                }
                 pintar();
             }
 
-            function recortar() {
-                if (!max || !input.files || input.files.length <= max) return false;
+            function sumar(lista) {
+                const nuevos = Array.from(lista || []);
+                if (!nuevos.length) return;
 
-                const dt = new DataTransfer();
-                Array.from(input.files).slice(0, max).forEach(a => dt.items.add(a));
-                input.files = dt.files;
+                const espacio = max ? Math.max(0, max - fotos.length) : nuevos.length;
 
-                return true;
-            }
+                if (nuevos.length > espacio && window.showToast) {
+                    window.showToast('Cada pieza lleva máximo ' + max + ' fotos. Quita una para agregar otra.', 'err');
+                }
 
-            function recibir(lista) {
-                const dt = new DataTransfer();
-                Array.from(lista).slice(0, max || lista.length).forEach(a => dt.items.add(a));
-                input.files = dt.files;
-                input.dispatchEvent(new Event('change', { bubbles: true }));
+                nuevos.slice(0, espacio).forEach(function (archivo) {
+                    const f = { path: null, url: null, nombre: archivo.name, subiendo: true, progreso: 0 };
+                    fotos.push(f);
+                    subirUna(f, archivo);
+                });
+
+                pintar();
             }
 
             ['dragenter', 'dragover'].forEach(ev => zona.addEventListener(ev, function (e) {
@@ -119,12 +190,12 @@
             }));
 
             zona.addEventListener('drop', function (e) {
-                if (e.dataTransfer?.files?.length) recibir(e.dataTransfer.files);
+                if (e.dataTransfer?.files?.length) sumar(e.dataTransfer.files);
             });
 
             input.addEventListener('change', function () {
-                recortar();
-                pintar();
+                sumar(input.files);
+                input.value = ''; // permite volver a elegir la misma foto
             });
 
             pintar();
@@ -230,19 +301,19 @@
                     <span class="pieza-estado" data-estado>Falta su foto</span>
                 </div>
 
-                <input type="text" class="pieza-serie" name="unidades[${i}][no_serie]"
-                       placeholder="No. de serie del fabricante (opcional)"
+                <input type="text" class="pieza-serie" name="unidades[${i}][no_serie]" required maxlength="255" pattern=".*\\S.*"
+                       aria-label="Número de serie de la pieza #${i + 1}" placeholder="No. de serie del fabricante (obligatorio)"
                        value="${(previa.no_serie || '').replace(/"/g, '&quot;')}">
 
                 <div class="pieza-medios">
-                    <div>
+                    <div data-fotos-individuales>
                         <label class="soltar soltar--chico" data-zona-fotos>
                             <span class="ico">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                             </span>
                             <span class="t">Fotos de esta pieza *</span>
-                            <span class="d" data-cuenta>Hasta ${MAX_FOTOS} · JPG o PNG</span>
-                            <input type="file" name="unidades[${i}][evidencias][]" accept="image/*" multiple>
+                            <span class="d" data-cuenta>Hasta ${MAX_FOTOS} · cualquier formato y tamaño</span>
+                            <input type="file" accept="${ACEPTA_FOTOS}" multiple>
                         </label>
                         <div class="miniaturas" data-minis></div>
                     </div>
@@ -274,12 +345,13 @@
             const minis = card.querySelector('[data-minis]');
             const estado = card.querySelector('[data-estado]');
 
-            const fotos = zonaDeArchivos(zonaFotos, minis, {
+            const fotos = zonaDeFotos(zonaFotos, minis, `unidades[${i}][fotos_paths][]`, {
                 max: MAX_FOTOS,
-                alCambiar: function (n) {
-                    estado.textContent = n === 0
-                        ? 'Falta su foto'
-                        : (n === 1 ? '1 foto' : n + ' fotos');
+                previas: Array.isArray(previa.fotos_paths) ? previa.fotos_paths : [],
+                alCambiar: function (n, subiendo) {
+                    estado.textContent = subiendo
+                        ? 'Subiendo fotos...'
+                        : (n === 0 ? 'Falta su foto' : (n === 1 ? '1 foto' : n + ' fotos'));
                     estado.classList.toggle('listo', n > 0);
                     actualizarResumen();
                 },
@@ -342,23 +414,21 @@
                 }
             }
 
-            aplicarSugerido();
-            actualizarResumen();
+            sincronizarFotoCompartida();
         };
 
-        /* La serie sugerida por el servidor se reparte como secuencia. */
-        function incrementarSerial(base, delta) {
-            const m = /^(.*?)(\d+)$/.exec(base || '');
-            if (!m) return '';
-            return m[1] + String(parseInt(m[2], 10) + delta).padStart(m[2].length, '0');
-        }
+        /*
+        | Un solo botón para las series: "Seguir consecutivo desde …". El
+        | número que enseña lo calcula el servidor con el consecutivo que
+        | comparten todos los equipos del mismo subtipo, marca y modelo
+        | (aunque sean otros productos); al darle clic se apartan de verdad.
+        */
+        const btnSugeridas = form.querySelector('[data-generar-series]');
 
-        function aplicarSugerido() {
-            if (!sugeridoBase || !contenedorPiezas) return;
+        function mostrarSugerida() {
+            if (!btnSugeridas || btnSugeridas.disabled) return;
 
-            contenedorPiezas.querySelectorAll('.pieza-serie').forEach(function (input, i) {
-                if (!input.value) input.value = incrementarSerial(sugeridoBase, i);
-            });
+            btnSugeridas.textContent = sugeridoBase ? 'Seguir consecutivo desde ' + sugeridoBase : 'Seguir consecutivo';
         }
 
         function seriesDeLasPiezas() {
@@ -480,7 +550,7 @@
         form.addEventListener('submit', function (e) {
             if (subiendoVideos > 0) {
                 e.preventDefault();
-                alert('Espera a que terminen de subirse los videos.');
+                window.showToast?.('Espera a que terminen de subirse los videos.', 'err');
             }
         });
 
@@ -547,6 +617,8 @@
             modeloSelect.addEventListener('change', function () {
                 aviso.style.display = 'none';
                 imagenActualWrap.style.display = 'none';
+                sugeridoBase = null;
+                mostrarSugerida();
 
                 if (!modeloSelect.value) return;
 
@@ -571,10 +643,18 @@
                         }
 
                         sugeridoBase = data.no_serie_sugerido || null;
+                        mostrarSugerida();
 
                         if (sugeridoBase) {
-                            aplicarSugerido();
-                            mensaje += ' Las series se sugirieron desde ' + sugeridoBase + ' (consecutivo del último registrado).';
+                            mensaje += ' El consecutivo de este equipo sigue en ' + sugeridoBase
+                                + '; si estas piezas no traen serie, usa «Seguir consecutivo» en el paso de piezas.';
+                        }
+
+                        // La referencia es del modelo: se completa si no se escribió otra.
+                        const referenciaInput = document.getElementById('referencia');
+                        if (referenciaInput && !referenciaInput.value && data.referencia) {
+                            referenciaInput.value = data.referencia;
+                            mensaje += ' Se completó la referencia.';
                         }
 
                         if (data.imagen) {
@@ -603,7 +683,8 @@
         const notaGenerar = form.querySelector('[data-generar-nota]');
 
         function prefijoALaVista() {
-            const nombres = ['equipment_type_id', 'subtype_id', 'brand_id', 'equipment_model_id']
+            // El tipo ya no forma parte de la serie (GeneradorDeSeries).
+            const nombres = ['subtype_id', 'brand_id', 'equipment_model_id']
                 .map(id => {
                     const s = document.getElementById(id);
                     return s?.value ? s.options[s.selectedIndex]?.text : null;
@@ -619,33 +700,80 @@
             const visto = prefijoALaVista();
 
             notaGenerar.textContent = visto
-                ? 'Se armarán con: ' + visto + '.'
-                : 'Elige al menos el tipo de equipo en el paso anterior.';
+                ? 'con ' + visto + ' y un consecutivo'
+                : 'sin subtipo, marca ni modelo quedan como EQ-0001, EQ-0002…';
+        }
+
+        /* Cuál sigue, según el servidor (sin apartarla): va en el botón. */
+        let consultaSiguiente = 0;
+
+        async function cargarSiguiente() {
+            const tipo = document.getElementById('equipment_type_id');
+            const turno = ++consultaSiguiente;
+
+            if (!tipo?.value) {
+                sugeridoBase = null;
+                mostrarSugerida();
+                return;
+            }
+
+            try {
+                const r = await fetch(@json(route('inventory.productos.generarSeries')), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                    body: JSON.stringify({
+                        solo_ver: true,
+                        equipment_type_id: tipo.value || null,
+                        subtype_id: document.getElementById('subtype_id')?.value || null,
+                        brand_id: document.getElementById('brand_id')?.value || null,
+                        equipment_model_id: document.getElementById('equipment_model_id')?.value || null,
+                    }),
+                });
+                const data = await r.json();
+
+                // Si cambiaron el catálogo mientras tanto, gana la última consulta.
+                if (turno !== consultaSiguiente) return;
+                sugeridoBase = r.ok ? (data.siguiente || null) : null;
+                mostrarSugerida();
+            } catch (e) {
+                // Sin vista previa el botón sigue funcionando.
+            }
         }
 
         ['equipment_type_id', 'subtype_id', 'brand_id', 'equipment_model_id'].forEach(function (id) {
-            document.getElementById(id)?.addEventListener('change', pintarNotaGenerar);
+            document.getElementById(id)?.addEventListener('change', function () {
+                pintarNotaGenerar();
+                // El modelo se llena después del subtipo/marca: un respiro.
+                setTimeout(cargarSiguiente, 50);
+            });
         });
 
         if (btnGenerar) {
             pintarNotaGenerar();
+            cargarSiguiente();
 
             btnGenerar.addEventListener('click', async function () {
                 const tipo = document.getElementById('equipment_type_id');
 
                 if (!tipo?.value) {
-                    alert('Elige primero el tipo de equipo, en el paso anterior.');
+                    window.showToast?.('Elige primero el tipo de equipo, en el paso anterior.', 'err');
                     form.dispatchEvent(new CustomEvent('paso:ir', { detail: { paso: 'equipo' } }));
                     return;
                 }
 
-                const inputsSerie = seriesDeLasPiezas();
-                const cuantas = Math.max(1, inputsSerie.length);
+                // Solo se llenan las piezas sin serie: la que ya tiene la suya
+                // la conserva. Si todas tienen, se pregunta antes de pisarlas.
+                let inputsSerie = seriesDeLasPiezas().filter(i => !i.value.trim());
 
-                // Lo capturado no se pisa sin avisar.
-                if (inputsSerie.some(i => i.value.trim()) && !(await window.confirmModal({ message: 'Ya hay series capturadas. ¿Reemplazarlas por las generadas?' }))) {
-                    return;
+                if (!inputsSerie.length) {
+                    if (!(await window.confirmModal({ message: 'Todas las piezas ya tienen serie. ¿Reemplazarlas por series generadas?' }))) {
+                        return;
+                    }
+
+                    inputsSerie = seriesDeLasPiezas();
                 }
+
+                const cuantas = Math.max(1, inputsSerie.length);
 
                 btnGenerar.disabled = true;
                 const textoPrevio = btnGenerar.textContent;
@@ -679,13 +807,14 @@
                     });
 
                     if (notaGenerar) {
-                        notaGenerar.textContent = `Se generaron ${data.series.length} con el prefijo ${data.prefijo}.`;
+                        notaGenerar.textContent = `se generaron ${data.series.length} con el prefijo ${data.prefijo}; puedes cambiar la de cualquier pieza`;
                     }
                 } catch (e) {
-                    alert(e.message || 'No se pudieron generar las series. Intenta de nuevo.');
+                    window.showToast?.(e.message || 'No se pudieron generar las series. Intenta de nuevo.', 'err');
                 } finally {
                     btnGenerar.disabled = false;
                     btnGenerar.textContent = textoPrevio;
+                    cargarSiguiente();
                 }
             });
         }
@@ -707,7 +836,7 @@
             let videos = 0;
 
             bloques.forEach(function (card) {
-                const cuantas = card.querySelector('input[type=file][multiple]')?.files.length || 0;
+                const cuantas = usaFotoCompartida() ? panelCompartido.querySelectorAll('[data-foto-path]').length : card.querySelectorAll('[data-foto-path]').length;
                 fotos += cuantas;
                 if (cuantas === 0) sinFoto++;
                 if (card.querySelector('[data-video-path]')?.value) videos++;
@@ -728,9 +857,48 @@
 
         window.actualizarResumenEntrada = actualizarResumen;
 
+        /* ===================== Foto del catálogo =====================
+           También se sube al elegirla: sin límite de tamaño ni de formato. */
+        const fotoCatalogo = form.querySelector('[data-foto-catalogo]');
+        const fotoCatalogoPath = form.querySelector('[data-foto-catalogo-path]');
+        const fotoCatalogoNota = form.querySelector('[data-foto-catalogo-nota]');
+
+        fotoCatalogo?.addEventListener('change', async function () {
+            const archivo = fotoCatalogo.files?.[0];
+            if (!archivo) return;
+
+            fotoCatalogoPath.value = '';
+            fotoCatalogoNota.textContent = 'Subiendo foto...';
+
+            try {
+                const lista = await prepararFoto(archivo);
+                const json = await subirFoto(lista, pct => { fotoCatalogoNota.textContent = 'Subiendo foto... ' + pct + '%'; });
+                fotoCatalogoPath.value = json.foto_path;
+                fotoCatalogoNota.textContent = 'Foto lista: ' + lista.name;
+
+                const actual = document.getElementById('imagen-actual');
+                if (actual && seVe(lista.name)) {
+                    actual.src = json.url;
+                    document.getElementById('imagen-actual-wrap').style.display = '';
+                }
+            } catch (e) {
+                fotoCatalogoNota.textContent = e.message || 'No se pudo subir la foto. Vuelve a intentarlo.';
+            } finally {
+                fotoCatalogo.value = '';
+            }
+        });
+
         /* ===================== Arranque ===================== */
+        zonaDeFotos(form.querySelector('[data-foto-compartida-zona]'), form.querySelector('[data-foto-compartida-minis]'),
+            'foto_compartida_paths[]', {
+                max: MAX_FOTOS,
+                previas: @json(array_values((array) old('foto_compartida_paths', []))),
+                alCambiar: sincronizarFotoCompartida,
+            });
+        fotoCompartida.addEventListener('change', sincronizarFotoCompartida);
+        form.querySelectorAll('[data-condicion]').forEach(radio => radio.addEventListener('change', sincronizarFotoCompartida));
         window.pintarPiezas();
-        actualizarResumen();
+        sincronizarFotoCompartida();
     });
     </script>
 @endpush

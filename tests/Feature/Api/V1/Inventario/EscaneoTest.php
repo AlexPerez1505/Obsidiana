@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Api\V1\Inventario;
 
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\Congress;
 use App\Models\TokenApi;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -44,7 +44,7 @@ class EscaneoTest extends TestCase
         $pieza = $producto->seriales()->firstOrFail();
         $congreso = Congress::create([
             'nombre' => 'Congreso de Endoscopia',
-            'categoria_id' => Category::firstOrCreate(['nombre' => 'Endoscopia'])->id,
+            'categoria_id' => EquipmentType::firstOrCreate(['name' => 'Endoscopia'])->id,
             'fecha_inicio' => now()->addDay()->toDateString(),
             'fecha_finalizacion' => now()->addDays(3)->toDateString(),
             'hora_montaje' => '08:00',

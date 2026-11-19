@@ -9,9 +9,11 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -54,6 +56,8 @@ class CuentasDeUsuario
         'nombre_contacto_emergencia_secundario' => ['nullable', 'string', 'max:255'],
         'numero_contacto_emergencia_secundario' => ['nullable', 'string', 'max:50'],
         'domicilio_contacto_emergencia_secundario' => ['nullable', 'string'],
+        // Foto del usuario (se muestra en el listado de usuarios).
+        'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
     ];
 
     public const REGLAS_ROLES = [
@@ -70,10 +74,10 @@ class CuentasDeUsuario
     ];
 
     public const REGLAS_DOCUMENTOS = [
-        'ine_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-        'acta_nacimiento_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-        'licencia_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-        'curp_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+        'ine_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp,heic,heif,doc,docx,xls,xlsx,ppt,pptx', 'max:20480'],
+        'acta_nacimiento_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp,heic,heif,doc,docx,xls,xlsx,ppt,pptx', 'max:20480'],
+        'licencia_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp,heic,heif,doc,docx,xls,xlsx,ppt,pptx', 'max:20480'],
+        'curp_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,gif,webp,heic,heif,doc,docx,xls,xlsx,ppt,pptx', 'max:20480'],
     ];
 
     /** Aprueba una cuenta pendiente para darle acceso. */
@@ -108,6 +112,137 @@ class CuentasDeUsuario
         $user->tokens()->delete();
 
         $this->notificar($user, 'banned', $motivo);
+    }
+
+    /**
+     * Tablas que apuntan al usuario pero que no son historial: se van con él
+     * sin que se pierda nada que importe (sus accesos, roles y permisos).
+     */
+    private const NO_ES_HISTORIAL = ['login_logs', 'permission_user', 'role_user', 'personal_access_tokens', 'sessions'];
+
+    /** Nombre legible de las tablas que más suelen aparecer en el historial. */
+    private const NOMBRES_HISTORIAL = [
+        'ventas' => 'ventas', 'cotizaciones' => 'cotizaciones', 'clientes' => 'clientes asignados',
+        'cliente_seguimientos' => 'seguimientos de clientes', 'cobros' => 'cobros',
+        'inventory_movements' => 'movimientos de inventario', 'productos' => 'productos',
+        'producto_seriales' => 'piezas de inventario', 'ordenes_salida' => 'órdenes de salida',
+        'pieza_procesos' => 'procesos de piezas', 'pieza_proceso_avances' => 'avances de procesos',
+        'attendance_punches' => 'checadas', 'employee_attendances' => 'asistencias',
+        'employee_absences' => 'faltas', 'employee_documents' => 'documentos',
+        'employee_vacation_requests' => 'vacaciones', 'employee_permission_requests' => 'permisos solicitados',
+        'employee_incidents' => 'incidencias', 'employee_shifts' => 'turnos', 'employee_schedules' => 'horarios',
+        'payroll_run_lines' => 'nóminas', 'payroll_concepts' => 'conceptos de nómina',
+        'comision_pagos' => 'pagos de comisiones', 'viatics' => 'viáticos', 'tasks' => 'tareas',
+        'services' => 'servicios', 'service_trackings' => 'seguimientos de servicios',
+        'campanas' => 'campañas', 'rutas' => 'rutas', 'garantias' => 'garantías',
+        'garantia_reclamaciones' => 'reclamaciones de garantía', 'agenda_events' => 'eventos de agenda',
+        'evento_congreso_usuario' => 'congresos', 'vehiculo_combustible' => 'cargas de combustible',
+        'venta_bitacora' => 'cambios en ventas', 'garantia_eventos' => 'eventos de garantía',
+        'company_events' => 'eventos de la empresa', 'payroll_rules' => 'reglas de nómina',
+        'payroll_runs' => 'nóminas cerradas', 'ruta_eventos' => 'eventos de rutas',
+        'orden_salida_evidencias' => 'evidencias de salida', 'material_requests' => 'solicitudes de material',
+    ];
+
+    /**
+     * Por qué no se puede eliminar esta cuenta (null = sí se puede).
+     * Cualquier cuenta se puede eliminar, menos la propia.
+     */
+    public function rechazoAlEliminar(User $user, User $quien): ?string
+    {
+        return $user->id === $quien->id ? 'No puedes eliminar tu propia cuenta.' : null;
+    }
+
+    /**
+     * Qué tiene registrado el usuario, por tipo: ['ventas' => 3, ...].
+     * Se arma desde las llaves foráneas de la base, así un módulo nuevo
+     * queda protegido sin tener que acordarse de agregarlo aquí.
+     *
+     * @return array<string, int>|null  null si no se pudo revisar
+     */
+    public function historial(User $user): ?array
+    {
+        try {
+            $llaves = DB::select(
+                'SELECT TABLE_NAME AS tabla, COLUMN_NAME AS columna FROM information_schema.KEY_COLUMN_USAGE
+                 WHERE REFERENCED_TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME = ? AND REFERENCED_COLUMN_NAME = ?',
+                [$user->getTable(), 'id']
+            );
+        } catch (\Throwable $e) {
+            Log::warning('[CuentasDeUsuario] No se pudo leer el historial', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+
+        $cuenta = [];
+
+        foreach ($llaves as $llave) {
+            if (in_array($llave->tabla, self::NO_ES_HISTORIAL, true)) {
+                continue;
+            }
+
+            $n = DB::table($llave->tabla)->where($llave->columna, $user->id)->count();
+
+            if ($n > 0) {
+                $nombre = self::NOMBRES_HISTORIAL[$llave->tabla] ?? str_replace('_', ' ', $llave->tabla);
+                $cuenta[$nombre] = ($cuenta[$nombre] ?? 0) + $n;
+            }
+        }
+
+        arsort($cuenta);
+
+        return $cuenta;
+    }
+
+    /**
+     * Elimina una cuenta (revisar antes con rechazoAlEliminar).
+     *
+     * Sin historial (de prueba o que nunca se usó) se borra por completo.
+     * Con historial no se puede borrar el renglón sin perder ventas,
+     * checadas o nóminas, así que la cuenta se retira: desaparece de la
+     * lista y de todo el sistema, no puede entrar, su correo queda libre
+     * para registrarse de nuevo, y lo que registró conserva su nombre.
+     *
+     * @return bool  true si se borró por completo, false si se retiró
+     */
+    public function eliminar(User $user, ?User $quien = null): bool
+    {
+        $historial = $this->historial($user);
+
+        if ($historial === []) {
+            $disco = Storage::disk(config('filesystems.fotos_disk', 'public'));
+            $archivos = array_filter([$user->avatar]);
+
+            DB::transaction(function () use ($user) {
+                DB::table('sessions')->where('user_id', $user->id)->delete();
+                $user->tokens()->delete();
+                $user->delete();
+            });
+
+            $disco->delete($archivos);
+
+            return true;
+        }
+
+        DB::transaction(function () use ($user, $quien) {
+            $user->forceFill([
+                'status' => User::STATUS_DELETED,
+                'banned_reason' => 'Eliminado'.($quien ? ' por '.$quien->name : '').' el '.now()->format('d/m/Y H:i').' · correo: '.$user->email,
+                'email' => 'eliminado-'.$user->id.'-'.now()->timestamp.'@baja.local',
+                'password' => Hash::make(Str::random(40)),
+                'remember_token' => null,
+                'is_admin' => false,
+            ])->save();
+
+            $user->roles()->detach();
+            DB::table('permission_user')->where('user_id', $user->id)->delete();
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+            $user->tokens()->delete();
+
+            // Ya no se le espera en el checador ni en la nómina
+            \App\Models\EmployeeSchedule::where('user_id', $user->id)->update(['active' => false]);
+        });
+
+        return false;
     }
 
     /** Reactiva una cuenta baneada (le devuelve el acceso). */
@@ -178,20 +313,25 @@ class CuentasDeUsuario
             ->where('name', $nombre)
             ->first();
 
-        if ($documento && $documento->file_path) {
-            Storage::disk('public')->delete($documento->file_path);
-        }
+        $anterior = $documento?->file_path;
+        $discoAnterior = $anterior && Storage::disk('local')->exists($anterior) ? 'local' : 'public';
+        $ruta = $archivo->store("employee_documents/{$user->id}", 'local');
+        abort_unless($ruta, 500, 'No se pudo guardar el documento.');
 
-        $ruta = $archivo->store("employee_documents/{$user->id}", 'public');
-
-        return EmployeeDocument::updateOrCreate(
+        $documento = EmployeeDocument::updateOrCreate(
             ['user_id' => $user->id, 'name' => $nombre],
             [
                 'file_path' => $ruta,
-                'file_type' => $archivo->getClientMimeType(),
+                'file_type' => $archivo->getMimeType(),
                 'file_size' => $archivo->getSize(),
             ]
         );
+
+        if ($anterior && $anterior !== $ruta) {
+            DB::afterCommit(fn () => Storage::disk($discoAnterior)->delete($anterior));
+        }
+
+        return $documento;
     }
 
     private function protegerRolAdmin(User $user, array $ids, User $quien): void

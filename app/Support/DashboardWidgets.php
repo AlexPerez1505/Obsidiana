@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Models\Brand;
-use App\Models\Category;
 use App\Models\Cotizacion;
 use App\Models\Customer;
 use App\Models\EquipmentModel;
@@ -66,23 +65,12 @@ class DashboardWidgets
     /**
      * Arreglo de fabrica, para quien todavia no personaliza su tablero.
      *
-     * El rol Marketing no vende, así que no lleva "Ventas del mes"; el
-     * resto de indicadores comerciales sí le sirven de contexto.
-     *
      * @return array<int, array{id: string, w: int, h: int}>
      */
-    public static function porOmision(?User $user = null): array
+    public static function porOmision(): array
     {
-        // Mantenimiento Externo solo entra a "Externo": su tablero no lleva
-        // ninguna tarjeta, ni comercial ni de otro tipo.
-        if ($user && ! $user->isAdmin() && $user->hasRole('mantenimiento_externo')) {
-            return [];
-        }
-
-        $ids = ($user && ! $user->isAdmin() && $user->hasRole('marketing'))
-            ? ['clientes', 'cotizaciones', 'inventario', 'mis_tareas', 'flyers_pendientes', 'calendario_marketing']
-            : ['clientes', 'cotizaciones', 'ventas_mes', 'inventario',
-                'ventas_grafica', 'ultimas_cotizaciones', 'ultimos_clientes', 'accesos_rapidos'];
+        $ids = ['clientes', 'cotizaciones', 'ventas_mes', 'inventario',
+            'ventas_grafica', 'ultimas_cotizaciones', 'ultimos_clientes', 'accesos_rapidos'];
 
         return array_map(function (string $id) {
             $def = self::definicion($id);
@@ -158,18 +146,6 @@ class DashboardWidgets
             'mis_tareas' => [
                 'titulo' => 'Mis tareas',
                 'descripcion' => 'Tus pendientes de marketing sin terminar.',
-                'grupo' => 'Listas',
-                'w' => 2, 'h' => 4, 'h_min' => 3,
-            ],
-            'flyers_pendientes' => [
-                'titulo' => 'Flyers por aprobar',
-                'descripcion' => 'Piezas en revisión, listas para aprobar o devolver.',
-                'grupo' => 'Listas',
-                'w' => 2, 'h' => 4, 'h_min' => 3,
-            ],
-            'calendario_marketing' => [
-                'titulo' => 'Calendario de la semana',
-                'descripcion' => 'Qué se publica esta semana y en qué red social.',
                 'grupo' => 'Listas',
                 'w' => 2, 'h' => 4, 'h_min' => 3,
             ],
@@ -249,7 +225,7 @@ class DashboardWidgets
     {
         $guardado = self::normalizar($user->dashboard_widgets);
 
-        return $guardado ?: self::porOmision($user);
+        return $guardado ?: self::porOmision();
     }
 
     /**
@@ -293,7 +269,7 @@ class DashboardWidgets
         $filas = self::filasQueCaben($h);
 
         $datos = match ($id) {
-            'clientes' => self::datosClientes($user, $nivel, $filas),
+            'clientes' => self::datosClientes($nivel, $filas),
             // Cotizaciones y ventas respetan el permiso de "ver todas": quien
             // no lo tiene ve en el tablero solo sus propios números.
             'cotizaciones' => self::datosCotizaciones($user, $nivel, $filas),
@@ -302,10 +278,8 @@ class DashboardWidgets
             'facturas' => self::datosFacturas($nivel, $filas),
             'ventas_grafica' => self::datosVentasGrafica($user, $nivel),
             'ultimas_cotizaciones' => self::datosUltimasCotizaciones($user, $filas),
-            'ultimos_clientes' => self::datosUltimosClientes($user, $filas),
+            'ultimos_clientes' => self::datosUltimosClientes($filas),
             'mis_tareas' => self::datosMisTareas($user, $filas),
-            'flyers_pendientes' => self::datosFlyersPendientes($filas),
-            'calendario_marketing' => self::datosCalendarioMarketing($filas),
             'catalogo_equipo' => self::datosCatalogoEquipo($nivel),
             default => [],
         };
@@ -315,29 +289,28 @@ class DashboardWidgets
 
     // ===================== Cálculos =====================
 
-    private static function datosClientes(User $user, int $nivel, int $filas): array
+    private static function datosClientes(int $nivel, int $filas): array
     {
-        $query = Customer::visiblesPara($user);
         $datos = [
-            'total' => (clone $query)->count(),
-            'nuevos' => (clone $query)->where('created_at', '>=', now()->startOfMonth())->count(),
-            'inactivos' => (clone $query)->where('activo', false)->count(),
+            'total' => Customer::count(),
+            'nuevos' => Customer::where('created_at', '>=', now()->startOfMonth())->count(),
+            'inactivos' => Customer::where('activo', false)->count(),
         ];
 
         if ($nivel >= 2) {
-            $datos['activos'] = (clone $query)->where('activo', true)->count();
-            $datos['con_promocion'] = (clone $query)->where('recibe_promocion', true)->count();
+            $datos['activos'] = Customer::where('activo', true)->count();
+            $datos['con_promocion'] = Customer::where('recibe_promocion', true)->count();
         }
 
         if ($nivel >= 3) {
-            // Desglose por categoria, para que la tarjeta amplia diga algo mas.
-            $datos['tabla'] = (clone $query)->selectRaw('categoria_id, COUNT(*) as total')
+            // Desglose por tipo de equipo, para que la tarjeta amplia diga algo mas.
+            $datos['tabla'] = Customer::selectRaw('categoria_id, COUNT(*) as total')
                 ->groupBy('categoria_id')
                 ->orderByDesc('total')
                 ->limit($filas)
                 ->get()
                 ->map(fn ($fila) => [
-                    'etiqueta' => Category::find($fila->categoria_id)?->nombre ?? 'Sin categoría',
+                    'etiqueta' => \App\Models\EquipmentType::find($fila->categoria_id)?->name ?? 'Sin tipo de equipo',
                     'valor' => $fila->total,
                 ])
                 ->all();
@@ -508,10 +481,10 @@ class DashboardWidgets
         ];
     }
 
-    private static function datosUltimosClientes(User $user, int $filas): array
+    private static function datosUltimosClientes(int $filas): array
     {
         return [
-            'filas' => Customer::visiblesPara($user)->with('asesor')->latest()->limit($filas)->get(),
+            'filas' => Customer::with('asesor')->latest()->limit($filas)->get(),
         ];
     }
 
@@ -521,28 +494,6 @@ class DashboardWidgets
             'filas' => Task::where('user_id', $user->id)
                 ->whereNotIn('status', ['completado', 'completada', 'terminado'])
                 ->latest()
-                ->limit($filas)
-                ->get(),
-        ];
-    }
-
-    /** Piezas ya enviadas a revisión, esperando que alguien las apruebe. */
-    private static function datosFlyersPendientes(int $filas): array
-    {
-        return [
-            'filas' => Task::where('status', 'revision')
-                ->latest()
-                ->limit($filas)
-                ->get(),
-        ];
-    }
-
-    /** Qué se publica esta semana, según la fecha de publicación de cada tarea. */
-    private static function datosCalendarioMarketing(int $filas): array
-    {
-        return [
-            'filas' => Task::whereBetween('due_date', [now()->startOfWeek(), now()->endOfWeek()])
-                ->orderBy('due_date')
                 ->limit($filas)
                 ->get(),
         ];

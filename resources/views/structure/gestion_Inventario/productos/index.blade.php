@@ -70,45 +70,6 @@
         .grupo-cerrado .grupo-cab svg { transform:rotate(-90deg); }
         .grupo-titulo-cards { grid-column:1 / -1; margin:8px 0 -2px; font-size:12.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
 
-        /* ===================== Filtros del inventario ===================== */
-        .inv-toolbar { display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
-        .inv-filter-wrap { flex:1 0 100%; min-width:0; order:2; }
-        .inv-filter-toggle { width:100%; display:flex; align-items:center; gap:10px; padding:13px 16px; border:1px solid var(--primary); border-radius:14px; background:var(--surface); color:var(--text); cursor:pointer; text-align:left; }
-        .inv-filter-toggle svg { width:18px; height:18px; color:var(--primary); flex:0 0 auto; }
-        .inv-filter-toggle span { display:flex; flex-direction:column; gap:2px; }
-        .inv-filter-toggle strong { font-size:15px; }
-        .inv-filter-toggle small { color:var(--muted); font-size:12px; }
-        .inv-filter-toggle .chev { margin-left:auto; font-size:18px; color:var(--muted); }
-        .inv-filter-toggle[aria-expanded="true"] { border-radius:14px 14px 0 0; }
-        .inv-filter-toggle[aria-expanded="true"] .chev { transform:rotate(180deg); }
-        .inv-filter-panel { flex:1 1 100%; display:grid !important; grid-template-columns:minmax(250px,1.45fr) repeat(4,minmax(145px,1fr)) auto auto; gap:12px; align-items:end; padding:16px; border:1px solid var(--border); border-radius:16px; background:var(--surface); box-shadow:0 8px 24px rgba(15,23,42,.05); }
-        .inv-filter-panel[hidden] { display:none !important; }
-        .inv-filter-wrap .inv-filter-panel { border-top:0; border-radius:0 0 16px 16px; }
-        .inv-filter-field { display:flex; flex-direction:column; gap:7px; min-width:0; color:var(--muted); font-size:11px; font-weight:750; letter-spacing:.06em; text-transform:uppercase; }
-        .inv-filter-label { display:flex; align-items:center; gap:7px; color:var(--text); font-size:11px; font-weight:650; letter-spacing:.02em; text-transform:none; }
-        .inv-filter-label svg { width:15px; height:15px; flex:0 0 auto; color:#9bb8dd; stroke-width:1.8; }
-        .inv-filter-field input, .inv-filter-field select { width:100%; min-height:42px; box-sizing:border-box; padding:10px 12px; border:1px solid color-mix(in srgb, var(--primary) 16%, var(--border)); border-radius:10px; background:color-mix(in srgb, var(--surface-2) 88%, #071b38); color:var(--text); font:inherit; font-size:13px; letter-spacing:normal; text-transform:none; outline:none; transition:border-color .18s, box-shadow .18s, background .18s; }
-        .inv-filter-field input::placeholder { color:var(--muted); opacity:.8; }
-        .inv-filter-field input:focus, .inv-filter-field select:focus { border-color:var(--primary); box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent); background:var(--surface); }
-        .inv-filter-search { position:relative; }
-        .inv-filter-search input { padding-left:39px; }
-        .inv-filter-search svg { position:absolute; left:12px; bottom:13px; width:17px; height:17px; color:var(--muted); pointer-events:none; }
-        .inv-filter-actions { display:flex; align-items:center; gap:8px; height:42px; }
-        .inv-filter-actions .btn { white-space:nowrap; height:42px; }
-        .inv-filter-panel [data-catalogo-filtros] { display:contents !important; }
-        .tipo-chips { gap:8px; margin:0 0 16px; padding:4px; }
-        .tipo-chip { padding:8px 13px; border-radius:10px; background:transparent; font-size:12.5px; transition:background .18s, border-color .18s, color .18s, transform .18s; }
-        .tipo-chip:hover { border-color:var(--primary); color:var(--primary); transform:translateY(-1px); }
-        .tipo-chip.on { box-shadow:0 4px 12px color-mix(in srgb, var(--primary) 20%, transparent); }
-        .tipo-chip span { padding:2px 6px; border-radius:999px; background:var(--surface-2); font-size:11px; }
-        .tipo-chip.on span { background:rgba(255,255,255,.16); }
-        .inv-actions { flex:1 0 100%; display:flex; align-items:center; justify-content:flex-end; gap:12px; flex-wrap:wrap; order:1; }
-        .inv-actions .inv-filter-toggle { width:auto; padding:10px 14px; }
-        .inv-actions .inv-filter-toggle small { display:none; }
-        .inv-actions .inv-spacer { flex:1; }
-        @media (max-width: 1100px) { .inv-filter-panel { grid-template-columns:repeat(2,minmax(180px,1fr)); } .inv-filter-search { grid-column:1 / -1; } .inv-filter-actions { justify-content:flex-start; } }
-        @media (max-width: 600px) { .inv-filter-panel { grid-template-columns:1fr; padding:12px; } .inv-filter-search { grid-column:auto; } .inv-filter-actions { width:100%; } .inv-filter-actions .btn { flex:1; justify-content:center; } .inv-actions > * { flex:1 1 100%; justify-content:center; } .inv-actions .inv-spacer { display:none; } }
-
         /* ===================== Paquetes con su contenido ===================== */
         .paq-sec > summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px; }
         .paq-sec > summary::-webkit-details-marker { display:none; }
@@ -135,31 +96,19 @@
         <x-ui.page-header title="Inventario" :back="route('dashboard')" />
     @endif
 
-    <div class="inv-toolbar">
-        <div class="inv-filter-wrap">
-        <form method="GET" id="filtrosProductos" data-live="off" class="inv-filter-panel" hidden>
-            <label class="inv-filter-field inv-filter-search">Buscar en inventario
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap;">
+        <form method="GET" id="filtrosProductos" data-live="off" style="flex:1 1 100%;display:flex;gap:10px;align-items:end;flex-wrap:wrap;">
+            <label style="flex:1;min-width:220px;">Buscar producto
                 <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por tipo, marca, modelo o serie..."
-                       autocomplete="off">
+                       style="width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);">
             </label>
             @include('partials.inventario-filtros-catalogo')
             @if (($filters['ubicacion'] ?? '') === 'congreso')
                 <input type="hidden" name="ubicacion" value="congreso">
             @endif
-            <div class="inv-filter-actions">
-                <button type="submit" class="btn">Aplicar</button>
-                <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost">Limpiar</a>
-            </div>
+            <button type="submit" class="btn">Aplicar filtros</button>
+            <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost">Limpiar filtros</a>
         </form>
-        </div>
-
-        <div class="inv-actions">
-        <button type="button" class="inv-filter-toggle" id="toggleFiltrosProductos" aria-expanded="false" aria-controls="filtrosProductos">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-            <span><strong>Filtros avanzados</strong><small>Refina la búsqueda de productos del inventario</small></span>
-            <b class="chev">⌄</b>
-        </button>
 
         {{-- Lo que está fuera del almacén, de un jalón: sigue siendo stock
              (allá se puede vender) pero no está en el anaquel. --}}
@@ -180,7 +129,7 @@
             </a>
         @endif
 
-        <div class="inv-spacer"></div>
+        <div style="flex:1;"></div>
         <x-ui.view-switch key="productos" />
         <a href="{{ route('inventory.paquetes.index') }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"/></svg>
@@ -205,7 +154,6 @@
             Registrar entrada
         </a>
         @endcan
-        </div>
     </div>
 
     @php
@@ -565,17 +513,6 @@
     @include('partials.galeria')
 
     <script>
-        (function () {
-            const toggle = document.getElementById('toggleFiltrosProductos');
-            const panel = document.getElementById('filtrosProductos');
-            if (!toggle || !panel) return;
-            toggle.addEventListener('click', function () {
-                const abierto = toggle.getAttribute('aria-expanded') === 'true';
-                toggle.setAttribute('aria-expanded', abierto ? 'false' : 'true');
-                panel.hidden = abierto;
-            });
-        })();
-
         function espejoPaquete(casilla) {
             document.querySelectorAll('.producto-checkbox[value="' + casilla.value + '"]').forEach(c => { c.checked = casilla.checked; });
             actualizarSeleccionPaquete();

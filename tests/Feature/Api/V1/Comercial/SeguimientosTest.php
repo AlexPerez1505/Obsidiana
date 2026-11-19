@@ -155,7 +155,7 @@ class SeguimientosTest extends TestCase
 
     public function test_eliminar_y_seguimiento_de_otro_cliente_da_404(): void
     {
-        $yo = $this->usuarioApi(['clientes.editar']);
+        $yo = $this->usuarioApi(['clientes.editar', 'clientes.eliminar']);
         $cliente = $this->cliente($yo);
         $otroCliente = $this->cliente($yo);
         $seguimiento = $this->seguimiento($cliente, $yo);
@@ -167,6 +167,7 @@ class SeguimientosTest extends TestCase
 
         $peticion->deleteJson("/api/v1/clientes/{$cliente->id}/seguimientos/{$seguimiento->id}")
             ->assertOk()->assertJsonPath('message', 'Seguimiento eliminado.');
-        $this->assertDatabaseMissing('cliente_seguimientos', ['id' => $seguimiento->id]);
+        // Ya no se borra: se cancela y queda en el historial (agenda y ficha).
+        $this->assertDatabaseHas('cliente_seguimientos', ['id' => $seguimiento->id, 'estado' => 'cancelado']);
     }
 }

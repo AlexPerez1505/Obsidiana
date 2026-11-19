@@ -154,6 +154,12 @@
             @if ($entrada?->movement_date)
                 <div><span class="e">Ingresó</span><span class="v">{{ $entrada->movement_date->format('d/m/Y') }}</span></div>
             @endif
+            @if ($entrada?->fecha_fabricacion)
+                <div><span class="e">Fabricación</span><span class="v">{{ $entrada->fecha_fabricacion->format('d/m/Y') }}</span></div>
+            @endif
+            @if ($entrada?->fecha_caducidad)
+                <div><span class="e">Caducidad</span><span class="v">{{ $entrada->fecha_caducidad->format('d/m/Y') }}</span></div>
+            @endif
             @if ($producto?->tipo_equipo)
                 <div><span class="e">Tipo</span><span class="v">{{ $producto->tipo_equipo }}</span></div>
             @endif
@@ -189,6 +195,35 @@
             <p style="margin:10px 0 0; color:var(--muted); font-size:13.5px;">
                 Grabado al recibir el equipo, para dejar constancia de cómo llegó.
             </p>
+        </div>
+    @endif
+
+    {{-- ===================== Componentes ===================== --}}
+    @php
+        $componentes = $pieza->componentes()->get();
+        $nivelDe = function ($c) use ($componentes) {
+            $n = 0;
+            for ($p = $c->padre_id; $p && $n < 5; $n++) { $p = $componentes->firstWhere('id', $p)?->padre_id; }
+            return $n;
+        };
+        $ordenados = collect();
+        $agregar = function ($padre) use (&$agregar, $componentes, &$ordenados) {
+            foreach ($componentes->where('padre_id', $padre) as $c) { $ordenados->push($c); $agregar($c->id); }
+        };
+        $agregar(null);
+    @endphp
+    @if ($ordenados->isNotEmpty())
+        <div class="tarjeta">
+            <h2>Componentes</h2>
+            @foreach ($ordenados as $c)
+                <div class="punto" style="padding-left:{{ $nivelDe($c) * 18 }}px;">
+                    <span class="r {{ $c->porLlegar() ? 'na' : 'si' }}">{{ $c->porLlegar() ? 'Por llegar' : 'Incluido' }}</span>
+                    <span class="t">
+                        {{ $nivelDe($c) ? '↳ ' : '' }}{{ $c->nombre }}
+                        @if ($c->no_serie)<span class="n">S/N {{ $c->no_serie }}</span>@endif
+                    </span>
+                </div>
+            @endforeach
         </div>
     @endif
 

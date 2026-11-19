@@ -14,6 +14,7 @@ use App\Services\CalculadoraCotizacion;
 use App\Services\CalendarioPagos;
 use App\Services\InventarioDeVentas;
 use App\Services\OrdenesDeSalida;
+use App\Services\Promociones\MotorDeCupones;
 use App\Support\DocumentoInitial;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -43,6 +44,7 @@ class RegistroDeVentas
         private readonly InventarioDeVentas $inventario,
         private readonly CalendarioPagos $calendario,
         private readonly OrdenesDeSalida $ordenes,
+        private readonly MotorDeCupones $cupones,
     ) {
     }
 
@@ -62,6 +64,8 @@ class RegistroDeVentas
             'plan_nombre' => ['nullable', 'string', 'max:255'],
             'num_meses' => ['nullable', 'integer', 'min:0', 'max:60'],
             'garantia_meses' => ['nullable', 'integer', Rule::in(Venta::GARANTIAS)],
+            // Solo el código: el descuento lo calcula el servidor (MotorDeCupones).
+            'cupon_codigo' => ['nullable', 'string', 'max:40'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.tipo_item' => ['required', 'in:equipo,paquete,producto'],
             'items.*.equipo_id' => ['nullable', 'integer'],
@@ -86,7 +90,7 @@ class RegistroDeVentas
             'pagos.*.bloqueado' => ['nullable', 'boolean'],
             'fichas' => ['nullable', 'array'],
             'fichas.*' => ['integer', 'exists:fichas_tecnicas,id'],
-        ];
+        ] + \App\Support\EquiposACuenta::reglas();
     }
 
     /**
@@ -129,6 +133,8 @@ class RegistroDeVentas
             'descuento_valor' => $initial['descuento_valor'],
             'envio' => $initial['envio'],
             'valor_a_cuenta' => $initial['valor_a_cuenta'],
+            'equipos_a_cuenta' => $initial['equipos_a_cuenta'] ?? [],
+            'cupon_codigo' => $initial['cupon_codigo'] ?: null,
             'plan_nombre' => $initial['plan_nombre'],
             'num_meses' => $initial['num_meses'],
             'garantia_meses' => $initial['garantia_meses'],
@@ -189,6 +195,10 @@ class RegistroDeVentas
     public function crear(array $data, ?int $cotizacionId = null): Venta
     {
         return DB::transaction(function () use ($data, $cotizacionId) {
+            // Primero el cupón: bloquea su fila hasta que la venta quede guardada.
+            $prep = $this->cupones->prepararDocumento($data, ['origen_cotizacion_id' => $cotizacionId]);
+            $data['_cupon_monto'] = $prep['resultado']->descuento ?? 0;
+
             $venta = new Venta();
             $venta->folio = Venta::siguienteFolio();
             $venta->seller_id = auth()->id();
@@ -205,6 +215,9 @@ class RegistroDeVentas
             if ($cotizacionId) {
                 Cotizacion::whereKey($cotizacionId)->update(['estado' => 'convertida']);
             }
+
+            // Aquí se CONSUME el cupón (o se convierte la reserva de la cotización).
+            $this->cupones->vincularVenta($venta, $prep);
 
             // Con la venta nace la orden de salida para almacén (solo si
             // hay equipo físico que preparar).
@@ -259,6 +272,15 @@ class RegistroDeVentas
             unset($data['pagos']);
         }
 
+        // Quien no manda el campo (p. ej. la API) no quita el cupón que ya tenía.
+        if (! array_key_exists('cupon_codigo', $data)) {
+            $data['cupon_codigo'] = $venta->cupon_codigo;
+        }
+
+        // Revisión previa del cupón (sin candado) para que el total exigible ya lo considere.
+        $ctxCupon = ['venta_id' => $venta->id, 'origen_cotizacion_id' => $venta->cotizacion_id];
+        $data['_cupon_monto'] = $this->cupones->montoParaDocumento($data, $ctxCupon);
+
         $nuevoExigible = $this->exigibleDe($data);
 
         if ($cobrado > 0.009 && $nuevoExigible + 0.009 < $cobrado) {
@@ -269,7 +291,10 @@ class RegistroDeVentas
             );
         }
 
-        DB::transaction(function () use ($venta, $data, $planBloqueado) {
+        DB::transaction(function () use ($venta, $data, $planBloqueado, $ctxCupon) {
+            $prep = $this->cupones->prepararDocumento($data, $ctxCupon);
+            $data['_cupon_monto'] = $prep['resultado']->descuento ?? 0;
+
             $this->llenarDesde($venta, $data);
             $venta->save();
 
@@ -285,6 +310,8 @@ class RegistroDeVentas
             }
 
             $venta->fichas()->sync($data['fichas'] ?? []);
+
+            $this->cupones->vincularVenta($venta, $prep);
 
             // La orden de salida se rehace con las partidas nuevas, salvo
             // que el equipo ya haya salido.
@@ -420,6 +447,52 @@ class RegistroDeVentas
         return "Venta {$folio} eliminada.";
     }
 
+    /**
+     * Borrado definitivo para limpiar datos de prueba: quita la venta con
+     * TODO su historial (cobros, pagos, facturas, garantías, orden de
+     * salida, fichas y bitácora), sin importar si ya recibió dinero. Las
+     * piezas vendidas regresan a disponible. Solo administradores o quien
+     * traiga ventas.eliminar_definitivo llega aquí por la ruta.
+     */
+    public function eliminarDefinitivo(Venta $venta): string
+    {
+        $folio = $venta->folio;
+        $cotizacionId = $venta->cotizacion_id;
+
+        DB::transaction(function () use ($venta, $cotizacionId) {
+            $this->inventario->liberarSerialesDe($venta);
+
+            $cobros = $venta->cobros()->pluck('id');
+            DB::table('cobro_aplicaciones')->whereIn('cobro_id', $cobros)->delete();
+            DB::table('cobro_evidencias')->whereIn('cobro_id', $cobros)->delete();
+            $venta->cobros()->delete();
+            $venta->pagos()->delete();
+
+            $facturas = DB::table('facturas')->where('venta_id', $venta->id)->pluck('id');
+            DB::table('factura_items')->whereIn('factura_id', $facturas)->delete();
+            DB::table('facturas')->whereIn('id', $facturas)->delete();
+
+            $garantias = DB::table('garantias')->where('venta_id', $venta->id)->pluck('id');
+            foreach (['garantia_archivos', 'garantia_costos', 'garantia_eventos', 'garantia_reclamaciones', 'garantia_sustituciones'] as $tabla) {
+                DB::table($tabla)->whereIn('garantia_id', $garantias)->delete();
+            }
+            DB::table('garantia_documentos')->where('venta_id', $venta->id)->delete();
+            DB::table('garantias')->whereIn('id', $garantias)->delete();
+
+            $venta->ordenSalida()->delete();
+            $venta->fichas()->detach();
+            $venta->bitacora()->delete();
+            $venta->items()->delete();
+            $venta->delete();
+
+            if ($cotizacionId) {
+                Cotizacion::whereKey($cotizacionId)->delete();
+            }
+        });
+
+        return "Venta {$folio} eliminada con todo su historial.";
+    }
+
     /** Lo que se le cobrará al cliente con los datos nuevos, antes de guardar. */
     private function exigibleDe(array $data): float
     {
@@ -430,7 +503,7 @@ class RegistroDeVentas
             'es_regalo' => (bool) ($i['es_regalo'] ?? false),
         ], $data['items']);
 
-        $valorACuenta = (float) ($data['valor_a_cuenta'] ?? 0);
+        $valorACuenta = \App\Support\EquiposACuenta::valorDocumento($data);
 
         $d = $this->calc->desglose(
             $items,
@@ -438,7 +511,8 @@ class RegistroDeVentas
             (float) ($data['descuento_valor'] ?? 0),
             (float) ($data['envio'] ?? 0),
             (bool) ($data['aplica_iva'] ?? false),
-            $valorACuenta
+            $valorACuenta,
+            (float) ($data['_cupon_monto'] ?? 0)
         );
 
         return (float) ($valorACuenta > 0 ? $d['contrato'] : $d['total']);
@@ -479,9 +553,9 @@ class RegistroDeVentas
         $descValor = (float) ($data['descuento_valor'] ?? 0);
         $envio = (float) ($data['envio'] ?? 0);
         $aplicaIva = (bool) ($data['aplica_iva'] ?? false);
-        $valorACuenta = (float) ($data['valor_a_cuenta'] ?? 0);
+        $valorACuenta = \App\Support\EquiposACuenta::valorDocumento($data);
 
-        $d = $this->calc->desglose($items, $descTipo, $descValor, $envio, $aplicaIva, $valorACuenta);
+        $d = $this->calc->desglose($items, $descTipo, $descValor, $envio, $aplicaIva, $valorACuenta, (float) ($data['_cupon_monto'] ?? 0));
 
         $venta->customer_id = $data['customer_id'];
         $venta->congreso_id = $data['congreso_id'] ?? null;
@@ -495,6 +569,9 @@ class RegistroDeVentas
         $venta->envio = $envio;
         $venta->iva_monto = $d['iva'];
         $venta->valor_a_cuenta = $valorACuenta;
+        if (array_key_exists('equipos_a_cuenta', $data)) {
+            $venta->equipos_a_cuenta = \App\Support\EquiposACuenta::limpiar($data['equipos_a_cuenta']) ?: null;
+        }
         $venta->total = $d['total'];
         $venta->total_contrato = $d['total_contrato'];
         $venta->plan_nombre = $data['modalidad'] === 'financiamiento' ? ($data['plan_nombre'] ?? 'Plan Personalizado') : null;

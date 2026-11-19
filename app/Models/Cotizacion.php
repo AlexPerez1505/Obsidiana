@@ -34,6 +34,7 @@ class Cotizacion extends Model
         'envio',
         'iva_monto',
         'valor_a_cuenta',
+        'equipos_a_cuenta',
         'total',
         'total_contrato',
         'plan_nombre',
@@ -52,6 +53,7 @@ class Cotizacion extends Model
             'envio' => 'decimal:2',
             'iva_monto' => 'decimal:2',
             'valor_a_cuenta' => 'decimal:2',
+            'equipos_a_cuenta' => 'array',
             'total' => 'decimal:2',
             'total_contrato' => 'decimal:2',
             'num_meses' => 'integer',
@@ -89,7 +91,12 @@ class Cotizacion extends Model
     public static function siguienteFolio(): string
     {
         $anio = now()->year;
-        $ultimo = static::where('folio', 'like', "COT-{$anio}-%")->count();
+        // Contar registros puede repetir folios cuando se eliminó alguno.
+        // Tomamos el consecutivo más alto que ya existe.
+        $ultimo = static::where('folio', 'like', "COT-{$anio}-%")
+            ->pluck('folio')
+            ->map(fn (string $folio): int => (int) Str::afterLast($folio, '-'))
+            ->max() ?? 0;
 
         return sprintf('COT-%d-%04d', $anio, $ultimo + 1);
     }
@@ -101,7 +108,9 @@ class Cotizacion extends Model
             'aceptada' => 'Aceptada',
             'rechazada' => 'Rechazada',
             'convertida' => 'Convertida a venta',
-            default => 'Borrador',
+            // En la base sigue siendo "borrador"; se muestra "Generada" porque la
+            // cotización ya está hecha y es válida.
+            default => 'Generada',
         };
     }
     /** Congreso donde se levanto. Nulo cuando no vino de un congreso. */

@@ -3,8 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\OrdenSalida;
+use App\Models\OrdenSalidaEvidencia;
 use App\Models\OrdenSalidaItem;
+use App\Services\Almacen\AsignacionDeSalida;
+use App\Services\Almacen\EvidenciaDeSalida;
 use App\Services\Almacen\PreparacionDeSalida;
+use App\Services\Inventario\VideoPorPedazos;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -18,15 +23,24 @@ use Illuminate\View\View;
  */
 class OrdenSalidaController extends Controller
 {
-    public function __construct(private readonly PreparacionDeSalida $salidas)
-    {
+    public function __construct(
+        private readonly PreparacionDeSalida $salidas,
+        private readonly EvidenciaDeSalida $evidencia,
+    ) {
     }
 
     public function index(Request $request): View
     {
         $estado = array_key_exists($request->get('estado'), OrdenSalida::ESTADOS) ? $request->get('estado') : PreparacionDeSalida::ABIERTAS;
 
-        $ordenes = $this->salidas->filtrarPorEstado(OrdenSalida::with(['venta.customer', 'venta.seller', 'items']), $estado)
+        // "Asignadas a mí": lo abierto que me toca preparar.
+        $mias = $request->boolean('mias');
+        $consulta = OrdenSalida::with(['venta.customer', 'venta.seller', 'items', 'asignadaA']);
+        $consulta = $mias
+            ? $this->salidas->filtrarPorEstado($consulta, PreparacionDeSalida::ABIERTAS)->where('asignada_a', $request->user()->id)
+            : $this->salidas->filtrarPorEstado($consulta, $estado);
+
+        $ordenes = $consulta
             ->latest()
             ->paginate(20)
             ->withQueryString();
@@ -34,7 +48,10 @@ class OrdenSalidaController extends Controller
         return view('structure.gestion_Inventario.ordenes_salida.index', [
             'ordenes' => $ordenes,
             'estado' => $estado,
-            'conteos' => $this->salidas->conteos(),
+            'mias' => $mias,
+            'conteos' => $this->salidas->conteos() + [
+                'mias' => $this->salidas->filtrarPorEstado(OrdenSalida::query(), PreparacionDeSalida::ABIERTAS)->where('asignada_a', $request->user()->id)->count(),
+            ],
         ]);
     }
 
@@ -43,14 +60,33 @@ class OrdenSalidaController extends Controller
         // Las piezas de cada partida vienen con su congreso: si el equipo
         // se vendió en uno, no está en el almacén y no hay que buscarlo.
         $orden->load([
-            'venta.customer', 'venta.seller', 'preparadaPor', 'entregadaPor',
-            'items.ventaItem.seriales.congress',
+            'venta.customer', 'venta.seller', 'preparadaPor', 'entregadaPor', 'asignadaA', 'asignadaPor',
+            'items.ventaItem.seriales.congress', 'evidencias.subidoPor',
         ]);
+
+        $puedeAsignar = auth()->user()->can('salidas.asignar');
+        $etapasDeSalida = app(\App\Services\Almacen\EtapasDeSalida::class);
+        $etapas = $etapasDeSalida->asegurar($orden);
 
         return view('structure.gestion_Inventario.ordenes_salida.show', [
             'orden' => $orden,
             'puedePreparar' => auth()->user()->can('salidas.preparar'),
+            'puedeAsignar' => $puedeAsignar,
+            'preparadores' => $puedeAsignar ? app(AsignacionDeSalida::class)->candidatos() : collect(),
+            'etapas' => $etapas,
+            // Ya se trabaja por etapas: la preparación y la firma se hacen en ellas.
+            'porEtapas' => $etapasDeSalida->activas($orden),
         ]);
+    }
+
+    /** Elige quién prepara el equipo; a esa persona le llega el aviso. */
+    public function asignar(Request $request, OrdenSalida $orden, AsignacionDeSalida $asignacion): RedirectResponse
+    {
+        $data = $request->validate(['user_id' => ['nullable', 'integer', 'exists:users,id']]);
+
+        $mensaje = $asignacion->asignar($orden, $data['user_id'] ?? null, $request->user());
+
+        return back()->with('status', $mensaje);
     }
 
     /**
@@ -131,5 +167,133 @@ class OrdenSalidaController extends Controller
 
         return redirect()->route('inventory.salidas.show', $orden)
             ->with('status', "Salida {$orden->folio} firmada. El equipo ya salió.");
+    }
+
+    /**
+     * Una foto de evidencia. La pantalla manda cada foto en su propia
+     * petición, una tras otra: así no hay tope de cuántas se suben y
+     * ninguna petición rebasa el tamaño máximo del servidor. Regresa el
+     * cuadro ya pintado para sumarlo a la galería sin recargar.
+     */
+    public function evidenciaFoto(Request $request, OrdenSalida $orden): JsonResponse
+    {
+        if ($razon = $this->evidencia->razonParaNoSubir($orden)) {
+            abort(409, $razon);
+        }
+
+        $data = $request->validate(EvidenciaDeSalida::reglasFoto() + ['etapa' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Models\OrdenSalidaEtapa::ETAPAS))]], EvidenciaDeSalida::MENSAJES);
+        $this->exigirEtapaAbierta($request, $orden, $data['etapa'] ?? null);
+
+        $nueva = filled($data['foto_path'] ?? null)
+            ? $this->evidencia->guardarFotoArmada($orden, $data['foto_path'], $data['nombre'] ?? null, $request->user()->id)
+            : $this->evidencia->guardarFoto($orden, $request->file('foto'), $request->user()->id);
+
+        if (! empty($data['etapa'])) {
+            $nueva->update(['etapa' => $data['etapa']]);
+        }
+
+        return $this->evidenciaSubida($request, $orden, $nueva, 'Foto agregada.');
+    }
+
+    /**
+     * Un pedazo de foto: cualquier formato y sin tope de tamaño (se manda
+     * en pedazos de 4MB). Al armarse, la pantalla la registra con foto_path.
+     */
+    public function evidenciaFotoChunk(Request $request, OrdenSalida $orden, \App\Services\Inventario\FotoPorPedazos $fotos): JsonResponse
+    {
+        if ($razon = $this->evidencia->razonParaNoSubir($orden)) {
+            abort(409, $razon);
+        }
+
+        $data = $request->validate(\App\Services\Inventario\FotoPorPedazos::reglas());
+
+        try {
+            return response()->json($fotos->recibir($request->file('chunk'), $data['upload_id'], (int) $data['index'], (int) $data['total'], $data['extension']));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
+        }
+    }
+
+    /**
+     * Un pedazo del video de evidencia (mismo armado por pedazos que el
+     * video de las entradas). Con el último, el video queda registrado.
+     */
+    public function evidenciaVideo(Request $request, OrdenSalida $orden): JsonResponse
+    {
+        if ($razon = $this->evidencia->razonParaNoSubir($orden)) {
+            abort(409, $razon);
+        }
+
+        $data = $request->validate([...VideoPorPedazos::reglas(), ...EvidenciaDeSalida::REGLAS_VIDEO, 'etapa' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Models\OrdenSalidaEtapa::ETAPAS))]]);
+        $this->exigirEtapaAbierta($request, $orden, $data['etapa'] ?? null);
+
+        $resultado = $this->evidencia->recibirPedazoDeVideo($orden, $request->file('chunk'), $data, $request->user()->id);
+
+        if (! isset($resultado['evidencia'])) {
+            return response()->json(['status' => $resultado['status']]);
+        }
+
+        if (! empty($data['etapa'])) {
+            $resultado['evidencia']->update(['etapa' => $data['etapa']]);
+        }
+
+        return $this->evidenciaSubida($request, $orden, $resultado['evidencia'], 'Video agregado.');
+    }
+
+    /** Quita una foto o un video, con todo y su archivo. */
+    public function borrarEvidencia(Request $request, OrdenSalida $orden, OrdenSalidaEvidencia $evidencia): JsonResponse|RedirectResponse
+    {
+        abort_if($evidencia->orden_salida_id !== $orden->id, 404);
+        abort_unless($evidencia->puedeBorrarla($request->user()), 403, 'No tienes permiso para eliminar esta evidencia.');
+
+        if ($razon = $this->evidencia->razonParaNoBorrar($orden)) {
+            abort(409, $razon);
+        }
+
+        $tipo = $evidencia->esVideo() ? 'Video eliminado.' : 'Foto eliminada.';
+        $evidencia->delete();
+
+        if (! $request->expectsJson()) {
+            return back()->with('status', $tipo);
+        }
+
+        return response()->json([
+            'message' => $tipo,
+            'conteo' => $orden->conteoEvidencias(),
+        ]);
+    }
+
+    /** La evidencia de una etapa se sube mientras se trabaja, o al corregirla (desbloqueada). */
+    private function exigirEtapaAbierta(Request $request, OrdenSalida $orden, ?string $etapa): void
+    {
+        if (! $etapa) {
+            return;
+        }
+
+        $e = $orden->etapas()->where('etapa', $etapa)->first();
+        $etapas = app(\App\Services\Almacen\EtapasDeSalida::class);
+
+        if ($e && ! $etapas->puedeEditar($request->user(), $e->setRelation('orden', $orden))) {
+            abort(409, $e->terminada()
+                ? 'Esta etapa ya se terminó: pulsa «Editar» para corregirla.'
+                : ($etapas->razonParaNoTrabajar($request->user(), $e) ?? 'No puedes subir evidencia a esta etapa.'));
+        }
+    }
+
+    private function evidenciaSubida(Request $request, OrdenSalida $orden, OrdenSalidaEvidencia $nueva, string $mensaje): JsonResponse
+    {
+        $nueva->load('subidoPor');
+
+        return response()->json([
+            'status' => 'listo',
+            'message' => $mensaje,
+            'evidencia' => ['id' => $nueva->id, 'tipo' => $nueva->tipo, 'url' => $nueva->url()],
+            'html' => view('structure.gestion_Inventario.ordenes_salida._evidencia', [
+                'orden' => $orden,
+                'evidencia' => $nueva,
+                'borrable' => $nueva->puedeBorrarla($request->user()),
+            ])->render(),
+            'conteo' => $orden->conteoEvidencias(),
+        ], 201);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\PiezaProceso;
+
 /**
  * Checklist de recepción de equipo usado.
  *
@@ -45,23 +47,13 @@ class ChecklistRecepcion
     public static function grupos(): array
     {
         return [
-            'funcionamiento' => [
-                'titulo' => 'Funcionamiento',
-                'puntos' => [
-                    'enciende' => ['texto' => 'Enciende y arranca correctamente', 'manda' => 'mantenimiento'],
-                    'autodiagnostico' => ['texto' => 'Pasa su autodiagnóstico sin errores', 'manda' => 'mantenimiento'],
-                    'imagen' => ['texto' => 'La imagen se ve bien (cámara, monitor, pantalla)', 'manda' => 'mantenimiento'],
-                    'controles' => ['texto' => 'Botones, perillas y controles responden', 'manda' => 'mantenimiento'],
-                    'sin_alarmas' => ['texto' => 'No marca alarmas ni códigos de falla', 'manda' => 'mantenimiento'],
-                ],
-            ],
             'fisico' => [
                 'titulo' => 'Estado físico',
                 'puntos' => [
                     'carcasa' => ['texto' => 'Carcasa sin golpes, rayones ni piezas rotas', 'manda' => 'hojalateria'],
-                    'pantalla_fisica' => ['texto' => 'Pantalla sin rayones, manchas ni pixeles muertos', 'manda' => 'hojalateria'],
+                    'pantalla_fisica' => ['texto' => 'Pantalla sin rayones, golpes ni estrelladuras', 'manda' => 'hojalateria'],
                     'sin_oxido' => ['texto' => 'Sin óxido, corrosión ni fugas', 'manda' => 'hojalateria'],
-                    'ruedas' => ['texto' => 'Ruedas y frenos funcionan (sillas, mesas, carros)', 'manda' => 'hojalateria'],
+                    'ruedas' => ['texto' => 'Ruedas y frenos sin daños (sillas, mesas, carros)', 'manda' => 'hojalateria'],
                     'tapiceria' => ['texto' => 'Tapicería sin roturas ni desgaste (sillas, mesas)', 'manda' => 'hojalateria'],
                 ],
             ],
@@ -84,6 +76,33 @@ class ChecklistRecepcion
         ];
     }
 
+    /**
+     * Puntos que ya no se preguntan al recibir (el funcionamiento lo prueba
+     * mantenimiento después) pero que siguen en entradas viejas: se conservan
+     * solo para mostrar su texto, grupo y proceso.
+     */
+    private static function anteriores(): array
+    {
+        return [
+            'funcionamiento' => [
+                'titulo' => 'Funcionamiento',
+                'puntos' => [
+                    'enciende' => ['texto' => 'Enciende y arranca correctamente', 'manda' => 'mantenimiento'],
+                    'autodiagnostico' => ['texto' => 'Pasa su autodiagnóstico sin errores', 'manda' => 'mantenimiento'],
+                    'imagen' => ['texto' => 'La imagen se ve bien (cámara, monitor, pantalla)', 'manda' => 'mantenimiento'],
+                    'controles' => ['texto' => 'Botones, perillas y controles responden', 'manda' => 'mantenimiento'],
+                    'sin_alarmas' => ['texto' => 'No marca alarmas ni códigos de falla', 'manda' => 'mantenimiento'],
+                ],
+            ],
+        ];
+    }
+
+    /** Los de ahora más los anteriores, para leer checklists ya guardados. */
+    private static function todos(): array
+    {
+        return static::grupos() + static::anteriores();
+    }
+
     /** Todas las llaves de punto, aplanadas, para validar lo que llegó. */
     public static function llaves(): array
     {
@@ -92,10 +111,19 @@ class ChecklistRecepcion
             ->all();
     }
 
-    /** Texto de un punto a partir de su llave, para mostrarlo después. */
-    public static function titulo(string $llave): string
+    /**
+     * Texto de un punto, para mostrarlo después.
+     *
+     * Los puntos que armó la IA o que se agregaron a mano no están en
+     * grupos(): su texto viaja guardado junto con la respuesta.
+     */
+    public static function titulo(string $llave, ?array $punto = null): string
     {
-        foreach (static::grupos() as $grupo) {
+        if (! empty($punto['texto'])) {
+            return (string) $punto['texto'];
+        }
+
+        foreach (static::todos() as $grupo) {
             if (isset($grupo['puntos'][$llave])) {
                 return $grupo['puntos'][$llave]['texto'];
             }
@@ -104,10 +132,33 @@ class ChecklistRecepcion
         return $llave;
     }
 
-    /** A qué proceso manda un punto cuando sale mal, si es que manda. */
-    public static function mandaA(string $llave): ?string
+    /**
+     * Grupo de un punto: el que trae guardado o, en checklists de antes de
+     * que se guardara, el del checklist general.
+     */
+    public static function grupoDe(string $llave, ?array $punto = null): string
     {
-        foreach (static::grupos() as $grupo) {
+        if (! empty($punto['grupo'])) {
+            return (string) $punto['grupo'];
+        }
+
+        foreach (static::todos() as $grupo) {
+            if (isset($grupo['puntos'][$llave])) {
+                return $grupo['titulo'];
+            }
+        }
+
+        return 'Otros';
+    }
+
+    /** A qué proceso manda un punto cuando sale mal, si es que manda. */
+    public static function mandaA(string $llave, ?array $punto = null): ?string
+    {
+        if ($punto !== null && array_key_exists('manda', $punto)) {
+            return $punto['manda'] ?: null;
+        }
+
+        foreach (static::todos() as $grupo) {
             if (isset($grupo['puntos'][$llave])) {
                 return $grupo['puntos'][$llave]['manda'];
             }
@@ -116,19 +167,29 @@ class ChecklistRecepcion
         return null;
     }
 
+    /** Cuántos puntos puede traer un checklist (los de la IA más los agregados a mano). */
+    public const MAX_PUNTOS = 80;
+
     /**
-     * Deja solo los puntos conocidos y con respuesta válida, y recorta la
-     * nota. Lo que llega del formulario no se guarda tal cual.
+     * Deja solo los puntos con respuesta válida, y recorta textos y notas.
+     * Lo que llega del formulario no se guarda tal cual.
      *
-     * @return array<string, array{r: string, nota?: string}>
+     * Cada punto se guarda con su texto, su grupo y a qué proceso manda: el
+     * checklist ya no es fijo (lo arma la IA según el equipo y se le pueden
+     * agregar puntos a mano), así que la llave sola ya no basta para saber
+     * qué decía.
+     *
+     * @return array<string, array{r: string, texto: string, grupo: ?string, manda: ?string, nota?: string}>
      */
     public static function limpiar(?array $recibido): array
     {
-        $validas = static::llaves();
+        $procesos = array_keys(PiezaProceso::PROCESOS);
         $limpio = [];
 
         foreach ($recibido ?? [] as $llave => $valor) {
-            if (! in_array($llave, $validas, true) || ! is_array($valor)) {
+            $llave = (string) $llave;
+
+            if (! preg_match('/^[a-z0-9_]{1,60}$/', $llave) || ! is_array($valor)) {
                 continue;
             }
 
@@ -138,7 +199,23 @@ class ChecklistRecepcion
                 continue;
             }
 
-            $punto = ['r' => $respuesta];
+            $texto = trim((string) ($valor['texto'] ?? '')) ?: static::titulo($llave);
+
+            // Un punto sin texto propio y que tampoco es de los de siempre no
+            // dice nada: no se guarda.
+            if ($texto === $llave) {
+                continue;
+            }
+
+            $manda = $valor['manda'] ?? static::mandaA($llave);
+
+            $punto = [
+                'r' => $respuesta,
+                'texto' => mb_substr($texto, 0, 200),
+                'grupo' => mb_substr(trim((string) ($valor['grupo'] ?? '')), 0, 60) ?: null,
+                'manda' => in_array($manda, $procesos, true) ? $manda : null,
+            ];
+
             $nota = trim((string) ($valor['nota'] ?? ''));
 
             if ($nota !== '') {
@@ -146,6 +223,10 @@ class ChecklistRecepcion
             }
 
             $limpio[$llave] = $punto;
+
+            if (count($limpio) >= self::MAX_PUNTOS) {
+                break;
+            }
         }
 
         return $limpio;
@@ -175,7 +256,7 @@ class ChecklistRecepcion
                 continue;
             }
 
-            $proceso = static::mandaA($llave);
+            $proceso = static::mandaA($llave, $punto);
 
             if (! $proceso) {
                 continue;
@@ -207,6 +288,6 @@ class ChecklistRecepcion
             return mb_strtoupper(mb_substr($nota, 0, 1)).mb_substr($nota, 1);
         }
 
-        return 'No cumple: '.mb_strtolower(static::titulo($llave));
+        return 'No cumple: '.mb_strtolower(static::titulo($llave, $punto));
     }
 }

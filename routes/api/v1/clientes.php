@@ -47,7 +47,7 @@ Route::prefix('clientes')->name('clientes.')->whereNumber(['cliente', 'seguimien
     Route::post('/{cliente}/seguimientos/{seguimiento}/reprogramar', [SeguimientoController::class, 'reprogramar'])
         ->middleware('can:clientes.editar')->name('seguimientos.reprogramar');
     Route::delete('/{cliente}/seguimientos/{seguimiento}', [SeguimientoController::class, 'destroy'])
-        ->middleware('can:clientes.editar')->name('seguimientos.destroy');
+        ->middleware('can:clientes.eliminar')->name('seguimientos.destroy');
 });
 
 // Cotizaciones. {cotizacion} pasa por el binding global que da 403 si es

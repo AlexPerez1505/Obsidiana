@@ -89,11 +89,11 @@ class ChecklistProceso
                 continue;
             }
 
-            if (ChecklistRecepcion::mandaA($llave) !== $paso->proceso) {
+            if (ChecklistRecepcion::mandaA($llave, $respuesta) !== $paso->proceso) {
                 continue;
             }
 
-            $texto = ChecklistRecepcion::titulo($llave);
+            $texto = ChecklistRecepcion::titulo($llave, $respuesta);
             $nota = $respuesta['nota'] ?? null;
 
             // Se conserva la llave original con prefijo para no chocar con
@@ -171,6 +171,8 @@ class ChecklistProceso
             $razones[] = 'Hay '.$malas->count().' punto(s) que siguen mal. El equipo no puede pasar a stock así.';
         }
 
+        // Sin evidencia no se cierra: cuentan las fotos de cierre y las de
+        // los avances de días anteriores.
         if ($cuantasFotos < 1) {
             $razones[] = 'Falta al menos una foto que demuestre que quedó funcionando.';
         }

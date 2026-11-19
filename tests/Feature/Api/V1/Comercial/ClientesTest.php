@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Api\V1\Comercial;
 
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\Congress;
 use App\Models\Cotizacion;
 use App\Models\Customer;
@@ -152,7 +152,7 @@ class ClientesTest extends TestCase
     public function test_registrar_cliente_con_primer_seguimiento(): void
     {
         $yo = $this->usuarioApi(['clientes.crear', 'clientes.ver']);
-        $categoria = Category::create(['nombre' => 'Hospital']);
+        $categoria = EquipmentType::create(['name' => 'Hospital']);
 
         $res = $this->conToken($yo)->postJson('/api/v1/clientes', $this->datosAlta([
             'categoria_id' => $categoria->id,
@@ -171,7 +171,7 @@ class ClientesTest extends TestCase
             ->assertJsonPath('data.etapa', 'prospecto')
             ->assertJsonPath('data.activo', true)
             ->assertJsonPath('data.recibe_promocion', true)
-            ->assertJsonPath('data.categoria.nombre', 'Hospital')
+            ->assertJsonPath('data.categoria.nombre', 'HOSPITAL')
             ->assertJsonPath('data.seguimientos.0.tipo', 'cotizacion')
             ->assertJsonPath('data.seguimientos.0.user_id', $yo->id);
 
@@ -184,7 +184,7 @@ class ClientesTest extends TestCase
         $yo = $this->usuarioApi(['clientes.crear']);
         $congreso = Congress::create([
             'nombre' => 'Expo Médica',
-            'categoria_id' => Category::create(['nombre' => 'Expos'])->id,
+            'categoria_id' => EquipmentType::create(['name' => 'Expos'])->id,
             'fecha_inicio' => now(),
             'fecha_finalizacion' => now()->addDays(2),
         ]);
@@ -318,13 +318,13 @@ class ClientesTest extends TestCase
 
     public function test_catalogos_solo_dan_usuarios_a_quien_ve_todos(): void
     {
-        Category::create(['nombre' => 'Clínica']);
+        EquipmentType::create(['name' => 'Clínica']);
         $yo = $this->usuarioApi(['clientes.ver']);
         $jefe = $this->usuarioApi(['clientes.ver', 'clientes.ver_todos']);
 
         $this->conToken($yo)->getJson('/api/v1/clientes/catalogos')
             ->assertOk()
-            ->assertJsonPath('data.categorias.0.nombre', 'Clínica')
+            ->assertJsonPath('data.categorias.0.nombre', 'CLÍNICA')
             ->assertJsonPath('data.etapas.1.valor', 'prospecto')
             ->assertJsonPath('data.usuarios', []);
 
@@ -339,7 +339,7 @@ class ClientesTest extends TestCase
 
         $this->conToken($yo)->postJson('/api/v1/clientes/categorias', ['nombre' => 'Consultorio'])
             ->assertCreated()
-            ->assertJsonPath('data.nombre', 'Consultorio');
+            ->assertJsonPath('data.nombre', 'CONSULTORIO');
 
         $this->conToken($yo)->postJson('/api/v1/clientes/categorias', ['nombre' => 'Consultorio'])
             ->assertStatus(422)->assertJsonValidationErrors(['nombre']);

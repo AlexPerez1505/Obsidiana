@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Commercial;
 
 use App\Http\Controllers\Controller;
 
-use App\Models\Category;
+use App\Models\EquipmentType;
 use App\Models\Congress;
 use App\Models\Customer;
 use App\Services\Clientes\RegistroClientes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -27,7 +28,7 @@ class CustomerController extends Controller
     {
         // Cada quien ve lo suyo, salvo que tenga permiso de ver todos.
         $customers = Customer::visiblesPara($request->user())
-            ->with(['asesor', 'category', 'congress', 'seguimientos'])
+            ->with(['asesor', 'tipoEquipo', 'congress', 'seguimientos'])
             ->latest()
             ->get();
 
@@ -48,7 +49,7 @@ class CustomerController extends Controller
         $this->asegurarVisible($cliente);
 
         return view('structure.commercial_management.customers.ver_cliente', [
-            'customer' => $cliente->load(['asesor', 'category', 'congress', 'cotizaciones', 'seguimientos.responsable', 'seguimientos.hechoPor']),
+            'customer' => $cliente->load(['asesor', 'tipoEquipo', 'congress', 'cotizaciones', 'seguimientos.responsable', 'seguimientos.hechoPor']),
             'tiposSeguimiento' => \App\Models\ClienteSeguimiento::TIPOS,
             // Solo quien ve a todos puede asignarle el seguimiento a otro.
             'usuarios' => auth()->user()->can('clientes.ver_todos')
@@ -63,7 +64,7 @@ class CustomerController extends Controller
     public function create(Request $request): View
     {
         return view('structure.commercial_management.customers.registrar_cliente', [
-            'categories' => Category::query()->orderBy('nombre')->get(),
+            'categories' => EquipmentType::query()->orderBy('name')->get(),
             'congresses' => Congress::query()->latest()->get(),
         ]);
     }
@@ -104,7 +105,7 @@ class CustomerController extends Controller
 
         return view('structure.commercial_management.customers.actulizar_cliente', [
             'customer' => $cliente,
-            'categories' => Category::query()->orderBy('nombre')->get(),
+            'categories' => EquipmentType::query()->orderBy('name')->get(),
             'congresses' => Congress::query()->latest()->get(),
         ]);
     }
@@ -127,6 +128,116 @@ class CustomerController extends Controller
         $this->registro->actualizar($cliente, $data);
 
         return redirect()->route('commercial.clientes.index')->with('status', 'Cliente actualizado correctamente.');
+    }
+
+    /**
+     * Desactiva/reactiva al cliente. No se borra: está ligado a ventas,
+     * cotizaciones y servicios, así que solo sale de las listas mientras
+     * está inactivo y conserva todo su historial.
+     */
+    public function toggleActivo(Customer $cliente): RedirectResponse
+    {
+        $this->asegurarVisible($cliente);
+
+        $cliente->activo = ! $cliente->activo;
+        $cliente->save();
+
+        // Regla al archivar: sus seguimientos abiertos se cancelan (con motivo
+        // en el historial) y salen de la agenda. Al reactivarlo no se reabren.
+        $cancelados = ! $cliente->activo
+            ? app(\App\Services\Clientes\SeguimientosCliente::class)->cancelarAbiertosDe($cliente, auth()->user(), 'Cliente desactivado (archivado)')
+            : 0;
+
+        return back()->with('status', $cliente->activo
+            ? "Se reactivó a {$cliente->nombre}."
+            : "Se desactivó a {$cliente->nombre}. Ya no aparece en las listas pero conserva su historial."
+                .($cancelados ? " Se cancelaron {$cancelados} seguimiento(s) pendiente(s)." : ''));
+    }
+
+    /**
+     * Borra al cliente de verdad, pero solo cuando no deja nada suelto:
+     * si tiene ventas, cotizaciones, servicios, facturas o pagos ligados,
+     * eliminarlo rompería ese historial y ahí lo correcto es desactivarlo.
+     *
+     * Sirve para quitarse de encima los registros de prueba.
+     */
+    public function destroy(Customer $cliente): RedirectResponse
+    {
+        return DB::transaction(function () use ($cliente) {
+            $cliente = Customer::whereKey($cliente->id)->lockForUpdate()->firstOrFail();
+            $this->asegurarVisible($cliente);
+
+            $ligado = collect([
+                'ventas' => $cliente->ventas()->exists(),
+                'cotizaciones' => $cliente->cotizaciones()->exists(),
+                'servicios' => \App\Models\Service::where('customer_id', $cliente->id)->exists(),
+                'facturas' => \App\Models\Factura::where('customer_id', $cliente->id)->exists(),
+                'planes de pago' => $cliente->planPagos()->exists(),
+                'pagos' => $cliente->pagos()->exists(),
+            ])->filter()->keys();
+
+            if ($ligado->isNotEmpty()) {
+                return back()->withErrors(['eliminar' =>
+                    "No se puede eliminar a {$cliente->nombre}: tiene {$ligado->implode(', ')} ligados. Mejor desactívalo."]);
+            }
+
+            // Lo que sí se va con él: sus seguimientos (recordatorios suyos, de nadie más).
+            $cliente->seguimientos()->delete();
+            $cliente->delete();
+
+            return redirect()->route('commercial.clientes.index')
+                ->with('status', "Se eliminó a {$cliente->nombre}.");
+        });
+    }
+
+    /**
+     * Elimina al cliente CON todo su historial (ventas, cotizaciones,
+     * pagos, servicios y garantías). Está pensado para depurar registros
+     * de prueba; por eso vive detrás de un permiso aparte.
+     *
+     * Las piezas vendidas en las ventas eliminadas vuelven a quedar
+     * disponibles: la venta deja de existir y la pieza no puede quedar
+     * marcada como vendida para siempre.
+     */
+    public function destroyDefinitivo(Customer $cliente): RedirectResponse
+    {
+        return DB::transaction(function () use ($cliente) {
+            $cliente = Customer::whereKey($cliente->id)->lockForUpdate()->firstOrFail();
+            $this->asegurarVisible($cliente);
+
+            abort_if($cliente->esPublicoEnGeneral(), 403,
+                '«Público en general» sostiene las ventas de mostrador y congresos: no se puede eliminar.');
+
+            $nombre = $cliente->nombre.' '.$cliente->apellido;
+
+            // Garantías y reclamaciones: sus archivos/eventos/costos caen
+            // en cascada; costos y sustituciones ligadas a la garantía se
+            // quitan antes porque la FK las deja colgadas (SET NULL).
+            \App\Models\GarantiaReclamacion::where('customer_id', $cliente->id)->delete();
+            $garantiaIds = \App\Models\Garantia::where('customer_id', $cliente->id)->pluck('id');
+            \App\Models\GarantiaCosto::whereIn('garantia_id', $garantiaIds)->delete();
+            \App\Models\GarantiaSustitucion::whereIn('garantia_id', $garantiaIds)->delete();
+            \App\Models\Garantia::where('customer_id', $cliente->id)->delete();
+
+            // Servicios: la FK a clientes es RESTRICT, hay que borrarlos
+            // primero; sus equipos, refacciones y seguimientos caen solos.
+            \App\Models\Service::where('customer_id', $cliente->id)->delete();
+
+            // Las piezas vendidas en las ventas que se van a borrar
+            // regresan a disponible antes de que desaparezca su venta.
+            $ventaItemIds = DB::table('venta_items')
+                ->whereIn('venta_id', $cliente->ventas()->select('id'))->pluck('id');
+            \App\Models\ProductoSerial::whereIn('venta_item_id', $ventaItemIds)
+                ->update(['vendido' => false, 'vendido_en' => null, 'venta_item_id' => null, 'estado' => 'disponible']);
+
+            // Al borrar al cliente, la base elimina en cascada sus
+            // seguimientos, cotizaciones, ventas, facturas, pagos, planes
+            // de pago y suscripciones a campañas/promociones.
+            $cliente->delete();
+
+            return redirect()->route('commercial.clientes.index')
+                ->with('status', "Se eliminó a {$nombre} con todo su historial.");
+        });
     }
 
     /**
@@ -191,8 +302,16 @@ class CustomerController extends Controller
         abort_unless($cliente->visiblePara(auth()->user()), 403, 'Este cliente lo registró otro asesor.');
     }
 
+    /** Municipios del estado elegido en la dirección (catálogo INEGI, en caché). */
+    public function municipios(Request $request): JsonResponse
+    {
+        return response()->json([
+            'municipios' => \App\Support\Mexico::municipios($request->query('estado')),
+        ]);
+    }
+
     /**
-     * Guarda una nueva categoría vía AJAX.
+     * Da de alta un tipo de equipo vía AJAX (alta rápida desde el formulario).
      */
     public function storeCategory(Request $request): JsonResponse
     {
@@ -202,7 +321,7 @@ class CustomerController extends Controller
 
         return response()->json([
             'id' => $category->id,
-            'nombre' => $category->nombre,
+            'nombre' => $category->name,
         ]);
     }
 }
