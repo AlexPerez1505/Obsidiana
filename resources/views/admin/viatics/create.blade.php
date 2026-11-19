@@ -104,6 +104,20 @@
 .trip-step[data-step="2"] .trip-total strong{font-size:22px}
 @media(max-width:700px){.trip-step[data-step="2"] .trip-card{padding:14px 18px}.trip-step[data-step="2"] .trip-card:nth-of-type(3) .trip-extra-fields{grid-template-columns:1fr}.trip-step[data-step="2"] .trip-counter{align-items:flex-start;flex-wrap:wrap}.trip-step[data-step="2"] .trip-counter>.trip-chips{margin-left:auto}}
 </style>
+<style>
+/* Complementos Lucide para una lectura más clara del formulario */
+.trip-cancel{display:inline-flex;align-items:center;gap:8px}
+.trip-cancel:before{content:'';width:16px;height:16px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E") center/16px no-repeat}
+.trip-step[data-step="1"] .trip-chip[data-vehicle-name]{display:inline-flex;align-items:center;gap:8px}
+.trip-step[data-step="1"] .trip-chip[data-vehicle-name]:before{content:'';width:18px;height:18px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2M9 17h6'/%3E%3Ccircle cx='7' cy='17' r='2'/%3E%3Ccircle cx='17' cy='17' r='2'/%3E%3C/svg%3E") center/18px no-repeat}
+.trip-step[data-step="1"] .trip-field label:before{content:'';display:inline-block;width:15px;height:15px;margin-right:7px;vertical-align:-3px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21a8 8 0 0 1 16 0'/%3E%3C/svg%3E") center/15px no-repeat}
+.trip-step[data-step="2"] .trip-field label:before{content:'';display:inline-block;width:15px;height:15px;margin-right:7px;vertical-align:-3px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E") center/15px no-repeat}
+.trip-step[data-step="2"] #calculateMeals:before{content:'';display:inline-block;width:17px;height:17px;margin-right:8px;vertical-align:-4px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M3 2v7c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3M21 15v7'/%3E%3C/svg%3E") center/17px no-repeat}
+.trip-step[data-step="2"] #addOther:before{content:'';display:inline-block;width:16px;height:16px;margin-right:7px;vertical-align:-3px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E") center/16px no-repeat}
+.trip-footer #back:before{content:'';display:inline-block;width:16px;height:16px;margin-right:7px;vertical-align:-3px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M19 12H5M12 19l-7-7 7-7'/%3E%3C/svg%3E") center/16px no-repeat}
+.trip-footer #next:after{content:'';display:inline-block;width:17px;height:17px;margin-left:8px;vertical-align:-4px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M5 12h14M13 5l7 7-7 7'/%3E%3C/svg%3E") center/17px no-repeat}
+.trip-step[data-step="0"] .trip-chip.selected:after{content:'';width:15px;height:15px;margin-left:3px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3'%3E%3Cpath d='m5 12 4 4L19 6'/%3E%3C/svg%3E") center/15px no-repeat}
+</style>
 @endpush
 
 @section('content')
