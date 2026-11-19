@@ -118,6 +118,26 @@
 .trip-footer #next:after{content:'';display:inline-block;width:17px;height:17px;margin-left:8px;vertical-align:-4px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M5 12h14M13 5l7 7-7 7'/%3E%3C/svg%3E") center/17px no-repeat}
 .trip-step[data-step="0"] .trip-chip.selected:after{content:'';width:15px;height:15px;margin-left:3px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3'%3E%3Cpath d='m5 12 4 4L19 6'/%3E%3C/svg%3E") center/15px no-repeat}
 </style>
+<style>
+/* Contraste del formulario en modo claro */
+:root:not([data-theme="dark"]) .trip-step .trip-card{color:#e8eef8}
+:root:not([data-theme="dark"]) .trip-step .trip-card h3,
+:root:not([data-theme="dark"]) .trip-step .trip-card strong,
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-counter{color:#f4f7fb}
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-help,
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-field label{color:#b8c8dc}
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-field input,
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-field select,
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-field textarea{background:#fff;color:#26364a;border-color:#c3d0df}
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-chip{color:#e8eef8;border-color:#4775a5}
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-chip:hover,
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-chip.selected{color:#fff;background:#1683f7;border-color:#55adff}
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-btn{color:#e8eef8;border-color:#4775a5}
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-btn:hover{background:rgba(22,131,247,.18)}
+:root:not([data-theme="dark"]) .trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-chips{background:#10284a;border-color:#4775a5}
+:root:not([data-theme="dark"]) .trip-footer .trip-btn{color:#25364a}
+:root:not([data-theme="dark"]) .trip-footer .trip-btn.primary{color:#fff}
+</style>
 @endpush
 
 @section('content')
