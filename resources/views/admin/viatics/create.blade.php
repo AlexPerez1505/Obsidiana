@@ -47,6 +47,18 @@
 .trip-step[data-step="0"] .trip-card:nth-of-type(2) .trip-field:nth-child(2) label:before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='m14 5 7-2v14l-7 3-7-3-4 2V5l4-2 7 2v15M7 3v14M14 5v15'/%3E%3C/svg%3E")}
 .trip-step[data-step="0"] .trip-card:nth-of-type(2) .trip-field:nth-child(n+3) label:before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E")}
 </style>
+<style>
+/* Ajuste del encabezado y textos auxiliares del paso 1 */
+.trip-step[data-step="0"] .trip-card:nth-of-type(2){position:relative;padding-top:82px}
+.trip-step[data-step="0"] .trip-card:nth-of-type(2):before{position:absolute;top:20px;left:24px;margin:0}
+.trip-step[data-step="0"] .trip-card:nth-of-type(2):after{position:absolute;top:22px;left:76px;margin:0;white-space:pre-line;line-height:1.45;content:'Información del viaje\A Define el destino y las fechas del viaje.'}
+.trip-step[data-step="0"] .trip-card:nth-of-type(2):after{font-size:12px;font-weight:500;color:var(--muted)}
+.trip-step[data-step="0"] .trip-card:nth-of-type(2):after:first-line{font-size:17px;font-weight:800;color:var(--text)}
+.trip-step[data-step="0"] .trip-chip[data-motive]:before,.trip-step[data-step="0"] .trip-card:nth-of-type(2) label:before{filter:invert(62%) sepia(90%) saturate(1500%) hue-rotate(180deg) brightness(102%) contrast(101%)}
+.trip-step[data-step="0"] .trip-card:nth-of-type(3) .trip-chip[data-user]{display:inline-flex;align-items:center;gap:8px}
+.trip-step[data-step="0"] .trip-card:nth-of-type(3) .trip-chip[data-user]:before{content:'';width:16px;height:16px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2336a0ff' stroke-width='2'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21a8 8 0 0 1 16 0'/%3E%3C/svg%3E") center/16px no-repeat}
+.trip-step[data-step="0"] .trip-card:nth-of-type(3) .trip-counter>span:after{content:'';display:inline-block;width:15px;height:15px;margin-left:8px;vertical-align:-3px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2336a0ff' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4M12 8h.01'/%3E%3C/svg%3E") center/15px no-repeat}
+</style>
 @endpush
 
 @section('content')
