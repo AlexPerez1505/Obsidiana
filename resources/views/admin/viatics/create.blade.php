@@ -243,6 +243,9 @@
 @media(max-width:900px){.trip-step[data-step="3"] .trip-summary-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:600px){.trip-step[data-step="3"].active{padding:20px 16px}.trip-step[data-step="3"] .trip-summary-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.trip-step[data-step="3"] .trip-question{font-size:24px}}
 </style>
+<style>
+.trip-duration{margin:0 24px 16px;font-size:16px}
+</style>
 @endpush
 
 @section('content')
@@ -311,6 +314,16 @@ const updateTripTotal=()=>{const total=[...document.querySelectorAll('.expense')
     const moneyGiven=document.querySelector('[data-money].selected')?.dataset.money==='si',payer=byId('payer')?.value||'Sin responsable';byId('reviewMoneyStatus').textContent=moneyGiven?'Se entregó dinero':'No se entregó dinero';byId('reviewPayer').textContent=moneyGiven?`Pagó ${payer}`:'Sin entrega registrada';byId('reviewMoney').textContent=money(0);byId('reviewBalanceLabel').textContent=moneyGiven?'Saldo pendiente':'Se le debe al responsable';byId('reviewBalance').textContent=money(total);byId('reviewReimburse').textContent=money(total);byId('reimburseButton').hidden=!total;
   };
   document.querySelectorAll('input,select,[data-money],[data-toggle-expense]').forEach(el=>el.addEventListener('input',updateReview));document.querySelectorAll('select,[data-money],[data-toggle-expense],[data-motive],[data-user],[data-vehicle-id]').forEach(el=>el.addEventListener('change',updateReview));document.getElementById('next')?.addEventListener('click',()=>setTimeout(updateReview,0));document.getElementById('back')?.addEventListener('click',()=>setTimeout(updateReview,0));document.getElementById('copyWhatsApp')?.addEventListener('click',()=>{const text=`Viaje a ${byId('place')?.value||'sin destino'}\nTotal: ${byId('reviewTotal')?.textContent||'$0.00'}\n${byId('reviewBreakdown')?.innerText||''}`;navigator.clipboard?.writeText(text);});document.getElementById('showCopyText')?.addEventListener('click',()=>alert(`Resumen para compartir:\n\n${byId('reviewBreakdown')?.innerText||''}`));updateReview();
+})();
+</script>
+<script>
+(()=>{
+  const start=document.getElementById('fecha_ida'),end=document.getElementById('fecha_regreso');
+  if(!start||!end)return;
+  let output=document.getElementById('tripDuration');
+  if(!output){const card=document.querySelector('.trip-step[data-step="0"] .trip-card:nth-of-type(2)');if(!card)return;output=document.createElement('p');output.id='tripDuration';output.className='trip-help trip-duration';card.after(output)}
+  const update=()=>{if(!start.value||!end.value){output.textContent='';return}const from=new Date(`${start.value}T00:00:00`),to=new Date(`${end.value}T00:00:00`),days=Math.max(1,Math.round((to-from)/86400000)+1);output.textContent=days===1?'1 día':`${days} días · ${days-1} ${days-1===1?'noche':'noches'}`};
+  start.addEventListener('input',update);end.addEventListener('input',update);start.addEventListener('change',update);end.addEventListener('change',update);update();
 })();
 </script>
 @endsection
