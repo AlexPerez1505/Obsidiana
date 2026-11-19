@@ -59,6 +59,20 @@
 .trip-step[data-step="0"] .trip-card:nth-of-type(3) .trip-chip[data-user]:before{content:'';width:16px;height:16px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2336a0ff' stroke-width='2'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21a8 8 0 0 1 16 0'/%3E%3C/svg%3E") center/16px no-repeat}
 .trip-step[data-step="0"] .trip-card:nth-of-type(3) .trip-counter>span:after{content:'';display:inline-block;width:15px;height:15px;margin-left:8px;vertical-align:-3px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2336a0ff' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4M12 8h.01'/%3E%3C/svg%3E") center/15px no-repeat}
 </style>
+<style>
+/* Escala visual del paso 2 según la referencia */
+.trip-step[data-step="1"] .trip-card{padding:26px 36px}
+.trip-step[data-step="1"] .trip-card h3{display:flex;align-items:center;gap:14px;margin:0 0 18px;font-size:24px;line-height:1.2}
+.trip-step[data-step="1"] .trip-card:first-of-type h3:before{width:48px;height:48px;margin:0;background-size:29px}
+.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-counter{align-items:center;gap:20px}
+.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-counter>strong{font-size:24px;line-height:1.25}
+.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-counter>strong:before{flex-basis:48px;width:48px;height:48px;background-size:30px}
+.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-chips{margin-left:auto}
+.trip-step[data-step="1"] .trip-card:nth-of-type(2) select{min-height:54px;font-size:17px}
+.trip-step[data-step="1"] .trip-card:first-of-type .trip-chips{gap:14px}
+.trip-step[data-step="1"] .trip-card:first-of-type .trip-chip{min-height:48px;padding:0 26px;font-size:17px}
+@media(max-width:700px){.trip-step[data-step="1"] .trip-card{padding:22px}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-counter{align-items:flex-start;flex-direction:column}.trip-step[data-step="1"] .trip-card:nth-of-type(2) .trip-chips{margin-left:0}}
+</style>
 @endpush
 
 @section('content')
