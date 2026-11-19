@@ -94,7 +94,16 @@
             ['label' => 'Viaje más caro', 'value' => '$'.number_format($viajeCaro?->total_computed ?? 0, 2), 'note' => $viajeCaro?->place ?: 'Sin destino', 'icon' => 'pin'],
         ] as $kpi)
             <article class="vt2-kpi">
-                <span class="vt2-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/></svg></span>
+                <span class="vt2-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    @switch($kpi['icon'])
+                        @case('route') <path d="M4 19c4-8 8-8 12-14"/><circle cx="4" cy="19" r="2"/><circle cx="16" cy="5" r="2"/> @break
+                        @case('wallet') <path d="M4 7h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h13"/><path d="M16 13h4"/> @break
+                        @case('clipboard') <rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M8 10h8M8 14h6"/> @break
+                        @case('check') <circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/> @break
+                        @case('fuel') <path d="M6 21V4h9v17M6 8h9M15 7h2l3 3v7a2 2 0 0 1-4 0v-4"/> @break
+                        @default <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/> @break
+                    @endswitch
+                </svg></span>
                 <div class="vt2-kpi-label">{{ $kpi['label'] }}</div>
                 <div class="vt2-kpi-value">{{ $kpi['value'] }}</div>
                 <div class="vt2-kpi-note">{{ $kpi['note'] }}</div>
