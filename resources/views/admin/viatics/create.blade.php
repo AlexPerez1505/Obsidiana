@@ -350,4 +350,16 @@ const updateTripTotal=()=>{const total=[...document.querySelectorAll('.expense')
   document.querySelectorAll('[data-user]').forEach(button=>button.addEventListener('click',update));start?.addEventListener('change',update);end?.addEventListener('change',update);update();
 })();
 </script>
+<script>
+(()=>{
+  const button=document.getElementById('copyWhatsApp');if(!button)return;
+  const money=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(Number(n)||0);
+  const value=selector=>Number(document.querySelector(selector)?.value)||0;
+  const dateText=value=>value?new Intl.DateTimeFormat('es-MX',{day:'numeric',month:'long',year:'numeric'}).format(new Date(`${value}T00:00:00`)):'';
+  const days=()=>{const from=document.getElementById('fecha_ida')?.value,to=document.getElementById('fecha_regreso')?.value;if(!from||!to)return 1;return Math.max(1,Math.round((new Date(`${to}T00:00:00`)-new Date(`${from}T00:00:00`))/86400000)+1)};
+  const buildText=()=>{const place=document.getElementById('place')?.value||'Sin destino',state=document.getElementById('state')?.value||'',motive=document.getElementById('description')?.value||'Sin motivo',vehicle=document.getElementById('vehicleName')?.value||'Sin vehículo',people=[...document.querySelectorAll('[data-user].selected')].map(x=>x.dataset.user),count=Math.max(1,people.length),duration=days(),tolls=value('[name="tolls"]'),fuel=value('[name="fuel"]'),meals=value('[name="meals"]'),lodging=value('[data-extra-fields="lodging"] input.expense'),parking=value('[data-extra-fields="parking"] input.expense'),taxi=value('[data-extra-fields="taxi"] input.expense'),other=[...document.querySelectorAll('#otherRows .other-amount')].reduce((sum,input)=>sum+(Number(input.value)||0),0),fund=document.getElementById('fixedFund')?.checked?500:0,total=tolls+fuel+meals+lodging+parking+taxi+other+fund,payer=document.getElementById('payer')?.value||people[0]||'Sin responsable';let text=`*Viáticos · ${place}${state&&state!=='Se llena solo'?', '+state:''}*\n${motive} · ${duration} ${duration===1?'día':'días'} · ${vehicle}\nViajan: ${count} ${count===1?'persona':'personas'}${people.length?` (${people.join(', ')})`:''}\n\n`;const rows=[['Casetas',tolls,''],['Gasolina',fuel,''],['Comidas',meals,` (${count} ${count===1?'persona':'personas'} · ${duration} ${duration===1?'día':'días'})`],['Hospedaje',lodging,''],['Estacionamiento',parking,''],['Taxi / Uber',taxi,''],['Otros gastos',other,''],['Fondo fijo de viaje',fund,'']];rows.forEach(([name,amount,meta])=>{if(amount>0)text+=`• ${name}: ${money(amount)}${meta}\n`});text+=`\n*Total gastado: ${money(total)}*\nPor persona por día: ${money(total/(count*duration))}\n\n*Dinero del viaje*\n• No se entregó dinero. Pagó ${payer}.\n*Reembolsar ${money(total)} a ${payer}*\n\n— Grupo MediBuy`;return text};
+  button.addEventListener('click',async()=>{const text=buildText();try{await navigator.clipboard.writeText(text)}catch(e){const area=document.createElement('textarea');area.value=text;document.body.appendChild(area);area.select();document.execCommand('copy');area.remove()}button.textContent='Copiado ✓';setTimeout(()=>button.textContent='Copiar para WhatsApp',2200)});
+  document.getElementById('showCopyText')?.addEventListener('click',()=>alert(buildText()));
+})();
+</script>
 @endsection
