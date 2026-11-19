@@ -38,14 +38,15 @@
 @endphp
 
 @push('head')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js?v=20261119"></script>
     <style>
         .vt2-summary{display:grid;gap:14px}
+        .vt-panel[data-vt-panel="resumen-legacy"]{display:none!important;visibility:hidden!important;height:0!important;overflow:hidden!important;margin:0!important;padding:0!important}
         .vt2-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
         .vt2-kpi,.vt2-card{border:1px solid #203652;border-radius:10px;background:#111B2E;color:#F1F5F9;box-shadow:none}
         .vt2-kpi{min-height:108px;padding:14px;position:relative}
-        .vt2-kpi-icon{position:absolute;right:12px;top:12px;color:#69B4FF;width:16px;height:16px}
-        .vt2-kpi-icon svg{width:100%;height:100%}
+        .vt2-kpi-icon{position:absolute;right:12px;top:12px;display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#123A68;color:#69B4FF}
+        .vt2-kpi-icon svg{display:block;width:18px;height:18px}
         .vt2-kpi-label,.vt2-card-sub{color:#94A9C4;font-size:10px;font-weight:600}
         .vt2-kpi-value{margin-top:10px;font-size:20px;font-weight:800;line-height:1.1}
         .vt2-kpi-note{margin-top:6px;color:#94A9C4;font-size:9px}
