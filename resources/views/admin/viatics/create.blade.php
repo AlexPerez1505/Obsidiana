@@ -340,4 +340,12 @@ const updateTripTotal=()=>{const total=[...document.querySelectorAll('.expense')
   start.addEventListener('input',update);end.addEventListener('input',update);start.addEventListener('change',update);end.addEventListener('change',update);update();
 })();
 </script>
+<script>
+(()=>{
+  const summary=document.getElementById('tripSummary'),start=document.getElementById('fecha_ida'),end=document.getElementById('fecha_regreso');
+  if(!summary)return;
+  const update=()=>{const people=Math.max(1,document.querySelectorAll('[data-user].selected').length),from=start?.value?new Date(`${start.value}T00:00:00`):null,to=end?.value?new Date(`${end.value}T00:00:00`):null,days=from&&to&&!Number.isNaN(from.getTime())&&!Number.isNaN(to.getTime())?Math.max(1,Math.round((to-from)/86400000)+1):1;summary.textContent=`${people} ${people===1?'persona':'personas'} · ${days} ${days===1?'d\u00eda':'d\u00edas'}`};
+  document.querySelectorAll('[data-user]').forEach(button=>button.addEventListener('click',update));start?.addEventListener('change',update);end?.addEventListener('change',update);update();
+})();
+</script>
 @endsection
