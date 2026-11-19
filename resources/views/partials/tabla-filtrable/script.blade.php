@@ -65,6 +65,21 @@
     var hasta = document.querySelector('[data-f="hasta"]');
     var toggles = Array.prototype.slice.call(document.querySelectorAll('.flt-tgl'));
     var textos = Array.prototype.slice.call(document.querySelectorAll('.flt-panel [data-f-texto]'));
+    var panelEstadoKey = 'filtros-abiertos:' + (CFG.formServidor || 'local');
+
+    function restaurarPanel() {
+        try {
+            if (sessionStorage.getItem(panelEstadoKey) !== '1') return;
+            var bloque = document.querySelector('[data-flt]');
+            var panel = bloque && bloque.querySelector('[data-flt-panel]');
+            var boton = bloque && bloque.querySelector('[data-flt-toggle]');
+            if (panel && boton) {
+                panel.hidden = false;
+                boton.setAttribute('aria-expanded', 'true');
+            }
+            sessionStorage.removeItem(panelEstadoKey);
+        } catch (e) {}
+    }
 
     function etiqueta(valor) {
         return CFG.etiquetas[valor] || valor;
@@ -355,6 +370,7 @@
 
     // Las filas que llegan en tiempo real respetan los filtros puestos.
     document.addEventListener('obs:vivo', filtrar);
+    restaurarPanel();
 })();
 </script>
 
