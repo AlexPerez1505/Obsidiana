@@ -170,6 +170,23 @@
 :root:not([data-theme="dark"]) .trip-step .trip-card .trip-chip:hover:before,
 :root:not([data-theme="dark"]) .trip-step .trip-card .trip-chip.selected:before{filter:brightness(0) invert(1)}
 </style>
+<style>
+/* Bordes reforzados y consistencia visual en los cuatro pasos */
+.trip-step .trip-card{border-width:1.5px!important}
+.trip-step .trip-field input,.trip-step .trip-field select,.trip-step .trip-field textarea{border-width:1.5px!important}
+.trip-step .trip-chip{border-width:1.5px!important}
+.trip-step .trip-card .trip-btn{border-width:1.5px!important}
+:root[data-theme="dark"] .trip-step .trip-card{border-color:#326da8!important}
+:root[data-theme="dark"] .trip-step .trip-field input,
+:root[data-theme="dark"] .trip-step .trip-field select,
+:root[data-theme="dark"] .trip-step .trip-field textarea{border-color:#6388ae!important}
+:root:not([data-theme="dark"]) .trip-step .trip-card{border-color:#a9bfd8!important}
+:root:not([data-theme="dark"]) .trip-step .trip-field input,
+:root:not([data-theme="dark"]) .trip-step .trip-field select,
+:root:not([data-theme="dark"]) .trip-step .trip-field textarea{border-color:#9bb5cf!important}
+:root:not([data-theme="dark"]) .trip-step .trip-chip{border-color:#83a5c8!important}
+:root:not([data-theme="dark"]) .trip-step .trip-card .trip-btn{border-color:#83a5c8!important}
+</style>
 @endpush
 
 @section('content')
