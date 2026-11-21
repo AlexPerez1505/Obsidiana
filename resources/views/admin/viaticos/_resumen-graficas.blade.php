@@ -47,6 +47,11 @@
         .vt2-kpi{min-height:108px;padding:14px;position:relative}
         .vt2-kpi-icon{position:absolute;right:12px;top:12px;display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#123A68;color:#69B4FF}
         .vt2-kpi-icon svg{display:block;width:18px;height:18px}
+        .vt2-kpis .vt2-kpi:nth-child(3) .vt2-kpi-icon{color:#FF9F0A;background:#352B16}
+        .vt2-kpis .vt2-kpi:nth-child(4) .vt2-kpi-icon{color:#30CE78;background:#12392F}
+        .vt2-kpis .vt2-kpi:nth-child(5) .vt2-kpi-icon{color:#BF8AF2;background:#30254A}
+        .vt2-kpis .vt2-kpi:nth-child(6) .vt2-kpi-icon{color:#FF6467;background:#3B222B}
+        .vt2-kpi-label,.vt2-kpi-value,.vt2-kpi-note{position:relative;z-index:1}
         .vt2-kpi-label,.vt2-card-sub{color:#94A9C4;font-size:10px;font-weight:600}
         .vt2-kpi-value{margin-top:10px;font-size:20px;font-weight:800;line-height:1.1}
         .vt2-kpi-note{margin-top:6px;color:#94A9C4;font-size:9px}
