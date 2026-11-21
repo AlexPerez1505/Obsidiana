@@ -236,7 +236,18 @@
                     </div>
                 @elseif ($orden->estado === \App\Models\OrdenSalida::CANCELADA)
                     <x-ui.section-title style="margin:0 0 10px;">Orden cancelada</x-ui.section-title>
-                    <p class="muted" style="margin:0;">La venta se canceló; no hay nada que preparar.</p>
+                    <p class="muted" style="margin:0;">La venta se canceló; no hay nada que preparar. En el sistema el equipo ya volvió a stock.</p>
+                    @php $apartados = $orden->items->filter(fn ($it) => $it->preparado || $it->emplayado); @endphp
+                    @if ($apartados->isNotEmpty())
+                        <div class="os-regresar">
+                            <b>Regresa a su lugar en el almacén:</b>
+                            <ul>
+                                @foreach ($apartados as $it)
+                                    <li>{{ $it->nombre }} × {{ $it->cantidad }}@if ($it->no_series) <span class="muted">· {{ $it->no_series }}</span>@endif</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
                 @else
                     <x-ui.section-title style="margin:0 0 4px;">Firmar salida</x-ui.section-title>
                     @if (! $orden->todoListo())
@@ -475,6 +486,9 @@
            espacio, los pasos van a la derecha; si no cabe, bajan debajo del
            nombre. Así sirve igual con la columna lateral que sin ella. */
         .os-lista { display:flex; flex-direction:column; gap:8px; container-type:inline-size; }
+        .os-regresar { margin-top:12px; padding:12px 14px; border-radius:12px; background:color-mix(in srgb, #f59e0b 12%, transparent); border:1px solid color-mix(in srgb, #f59e0b 35%, transparent); font-size:13.5px; }
+        .os-regresar ul { margin:6px 0 0; padding-left:18px; }
+        .os-regresar li { margin:2px 0; }
         .os-item-prepara { margin-top:8px; }
         .os-item-asig { display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; }
         .os-item-asig label { font-size:12.5px; font-weight:700; color:var(--muted); }

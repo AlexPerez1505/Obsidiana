@@ -45,6 +45,7 @@ class RegistroDeVentas
         private readonly CalendarioPagos $calendario,
         private readonly OrdenesDeSalida $ordenes,
         private readonly MotorDeCupones $cupones,
+        private readonly AvisoDeVentaCancelada $avisos,
     ) {
     }
 
@@ -386,6 +387,8 @@ class RegistroDeVentas
         }
 
         $cobrado = $venta->totalCobrado();
+        // Quién estaba trabajando en ella y qué equipo llevaba (antes de liberarlo).
+        $foto = $this->avisos->preparar($venta, $user, 'cancelada', $motivo);
 
         DB::transaction(function () use ($venta, $motivo, $cobrado) {
             $this->inventario->liberarSerialesDe($venta);
@@ -396,6 +399,9 @@ class RegistroDeVentas
             // La orden de almacén se marca cancelada (no se borra: queda el
             // rastro de qué se alcanzó a preparar).
             $venta->ordenSalida?->update(['estado' => OrdenSalida::CANCELADA]);
+            // Lo que quedaba por hacer ya no le toca a nadie.
+            $venta->ordenSalida?->items()->update(['asignado_a' => null]);
+            $venta->ordenSalida?->etapas()->where('estado', '!=', \App\Models\OrdenSalidaEtapa::TERMINADA)->update(['asignada_a' => null]);
 
             VentaBitacora::registrar(
                 $venta,
@@ -410,6 +416,12 @@ class RegistroDeVentas
             ? " El cliente tenía pagados \$".number_format($cobrado, 2).'; los cobros se conservan como historial y queda pendiente su devolución.'
             : '';
 
+        $avisados = $this->avisos->enviar($foto);
+        $aviso .= $avisados > 0 ? " Se avisó a {$avisados} persona(s) que ya no va." : '';
+        if ($foto['datos']['hay_que_regresar']) {
+            $aviso .= ' Si el equipo ya estaba apartado, hay que regresarlo a su lugar en el almacén.';
+        }
+
         return "Venta {$venta->folio} cancelada. El equipo volvió al inventario.{$aviso}";
     }
 
@@ -419,7 +431,7 @@ class RegistroDeVentas
      *
      * @return string El mensaje para el usuario.
      */
-    public function eliminar(Venta $venta): string
+    public function eliminar(Venta $venta, ?User $quien = null): string
     {
         if ($venta->cobros()->exists()) {
             throw OperacionRechazada::conflicto('Esta venta ya tiene cobros registrados: no se puede eliminar, solo cancelar.');
@@ -431,6 +443,7 @@ class RegistroDeVentas
 
         $folio = $venta->folio;
         $cotizacionId = $venta->cotizacion_id;
+        $foto = $this->avisos->preparar($venta, $quien, 'eliminada');
 
         // Si la venta viene de una cotización, se borra junto con ella: ya no
         // tiene sentido dejar la cotización suelta cuando su venta se cancela.
@@ -444,7 +457,11 @@ class RegistroDeVentas
             }
         });
 
-        return "Venta {$folio} eliminada.";
+        $avisados = $this->avisos->enviar($foto);
+
+        return "Venta {$folio} eliminada. El equipo volvió al inventario."
+            .($avisados > 0 ? " Se avisó a {$avisados} persona(s) que ya no va." : '')
+            .($foto['datos']['hay_que_regresar'] ? ' Si el equipo ya estaba apartado, hay que regresarlo a su lugar en el almacén.' : '');
     }
 
     /**
@@ -454,10 +471,11 @@ class RegistroDeVentas
      * piezas vendidas regresan a disponible. Solo administradores o quien
      * traiga ventas.eliminar_definitivo llega aquí por la ruta.
      */
-    public function eliminarDefinitivo(Venta $venta): string
+    public function eliminarDefinitivo(Venta $venta, ?User $quien = null): string
     {
         $folio = $venta->folio;
         $cotizacionId = $venta->cotizacion_id;
+        $foto = $this->avisos->preparar($venta, $quien, 'eliminada');
 
         DB::transaction(function () use ($venta, $cotizacionId) {
             $this->inventario->liberarSerialesDe($venta);
@@ -490,7 +508,10 @@ class RegistroDeVentas
             }
         });
 
-        return "Venta {$folio} eliminada con todo su historial.";
+        $avisados = $this->avisos->enviar($foto);
+
+        return "Venta {$folio} eliminada con todo su historial."
+            .($avisados > 0 ? " Se avisó a {$avisados} persona(s) que ya no va." : '');
     }
 
     /** Lo que se le cobrará al cliente con los datos nuevos, antes de guardar. */
