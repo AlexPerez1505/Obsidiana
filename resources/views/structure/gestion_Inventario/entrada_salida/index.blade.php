@@ -724,6 +724,51 @@
         :root[data-theme="light"] .flt-panel .flt-state-options { border-top-color:#e2e8f0 !important; }
         :root[data-theme="light"] .flt-panel .flt-state-chevron,
         :root[data-theme="light"] .flt-panel .mov-cat label::after { color:#475569 !important; border-color:#475569 !important; }
+        /* En modo claro la tabla usa superficies claras; las tarjetas de
+           métricas conservan deliberadamente su tratamiento oscuro. */
+        :root[data-theme="light"] .mv-table {
+            border-color:#cbd8e8;
+            background:#ffffff;
+            box-shadow:0 8px 20px rgba(15,23,42,.06);
+        }
+        :root[data-theme="light"] .mv-table thead th {
+            border-bottom-color:#cbd8e8;
+            background:#edf4fc;
+            color:#334155;
+        }
+        :root[data-theme="light"] .mv-table tbody td {
+            border-bottom-color:#e2e8f0;
+            color:#334155;
+        }
+        :root[data-theme="light"] .mv-table tbody tr.mv-clic:hover {
+            background:#f3f8fe;
+        }
+        :root[data-theme="light"] .mv-table .t { color:#1e293b; }
+        :root[data-theme="light"] .mv-table .s { color:#64748b; }
+        :root[data-theme="light"] .mv-table .mv-product-image {
+            border-color:#bfd0e4;
+            background:#f8fafc;
+        }
+        :root[data-theme="light"] .mv-table .mv-product-image--empty { color:#64748b; }
+        :root[data-theme="light"] .mv-qty {
+            background:#dbeafe;
+            color:#1d4ed8;
+        }
+        :root[data-theme="light"] .mv-cell-with-icon { color:#475569; }
+        :root[data-theme="light"] .mv-cell-with-icon svg { color:#64748b; }
+        :root[data-theme="light"] .mv-table .mv-actions,
+        :root[data-theme="light"] .mv-table td:last-child { color:#64748b; }
+        :root[data-theme="light"] .mv-table .mv-select-col input,
+        :root[data-theme="light"] .mv-table input.mv-etq {
+            border-color:#94a9c2;
+            background:#ffffff;
+            box-shadow:inset 0 0 0 1px rgba(15,23,42,.04);
+        }
+        :root[data-theme="light"] .mv-table .mv-select-col input:hover,
+        :root[data-theme="light"] .mv-table input.mv-etq:hover { background:#eff6ff; border-color:#3b82f6; }
+        :root[data-theme="light"] .mv-table .mv-select-col input:checked,
+        :root[data-theme="light"] .mv-table input.mv-etq:checked { background:#1683f7; border-color:#1683f7; }
+        :root[data-theme="light"] .mv-table .mv-select-col input:indeterminate { background:#dbeafe; border-color:#3b82f6; }
         @media (max-width:520px) { .mv-modal-pie .btn { flex:1; justify-content:center; } }
     </style>
 
