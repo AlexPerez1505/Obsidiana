@@ -116,6 +116,19 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/gestion-inventario/escanear/buscar', [EscaneoController::class, 'buscar'])
         ->middleware('can:inventario.escanear')->name('inventory.escaneo.buscar');
 
+    /*
+    | Consulta por escaneo: ficha de 10 s con existencias e historial.
+    | Solo lectura, por eso todo es GET.
+    */
+    Route::middleware('can:inventario.consulta_escaneo')->prefix('gestion-inventario/consulta-escaneo')
+        ->name('inventory.consulta.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\ConsultaEscaneoController::class, 'index'])->name('index');
+            Route::get('/buscar', [\App\Http\Controllers\ConsultaEscaneoController::class, 'buscar'])
+                ->middleware('throttle:240,1')->name('buscar');
+            Route::get('/ficha', [\App\Http\Controllers\ConsultaEscaneoController::class, 'ficha'])->name('ficha');
+            Route::get('/historial', [\App\Http\Controllers\ConsultaEscaneoController::class, 'historial'])->name('historial');
+        });
+
     // Varias etiquetas de un jalón: de los productos o entradas que se marcaron.
     Route::get('/gestion-inventario/etiquetas', [\App\Http\Controllers\EtiquetasController::class, 'lote'])
         ->middleware('can:inventario.ver')->name('inventory.etiquetas.lote');

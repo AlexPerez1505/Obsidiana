@@ -172,6 +172,12 @@
                         <span class="nav-label">Escanear</span>
                     </a>
                     @endcan
+                    @can('inventario.consulta_escaneo')
+                    <a class="nav-item nav-sub {{ request()->routeIs('inventory.consulta.*') ? 'active' : '' }}" href="{{ route('inventory.consulta.index') }}" data-tip="Consulta por escaneo">
+                        <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                        <span class="nav-label">Consulta por escaneo</span>
+                    </a>
+                    @endcan
                     @can('inventario.ver')
                     <a class="nav-item nav-sub {{ request()->routeIs('inventory.productos.*') ? 'active' : '' }}" href="{{ route('inventory.productos.index') }}" data-tip="Productos">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
