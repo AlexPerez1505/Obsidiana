@@ -854,6 +854,19 @@
             '</div></article>';
     }
 
+    // Foto que el navegador no puede abrir (p. ej. HEIC del iPhone en
+    // Chrome): en vez de la imagen rota, el icono de "sin foto".
+    resumenEl.addEventListener('error', function (e) {
+        const img = e.target;
+        if (!(img instanceof HTMLImageElement) || !img.classList.contains('cxe-foto')) return;
+        const sin = document.createElement('span');
+        sin.className = 'cxe-foto';
+        sin.setAttribute('role', 'img');
+        sin.setAttribute('aria-label', 'Foto en un formato que este navegador no puede mostrar');
+        sin.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 17-5-5-6 6"/></svg>';
+        img.replaceWith(sin);
+    }, true);
+
     // Al entrar, el lector queda listo.
     listoParaOtra();
 })();
