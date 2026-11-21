@@ -29,6 +29,9 @@
     // La evidencia del lote solo existe en entradas viejas: hoy cada pieza
     // trae la suya. Una salida no tiene evidencia propia.
     $hayEvidenciaLote = $esEntrada && (count($movimiento->evidenceUrls()) || $movimiento->videoUrl());
+    $heroImage = $producto?->imagen_path
+        ? asset('storage/'.$producto->imagen_path)
+        : $unidades->flatMap(fn ($unidad) => $unidad->evidenceUrls())->first();
 @endphp
 
 @section('content')
@@ -37,9 +40,18 @@
          solo bloque. --}}
     <x-ui.card class="mv-cab">
         <div class="mv-cab-top">
+            <div class="mv-hero-media">
+                @if ($heroImage)
+                    <img src="{{ $heroImage }}" alt="{{ $movimiento->item_name }}" loading="eager">
+                @else
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
+                @endif
+            </div>
             <div class="mv-cab-id">
                 <span class="badge {{ $tonoTipo }}">{{ $movimiento->tipoVistaLabel() }}</span>
                 <span class="muted">{{ $movimiento->movement_date->format('d/m/Y') }}</span>
+                <h1 class="mv-hero-title">{{ $movimiento->item_name }}</h1>
+                <p class="mv-hero-sub">Movimiento {{ $movimiento->folio }} · {{ $movimiento->quantity }} {{ $movimiento->unit }}</p>
 
                 @if ($movimiento->ventaPendienteDeEntrega())
                     <span class="mv-aviso">
@@ -78,15 +90,16 @@
                     </a>
                 @endif
 
-                <a href="{{ $volverUrl }}" class="btn-icono" title="Regresar" aria-label="Regresar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                <a href="{{ $volverUrl }}" class="btn btn--ghost mv-back-action">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                    Regresar
                 </a>
             </div>
         </div>
 
         <dl class="mv-datos">
             <div class="mv-dato-ancho">
-                <dt>Producto</dt>
+                <dt><span class="mv-dato-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg></span>Producto</dt>
                 <dd>
                     @if ($producto)
                         <a href="{{ route('inventory.productos.show', ['producto' => $producto, 'return_to' => route('inventory.movimientos.show', $movimiento, false)]) }}" style="color:inherit;">{{ $movimiento->item_name }}</a>
@@ -95,9 +108,9 @@
                     @endif
                 </dd>
             </div>
-            <div><dt>Cantidad</dt><dd>{{ $movimiento->quantity }} {{ $movimiento->unit }}</dd></div>
+            <div><dt><span class="mv-dato-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18M3 12h18"/></svg></span>Cantidad</dt><dd>{{ $movimiento->quantity }} {{ $movimiento->unit }}</dd></div>
             <div><dt>Stock antes / después</dt><dd>{{ $movimiento->stock_before }} → {{ $movimiento->stock_after }}</dd></div>
-            <div><dt>Almacén</dt><dd>{{ $movimiento->warehouse }}</dd></div>
+            <div><dt><span class="mv-dato-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M8 21v-6h8v6"/></svg></span>Almacén</dt><dd>{{ $movimiento->warehouse }}</dd></div>
             @if ($movimiento->fecha_fabricacion)
                 <div><dt>Fabricación</dt><dd>{{ $movimiento->fecha_fabricacion->format('d/m/Y') }}</dd></div>
             @endif
@@ -107,7 +120,7 @@
             @if ($movimiento->reference)
                 <div><dt>Referencia</dt><dd>{{ $movimiento->reference }}</dd></div>
             @endif
-            <div><dt>Registrado por</dt><dd>{{ $movimiento->creator?->name ?: '—' }}</dd></div>
+            <div><dt><span class="mv-dato-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.5"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>Registrado por</dt><dd>{{ $movimiento->creator?->name ?: '—' }}</dd></div>
         </dl>
 
         @if ($movimiento->notes)
@@ -292,6 +305,44 @@
     @include('structure.gestion_Inventario._componentes')
 
     <style>
+        /* Cabecera de detalle: imagen, identidad y acciones en un solo panel. */
+        .mv-cab { padding:18px; border:1px solid #176fc1; border-radius:18px; background:radial-gradient(circle at 78% 12%, rgba(22,131,247,.18), transparent 32%), linear-gradient(135deg,#0d1b32 0%,#102d52 100%); box-shadow:0 12px 28px rgba(2,20,52,.2); }
+        .mv-cab-top { display:grid; grid-template-columns:154px minmax(0,1fr) 210px; align-items:center; gap:18px; }
+        .mv-hero-media { display:flex; align-items:center; justify-content:center; width:154px; height:154px; overflow:hidden; border:1px solid #2b75b8; border-radius:16px; background:linear-gradient(145deg,#122b4b,#09172b); color:#83a5c9; box-shadow:inset 0 0 0 5px rgba(10,26,48,.45); }
+        .mv-hero-media img { width:100%; height:100%; object-fit:contain; display:block; }
+        .mv-hero-media svg { width:58px; height:58px; }
+        .mv-cab-id { display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap; min-width:0; }
+        .mv-hero-title { flex-basis:100%; margin:4px 0 0; color:#f7fbff; font-size:clamp(24px,3vw,36px); line-height:1.05; letter-spacing:-.02em; }
+        .mv-hero-sub { flex-basis:100%; margin:0; color:#a9c1dd; font-size:14px; }
+        .mv-acciones { display:flex; flex-direction:column; align-items:stretch; gap:8px; min-width:0; }
+        .mv-acciones .btn, .mv-acciones .btn--ghost { justify-content:center; width:100%; }
+        .mv-acciones .btn-icono { align-self:flex-end; }
+        .mv-acciones .mv-back-action { border-color:#2a527c; color:#b6cbe4; }
+        .mv-acciones .mv-back-action:hover { border-color:#1683f7; color:#fff; background:#12365f; }
+        .mv-datos dt { display:flex; align-items:center; gap:7px; }
+        .mv-dato-ico { display:inline-flex; align-items:center; justify-content:center; flex:0 0 25px; width:25px; height:25px; border-radius:7px; background:#12365f; color:#6db8ff; }
+        .mv-dato-ico svg { width:14px; height:14px; }
+        .mv-stock { color:#55e68b; }
+        .mv-datos { grid-template-columns:repeat(4,minmax(0,1fr)); margin-top:18px; padding:16px 0 0; border-top-color:rgba(144,186,229,.25); }
+        .mv-datos dd { color:#f1f5f9; }
+        .mv-unidades, .mv-lateral > .card { border-color:#203f67; background:linear-gradient(145deg,#0e1d34,#101f38); }
+        .mv-unidad { border-color:#294e7b; background:linear-gradient(145deg,#122846,#0d1b31); }
+        .mv-ficha { border-color:#245789; background:linear-gradient(135deg,#102945,#123c6e); }
+        @media (max-width:900px) {
+            .mv-cab-top { grid-template-columns:120px minmax(0,1fr); }
+            .mv-hero-media { width:120px; height:120px; }
+            .mv-acciones { grid-column:1 / -1; flex-direction:row; flex-wrap:wrap; }
+            .mv-acciones .btn, .mv-acciones .btn--ghost { width:auto; flex:1 1 auto; }
+            .mv-acciones .btn-icono { margin-left:auto; }
+            .mv-datos { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        }
+        @media (max-width:560px) {
+            .mv-cab-top { grid-template-columns:1fr; }
+            .mv-hero-media { width:100%; height:150px; }
+            .mv-cab-id, .mv-acciones { grid-column:auto; }
+            .mv-datos { grid-template-columns:1fr 1fr; }
+        }
+
         /* Encabezado: identidad y acciones arriba, datos abajo */
         .mv-cab { margin-bottom:18px; }
         .mv-cab-top { display:flex; align-items:center; justify-content:space-between; gap:12px 18px; flex-wrap:wrap; }
@@ -384,6 +435,85 @@
         .proc-op { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:13.5px; }
         .proc-op input { width:16px; height:16px; margin:0; accent-color:var(--primary); }
         .proc-op small { color:var(--muted); font-size:11.5px; }
+
+        /* Ajustes finales del nuevo encabezado, después de los estilos base. */
+        .mv-cab { padding:18px; border:1px solid #176fc1; border-radius:18px; background:radial-gradient(circle at 78% 12%, rgba(22,131,247,.18), transparent 32%), linear-gradient(135deg,#0d1b32 0%,#102d52 100%); box-shadow:0 12px 28px rgba(2,20,52,.2); }
+        .mv-cab-top { display:grid; grid-template-columns:154px minmax(0,1fr) 210px; align-items:center; gap:18px; }
+        .mv-hero-media { display:flex; align-items:center; justify-content:center; width:154px; height:154px; overflow:hidden; border:1px solid #2b75b8; border-radius:16px; background:linear-gradient(145deg,#122b4b,#09172b); color:#83a5c9; box-shadow:inset 0 0 0 5px rgba(10,26,48,.45); }
+        .mv-hero-media img { width:100%; height:100%; object-fit:contain; display:block; }
+        .mv-hero-media svg { width:58px; height:58px; }
+        .mv-cab-id { display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap; min-width:0; }
+        .mv-hero-title { flex-basis:100%; margin:4px 0 0; color:#f7fbff; font-size:clamp(24px,3vw,36px); line-height:1.05; letter-spacing:-.02em; }
+        .mv-hero-sub { flex-basis:100%; margin:0; color:#a9c1dd; font-size:14px; }
+        .mv-acciones { display:flex; flex-direction:column; align-items:stretch; gap:8px; min-width:0; }
+        .mv-acciones .btn, .mv-acciones .btn--ghost { justify-content:center; width:100%; }
+        .mv-acciones .btn-icono { align-self:flex-end; }
+        .mv-stock { color:#55e68b; }
+        .mv-datos { grid-template-columns:repeat(4,minmax(0,1fr)); margin-top:18px; padding:16px 0 0; border-top-color:rgba(144,186,229,.25); }
+        .mv-datos dd { color:#f1f5f9; }
+        .mv-unidades, .mv-lateral > .card { border-color:#203f67; background:linear-gradient(145deg,#0e1d34,#101f38); }
+        .mv-unidad { border-color:#294e7b; background:linear-gradient(145deg,#122846,#0d1b31); }
+        .mv-ficha { border-color:#245789; background:linear-gradient(135deg,#102945,#123c6e); }
+        @media (max-width:900px) {
+            .mv-cab-top { grid-template-columns:120px minmax(0,1fr); }
+            .mv-hero-media { width:120px; height:120px; }
+            .mv-acciones { grid-column:1 / -1; flex-direction:row; flex-wrap:wrap; }
+            .mv-acciones .btn, .mv-acciones .btn--ghost { width:auto; flex:1 1 auto; }
+            .mv-acciones .btn-icono { margin-left:auto; }
+            .mv-datos { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        }
+        @media (max-width:560px) {
+            .mv-cab-top { grid-template-columns:1fr; }
+            .mv-hero-media { width:100%; height:150px; }
+            .mv-cab-id, .mv-acciones { grid-column:auto; }
+            .mv-datos { grid-template-columns:1fr 1fr; }
+        }
+
+        /* Adaptación del detalle al tema claro: el encabezado conserva su
+           identidad azul y el contenido inferior usa superficies claras. */
+        :root[data-theme="light"] .mv-unidades,
+        :root[data-theme="light"] .mv-lateral > .card {
+            border-color:#d6e1ee;
+            background:#fff;
+            color:#1e293b;
+            box-shadow:0 8px 20px rgba(15,23,42,.06);
+        }
+        :root[data-theme="light"] .mv-unidad {
+            border-color:#cbd8e8;
+            background:#f8fbff;
+        }
+        :root[data-theme="light"] .mv-u-id strong { color:#1e293b; }
+        :root[data-theme="light"] .mv-unidades .muted,
+        :root[data-theme="light"] .mv-lateral .muted,
+        :root[data-theme="light"] .mv-u-codigo,
+        :root[data-theme="light"] .mv-u-etq,
+        :root[data-theme="light"] .mv-u-sinserie,
+        :root[data-theme="light"] .mv-sec-nota { color:#64748b; }
+        :root[data-theme="light"] .mv-u-portada {
+            background:#f1f5f9;
+            border-color:#cbd5e1;
+        }
+        :root[data-theme="light"] .mv-u-procesos { border-color:#dbe5ef; }
+        :root[data-theme="light"] .proc-form {
+            background:#f8fafc;
+            border-color:#dbe5ef;
+        }
+        :root[data-theme="light"] .mv-firma { border-color:#cbd5e1; }
+        :root[data-theme="light"] .mv-ficha {
+            border-color:#b9d5f2;
+            background:#eff6ff;
+            color:#0b74d1;
+        }
+        :root[data-theme="light"] .mv-acciones .mv-back-action {
+            background:#fff;
+            border-color:#e2e8f0;
+            color:#94a3b8;
+        }
+        :root[data-theme="light"] .mv-acciones .mv-back-action:hover {
+            background:#eff6ff;
+            border-color:#60a5fa;
+            color:#2563eb;
+        }
 
         @media (max-width: 560px) {
             .mv-dato-ancho { grid-column:auto; }
