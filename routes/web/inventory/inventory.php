@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\EscaneoController;
 use App\Http\Controllers\EtapaSalidaController;
 use App\Http\Controllers\Inventory\ComponenteController;
 use App\Http\Controllers\Inventory\FichaTecnicaController;
@@ -109,12 +108,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->middleware('can:inventario.registrar')->name('inventory.procesos.definir');
 
     /*
-    | Escaneo con pistola lectora: conteo, préstamos, revisión de un lote.
+    | La pantalla "Escanear" se reemplazó por Consulta por escaneo: la liga
+    | vieja (marcadores, accesos directos) lleva a la nueva.
     */
-    Route::get('/gestion-inventario/escanear', [EscaneoController::class, 'index'])
-        ->middleware('can:inventario.escanear')->name('inventory.escaneo.index');
-    Route::post('/gestion-inventario/escanear/buscar', [EscaneoController::class, 'buscar'])
-        ->middleware('can:inventario.escanear')->name('inventory.escaneo.buscar');
+    Route::redirect('/gestion-inventario/escanear', '/gestion-inventario/consulta-escaneo', 301);
 
     /*
     | Consulta por escaneo: ficha de 10 s con existencias e historial.

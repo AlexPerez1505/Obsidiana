@@ -111,7 +111,7 @@ class CatalogoPermisos
                     'inventario.registrar' => 'Registrar entradas de equipo',
                     'inventario.editar' => 'Editar productos y equipos',
                     'inventario.eliminar' => 'Eliminar entradas y productos',
-                    'inventario.escanear' => 'Usar la pistola lectora',
+                    'inventario.escanear' => 'Escanear etiquetas desde la app (API)',
                     'inventario.consulta_escaneo' => 'Consulta por escaneo (existencias e historial de una etiqueta)',
                     'inventario.catalogo' => 'Administrar el catálogo (tipos, marcas, modelos)',
                     'inventario.catalogo_eliminar' => 'Eliminar categorías, tipos, subtipos, marcas y modelos',

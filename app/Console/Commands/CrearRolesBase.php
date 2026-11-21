@@ -49,7 +49,7 @@ class CrearRolesBase extends Command
                 'description' => 'Recibe equipo, lo identifica y lo mueve por procesos.',
                 'permisos' => [
                     'inventario.ver', 'inventario.registrar', 'inventario.editar',
-                    'inventario.escanear', 'inventario.catalogo',
+                    'inventario.escanear', 'inventario.consulta_escaneo', 'inventario.catalogo',
                     'procesos.ver', 'procesos.trabajar',
                     'servicios.ver',
                     // Sin precios.ver: registra y repara sin ver cuánto vale.
