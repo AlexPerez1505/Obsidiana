@@ -1,0 +1,94 @@
+/*
+ * Categorías de Productos en tarjetas. La foto se sale por arriba de la
+ * tarjeta; el fondo es un tono suave distinto por tarjeta. Todo bajo .pcat.
+ */
+.pcat { margin: 4px 0 22px; }
+.pcat-top { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.pcat-top h2 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: -.01em; }
+.pcat-n { padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 700; }
+.pcat-todos { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--primary); text-decoration: none; }
+.pcat-todos:hover { text-decoration: underline; }
+
+/* Espacio arriba de cada fila: ahí se asoma la foto. */
+.pcat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 54px 18px; padding-top: 48px; }
+
+.pcat-card {
+    --pc-bg: #fdfbe9; --pc-p1: #46c08a; --pc-p2: #f2b84b;
+    position: relative; display: block; min-height: 200px; padding: 80px 20px 18px;
+    border-radius: 22px; background: var(--pc-bg); color: var(--text); text-decoration: none;
+    border: 1px solid color-mix(in srgb, var(--text) 5%, transparent);
+    transition: transform 200ms cubic-bezier(.2, .8, .2, 1), box-shadow 200ms ease;
+}
+.pcat-t1 { --pc-bg: #eef4ff; --pc-p1: #ee7b8f; --pc-p2: #6cc8d9; }
+.pcat-t2 { --pc-bg: #fdf0f2; --pc-p1: #7fd1bd; --pc-p2: #ee7b8f; }
+.pcat-t3 { --pc-bg: #ecf8f1; --pc-p1: #5fb87a; --pc-p2: #9cc3ee; }
+.pcat-t4 { --pc-bg: #fff4e8; --pc-p1: #e8c45a; --pc-p2: #5fb87a; }
+.pcat-t5 { --pc-bg: #f3f0fd; --pc-p1: #9cc3ee; --pc-p2: #f2b84b; }
+
+[data-theme="dark"] .pcat-card { --pc-bg: color-mix(in srgb, var(--pc-p1) 10%, var(--surface)); border-color: var(--border); }
+
+.pcat-card:hover { transform: translateY(-3px); box-shadow: 0 16px 34px rgba(15, 23, 42, .08); }
+.pcat-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.pcat-card.is-on { box-shadow: 0 0 0 2px var(--primary), 0 12px 28px color-mix(in srgb, var(--primary) 16%, transparent); }
+
+/* La decoración se queda dentro de la tarjeta; la foto no. */
+.pcat-fondo { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.pcat-deco { position: absolute; right: -6px; bottom: -8px; width: 118px; height: 118px; opacity: .9; }
+.pcat-punto { position: absolute; width: 11px; height: 11px; border-radius: 50%; pointer-events: none; }
+.pcat-p1 { top: 22px; right: 70px; background: var(--pc-p1); }
+.pcat-p2 { bottom: 26px; right: 132px; width: 9px; height: 9px; background: var(--pc-p2); }
+
+/* La foto: sobresale por arriba y a la izquierda. */
+.pcat-img {
+    position: absolute; top: -50px; left: 12px; width: 136px; height: 116px;
+    display: flex; align-items: flex-end; justify-content: center;
+    transition: transform 220ms cubic-bezier(.2, .8, .2, 1);
+}
+.pcat-img img {
+    max-width: 100%; max-height: 100%; object-fit: contain;
+    filter: drop-shadow(0 10px 14px rgba(15, 23, 42, .16));
+    /* Las fotos traen fondo blanco: así se funden con el tono de la tarjeta. */
+    mix-blend-mode: multiply;
+}
+[data-theme="dark"] .pcat-img img { mix-blend-mode: normal; border-radius: 12px; background: #fff; padding: 4px; }
+.pcat-img svg, .pcat-img.sin::after {
+    width: 62px; height: 62px; padding: 14px; border-radius: 18px; background: var(--surface); color: var(--muted);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, .08);
+}
+.pcat-img.sin::after { content: ""; display: block; }
+.pcat-card:hover .pcat-img { transform: translateY(-4px) rotate(-2deg) scale(1.03); }
+
+.pcat-flecha { position: absolute; top: 18px; right: 18px; width: 34px; height: 34px; border-radius: 50%;
+               display: flex; align-items: center; justify-content: center; color: var(--text);
+               background: color-mix(in srgb, var(--surface) 70%, transparent);
+               transition: background-color 200ms ease, color 200ms ease, transform 200ms ease; }
+.pcat-flecha svg { width: 17px; height: 17px; }
+.pcat-card:hover .pcat-flecha { background: var(--text); color: var(--surface); transform: rotate(8deg); }
+.pcat-card.is-on .pcat-flecha { background: var(--primary); color: #fff; }
+
+.pcat-txt { position: relative; display: flex; flex-direction: column; gap: 2px; max-width: 72%; }
+.pcat-txt small { font-size: 12.5px; color: var(--muted); }
+.pcat-txt strong { font-size: 22px; line-height: 1.15; font-weight: 800; letter-spacing: -.02em; hyphens: auto; -webkit-hyphens: auto; overflow-wrap: break-word; }
+.pcat-txt em { margin-top: 14px; font-style: normal; font-size: 13px; color: var(--muted); }
+.pcat-txt strong.pcat-largo { font-size: 18px; }
+
+@media (max-width: 640px) {
+    .pcat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 12px; padding-top: 30px; }
+    .pcat-card { min-height: 168px; padding: 56px 14px 14px; border-radius: 18px; }
+    .pcat-img { top: -30px; left: 10px; width: 86px; height: 78px; }
+    .pcat-deco { width: 84px; height: 84px; }
+    .pcat-p1 { display: none; }
+    .pcat-p2 { right: 90px; bottom: 18px; }
+    .pcat-flecha { top: 12px; right: 12px; width: 30px; height: 30px; }
+    .pcat-txt { max-width: 100%; }
+    .pcat-txt strong { font-size: 16px; }
+    .pcat-txt small { font-size: 11.5px; }
+    .pcat-txt strong.pcat-largo { font-size: 13.5px; }
+    .pcat-txt em { margin-top: 8px; }
+}
+@media (max-width: 330px) { .pcat-grid { grid-template-columns: 1fr; } }
+
+@media (prefers-reduced-motion: reduce) {
+    .pcat-card, .pcat-img, .pcat-flecha { transition: none; }
+    .pcat-card:hover, .pcat-card:hover .pcat-img, .pcat-card:hover .pcat-flecha { transform: none; }
+}

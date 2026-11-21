@@ -4,6 +4,7 @@
 @section('page-sub', 'Inventario de equipos y stock disponible')
 
 @push('head')
+    <link rel="stylesheet" href="{{ asset('css/productos-categorias.css') }}?v={{ filemtime(public_path('css/productos-categorias.css')) }}">
     <style>
         .unidades-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:1000; padding:20px; }
         .unidades-modal { background:var(--surface); border-radius:14px; max-width:840px; width:100%; max-height:86vh; overflow-y:auto; padding:22px; }
@@ -212,12 +213,77 @@
         $tipoSel = $filters['tipo'] ?? '';
         $base = array_filter(['search' => $filters['search'] ?? null, 'ubicacion' => $filters['ubicacion'] ?? null]);
     @endphp
-    @if ($porTipo->count() > 1 || $tipoSel !== '')
-        <nav class="tipo-chips" aria-label="Filtrar por tipo">
-            <a href="{{ route('inventory.productos.index', $base) }}" class="tipo-chip {{ $tipoSel === '' ? 'on' : '' }}">Todos <span>{{ $porTipo->sum() }}</span></a>
-            @foreach ($porTipo as $t => $n)
-                <a href="{{ route('inventory.productos.index', $base + ['tipo' => $t]) }}" class="tipo-chip {{ $tipoSel === $t ? 'on' : '' }}">{{ $t }} <span>{{ $n }}</span></a>
-            @endforeach
+    {{-- Categorías (tipos de equipo) en tarjetas: la foto se sale de la
+         tarjeta. Un clic filtra la lista; otro clic en la misma la quita. --}}
+    @if ($tarjetasTipo->count() > 1 || $tipoSel !== '')
+        <nav class="pcat" aria-label="Categorías de productos">
+            <div class="pcat-top">
+                <h2>Categorías</h2>
+                <span class="pcat-n">{{ $tarjetasTipo->count() }}</span>
+                @if ($tipoSel !== '')
+                    <a class="pcat-todos" href="{{ route('inventory.productos.index', $base) }}">
+                        Ver todas · {{ $porTipo->sum() }} productos
+                    </a>
+                @endif
+            </div>
+            <div class="pcat-grid">
+                @foreach ($tarjetasTipo as $i => $cat)
+                    @php $on = $tipoSel === $cat['tipo']; @endphp
+                    <a class="pcat-card pcat-t{{ $i % 6 }} {{ $on ? 'is-on' : '' }}"
+                       href="{{ route('inventory.productos.index', $on ? $base : $base + ['tipo' => $cat['tipo']]) }}"
+                       @if ($on) aria-current="true" @endif
+                       aria-label="{{ $cat['tipo'] }}: {{ $cat['productos'] }} {{ $cat['productos'] === 1 ? 'producto' : 'productos' }}, {{ $cat['disponibles'] }} {{ $cat['disponibles'] === 1 ? 'pieza disponible' : 'piezas disponibles' }}{{ $on ? '. Quitar filtro' : '' }}">
+                        <span class="pcat-fondo" aria-hidden="true">
+                            @switch($i % 6)
+                                @case(0)
+                                    <svg class="pcat-deco" viewBox="0 0 120 120"><g stroke-width="6" stroke-linecap="round"><path d="M30 40 90 22" stroke="#7aa7e8"/><path d="M24 58 84 40" stroke="#ee7b8f"/><path d="M34 74 94 56" stroke="#7fd1bd"/><path d="M20 92 80 74" stroke="#7aa7e8"/><path d="M28 108 88 90" stroke="#ee7b8f"/></g></svg>
+                                    @break
+                                @case(1)
+                                    <svg class="pcat-deco" viewBox="0 0 120 120" fill="none" stroke-width="2"><path d="M10 100 30 70 22 64 42 34 34 28 54 0" stroke="#ee7b8f"/><path d="M30 110 50 80 42 74 62 44 54 38 74 10" stroke="#6cc8d9"/><path d="M50 118 70 88 62 82 82 52 74 46 94 16" stroke="#e8c45a"/></svg>
+                                    @break
+                                @case(2)
+                                    <svg class="pcat-deco" viewBox="0 0 120 120" fill="none" stroke-width="2" stroke-dasharray="2 3"><circle cx="90" cy="18" r="9" stroke="#ee7b8f"/><circle cx="74" cy="40" r="9" stroke="#ee7b8f"/><circle cx="100" cy="46" r="9" stroke="#7fd1bd"/><circle cx="60" cy="66" r="9" stroke="#ee7b8f"/><circle cx="88" cy="74" r="9" stroke="#7fd1bd"/><circle cx="72" cy="98" r="9" stroke="#ee7b8f"/><circle cx="104" cy="102" r="9" stroke="#7fd1bd"/></svg>
+                                    @break
+                                @case(3)
+                                    <svg class="pcat-deco" viewBox="0 0 120 120" fill="none" stroke="#7fd1a4" stroke-width="1.6"><path d="M20 120C30 60 70 40 120 30"/><path d="M34 120C44 70 80 54 120 48"/><path d="M50 120C58 84 88 70 120 66"/><path d="M8 120C18 52 60 22 120 12"/></svg>
+                                    @break
+                                @case(4)
+                                    <svg class="pcat-deco" viewBox="0 0 120 120"><circle cx="40" cy="70" r="11" fill="#e8d36a"/><circle cx="84" cy="80" r="11" fill="#e8d36a"/><circle cx="36" cy="102" r="7" fill="#e8d36a"/><circle cx="66" cy="110" r="8" fill="#e8d36a"/><circle cx="104" cy="108" r="5" fill="#5fb87a"/><circle cx="70" cy="44" r="6" fill="none" stroke="#e8d36a" stroke-width="2"/></svg>
+                                    @break
+                                @default
+                                    <svg class="pcat-deco" viewBox="0 0 120 120" stroke-linecap="round" stroke-width="7"><path d="M30 118 110 38" stroke="#5fb87a"/><path d="M54 118 118 54" stroke="#9cc3ee"/><path d="M6 110 70 46" stroke="#9cc3ee" opacity=".7"/><path d="M80 118 120 78" stroke="#5fb87a" opacity=".6"/></svg>
+                            @endswitch
+                        </span>
+                        <span class="pcat-punto pcat-p1" aria-hidden="true"></span>
+                        <span class="pcat-punto pcat-p2" aria-hidden="true"></span>
+
+                        <span class="pcat-img" aria-hidden="true">
+                            @if ($cat['imagen'])
+                                <img src="{{ $cat['imagen'] }}" alt="" loading="lazy" decoding="async"
+                                     onerror="this.parentNode.classList.add('sin');this.remove()">
+                            @else
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"/></svg>
+                            @endif
+                        </span>
+
+                        <span class="pcat-flecha" aria-hidden="true">
+                            @if ($on)
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                            @else
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M8 7h9v9"/></svg>
+                            @endif
+                        </span>
+
+                        <span class="pcat-txt">
+                            <small>{{ $cat['disponibles'] }} {{ $cat['disponibles'] === 1 ? 'pieza disponible' : 'piezas disponibles' }}</small>
+                            {{-- Palabras muy largas (Otorrinolaringología) con letra más chica: no se parten. --}}
+                            @php $palabraLarga = collect(preg_split('/\s+/u', $cat['tipo']))->max(fn ($w) => mb_strlen($w)) > 16; @endphp
+                            <strong class="{{ $palabraLarga ? 'pcat-largo' : '' }}">{{ \Illuminate\Support\Str::title(mb_strtolower($cat['tipo'])) }}</strong>
+                            <em>{{ $cat['productos'] }} {{ $cat['productos'] === 1 ? 'producto' : 'productos' }}</em>
+                        </span>
+                    </a>
+                @endforeach
+            </div>
         </nav>
     @endif
 

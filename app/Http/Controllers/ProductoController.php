@@ -71,6 +71,7 @@ class ProductoController extends Controller
             'catalogo' => $this->catalogoEquipo(),
             'enCongreso' => $this->productos->piezasEnCongreso(),
             'porTipo' => $porTipo,
+            'tarjetasTipo' => $this->tarjetasPorTipo($query, $porTipo),
             'paquetesPorTipo' => $paquetes,
         ]);
     }
@@ -389,5 +390,36 @@ class ProductoController extends Controller
         // El formulario no dibuja el campo para quien no puede definir precios;
         // si aun así llegó uno, se descarta en vez de confiar en él.
         return ProductosDeInventario::filtrarPrecio($data, $request->user());
+    }
+
+    /**
+     * Una tarjeta por tipo de equipo: cuántos productos y piezas
+     * disponibles hay (con los mismos filtros de búsqueda) y una foto que
+     * lo represente. La foto es la del producto con más stock de ese tipo
+     * que tenga imagen; se resuelve en una sola consulta, no una por tipo.
+     *
+     * @return \Illuminate\Support\Collection<int, array{tipo:string, productos:int, disponibles:int, imagen:?string}>
+     */
+    private function tarjetasPorTipo(\Illuminate\Database\Eloquent\Builder $query, \Illuminate\Support\Collection $porTipo): \Illuminate\Support\Collection
+    {
+        $tipoSql = "COALESCE(NULLIF(tipo_equipo, ''), 'Sin tipo')";
+
+        $disponibles = (clone $query)->reorder()
+            ->selectRaw("{$tipoSql} as tipo, SUM(stock) as piezas")
+            ->groupBy('tipo')->pluck('piezas', 'tipo');
+
+        $fotos = Producto::query()
+            ->whereNotNull('imagen_path')->where('imagen_path', '<>', '')
+            ->orderByDesc('stock')->orderBy('id')
+            ->get(['id', 'tipo_equipo', 'imagen_path', 'stock'])
+            ->groupBy(fn (Producto $p) => trim((string) $p->tipo_equipo) !== '' ? $p->tipo_equipo : 'Sin tipo')
+            ->map(fn ($grupo) => $grupo->first()->imagen_path);
+
+        return $porTipo->map(fn ($n, $tipo) => [
+            'tipo' => (string) $tipo,
+            'productos' => (int) $n,
+            'disponibles' => (int) ($disponibles[$tipo] ?? 0),
+            'imagen' => isset($fotos[$tipo]) ? asset('storage/'.$fotos[$tipo]) : null,
+        ])->values();
     }
 }
