@@ -516,7 +516,7 @@
                     <a class="nav-item nav-sub {{ request()->routeIs('mensajeria.*') ? 'active' : '' }}" href="{{ route('mensajeria.index') }}" data-tip="Mensajería">
                         <svg class="nav-bullet" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
                         <span class="nav-label">Mensajería</span>
-                        <span class="nav-count" id="navMsjNoLeidos" hidden></span>
+                        <span class="nav-count" id="navMsjNoLeidos" style="display:none"></span>
                     </a>
                     @endcan
                     @can('promociones.ver')

@@ -260,7 +260,7 @@
         const n = $('msjSinLeerN');
         n.hidden = !sinLeer; n.textContent = sinLeer;
         const nav = document.getElementById('navMsjNoLeidos');
-        if (nav) { nav.hidden = !sinLeer; nav.textContent = sinLeer; }
+        if (nav) { nav.hidden = !sinLeer; nav.style.display = sinLeer ? '' : 'none'; nav.textContent = sinLeer; }
     }
 
     async function cargarConversaciones() {

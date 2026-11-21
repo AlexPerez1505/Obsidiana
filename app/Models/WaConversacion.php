@@ -56,6 +56,6 @@ class WaConversacion extends Model
         $c = $this->cliente;
         $nombre = $c ? trim(($c->nombre ?? '').' '.($c->apellido ?? '')) : '';
 
-        return $nombre !== '' ? $nombre : ($this->nombre_perfil ?: '+'.$this->telefono);
+        return $nombre !== '' ? $nombre : ($this->nombre_perfil ?: \App\Services\Mensajeria\Mensajeria::telefonoBonito($this->telefono));
     }
 }

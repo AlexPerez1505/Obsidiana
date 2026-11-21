@@ -583,11 +583,15 @@ class Mensajeria
         };
     }
 
-    /** +52 55 3668 8172 (México) o +<dígitos> para otros países. */
+    /** +52 55 3668 8172 / +52 220 538 1046 (México) o +<dígitos> para otros países. */
     public static function telefonoBonito(string $tel): string
     {
-        if (preg_match('/^52(\d{2})(\d{4})(\d{4})$/', $tel, $m)) {
-            return '+52 '.$m[1].' '.$m[2].' '.$m[3];
+        if (preg_match('/^52(\d{10})$/', $tel, $m)) {
+            $d = $m[1];
+            // CDMX, Guadalajara y Monterrey tienen lada de 2 dígitos; el resto, de 3.
+            return in_array(substr($d, 0, 2), ['55', '56', '33', '81'], true)
+                ? '+52 '.substr($d, 0, 2).' '.substr($d, 2, 4).' '.substr($d, 6)
+                : '+52 '.substr($d, 0, 3).' '.substr($d, 3, 3).' '.substr($d, 6);
         }
 
         return '+'.$tel;
