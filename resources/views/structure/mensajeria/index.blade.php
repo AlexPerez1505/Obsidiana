@@ -196,33 +196,55 @@
     <figure><img id="msjVisorImg" alt=""><figcaption id="msjVisorPie"></figcaption></figure>
 </div>
 
-{{-- Plantillas --}}
-<dialog class="msj-dlg msj-pl" id="msjPl" aria-labelledby="msjPlTitulo">
-    <div class="msj-dlg-cab">
-        <h3 id="msjPlTitulo">Enviar plantilla</h3>
+{{-- Plantillas: elegir (izquierda) → llenar con vista previa (derecha). En teléfono, dos pasos. --}}
+<dialog class="msj-dlg msj-pl" id="msjPl" aria-labelledby="msjPlTitulo" data-no-mayus data-no-ortografia>
+    <header class="msj-pl-cab">
+        <button type="button" class="msj-icono msj-pl-atras" id="msjPlAtras" aria-label="Volver a la lista" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div class="msj-pl-cab-t">
+            <h3 id="msjPlTitulo">Enviar plantilla</h3>
+            <small id="msjPlPara"></small>
+        </div>
         <button type="button" class="msj-icono" data-cerrar aria-label="Cerrar">✕</button>
-    </div>
-    <div class="msj-pl-cuerpo">
-        <div class="msj-pl-lado">
+    </header>
+
+    <div class="msj-pl-cuerpo" id="msjPlCuerpo">
+        <section class="msj-pl-lado" aria-label="Plantillas">
             <div class="msj-buscar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-                <input type="search" id="msjPlBuscar" placeholder="Buscar plantilla" aria-label="Buscar plantilla">
+                <input type="search" id="msjPlBuscar" placeholder="Buscar por nombre o texto" aria-label="Buscar plantilla" autocomplete="off">
             </div>
-            <div class="msj-pl-filtros">
-                <select id="msjPlIdioma" aria-label="Idioma"><option value="">Idioma</option></select>
-                <select id="msjPlCategoria" aria-label="Categoría"><option value="">Categoría</option></select>
-                <select id="msjPlEstado" aria-label="Estado"><option value="">Estado</option></select>
-            </div>
+            <div class="msj-pl-chips" id="msjPlChips" role="tablist" aria-label="Categoría"></div>
             <ul class="msj-pl-lista" id="msjPlLista"></ul>
-        </div>
-        <div class="msj-pl-detalle" id="msjPlDetalle">
-            <p class="msj-pl-hint">Elige una plantilla para ver cómo se verá y llenar sus datos.</p>
-        </div>
+            <label class="msj-pl-todas" id="msjPlTodasL" hidden>
+                <input type="checkbox" id="msjPlTodas"> <span>Mostrar también las no aprobadas (<b id="msjPlOtrasN">0</b>)</span>
+            </label>
+        </section>
+
+        <section class="msj-pl-det" id="msjPlDetalle" aria-label="Datos de la plantilla">
+            <div class="msj-pl-vacio">
+                <div class="msj-pl-vacio-ico">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+                </div>
+                <b>Elige una plantilla</b>
+                <span>Verás cómo le llega al cliente y solo llenas lo que cambia.</span>
+            </div>
+        </section>
     </div>
+
+    <footer class="msj-pl-pie" id="msjPlPie" hidden>
+        <span class="msj-pl-falta" id="msjPlFalta"></span>
+        <button type="button" class="msj-btn" data-cerrar>Cancelar</button>
+        <button type="button" class="msj-btn msj-btn--primario" id="msjPlEnviar" disabled>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12 2-12 2z"/></svg>
+            Enviar
+        </button>
+    </footer>
 </dialog>
 
 {{-- Nueva conversación --}}
-<dialog class="msj-dlg msj-dlg--chico" id="msjNuevaDlg" aria-labelledby="msjNuevaTitulo">
+<dialog class="msj-dlg msj-dlg--chico" id="msjNuevaDlg" aria-labelledby="msjNuevaTitulo" data-no-mayus data-no-ortografia>
     <form method="dialog" id="msjNuevaForm">
         <div class="msj-dlg-cab">
             <h3 id="msjNuevaTitulo">Nueva conversación</h3>

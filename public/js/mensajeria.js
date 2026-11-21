@@ -579,7 +579,7 @@
             h += '<span class="msj-pl-h">' + var_(p.encabezado) + '</span>';
         }
         if (p.cuerpo) h += '<p class="msj-texto">' + (faltan ? var_(p.cuerpo) : textoSeguro(p.cuerpo)) + '</p>';
-        if (p.pie) h += '<span class="msj-pl-pie">' + esc(p.pie) + '</span>';
+        if (p.pie) h += '<span class="msj-pl-pietxt">' + esc(p.pie) + '</span>';
         if (p.botones?.length) {
             h += '<div class="msj-pl-botones">' + p.botones.map((b) => '<span>' + (b.tipo === 'URL' ? ICO.enlace : b.tipo === 'PHONE_NUMBER' ? ICO.tel : b.tipo === 'COPY_CODE' ? ICO.copiar : ICO.responder) + esc(b.texto) + '</span>').join('') + '</div>';
         }
@@ -1106,10 +1106,11 @@
     }
 
     /* ==================================================================
-     |  Plantillas
+     |  Plantillas: elegir → llenar lo que cambia (con vista previa en vivo) → enviar
      * ================================================================== */
     const dlgPl = $('msjPl');
-    let plSel = null, plMedia = null;
+    const PL = { sel: null, media: null, cat: '', todas: false, foco: null };
+    const PL_VACIO = $('msjPlDetalle').innerHTML;
 
     document.addEventListener('click', (e) => {
         if (e.target.closest('[data-abrir-plantillas]')) { cerrarMenu(); abrirPlantillas(); }
@@ -1117,146 +1118,287 @@
         if (x) x.closest('dialog').close();
     });
 
-    async function abrirPlantillas() {
-        if (!S.activa || !CFG.puedeResponder) return;
-        plSel = null; plMedia = null;
-        $('msjPlDetalle').innerHTML = '<p class="msj-pl-hint">Elige una plantilla para ver cómo se verá y llenar sus datos.</p>';
-        dlgPl.showModal();
-        if (!S.plantillas) {
-            $('msjPlLista').innerHTML = '<li class="msj-nota" style="padding:12px">Cargando plantillas de WhatsApp…</li>';
-            try {
-                const j = await pedir(R.plantillas);
-                if (j.error) toast(j.error, 'error');
-                S.plantillas = j.plantillas;
-                llenarFiltros();
-            } catch (e) {
-                $('msjPlLista').innerHTML = '<li class="msj-nota" style="padding:12px">' + esc(e.message) + '</li>';
-                return;
-            }
-        }
-        pintarPlantillas();
-        $('msjPlBuscar').focus();
-    }
-
     const ESTADOS_PL = { APPROVED: ['Aprobada', 'ok'], PENDING: ['En revisión', 'pend'], REJECTED: ['Rechazada', 'mal'], PAUSED: ['Pausada', 'pend'], DISABLED: ['Desactivada', 'mal'], IN_APPEAL: ['En apelación', 'pend'], LIMIT_EXCEEDED: ['Límite excedido', 'mal'] };
-    const CATS = { MARKETING: 'Marketing', UTILITY: 'Utilidad', AUTHENTICATION: 'Autenticación' };
+    const CATS = { UTILITY: 'Utilidad', MARKETING: 'Marketing', AUTHENTICATION: 'Autenticación' };
 
-    function llenarFiltros() {
-        const uniq = (k) => [...new Set(S.plantillas.map((p) => p[k]).filter(Boolean))].sort();
-        $('msjPlIdioma').innerHTML = '<option value="">Idioma</option>' + uniq('idioma').map((v) => '<option>' + esc(v) + '</option>').join('');
-        $('msjPlCategoria').innerHTML = '<option value="">Categoría</option>' + uniq('categoria').map((v) => '<option value="' + esc(v) + '">' + esc(CATS[v] || v) + '</option>').join('');
-        $('msjPlEstado').innerHTML = '<option value="">Estado</option>' + uniq('estado').map((v) => '<option value="' + esc(v) + '">' + esc((ESTADOS_PL[v] || [v])[0]) + '</option>').join('');
+    function titulo(nombre) {
+        const t = String(nombre || '').replace(/[_-]+/g, ' ').trim();
+        return t.charAt(0).toUpperCase() + t.slice(1);
     }
-    ['msjPlBuscar', 'msjPlIdioma', 'msjPlCategoria', 'msjPlEstado'].forEach((id) => $(id).addEventListener('input', pintarPlantillas));
-
-    function pintarPlantillas() {
-        const q = $('msjPlBuscar').value.trim().toLowerCase();
-        const idi = $('msjPlIdioma').value, cat = $('msjPlCategoria').value, est = $('msjPlEstado').value;
-        const items = (S.plantillas || []).filter((p) =>
-            (!q || p.nombre.toLowerCase().includes(q) || cuerpoDe(p).toLowerCase().includes(q)) &&
-            (!idi || p.idioma === idi) && (!cat || p.categoria === cat) && (!est || p.estado === est));
-        $('msjPlLista').innerHTML = items.length ? items.map((p, i) => {
-            const [et, cls] = ESTADOS_PL[p.estado] || [p.estado, ''];
-            return '<li class="msj-pl-it' + (plSel === p ? ' is-on' : '') + '" data-i="' + S.plantillas.indexOf(p) + '" tabindex="0" role="button">' +
-                '<b>' + esc(p.nombre) + '</b><span class="msj-pl-tags"><span class="msj-tag msj-tag--' + cls + '">' + esc(et) + '</span><span class="msj-tag">' + esc(CATS[p.categoria] || p.categoria || '') + '</span><span class="msj-tag">' + esc(p.idioma) + '</span></span></li>';
-        }).join('') : '<li class="msj-nota" style="padding:12px">Sin plantillas con esos filtros.</li>';
-    }
-
-    $('msjPlLista').addEventListener('click', (e) => { const li = e.target.closest('[data-i]'); if (li) elegirPlantilla(S.plantillas[Number(li.dataset.i)]); });
-    $('msjPlLista').addEventListener('keydown', (e) => { const li = e.target.closest('[data-i]'); if (li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); elegirPlantilla(S.plantillas[Number(li.dataset.i)]); } });
-
     function parte(p, tipo) { return (p.componentes || []).find((c) => String(c.type).toUpperCase() === tipo) || null; }
     function cuerpoDe(p) { return parte(p, 'BODY')?.text || ''; }
     function varsDe(t) { return [...new Set([...String(t || '').matchAll(/\{\{\s*([\w]+)\s*\}\}/g)].map((m) => m[1]))]; }
 
-    function elegirPlantilla(p) {
-        plSel = p; plMedia = null;
+    async function abrirPlantillas() {
+        if (!S.activa || !CFG.puedeResponder) return;
+        const c = S.convs.get(S.activa);
+        $('msjPlPara').textContent = 'Para ' + (c ? c.nombre + (c.nombre !== c.telefono ? ' · ' + c.telefono : '') : '');
+        PL.sel = null; PL.media = null;
+        mostrarLista();
+        $('msjPlDetalle').innerHTML = PL_VACIO;
+        $('msjPlPie').hidden = true;
+        dlgPl.showModal();
+
+        if (!S.plantillas) {
+            $('msjPlLista').innerHTML = '<li class="msj-pl-vacio-lista"><span class="msj-girando"></span><br>Cargando tus plantillas de WhatsApp…</li>';
+            try {
+                const j = await pedir(R.plantillas);
+                if (j.error) toast(j.error, 'error');
+                S.plantillas = j.plantillas;
+            } catch (e) {
+                $('msjPlLista').innerHTML = '<li class="msj-pl-vacio-lista">' + esc(e.message) + '</li>';
+                return;
+            }
+        }
+        pintarChips();
         pintarPlantillas();
+        if (matchMedia('(hover: hover)').matches) $('msjPlBuscar').focus();
+    }
+
+    function mostrarLista() { dlgPl.classList.remove('en-detalle'); $('msjPlAtras').hidden = true; }
+    $('msjPlAtras').addEventListener('click', mostrarLista);
+
+    function pintarChips() {
+        const cats = [...new Set((S.plantillas || []).map((p) => p.categoria).filter(Boolean))];
+        $('msjPlChips').innerHTML = ['', ...cats].map((c) =>
+            '<button type="button" class="msj-pl-chip-f' + (PL.cat === c ? ' is-on' : '') + '" data-cat="' + esc(c) + '" role="tab" aria-selected="' + (PL.cat === c) + '">' + esc(c ? (CATS[c] || c) : 'Todas') + '</button>').join('');
+        const otras = (S.plantillas || []).filter((p) => !p.usable).length;
+        $('msjPlTodasL').hidden = !otras;
+        $('msjPlOtrasN').textContent = otras;
+    }
+    $('msjPlChips').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-cat]'); if (!b) return;
+        PL.cat = b.dataset.cat; pintarChips(); pintarPlantillas();
+    });
+    $('msjPlBuscar').addEventListener('input', pintarPlantillas);
+    $('msjPlTodas').addEventListener('change', (e) => { PL.todas = e.target.checked; pintarPlantillas(); });
+
+    function pintarPlantillas() {
+        const q = $('msjPlBuscar').value.trim().toLowerCase();
+        const items = (S.plantillas || []).filter((p) =>
+            (PL.todas || p.usable) &&
+            (!PL.cat || p.categoria === PL.cat) &&
+            (!q || p.nombre.toLowerCase().includes(q) || titulo(p.nombre).toLowerCase().includes(q) || cuerpoDe(p).toLowerCase().includes(q)));
+
+        $('msjPlLista').innerHTML = items.length ? items.map((p) => {
+            const [et, cls] = ESTADOS_PL[p.estado] || [p.estado, ''];
+            const etiqueta = p.usable
+                ? '<span class="msj-tag' + (p.categoria === 'MARKETING' ? ' msj-tag--mkt' : '') + '">' + esc(CATS[p.categoria] || p.categoria || '') + '</span>'
+                : '<span class="msj-tag msj-tag--' + cls + '">' + esc(et) + '</span>';
+            const vista = cuerpoDe(p).replace(/\{\{\s*[\w]+\s*\}\}/g, '…');
+            return '<li class="msj-pl-it' + (PL.sel === p ? ' is-on' : '') + (p.usable ? '' : ' no-usable') + '" data-i="' + S.plantillas.indexOf(p) + '" tabindex="0" role="button">' +
+                '<span class="msj-pl-it-top"><b>' + esc(titulo(p.nombre)) + '</b>' + etiqueta + '</span>' +
+                '<p>' + esc(vista) + '</p></li>';
+        }).join('') : '<li class="msj-pl-vacio-lista">No hay plantillas' + (q ? ' con “' + esc(q) + '”' : '') + '.</li>';
+    }
+
+    $('msjPlLista').addEventListener('click', (e) => { const li = e.target.closest('[data-i]'); if (li) elegirPlantilla(S.plantillas[Number(li.dataset.i)]); });
+    $('msjPlLista').addEventListener('keydown', (e) => {
+        const li = e.target.closest('[data-i]'); if (!li) return;
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elegirPlantilla(S.plantillas[Number(li.dataset.i)]); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); li.nextElementSibling?.focus(); }
+        if (e.key === 'ArrowUp') { e.preventDefault(); li.previousElementSibling?.focus(); }
+    });
+    $('msjPlBuscar').addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); $('msjPlLista').querySelector('[data-i]')?.focus(); }
+        if (e.key === 'Enter') { e.preventDefault(); const li = $('msjPlLista').querySelector('[data-i]'); if (li) elegirPlantilla(S.plantillas[Number(li.dataset.i)]); }
+    });
+
+    /*
+     * Qué es cada variable, en palabras: "Nombre", "Fecha"… y qué texto la
+     * antecede, para que se entienda sin conocer la plantilla.
+     */
+    function describirVariable(texto, clave, ejemplo, n) {
+        const antes = String(texto).split(new RegExp('\\{\\{\\s*' + clave + '\\s*\\}\\}'))[0]
+            .replace(/\{\{\s*[\w]+\s*\}\}/g, '…').trim();
+        const palabras = antes.split(/\s+/).filter(Boolean);
+        const contexto = palabras.slice(-4).join(' ').replace(/[,:;]$/, '');
+        const ultima = (palabras[palabras.length - 1] || '').toLowerCase().replace(/[^\wáéíóúñ]/g, '');
+        let nombre;
+        if (!/^\d+$/.test(clave)) nombre = titulo(clave);
+        else if (['hola', 'estimado', 'estimada', 'querido', 'querida', 'buen', 'día', 'dia'].includes(ultima) || /^hola\b/i.test(antes) && palabras.length <= 1) nombre = 'Nombre';
+        else if (/\d{1,2}[\/.-]\d{1,2}([\/.-]\d{2,4})?/.test(ejemplo || '') || ['el', 'fecha', 'del', 'hasta'].includes(ultima) && /\d/.test(ejemplo || '')) nombre = 'Fecha';
+        else if (/^\$|\d+[.,]\d{2}$/.test(ejemplo || '') || ['por', 'monto', 'total'].includes(ultima) && /\d/.test(ejemplo || '')) nombre = 'Monto';
+        else if (['cupón', 'cupon', 'código', 'codigo'].includes(ultima)) nombre = 'Código';
+        else if (['evento', 'orden', 'venta', 'folio', 'solicitud', 'reclamación', 'garantía'].includes(ultima)) nombre = titulo(ultima);
+        else nombre = 'Dato ' + n;
+        return { nombre, contexto };
+    }
+
+    function primerNombre() {
+        const c = S.convs.get(S.activa);
+        if (!c || /^\+?\d[\d\s]+$/.test(c.nombre)) return '';
+        const n = c.nombre.split(/\s+/)[0] || '';
+        return n.charAt(0).toUpperCase() + n.slice(1).toLowerCase();
+    }
+
+    function elegirPlantilla(p) {
+        PL.sel = p; PL.media = null; PL.foco = null;
+        pintarPlantillas();
+        dlgPl.classList.add('en-detalle');
+        $('msjPlAtras').hidden = false;
+
         const h = parte(p, 'HEADER'), b = parte(p, 'BODY');
         const botones = parte(p, 'BUTTONS')?.buttons || [];
-        let campos = '';
+        const campos = [];
+        let n = 0;
 
-        if (h && String(h.format).toUpperCase() === 'TEXT' && varsDe(h.text).length) {
-            campos += '<h4>Encabezado</h4>' + varsDe(h.text).map((v, i) => campo('header', v, h.example?.header_text?.[i] || h.example?.header_text_named_params?.find((x) => x.param_name === v)?.example)).join('');
+        const agregar = (grupo, clave, texto, ejemplo) => {
+            n++;
+            const d = describirVariable(texto, clave, ejemplo, n);
+            const sugerido = d.nombre === 'Nombre' ? primerNombre() : '';
+            campos.push('<div class="msj-pl-campo" data-campo="' + grupo + ':' + esc(clave) + '">' +
+                '<label for="plv-' + grupo + '-' + esc(clave) + '"><span class="msj-pl-num">' + n + '</span>' + esc(d.nombre) +
+                (d.contexto ? ' <small>va después de “' + esc(d.contexto) + '”</small>' : '') + '</label>' +
+                '<input type="text" id="plv-' + grupo + '-' + esc(clave) + '" data-grupo="' + grupo + '" data-clave="' + esc(clave) + '" maxlength="1024" autocomplete="off"' +
+                ' placeholder="' + esc(ejemplo ? 'Ej. ' + ejemplo : 'Escribe el ' + d.nombre.toLowerCase()) + '" value="' + esc(sugerido) + '"></div>');
+        };
+
+        if (h && String(h.format).toUpperCase() === 'TEXT') {
+            varsDe(h.text).forEach((v, i) => agregar('header', v, h.text, h.example?.header_text?.[i] || h.example?.header_text_named_params?.find((x) => x.param_name === v)?.example));
         }
-        if (p.media) {
-            const acepta = { image: 'image/jpeg,image/png', video: 'video/mp4', document: 'application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt' }[p.media];
-            campos += '<h4>Encabezado</h4><label class="msj-campo"><span>' + ({ image: 'Imagen', video: 'Video', document: 'Documento' }[p.media]) + ' <em>(obligatorio)</em></span><input type="file" id="msjPlMedia" accept="' + acepta + '"></label>';
-        }
-        if (b && varsDe(b.text).length) {
+        if (b) {
             const ej = b.example?.body_text?.[0] || [];
             const ejN = b.example?.body_text_named_params || [];
-            campos += '<h4>Mensaje</h4>' + varsDe(b.text).map((v, i) => campo('body', v, ej[i] || ejN.find((x) => x.param_name === v)?.example)).join('');
+            varsDe(b.text).forEach((v, i) => agregar('body', v, b.text, ej[i] || ejN.find((x) => x.param_name === v)?.example));
         }
         botones.forEach((bt, i) => {
             const t = String(bt.type).toUpperCase();
-            if (t === 'URL' && varsDe(bt.url).length) campos += '<h4>Botón</h4>' + campo('botones', i, bt.example?.[0], 'Final del enlace de "' + bt.text + '"');
-            if (t === 'COPY_CODE') campos += '<h4>Botón</h4>' + campo('botones', i, bt.example?.[0], 'Código para copiar');
+            if (t === 'URL' && varsDe(bt.url).length) {
+                const base = String(bt.url).split(/\{\{/)[0];
+                const ejemplo = String(bt.example?.[0] || '');
+                const sufijo = ejemplo.startsWith(base) ? ejemplo.slice(base.length) : '';
+                n++;
+                campos.push('<div class="msj-pl-campo" data-campo="botones:' + i + '">' +
+                    '<label for="plv-botones-' + i + '"><span class="msj-pl-num">' + n + '</span>Enlace del botón “' + esc(bt.text) + '”</label>' +
+                    '<div class="msj-pl-url"><span title="' + esc(base) + '">' + esc(base.replace(/^https?:\/\//, '')) + '</span>' +
+                    '<input type="text" id="plv-botones-' + i + '" data-grupo="botones" data-clave="' + i + '" maxlength="1024" autocomplete="off" placeholder="' + esc(sufijo || 'ruta') + '" value="' + esc(sufijo.split('?')[0]) + '"></div></div>');
+            }
+            if (t === 'COPY_CODE') {
+                n++;
+                campos.push('<div class="msj-pl-campo" data-campo="botones:' + i + '"><label for="plv-botones-' + i + '"><span class="msj-pl-num">' + n + '</span>Código para copiar</label>' +
+                    '<input type="text" id="plv-botones-' + i + '" data-grupo="botones" data-clave="' + i + '" maxlength="15" autocomplete="off" placeholder="' + esc(bt.example?.[0] ? 'Ej. ' + bt.example[0] : 'Código') + '"></div>');
+            }
         });
+        if (p.media) {
+            const acepta = { image: 'image/jpeg,image/png', video: 'video/mp4', document: 'application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt' }[p.media];
+            const que = { image: 'la imagen', video: 'el video', document: 'el documento' }[p.media];
+            campos.unshift('<label class="msj-pl-archivo" id="msjPlArchivoL"><input type="file" id="msjPlMedia" accept="' + acepta + '">' +
+                '<i>＋</i><div><b>Elige ' + que + ' del encabezado</b><small>Obligatorio para esta plantilla</small></div></label>');
+        }
 
         const [et] = ESTADOS_PL[p.estado] || [p.estado];
         const bloqueo = !p.usable
-            ? '<div class="msj-pl-bloqueo"><b>No se puede enviar.</b> ' + (p.estado !== 'APPROVED' ? 'Su estado en Meta es "' + esc(et) + '".' + (p.motivo && p.motivo !== 'NONE' ? ' Motivo: ' + esc(p.motivo) + '.' : '') : esc(p.no_usable || '')) + '</div>'
+            ? '<div class="msj-pl-bloqueo"><b>Esta plantilla no se puede enviar.</b> ' + (p.estado !== 'APPROVED' ? 'Su estado en Meta es “' + esc(et) + '”.' + (p.motivo && p.motivo !== 'NONE' ? ' Motivo: ' + esc(p.motivo) + '.' : '') : esc(p.no_usable || '')) + '</div>'
             : '';
 
-        $('msjPlDetalle').innerHTML = bloqueo +
-            '<form class="msj-pl-form" id="msjPlForm">' + (campos || '<p class="msj-nota">Esta plantilla no lleva datos variables.</p>') + '</form>' +
-            '<div class="msj-pl-previa"><span class="msj-pl-previa-et">Vista previa</span><div id="msjPlVista"></div></div>' +
-            '<div class="msj-pl-acciones"><small>' + esc(CATS[p.categoria] || '') + ' · ' + esc(p.idioma) + '</small>' +
-            '<button type="button" class="msj-btn" data-cerrar>Cancelar</button>' +
-            '<button type="button" class="msj-btn msj-btn--primario" id="msjPlEnviar"' + (p.usable ? '' : ' disabled') + '>Enviar plantilla</button></div>';
+        $('msjPlDetalle').innerHTML =
+            '<div class="msj-pl-edit">' +
+                '<div class="msj-pl-campos" id="msjPlForm">' + bloqueo +
+                    '<h4>' + esc(titulo(p.nombre)) + '</h4>' +
+                    '<p>' + esc(CATS[p.categoria] || p.categoria || '') + ' · ' + esc(p.idioma) + (campos.length ? ' · llena ' + (campos.length === 1 ? 'el dato' : 'los ' + campos.length + ' datos') : '') + '</p>' +
+                    (campos.length ? campos.join('') : '<div class="msj-pl-sinvars"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Esta plantilla no lleva datos: está lista para enviarse.</div>') +
+                '</div>' +
+                '<div class="msj-pl-tel"><span class="msj-pl-tel-et">Así le llega</span><div id="msjPlVista"></div></div>' +
+            '</div>';
 
-        $('msjPlForm').addEventListener('input', vistaPlantilla);
-        $('msjPlMedia')?.addEventListener('change', (e) => { plMedia = e.target.files[0] || null; vistaPlantilla(); });
-        $('msjPlEnviar').addEventListener('click', enviarPlantilla);
+        const form = $('msjPlForm');
+        form.addEventListener('input', vistaPlantilla);
+        form.addEventListener('focusin', (e) => { const i = e.target.closest('[data-grupo]'); PL.foco = i ? i.dataset.grupo + ':' + i.dataset.clave : null; vistaPlantilla(); });
+        form.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' || !e.target.matches('input[type=text]')) return;
+            e.preventDefault();
+            const todos = [...form.querySelectorAll('input[type=text]')];
+            const sig = todos.slice(todos.indexOf(e.target) + 1).find((x) => !x.value.trim()) || todos.find((x) => !x.value.trim());
+            if (sig) sig.focus(); else if (!$('msjPlEnviar').disabled) enviarPlantilla();
+        });
+        $('msjPlMedia')?.addEventListener('change', (e) => {
+            PL.media = e.target.files[0] || null;
+            const l = $('msjPlArchivoL');
+            l.classList.toggle('is-ok', !!PL.media);
+            l.querySelector('b').textContent = PL.media ? PL.media.name : 'Elige el archivo del encabezado';
+            l.querySelector('small').textContent = PL.media ? peso(PL.media.size) + ' · toca para cambiarlo' : 'Obligatorio para esta plantilla';
+            vistaPlantilla();
+        });
+        $('msjPlPie').hidden = false;
         vistaPlantilla();
-    }
 
-    function campo(grupo, clave, ejemplo, etiqueta) {
-        return '<label class="msj-campo"><span>' + esc(etiqueta || ('{{' + clave + '}}')) + (ejemplo ? ' <em>· ej. ' + esc(ejemplo) + '</em>' : '') + '</span>' +
-            '<input type="text" data-grupo="' + grupo + '" data-clave="' + esc(clave) + '" maxlength="1024" autocomplete="off"></label>';
+        // Directo al primer dato vacío.
+        const primero = [...form.querySelectorAll('input[type=text]')].find((x) => !x.value.trim());
+        if (primero && matchMedia('(hover: hover)').matches) primero.focus();
     }
 
     function valoresPlantilla() {
         const v = { header: {}, body: {}, botones: {} };
-        $('msjPlForm')?.querySelectorAll('[data-grupo]').forEach((i) => { v[i.dataset.grupo][i.dataset.clave] = i.value; });
+        $('msjPlForm')?.querySelectorAll('[data-grupo]').forEach((i) => { v[i.dataset.grupo][i.dataset.clave] = i.value.trim(); });
         return v;
     }
 
-    function vistaPlantilla() {
-        const p = plSel; if (!p) return;
-        const v = valoresPlantilla();
-        const llenar = (t, vals) => String(t || '').replace(/\{\{\s*([\w]+)\s*\}\}/g, (m, k) => (vals[k] || '').trim() ? vals[k] : m);
-        const h = parte(p, 'HEADER'), b = parte(p, 'BODY'), f = parte(p, 'FOOTER');
-        const formato = h ? String(h.format).toUpperCase() : null;
-        const vista = {
-            nombre: p.nombre,
-            encabezado_formato: formato,
-            encabezado: formato === 'TEXT' ? llenar(h.text, v.header) : null,
-            cuerpo: llenar(b?.text, v.body),
-            pie: f?.text || null,
-            botones: (parte(p, 'BUTTONS')?.buttons || []).map((bt) => ({ tipo: String(bt.type).toUpperCase(), texto: bt.text })),
-        };
-        const media = plMedia ? { url: URL.createObjectURL(plMedia), nombre: plMedia.name } : null;
-        $('msjPlVista').innerHTML = '<div class="msj-m out primero"><div class="msj-b' + (media ? ' con-media' : '') + '">' + renderPlantilla(vista, media, true) +
-            '<span class="msj-meta">' + esc(hora(new Date().toISOString())) + ICO.una + '</span></div></div>';
-
-        const faltan = $('msjPlForm').querySelectorAll('[data-grupo]');
-        const completos = [...faltan].every((i) => i.value.trim() !== '') && (!p.media || !!plMedia);
-        $('msjPlEnviar').disabled = !p.usable || !completos;
-        $('msjPlEnviar').title = completos ? '' : 'Llena todos los datos' + (p.media ? ' y elige el archivo del encabezado' : '');
+    /* Vista previa: cada variable es una "pastilla" que se ve vacía o llena y lleva al campo. */
+    function conVariables(texto, grupo, vals) {
+        return esc(texto).replace(/\{\{\s*([\w]+)\s*\}\}/g, (m, k) => {
+            const val = vals[k];
+            const clave = grupo + ':' + k;
+            return '<span class="msj-pl-var' + (val ? '' : ' vacia') + (PL.foco === clave ? ' activa' : '') + '" data-ir="' + esc(clave) + '">' + (val ? esc(val) : '{{' + esc(k) + '}}') + '</span>';
+        });
     }
 
+    function vistaPlantilla() {
+        const p = PL.sel; if (!p) return;
+        const v = valoresPlantilla();
+        const h = parte(p, 'HEADER'), b = parte(p, 'BODY'), f = parte(p, 'FOOTER');
+        const formato = h ? String(h.format).toUpperCase() : null;
+        let html = '<div class="msj-pl-render">';
+        if (['IMAGE', 'VIDEO', 'DOCUMENT'].includes(formato)) {
+            if (PL.media && formato === 'IMAGE') html += '<div class="msj-pl-media"><img src="' + esc(URL.createObjectURL(PL.media)) + '" alt=""></div>';
+            else html += '<div class="msj-media-estado" style="min-height:84px">' + (PL.media ? esc(PL.media.name) : ({ IMAGE: 'Imagen', VIDEO: 'Video', DOCUMENT: 'Documento' }[formato]) + ' del encabezado') + '</div>';
+        } else if (formato === 'TEXT') {
+            html += '<span class="msj-pl-h">' + conVariables(h.text, 'header', v.header) + '</span>';
+        }
+        if (b) html += '<p class="msj-texto">' + conVariables(b.text, 'body', v.body) + '</p>';
+        if (f?.text) html += '<span class="msj-pl-pietxt">' + esc(f.text) + '</span>';
+        const botones = parte(p, 'BUTTONS')?.buttons || [];
+        if (botones.length) {
+            html += '<div class="msj-pl-botones">' + botones.map((bt) => {
+                const t = String(bt.type).toUpperCase();
+                return '<span>' + (t === 'URL' ? ICO.enlace : t === 'PHONE_NUMBER' ? ICO.tel : t === 'COPY_CODE' ? ICO.copiar : ICO.responder) + esc(bt.text || (t === 'COPY_CODE' ? 'Copiar código' : '')) + '</span>';
+            }).join('') + '</div>';
+        }
+        html += '</div>';
+        $('msjPlVista').innerHTML = '<div class="msj-m out primero"><div class="msj-b">' + html + '<span class="msj-meta">' + esc(hora(new Date().toISOString())) + ICO.una + '</span></div></div>';
+
+        // Marca los campos listos y cuenta lo que falta.
+        const inputs = [...$('msjPlForm').querySelectorAll('input[type=text][data-grupo]')];
+        inputs.forEach((i) => i.closest('.msj-pl-campo').classList.toggle('is-ok', !!i.value.trim()));
+        const faltan = inputs.filter((i) => !i.value.trim()).length + (p.media && !PL.media ? 1 : 0);
+        const listo = p.usable && faltan === 0;
+        const f2 = $('msjPlFalta');
+        f2.textContent = !p.usable ? 'No se puede enviar' : (faltan ? 'Falta' + (faltan === 1 ? ' 1 dato' : 'n ' + faltan + ' datos') : 'Lista para enviar');
+        f2.classList.toggle('listo', listo);
+        $('msjPlEnviar').disabled = !listo;
+    }
+
+    $('msjPlDetalle').addEventListener('click', (e) => {
+        const v = e.target.closest('[data-ir]'); if (!v) return;
+        const [g, k] = v.dataset.ir.split(':');
+        $('msjPlForm').querySelector('[data-grupo="' + g + '"][data-clave="' + CSS.escape(k) + '"]')?.focus();
+    });
+
+    $('msjPlEnviar').addEventListener('click', enviarPlantilla);
+
     async function enviarPlantilla() {
-        const p = plSel; if (!p || !S.activa) return;
+        const p = PL.sel; if (!p || !S.activa) return;
         const btn = $('msjPlEnviar');
-        btn.disabled = true; btn.textContent = 'Enviando…';
+        if (btn.disabled) return;
+        btn.disabled = true;
+        const original = btn.innerHTML;
+        btn.innerHTML = '<span class="msj-girando" style="width:16px;height:16px;border-width:2px;margin:0"></span> Enviando…';
         const fd = new FormData();
         fd.append('nombre', p.nombre);
         fd.append('idioma', p.idioma);
         fd.append('valores', JSON.stringify(valoresPlantilla()));
         fd.append('uuid', uuid());
-        if (plMedia) fd.append('media', plMedia, plMedia.name);
+        if (PL.media) fd.append('media', PL.media, PL.media.name);
         const id = S.activa;
         try {
             const j = await subir(url(R.plantilla, id), fd);
@@ -1267,7 +1409,9 @@
             refrescarConv(id);
         } catch (e) {
             toast(e.message, 'error');
-            btn.disabled = false; btn.textContent = 'Enviar plantilla';
+        } finally {
+            btn.innerHTML = original;
+            vistaPlantilla();
         }
     }
 
