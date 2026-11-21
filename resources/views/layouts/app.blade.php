@@ -93,7 +93,7 @@
     <div class="wrap">
         <div class="card @yield('card-class')">
             <div class="auth-logo">
-                <img src="{{ asset('images/logo.png') }}" alt="{{ config('app.name') }}"
+                <img src="{{ asset('images/logo-web.png') }}" alt="{{ config('app.name') }}"
                      onerror="this.parentElement.style.display='none';">
             </div>
             @yield('content')
