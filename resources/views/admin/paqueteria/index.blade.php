@@ -6,7 +6,7 @@
 
 @push('head')
 <style>
-    .paq-page { padding-bottom: 48px; }
+    .paq-page { position:relative; padding-bottom: 48px; }
     .paq-topbar { display:flex; align-items:center; justify-content:flex-end; gap:16px; margin-bottom:18px; }
     .paq-actions { display:flex; gap:8px; flex-wrap:wrap; }
     .paq-actions .btn { display:inline-flex; align-items:center; gap:7px; }
@@ -208,7 +208,7 @@
 
     /* Rediseño visual de Paquetería: solo presentación, sin alterar datos ni comportamiento. */
     .paq-page { position:relative; max-width: 1180px; margin: 0 auto; padding-bottom: 42px; }
-    .paq-topbar { position:absolute; top:20px; right:24px; z-index:3; display:flex; margin:0; }
+    .paq-topbar { position:absolute; top:92px; right:24px; z-index:3; display:flex; margin:0; }
     .paq-hero { position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:24px; margin:0 0 10px; padding:22px 180px 22px 24px; background:linear-gradient(135deg,#111b2e 0%,#142d50 100%); border:1px solid #203652; border-radius:14px; overflow:hidden; }
     .paq-hero::after { content:""; position:absolute; inset:auto -80px -100px auto; width:280px; height:220px; border-radius:50%; background:rgba(7,136,245,.12); pointer-events:none; }
     .paq-hero-copy { position:relative; z-index:1; padding-left:52px; }
