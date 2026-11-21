@@ -46,8 +46,12 @@ class ProductoController extends Controller
         $filters = $request->validate(ProductosDeInventario::REGLAS_FILTROS_CATALOGO + [
             'search' => ['nullable', 'string', 'max:255'],
             'ubicacion' => ['nullable', 'in:congreso'],
+            'con_stock' => ['nullable', 'in:1'],
         ]);
         $this->productos->filtrar($query, $filters['search'] ?? null, $filters['ubicacion'] ?? null, $filters);
+        if (($filters['con_stock'] ?? null) === '1') {
+            $query->where('stock', '>', 0);
+        }
 
         $tipo = trim((string) $request->get('tipo', ''));
         $porTipo = (clone $query)->reorder()->selectRaw("COALESCE(NULLIF(tipo_equipo, ''), 'Sin tipo') as tipo, COUNT(*) as n")
@@ -428,6 +432,45 @@ class ProductoController extends Controller
         // El formulario no dibuja el campo para quien no puede definir precios;
         // si aun así llegó uno, se descarta en vez de confiar en él.
         return ProductosDeInventario::filtrarPrecio($data, $request->user());
+    }
+
+    /**
+     * Sugerencias del buscador de la barra (JSON): los primeros que
+     * coinciden, con foto, para elegir sin salir de la pantalla.
+     */
+    public function sugerencias(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $data = $request->validate([
+            'q' => ['required', 'string', 'max:120'],
+            'tipo' => ['nullable', 'string', 'max:120'],
+            'con_stock' => ['nullable', 'in:1'],
+            'ubicacion' => ['nullable', 'in:congreso'],
+        ]);
+
+        $query = Producto::query();
+        $this->productos->filtrar($query, $data['q'], $data['ubicacion'] ?? null);
+        if (filled($data['tipo'] ?? null)) {
+            $query->where('tipo_equipo', $data['tipo']);
+        }
+        if (($data['con_stock'] ?? null) === '1') {
+            $query->where('stock', '>', 0);
+        }
+
+        $total = (clone $query)->count();
+        $productos = $query->orderByDesc('stock')->orderBy('subtipo')->limit(8)
+            ->get(['id', 'tipo_equipo', 'subtipo', 'marca', 'modelo', 'referencia', 'stock', 'imagen_path']);
+
+        return response()->json([
+            'total' => $total,
+            'items' => $productos->map(fn (Producto $p) => [
+                'nombre' => $p->nombreVisible(),
+                'sub' => trim(($p->modelo ?: '').($p->marca ? ' · '.$p->marca : ''), ' ·'),
+                'tipo' => $p->tipo_equipo ? \Illuminate\Support\Str::title(mb_strtolower($p->tipo_equipo)) : null,
+                'stock' => (int) $p->stock,
+                'img' => $p->imagen_path ? asset('storage/'.$p->imagen_path) : null,
+                'url' => route('inventory.productos.show', ['producto' => $p, 'return_to' => $request->query('volver')]),
+            ])->values(),
+        ]);
     }
 
     /**

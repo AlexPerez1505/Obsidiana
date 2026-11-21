@@ -109,14 +109,25 @@ class ProductosDeInventario
                 $query->where($campo, $catalogo[$campo]);
             }
         }
-        if ($busqueda !== null && $busqueda !== '') {
-            $query->where(function ($q) use ($busqueda) {
-                $q->where('tipo_equipo', 'like', "%{$busqueda}%")
-                    ->orWhere('subtipo', 'like', "%{$busqueda}%")
-                    ->orWhere('marca', 'like', "%{$busqueda}%")
-                    ->orWhere('modelo', 'like', "%{$busqueda}%")
-                    ->orWhere('referencia', 'like', "%{$busqueda}%")
-                    ->orWhere('no_serie', 'like', "%{$busqueda}%");
+        /*
+        | Palabra por palabra: "cuchilla stryker 5.0" encuentra lo que tenga
+        | las tres, cada una en cualquier campo (tipo, producto, marca,
+        | modelo, referencia, serie o la etiqueta de una de sus piezas).
+        */
+        $palabras = collect(preg_split('/\s+/u', trim((string) $busqueda)))
+            ->filter(fn ($p) => $p !== '')
+            ->take(8);
+
+        foreach ($palabras as $palabra) {
+            $like = '%'.addcslashes($palabra, '%_\\').'%';
+            $query->where(function ($q) use ($like) {
+                $q->where('tipo_equipo', 'like', $like)
+                    ->orWhere('subtipo', 'like', $like)
+                    ->orWhere('marca', 'like', $like)
+                    ->orWhere('modelo', 'like', $like)
+                    ->orWhere('referencia', 'like', $like)
+                    ->orWhere('no_serie', 'like', $like)
+                    ->orWhereHas('seriales', fn ($s) => $s->where('codigo', 'like', $like)->orWhere('no_serie', 'like', $like));
             });
         }
 

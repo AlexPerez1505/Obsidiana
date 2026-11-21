@@ -138,7 +138,7 @@
 
     @php
         $tipoSel = $filters['tipo'] ?? '';
-        $base = array_filter(['search' => $filters['search'] ?? null, 'ubicacion' => $filters['ubicacion'] ?? null]);
+        $base = array_filter(['search' => $filters['search'] ?? null, 'ubicacion' => $filters['ubicacion'] ?? null, 'con_stock' => $filters['con_stock'] ?? null]);
     @endphp
 
     {{-- Dos vistas: al entrar, solo las categorías; al abrir una (o "Todos
@@ -166,7 +166,14 @@
             : (($filters['search'] ?? '') !== '' ? 'Resultados de “'.$filters['search'].'”' : 'Todos los productos');
     @endphp
 
-    {{-- Cambiar de categoría sin regresar al inicio. --}}
+    {{-- Cambiar de categoría sin regresar al inicio, y buscar ahí mismo:
+         la lupa convierte la barra en el buscador. --}}
+    @php $buscando = ($filters['search'] ?? '') !== ''; @endphp
+    <div class="pvb {{ $buscando ? 'is-abierto' : '' }}" data-pvb
+         data-url-sug="{{ route('inventory.productos.sugerencias') }}"
+         data-volver="{{ request()->getRequestUri() }}"
+         data-buscando="{{ $buscando ? '1' : '0' }}"
+         data-sin-busqueda="{{ route('inventory.productos.index', $tipoSel !== '' ? ['tipo' => $tipoSel] : ['ver' => 'todos']) }}">
     <nav class="pv-tipos" aria-label="Cambiar de categoría">
         <a class="pv-tipo" href="{{ route('inventory.productos.index') }}" title="Volver a las categorías">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
@@ -185,6 +192,26 @@
             </a>
         @endforeach
     </nav>
+
+    <button type="button" class="pvb-lupa" data-pvb-abrir aria-label="Buscar productos" title="Buscar productos" aria-expanded="{{ $buscando ? 'true' : 'false' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+    </button>
+
+    {{-- El buscador se abre encima de la barra, sin cambiarle el tamaño. --}}
+    <form class="pvb-form" method="GET" action="{{ route('inventory.productos.index') }}" role="search" data-pvb-form>
+        <svg class="pvb-form-lupa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <label class="pv-sr" for="pvb-q">Buscar productos</label>
+        <input id="pvb-q" type="text" name="search" value="{{ $filters['search'] ?? '' }}" autocomplete="off" spellcheck="false"
+               placeholder="Busca por nombre, modelo, marca, serie o etiqueta…" data-pvb-q enterkeyhint="search"
+               role="combobox" aria-autocomplete="list" aria-controls="pvb-sug" aria-expanded="false">
+        <kbd class="pvb-kbd" aria-hidden="true">Esc</kbd>
+        <button type="button" class="pvb-x" data-pvb-cerrar aria-label="Cerrar el buscador" title="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+    </form>
+
+    <div class="pvb-sug" id="pvb-sug" role="listbox" aria-label="Sugerencias" data-pvb-sug hidden></div>
+    </div>
 
     <div class="pv-cab">
         <h2 class="pv-titulo">{{ $tituloVista }}. <span>{{ $productos->total() }} {{ $productos->total() === 1 ? 'producto' : 'productos' }}</span></h2>
@@ -710,5 +737,6 @@
         });
     </script>
 
+    <script src="{{ asset('js/productos-buscador.js') }}?v={{ filemtime(public_path('js/productos-buscador.js')) }}"></script>
     @include('partials.row-menu')
 @endsection

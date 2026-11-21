@@ -153,6 +153,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->middleware('can:inventario.registrar')->name('inventory.productos.create');
     Route::get('/gestion-inventario/productos/buscar-por-modelo', [ProductoController::class, 'buscarPorModelo'])
         ->middleware('can:inventario.ver')->name('inventory.productos.buscarPorModelo');
+    // Sugerencias en vivo del buscador de la barra de categorías.
+    Route::get('/gestion-inventario/productos/sugerencias', [ProductoController::class, 'sugerencias'])
+        ->middleware(['can:inventario.ver', 'throttle:180,1'])->name('inventory.productos.sugerencias');
     // Series propias para equipo que no trae serial de fábrica.
     Route::post('/gestion-inventario/productos/generar-series', [ProductoController::class, 'generarSeries'])
         ->middleware('can:inventario.registrar')->name('inventory.productos.generarSeries');
