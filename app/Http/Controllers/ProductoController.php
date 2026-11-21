@@ -53,6 +53,29 @@ class ProductoController extends Controller
         $porTipo = (clone $query)->reorder()->selectRaw("COALESCE(NULLIF(tipo_equipo, ''), 'Sin tipo') as tipo, COUNT(*) as n")
             ->groupBy('tipo')->orderBy('tipo')->pluck('n', 'tipo');
 
+        /*
+        | Dos vistas. Al entrar: solo las categorías. La lista (barra,
+        | paquetes y tabla) sale al abrir una categoría, "Todos los
+        | productos", o en cuanto hay búsqueda, filtros o una página.
+        */
+        $vistaLista = $tipo !== ''
+            || $request->query('ver') === 'todos'
+            || $request->has('page')
+            || collect($filters)->filter(fn ($v) => filled($v))->isNotEmpty();
+
+        if (! $vistaLista) {
+            return view('structure.gestion_Inventario.productos.index', [
+                'vistaLista' => false,
+                'productos' => null,
+                'filters' => $filters + ['tipo' => ''],
+                'porTipo' => $porTipo,
+                'tarjetasTipo' => $this->tarjetasPorTipo(clone $query, $porTipo),
+                'paquetesPorTipo' => collect(),
+                'enCongreso' => 0,
+                'catalogo' => [],
+            ]);
+        }
+
         if ($tipo !== '') {
             $tipo === 'Sin tipo'
                 ? $query->where(fn ($w) => $w->whereNull('tipo_equipo')->orWhere('tipo_equipo', ''))
@@ -61,17 +84,22 @@ class ProductoController extends Controller
 
         $productos = $query->paginate(50)->withQueryString();
 
-        // Los paquetes, agrupados por el tipo que más traen, con su contenido.
+        // Los paquetes, agrupados por el tipo que más traen, con su
+        // contenido. Dentro de una categoría, solo los de esa categoría.
         $paquetes = \App\Models\Paquete::with(['productos', 'equipos'])->orderBy('nombre')->get()
             ->groupBy(fn ($p) => $p->tipoPrincipal())->sortKeys();
+        if ($tipo !== '') {
+            $paquetes = $paquetes->filter(fn ($lista, $t) => mb_strtoupper((string) $t) === mb_strtoupper($tipo));
+        }
 
         return view('structure.gestion_Inventario.productos.index', [
+            'vistaLista' => true,
             'productos' => $productos,
             'filters' => $filters + ['tipo' => $tipo],
             'catalogo' => $this->catalogoEquipo(),
             'enCongreso' => $this->productos->piezasEnCongreso(),
             'porTipo' => $porTipo,
-            'tarjetasTipo' => $this->tarjetasPorTipo($query, $porTipo),
+            'tarjetasTipo' => collect(),
             'paquetesPorTipo' => $paquetes,
         ]);
     }

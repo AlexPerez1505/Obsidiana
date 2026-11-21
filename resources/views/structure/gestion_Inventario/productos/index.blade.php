@@ -136,6 +136,26 @@
         <x-ui.page-header title="Inventario" :back="route('dashboard')" />
     @endif
 
+    @php
+        $tipoSel = $filters['tipo'] ?? '';
+        $base = array_filter(['search' => $filters['search'] ?? null, 'ubicacion' => $filters['ubicacion'] ?? null]);
+    @endphp
+
+    {{-- Dos vistas: al entrar, solo las categorías; al abrir una (o "Todos
+         los productos", o al buscar/filtrar), la lista con su barra,
+         paquetes y tabla. --}}
+    @if ($vistaLista)
+    <div class="pcat-vista">
+        <a class="pcat-volver" href="{{ route('inventory.productos.index') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+            Categorías
+        </a>
+        <h2 class="pcat-vista-t">
+            {{ $tipoSel !== '' ? \Illuminate\Support\Str::title(mb_strtolower($tipoSel)) : (($filters['search'] ?? '') !== '' ? 'Resultados de “'.$filters['search'].'”' : 'Todos los productos') }}
+            <span>{{ $productos->total() }} {{ $productos->total() === 1 ? 'producto' : 'productos' }}</span>
+        </h2>
+    </div>
+
     <div class="inv-toolbar">
         <div class="inv-filter-wrap">
         <form method="GET" id="filtrosProductos" data-live="off" class="inv-filter-panel" hidden>
@@ -209,13 +229,11 @@
         </div>
     </div>
 
-    @php
-        $tipoSel = $filters['tipo'] ?? '';
-        $base = array_filter(['search' => $filters['search'] ?? null, 'ubicacion' => $filters['ubicacion'] ?? null]);
-    @endphp
+    @endif
+
     {{-- Categorías (tipos de equipo) en tarjetas: la foto se sale de la
-         tarjeta. Un clic filtra la lista; otro clic en la misma la quita. --}}
-    @if ($tarjetasTipo->count() > 1 || $tipoSel !== '')
+         tarjeta. Un clic abre la vista de esa categoría. --}}
+    @if (! $vistaLista)
         <nav class="pcat" aria-label="Categorías de productos">
             <div class="pcat-top">
                 <h2>Categorías</h2>
@@ -228,7 +246,7 @@
             </div>
             <div class="pcat-grid">
                 @foreach ($tarjetasTipo as $i => $cat)
-                    @php $on = $tipoSel === $cat['tipo']; @endphp
+                    @php $on = false; @endphp
                     <a class="pcat-card pcat-t{{ $i % 6 }} {{ $on ? 'is-on' : '' }}"
                        href="{{ route('inventory.productos.index', $on ? $base : $base + ['tipo' => $cat['tipo']]) }}"
                        @if ($on) aria-current="true" @endif
@@ -283,10 +301,25 @@
                         </span>
                     </a>
                 @endforeach
+
+                {{-- Todo el inventario, sin separar por categoría. --}}
+                <a class="pcat-card pcat-card--todos" href="{{ route('inventory.productos.index', ['ver' => 'todos']) }}"
+                   aria-label="Todos los productos: {{ $porTipo->sum() }}">
+                    <span class="pcat-img pcat-img--todos" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+                    </span>
+                    <span class="pcat-flecha" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M8 7h9v9"/></svg></span>
+                    <span class="pcat-txt">
+                        <small>Sin separar por categoría</small>
+                        <strong>Todos los productos</strong>
+                        <em>{{ $porTipo->sum() }} {{ $porTipo->sum() === 1 ? 'producto' : 'productos' }}</em>
+                    </span>
+                </a>
             </div>
         </nav>
     @endif
 
+    @if ($vistaLista)
     {{-- Paquetes agrupados por el tipo que más traen; cada uno se abre y
          dice qué contiene. --}}
     @if ($paquetesPorTipo->isNotEmpty())
@@ -626,6 +659,7 @@
             </div>
         </div>
     @endforeach
+    @endif
 
     {{-- Visor de la evidencia de una pieza: compartido con el detalle de Entrada / Salida. --}}
     @include('partials.galeria')
