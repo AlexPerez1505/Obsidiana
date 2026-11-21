@@ -10,11 +10,11 @@
 .pcat-todos:hover { text-decoration: underline; }
 
 /* Espacio arriba de cada fila: ahí se asoma la foto. */
-.pcat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 54px 18px; padding-top: 48px; }
+.pcat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 62px 18px; padding-top: 56px; }
 
 .pcat-card {
     --pc-bg: #fdfbe9; --pc-p1: #46c08a; --pc-p2: #f2b84b;
-    position: relative; display: block; min-height: 200px; padding: 80px 20px 18px;
+    position: relative; display: block; min-height: 204px; padding: 84px 20px 18px;
     border-radius: 22px; background: var(--pc-bg); color: var(--text); text-decoration: none;
     border: 1px solid color-mix(in srgb, var(--text) 5%, transparent);
     transition: transform 200ms cubic-bezier(.2, .8, .2, 1), box-shadow 200ms ease;
@@ -40,17 +40,16 @@
 
 /* La foto: sobresale por arriba y a la izquierda. */
 .pcat-img {
-    position: absolute; top: -50px; left: 12px; width: 136px; height: 116px;
+    position: absolute; top: -58px; left: 10px; width: 156px; height: 128px;
     display: flex; align-items: flex-end; justify-content: center;
     transition: transform 220ms cubic-bezier(.2, .8, .2, 1);
 }
 .pcat-img img {
     max-width: 100%; max-height: 100%; object-fit: contain;
-    filter: drop-shadow(0 10px 14px rgba(15, 23, 42, .16));
-    /* Las fotos traen fondo blanco: así se funden con el tono de la tarjeta. */
-    mix-blend-mode: multiply;
+    /* Las fotos del catálogo vienen recortadas (fondo transparente): solo
+       la sombra, para que el equipo "flote" sobre la tarjeta. */
+    filter: drop-shadow(0 12px 14px rgba(15, 23, 42, .18));
 }
-[data-theme="dark"] .pcat-img img { mix-blend-mode: normal; border-radius: 12px; background: #fff; padding: 4px; }
 .pcat-img svg, .pcat-img.sin::after {
     width: 62px; height: 62px; padding: 14px; border-radius: 18px; background: var(--surface); color: var(--muted);
     box-shadow: 0 8px 18px rgba(15, 23, 42, .08);
@@ -75,7 +74,7 @@
 @media (max-width: 640px) {
     .pcat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 12px; padding-top: 30px; }
     .pcat-card { min-height: 168px; padding: 56px 14px 14px; border-radius: 18px; }
-    .pcat-img { top: -30px; left: 10px; width: 86px; height: 78px; }
+    .pcat-img { top: -38px; left: 8px; width: 100px; height: 88px; }
     .pcat-deco { width: 84px; height: 84px; }
     .pcat-p1 { display: none; }
     .pcat-p2 { right: 90px; bottom: 18px; }
