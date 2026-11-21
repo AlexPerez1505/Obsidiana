@@ -147,26 +147,29 @@
                         <button type="button" class="msj-btn" id="msjGrabStop">Detener</button>
                     </div>
                     <form class="msj-barra" id="msjBarra" autocomplete="off">
-                        <div class="msj-mas">
-                            <button type="button" class="msj-icono" id="msjAdjuntar" aria-label="Adjuntar archivo" title="Adjuntar" aria-haspopup="true" aria-expanded="false">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m21 11-8.6 8.6a5 5 0 0 1-7-7L14 4a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4L15.5 7"/></svg>
+                        <div class="msj-pill">
+                            <button type="button" class="msj-icono msj-pl-btn" data-abrir-plantillas aria-label="Plantillas" title="Plantillas">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>
                             </button>
-                            <div class="msj-mas-menu" id="msjAdjMenu" hidden>
-                                <button type="button" data-tomar="image/jpeg,image/png,video/mp4,video/3gpp"><i class="msj-mi msj-mi--foto"></i>Foto o video</button>
-                                <button type="button" data-tomar="application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"><i class="msj-mi msj-mi--doc"></i>Documento</button>
-                                <button type="button" data-tomar="audio/mpeg,audio/mp4,audio/aac,audio/amr,audio/ogg,.m4a,.mp3,.ogg,.aac,.amr"><i class="msj-mi msj-mi--audio"></i>Audio</button>
-                                <button type="button" data-abrir-plantillas><i class="msj-mi msj-mi--plantilla"></i>Plantilla</button>
+                            <textarea id="msjTexto" rows="1" placeholder="Mensaje" aria-label="Mensaje" maxlength="4096"></textarea>
+                            <div class="msj-mas">
+                                <button type="button" class="msj-icono" id="msjAdjuntar" aria-label="Adjuntar" title="Adjuntar" aria-haspopup="true" aria-expanded="false">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>
+                                </button>
+                                <div class="msj-mas-menu" id="msjAdjMenu" hidden role="menu">
+                                    <button type="button" role="menuitem" data-tomar="image/jpeg,image/png,video/mp4,video/3gpp"><i class="msj-mi" style="--c:#2563eb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.5-4.5L5 21"/></svg></i><span>Fotos y videos</span></button>
+                                    <button type="button" role="menuitem" class="msj-solo-tel" data-tomar="image/*" data-captura="environment"><i class="msj-mi" style="--c:#db2777"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7.5 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.5z"/><circle cx="12" cy="13" r="3.5"/></svg></i><span>Cámara</span></button>
+                                    <button type="button" role="menuitem" data-tomar="application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"><i class="msj-mi" style="--c:#7c3aed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></i><span>Documento</span></button>
+                                    <button type="button" role="menuitem" data-tomar="audio/mpeg,audio/mp4,audio/aac,audio/amr,audio/ogg,.m4a,.mp3,.ogg,.aac,.amr"><i class="msj-mi" style="--c:#ea580c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><path d="M21 15a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2zM3 15a2 2 0 0 0 2 2h1v-6H5a2 2 0 0 0-2 2z"/></svg></i><span>Audio</span></button>
+                                    <button type="button" role="menuitem" data-abrir-plantillas><i class="msj-mi" style="--c:#059669"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></i><span>Plantilla</span></button>
+                                </div>
                             </div>
+                            <input type="file" id="msjArchivo" hidden>
                         </div>
-                        <input type="file" id="msjArchivo" hidden>
-                        <button type="button" class="msj-icono msj-pl-btn" data-abrir-plantillas aria-label="Plantillas" title="Plantillas">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+                        <button type="button" class="msj-redondo msj-mic" id="msjMic" aria-label="Grabar nota de voz" title="Nota de voz">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
                         </button>
-                        <textarea id="msjTexto" rows="1" placeholder="Escribe un mensaje" aria-label="Mensaje" maxlength="4096"></textarea>
-                        <button type="button" class="msj-icono msj-mic" id="msjMic" aria-label="Grabar nota de voz" title="Nota de voz">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
-                        </button>
-                        <button type="submit" class="msj-enviar" id="msjEnviar" aria-label="Enviar" hidden>
+                        <button type="submit" class="msj-redondo msj-enviar" id="msjEnviar" aria-label="Enviar" hidden>
                             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12 2-12 2z"/></svg>
                         </button>
                     </form>

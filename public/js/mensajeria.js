@@ -190,6 +190,7 @@
     function iconoEstado(e) {
         return { enviando: ICO.reloj, enviado: ICO.una, entregado: ICO.dos(false), leido: ICO.dos(true), fallo: ICO.alerta }[e] || '';
     }
+    const BLOBS = new Map(); // uuid -> vista local de lo que acabo de mandar
     const ETIQUETA_ESTADO = { enviando: 'Enviando', enviado: 'Enviado', entregado: 'Entregado', leido: 'Leído', fallo: 'Falló' };
 
     /* ==================================================================
@@ -485,6 +486,9 @@
         const d = m.datos || {};
         const pie = m.cuerpo ? '<p class="msj-texto">' + textoSeguro(m.cuerpo) + '</p>' : '';
         const media = m.media || {};
+        const src = (m.uuid && BLOBS.get(m.uuid)) || media.url;
+        const subiendo = typeof m.progreso === 'number' && m.progreso < 1
+            ? '<span class="msj-subiendo"><span style="--p:' + Math.round(m.progreso * 100) + '"></span><b>' + Math.round(m.progreso * 100) + '%</b></span>' : '';
 
         if (['image', 'video', 'audio', 'sticker', 'document'].includes(m.tipo)) {
             if (!media.url) {
@@ -496,16 +500,16 @@
                     (m.dir === 'in' ? '<button type="button" class="msj-btn msj-btn--mini" data-reintentar-media>Reintentar</button>' : '') + '</div>' + pie, true];
             }
             if (m.tipo === 'image') {
-                return ['<button type="button" class="msj-foto" data-visor aria-label="Ver foto"><img src="' + esc(media.url) + '" alt="' + esc(m.cuerpo || 'Foto') + '" loading="lazy"></button>' + pie, true];
+                return ['<button type="button" class="msj-foto" data-visor aria-label="Ver foto"><img src="' + esc(src) + '" alt="' + esc(m.cuerpo || 'Foto') + '" loading="lazy">' + subiendo + '</button>' + pie, true];
             }
             if (m.tipo === 'video') {
-                return ['<video class="msj-video" src="' + esc(media.url) + '" controls preload="metadata" playsinline></video>' + pie, true];
+                return ['<div class="msj-foto"><video class="msj-video" src="' + esc(src) + '" controls preload="metadata" playsinline></video>' + subiendo + '</div>' + pie, true];
             }
             if (m.tipo === 'sticker') {
                 return ['<img class="msj-sticker" src="' + esc(media.url) + '" alt="Sticker" loading="lazy">', true];
             }
             if (m.tipo === 'audio') {
-                return ['<div class="msj-audio" data-audio="' + esc(media.url) + '"></div>', false];
+                return ['<div class="msj-audio" data-audio="' + esc(src) + '"></div>' + (subiendo ? '<small class="msj-audio-t">Subiendo ' + Math.round(m.progreso * 100) + '%</small>' : ''), false];
             }
             const ext = (media.nombre || '').split('.').pop().slice(0, 4).toUpperCase() || 'DOC';
             return ['<a class="msj-doc" href="' + esc(media.url) + '?descargar=1" download>' +
@@ -712,6 +716,7 @@
     }
 
     function irAlFinal(suave) {
+        pegadoAbajo = true;
         requestAnimationFrame(() => {
             hilo.scrollTo({ top: hilo.scrollHeight, behavior: suave && MOVIMIENTO ? 'smooth' : 'auto' });
         });
@@ -720,6 +725,16 @@
     }
 
     $('msjNuevos').addEventListener('click', () => irAlFinal(true));
+
+    // Si estabas al final, las fotos y videos que terminan de cargar no te dejan a medias.
+    let pegadoAbajo = true;
+    hilo.addEventListener('scroll', () => { pegadoAbajo = cercaDelFinal(); }, { passive: true });
+    hiloIn.addEventListener('load', (e) => {
+        if (pegadoAbajo && /^(IMG|VIDEO)$/.test(e.target.tagName)) hilo.scrollTop = hilo.scrollHeight;
+    }, true);
+    hiloIn.addEventListener('loadedmetadata', (e) => {
+        if (pegadoAbajo && e.target.tagName === 'VIDEO') hilo.scrollTop = hilo.scrollHeight;
+    }, true);
 
     hilo.addEventListener('scroll', () => {
         if (cercaDelFinal()) {
@@ -788,7 +803,7 @@
     let visorOrigen = null;
     function abrirVisor(m) {
         visorOrigen = document.activeElement;
-        $('msjVisorImg').src = m.media.url;
+        $('msjVisorImg').src = (m.uuid && BLOBS.get(m.uuid)) || m.media.url;
         $('msjVisorImg').alt = m.cuerpo || 'Foto';
         $('msjVisorPie').textContent = m.cuerpo || '';
         $('msjVisorBajar').href = m.media.url + '?descargar=1';
@@ -914,6 +929,7 @@
     document.addEventListener('click', (e) => { if (menu && !menu.hidden && !e.target.closest('.msj-mas')) cerrarMenu(); });
     menu?.querySelectorAll('[data-tomar]').forEach((b) => b.addEventListener('click', () => {
         inputArchivo.accept = b.dataset.tomar;
+        if (b.dataset.captura) inputArchivo.setAttribute('capture', b.dataset.captura); else inputArchivo.removeAttribute('capture');
         inputArchivo.value = '';
         cerrarMenu();
         inputArchivo.click();
@@ -951,7 +967,7 @@
         S.adjunto = null;
         if ($('msjAdj')) $('msjAdj').hidden = true;
         if (inputArchivo) inputArchivo.value = '';
-        if (texto) texto.placeholder = 'Escribe un mensaje';
+        if (texto) texto.placeholder = 'Mensaje';
         ajustarTexto();
     }
     $('msjAdjX')?.addEventListener('click', quitarAdjunto);
@@ -991,8 +1007,8 @@
             cita: S.cita ? { dir: S.cita.quien === 'Tú' ? 'out' : 'in', texto: S.cita.texto } : null,
             media: archivo ? { url: URL.createObjectURL(archivo), nombre: archivo.name, tamano: archivo.size, mime: archivo.type, estado: 'listo' } : null,
         };
+        if (temporal.media) { BLOBS.set(u, temporal.media.url); temporal.progreso = 0; }
         S.mensajes.set(temporal.id, temporal);
-        actualizarMensajes([]);
         pintarHilo(new Set([temporal.id]));
         irAlFinal(true);
 
@@ -1015,8 +1031,19 @@
     }
 
     function progresoTemporal(m, p) {
-        const el = hiloIn.querySelector('.msj-m[data-k="' + CSS.escape(String(m.id)) + '"] .msj-meta');
-        if (el && p < 1) el.textContent = Math.round(p * 100) + '%';
+        m.progreso = p >= 1 ? 1 : p;
+        const el = hiloIn.querySelector('.msj-m[data-k="' + CSS.escape(String(m.id)) + '"]');
+        if (!el) return;
+        const anillo = el.querySelector('.msj-subiendo');
+        if (anillo && p < 1) {
+            anillo.firstElementChild.style.setProperty('--p', Math.round(p * 100));
+            anillo.querySelector('b').textContent = Math.round(p * 100) + '%';
+        } else if (anillo) {
+            anillo.remove(); // Ya subió: ahora WhatsApp lo está enviando (el reloj lo indica).
+        } else if (p < 1) {
+            const meta = el.querySelector('.msj-meta');
+            if (meta) meta.firstChild.textContent = Math.round(p * 100) + '% ';
+        }
     }
 
     function subir(u, fd, onProg) {
