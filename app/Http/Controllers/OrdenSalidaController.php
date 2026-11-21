@@ -37,7 +37,7 @@ class OrdenSalidaController extends Controller
         $mias = $request->boolean('mias');
         $consulta = OrdenSalida::with(['venta.customer', 'venta.seller', 'items', 'asignadaA']);
         $consulta = $mias
-            ? $this->salidas->filtrarPorEstado($consulta, PreparacionDeSalida::ABIERTAS)->where('asignada_a', $request->user()->id)
+            ? $this->salidas->filtrarPorEstado($consulta, PreparacionDeSalida::ABIERTAS)->where(fn ($q) => $q->where('asignada_a', $request->user()->id)->orWhereHas('items', fn ($i) => $i->where('asignado_a', $request->user()->id)))
             : $this->salidas->filtrarPorEstado($consulta, $estado);
 
         $ordenes = $consulta
@@ -50,7 +50,7 @@ class OrdenSalidaController extends Controller
             'estado' => $estado,
             'mias' => $mias,
             'conteos' => $this->salidas->conteos() + [
-                'mias' => $this->salidas->filtrarPorEstado(OrdenSalida::query(), PreparacionDeSalida::ABIERTAS)->where('asignada_a', $request->user()->id)->count(),
+                'mias' => $this->salidas->filtrarPorEstado(OrdenSalida::query(), PreparacionDeSalida::ABIERTAS)->where(fn ($q) => $q->where('asignada_a', $request->user()->id)->orWhereHas('items', fn ($i) => $i->where('asignado_a', $request->user()->id)))->count(),
             ],
         ]);
     }
@@ -61,7 +61,7 @@ class OrdenSalidaController extends Controller
         // se vendió en uno, no está en el almacén y no hay que buscarlo.
         $orden->load([
             'venta.customer', 'venta.seller', 'preparadaPor', 'entregadaPor', 'asignadaA', 'asignadaPor',
-            'items.ventaItem.seriales.congress', 'evidencias.subidoPor',
+            'items.ventaItem.seriales.congress', 'items.asignadoA', 'evidencias.subidoPor',
         ]);
 
         $puedeAsignar = auth()->user()->can('salidas.asignar');
@@ -77,6 +77,14 @@ class OrdenSalidaController extends Controller
             // Ya se trabaja por etapas: la preparación y la firma se hacen en ellas.
             'porEtapas' => $etapasDeSalida->activas($orden),
         ]);
+    }
+
+    /** Elige quién prepara UN equipo de la orden; a esa persona le llega el aviso. */
+    public function asignarItem(Request $request, \App\Models\OrdenSalidaItem $item, AsignacionDeSalida $asignacion): RedirectResponse
+    {
+        $data = $request->validate(['user_id' => ['nullable', 'integer', 'exists:users,id']]);
+
+        return back()->with('status', $asignacion->asignarItem($item, $data['user_id'] ?? null, $request->user()));
     }
 
     /** Elige quién prepara el equipo; a esa persona le llega el aviso. */

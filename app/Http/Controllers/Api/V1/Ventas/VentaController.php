@@ -244,7 +244,7 @@ class VentaController extends Controller
         // Pasadas 72 horas desde que se registró, se manda "nip" (o la contraseña).
         \App\Support\EliminarConNip::exigir($venta, $request->user(), $request->input('nip'));
 
-        return response()->json(['message' => $this->registro->eliminar($venta)]);
+        return response()->json(['message' => $this->registro->eliminar($venta, $request->user())]);
     }
 
     /**

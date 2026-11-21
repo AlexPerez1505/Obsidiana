@@ -5,6 +5,12 @@
 --}}
 @php
     $asignado = $orden->asignadaA;
+    // Repartido por equipo: quién prepara qué.
+    $porEquipo = $orden->relationLoaded('items')
+        ? $orden->items->loadMissing('asignadoA')->pluck('asignadoA')->filter()->unique('id')->values()
+        : collect();
+    $varios = ! $asignado && $porEquipo->count() > 0;
+    $muchosEquipos = $orden->relationLoaded('items') && $orden->items->count() > 1;
     $iniciales = $asignado ? collect(preg_split('/\s+/', trim($asignado->name)))->filter()->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->implode('') : '';
 @endphp
 <div class="os-asig" id="asignar">
@@ -17,6 +23,13 @@
                 @if ($orden->asignada_en)
                     <div class="os-asig-sub">Asignado{{ $orden->asignadaPor ? ' por '.$orden->asignadaPor->name : '' }} el {{ $orden->asignada_en->format('d/m/Y H:i') }}</div>
                 @endif
+            </div>
+        @elseif ($varios)
+            <span class="os-asig-ini" aria-hidden="true">{{ $porEquipo->count() }}</span>
+            <div>
+                <div class="os-asig-et">Preparan (por equipo)</div>
+                <div class="os-asig-nom">{{ $porEquipo->pluck('name')->implode(', ') }}</div>
+                <div class="os-asig-sub">Cada equipo dice abajo quién lo prepara.</div>
             </div>
         @else
             <span class="os-asig-ini is-vacio" aria-hidden="true">?</span>
@@ -37,9 +50,9 @@
                     <option value="{{ $p->id }}" @selected($orden->asignada_a === $p->id)>{{ $p->name }}</option>
                 @endforeach
             </select>
-            <button type="submit" class="btn">{{ $asignado ? 'Cambiar' : 'Asignar' }}</button>
+            <button type="submit" class="btn">{{ $muchosEquipos ? 'Asignar todo' : ($asignado ? 'Cambiar' : 'Asignar') }}</button>
         </form>
-        <p class="os-asig-nota">Le llega un aviso en el sistema y a su correo.</p>
+        <p class="os-asig-nota">{{ $muchosEquipos ? 'Asigna todos los equipos a una persona, o elige quién prepara cada uno abajo.' : 'Le llega un aviso en el sistema y a su correo.' }}</p>
     @endif
 </div>
 

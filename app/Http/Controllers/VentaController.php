@@ -173,7 +173,7 @@ class VentaController extends Controller
         \App\Support\EliminarConNip::exigir($venta, $request->user(), $request->input('nip'));
 
         try {
-            $mensaje = $this->registro->eliminar($venta);
+            $mensaje = $this->registro->eliminar($venta, $request->user());
         } catch (OperacionRechazada $e) {
             return redirect()->route('commercial.ventas.show', $venta)
                 ->withErrors([$e->campo => $e->getMessage()]);
@@ -195,7 +195,7 @@ class VentaController extends Controller
             404
         );
 
-        $mensaje = $this->registro->eliminarDefinitivo($venta);
+        $mensaje = $this->registro->eliminarDefinitivo($venta, $request->user());
 
         return redirect()->route('commercial.ventas.index')
             ->with('status', $mensaje);

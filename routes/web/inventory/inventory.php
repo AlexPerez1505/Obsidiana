@@ -60,6 +60,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         // Quién prepara: le llega el aviso por correo y en la campana.
         Route::post('/{orden}/asignar', [OrdenSalidaController::class, 'asignar'])
             ->middleware('can:salidas.asignar')->name('asignar');
+        // Quién prepara cada equipo de la orden (no solo la orden completa).
+        Route::post('/partidas/{item}/asignar', [OrdenSalidaController::class, 'asignarItem'])
+            ->middleware('can:salidas.asignar')->name('items.asignar');
 
         // Etapas: Ingeniería → Empaque → Entrega, cada una con su responsable.
         // Quién puede trabajar cada etapa lo revisa EtapasDeSalida (asignado, admin o quien asigna).
@@ -153,6 +156,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         ->middleware('can:inventario.registrar')->name('inventory.productos.create');
     Route::get('/gestion-inventario/productos/buscar-por-modelo', [ProductoController::class, 'buscarPorModelo'])
         ->middleware('can:inventario.ver')->name('inventory.productos.buscarPorModelo');
+    // Sugerencias en vivo del buscador de la barra de categorías.
+    Route::get('/gestion-inventario/productos/sugerencias', [ProductoController::class, 'sugerencias'])
+        ->middleware(['can:inventario.ver', 'throttle:180,1'])->name('inventory.productos.sugerencias');
     // Series propias para equipo que no trae serial de fábrica.
     Route::post('/gestion-inventario/productos/generar-series', [ProductoController::class, 'generarSeries'])
         ->middleware('can:inventario.registrar')->name('inventory.productos.generarSeries');

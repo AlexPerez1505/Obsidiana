@@ -137,7 +137,10 @@ class CobroController extends Controller
     /** Quita el IVA agregado mientras no se haya cobrado. */
     public function quitarIva(Request $request, Venta $venta, \App\Services\Ventas\IvaEnMensualidades $iva): RedirectResponse
     {
-        return back()->with('status', $iva->quitar($venta, $request->user()));
+        // pagos[] opcional: quitarlo solo de esa(s) mensualidad(es).
+        $data = $request->validate(['pagos' => ['nullable', 'array'], 'pagos.*' => ['integer']]);
+
+        return back()->with('status', $iva->quitar($venta, $request->user(), $data['pagos'] ?? null));
     }
 
     /** Reasigna a las parcialidades pendientes el excedente de abonos sueltos o que se pasaron de lo que les tocaba. */

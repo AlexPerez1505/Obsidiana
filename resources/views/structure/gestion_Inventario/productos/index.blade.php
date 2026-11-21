@@ -138,7 +138,7 @@
 
     @php
         $tipoSel = $filters['tipo'] ?? '';
-        $base = array_filter(['search' => $filters['search'] ?? null, 'ubicacion' => $filters['ubicacion'] ?? null]);
+        $base = array_filter(['search' => $filters['search'] ?? null, 'ubicacion' => $filters['ubicacion'] ?? null, 'con_stock' => $filters['con_stock'] ?? null]);
     @endphp
 
     {{-- Dos vistas: al entrar, solo las categorías; al abrir una (o "Todos
@@ -166,7 +166,14 @@
             : (($filters['search'] ?? '') !== '' ? 'Resultados de “'.$filters['search'].'”' : 'Todos los productos');
     @endphp
 
-    {{-- Cambiar de categoría sin regresar al inicio. --}}
+    {{-- Cambiar de categoría sin regresar al inicio, y buscar ahí mismo:
+         la lupa convierte la barra en el buscador. --}}
+    @php $buscando = ($filters['search'] ?? '') !== ''; @endphp
+    <div class="pvb {{ $buscando ? 'is-abierto' : '' }}" data-pvb
+         data-url-sug="{{ route('inventory.productos.sugerencias') }}"
+         data-volver="{{ request()->getRequestUri() }}"
+         data-buscando="{{ $buscando ? '1' : '0' }}"
+         data-sin-busqueda="{{ route('inventory.productos.index', $tipoSel !== '' ? ['tipo' => $tipoSel] : ['ver' => 'todos']) }}">
     <nav class="pv-tipos" aria-label="Cambiar de categoría">
         <a class="pv-tipo" href="{{ route('inventory.productos.index') }}" title="Volver a las categorías">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
@@ -185,6 +192,26 @@
             </a>
         @endforeach
     </nav>
+
+    <button type="button" class="pvb-lupa" data-pvb-abrir aria-label="Buscar productos" title="Buscar productos" aria-expanded="{{ $buscando ? 'true' : 'false' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+    </button>
+
+    {{-- El buscador se abre encima de la barra, sin cambiarle el tamaño. --}}
+    <form class="pvb-form" method="GET" action="{{ route('inventory.productos.index') }}" role="search" data-pvb-form>
+        <svg class="pvb-form-lupa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <label class="pv-sr" for="pvb-q">Buscar productos</label>
+        <input id="pvb-q" type="text" name="search" value="{{ $filters['search'] ?? '' }}" autocomplete="off" spellcheck="false"
+               placeholder="Busca por nombre, modelo, marca, serie o etiqueta…" data-pvb-q enterkeyhint="search"
+               role="combobox" aria-autocomplete="list" aria-controls="pvb-sug" aria-expanded="false">
+        <kbd class="pvb-kbd" aria-hidden="true">Esc</kbd>
+        <button type="button" class="pvb-x" data-pvb-cerrar aria-label="Cerrar el buscador" title="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+    </form>
+
+    <div class="pvb-sug" id="pvb-sug" role="listbox" aria-label="Sugerencias" data-pvb-sug hidden></div>
+    </div>
 
     <div class="pv-cab">
         <h2 class="pv-titulo">{{ $tituloVista }}. <span>{{ $productos->total() }} {{ $productos->total() === 1 ? 'producto' : 'productos' }}</span></h2>
@@ -483,16 +510,16 @@
     <div class="pv-grid">
         @forelse ($productos as $producto)
             @php
-                $nuevo = $producto->created_at && $producto->created_at->gt(now()->subDays(30));
                 $enCongresoP = $producto->serialesDisponibles->whereNotNull('congress_id')->count();
                 $enAlmacenP = $producto->serialesDisponibles->count() - $enCongresoP;
                 $precio = \App\Support\PrecioVisible::texto($producto);
             @endphp
             <article class="pv-card">
-                <div class="pv-media" role="button" tabindex="0" title="Ver unidades disponibles"
-                     aria-label="Ver unidades de {{ $producto->nombreVisible() }}"
-                     onclick="document.getElementById('unidades-modal-{{ $producto->id }}').style.display='flex'"
-                     onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }">
+                @php $fichaUrl = route('inventory.productos.show', ['producto' => $producto, 'return_to' => request()->getRequestUri()]); @endphp
+                <div class="pv-media" role="link" tabindex="0" title="Ver la ficha"
+                     aria-label="Ver la ficha de {{ $producto->nombreVisible() }}"
+                     onclick="location.href = {{ \Illuminate\Support\Js::from($fichaUrl) }}"
+                     onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.click(); }">
                     @if ($producto->imagen_path)
                         <img src="{{ asset('storage/' . $producto->imagen_path) }}" alt="{{ $producto->nombreVisible() }}" loading="lazy" decoding="async">
                     @else
@@ -500,9 +527,6 @@
                     @endif
 
                     <span class="pv-etiquetas">
-                        @if ($nuevo)
-                            <span class="pv-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2"/></svg>Nuevo</span>
-                        @endif
                         @if ($tipoSel === '' && $producto->tipo_equipo)
                             <span class="pv-chip pv-chip--tipo">{{ \Illuminate\Support\Str::title(mb_strtolower($producto->tipo_equipo)) }}</span>
                         @endif
@@ -527,7 +551,7 @@
                     </div>
 
                     <div class="pv-nombre">
-                        <h3>{{ $producto->nombreVisible() }}</h3>
+                        <h3><a href="{{ $fichaUrl }}">{{ $producto->nombreVisible() }}</a></h3>
                         <div class="row-menu" data-row-menu>
                             <button type="button" class="row-menu-btn" data-row-menu-toggle aria-haspopup="true" aria-expanded="false"
                                     aria-label="Acciones de {{ $producto->nombreVisible() }}">
@@ -598,115 +622,6 @@
         </button>
     </div>
 
-    {{-- Modales de unidades disponibles, fuera de la tabla para que el HTML sea válido --}}
-    @foreach ($productos as $producto)
-        <div id="unidades-modal-{{ $producto->id }}" class="unidades-modal-overlay">
-            <div class="unidades-modal">
-                <div class="unidades-modal-head">
-                    <div>
-                        <strong>{{ $producto->nombreVisible() }}{{ $producto->modelo ? ' · '.trim($producto->modelo.' '.$producto->marca) : '' }}</strong>
-                        <div class="muted" style="font-size:12.5px;">Unidades disponibles ({{ $producto->serialesDisponibles->count() }})</div>
-                    </div>
-                    <button type="button" class="btn btn--ghost" style="padding:5px 10px;" onclick="document.getElementById('unidades-modal-{{ $producto->id }}').style.display='none'">Cerrar</button>
-                </div>
-
-                {{-- Con muchas piezas del mismo equipo, buscar la que se
-                     necesita en vez de recorrerlas todas. --}}
-                @if ($producto->serialesDisponibles->count() > 4)
-                    <div style="display:flex; gap:10px; align-items:center; margin:0 0 12px;">
-                        <input type="search" data-unidades-buscar placeholder="Buscar por serie o etiqueta…"
-                               aria-label="Buscar unidad" style="flex:1; min-width:0;">
-                        <span class="muted" style="font-size:12.5px; white-space:nowrap;" data-unidades-conteo></span>
-                    </div>
-                @endif
-
-                @forelse ($producto->serialesDisponibles as $serial)
-                    @php
-                        $evidencias = $serial->evidenceUrls();
-                        $video = $serial->videoUrl();
-
-                        // Todo lo que documenta cómo llegó esta pieza, en el
-                        // orden en que se ve en la galería grande.
-                        $medios = collect($evidencias)->map(fn ($url) => ['tipo' => 'foto', 'url' => $url]);
-                        if ($video) {
-                            $medios->push(['tipo' => 'video', 'url' => $video]);
-                        }
-
-                        $nFotos = count($evidencias);
-                        $etiquetaMedios = $nFotos.' '.($nFotos === 1 ? 'foto' : 'fotos').($video ? ' + video' : '');
-                        $modelo = trim($producto->modelo.' '.$producto->marca) ?: $producto->nombreVisible();
-                    @endphp
-                    <div class="unidad-card" data-buscar="{{ mb_strtolower(trim($serial->no_serie.' '.$serial->codigo)) }}"
-                         @if ($medios->isNotEmpty()) data-medios="{{ $medios->toJson() }}" @endif>
-                        <div class="unidad-card-head">
-                            <div style="min-width:0;">
-                                <div class="unidad-serie {{ $serial->no_serie ? '' : 'sin' }}">
-                                    {{ $serial->no_serie ?: 'Sin número de serie del fabricante' }}
-                                </div>
-                                <div class="unidad-meta">
-                                    {{ $modelo }}
-                                    @if ($serial->codigo)
-                                        · <span class="cod">{{ $serial->codigo }}</span>
-                                    @endif
-                                    @if ($serial->condicion)
-                                        · {{ ucfirst($serial->condicion) }}
-                                    @endif
-                                    @if ($serial->entrada?->movement_date)
-                                        · Llegó el {{ $serial->entrada->movement_date->format('d/m/Y') }}
-                                    @endif
-                                </div>
-                            </div>
-                            <div class="der">
-                                {{-- Si se la llevaron a un congreso sigue
-                                     contando como stock, pero no está en el
-                                     almacén: eso hay que decirlo aquí. --}}
-                                @if ($serial->enCongreso())
-                                    <span class="badge unidad-en-congreso" style="font-size:11px;"
-                                          title="Esta pieza no está en el almacén">
-                                        En congreso: {{ $serial->congress?->nombre }}
-                                    </span>
-                                @else
-                                    <span class="badge badge--ok" style="font-size:11px;">Disponible</span>
-                                @endif
-                                @if ($medios->isNotEmpty())
-                                    <button type="button" class="ver-evidencia" onclick="abrirGaleria(this)"
-                                            title="Abrir en grande">
-                                        Ver evidencia ({{ $etiquetaMedios }})
-                                    </button>
-                                @endif
-                            </div>
-                        </div>
-
-                        @if ($medios->isEmpty())
-                            <p class="unidad-sin-medios">Esta unidad se registró sin evidencia de entrada.</p>
-                        @else
-                            <div class="unidad-medios">
-                                @foreach ($evidencias as $i => $url)
-                                    <button type="button" class="medio" data-indice="{{ $i }}"
-                                            onclick="abrirGaleria(this)" title="Ver en grande">
-                                        <img src="{{ $url }}" loading="lazy" alt="Foto {{ $i + 1 }} de cómo llegó la unidad">
-                                        <span class="medio-etiqueta">Foto {{ $i + 1 }} de {{ $nFotos }}</span>
-                                    </button>
-                                @endforeach
-
-                                @if ($video)
-                                    {{-- El video se reproduce aquí mismo; preload
-                                         metadata para no descargarlo completo. --}}
-                                    <div class="medio medio--video">
-                                        <video src="{{ $video }}" controls preload="metadata" playsinline></video>
-                                        <span class="medio-etiqueta">Video de entrada</span>
-                                    </div>
-                                @endif
-                            </div>
-                        @endif
-                    </div>
-                @empty
-                    <p class="muted" style="padding:16px 0; text-align:center;">No hay unidades disponibles.</p>
-                @endforelse
-                <p class="muted" data-unidades-vacio hidden style="padding:16px 0; text-align:center;">Ninguna unidad coincide con la búsqueda.</p>
-            </div>
-        </div>
-    @endforeach
     @endif
 
     {{-- Visor de la evidencia de una pieza: compartido con el detalle de Entrada / Salida. --}}
@@ -822,5 +737,6 @@
         });
     </script>
 
+    <script src="{{ asset('js/productos-buscador.js') }}?v={{ filemtime(public_path('js/productos-buscador.js')) }}"></script>
     @include('partials.row-menu')
 @endsection

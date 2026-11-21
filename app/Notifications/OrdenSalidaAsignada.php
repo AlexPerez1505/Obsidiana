@@ -15,7 +15,7 @@ use Illuminate\Notifications\Notification;
  */
 class OrdenSalidaAsignada extends Notification
 {
-    public function __construct(public OrdenSalida $orden) {}
+    public function __construct(public OrdenSalida $orden, public ?\App\Models\OrdenSalidaItem $item = null) {}
 
     public function via(object $notifiable): array
     {
@@ -29,8 +29,11 @@ class OrdenSalidaAsignada extends Notification
 
         return [
             'titulo' => 'Te toca preparar · '.$o->folio,
-            'texto' => ($o->asignadaPor?->name ?? 'Alguien').' te asignó preparar el equipo de '.($o->venta?->folio ?? 'la venta')
-                .($cliente ? ' ('.$cliente.')' : '').': '.$o->items->count().' partida(s).',
+            'texto' => $this->item
+                ? ($this->item->asignadoPor?->name ?? 'Alguien').' te asignó preparar '.$this->item->nombre.' × '.$this->item->cantidad
+                    .' de '.($o->venta?->folio ?? 'la venta').($cliente ? ' ('.$cliente.')' : '').'.'
+                : ($o->asignadaPor?->name ?? 'Alguien').' te asignó preparar el equipo de '.($o->venta?->folio ?? 'la venta')
+                    .($cliente ? ' ('.$cliente.')' : '').': '.$o->items->count().' partida(s).',
             'url' => route('inventory.salidas.show', $o),
             'icono' => 'salidas',
             'orden_salida_id' => $o->id,

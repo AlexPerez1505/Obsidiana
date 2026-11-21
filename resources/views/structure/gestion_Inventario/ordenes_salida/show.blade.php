@@ -114,6 +114,27 @@
                                     </div>
                                 @endif
 
+                                {{-- Quién prepara este equipo (cada uno puede ser de otra persona). --}}
+                                <div class="os-item-prepara">
+                                    @if ($puedeAsignar && ! $orden->cerrada())
+                                        <form method="POST" action="{{ route('inventory.salidas.items.asignar', $item) }}" class="os-item-asig">
+                                            @csrf
+                                            <label for="prep-{{ $item->id }}">Prepara</label>
+                                            <select id="prep-{{ $item->id }}" name="user_id" data-no-mayus onchange="this.form.requestSubmit()">
+                                                <option value="">— Sin asignar —</option>
+                                                @foreach ($preparadores as $pp)
+                                                    <option value="{{ $pp->id }}" @selected((int) $item->asignado_a === $pp->id)>{{ $pp->name }}</option>
+                                                @endforeach
+                                            </select>
+                                            <noscript><button type="submit" class="btn btn--ghost">Guardar</button></noscript>
+                                        </form>
+                                    @else
+                                        <span class="os-item-prep {{ $item->asignadoA ? '' : 'is-vacio' }}">
+                                            Prepara: <b>{{ $item->asignadoA?->name ?? 'sin asignar' }}</b>
+                                        </span>
+                                    @endif
+                                </div>
+
                                 {{-- Observaciones de la partida --}}
                                 @if ($editable)
                                     <form method="POST" action="{{ route('inventory.salidas.item', [$orden, $item]) }}" class="os-obs">
@@ -215,7 +236,18 @@
                     </div>
                 @elseif ($orden->estado === \App\Models\OrdenSalida::CANCELADA)
                     <x-ui.section-title style="margin:0 0 10px;">Orden cancelada</x-ui.section-title>
-                    <p class="muted" style="margin:0;">La venta se canceló; no hay nada que preparar.</p>
+                    <p class="muted" style="margin:0;">La venta se canceló; no hay nada que preparar. En el sistema el equipo ya volvió a stock.</p>
+                    @php $apartados = $orden->items->filter(fn ($it) => $it->preparado || $it->emplayado); @endphp
+                    @if ($apartados->isNotEmpty())
+                        <div class="os-regresar">
+                            <b>Regresa a su lugar en el almacén:</b>
+                            <ul>
+                                @foreach ($apartados as $it)
+                                    <li>{{ $it->nombre }} × {{ $it->cantidad }}@if ($it->no_series) <span class="muted">· {{ $it->no_series }}</span>@endif</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
                 @else
                     <x-ui.section-title style="margin:0 0 4px;">Firmar salida</x-ui.section-title>
                     @if (! $orden->todoListo())
@@ -454,6 +486,16 @@
            espacio, los pasos van a la derecha; si no cabe, bajan debajo del
            nombre. Así sirve igual con la columna lateral que sin ella. */
         .os-lista { display:flex; flex-direction:column; gap:8px; container-type:inline-size; }
+        .os-regresar { margin-top:12px; padding:12px 14px; border-radius:12px; background:color-mix(in srgb, #f59e0b 12%, transparent); border:1px solid color-mix(in srgb, #f59e0b 35%, transparent); font-size:13.5px; }
+        .os-regresar ul { margin:6px 0 0; padding-left:18px; }
+        .os-regresar li { margin:2px 0; }
+        .os-item-prepara { margin-top:8px; }
+        .os-item-asig { display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .os-item-asig label { font-size:12.5px; font-weight:700; color:var(--muted); }
+        .os-item-asig select { min-width:190px; max-width:100%; height:34px; padding:0 10px; border-radius:9px; font-size:13px; }
+        .os-item-prep { font-size:12.5px; color:var(--muted); }
+        .os-item-prep b { color:var(--text); }
+        .os-item-prep.is-vacio b { color:var(--muted); font-weight:600; }
         .os-item { display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:10px 12px; align-items:start;
                    padding:12px 14px; border:1px solid var(--border); border-radius:12px; background:var(--surface); }
         .os-item.is-listo { border-color:var(--green); background:var(--green-soft, rgba(34,197,94,.06)); }
