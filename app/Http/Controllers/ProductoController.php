@@ -310,12 +310,22 @@ class ProductoController extends Controller
             $volverUrl = url($returnTo);
         }
 
+        // "También en esta categoría": los de más stock del mismo tipo.
+        $relacionados = Producto::query()
+            ->where('id', '<>', $producto->id)
+            ->when($producto->tipo_equipo, fn ($q) => $q->where('tipo_equipo', $producto->tipo_equipo))
+            ->orderByDesc('stock')->orderBy('subtipo')
+            ->limit(8)
+            ->get();
+
         return view('structure.gestion_Inventario.productos.show', [
             'producto' => $producto,
             'piezas' => $kardex['piezas'],
             'movimientos' => $kardex['movimientos'],
             'conteos' => $kardex['conteos'],
             'volverUrl' => $volverUrl,
+            'relacionados' => $relacionados,
+            'enCongresoProducto' => $kardex['piezas']->where('vendido', false)->whereNotNull('congress_id')->count(),
         ]);
     }
 
