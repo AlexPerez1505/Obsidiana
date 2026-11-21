@@ -1,0 +1,617 @@
+/* Estilos del panel (antes en línea en layouts/dashboard). */
+        :root {
+            --bg:#ffffff; --surface:#ffffff; --surface-2:#f7f8fa;
+            --text:#333333; --muted:#888888; --border:#ebebeb;
+            --primary:#007aff; --primary-strong:#0062cc; --primary-soft:#e6f0ff;
+            --accent:#f97316; --accent-soft:#fff3e8;
+            --danger:#ff4a4a; --danger-soft:#ffebeb; --green:#15803d; --green-soft:#e6ffe6;
+            --shadow:0 4px 20px rgba(17,24,39,.05);
+            --sidebar-bg:#ffffff; --topbar-bg:#ffffff;
+            --sidebar-w:252px; --sidebar-w-collapsed:78px;
+        }
+        :root[data-theme="dark"] {
+            --bg:#070c17; --surface:#0f1a30; --surface-2:#0c1526;
+            --text:#e8eef8; --muted:#93a4bd; --border:rgba(90,140,230,.18);
+            --primary:#0a84ff; --primary-strong:#007aff; --primary-soft:rgba(10,132,255,.18);
+            --accent:#fb923c; --accent-soft:rgba(249,115,22,.12);
+            --danger:#f87171; --danger-soft:rgba(220,38,38,.12); --green:#4ade80; --green-soft:rgba(22,163,74,.14);
+            --shadow:0 6px 26px rgba(0,0,0,.45);
+            --sidebar-bg:#0a1223; --topbar-bg:#0a1223;
+        }
+        * { box-sizing:border-box; }
+        html, body { margin:0; padding:0; }
+        body { font-family:'Quicksand',system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+               background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; }
+
+        /* ===== Estructura ===== */
+        .app { display:grid; grid-template-columns:var(--sidebar-w) 1fr; min-height:100vh;
+               transition:grid-template-columns .34s cubic-bezier(.4,0,.2,1); }
+        .app.no-anim, .app.no-anim .brand-text, .app.no-anim .nav-label,
+        .app.no-anim .help-text, .app.no-anim .collapse-btn svg { transition:none !important; }
+        .app.collapsed { grid-template-columns:var(--sidebar-w-collapsed) 1fr; }
+
+        /* ===== Sidebar ===== */
+        .sidebar { background:var(--sidebar-bg);
+                   box-shadow:1px 0 3px rgba(17,24,39,.05), 1px 0 1px rgba(17,24,39,.03);
+                   display:flex; flex-direction:column; padding:20px 16px; position:sticky; top:0; height:100vh;
+                   z-index:40; }
+        .app.collapsed .sidebar { padding-left:12px; padding-right:12px; }
+
+        .brand { display:flex; align-items:center; gap:11px; padding:4px 6px 20px; min-height:56px;
+                 transition:justify-content .3s, padding .3s; }
+        .brand-logo { width:44px; height:44px; flex:0 0 auto;
+                      display:flex; align-items:center; justify-content:center; color:var(--primary); }
+        .brand-logo img { width:100%; height:100%; object-fit:contain; display:block; }
+        .brand-text { min-width:0; overflow:hidden; opacity:1; transform:translateX(0);
+                      transition:opacity .22s ease .06s, transform .28s cubic-bezier(.4,0,.2,1); }
+        .brand-name { font-weight:700; letter-spacing:-.01em; font-size:19px; line-height:1.1; white-space:nowrap; }
+        .brand-sub { font-size:8.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);
+                     margin-top:3px; white-space:nowrap; }
+        .app.collapsed .brand { justify-content:center; gap:0; padding-left:0; padding-right:0; }
+        .app.collapsed .brand-logo { width:50px; height:50px; margin:0 auto; }
+        .app.collapsed .brand-text { opacity:0; transform:translateX(-8px); width:0;
+                                     margin:0; padding:0; pointer-events:none; }
+
+        /* Botón contraer: flotante, minimalista, gira según el estado */
+        .collapse-btn { position:absolute; top:30px; right:-13px; width:26px; height:26px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center; z-index:60;
+            border:1px solid var(--border); background:var(--surface); color:var(--muted);
+            cursor:pointer; box-shadow:0 2px 8px rgba(17,24,39,.10);
+            transition:transform .2s ease, color .2s ease, background .2s ease, box-shadow .2s ease; }
+        .collapse-btn:hover { color:var(--text); background:var(--surface-2); transform:scale(1.08); }
+        .collapse-btn:active { transform:scale(.94); }
+        .collapse-btn svg { width:15px; height:15px; transition:transform .34s cubic-bezier(.4,0,.2,1); }
+        .app.collapsed .collapse-btn svg { transform:rotate(180deg); }
+        .app.collapsed .collapse-btn span { display:none; }
+
+        /* La lista es la que se desplaza, no la barra: con un apartado abierto
+           no cabía en la pantalla y las últimas opciones quedaban cortadas.
+           Contraída no se desplaza, porque el scroll recortaría los
+           tooltips y los paneles flotantes. */
+        .nav { display:flex; flex-direction:column; gap:4px; margin-top:6px; flex:1 1 auto; min-height:0; }
+        .app:not(.collapsed) .nav { overflow-y:auto; overscroll-behavior:contain;
+                                    margin-right:-8px; padding-right:8px; padding-bottom:12px;
+                                    scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+        .app:not(.collapsed) .nav::-webkit-scrollbar { width:6px; }
+        .app:not(.collapsed) .nav::-webkit-scrollbar-thumb { background:var(--border); border-radius:6px; }
+        .nav-item { position:relative; display:flex; align-items:center; gap:13px; padding:11px 13px; border-radius:12px;
+                    color:var(--muted); text-decoration:none; font-weight:600; font-size:14.5px; white-space:nowrap;
+                    transition:background .16s ease, color .16s ease; }
+        .nav-item:hover { background:var(--surface-2); color:var(--text); }
+        .nav-item.active { background:linear-gradient(135deg,var(--primary-strong),var(--primary));
+                           color:#fff; box-shadow:0 8px 18px rgba(0,122,255,.28); }
+        .nav-item svg { width:20px; height:20px; flex:0 0 auto; }
+        .nav-label { display:inline-block; overflow:hidden; white-space:nowrap; transition:opacity .2s ease .05s; }
+        .app.collapsed .nav-item { justify-content:center; gap:0; }
+        .app.collapsed .nav-label { opacity:0; width:0; }
+
+        /* Tooltip elegante al pasar el mouse con el menú contraído */
+        .app.collapsed .nav-item::after { content:attr(data-tip); position:absolute; left:calc(100% + 16px); top:50%;
+            transform:translateY(-50%) translateX(-4px); white-space:nowrap; background:var(--surface); color:var(--text);
+            border:1px solid var(--border); padding:7px 11px; border-radius:10px; font-size:13px; font-weight:600;
+            box-shadow:0 10px 28px rgba(17,24,39,.16); opacity:0; pointer-events:none; z-index:70;
+            transition:opacity .16s ease, transform .18s cubic-bezier(.4,0,.2,1); }
+        .app.collapsed .nav-item::before { content:""; position:absolute; left:calc(100% + 10px); top:50%;
+            transform:translateY(-50%) rotate(45deg); width:9px; height:9px; background:var(--surface);
+            border-left:1px solid var(--border); border-bottom:1px solid var(--border);
+            opacity:0; pointer-events:none; z-index:70; transition:opacity .16s ease; }
+        .app.collapsed .nav-item:hover::after { opacity:1; transform:translateY(-50%) translateX(0); }
+        .app.collapsed .nav-item:hover::before { opacity:1; }
+
+        .sidebar-foot { margin-top:auto; }
+        .help-box { background:var(--surface-2); border:1px solid var(--border); border-radius:14px;
+                    padding:16px; text-align:center; transition:padding .3s ease; }
+        .help-ico { width:44px; height:44px; border-radius:50%; background:var(--primary-soft); color:var(--primary);
+                    display:flex; align-items:center; justify-content:center; margin:0 auto 8px;
+                    transition:margin .3s ease; }
+        .help-box b { display:block; font-size:14px; }
+        .help-box small { color:var(--muted); font-size:12px; }
+        .help-text { overflow:hidden; transition:opacity .2s ease; }
+        .app.collapsed .help-text { opacity:0; height:0; margin:0; }
+        .app.collapsed .help-box { padding:11px; }
+        .app.collapsed .help-ico { margin-bottom:0; }
+
+        /* ===== Área principal ===== */
+        .main { display:flex; flex-direction:column; min-width:0; }
+        /* Sin borde: la separacion con el contenido la da una sombra muy
+           tenue, que ademas solo tiene sentido hacia abajo. */
+        .topbar { position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:16px;
+                  padding:16px 26px; background:var(--topbar-bg);
+                  box-shadow:0 1px 3px rgba(17,24,39,.05), 0 1px 1px rgba(17,24,39,.03); }
+        .page-title { font-size:25px; font-weight:700; margin:0; line-height:1.15; letter-spacing:-.01em; }
+        .page-sub { color:var(--muted); font-size:14px; margin:2px 0 0; }
+        .topbar-spacer { flex:1; }
+        /* Fila de acciones de la pantalla, dentro del contenido y a la derecha. */
+        .content-actions { display:flex; align-items:center; justify-content:flex-end;
+                           gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+        .content-actions .btn { display:inline-flex; align-items:center; gap:6px; }
+        /* Hamburguesa: solo en móvil (en escritorio ya existe el botón "Contraer" del sidebar) */
+        .hamburger { display:none; align-items:center; justify-content:center; width:42px; height:42px;
+                     border:1px solid var(--border); background:var(--surface); color:var(--text);
+                     border-radius:11px; cursor:pointer; flex:0 0 auto; }
+        .hamburger:hover { background:var(--surface-2); }
+
+        .icon-btn { position:relative; width:42px; height:42px; border:none; background:transparent;
+                    color:var(--muted); border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;
+                    transition:background .18s ease, color .18s ease; }
+        .icon-btn:hover { background:var(--surface-2); color:var(--text); }
+        .icon-btn svg { width:19px; height:19px; }
+        .badge-dot { position:absolute; top:-5px; right:-5px; min-width:18px; height:18px; padding:0 5px;
+                     background:var(--danger); color:#fff; border-radius:999px; font-size:11px; font-weight:700;
+                     display:flex; align-items:center; justify-content:center; }
+
+        /* Toggle de tema: luna en claro, sol en oscuro */
+        #theme-toggle .ico-sun { display:none; }
+        :root[data-theme="dark"] #theme-toggle .ico-sun { display:block; }
+        :root[data-theme="dark"] #theme-toggle .ico-moon { display:none; }
+
+        .user-btn { display:flex; align-items:center; gap:10px; border:1px solid var(--border); background:var(--surface);
+                    padding:6px 10px 6px 6px; border-radius:999px; cursor:pointer; color:var(--text);
+                    transition:background .18s ease, border-color .18s ease, box-shadow .18s ease; }
+        .user-btn:hover { background:var(--surface-2); box-shadow:0 2px 10px rgba(17,24,39,.06); }
+        .dd.open .user-btn { background:var(--surface-2); border-color:var(--primary); }
+        .user-btn .chev { color:var(--muted); transition:transform .24s cubic-bezier(.4,0,.2,1); }
+        .dd.open .user-btn .chev { transform:rotate(180deg); }
+        .avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#4da3ff,var(--primary));
+                  color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;
+                  flex:0 0 auto; }
+        .user-name { font-weight:600; font-size:14px; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+        /* ===== Dropdowns ===== */
+        .dd { position:relative; }
+        .dd-panel { position:absolute; right:0; top:calc(100% + 10px); width:290px; background:var(--surface);
+                    border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow); padding:8px;
+                    z-index:50; opacity:0; visibility:hidden; transform:translateY(-8px) scale(.97);
+                    transform-origin:top right; pointer-events:none;
+                    transition:opacity .18s ease, transform .22s cubic-bezier(.4,0,.2,1), visibility .18s; }
+        .dd.open .dd-panel { opacity:1; visibility:visible; transform:translateY(0) scale(1); pointer-events:auto; }
+        .dd-head { padding:12px 12px 10px; }
+        .dd-head b { font-size:15px; }
+        .dd-head small { display:block; color:var(--muted); font-size:12.5px; margin-top:2px; }
+        .dd-sep { height:1px; background:var(--border); margin:4px 6px 6px; }
+        .dd-item { display:flex; gap:12px; align-items:center; padding:10px 12px; border-radius:12px;
+                   text-decoration:none; color:var(--text); width:100%; border:none; background:none; cursor:pointer;
+                   text-align:left; font-family:inherit; transition:background .14s ease; }
+        .dd-item:hover { background:var(--surface-2); }
+        .dd-item .di-ico { width:36px; height:36px; border-radius:10px; background:var(--primary-soft); color:var(--primary);
+                           display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+        .dd-item.danger .di-ico { background:var(--danger-soft); color:var(--danger); }
+        .dd-item.danger b { color:var(--danger); }
+        .dd-item b { font-size:14.5px; }
+        .dd-item small { display:block; color:var(--muted); font-size:12.5px; }
+        .dd-notif { max-height:340px; overflow-y:auto; }
+        .dd-empty { padding:26px 12px; text-align:center; color:var(--muted); font-size:14px; }
+
+        /* ===== Contenido ===== */
+        .content { padding:26px; }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:10px;
+                padding:18px; }
+        .grid { display:grid; gap:18px; }
+        .stat-row { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+        .stat { display:flex; align-items:center; gap:14px; }
+        .stat-ico { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+        .stat-ico svg { width:20px; height:20px; }
+        .stat-ico.blue { background:var(--primary-soft); color:var(--primary); }
+        .stat-ico.orange { background:var(--accent-soft); color:var(--accent); }
+        .stat-ico.green { background:var(--green-soft); color:var(--green); }
+        .stat-num { font-size:26px; font-weight:600; line-height:1.1; letter-spacing:-.02em; }
+        .stat-lbl { color:var(--muted); font-size:13px; margin-top:2px; }
+
+        /* Tarjeta con acento superior: da color sin invadir el fondo */
+        .card--accent { position:relative; overflow:hidden; }
+        .card--accent::before { content:""; position:absolute; top:0; left:0; right:0; height:2px; background:var(--primary); }
+        .card--accent.is-green::before { background:var(--green); }
+        .card--accent.is-amber::before { background:var(--accent); }
+        .card--accent.is-danger::before { background:var(--danger); }
+
+        /* Encabezado de una tarjeta con titulo y accion */
+        .card-head { display:flex; align-items:center; gap:10px; padding:14px 18px;
+                     border-bottom:1px solid var(--border); }
+        .card-head h3 { margin:0; font-size:14px; font-weight:600; letter-spacing:-.01em; }
+        .card-head .right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+
+        /* ===== Cambio de vista: lista o tarjetas ===== */
+        .view-switch { display:inline-flex; border:1px solid var(--border); border-radius:7px; overflow:hidden; }
+        .view-switch button { width:34px; height:34px; border:none; background:var(--surface); color:var(--muted);
+                              cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+                              transition:background .15s ease, color .15s ease; }
+        .view-switch button + button { border-left:1px solid var(--border); }
+        .view-switch button:hover { color:var(--text); }
+        .view-switch button.active { background:var(--surface-2); color:var(--primary); }
+        .view-switch svg { width:16px; height:16px; }
+
+        /* Rejilla de tarjetas equivalente a una tabla */
+        .data-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; }
+        .data-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px;
+                     transition:border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
+        .data-card:hover { border-color:var(--primary); transform:translateY(-2px);
+                           box-shadow:0 6px 16px rgba(17,24,39,.07); }
+        .data-card-top { display:flex; align-items:center; gap:11px; padding-bottom:14px;
+                         border-bottom:1px solid var(--border); }
+        .data-card-top .t { font-weight:600; line-height:1.3; }
+        .data-card-top .s { color:var(--muted); font-size:12.5px; margin-top:1px; }
+        .data-card-top .right { margin-left:auto; }
+        .data-card dl { margin:14px 0 0; display:grid; gap:9px; }
+        .data-card dl > div { display:flex; justify-content:space-between; gap:12px; align-items:baseline; }
+        .data-card dt { color:var(--muted); font-size:13px; }
+        .data-card dd { margin:0; font-size:13px; font-weight:500; text-align:right; overflow-wrap:anywhere; }
+        .data-card-foot { margin-top:16px; padding-top:13px; border-top:1px solid var(--border); text-align:right; }
+        [data-theme="dark"] .data-card:hover { box-shadow:0 6px 18px rgba(0,0,0,.4); }
+
+        .tbl-link { color:var(--primary); text-decoration:none; font-size:13px; font-weight:500; }
+        .tbl-link:hover { text-decoration:underline; }
+        .tbl-link + .tbl-link { margin-left:14px; }
+
+        @media (prefers-reduced-motion:reduce) {
+            .view-switch button, .data-card { transition:none; }
+        }
+
+        /* Estado vacio con caracter */
+        .empty-state { text-align:center; padding:44px 20px; }
+        .empty-state .ico { width:46px; height:46px; margin:0 auto 14px; border-radius:12px;
+                            display:flex; align-items:center; justify-content:center;
+                            background:var(--surface-2); color:var(--muted); }
+        .empty-state .ico svg { width:22px; height:22px; }
+        .empty-state h3 { margin:0 0 5px; font-size:15px; font-weight:600; }
+        .empty-state p { margin:0 0 18px; color:var(--muted); font-size:14px; }
+
+        h2.section-title { font-size:17px; margin:0 0 4px; }
+
+        /* ===== Cabecera de pagina (componente x-ui.page-header) =====
+           Minimalista: sin tarjeta, sin icono, sin subtitulo. */
+        .page-header { margin-bottom:22px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .page-header-title { margin:0; font-size:18px; font-weight:600; letter-spacing:-.01em;
+                             line-height:1.2; color:var(--text); min-width:0; }
+        .page-header-count { font-size:12px; font-weight:500; color:var(--muted);
+                             background:var(--surface-2); border:1px solid var(--border);
+                             padding:1px 7px; border-radius:5px; }
+        .page-header-back { width:34px; height:34px; border-radius:9px; flex:0 0 auto; display:inline-flex;
+                            align-items:center; justify-content:center; color:var(--muted); text-decoration:none;
+                            transition:background .15s ease, color .15s ease, transform .1s ease; }
+        .page-header-back:hover { background:var(--surface-2); color:var(--text); }
+        .page-header-back:active { transform:scale(.92); }
+        .page-header-back svg { width:18px; height:18px; }
+        .page-header-actions { margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .page-header-actions .btn { display:inline-flex; align-items:center; gap:6px; }
+
+        /* Accion secundaria sin peso visual: mismo lenguaje que la flecha
+           de regresar, para que no compita con la accion principal. */
+        .btn-icono { width:34px; height:34px; border-radius:9px; flex:0 0 auto; display:inline-flex;
+                     align-items:center; justify-content:center; border:1px solid transparent;
+                     background:transparent; color:var(--muted); text-decoration:none; cursor:pointer;
+                     transition:background .15s ease, color .15s ease, transform .1s ease; }
+        .btn-icono:hover { background:var(--surface-2); color:var(--text); }
+        .btn-icono:active { transform:scale(.92); }
+        .btn-icono svg { width:17px; height:17px; }
+
+        /* Dato accionable (un saldo, un contador): se lee como informacion,
+           no como boton, pero lleva a su propia pantalla. */
+        .pill-dato { display:inline-flex; align-items:center; gap:8px; padding:7px 13px 7px 11px;
+                     border:1px solid var(--border); border-radius:8px; background:var(--surface);
+                     color:var(--text); font-size:13.5px; line-height:1.5; text-decoration:none;
+                     transition:background .16s ease, border-color .16s ease; }
+        .pill-dato:hover { background:var(--surface-2); border-color:var(--muted); }
+        .pill-dato .punto { width:7px; height:7px; border-radius:50%; background:var(--muted); flex:0 0 7px; }
+        .pill-dato .et { color:var(--muted); }
+        .pill-dato .val { font-weight:600; font-variant-numeric:tabular-nums; }
+        .pill-dato.es-pagado .punto { background:var(--green); }
+        .pill-dato.es-vencido .punto { background:var(--danger); }
+        .pill-dato.es-parcial .punto { background:var(--accent, #f59e0b); }
+
+        /* Pie de acciones pegado al fondo, para formularios largos */
+        .page-foot { position:sticky; bottom:0; z-index:20; display:flex; justify-content:flex-end;
+                     align-items:center; gap:10px; margin-top:22px; padding:14px 0;
+                     border-top:1px solid var(--border);
+                     background:color-mix(in srgb, var(--bg) 88%, transparent);
+                     backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+        .page-foot .btn { display:inline-flex; align-items:center; gap:6px; }
+        /* Rejillas de página: contenido + columna lateral, o dos columnas
+           iguales. En pantallas chicas todo va en una columna. Las usaban
+           varias vistas pero nunca se habían definido. */
+        .rgrid-sidebar, .rgrid-2 { display:grid; grid-template-columns:minmax(0, 1fr); gap:18px; align-items:start; }
+        @media (min-width:1000px) {
+            .rgrid-sidebar { grid-template-columns:minmax(0, 1fr) 320px; }
+            .rgrid-2 { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+        }
+        /* Si el formulario esta en rejilla, el pie ocupa todo el ancho. */
+        .rgrid-sidebar > .page-foot, .rgrid-2 > .page-foot { grid-column:1 / -1; }
+
+        @media (max-width:640px) {
+            .page-header { align-items:flex-start; }
+            .page-header-actions { width:100%; }
+            .page-header-actions .btn { flex:1; justify-content:center; }
+            /* El icono conserva su tamaño; solo se estiran los que llevan texto. */
+            .page-header-actions .btn-icono { flex:0 0 34px; }
+            .page-header-actions .pill-dato { flex:1; justify-content:center; }
+        }
+        @media (prefers-reduced-motion: reduce) { .page-header-back { transition:none; } }
+
+        /* ===== Utilidades (compatibles con las vistas existentes) ===== */
+        label { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }
+        /* Controles de formulario: mismo aspecto sin repetir estilos en cada vista. */
+        input[type=text], input[type=email], input[type=password], input[type=tel],
+        input[type=number], input[type=date], input[type=time], input[type=search], input[type=file], select, textarea {
+            width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:7px; font-size:14px;
+            font-family:inherit; outline:none; background:var(--surface); color:var(--text);
+            transition:border-color .15s ease; }
+        select { cursor:pointer; }
+        textarea { resize:vertical; }
+        /* El selector de archivo traia su propio estilo pegado en cada vista;
+           ahora se ve igual que los demas controles del sistema. */
+        input[type=file] { cursor:pointer; }
+        input[type=file]::file-selector-button {
+            margin:-3px 10px -3px -4px; padding:6px 11px; border:1px solid var(--border);
+            border-radius:6px; background:var(--surface-2); color:var(--text);
+            font-family:inherit; font-size:13px; cursor:pointer; }
+        input[type=file]::file-selector-button:hover { border-color:var(--muted); }
+
+        /* El reloj de los campos de hora y el calendario de los de fecha los
+           dibuja el navegador en negro, así que en tema oscuro quedaban
+           invisibles sobre el fondo. Se invierten para que se vean blancos. */
+        [data-theme="dark"] input[type=time]::-webkit-calendar-picker-indicator,
+        [data-theme="dark"] input[type=date]::-webkit-calendar-picker-indicator,
+        [data-theme="dark"] input[type=datetime-local]::-webkit-calendar-picker-indicator,
+        [data-theme="dark"] input[type=month]::-webkit-calendar-picker-indicator,
+        [data-theme="dark"] input[type=week]::-webkit-calendar-picker-indicator {
+            filter:invert(1) brightness(1.6); cursor:pointer; }
+
+        /* Campo del componente x-ui.form-group: etiqueta, control y error
+           en un mismo bloque, para que no se separen dentro de una rejilla. */
+        .form-group { min-width:0; }
+        /* Nota corta debajo de un control. */
+        .campo-nota { color:var(--muted); font-size:13px; line-height:1.5; }
+        small.campo-nota { display:block; margin-top:6px; }
+        /* Casilla con su texto, alineadas y ambas clicables. */
+        .ui-check { display:flex; align-items:center; gap:9px; margin:4px 0 16px;
+                    font-size:14px; font-weight:500; cursor:pointer; }
+        .ui-check input[type=checkbox] { width:17px; height:17px; margin:0; flex:0 0 17px; cursor:pointer; }
+        input:hover, select:hover, textarea:hover { border-color:var(--muted); }
+        input:focus, select:focus, textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft); }
+        input::placeholder, textarea::placeholder { color:var(--muted); }
+        .btn { display:inline-block; padding:8px 14px; border:1px solid var(--primary); border-radius:7px; background:var(--primary);
+               color:#fff; font-size:13.5px; font-weight:500; line-height:1.5; cursor:pointer; text-decoration:none; text-align:center;
+               transition:background .16s ease, border-color .16s ease; }
+        .btn:hover { background:var(--primary-strong); border-color:var(--primary-strong); }
+        .btn--ghost { background:var(--surface); color:var(--text); border:1px solid var(--border); }
+        .btn--ghost:hover { background:var(--surface-2); }
+
+        /* En oscuro el azul saturado vibra sobre el fondo casi negro:
+           se apaga un poco y el texto pasa a blanco puro para mantener contraste. */
+        [data-theme="dark"] .btn, [data-theme="dark"] .erp-btn {
+            background:#2563eb; border-color:#2563eb; color:#f8fafc; }
+        [data-theme="dark"] .btn:hover, [data-theme="dark"] .erp-btn:hover {
+            background:#1d4ed8; border-color:#1d4ed8; }
+        [data-theme="dark"] .btn--ghost, [data-theme="dark"] .erp-btn.ghost {
+            background:var(--surface-2); color:var(--text); border-color:var(--border); }
+        [data-theme="dark"] .btn--ghost:hover, [data-theme="dark"] .erp-btn.ghost:hover {
+            background:var(--surface); border-color:var(--muted); }
+        [data-theme="dark"] .btn--danger, [data-theme="dark"] .erp-btn.danger {
+            background:#dc2626; border-color:#dc2626; color:#fff; }
+
+        /* En oscuro una sombra negra no se ve: la separacion se logra
+           oscureciendo el borde de la sombra en vez de aclararlo. */
+        [data-theme="dark"] .topbar { box-shadow:0 1px 0 rgba(255,255,255,.06), 0 2px 8px rgba(0,0,0,.4); }
+        [data-theme="dark"] .sidebar { box-shadow:1px 0 0 rgba(255,255,255,.06), 2px 0 8px rgba(0,0,0,.4); }
+        .btn--danger { background:var(--danger); }
+        .btn--danger:hover { filter:brightness(.92); }
+        .btn--block { display:block; width:100%; }
+        .link { color:var(--primary); text-decoration:none; font-weight:600; }
+        .link:hover { text-decoration:underline; }
+        .muted { color:var(--muted); font-size:14px; }
+        .err { color:var(--danger); font-size:13px; margin:6px 0 0; }
+        .alert { padding:11px 14px; border-radius:10px; font-size:14px; margin-bottom:16px; }
+        .alert--ok { background:var(--green-soft); color:var(--green); border:1px solid var(--border); }
+        .alert--err { background:var(--danger-soft); color:var(--danger); border:1px solid var(--border); }
+        .section { border-top:1px solid var(--border); margin-top:26px; padding-top:20px; }
+        .badge { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:6px;
+                 font-size:12px; font-weight:500; background:var(--surface-2); color:var(--muted);
+                 border:1px solid var(--border); }
+        .badge::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; flex:0 0 6px; }
+        .badge--plain::before { display:none; }
+        .badge--ok { background:var(--green-soft); color:var(--green); border-color:transparent; }
+        .badge--warn { background:var(--accent-soft); color:var(--accent); border-color:transparent; }
+        .badge--info { background:var(--primary-soft); color:var(--primary); border-color:transparent; }
+        .badge--danger { background:var(--danger-soft); color:var(--danger); border-color:transparent; }
+        .danger-box { border:1px solid var(--border); background:var(--danger-soft); border-radius:14px; padding:18px; margin-top:12px; }
+        /* ===== Tablas ===== */
+        table { width:100%; border-collapse:collapse; font-size:14px; }
+        thead th { background:var(--surface-2); }
+        th, td { text-align:left; padding:13px 16px; border-bottom:1px solid var(--border); }
+        th { color:var(--muted); font-weight:500; font-size:12px; letter-spacing:.02em;
+             white-space:nowrap; border-bottom:1px solid var(--border); }
+        thead th:first-child { border-top-left-radius:9px; }
+        thead th:last-child { border-top-right-radius:9px; }
+        tbody tr { transition:background .15s ease; }
+        tbody tr:hover td { background:var(--surface-2); }
+        tbody tr:last-child td { border-bottom:none; }
+        td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+
+        /* Celda de identidad: avatar + nombre + dato secundario */
+        .cell-id { display:flex; align-items:center; gap:11px; min-width:0; }
+        .cell-id .t { font-weight:600; color:var(--text); line-height:1.3; }
+        .cell-id .s { color:var(--muted); font-size:12.5px; margin-top:1px; }
+
+        /* Avatar con tinte suave; el color lo pone la vista con .a1 .. .a5 */
+        .avatar { width:36px; height:36px; flex:0 0 36px; border-radius:9px; display:inline-flex;
+                  align-items:center; justify-content:center; font-size:12.5px; font-weight:600;
+                  background:var(--primary-soft); color:var(--primary); }
+        .avatar.a1 { background:var(--primary-soft); color:var(--primary); }
+        .avatar.a2 { background:var(--green-soft); color:var(--green); }
+        .avatar.a3 { background:var(--accent-soft); color:var(--accent); }
+        .avatar.a4 { background:var(--danger-soft); color:var(--danger); }
+        .avatar.a5 { background:var(--surface-2); color:var(--muted); }
+
+        /* Botón ojo para contraseñas */
+        .pw-wrap { position:relative; display:block; }
+        .pw-wrap input { padding-right:44px; }
+        .pw-toggle { position:absolute; right:6px; top:50%; transform:translateY(-50%); background:none; border:none;
+                     cursor:pointer; padding:6px; line-height:0; color:var(--muted); border-radius:6px; }
+        .pw-toggle:hover { color:var(--text); background:var(--surface-2); }
+        .pw-toggle svg { width:20px; height:20px; display:block; }
+        .pw-toggle .icon-off { display:none; }
+        .pw-toggle.is-visible .icon-on { display:none; }
+        .pw-toggle.is-visible .icon-off { display:block; }
+
+        .overlay { display:none; position:fixed; inset:0; background:rgba(2,6,23,.5); z-index:40; }
+
+        /* ===== Toast moderno (arriba a la derecha) ===== */
+        .toast{ position:fixed; top:22px; right:22px; left:auto; bottom:auto; z-index:9999;
+                display:flex; align-items:center; gap:12px; padding:13px 16px 13px 13px; border-radius:15px;
+                background:var(--surface); color:var(--text); border:1px solid var(--border);
+                box-shadow:0 16px 44px rgba(17,24,39,.16); opacity:0; pointer-events:none;
+                transform:translateX(120%); transition:opacity .3s ease, transform .34s cubic-bezier(.22,1,.36,1);
+                font-size:14px; font-weight:600; max-width:min(360px, calc(100% - 44px)); }
+        .toast.show{ opacity:1; transform:translateX(0); }
+        .toast .toast-ico{ width:34px; height:34px; border-radius:10px; flex:0 0 auto;
+                display:flex; align-items:center; justify-content:center;
+                background:var(--green-soft); color:var(--green); }
+        .toast .toast-ico.warn{ background:var(--danger-soft); color:var(--danger); }
+        .toast .toast-ico svg{ width:19px; height:19px; }
+        .toast #appToastMsg{ line-height:1.35; }
+        .toast b{ font-weight:800; }
+        @media (max-width:640px){ .toast{ top:14px; right:14px; left:14px; max-width:none; } }
+
+        /* ===== Modal de confirmacion (reemplaza confirm() nativo) ===== */
+        .cm-overlay{ position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px;
+            background:rgba(6,12,23,.55); opacity:0; transition:opacity .18s ease; }
+        .cm-overlay[hidden]{ display:none; }
+        .cm-overlay.show{ opacity:1; }
+        /* Con los tokens del tema (--surface, --text…): antes el fondo usaba
+           --card, que este layout no define, y en modo oscuro quedaba una caja
+           blanca con el título y el botón de cancelar en texto claro. */
+        .cm-box{ width:100%; max-width:420px; background:var(--surface); color:var(--text); border-radius:16px;
+            border:1px solid var(--border); box-shadow:var(--shadow), 0 24px 60px rgba(0,0,0,.22);
+            padding:26px 24px 20px; text-align:center;
+            transform:translateY(8px) scale(.98); transition:transform .18s ease; }
+        .cm-overlay.show .cm-box{ transform:none; }
+        .cm-ico{ width:52px; height:52px; border-radius:14px; margin:0 auto 14px; display:flex; align-items:center; justify-content:center;
+            background:var(--primary-soft); color:var(--primary); }
+        .cm-ico svg{ width:26px; height:26px; }
+        .cm-box.danger .cm-ico{ background:var(--danger-soft); color:var(--danger); }
+        .cm-title{ font-size:18px; font-weight:700; margin:0 0 6px; color:var(--text); }
+        .cm-msg{ font-size:14px; color:var(--muted); margin:0 0 20px; line-height:1.45; white-space:pre-line; }
+        .cm-actions{ display:flex; gap:10px; justify-content:center; }
+        .cm-btn{ flex:1; max-width:180px; padding:11px 16px; border-radius:10px; font:inherit; font-size:14px; font-weight:700;
+            cursor:pointer; border:1px solid transparent; transition:background .15s ease, border-color .15s ease; }
+        .cm-cancel{ background:var(--surface); border-color:var(--border); color:var(--text); }
+        .cm-cancel:hover{ background:var(--surface-2); }
+        .cm-ok{ background:var(--primary); color:#fff; }
+        .cm-ok:hover{ background:var(--primary-strong); }
+        .cm-box.danger .cm-ok{ background:var(--danger); }
+        .cm-box.danger .cm-ok:hover{ filter:brightness(.95); }
+        .cm-btn:active{ transform:translateY(1px); }
+
+        .nav-group { display:flex; flex-direction:column; gap:4px; }
+        .nav-toggle { cursor:pointer; }
+        .nav-chev { width:16px; height:16px; margin-left:auto; transition:transform .2s ease; flex:0 0 auto; pointer-events:none; }
+        .nav-group.open .nav-chev { transform:rotate(180deg); }
+        .submenu { display:none; flex-direction:column; gap:4px; padding-left:14px; margin-left:20px; border-left:2px solid var(--border); }
+        .nav-group.open .submenu { display:flex; }
+        .submenu .nav-item { padding:9px 12px; font-size:13.5px; }
+        .nav-sub { gap:10px; position:relative; }
+        .submenu .nav-bullet { width:6px; height:6px; color:var(--muted); flex:0 0 auto; }
+        .submenu-label { font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:8px 12px 2px; }
+        .nav-count { margin-left:auto; background:var(--primary); color:#fff; font-size:11px; font-weight:800; min-width:20px; height:20px; padding:0 6px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; }
+        /* Bloques del menu: parten la lista en secciones para que no se lea
+           como una sola columna larga de ocho apartados. */
+        .nav-section { padding:15px 13px 5px; font-size:10.5px; font-weight:800; letter-spacing:.07em;
+                       text-transform:uppercase; color:var(--muted); white-space:nowrap; }
+        .nav-section:first-child { padding-top:4px; }
+        /* Contraido el texto no cabe: el bloque se marca con una linea fina. */
+        .app.collapsed .nav-section { padding:0; height:1px; margin:10px 12px; overflow:hidden;
+                                      color:transparent; background:var(--border); }
+
+        /* ===== Menu contraido: los grupos abren en un panel flotante =====
+           Antes el submenu se ocultaba a la fuerza, asi que al hacer clic en
+           un icono no pasaba absolutamente nada. */
+        .app.collapsed .nav-chev { display:none; }
+        /* El panel ya lleva el nombre del apartado: el tooltip sobraria. */
+        .app.collapsed .nav-toggle::after, .app.collapsed .nav-toggle::before { display:none; }
+
+        .app.collapsed .nav-group .submenu {
+            display:flex; position:fixed; z-index:80; min-width:214px; padding:6px;
+            margin:0; border:1px solid var(--border); border-radius:12px; background:var(--surface);
+            box-shadow:0 14px 40px rgba(17,24,39,.16);
+            opacity:0; transform:translateX(-6px); pointer-events:none;
+            transition:opacity .14s ease, transform .16s cubic-bezier(.4,0,.2,1); }
+        .app.collapsed .nav-group[data-flotante] .submenu {
+            opacity:1; transform:translateX(0); pointer-events:auto; }
+        .app.collapsed .submenu::before {
+            content:attr(data-nombre); display:block; padding:7px 11px 8px; margin-bottom:5px;
+            font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+            color:var(--muted); border-bottom:1px solid var(--border); }
+        .app.collapsed .submenu .nav-item { justify-content:flex-start; gap:10px; padding:8px 11px; }
+        .app.collapsed .submenu .nav-label { opacity:1; width:auto; }
+        /* Dentro del panel cada opcion ya se lee: no hacen falta tooltips. */
+        .app.collapsed .submenu .nav-item::after, .app.collapsed .submenu .nav-item::before { display:none; }
+
+        /* ===== Responsive ===== */
+        @media (max-width:1024px) {
+            .hamburger { display:flex; }
+            .app { grid-template-columns:1fr; }
+            /* 100dvh: en el teléfono 100vh incluye la barra del navegador y
+               el final del menú quedaba debajo de ella. */
+            .sidebar { position:fixed; left:0; top:0; z-index:60; width:min(var(--sidebar-w), 86vw);
+                       height:100vh; height:100dvh;
+                       transform:translateX(-100%); transition:transform .25s; }
+            .app.sidebar-open .sidebar { box-shadow:0 10px 40px rgba(2,6,23,.3); }
+            /* En el cajón siempre se desplaza, aunque en escritorio se haya dejado contraído. */
+            .app.collapsed .nav { overflow-y:auto; overscroll-behavior:contain; padding-bottom:12px; }
+            body.menu-abierto { overflow:hidden; }
+            .app.sidebar-open .sidebar { transform:translateX(0); }
+            .app.sidebar-open .overlay { display:block; }
+            .app.collapsed { grid-template-columns:1fr; }
+            .app.collapsed .brand-text, .app.collapsed .nav-label, .app.collapsed .help-text {
+                opacity:1; width:auto; height:auto; transform:none; margin:initial; }
+            .app.collapsed .nav-item { justify-content:flex-start; gap:13px; }
+            .app.collapsed .brand { justify-content:flex-start; padding:4px 6px 20px; }
+            /* El cajón móvil se ve completo: se deshace todo lo de contraído.
+               Sin esto, quien dejó el menú contraído en escritorio abría el
+               cajón en el teléfono y los submenús no respondían. */
+            .app.collapsed .nav-group .submenu {
+                display:none; position:static; min-width:0; padding:0 0 0 14px; margin-left:20px;
+                border:0; border-left:2px solid var(--border); border-radius:0; background:none;
+                box-shadow:none; opacity:1; transform:none; pointer-events:auto; }
+            .app.collapsed .nav-group.open .submenu { display:flex; }
+            .app.collapsed .submenu::before { display:none; }
+            .app.collapsed .nav-chev { display:block; }
+            .app.collapsed .nav-section { padding:15px 13px 5px; height:auto; margin:0;
+                                          color:var(--muted); background:none; }
+            /* En móvil el sidebar se abre/cierra con la hamburguesa; ocultamos el botón flotante */
+            .collapse-btn { display:none; }
+        }
+        @media (max-width:640px) {
+            .content { padding:16px; }
+            .user-name { display:none; }
+
+            /* ===== Cabecera en una sola línea =====
+               El título competía por el ancho con los cuatro controles y
+               terminaba partido en cinco renglones. Ahora ocupa lo que sobra
+               y lo que no cabe se corta con puntos suspensivos. */
+            .topbar { padding:10px 14px; gap:8px; }
+            .topbar-titulo { flex:1; min-width:0; }
+            .page-title { font-size:17px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+            .page-sub { display:none; }
+            .topbar-spacer { display:none; }
+            .icon-btn { width:36px; height:36px; }
+            .icon-btn svg { width:18px; height:18px; }
+            .hamburger { width:38px; height:38px; }
+            .user-btn { padding:0; }
+            .user-btn .chev { display:none; }
+
+            /* Acciones de pantalla: a lo ancho, no apretadas en una esquina. */
+            .content-actions { gap:8px; }
+            .content-actions .btn { flex:1; justify-content:center; }
+
+            /* Pie de formulario: el botón principal arriba y al alcance del pulgar. */
+            .page-foot { flex-direction:column-reverse; align-items:stretch;
+                         gap:8px; padding:12px 0 14px; }
+            .page-foot .btn { width:100%; justify-content:center; }
+        }
+
+        /* Variantes de un mismo texto segun el ancho de la pantalla. */
+        .solo-angosto { display:none; }
+        @media (max-width:640px) {
+            .solo-ancho { display:none; }
+            .solo-angosto { display:inline; }
+        }
