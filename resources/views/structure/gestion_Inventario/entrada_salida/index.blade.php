@@ -139,6 +139,7 @@
 
     {{-- ===================== Búsqueda y filtros ===================== --}}
     <form method="GET" id="filtrosMovimientos" data-live="off" class="f-toolbar">
+        <input type="hidden" name="estado" id="fEstado" value="{{ $filters['estado'] ?? '' }}">
         <div class="mv-filter-row">
         {{-- Catálogo del equipo en una sola fila de selectores compactos:
              el texto del label queda oculto a la vista (lo usan los lectores
