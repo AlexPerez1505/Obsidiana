@@ -256,8 +256,9 @@
 .cxe .cxe-ev.is-foco .cxe-ev-t { background: var(--surface-2); }
 .cxe .cxe-ev.is-foco .cxe-ev-ico { border-color: var(--primary); color: var(--primary); }
 /* El último movimiento. */
-.cxe .cxe-ev--ultimo .cxe-ev-ico { background: var(--primary); border-color: var(--primary); color: #fff; }
-.cxe .cxe-ev--ultimo .cxe-ev-t { background: var(--cxe-info-soft); }
+/* .cxe-ev.cxe-ev--ultimo: gana también cuando además es el resaltado. */
+.cxe .cxe-ev.cxe-ev--ultimo .cxe-ev-ico { background: var(--primary); border-color: var(--primary); color: #fff; }
+.cxe .cxe-ev.cxe-ev--ultimo .cxe-ev-t { background: var(--cxe-info-soft); }
 .cxe .cxe-ev-ultimo-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--primary);
                           color: #fff; font-size: 11px; font-weight: 700; vertical-align: 2px; }
 .cxe .cxe-ev[data-icono="cancelado"] .cxe-ev-ico { color: var(--cxe-danger); }
