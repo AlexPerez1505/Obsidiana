@@ -75,3 +75,12 @@ if (app()->environment('local')) {
         return response()->file($ruta, ['Content-Type' => 'application/x-x509-ca-cert']);
     })->name('publico.certificado');
 }
+
+/*
+|--------------------------------------------------------------------------
+| Aviso de privacidad
+|--------------------------------------------------------------------------
+| Público. Lo pide Meta para publicar la app de WhatsApp; #eliminar sirve
+| como instrucciones para borrar datos.
+*/
+Route::view('/privacidad', 'publico.privacidad')->name('publico.privacidad');
