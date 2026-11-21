@@ -205,78 +205,6 @@
         @endif
     </div>
 
-    <div class="inv-toolbar">
-        <div class="inv-filter-wrap">
-        <form method="GET" id="filtrosProductos" data-live="off" class="inv-filter-panel" hidden>
-            <label class="inv-filter-field inv-filter-search">Buscar en inventario
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
-                <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar por tipo, marca, modelo o serie..."
-                       autocomplete="off">
-            </label>
-            @include('partials.inventario-filtros-catalogo')
-            @if (($filters['ubicacion'] ?? '') === 'congreso')
-                <input type="hidden" name="ubicacion" value="congreso">
-            @endif
-            <div class="inv-filter-actions">
-                <button type="submit" class="btn">Aplicar</button>
-                <a href="{{ route('inventory.productos.index') }}" class="btn btn--ghost">Limpiar</a>
-            </div>
-        </form>
-        </div>
-
-        <div class="inv-actions">
-        <button type="button" class="inv-filter-toggle" id="toggleFiltrosProductos" aria-expanded="false" aria-controls="filtrosProductos">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-            <span><strong>Filtros avanzados</strong><small>Refina la búsqueda de productos del inventario</small></span>
-            <b class="chev">⌄</b>
-        </button>
-
-        {{-- Lo que está fuera del almacén, de un jalón: sigue siendo stock
-             (allá se puede vender) pero no está en el anaquel. --}}
-        {{--
-            Sin la directiva php de una línea a propósito: se empareja con
-            el cierre del bloque que hay más abajo en este mismo archivo y
-            se traga todo el HTML de en medio.
-        --}}
-        @if ($enCongreso > 0)
-            <a href="{{ ($filters['ubicacion'] ?? '') === 'congreso'
-                    ? route('inventory.productos.index', array_filter(\Illuminate\Support\Arr::except($filters, ['ubicacion'])))
-                    : route('inventory.productos.index', array_filter(array_merge($filters, ['ubicacion' => 'congreso']))) }}"
-               class="btn {{ ($filters['ubicacion'] ?? '') === 'congreso' ? '' : 'btn--ghost' }}"
-               style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;"
-               title="{{ ($filters['ubicacion'] ?? '') === 'congreso' ? 'Quitar el filtro' : 'Ver solo lo que está en congresos' }}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                En congreso ({{ $enCongreso }})
-            </a>
-        @endif
-
-        <div class="inv-spacer"></div>
-        <a href="{{ route('inventory.paquetes.index') }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"/></svg>
-            Paquetes
-        </a>
-        {{-- Etiquetas de todas las piezas de los productos marcados, de un jalón. --}}
-        <button type="button" id="btn-etiquetas" class="btn btn--ghost" disabled
-                style="display:inline-flex; align-items:center; gap:7px; opacity:.5; cursor:not-allowed;"
-                onclick="imprimirEtiquetas()" title="Marca productos con la casilla para imprimir sus etiquetas">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Imprimir etiquetas (<span id="contador-etiquetas">0</span>)
-        </button>
-        <button type="button" id="btn-agrupar-paquete" class="btn" disabled
-                style="display:inline-flex; align-items:center; gap:7px; opacity:.5; cursor:not-allowed;"
-                onclick="agruparEnPaquete()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Agrupar en paquete (<span id="contador-seleccionados">0</span>)
-        </button>
-        @can('inventario.registrar')
-        <a href="{{ route('inventory.movimientos.create') }}" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            Registrar entrada
-        </a>
-        @endcan
-        </div>
-    </div>
-
     @endif
 
     {{-- Categorías (tipos de equipo) en tarjetas: la foto se sale de la
@@ -368,45 +296,125 @@
     @endif
 
     @if ($vistaLista)
-    {{-- Paquetes agrupados por el tipo que más traen; cada uno se abre y
-         dice qué contiene. --}}
-    @if ($paquetesPorTipo->isNotEmpty())
-        <x-ui.card style="margin-bottom:16px;">
-            <details class="paq-sec" @if (! request()->has('page')) open @endif>
-                <summary>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"/></svg>
-                    <h3>Paquetes <span class="muted" style="font-weight:500; font-size:13px;">{{ $paquetesPorTipo->flatten()->count() }}</span></h3>
-                    <a href="{{ route('inventory.paquetes.index') }}" class="tbl-link" onclick="event.stopPropagation();" style="font-size:13px;">Administrar</a>
-                    <svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                </summary>
-                @foreach ($paquetesPorTipo as $tipoPaq => $lista)
-                    <div class="paq-grupo">
-                        <p class="paq-grupo-t">{{ $tipoPaq }} · {{ $lista->count() }}</p>
-                        <div class="paq-lista">
-                            @foreach ($lista as $paq)
-                                @php $contenido = $paq->contenido(); @endphp
-                                <details class="paq-item">
-                                    <summary>
-                                        <b>{{ $paq->nombre }}</b>
-                                        <small>{{ count($contenido) }} {{ count($contenido) === 1 ? 'artículo' : 'artículos' }}</small>
-                                        @if (! $paq->activo)<span class="badge" style="font-size:11px;">Inactivo</span>@endif
-                                    </summary>
-                                    @if (empty($contenido))
-                                        <p class="muted" style="margin:0; padding:0 13px 12px; font-size:12.5px;">Sin productos.</p>
-                                    @else
-                                        <ul>
-                                            @foreach ($contenido as $l)
-                                                <li><b>{{ $l['cantidad'] }}×</b> {{ $l['nombre'] }}{{ $l['marca'] ? ' · '.$l['marca'] : '' }}{{ $l['modelo'] ? ' · '.$l['modelo'] : '' }}</li>
-                                            @endforeach
-                                        </ul>
-                                    @endif
-                                </details>
-                            @endforeach
+    {{-- ===================== Paquetes en vitrina =====================
+         Mismo diseño que los productos. La foto es un collage con las
+         fotos de lo que trae el paquete; tocarla muestra el contenido. --}}
+    @php $paquetesVista = $paquetesPorTipo->flatten(1)->values(); @endphp
+    @if ($paquetesVista->isNotEmpty())
+        <div class="pv-cab pv-cab--sec">
+            <h2 class="pv-titulo pv-titulo--sec">Paquetes. <span>{{ $paquetesVista->count() }}</span></h2>
+            <a class="pv-admin" href="{{ route('inventory.paquetes.index') }}">Administrar paquetes</a>
+        </div>
+        <div class="pv-grid pv-grid--paq">
+            @foreach ($paquetesVista as $paq)
+                @php
+                    $fotosPaq = $paq->productos->map(fn ($p) => $p->imagen_path ? asset('storage/'.$p->imagen_path) : null)
+                        ->concat($paq->equipos->map(fn ($e) => $e->imagen ? asset('storage/'.$e->imagen) : null))
+                        ->filter()->values();
+                    if ($paq->imagen) { $fotosPaq->prepend(asset('storage/'.$paq->imagen)); }
+                    $fotosPaq = $fotosPaq->take(3);
+                    $contenidoPaq = $paq->contenido();
+                    $piezasPaq = collect($contenidoPaq)->sum('cantidad');
+                    $precioPaq = (float) $paq->precio > 0 ? (float) $paq->precio : $paq->precioCalculado();
+                @endphp
+                <article class="pv-card pv-card--paq">
+                    <div class="pv-media pv-media--paq pv-fotos-{{ max(1, $fotosPaq->count()) }}" role="button" tabindex="0"
+                         title="Ver lo que trae" aria-label="Ver lo que trae el paquete {{ $paq->nombre }}"
+                         onclick="document.getElementById('paquete-modal-{{ $paq->id }}').style.display='flex'"
+                         onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }">
+                        @forelse ($fotosPaq as $foto)
+                            <span class="pv-foto"><img src="{{ $foto }}" alt="" loading="lazy" decoding="async"></span>
+                        @empty
+                            <span class="pv-sinfoto" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22V12"/></svg></span>
+                        @endforelse
+
+                        <span class="pv-etiquetas">
+                            <span class="pv-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/></svg>Paquete</span>
+                            @if (! $paq->activo)
+                                <span class="pv-chip pv-chip--tipo">Inactivo</span>
+                            @endif
+                        </span>
+                    </div>
+
+                    <div class="pv-info">
+                        <div class="pv-puntos" aria-hidden="true"></div>
+                        <div class="pv-nombre">
+                            <h3>{{ $paq->nombre }}</h3>
+                            @canany(['inventario.editar', 'inventario.eliminar'])
+                            <div class="row-menu" data-row-menu>
+                                <button type="button" class="row-menu-btn" data-row-menu-toggle aria-haspopup="true" aria-expanded="false"
+                                        aria-label="Acciones del paquete {{ $paq->nombre }}">
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+                                </button>
+                                <div class="row-menu-pop" data-row-menu-pop role="menu" hidden>
+                                    @can('inventario.editar')
+                                        <a href="{{ route('inventory.paquetes.edit', $paq) }}" role="menuitem">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                            Editar paquete
+                                        </a>
+                                    @endcan
+                                    @can('inventario.eliminar')
+                                        <form method="POST" action="{{ route('inventory.paquetes.destroy', $paq) }}" data-confirm="¿Eliminar este paquete? Los productos no se borran." style="margin:0;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="es-danger" role="menuitem">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                                                Eliminar paquete
+                                            </button>
+                                        </form>
+                                    @endcan
+                                </div>
+                            </div>
+                            @endcanany
+                        </div>
+                        <p class="pv-sub pv-sub--paq">{{ collect($contenidoPaq)->map(fn ($l) => $l['cantidad'].'× '.$l['nombre'])->implode(' · ') ?: 'Sin productos' }}</p>
+
+                        <div class="pv-pie">
+                            @if (\App\Support\PrecioVisible::para())
+                                <span class="pv-precio {{ $precioPaq > 0 ? '' : 'is-sin' }}" @if ((float) $paq->precio <= 0 && $precioPaq > 0) title="Suma de los precios de lo que trae" @endif>
+                                    {{ $precioPaq > 0 ? '$'.number_format($precioPaq, 2) : 'Sin precio definido' }}
+                                </span>
+                            @endif
+                            <span class="pv-stock pv-stock--paq">
+                                {{ count($contenidoPaq) }} {{ count($contenidoPaq) === 1 ? 'artículo' : 'artículos' }}{{ $piezasPaq > count($contenidoPaq) ? ' · '.$piezasPaq.' pz' : '' }}
+                            </span>
                         </div>
                     </div>
-                @endforeach
-            </details>
-        </x-ui.card>
+                </article>
+
+                {{-- Lo que trae, con su foto. --}}
+                <div id="paquete-modal-{{ $paq->id }}" class="unidades-modal-overlay" onclick="if (event.target === this) this.style.display='none'">
+                    <div class="unidades-modal">
+                        <div class="unidades-modal-head">
+                            <div>
+                                <strong>{{ $paq->nombre }}</strong>
+                                <div class="muted" style="font-size:12.5px;">{{ count($contenidoPaq) }} {{ count($contenidoPaq) === 1 ? 'artículo' : 'artículos' }}</div>
+                            </div>
+                            <button type="button" class="btn btn--ghost" style="padding:5px 10px;" onclick="document.getElementById('paquete-modal-{{ $paq->id }}').style.display='none'">Cerrar</button>
+                        </div>
+                        <ul class="pv-paq-lista">
+                            @foreach ($paq->productos as $p)
+                                <li>
+                                    @if ($p->imagen_path)<img src="{{ asset('storage/'.$p->imagen_path) }}" alt="" loading="lazy">@else<span class="pv-paq-sin"></span>@endif
+                                    <span><b>{{ (int) $p->pivot->cantidad }}×</b> {{ $p->nombreVisible() }}<small>{{ trim(($p->modelo ?: '').($p->marca ? ' · '.$p->marca : ''), ' ·') }}</small></span>
+                                    <a class="tbl-link" href="{{ route('inventory.productos.show', $p) }}">Ver ficha</a>
+                                </li>
+                            @endforeach
+                            @foreach ($paq->equipos as $e)
+                                <li>
+                                    @if ($e->imagen)<img src="{{ asset('storage/'.$e->imagen) }}" alt="" loading="lazy">@else<span class="pv-paq-sin"></span>@endif
+                                    <span><b>{{ (int) $e->pivot->cantidad }}×</b> {{ trim(($e->subtipo ?: $e->tipo) ?? '') ?: 'Equipo' }}<small>{{ trim(($e->modelo ?: '').($e->marca ? ' · '.$e->marca : ''), ' ·') }}</small></span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        <div class="pv-cab pv-cab--sec">
+            <h2 class="pv-titulo pv-titulo--sec">Productos. <span>{{ $productos->total() }}</span></h2>
+        </div>
     @endif
 
     {{-- ===================== Vitrina de productos =====================
@@ -521,6 +529,22 @@
         @endforelse
     </div>
     @include('partials._paginacion', ['paginator' => $productos])
+
+    {{-- Aparece solo cuando hay productos marcados con la palomita. --}}
+    <div class="pv-barra" id="pv-barra" hidden role="region" aria-label="Productos marcados">
+        <span class="pv-barra-n"><b id="contador-seleccionados">0</b> <span id="pv-barra-palabra">marcados</span></span>
+        <button type="button" id="btn-etiquetas" class="pv-barra-btn" onclick="imprimirEtiquetas()" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            <span class="pv-l">Imprimir etiquetas</span><span class="pv-c">Etiquetas</span> <span class="pv-sr">(<span id="contador-etiquetas">0</span>)</span>
+        </button>
+        <button type="button" id="btn-agrupar-paquete" class="pv-barra-btn pv-barra-btn--prim" onclick="agruparEnPaquete()" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+            <span class="pv-l">Agrupar en paquete</span><span class="pv-c">Paquete</span>
+        </button>
+        <button type="button" class="pv-barra-x" onclick="desmarcarTodo()" aria-label="Desmarcar todo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+    </div>
 
     {{-- Modales de unidades disponibles, fuera de la tabla para que el HTML sea válido --}}
     @foreach ($productos as $producto)
@@ -654,26 +678,23 @@
         }
 
         function actualizarSeleccionPaquete() {
-            const marcados = document.querySelectorAll('.producto-checkbox:checked');
-            const boton = document.getElementById('btn-agrupar-paquete');
+            const n = new Set(Array.from(document.querySelectorAll('.producto-checkbox:checked')).map(c => c.value)).size;
+            const barra = document.getElementById('pv-barra');
+            if (!barra) return;
+            document.getElementById('contador-seleccionados').textContent = n;
+            document.getElementById('pv-barra-palabra').textContent = n === 1 ? 'marcado' : 'marcados';
+            document.getElementById('contador-etiquetas').textContent = n;
+            document.getElementById('btn-etiquetas').disabled = n === 0;
+            document.getElementById('btn-agrupar-paquete').disabled = n === 0;
+            barra.hidden = n === 0;
+            const todos = document.getElementById('sel-todos');
+            const total = document.querySelectorAll('.pv-card .producto-checkbox').length;
+            if (todos) { todos.checked = n > 0 && n === total; todos.indeterminate = n > 0 && n < total; }
+        }
 
-            document.getElementById('contador-seleccionados').textContent = marcados.length;
-
-            const etq = document.getElementById('btn-etiquetas');
-            document.getElementById('contador-etiquetas').textContent = marcados.length;
-            etq.disabled = marcados.length === 0;
-            etq.style.opacity = marcados.length ? '1' : '.5';
-            etq.style.cursor = marcados.length ? 'pointer' : 'not-allowed';
-
-            if (marcados.length > 0) {
-                boton.disabled = false;
-                boton.style.opacity = '1';
-                boton.style.cursor = 'pointer';
-            } else {
-                boton.disabled = true;
-                boton.style.opacity = '.5';
-                boton.style.cursor = 'not-allowed';
-            }
+        function desmarcarTodo() {
+            document.querySelectorAll('.producto-checkbox:checked').forEach(c => { c.checked = false; });
+            actualizarSeleccionPaquete();
         }
 
         function imprimirEtiquetas() {

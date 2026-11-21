@@ -229,3 +229,65 @@
     .pv-media img, .pv-check, .pv-tipo { transition: none; }
     .pv-media:hover img { transform: none; }
 }
+
+/* ===================== Paquetes en vitrina ===================== */
+.pv-cab--sec { margin: 6px 0 14px; }
+.pv-titulo--sec { font-size: 22px; }
+.pv-admin { font-size: 13px; font-weight: 600; color: var(--primary); text-decoration: none; white-space: nowrap; }
+.pv-admin:hover { text-decoration: underline; }
+.pv-grid--paq { margin-bottom: 34px; }
+
+/* Collage: 1 foto sola; 2 lado a lado; 3 = una grande y dos chicas. */
+.pv-media--paq { display: grid; gap: 6px; padding: 10px; align-items: stretch; justify-items: stretch; }
+.pv-media--paq .pv-foto { min-width: 0; min-height: 0; border-radius: 14px; background: color-mix(in srgb, var(--surface) 55%, transparent);
+                          display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.pv-media--paq .pv-foto img { width: 82%; height: 82%; object-fit: contain; }
+.pv-fotos-1 { grid-template-columns: 1fr; }
+.pv-fotos-1 .pv-foto { background: transparent; }
+.pv-fotos-2 { grid-template-columns: 1fr 1fr; }
+.pv-fotos-3 { grid-template-columns: 1.25fr 1fr; grid-template-rows: 1fr 1fr; }
+.pv-fotos-3 .pv-foto:first-child { grid-row: 1 / span 2; }
+.pv-media--paq .pv-sinfoto { grid-column: 1 / -1; align-self: center; justify-self: center; }
+.pv-media--paq .pv-etiquetas { right: 14px; }
+.pv-media--paq:hover img { transform: scale(1.04); }
+
+.pv-sub--paq { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+.pv-stock--paq { color: var(--muted); }
+
+.pv-paq-lista { list-style: none; margin: 0; padding: 6px 0 0; display: grid; gap: 8px; }
+.pv-paq-lista li { display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px solid var(--border); border-radius: 12px; }
+.pv-paq-lista img, .pv-paq-sin { width: 54px; height: 54px; flex: 0 0 54px; border-radius: 10px; object-fit: contain; background: var(--surface-2); }
+.pv-paq-lista li > span { flex: 1; min-width: 0; font-size: 14px; }
+.pv-paq-lista small { display: block; color: var(--muted); font-size: 12.5px; }
+
+/* ===================== Barra flotante al marcar ===================== */
+.pv-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pv-barra { position: fixed; left: 50%; bottom: 22px; z-index: 60; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 18px; border-radius: 999px;
+            background: var(--text); color: var(--surface); box-shadow: 0 18px 40px rgba(15, 23, 42, .28);
+            animation: pv-sube 200ms cubic-bezier(.2, .8, .2, 1); max-width: calc(100vw - 24px); }
+.pv-barra[hidden] { display: none; }
+@keyframes pv-sube { from { opacity: 0; transform: translate(-50%, 14px); } }
+.pv-barra-n { font-size: 13.5px; margin-right: 6px; white-space: nowrap; }
+.pv-barra .pv-c { display: none; }
+.pv-barra-btn { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 16px; border-radius: 999px; border: 0;
+                background: color-mix(in srgb, var(--surface) 14%, transparent); color: var(--surface); font: inherit; font-size: 13.5px;
+                font-weight: 600; cursor: pointer; white-space: nowrap; transition: background-color 150ms ease; }
+.pv-barra-btn svg { width: 16px; height: 16px; }
+.pv-barra-btn:hover { background: color-mix(in srgb, var(--surface) 24%, transparent); }
+.pv-barra-btn--prim { background: var(--primary); color: #fff; }
+.pv-barra-btn--prim:hover { background: var(--primary-strong, var(--primary)); }
+.pv-barra-btn:focus-visible, .pv-barra-x:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.pv-barra-x { width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; color: var(--surface); cursor: pointer;
+              display: inline-flex; align-items: center; justify-content: center; }
+.pv-barra-x svg { width: 18px; height: 18px; }
+@media (max-width: 640px) {
+    .pv-barra { bottom: 12px; padding-left: 14px; gap: 4px; }
+    .pv-barra-btn { padding: 0 12px; font-size: 12.5px; }
+    .pv-barra-n { font-size: 12.5px; }
+    .pv-barra .pv-l { display: none; }
+    .pv-barra .pv-c { display: inline; }
+    .pv-barra-btn { height: 38px; }
+    .pv-titulo--sec { font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .pv-barra { animation: none; } }
