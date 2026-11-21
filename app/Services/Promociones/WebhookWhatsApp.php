@@ -45,6 +45,16 @@ class WebhookWhatsApp
             foreach ((array) ($entry['changes'] ?? []) as $change) {
                 $valor = (array) ($change['value'] ?? []);
 
+                // Mensajería: guarda la conversación (mensajes y estados). Un
+                // error aquí no detiene lo de campañas ni las bajas.
+                if (($change['field'] ?? 'messages') === 'messages') {
+                    try {
+                        app(\App\Services\Mensajeria\Mensajeria::class)->recibir($valor);
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
+                }
+
                 foreach ((array) ($valor['statuses'] ?? []) as $st) {
                     $this->estado((array) $st, $r);
                 }
