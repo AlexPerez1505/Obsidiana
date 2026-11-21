@@ -37,9 +37,8 @@
     $mesLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 @endphp
 
-@push('head')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js?v=20261119"></script>
-    <style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js?v=20261119"></script>
+<style>
         .vt2-summary{display:grid;gap:14px}
         .vt-panel[data-vt-panel="resumen-legacy"]{display:none!important;visibility:hidden!important;height:0!important;overflow:hidden!important;margin:0!important;padding:0!important}
         .vt2-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
@@ -86,8 +85,7 @@
         @media(max-width:1100px){.vt2-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
         @media(max-width:720px){.vt2-kpis,.vt2-lower{grid-template-columns:1fr 1fr}.vt2-donut-layout{grid-template-columns:1fr}.vt2-donut-wrap{max-width:170px;margin:auto}}
         @media(max-width:480px){.vt2-kpis{grid-template-columns:1fr}.vt2-card{padding:12px}.vt2-chart-wrap{height:235px}}
-    </style>
-@endpush
+</style>
 
 <section class="vt-panel vt2-summary" data-vt-panel="resumen">
     <div class="vt2-kpis">
