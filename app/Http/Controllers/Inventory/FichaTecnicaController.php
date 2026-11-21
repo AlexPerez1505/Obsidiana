@@ -148,23 +148,46 @@ class FichaTecnicaController extends Controller
             // Qué producto le toca a cada modelo, para decirlo antes de guardar.
             'productosPorModelo' => Producto::whereNotNull('equipment_model_id')->get(['id', 'equipment_model_id', 'marca', 'modelo'])
                 ->mapWithKeys(fn (Producto $p) => [$p->equipment_model_id => trim($p->marca.' '.$p->modelo) ?: 'Producto #'.$p->id]),
+            // Cualquier equipo del inventario, coincida o no con el catálogo
+            // elegido. Los que ya tienen otra ficha se muestran pero no se
+            // pueden elegir (cada producto lleva una sola ficha).
+            'productosInventario' => Producto::query()
+                ->orderByRaw("COALESCE(NULLIF(tipo_equipo, ''), 'ZZZ')")->orderBy('subtipo')->orderBy('marca')->orderBy('modelo')
+                ->get(['id', 'tipo_equipo', 'subtipo', 'marca', 'modelo', 'referencia']),
+            'productosConFicha' => FichaTecnica::whereNotNull('producto_id')
+                ->when($ficha->exists, fn ($q) => $q->whereKeyNot($ficha->id))
+                ->pluck('producto_id')->flip(),
         ]);
     }
 
     private function validado(Request $request, bool $obligaArchivo, ?FichaTecnica $ficha = null): array
     {
-        $data = $request->validate(FichasTecnicas::reglas($obligaArchivo, exigeCatalogo: true), FichasTecnicas::MENSAJES);
+        // Si eligen el equipo del inventario a mano, el catálogo ya no es
+        // obligatorio: se liga a ese aunque no coincida con el modelo.
+        $elegido = $request->filled('producto_id');
+        $data = $request->validate(
+            FichasTecnicas::reglas($obligaArchivo, exigeCatalogo: ! $elegido) + ['producto_id' => ['nullable', 'integer', 'exists:productos,id']],
+            FichasTecnicas::MENSAJES + ['producto_id.exists' => 'Ese equipo ya no existe en el inventario.'],
+        );
 
         $data['activo'] = $request->boolean('activo');
 
-        // El producto sale del modelo elegido: es el que coincide en el inventario.
-        $data['producto_id'] = FichasTecnicas::productoDelModelo((int) $data['equipment_model_id'])?->id;
+        if ($elegido) {
+            $producto = Producto::find($data['producto_id']);
+            // Sin catálogo capturado, se toma el del equipo elegido.
+            foreach (['equipment_type_id', 'subtype_id', 'brand_id', 'equipment_model_id'] as $campo) {
+                $data[$campo] = ($data[$campo] ?? null) ?: $producto?->{$campo};
+            }
+        } else {
+            // El producto sale del modelo elegido: es el que coincide en el inventario.
+            $data['producto_id'] = FichasTecnicas::productoDelModelo((int) $data['equipment_model_id'])?->id;
+        }
         $data['paquete_id'] = $data['paquete_id'] ?? null;
         unset($data['item']);
 
         // Cada producto solo puede tener una ficha técnica relacionada.
-        $this->fichas->exigirUnicaPorProducto($data['producto_id'], $ficha, 'equipment_model_id',
-            'El producto de ese modelo ya tiene otra ficha técnica.');
+        $this->fichas->exigirUnicaPorProducto($data['producto_id'], $ficha, $elegido ? 'producto_id' : 'equipment_model_id',
+            $elegido ? 'Ese equipo ya tiene otra ficha técnica.' : 'El producto de ese modelo ya tiene otra ficha técnica.');
 
         // El archivo se resuelve aparte, segun sea alta o edicion.
         unset($data['archivo']);

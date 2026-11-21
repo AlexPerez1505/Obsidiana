@@ -67,6 +67,7 @@
                     </div>
                 </div>
 
+                @php $ivaPorPago = $ivaCandidatas->mapWithKeys(fn ($c) => [$c['pago']->id => $c['iva']]); @endphp
                 @forelse ($venta->pagos as $p)
                     <div class="cb-fila">
                         <div class="cb-fila-txt">
@@ -94,6 +95,26 @@
                         <span class="cb-chip es-{{ $p->estado() }}">{{ $p->estadoLabel() }}</span>
 
                         <div class="cb-fila-acc">
+                            {{-- IVA solo a esta mensualidad: las demás no cambian. --}}
+                            @can('cobranza.ajustar')
+                                @if ($ivaPorPago->has($p->id))
+                                    @php $ivaFila = (float) $ivaPorPago[$p->id]; @endphp
+                                    <form method="POST" action="{{ route('commercial.ventas.cobros.iva.agregar', $venta) }}" style="display:inline;"
+                                          data-confirmar="¿Agregar IVA solo a «{{ $p->nombre }}»? Sube ${{ number_format($ivaFila, 2) }} y queda en ${{ number_format($p->saldo() + $ivaFila, 2) }}. Las demás mensualidades no cambian.">
+                                        @csrf
+                                        <input type="hidden" name="pagos[]" value="{{ $p->id }}">
+                                        <button type="submit" class="cb-iva-btn" title="Agregar IVA solo a esta mensualidad">+IVA</button>
+                                    </form>
+                                @elseif ((float) $p->iva_monto > 0 && $p->saldo() + 0.009 >= (float) $p->iva_monto)
+                                    <form method="POST" action="{{ route('commercial.ventas.cobros.iva.quitar', $venta) }}" style="display:inline;"
+                                          data-confirmar="¿Quitar el IVA de «{{ $p->nombre }}»? Baja ${{ number_format((float) $p->iva_monto, 2) }}. Las demás mensualidades no cambian.">
+                                        @csrf
+                                        <input type="hidden" name="pagos[]" value="{{ $p->id }}">
+                                        <button type="submit" class="cb-iva-btn quitar" title="Quitar el IVA de esta mensualidad">−IVA</button>
+                                    </form>
+                                @endif
+                            @endcan
+
                             <button type="button" class="cb-mini" title="Editar"
                                     data-editar-parcialidad
                                     data-url="{{ route('commercial.ventas.cobros.parcialidad.actualizar', [$venta, $p]) }}"

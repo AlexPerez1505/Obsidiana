@@ -13,7 +13,7 @@ class OrdenSalidaItem extends Model
     protected $fillable = [
         'orden_salida_id', 'venta_item_id', 'nombre', 'descripcion', 'cantidad', 'no_series',
         'requiere_emplayado', 'preparado', 'preparado_en', 'emplayado', 'emplayado_en',
-        'observaciones', 'orden',
+        'observaciones', 'orden', 'asignado_a', 'asignado_por', 'asignado_en',
     ];
 
     protected function casts(): array
@@ -25,12 +25,24 @@ class OrdenSalidaItem extends Model
             'emplayado' => 'boolean',
             'preparado_en' => 'datetime',
             'emplayado_en' => 'datetime',
+            'asignado_en' => 'datetime',
         ];
     }
 
     public function orden(): BelongsTo
     {
         return $this->belongsTo(OrdenSalida::class, 'orden_salida_id');
+    }
+
+    /** Quién prepara este equipo en particular. */
+    public function asignadoA(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'asignado_a');
+    }
+
+    public function asignadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'asignado_por');
     }
 
     public function ventaItem(): BelongsTo

@@ -73,12 +73,17 @@
                     <span class="et">Salida</span>
                     <span class="val">{{ $venta->ordenSalida->estadoLabel() }}</span>
                 </a>
-                @php $prepara = $venta->ordenSalida->asignadaA; @endphp
-                @if ($prepara || (! $venta->ordenSalida->cerrada() && auth()->user()->can('salidas.asignar')))
+                @php
+                    // Quién prepara: la persona de la orden o, si se repartió, las de cada equipo.
+                    $preparan = $venta->ordenSalida->asignadaA
+                        ? collect([$venta->ordenSalida->asignadaA->name])
+                        : $venta->ordenSalida->items()->with('asignadoA:id,name')->get()->pluck('asignadoA.name')->filter()->unique()->values();
+                @endphp
+                @if ($preparan->isNotEmpty() || (! $venta->ordenSalida->cerrada() && auth()->user()->can('salidas.asignar')))
                     <a href="{{ route('inventory.salidas.show', $venta->ordenSalida) }}#asignar" class="pill-dato"
-                       title="{{ $prepara ? 'Quién prepara el equipo' : 'Elegir quién prepara el equipo' }}">
+                       title="{{ $preparan->isNotEmpty() ? 'Quién prepara el equipo' : 'Elegir quién prepara el equipo' }}">
                         <span class="et">Prepara</span>
-                        <span class="val">{{ $prepara?->name ?? 'Asignar' }}</span>
+                        <span class="val">{{ $preparan->isNotEmpty() ? $preparan->implode(', ') : 'Asignar' }}</span>
                     </a>
                 @endif
                 <a href="{{ route('inventory.salidas.pdf', $venta->ordenSalida) }}" target="_blank" class="btn-icono" title="PDF de la orden de salida" aria-label="PDF de la orden de salida">

@@ -60,6 +60,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         // Quién prepara: le llega el aviso por correo y en la campana.
         Route::post('/{orden}/asignar', [OrdenSalidaController::class, 'asignar'])
             ->middleware('can:salidas.asignar')->name('asignar');
+        // Quién prepara cada equipo de la orden (no solo la orden completa).
+        Route::post('/partidas/{item}/asignar', [OrdenSalidaController::class, 'asignarItem'])
+            ->middleware('can:salidas.asignar')->name('items.asignar');
 
         // Etapas: Ingeniería → Empaque → Entrega, cada una con su responsable.
         // Quién puede trabajar cada etapa lo revisa EtapasDeSalida (asignado, admin o quien asigna).

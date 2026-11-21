@@ -3,6 +3,7 @@
 namespace App\Services\Almacen;
 
 use App\Models\OrdenSalida;
+use App\Models\OrdenSalidaItem;
 use App\Models\User;
 use App\Models\VentaBitacora;
 use App\Notifications\OrdenSalidaAsignada;
@@ -62,6 +63,8 @@ class AsignacionDeSalida
         }
 
         $orden->update(['asignada_a' => $persona->id, 'asignada_por' => $quien->id, 'asignada_en' => now()]);
+        // "Asignar todo": cada equipo de la orden queda con esa persona.
+        $orden->items()->update(['asignado_a' => $persona->id, 'asignado_por' => $quien->id, 'asignado_en' => now()]);
         $this->bitacora($orden, "{$quien->name} asignó a {$persona->name} para preparar {$orden->folio}");
         $this->avisar($orden->fresh(), $persona);
 
@@ -69,16 +72,74 @@ class AsignacionDeSalida
     }
 
     /**
+     * Quién prepara UN equipo de la orden (o nadie, con null). La orden
+     * queda con esa persona solo si todos sus equipos la tienen a ella.
+     *
+     * @return string mensaje para el usuario
+     */
+    public function asignarItem(OrdenSalidaItem $item, ?int $userId, User $quien): string
+    {
+        // Ojo: $item->orden es la columna de posición, no la relación.
+        $orden = OrdenSalida::findOrFail($item->orden_salida_id);
+        if ($orden->cerrada()) {
+            throw ValidationException::withMessages(['user_id' => 'La orden ya se entregó o se canceló: ya no se asigna.']);
+        }
+
+        if ($userId === null) {
+            if (! $item->asignado_a) {
+                return 'Ese equipo no tenía a nadie asignado.';
+            }
+            $antes = $item->asignadoA?->name;
+            $item->update(['asignado_a' => null, 'asignado_por' => $quien->id, 'asignado_en' => now()]);
+            $this->sincronizarOrden($orden, $quien);
+            $this->bitacora($orden, "{$quien->name} quitó a {$antes} de preparar {$item->nombre} ({$orden->folio})");
+
+            return "Se quitó a {$antes} de {$item->nombre}.";
+        }
+
+        $persona = $this->candidatos()->firstWhere('id', $userId);
+        if (! $persona) {
+            throw ValidationException::withMessages(['user_id' => 'Esa persona no está activa o no tiene permiso para preparar salidas.']);
+        }
+
+        if ((int) $item->asignado_a === $persona->id) {
+            return "{$persona->name} ya prepara {$item->nombre}.";
+        }
+
+        $item->update(['asignado_a' => $persona->id, 'asignado_por' => $quien->id, 'asignado_en' => now()]);
+        $this->sincronizarOrden($orden, $quien);
+        $this->bitacora($orden, "{$quien->name} asignó a {$persona->name} para preparar {$item->nombre} ({$orden->folio})");
+        $this->avisar($orden->fresh(), $persona, $item->fresh());
+
+        return "Listo: {$persona->name} prepara {$item->nombre}. Le llegó el aviso en el sistema y a su correo.";
+    }
+
+    /**
+     * La orden lleva a una persona solo si todos sus equipos la tienen; si
+     * están repartidos, la orden queda sin una sola persona (cada equipo
+     * dice quién lo prepara).
+     */
+    private function sincronizarOrden(OrdenSalida $orden, User $quien): void
+    {
+        $asignados = $orden->items()->pluck('asignado_a')->unique()->values();
+        $unico = $asignados->count() === 1 ? $asignados->first() : null;
+
+        if ((int) $orden->asignada_a !== (int) $unico) {
+            $orden->update(['asignada_a' => $unico, 'asignada_por' => $quien->id, 'asignada_en' => now()]);
+        }
+    }
+
+    /**
      * Campana + correo. Va después de responder (no hace esperar a quien
      * asigna) y un correo que falla no tumba nada.
      */
-    private function avisar(OrdenSalida $orden, User $persona): void
+    private function avisar(OrdenSalida $orden, User $persona, ?OrdenSalidaItem $item = null): void
     {
         $orden->loadMissing(['venta.customer', 'items', 'asignadaPor']);
 
-        \Illuminate\Support\defer(function () use ($orden, $persona) {
+        \Illuminate\Support\defer(function () use ($orden, $persona, $item) {
             try {
-                $persona->notify(new OrdenSalidaAsignada($orden));
+                $persona->notify(new OrdenSalidaAsignada($orden, $item));
             } catch (\Throwable $e) {
                 Log::warning('[Salidas] No salió el aviso de asignación', ['orden' => $orden->id, 'user_id' => $persona->id, 'error' => $e->getMessage()]);
             }

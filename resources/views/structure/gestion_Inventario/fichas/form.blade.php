@@ -24,8 +24,30 @@
                              placeholder="Ej. Gastroscopio Olympus GIF-H190"
                              :value="$ficha->titulo" :required="true" :autofocus="true" />
 
-            {{-- El equipo que describe, con el catálogo: obligatorio. Con el
-                 modelo se liga sola al producto que coincide en el inventario. --}}
+            {{-- Cualquier equipo del inventario, coincida o no con el catálogo.
+                 Si se elige, se liga a ese y el catálogo pasa a ser opcional. --}}
+            @php $productoElegido = (string) old('producto_id', $ficha->exists ? $ficha->producto_id : ''); @endphp
+            <x-ui.form-group for="producto_id" label="Equipo del inventario">
+                <select id="producto_id" name="producto_id" data-ft-producto>
+                    <option value="">Ligar por el modelo del catálogo (automático)</option>
+                    @foreach ($productosInventario->groupBy(fn ($p) => $p->tipo_equipo ?: 'Sin tipo') as $tipoP => $lista)
+                        <optgroup label="{{ $tipoP }}">
+                            @foreach ($lista as $p)
+                                @php $ocupado = isset($productosConFicha[$p->id]); @endphp
+                                <option value="{{ $p->id }}" @selected($productoElegido === (string) $p->id) @disabled($ocupado && $productoElegido !== (string) $p->id)>
+                                    {{ $p->nombreVisible() }}{{ $p->modelo ? ' · '.$p->modelo : '' }}{{ $p->marca ? ' · '.$p->marca : '' }}{{ $p->referencia ? ' · Ref. '.$p->referencia : '' }}{{ $ocupado ? ' (ya tiene ficha)' : '' }}
+                                </option>
+                            @endforeach
+                        </optgroup>
+                    @endforeach
+                </select>
+            </x-ui.form-group>
+            @error('producto_id')<p class="ft-liga" style="color:var(--danger);">{{ $message }}</p>@enderror
+            <p class="campo-nota" style="margin:-4px 0 12px;">Elige cualquier equipo aunque no coincida con el tipo, la marca o el modelo de abajo.</p>
+
+            {{-- El equipo que describe, con el catálogo. Con el modelo se liga
+                 solo al producto que coincide en el inventario (si no se eligió
+                 uno arriba). --}}
             <div class="ft-catalogo" data-ft-catalogo>
                 @foreach ([
                     ['equipment_type_id', 'tipo', 'Tipo de equipo *', 'Elige el tipo'],
@@ -185,7 +207,22 @@
             select.disabled = !opciones || !opciones.length;
         }
 
+        var elegido = document.querySelector('[data-ft-producto]');
+        // Con un equipo elegido a mano, el catálogo es opcional.
+        function catalogoObligatorio() {
+            var libre = elegido && elegido.value;
+            Object.keys(sel).forEach(function (k) { sel[k].required = !libre; });
+        }
+
         function pintarLiga() {
+            if (elegido && elegido.value) {
+                liga.className = 'ft-liga ok';
+                liga.innerHTML = '✓ Se liga al equipo <b></b> que elegiste.';
+                liga.querySelector('b').textContent = elegido.options[elegido.selectedIndex].textContent.trim();
+                catalogoObligatorio();
+                return;
+            }
+            catalogoObligatorio();
             var modelo = sel.modelo.value;
             if (!modelo) { liga.textContent = ''; liga.className = 'ft-liga'; return; }
             var p = productos[modelo];
@@ -207,6 +244,7 @@
         sel.subtipo.addEventListener('change', function () { marcas(false); });
         sel.marca.addEventListener('change', function () { modelos(false); });
         sel.modelo.addEventListener('change', pintarLiga);
+        if (elegido) elegido.addEventListener('change', pintarLiga);
     })();
 
     (function () {

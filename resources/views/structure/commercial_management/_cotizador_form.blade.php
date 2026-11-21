@@ -312,6 +312,35 @@
     .cot-link { padding:0; border:0; background:none; color:var(--primary); font-family:inherit;
                 font-size:12px; font-weight:600; cursor:pointer; text-decoration:underline; }
     .cot-piezas { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:8px; }
+    /* Número de serie: botón en el renglón y panel guiado debajo. */
+    .cot-serie-btn { display:inline-flex; align-items:center; gap:6px; margin-top:6px; max-width:180px; padding:5px 10px; border-radius:999px;
+                     border:1px dashed var(--primary); background:var(--primary-soft); color:var(--primary); font:inherit; font-size:12px;
+                     font-weight:700; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cot-serie-btn.ok { border-style:solid; border-color:color-mix(in srgb, var(--green) 50%, var(--border)); background:var(--green-soft); color:var(--green);
+                        font-family:ui-monospace, Consolas, monospace; font-weight:600; }
+    .cot-serie-btn:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+    .cot-serie-falta { display:block; margin-top:4px; color:var(--danger); font-size:11.5px; font-weight:700; }
+    .cot-piezas-fila > td { padding:0 !important; background:transparent !important; }
+    .cot-piezas-panel { margin:4px 8px 12px; padding:14px 16px; border:1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+                        border-radius:14px; background:var(--surface); box-shadow:0 10px 26px rgba(15,23,42,.06); }
+    .cot-piezas-cab { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+    .cot-piezas-cab b { display:block; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cot-piezas-ico { width:34px; height:34px; border-radius:10px; flex:0 0 34px; display:inline-flex; align-items:center; justify-content:center;
+                      background:var(--primary-soft); color:var(--primary); }
+    .cot-piezas-ico svg { width:17px; height:17px; }
+    .cot-piezas-estado { display:block; font-size:12.5px; color:var(--muted); }
+    .cot-piezas-estado.ok { color:var(--green); font-weight:700; }
+    .cot-piezas-auto { height:34px; padding:0 12px; border-radius:999px; border:1px solid var(--border); background:var(--surface);
+                       color:var(--primary); font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; }
+    .cot-piezas-auto:hover { background:var(--primary-soft); }
+    .cot-piezas-listo { height:34px; padding:0 16px; border-radius:999px; border:0; background:var(--primary); color:#fff;
+                        font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; }
+    .cot-piezas-buscar { width:100%; max-width:320px; margin-bottom:10px; }
+    .cot-piezas-nota { margin:10px 0 0; color:var(--muted); font-size:12px; }
+    .cot-pieza-txt { display:flex; flex-direction:column; gap:1px; min-width:0; }
+    .cot-pieza .serie { font-family:ui-monospace, Consolas, monospace; font-size:13px; font-weight:700; }
+    .cot-pieza .serie.sin { font-family:inherit; font-weight:600; color:var(--muted); font-style:italic; }
+    .cot-pieza[hidden] { display:none; }
     .cot-pieza { display:flex; align-items:center; gap:9px; padding:8px 11px; cursor:pointer;
                  border:1px solid var(--border); border-radius:9px; background:var(--surface);
                  transition:border-color .14s ease, background .14s ease; }
@@ -503,6 +532,7 @@
 
     const money = n => '$' + (Math.round((+n || 0) * 100) / 100).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const $ = id => document.getElementById(id);
+    const ICON_SERIE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" aria-hidden="true"><path d="M3 5v14M7 5v14M11 5v14M15 5v14M19 5v14"/></svg>';
     const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g, '')); return isNaN(n) ? 0 : n; };
     // Los campos de importes no arrancan con un 0 escrito (estorba al
     // capturar): si vale 0 se muestran vacíos, con el 0 solo de guía.
@@ -516,11 +546,13 @@
        Un paquete no tiene stock propio (lo tienen los productos que lo
        componen), así que ahí no se muestra nada.
     ========================================================== */
+    const escS = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
     function celdaStock(it, idx) {
         if (it.tipo_item !== 'producto') return '<span style="color:var(--muted);">—</span>';
 
         const stock = +it.stock || 0;
-        const elegidas = (it.seriales || []).length;
+        const elegidas = (it.seriales || []);
         const falta = it.cantidad > stock;
 
         const color = falta ? 'var(--danger)' : (stock > 0 ? 'var(--green)' : 'var(--muted)');
@@ -529,50 +561,68 @@
         // Sin piezas identificadas no hay nada que elegir.
         if (!(it.piezas || []).length) return texto;
 
-        const etiqueta = elegidas ? `${elegidas} elegida(s)` : 'Elegir';
+        // Las series elegidas quedan a la vista en el renglón.
+        const series = elegidas.map(id => it.piezas.find(p => p.id === id)).filter(Boolean)
+            .map(p => p.no_serie || p.codigo || 'sin serie');
+        const faltan = Math.max(0, it.cantidad - elegidas.length);
+        const boton = elegidas.length
+            ? `<button type="button" class="cot-serie-btn ok" data-piezas="${idx}" title="Cambiar las series">${ICON_SERIE}${escS(series.slice(0, 2).join(', '))}${series.length > 2 ? ` +${series.length - 2}` : ''}</button>`
+            : `<button type="button" class="cot-serie-btn" data-piezas="${idx}">${ICON_SERIE}Elegir serie</button>`;
+        const aviso = elegidas.length && faltan
+            ? `<span class="cot-serie-falta">Falta elegir ${faltan}</span>` : '';
 
-        return `${texto}<br><button type="button" class="cot-link" data-piezas="${idx}">${etiqueta}</button>`;
+        return `${texto}<br>${boton}${aviso}`;
     }
 
     function filaDePiezas(it, idx) {
         const tr = document.createElement('tr');
         const elegidas = it.seriales || [];
+        const muchas = it.piezas.length > 6;
 
         const chips = it.piezas.map(p => {
             const puesta = elegidas.includes(p.id);
-            const detalle = [p.no_serie, p.condicion === 'usado' ? 'usado' : null].filter(Boolean).join(' · ');
+            const serie = p.no_serie || 'Sin número de serie';
+            const extra = [p.codigo ? 'Etiqueta ' + p.codigo : null, p.condicion === 'usado' ? 'usado' : null].filter(Boolean).join(' · ');
 
             // La pieza que está en un congreso se puede vender (allá mismo
             // la venden), pero no está en el almacén: se avisa para que se
             // elija a propósito y no por descuido.
             const fuera = p.congreso
-                ? `<span class="det cot-pieza-fuera">En ${p.congreso}</span>`
+                ? `<span class="det cot-pieza-fuera">En ${escS(p.congreso)}</span>`
                 : '';
 
-            return `<label class="cot-pieza ${puesta ? 'puesta' : ''} ${p.congreso ? 'fuera' : ''}">
+            return `<label class="cot-pieza ${puesta ? 'puesta' : ''} ${p.congreso ? 'fuera' : ''}" data-buscar="${escS([p.no_serie, p.codigo, p.condicion, p.congreso].filter(Boolean).join(' ').toLowerCase())}">
                         <input type="checkbox" data-pieza="${idx}" value="${p.id}" ${puesta ? 'checked' : ''}>
-                        <span class="cod">${p.codigo || 'sin etiqueta'}</span>
-                        ${detalle ? `<span class="det">${detalle}</span>` : ''}
-                        ${fuera}
+                        <span class="cot-pieza-txt">
+                            <span class="serie ${p.no_serie ? '' : 'sin'}">${escS(serie)}</span>
+                            ${extra ? `<span class="det">${escS(extra)}</span>` : ''}
+                            ${fuera}
+                        </span>
                     </label>`;
         }).join('');
 
-        const sobran = elegidas.length > it.cantidad;
+        const completas = elegidas.length >= it.cantidad && elegidas.length > 0;
+        const estado = !elegidas.length
+            ? `Elige ${it.cantidad === 1 ? 'la serie que se entrega' : 'las ' + it.cantidad + ' series que se entregan'}`
+            : (completas ? '✓ Listo: ' + elegidas.length + ' de ' + it.cantidad : elegidas.length + ' de ' + it.cantidad + ' elegidas');
 
+        tr.className = 'cot-piezas-fila';
         tr.innerHTML = `
-            <td colspan="${COLUMNAS}" style="background:var(--surface-2); padding:14px 16px;">
-                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                    <b style="font-size:13px;">¿Cuáles piezas se entregan?</b>
-                    <span style="color:${sobran ? 'var(--danger)' : 'var(--muted)'}; font-size:12.5px;">
-                        ${elegidas.length} de ${it.cantidad} elegida(s)${sobran ? ' — sobran' : ''}
-                    </span>
-                    <span style="flex:1;"></span>
-                    <button type="button" class="cot-link" data-piezas-cerrar="${idx}">Cerrar</button>
+            <td colspan="${COLUMNAS}">
+                <div class="cot-piezas-panel">
+                    <div class="cot-piezas-cab">
+                        <span class="cot-piezas-ico">${ICON_SERIE}</span>
+                        <div style="flex:1; min-width:0;">
+                            <b>Número de serie · ${escS(it.nombre)}</b>
+                            <span class="cot-piezas-estado ${completas ? 'ok' : ''}">${estado}</span>
+                        </div>
+                        <button type="button" class="cot-piezas-auto" data-piezas-auto="${idx}" title="Toma las piezas más antiguas del almacén">Elegir automáticamente</button>
+                        <button type="button" class="cot-piezas-listo" data-piezas-cerrar="${idx}">Listo</button>
+                    </div>
+                    ${muchas ? `<input type="search" class="cot-input cot-piezas-buscar" data-piezas-buscar="${idx}" placeholder="Buscar serie o etiqueta…" autocomplete="off">` : ''}
+                    <div class="cot-piezas">${chips}</div>
+                    <p class="cot-piezas-nota">Marca la pieza que se le entrega al cliente. Si eliges más de las que dice la cantidad, la cantidad sube sola. Si no eliges ninguna, el sistema toma las más antiguas.</p>
                 </div>
-                <div class="cot-piezas">${chips}</div>
-                <p style="margin:10px 0 0; color:var(--muted); font-size:12.5px;">
-                    Si no eliges ninguna, el sistema toma las más antiguas.
-                </p>
             </td>`;
 
         return tr;
@@ -776,7 +826,29 @@
                 ? [...elegidas, id]
                 : elegidas.filter(x => x !== id);
 
+            // Más piezas elegidas que la cantidad: la cantidad sube sola.
+            if (state.items[i].seriales.length > state.items[i].cantidad) {
+                state.items[i].cantidad = state.items[i].seriales.length;
+            }
+
             renderItems();
+        }));
+
+        // Elegir automáticamente: las más antiguas del almacén primero
+        // (las de congreso al final), hasta completar la cantidad.
+        body.querySelectorAll('button[data-piezas-auto]').forEach(b => b.addEventListener('click', () => {
+            const it = state.items[+b.dataset.piezasAuto];
+            const orden = [...it.piezas].sort((x, y) => (x.congreso ? 1 : 0) - (y.congreso ? 1 : 0) || x.id - y.id);
+            it.seriales = orden.slice(0, Math.max(1, it.cantidad)).map(p => p.id);
+            renderItems();
+        }));
+
+        // Buscar dentro de las piezas (cuando son muchas).
+        body.querySelectorAll('input[data-piezas-buscar]').forEach(inp => inp.addEventListener('input', () => {
+            const q = inp.value.trim().toLowerCase();
+            inp.closest('.cot-piezas-panel').querySelectorAll('.cot-pieza').forEach(l => {
+                l.hidden = q !== '' && !l.dataset.buscar.includes(q);
+            });
         }));
 
         recalc();
@@ -799,7 +871,8 @@
             nombre: d.nombre, modelo: d.modelo, marca: d.marca, imagen: d.imagen, contenido: d.contenido || [],
             cantidad: 1, precio_unitario: +d.precio || 0, sobreprecio: 0, es_regalo: false,
             // Cuánto hay y cuáles piezas se pueden entregar.
-            stock: +d.stock || 0, piezas: d.piezas || [], seriales: [], abierto: false,
+            stock: +d.stock || 0, piezas: d.piezas || [], seriales: [],
+            abierto: MOSTRAR_STOCK && (d.piezas || []).length > 0,
         });
         renderItems();
         // El producto solo puede tener una ficha técnica: si la tiene, se adjunta sola.

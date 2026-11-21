@@ -108,16 +108,20 @@ class IvaEnMensualidades
      * Quita el IVA agregado de las mensualidades donde todavía no se ha
      * cobrado: si ya se pagó parte del IVA, esa mensualidad se queda como está.
      */
-    public function quitar(Venta $venta, User $user): string
+    public function quitar(Venta $venta, User $user, ?array $soloPagos = null): string
     {
-        return DB::transaction(function () use ($venta, $user) {
+        return DB::transaction(function () use ($venta, $user, $soloPagos) {
             $venta = Venta::whereKey($venta->id)->lockForUpdate()->firstOrFail();
             $venta->load('pagos.cobros');
+
+            // Sin lista: de todas. Con lista: solo de esas mensualidades;
+            // las demás no se tocan.
+            $ids = $soloPagos === null ? null : collect($soloPagos)->map(fn ($id) => (int) $id)->all();
 
             $quitado = 0.0;
             $n = 0;
             $quedan = 0;
-            foreach ($venta->pagos->filter(fn ($p) => (float) $p->iva_monto > 0) as $p) {
+            foreach ($venta->pagos->filter(fn ($p) => (float) $p->iva_monto > 0 && ($ids === null || in_array($p->id, $ids, true))) as $p) {
                 $iva = (float) $p->iva_monto;
                 if ($p->saldo() + 0.009 < $iva) {
                     $quedan++;

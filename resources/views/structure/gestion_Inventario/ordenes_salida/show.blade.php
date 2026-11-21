@@ -114,6 +114,27 @@
                                     </div>
                                 @endif
 
+                                {{-- Quién prepara este equipo (cada uno puede ser de otra persona). --}}
+                                <div class="os-item-prepara">
+                                    @if ($puedeAsignar && ! $orden->cerrada())
+                                        <form method="POST" action="{{ route('inventory.salidas.items.asignar', $item) }}" class="os-item-asig">
+                                            @csrf
+                                            <label for="prep-{{ $item->id }}">Prepara</label>
+                                            <select id="prep-{{ $item->id }}" name="user_id" data-no-mayus onchange="this.form.requestSubmit()">
+                                                <option value="">— Sin asignar —</option>
+                                                @foreach ($preparadores as $pp)
+                                                    <option value="{{ $pp->id }}" @selected((int) $item->asignado_a === $pp->id)>{{ $pp->name }}</option>
+                                                @endforeach
+                                            </select>
+                                            <noscript><button type="submit" class="btn btn--ghost">Guardar</button></noscript>
+                                        </form>
+                                    @else
+                                        <span class="os-item-prep {{ $item->asignadoA ? '' : 'is-vacio' }}">
+                                            Prepara: <b>{{ $item->asignadoA?->name ?? 'sin asignar' }}</b>
+                                        </span>
+                                    @endif
+                                </div>
+
                                 {{-- Observaciones de la partida --}}
                                 @if ($editable)
                                     <form method="POST" action="{{ route('inventory.salidas.item', [$orden, $item]) }}" class="os-obs">
@@ -454,6 +475,13 @@
            espacio, los pasos van a la derecha; si no cabe, bajan debajo del
            nombre. Así sirve igual con la columna lateral que sin ella. */
         .os-lista { display:flex; flex-direction:column; gap:8px; container-type:inline-size; }
+        .os-item-prepara { margin-top:8px; }
+        .os-item-asig { display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .os-item-asig label { font-size:12.5px; font-weight:700; color:var(--muted); }
+        .os-item-asig select { min-width:190px; max-width:100%; height:34px; padding:0 10px; border-radius:9px; font-size:13px; }
+        .os-item-prep { font-size:12.5px; color:var(--muted); }
+        .os-item-prep b { color:var(--text); }
+        .os-item-prep.is-vacio b { color:var(--muted); font-weight:600; }
         .os-item { display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:10px 12px; align-items:start;
                    padding:12px 14px; border:1px solid var(--border); border-radius:12px; background:var(--surface); }
         .os-item.is-listo { border-color:var(--green); background:var(--green-soft, rgba(34,197,94,.06)); }

@@ -37,6 +37,15 @@
     .cb-chip.es-vencido { background:var(--danger-soft); color:var(--danger); }
     .cb-chip.es-pendiente { background:var(--surface-2); color:var(--muted); }
 
+    /* IVA solo a una mensualidad. */
+    .cb-iva-btn { height:28px; padding:0 10px; border-radius:999px; border:1px solid color-mix(in srgb, var(--primary) 45%, var(--border));
+                  background:var(--primary-soft); color:var(--primary); font:inherit; font-size:11.5px; font-weight:800; cursor:pointer; vertical-align:middle;
+                  transition:background .15s, color .15s; }
+    .cb-iva-btn:hover { background:var(--primary); color:#fff; }
+    .cb-iva-btn.quitar { border-color:var(--border); background:var(--surface); color:var(--muted); }
+    .cb-iva-btn.quitar:hover { background:var(--danger-soft); border-color:var(--danger); color:var(--danger); }
+    .cb-iva-btn:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+
     .cb-mini { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px;
                padding:0; border:0; border-radius:7px; background:none; color:var(--muted);
                cursor:pointer; transition:background .15s, color .15s; }
