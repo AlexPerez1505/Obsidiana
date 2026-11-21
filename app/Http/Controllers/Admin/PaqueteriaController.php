@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Cotizacion;
 use App\Models\PaqueteriaEnvio;
 use App\Models\PaqueteriaGuia;
+use App\Models\Producto;
+use App\Models\Equipo;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -117,7 +119,33 @@ class PaqueteriaController extends Controller
             $guia['paqueteria'] === 'FedEx' && $guia['estado'] === 'disponible'
         )->values();
 
-        return view('admin.paqueteria.index', compact('remisiones', 'usuarios', 'envios', 'resumen', 'guiasFedex', 'guias'));
+        $catalogoArticulos = Producto::query()
+            ->with(['serialesDisponibles:id,producto_id,no_serie'])
+            ->orderBy('tipo_equipo')->orderBy('marca')->orderBy('modelo')->get()
+            ->map(function (Producto $producto): array {
+                $series = $producto->serialesDisponibles->pluck('no_serie')->filter()->values();
+                if ($series->isEmpty() && filled($producto->no_serie)) {
+                    $series = collect(preg_split('/[,\n]+/', (string) $producto->no_serie))
+                        ->map(fn ($serie) => trim((string) $serie))->filter()->values();
+                }
+                return [
+                    'clave' => 'producto-'.$producto->id,
+                    'nombre' => collect([$producto->nombreVisible(), $producto->marca, $producto->modelo])->filter()->implode(' · '),
+                    'series' => $series->all(),
+                ];
+            });
+
+        $catalogoArticulos = $catalogoArticulos->concat(
+            Equipo::query()->where('activo', true)->orderBy('tipo')->orderBy('marca')->orderBy('modelo')
+                ->get(['id', 'tipo', 'subtipo', 'marca', 'modelo', 'serie'])
+                ->map(fn (Equipo $equipo): array => [
+                    'clave' => 'equipo-'.$equipo->id,
+                    'nombre' => collect([$equipo->subtipo ?: $equipo->tipo, $equipo->marca, $equipo->modelo])->filter()->implode(' · '),
+                    'series' => filled($equipo->serie) ? [(string) $equipo->serie] : [],
+                ])
+        )->sortBy('nombre', SORT_NATURAL | SORT_FLAG_CASE)->values();
+
+        return view('admin.paqueteria.index', compact('remisiones', 'usuarios', 'envios', 'resumen', 'guiasFedex', 'guias', 'catalogoArticulos'));
     }
 
     public function store(Request $request): JsonResponse

@@ -205,6 +205,77 @@
     @media (max-width: 600px) { .paq-modal { padding:10px; } .paq-wizard { max-height:calc(100vh - 20px); padding:18px; } .paq-remision { grid-template-columns:1fr auto; } .paq-remision small { grid-column:1/-1; } .paq-auto-grid { grid-template-columns:1fr; } .paq-auto-field.full { grid-column:auto; } .paq-item { grid-template-columns:22px minmax(0,1fr) 30px; } .paq-item-input[data-item-serial] { grid-column:2; } .paq-item-remove { grid-column:3; grid-row:1 / span 2; } }
     @media (max-width: 850px) { .paq-topbar { align-items:flex-start; flex-direction:column; } .paq-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     @media (max-width: 560px) { .paq-stats { grid-template-columns:1fr; } .paq-total { font-size:34px; } .paq-tabs { width:100%; } .paq-tab { flex:1; } }
+
+    /* Rediseño visual de Paquetería: solo presentación, sin alterar datos ni comportamiento. */
+    .paq-page { position:relative; max-width: 1180px; margin: 0 auto; padding-bottom: 42px; }
+    .paq-topbar { position:absolute; top:20px; right:24px; z-index:3; display:flex; margin:0; }
+    .paq-hero { position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:24px; margin:0 0 10px; padding:22px 180px 22px 24px; background:linear-gradient(135deg,#111b2e 0%,#142d50 100%); border:1px solid #203652; border-radius:14px; overflow:hidden; }
+    .paq-hero::after { content:""; position:absolute; inset:auto -80px -100px auto; width:280px; height:220px; border-radius:50%; background:rgba(7,136,245,.12); pointer-events:none; }
+    .paq-hero-copy { position:relative; z-index:1; padding-left:52px; }
+    .paq-hero-icon { position:absolute; left:0; top:0; display:grid; place-items:center; width:40px; height:40px; border-radius:11px; background:#123a68; color:#69b4ff; }
+    .paq-hero-icon svg, .paq-stat-icon svg, .paq-tab-icon svg, .paq-summary-icon svg { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .paq-eyebrow { margin:0 0 4px; color:#69b4ff; font-size:11px; }
+    .paq-hero h1 { font-size:24px; letter-spacing:-.02em; }
+    .paq-total { margin:9px 0 3px; font-size:36px; line-height:1; color:#f1f5f9; }
+    .paq-description { font-size:12px; }
+    .paq-hero-action { position:relative; z-index:1; display:flex; flex-direction:column; align-items:flex-end; gap:9px; }
+    .paq-hero-action .paq-total-label { color:#94a9c4; font-size:11px; }
+    .paq-hero-action .btn { background:#0788f5; border-color:#0788f5; }
+    .paq-filters { gap:6px; flex-wrap:nowrap; overflow-x:auto; margin:0 0 10px; padding:7px; background:#111b2e; border:1px solid #203652; border-radius:11px; scrollbar-width:thin; }
+    .paq-filter { flex:0 0 auto; padding:7px 9px; border:1px solid #294667; border-radius:7px; color:#94a9c4; font-size:11px; white-space:nowrap; }
+    .paq-filter:hover { background:#172944; color:#f1f5f9; }
+    .paq-filter.active { background:#0788f5; border-color:#0788f5; color:#fff; }
+    .paq-filter small { color:inherit; font-weight:700; }
+    .paq-tabs { width:100%; gap:22px; margin:0 0 16px; padding:0; background:transparent; border-bottom:1px solid #203652; border-radius:0; }
+    .paq-tab { display:inline-flex; align-items:center; gap:5px; padding:10px 1px 9px; border-radius:0; color:#94a9c4; font-size:12px; }
+    .paq-tab.active { background:transparent; color:#0788f5; box-shadow:inset 0 -2px 0 #0788f5; }
+    .paq-stats { grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .paq-stat { position:relative; min-height:102px; padding:16px 16px 14px; background:#111b2e; border:1px solid #203652; border-radius:11px; }
+    .paq-stat-icon { position:absolute; top:10px; right:10px; display:grid; place-items:center; width:30px; height:30px; border-radius:9px; background:#123a68; color:#69b4ff; }
+    .paq-stat-label { padding-right:34px; color:#94a9c4; font-size:11px; font-weight:500; }
+    .paq-stat-value { margin-top:15px; font-size:20px; }
+    .paq-stat-note { margin-top:8px; font-size:11px; }
+    .paq-stat.blue .paq-stat-icon { color:#4b9fff; background:#12345c; }
+    .paq-stat.blue .paq-stat-value { color:#4b9fff; }
+    .paq-stat.amber .paq-stat-icon { color:#ff9f0a; background:#352b16; }
+    .paq-stat.amber .paq-stat-value { color:#ff9f0a; }
+    .paq-stat.green .paq-stat-icon { color:#30ce78; background:#12392f; }
+    .paq-stat.green .paq-stat-value { color:#30ce78; }
+    .paq-stat.purple .paq-stat-icon { color:#bf8af2; background:#30254a; }
+    .paq-stat.purple .paq-stat-value { color:#bf8af2; }
+    .paq-stat.danger .paq-stat-icon { color:#ff6467; background:#3b222b; }
+    .paq-stat.danger .paq-stat-value { color:#ff6467; }
+    .paq-summary { display:flex; align-items:center; gap:12px; margin-top:10px; padding:12px 14px; background:#111b2e; border:1px solid #203652; border-radius:11px; }
+    .paq-summary-icon { display:grid; place-items:center; flex:0 0 30px; width:30px; height:30px; border-radius:9px; background:#123a68; color:#69b4ff; }
+    .paq-summary .paq-placeholder-copy { display:flex; flex-direction:column; gap:2px; }
+    .paq-summary .paq-placeholder-copy span { color:#94a9c4; font-size:11px; }
+    .paq-placeholder { margin-top:10px; padding:12px 14px; background:#111b2e; border-color:#203652; border-radius:11px; }
+    @media (max-width: 850px) { .paq-topbar { top:18px; right:18px; } .paq-hero { grid-template-columns:1fr; padding-right:160px; } .paq-hero-action { display:none; } }
+    @media (max-width: 560px) { .paq-page { padding-bottom:24px; } .paq-topbar { position:static; justify-content:flex-end; margin:0 0 8px; } .paq-hero { padding:18px; } .paq-hero-copy { padding-left:44px; } .paq-total { font-size:30px; } .paq-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } .paq-stat { min-height:104px; padding:14px 12px; } .paq-stat-value { font-size:19px; } }
+    @media (max-width: 390px) { .paq-stats { grid-template-columns:1fr; } }
+
+    [data-theme="light"] .paq-hero { background:linear-gradient(135deg,#f4f8ff 0%,#dcecff 100%); border-color:#bfd3ea; }
+    [data-theme="light"] .paq-hero::after { background:rgba(7,136,245,.08); }
+    [data-theme="light"] .paq-hero-icon,
+    [data-theme="light"] .paq-stat-icon,
+    [data-theme="light"] .paq-summary-icon { background:#e2efff; color:#0878d8; }
+    [data-theme="light"] .paq-total,
+    [data-theme="light"] .paq-hero h1 { color:var(--text); }
+    [data-theme="light"] .paq-hero-action .paq-total-label { color:var(--muted); }
+    [data-theme="light"] .paq-filters,
+    [data-theme="light"] .paq-stat,
+    [data-theme="light"] .paq-summary,
+    [data-theme="light"] .paq-placeholder { background:#fff; border-color:#cbdced; }
+    [data-theme="light"] .paq-filter { border-color:#b8cce2; color:#607b9a; }
+    [data-theme="light"] .paq-filter:hover { background:#eef5fc; color:var(--text); }
+    [data-theme="light"] .paq-tabs { border-color:#cbdced; }
+    [data-theme="light"] .paq-tab { color:#66809e; }
+    [data-theme="light"] .paq-stat.blue .paq-stat-icon { background:#e5f0ff; }
+    [data-theme="light"] .paq-stat.amber .paq-stat-icon { background:#fff2d8; }
+    [data-theme="light"] .paq-stat.green .paq-stat-icon { background:#e0f7eb; }
+    [data-theme="light"] .paq-stat.purple .paq-stat-icon { background:#f0e7ff; }
+    [data-theme="light"] .paq-stat.danger .paq-stat-icon { background:#ffe5e7; }
+    [data-theme="light"] .paq-summary .paq-placeholder-copy span { color:var(--muted); }
 </style>
 @endpush
 
@@ -253,45 +324,52 @@
         </section>
 
         <div class="paq-tabs" role="tablist" aria-label="Secciones de paquetería">
-            <button type="button" class="paq-tab active" role="tab" aria-selected="true" data-paq-tab="resumen">Resumen</button>
-            <button type="button" class="paq-tab" role="tab" aria-selected="false" data-paq-tab="envios">Envíos</button>
-            <button type="button" class="paq-tab" role="tab" aria-selected="false" data-paq-tab="guias">Guías</button>
+            <button type="button" class="paq-tab active" role="tab" aria-selected="true" data-paq-tab="resumen"><span class="paq-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>Resumen</button>
+            <button type="button" class="paq-tab" role="tab" aria-selected="false" data-paq-tab="envios"><span class="paq-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></svg></span>Envíos</button>
+            <button type="button" class="paq-tab" role="tab" aria-selected="false" data-paq-tab="guias"><span class="paq-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 7h6M9 11h6M9 15h4"/></svg></span>Guías</button>
         </div>
 
         <section class="paq-stats" id="paq-resumen-content" aria-label="Resumen de envíos">
             <article class="paq-stat">
+                <span class="paq-stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
                 <div class="paq-stat-label">Envíos este mes</div>
                 <div class="paq-stat-value">{{ $resumen['total'] }}</div>
                 <div class="paq-stat-note">${{ number_format($resumen['costo'], 2) }} registrados</div>
             </article>
             <article class="paq-stat blue">
+                <span class="paq-stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></svg></span>
                 <div class="paq-stat-label">En camino</div>
                 <div class="paq-stat-value">{{ $resumen['en_camino'] }}</div>
                 <div class="paq-stat-note">Envíos con guía</div>
             </article>
             <article class="paq-stat amber">
+                <span class="paq-stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 8 5v8l-8 5-8-5V8l8-5Z"/><path d="m4 8 8 5 8-5M12 13v8"/></svg></span>
                 <div class="paq-stat-label">Por enviar</div>
                 <div class="paq-stat-value">{{ $resumen['por_enviar'] }}</div>
                 <div class="paq-stat-note">Sin guía capturada</div>
             </article>
             <article class="paq-stat green">
+                <span class="paq-stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span>
                 <div class="paq-stat-label">Guías físicas</div>
                 <div class="paq-stat-value">{{ collect($envios)->where('tipo_guia', 'fisica')->count() }}</div>
                 <div class="paq-stat-note">Guías físicas utilizadas</div>
             </article>
-            <article class="paq-stat">
+            <article class="paq-stat purple">
+                <span class="paq-stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 8h12l2 13H4L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></span>
                 <div class="paq-stat-label">Costo por kilo</div>
                 <div class="paq-stat-value">{{ $costoPorKilo !== null ? '$'.number_format($costoPorKilo, 2) : '—' }}</div>
                 <div class="paq-stat-note">Costo promedio por kilo</div>
             </article>
             <article class="paq-stat danger">
+                <span class="paq-stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2h6v4H9zM9 10h6M9 14h6M9 18h4"/></svg></span>
                 <div class="paq-stat-label">Por completar</div>
                 <div class="paq-stat-value">{{ $resumen['por_completar'] }}</div>
                 <div class="paq-stat-note">Costo pendiente</div>
             </article>
         </section>
 
-        <div class="paq-placeholder" id="paq-resumen-placeholder">
+        <div class="paq-placeholder paq-summary" id="paq-resumen-placeholder">
+            <span class="paq-summary-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 2h6v4H9zM9 10h6M9 14h6M9 18h4"/></svg></span>
             <strong>Resumen de paquetería</strong>
             <span> — los envíos guardados aparecen abajo.</span>
         </div>
@@ -372,6 +450,13 @@
                 <button type="button" class="paq-add-item" id="paq-add-item">+ Agregar artículo</button>
             </section>
 
+            <datalist id="paq-series-catalogo">
+                @foreach ($catalogoArticulos as $articulo)
+                    @foreach ($articulo['series'] as $serie)
+                        <option value="{{ $serie }}">{{ $articulo['nombre'] }}</option>
+                    @endforeach
+                @endforeach
+            </datalist>
             <section class="paq-wizard-card paq-step" id="paq-step-2" hidden>
                 <div class="paq-suggestion" id="paq-courier-suggestion">
                     <span>💡 Selecciona la paquetería que utilizarás para este envío.</span>
@@ -504,6 +589,7 @@
     const paqueteriaEnvios = @json($envios);
     const paqueteriaResumen = @json($resumen);
     const paqueteriaGuias = @json($guiasFedex);
+    const paqueteriaCatalogoArticulos = @json($catalogoArticulos);
     const paqModal = document.getElementById('paq-wizard-modal');
     const paqDetailModal = document.getElementById('paq-detail-modal');
     const paqDetailContent = document.getElementById('paq-detail-content');
@@ -793,8 +879,11 @@
         container.innerHTML = paqItems.length
             ? paqItems.map(function (item, index) { return `<div class="paq-item">
                     <input type="checkbox" data-item-check="${index}" ${item.incluido !== false ? 'checked' : ''} aria-label="Incluir artículo">
-                    <input class="paq-item-input" data-item-name="${index}" value="${paqEscape(item.nombre)}" placeholder="Equipo o producto">
-                    <input class="paq-item-input" data-item-serial="${index}" value="${paqEscape(item.serie)}" placeholder="No. de serie">
+                    ${item.catalogo !== undefined ? `<select class="paq-item-input" data-item-catalogo="${index}">
+                        <option value="">Equipo o producto</option>
+                        ${paqueteriaCatalogoArticulos.map(function (opcion) { return `<option value="${paqEscape(opcion.clave)}" ${opcion.clave === item.catalogo ? 'selected' : ''}>${paqEscape(opcion.nombre)}</option>`; }).join('')}
+                    </select>` : `<input class="paq-item-input" data-item-name="${index}" value="${paqEscape(item.nombre)}" placeholder="Equipo o producto">`}
+                    <input class="paq-item-input" data-item-serial="${index}" list="paq-series-catalogo" value="${paqEscape(item.serie)}" placeholder="No. de serie">
                     <button type="button" class="paq-item-remove" data-remove-item="${index}" aria-label="Quitar artículo">×</button>
                 </div>`; }).join('')
             : '<div class="paq-empty">Agrega los artículos que vas a enviar.</div>';
@@ -1332,20 +1421,41 @@
         if (remision) paqMostrarDatos(remision);
     });
     document.getElementById('paq-add-item').addEventListener('click', function () {
-        paqItems.push({ nombre: '', serie: '', incluido: true });
+        paqItems.push({ nombre: '', serie: '', catalogo: '', incluido: true });
         paqRenderItems();
-        const inputs = document.querySelectorAll('[data-item-name]');
+        const inputs = document.querySelectorAll('[data-item-catalogo]');
         inputs[inputs.length - 1]?.focus();
     });
     document.getElementById('paq-data-items').addEventListener('input', function (event) {
         const nameIndex = event.target.dataset.itemName;
         const serialIndex = event.target.dataset.itemSerial;
         if (nameIndex !== undefined) paqItems[Number(nameIndex)].nombre = event.target.value;
-        if (serialIndex !== undefined) paqItems[Number(serialIndex)].serie = event.target.value;
+        if (serialIndex !== undefined) {
+            const item = paqItems[Number(serialIndex)];
+            item.serie = event.target.value;
+            const serie = event.target.value.trim().toLowerCase();
+            const opcion = paqueteriaCatalogoArticulos.find(function (articulo) {
+                return (articulo.series || []).some(function (valor) { return String(valor).trim().toLowerCase() === serie; });
+            });
+            if (opcion && item.catalogo !== opcion.clave) {
+                item.catalogo = opcion.clave;
+                item.nombre = opcion.nombre;
+                paqRenderItems();
+            }
+        }
     });
     document.getElementById('paq-data-items').addEventListener('change', function (event) {
         const index = event.target.dataset.itemCheck;
         if (index !== undefined) paqItems[Number(index)].incluido = event.target.checked;
+        const catalogoIndex = event.target.dataset.itemCatalogo;
+        if (catalogoIndex !== undefined) {
+            const item = paqItems[Number(catalogoIndex)];
+            const opcion = paqueteriaCatalogoArticulos.find(function (articulo) { return articulo.clave === event.target.value; });
+            item.catalogo = event.target.value;
+            item.nombre = opcion?.nombre || '';
+            item.serie = opcion?.series?.[0] || '';
+            paqRenderItems();
+        }
     });
     document.getElementById('paq-data-items').addEventListener('click', function (event) {
         const button = event.target.closest('[data-remove-item]');
