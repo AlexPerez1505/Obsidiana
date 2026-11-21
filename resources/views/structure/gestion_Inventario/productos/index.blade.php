@@ -145,15 +145,64 @@
          los productos", o al buscar/filtrar), la lista con su barra,
          paquetes y tabla. --}}
     @if ($vistaLista)
-    <div class="pcat-vista">
-        <a class="pcat-volver" href="{{ route('inventory.productos.index') }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-            Categorías
+    @php
+        // Icono por categoría (por palabra clave; si no, una caja).
+        $iconoTipo = function (string $t): string {
+            $t = mb_strtolower($t);
+            $p = match (true) {
+                str_contains($t, 'laparos') => '<path d="M4 20 14 10"/><path d="M14 10l3-3 3 3-3 3z"/><path d="M8 16l-2-2"/>',
+                str_contains($t, 'artros') => '<path d="M17 4a3 3 0 0 0-3 3l-4 4a3 3 0 1 0 3 3l4-4a3 3 0 1 0 0-6z"/>',
+                str_contains($t, 'endos') => '<path d="M4 4c6 0 6 8 12 8a4 4 0 0 1 0 8"/><circle cx="16" cy="20" r="1.5"/>',
+                str_contains($t, 'hospital') => '<path d="M3 18V8M3 14h18v4M21 18v-4a3 3 0 0 0-3-3h-7v3"/><circle cx="7" cy="11" r="2"/>',
+                str_contains($t, 'quirof') => '<path d="M14 4 4 14l3 3 10-10z"/><path d="M14 4l6 6-3 3"/><path d="M5 19l2-2"/>',
+                str_contains($t, 'radiolog') => '<circle cx="12" cy="12" r="2"/><path d="M12 2a10 10 0 0 1 8.7 5L14 10.9M3.3 7A10 10 0 0 1 12 2M12 22a10 10 0 0 1-8.7-5L10 13.1M20.7 17A10 10 0 0 1 12 22"/>',
+                str_contains($t, 'urolog') => '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+                str_contains($t, 'otorrino') => '<path d="M7 9a5 5 0 1 1 10 0c0 3-3 4-3 7a3 3 0 0 1-6 0"/><path d="M10 9a2 2 0 1 1 4 0"/>',
+                default => '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22V12"/>',
+            };
+            return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$p.'</svg>';
+        };
+        $tituloVista = $tipoSel !== '' ? \Illuminate\Support\Str::title(mb_strtolower($tipoSel))
+            : (($filters['search'] ?? '') !== '' ? 'Resultados de “'.$filters['search'].'”' : 'Todos los productos');
+    @endphp
+
+    {{-- Cambiar de categoría sin regresar al inicio. --}}
+    <nav class="pv-tipos" aria-label="Cambiar de categoría">
+        <a class="pv-tipo" href="{{ route('inventory.productos.index') }}" title="Volver a las categorías">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            <span>Categorías</span>
         </a>
-        <h2 class="pcat-vista-t">
-            {{ $tipoSel !== '' ? \Illuminate\Support\Str::title(mb_strtolower($tipoSel)) : (($filters['search'] ?? '') !== '' ? 'Resultados de “'.$filters['search'].'”' : 'Todos los productos') }}
-            <span>{{ $productos->total() }} {{ $productos->total() === 1 ? 'producto' : 'productos' }}</span>
-        </h2>
+        <a class="pv-tipo {{ $tipoSel === '' ? 'is-on' : '' }}" href="{{ route('inventory.productos.index', $base + ['ver' => 'todos']) }}"
+           @if ($tipoSel === '') aria-current="page" @endif>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            <span>Todos</span>
+        </a>
+        @foreach ($porTipo as $t => $n)
+            <a class="pv-tipo {{ $tipoSel === $t ? 'is-on' : '' }}" href="{{ route('inventory.productos.index', $base + ['tipo' => $t]) }}"
+               @if ($tipoSel === $t) aria-current="page" @endif title="{{ $n }} {{ $n === 1 ? 'producto' : 'productos' }}">
+                {!! $iconoTipo((string) $t) !!}
+                <span>{{ \Illuminate\Support\Str::title(mb_strtolower((string) $t)) }}</span>
+            </a>
+        @endforeach
+    </nav>
+
+    <div class="pv-cab">
+        <h2 class="pv-titulo">{{ $tituloVista }}. <span>{{ $productos->total() }} {{ $productos->total() === 1 ? 'producto' : 'productos' }}</span></h2>
+        @if ($productos->hasPages())
+            <div class="pv-nav">
+                @if ($productos->onFirstPage())
+                    <span class="pv-flecha is-off" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></span>
+                @else
+                    <a class="pv-flecha" href="{{ $productos->previousPageUrl() }}" aria-label="Página anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></a>
+                @endif
+                <span class="pv-pag">{{ $productos->currentPage() }} / {{ $productos->lastPage() }}</span>
+                @if ($productos->hasMorePages())
+                    <a class="pv-flecha pv-flecha--sig" href="{{ $productos->nextPageUrl() }}" aria-label="Página siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+                @else
+                    <span class="pv-flecha pv-flecha--sig is-off" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                @endif
+            </div>
+        @endif
     </div>
 
     <div class="inv-toolbar">
@@ -202,7 +251,6 @@
         @endif
 
         <div class="inv-spacer"></div>
-        <x-ui.view-switch key="productos" />
         <a href="{{ route('inventory.paquetes.index') }}" class="btn btn--ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:7px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22.08V12"/></svg>
             Paquetes
@@ -361,194 +409,118 @@
         </x-ui.card>
     @endif
 
-    <x-ui.card>
-        <div style="overflow-x:auto;" data-view-list>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width:36px;"><input type="checkbox" id="sel-todos" aria-label="Marcar todos los productos de la página" style="width:16px; height:16px; cursor:pointer;" onclick="event.stopPropagation()"></th>
-                        <th>Imagen</th>
-                        <th>Producto</th>
-                        <th>Modelo / Marca</th>
-                        {{-- El precio es dato de administración: la columna
-                             no se dibuja para quien no puede verlo. --}}
-                        @if (\App\Support\PrecioVisible::para())
-                            <th>Precio de venta</th>
-                        @endif
-                        <th>Stock</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @php $tipoPrevio = null; @endphp
-                    @forelse($productos as $producto)
-                        @php $tipoFila = $producto->tipo_equipo ?: 'Sin tipo'; @endphp
-                        @if ($tipoFila !== $tipoPrevio)
-                            @php $tipoPrevio = $tipoFila; @endphp
-                            <tr class="grupo-fila" data-grupo-toggle="{{ $tipoFila }}" tabindex="0" aria-expanded="true">
-                                <td colspan="8">
-                                    <span class="grupo-cab">
-                                        <input type="checkbox" data-sel-grupo="{{ $tipoFila }}" aria-label="Marcar todo {{ $tipoFila }}"
-                                               style="width:15px; height:15px; cursor:pointer; margin:0 2px 0 0;" onclick="event.stopPropagation()">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
-                                        {{ $tipoFila }} <span class="n">{{ $porTipo[$tipoFila] ?? '' }} {{ ($porTipo[$tipoFila] ?? 0) === 1 ? 'producto' : 'productos' }}</span>
-                                    </span>
-                                </td>
-                            </tr>
-                        @endif
-                        <tr class="producto-row" data-grupo="{{ $tipoFila }}" title="Ver unidades disponibles"
-                            onclick="if (!event.target.closest('.row-menu') && event.target.tagName !== 'INPUT') { document.getElementById('unidades-modal-{{ $producto->id }}').style.display='flex'; }">
-                            <td onclick="event.stopPropagation();">
-                                <input type="checkbox" class="producto-checkbox" value="{{ $producto->id }}" onchange="actualizarSeleccionPaquete()" style="width:16px; height:16px; cursor:pointer;">
-                            </td>
-                            <td>
-                                @if($producto->imagen_path)
-                                    <img src="{{ asset('storage/' . $producto->imagen_path) }}" alt="{{ $producto->tipo_equipo }}" style="width:50px; height:50px; object-fit:cover; border-radius:6px; border:1px solid var(--border);">
-                                @else
-                                    <div style="width:50px; height:50px; background:var(--surface); border:1px solid var(--border); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:20px;">—</div>
-                                @endif
-                            </td>
-                            {{-- Primero el nombre del producto (su subtipo) y abajo el tipo;
-                                 primero el modelo y abajo la marca. --}}
-                            <td>
-                                <div style="font-weight:700;">
-                                    {{ $producto->nombreVisible() }}
-                                    @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'etiqueta'])
-                                </div>
-                                @if ($producto->subtipo && $producto->tipo_equipo)
-                                    <div class="muted" style="font-size:12.5px;">{{ $producto->tipo_equipo }}</div>
-                                @endif
-                            </td>
-                            <td>
-                                <div style="font-weight:600;">{{ $producto->modelo ?: '—' }}</div>
-                                @if ($producto->marca)
-                                    <div class="muted" style="font-size:12.5px;">{{ $producto->marca }}</div>
-                                @endif
-                                @if ($producto->referencia)
-                                    <div class="muted" style="font-size:12.5px;">Ref. {{ $producto->referencia }}</div>
-                                @endif
-                            </td>
-                            @if (\App\Support\PrecioVisible::para())
-                                <td>{{ \App\Support\PrecioVisible::texto($producto) }}</td>
-                            @endif
-                            <td>
-                                <span class="badge {{ $producto->stock > 0 ? 'badge--ok' : 'badge--danger' }}">
-                                    {{ $producto->stock }} u.
-                                </span>
-                            </td>
-                            <td>
-                                {{-- Menú compartido: se posiciona en fijo, así que
-                                     no lo recorta el overflow de la tarjeta. El
-                                     de antes se cortaba cuando había una sola
-                                     fila y no se alcanzaba a ver. --}}
-                                <div class="row-menu" data-row-menu>
-                                    <button type="button" class="row-menu-btn" data-row-menu-toggle
-                                            aria-haspopup="true" aria-expanded="false"
-                                            aria-label="Acciones de {{ $producto->tipo_equipo }}">
-                                        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
-                                    </button>
+    {{-- ===================== Vitrina de productos =====================
+         Foto grande, nombre, modelo y marca, precio (solo para quien puede
+         verlo) y piezas disponibles. Tocar la foto abre sus unidades; la
+         palomita lo marca para etiquetas o paquete; ⋮ tiene las acciones. --}}
+    <div class="pv-sel">
+        <label class="pv-sel-todos">
+            <input type="checkbox" id="sel-todos" aria-label="Marcar todos los productos de la página">
+            <span>Marcar todos</span>
+        </label>
+    </div>
 
-                                    <div class="row-menu-pop" data-row-menu-pop role="menu" hidden>
-                                        <a href="{{ route('inventory.productos.show', $producto) }}" role="menuitem">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                                            Ver ficha
-                                        </a>
-                                        {{-- Editar: con permiso, o si es suyo y está dentro de
-                                             sus primeras horas (el producto o alguna pieza). --}}
-                                        @if (\App\Support\EdicionPropia::puedeEditarProducto(auth()->user(), $producto)
-                                             || $producto->serialesDisponibles->contains(fn ($s) => \App\Support\EdicionPropia::puedeEditarPieza(auth()->user(), $s)))
-                                            <a href="{{ route('inventory.productos.edit', $producto) }}" role="menuitem">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                                                Editar
-                                            </a>
-                                        @endif
-                                        @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'menu'])
-                                        @if (\App\Support\EdicionPropia::puedeEliminarProducto(auth()->user(), $producto))
-                                            <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}"
-                                                  data-confirm="¿Eliminar este producto?" style="margin:0;">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="es-danger" role="menuitem">
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
-                                                    Eliminar
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" style="text-align:center; padding:32px; color:var(--muted);">
-                                No hay productos registrados.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+    <div class="pv-grid">
+        @forelse ($productos as $producto)
+            @php
+                $nuevo = $producto->created_at && $producto->created_at->gt(now()->subDays(30));
+                $enCongresoP = $producto->serialesDisponibles->whereNotNull('congress_id')->count();
+                $enAlmacenP = $producto->serialesDisponibles->count() - $enCongresoP;
+                $precio = \App\Support\PrecioVisible::texto($producto);
+            @endphp
+            <article class="pv-card">
+                <div class="pv-media" role="button" tabindex="0" title="Ver unidades disponibles"
+                     aria-label="Ver unidades de {{ $producto->nombreVisible() }}"
+                     onclick="document.getElementById('unidades-modal-{{ $producto->id }}').style.display='flex'"
+                     onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }">
+                    @if ($producto->imagen_path)
+                        <img src="{{ asset('storage/' . $producto->imagen_path) }}" alt="{{ $producto->nombreVisible() }}" loading="lazy" decoding="async">
+                    @else
+                        <span class="pv-sinfoto" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 17-5-5-6 6"/></svg></span>
+                    @endif
 
-        {{-- ===================== Vista en tarjetas =====================
-             Misma información que la tabla. Tocar la tarjeta abre las
-             unidades disponibles, igual que la fila. --}}
-        <div class="data-cards" data-view-cards style="display:none;">
-            @php $tipoPrevioC = null; @endphp
-            @forelse ($productos as $producto)
-                @php $tipoCard = $producto->tipo_equipo ?: 'Sin tipo'; @endphp
-                @if ($tipoCard !== $tipoPrevioC)
-                    @php $tipoPrevioC = $tipoCard; @endphp
-                    <h3 class="grupo-titulo-cards">{{ $tipoCard }} · {{ $porTipo[$tipoCard] ?? '' }}</h3>
-                @endif
-                <article class="data-card prod-card" title="Ver unidades disponibles"
-                         onclick="if (!event.target.closest('a, input, label')) { document.getElementById('unidades-modal-{{ $producto->id }}').style.display='flex'; }">
-                    <div class="prod-card-foto">
-                        @if ($producto->imagen_path)
-                            <img src="{{ asset('storage/' . $producto->imagen_path) }}" alt="{{ $producto->nombreVisible() }}" loading="lazy">
-                        @else
-                            <span>Sin foto</span>
+                    <span class="pv-etiquetas">
+                        @if ($nuevo)
+                            <span class="pv-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2"/></svg>Nuevo</span>
                         @endif
-                        <label class="prod-card-check" title="Agrupar en paquete" onclick="event.stopPropagation();">
-                            <input type="checkbox" value="{{ $producto->id }}" onchange="espejoPaquete(this)"
-                                   aria-label="Seleccionar {{ $producto->nombreVisible() }} para un paquete">
-                        </label>
+                        @if ($tipoSel === '' && $producto->tipo_equipo)
+                            <span class="pv-chip pv-chip--tipo">{{ \Illuminate\Support\Str::title(mb_strtolower($producto->tipo_equipo)) }}</span>
+                        @endif
+                        @if ($producto->en_tienda)
+                            <span class="pv-chip pv-chip--web"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>En la web</span>
+                        @endif
+                    </span>
+
+                    <label class="pv-check" title="Marcar para etiquetas o paquete" onclick="event.stopPropagation()">
+                        <input type="checkbox" class="producto-checkbox" value="{{ $producto->id }}" onchange="actualizarSeleccionPaquete()"
+                               aria-label="Marcar {{ $producto->nombreVisible() }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+                    </label>
+                </div>
+
+                <div class="pv-info">
+                    {{-- Dónde están sus piezas: verde en almacén, azul en congreso.
+                         El renglón siempre ocupa su lugar para que todo alinee. --}}
+                    <div class="pv-puntos" @if ($enAlmacenP + $enCongresoP) aria-label="{{ $enAlmacenP }} en almacén{{ $enCongresoP ? ', '.$enCongresoP.' en congreso' : '' }}" @else aria-hidden="true" @endif>
+                        @if ($enAlmacenP > 0)<span class="pv-punto pv-punto--almacen" title="{{ $enAlmacenP }} en almacén"></span>@endif
+                        @if ($enCongresoP > 0)<span class="pv-punto pv-punto--congreso" title="{{ $enCongresoP }} en congreso"></span>@endif
                     </div>
 
-                    <div class="data-card-top" style="padding-top:12px;">
-                        <div style="min-width:0; flex:1;">
-                            <div class="t">
-                                {{ $producto->nombreVisible() }}
-                                @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'etiqueta'])
+                    <div class="pv-nombre">
+                        <h3>{{ $producto->nombreVisible() }}</h3>
+                        <div class="row-menu" data-row-menu>
+                            <button type="button" class="row-menu-btn" data-row-menu-toggle aria-haspopup="true" aria-expanded="false"
+                                    aria-label="Acciones de {{ $producto->nombreVisible() }}">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+                            </button>
+                            <div class="row-menu-pop" data-row-menu-pop role="menu" hidden>
+                                <a href="{{ route('inventory.productos.show', $producto) }}" role="menuitem">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    Ver ficha
+                                </a>
+                                @if (\App\Support\EdicionPropia::puedeEditarProducto(auth()->user(), $producto)
+                                     || $producto->serialesDisponibles->contains(fn ($s) => \App\Support\EdicionPropia::puedeEditarPieza(auth()->user(), $s)))
+                                    <a href="{{ route('inventory.productos.edit', $producto) }}" role="menuitem">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                        Editar
+                                    </a>
+                                @endif
+                                @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'menu'])
+                                @if (\App\Support\EdicionPropia::puedeEliminarProducto(auth()->user(), $producto))
+                                    <form method="POST" action="{{ route('inventory.productos.destroy', $producto) }}"
+                                          data-confirm="¿Eliminar este producto?" style="margin:0;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="es-danger" role="menuitem">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>
+                                            Eliminar
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
-                            @if ($producto->subtipo && $producto->tipo_equipo)
-                                <div class="s">{{ $producto->tipo_equipo }}</div>
-                            @endif
                         </div>
-                        <span class="badge {{ $producto->stock > 0 ? 'badge--ok' : 'badge--danger' }}">{{ $producto->stock }} u.</span>
                     </div>
+                    <p class="pv-sub">{{ trim(($producto->modelo ?: '').($producto->marca ? ' · '.$producto->marca : ''), ' ·') ?: 'Sin modelo ni marca' }}</p>
+                    @if ($producto->referencia)
+                        <p class="pv-ref">Ref. {{ $producto->referencia }}</p>
+                    @endif
 
-                    <dl>
-                        <div><dt>Modelo</dt><dd>{{ $producto->modelo ?: '—' }}</dd></div>
-                        <div><dt>Marca</dt><dd>{{ $producto->marca ?: '—' }}</dd></div>
-                        @if ($producto->referencia)
-                            <div><dt>Referencia</dt><dd>{{ $producto->referencia }}</dd></div>
+                    <div class="pv-pie">
+                        @if ($precio !== null)
+                            <span class="pv-precio {{ $producto->precio === null ? 'is-sin' : '' }}">{{ $precio }}</span>
                         @endif
-                        @if (\App\Support\PrecioVisible::para())
-                            <div><dt>Precio de venta</dt><dd>{{ \App\Support\PrecioVisible::texto($producto) }}</dd></div>
-                        @endif
-                    </dl>
-
-                    <div class="data-card-foot" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                        @include('structure.gestion_Inventario.productos._tienda', ['producto' => $producto, 'como' => 'boton'])
-                        <a class="tbl-link" href="{{ route('inventory.productos.show', $producto) }}" style="margin-left:auto;">Ver ficha</a>
+                        <span class="pv-stock {{ $producto->stock > 0 ? '' : 'is-cero' }}">
+                            <span class="pv-stock-punto" aria-hidden="true"></span>
+                            {{ $producto->stock > 0 ? $producto->stock.' '.($producto->stock === 1 ? 'disponible' : 'disponibles') : 'Sin stock' }}
+                        </span>
                     </div>
-                </article>
-            @empty
-                <p class="muted" style="text-align:center; padding:32px; grid-column:1/-1;">No hay productos registrados.</p>
-            @endforelse
-        </div>
-        @include('partials._paginacion', ['paginator' => $productos])
-    </x-ui.card>
+                </div>
+            </article>
+        @empty
+            <p class="pv-vacio">No hay productos en esta categoría.</p>
+        @endforelse
+    </div>
+    @include('partials._paginacion', ['paginator' => $productos])
 
     {{-- Modales de unidades disponibles, fuera de la tabla para que el HTML sea válido --}}
     @foreach ($productos as $producto)
@@ -737,7 +709,7 @@
         /* Marcar todos / todo un tipo (para etiquetas o para un paquete). */
         document.addEventListener('change', function (e) {
             let casillas = null;
-            if (e.target.id === 'sel-todos') casillas = document.querySelectorAll('tr[data-grupo] .producto-checkbox');
+            if (e.target.id === 'sel-todos') casillas = document.querySelectorAll('.pv-card .producto-checkbox');
             if (e.target.dataset.selGrupo) casillas = document.querySelectorAll('tr[data-grupo="' + CSS.escape(e.target.dataset.selGrupo) + '"] .producto-checkbox');
             if (!casillas) return;
             casillas.forEach(c => { c.checked = e.target.checked; });
