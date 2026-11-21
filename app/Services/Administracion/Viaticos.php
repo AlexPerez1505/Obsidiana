@@ -41,17 +41,15 @@ class Viaticos
         'vehicle_name' => ['nullable', 'string', 'max:100'],
         'place' => ['nullable', 'string', 'max:255'],
         'state' => ['nullable', 'string', 'max:100'],
-        'personas_viaje' => ['nullable', 'string', 'max:2000'],
-        'dias_hospedaje' => ['nullable', 'integer', 'min:0', 'max:3650'],
         'fecha_ida' => ['nullable', 'date'],
         'fecha_regreso' => ['nullable', 'date', 'after_or_equal:fecha_ida'],
+        'personas_viaje' => ['nullable', 'string', 'max:2000'],
         'external_companions' => ['nullable', 'integer', 'min:0'],
         'tolls' => ['nullable', 'numeric', 'min:0'],
         'fuel' => ['nullable', 'numeric', 'min:0'],
         'meals' => ['nullable', 'numeric', 'min:0'],
         'lodging' => ['nullable', 'numeric', 'min:0'],
         'additional' => ['nullable', 'numeric', 'min:0'],
-        'extras' => ['nullable', 'string', 'max:1000'],
         'parking' => ['nullable', 'numeric', 'min:0'],
         'taxi' => ['nullable', 'numeric', 'min:0'],
         'fixed_fund' => ['nullable', 'numeric', 'min:0'],
@@ -114,12 +112,9 @@ class Viaticos
         return DB::transaction(function () use ($data, $quien, $fotos) {
             $data['user_id'] = $quien->id;
             $data = $this->conNombreDeVehiculo($data);
-            $data['expense_date'] = $data['fecha_ida'] ?? $data['expense_date'] ?? null;
-            $data['fecha_ida'] = $data['fecha_ida'] ?? null;
-            $data['fecha_regreso'] = $data['fecha_regreso'] ?? null;
-            $data['personas_viaje'] = $data['personas_viaje'] ?? null;
             $data['start_date'] = $data['fecha_ida'] ?? null;
             $data['end_date'] = $data['fecha_regreso'] ?? null;
+            $data['personas_viaje'] = $data['personas_viaje'] ?? null;
             $data['money_given'] = filter_var($data['money_given'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
             $users = User::query()->get(['id', 'name']);
@@ -195,7 +190,6 @@ class Viaticos
     public function actualizar(Viatic $viatic, array $data, array $fotosNuevas = []): Viatic
     {
         $data = $this->conNombreDeVehiculo($data);
-        $data['expense_date'] = $data['fecha_ida'] ?? $data['expense_date'] ?? null;
 
         $actuales = collect($viatic->ticket_photos ?? []);
         $quitar = $actuales->intersect($data['quitar_fotos'] ?? [])->values();

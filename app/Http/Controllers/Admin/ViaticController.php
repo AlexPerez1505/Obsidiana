@@ -45,7 +45,7 @@ class ViaticController extends Controller
             ->map(fn ($items) => $items->sum(fn (Viatic $v) => (float) $v->total_computed))
             ->sortDesc();
 
-        return view('admin.viatics.index', [
+        return view('admin.viaticos.index', [
             'viatics'  => $viatics,
             'filters'  => $request->only(['search', 'status', 'vehicle']),
             'porLugar' => $porLugar,

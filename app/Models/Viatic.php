@@ -31,7 +31,7 @@ class Viatic extends Model
         'expense_date'  => 'date',
         'fecha_ida'     => 'date',
         'fecha_regreso' => 'date',
-        'dias_hospedaje'  => 'integer',
+        'dias_hospedaje' => 'integer',
         'start_date'    => 'date',
         'end_date'      => 'date',
         'external_companions' => 'integer',
