@@ -320,7 +320,7 @@
                 <article class="pv-card pv-card--paq">
                     <div class="pv-media pv-media--paq pv-fotos-{{ max(1, $fotosPaq->count()) }}" role="button" tabindex="0"
                          title="Ver lo que trae" aria-label="Ver lo que trae el paquete {{ $paq->nombre }}"
-                         onclick="document.getElementById('paquete-modal-{{ $paq->id }}').style.display='flex'"
+                         onclick="const m = document.getElementById('paquete-modal-{{ $paq->id }}'); m.style.display='flex'; m.querySelector('.pvm-x').focus();"
                          onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }">
                         @forelse ($fotosPaq as $foto)
                             <span class="pv-foto"><img src="{{ $foto }}" alt="" loading="lazy" decoding="async"></span>
@@ -382,31 +382,83 @@
                     </div>
                 </article>
 
-                {{-- Lo que trae, con su foto. --}}
-                <div id="paquete-modal-{{ $paq->id }}" class="unidades-modal-overlay" onclick="if (event.target === this) this.style.display='none'">
-                    <div class="unidades-modal">
-                        <div class="unidades-modal-head">
-                            <div>
-                                <strong>{{ $paq->nombre }}</strong>
-                                <div class="muted" style="font-size:12.5px;">{{ count($contenidoPaq) }} {{ count($contenidoPaq) === 1 ? 'artículo' : 'artículos' }}</div>
+                {{-- Lo que trae el paquete: encabezado con su collage y total,
+                     y un renglón por artículo con foto, cantidad y existencias. --}}
+                <div id="paquete-modal-{{ $paq->id }}" class="unidades-modal-overlay pvm-fondo" role="dialog" aria-modal="true" aria-labelledby="pvm-t-{{ $paq->id }}"
+                     onclick="if (event.target === this) this.style.display='none'"
+                     onkeydown="if (event.key === 'Escape') this.style.display='none'">
+                    <div class="pvm">
+                        <header class="pvm-cab">
+                            <div class="pvm-mini pv-fotos-{{ max(1, $fotosPaq->count()) }}" aria-hidden="true">
+                                @forelse ($fotosPaq as $foto)
+                                    <span><img src="{{ $foto }}" alt="" loading="lazy" onerror="this.remove()"></span>
+                                @empty
+                                    <span></span>
+                                @endforelse
                             </div>
-                            <button type="button" class="btn btn--ghost" style="padding:5px 10px;" onclick="document.getElementById('paquete-modal-{{ $paq->id }}').style.display='none'">Cerrar</button>
-                        </div>
-                        <ul class="pv-paq-lista">
+                            <div class="pvm-cab-t">
+                                <span class="pvm-etq">Paquete{{ $paq->activo ? '' : ' · Inactivo' }}</span>
+                                <h3 id="pvm-t-{{ $paq->id }}">{{ $paq->nombre }}</h3>
+                                <p>{{ count($contenidoPaq) }} {{ count($contenidoPaq) === 1 ? 'artículo' : 'artículos' }} · {{ $piezasPaq }} {{ $piezasPaq === 1 ? 'pieza' : 'piezas' }}
+                                    @if (\App\Support\PrecioVisible::para())
+                                        · <b>{{ $precioPaq > 0 ? '$'.number_format($precioPaq, 2) : 'Sin precio' }}</b>
+                                    @endif
+                                </p>
+                            </div>
+                            <button type="button" class="pvm-x" aria-label="Cerrar" onclick="document.getElementById('paquete-modal-{{ $paq->id }}').style.display='none'">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                            </button>
+                        </header>
+
+                        <ul class="pvm-lista">
                             @foreach ($paq->productos as $p)
-                                <li>
-                                    @if ($p->imagen_path)<img src="{{ asset('storage/'.$p->imagen_path) }}" alt="" loading="lazy">@else<span class="pv-paq-sin"></span>@endif
-                                    <span><b>{{ (int) $p->pivot->cantidad }}×</b> {{ $p->nombreVisible() }}<small>{{ trim(($p->modelo ?: '').($p->marca ? ' · '.$p->marca : ''), ' ·') }}</small></span>
-                                    <a class="tbl-link" href="{{ route('inventory.productos.show', $p) }}">Ver ficha</a>
+                                <li class="pvm-item">
+                                    <span class="pvm-foto">
+                                        @if ($p->imagen_path)
+                                            <img src="{{ asset('storage/'.$p->imagen_path) }}" alt="" loading="lazy" onerror="this.remove()">
+                                        @endif
+                                    </span>
+                                    <span class="pvm-cant">{{ (int) $p->pivot->cantidad }}×</span>
+                                    <span class="pvm-txt">
+                                        <b>{{ $p->nombreVisible() }}</b>
+                                        <small>{{ trim(($p->modelo ?: '').($p->marca ? ' · '.$p->marca : ''), ' ·') ?: 'Sin modelo ni marca' }}</small>
+                                    </span>
+                                    <span class="pvm-stock {{ $p->stock >= (int) $p->pivot->cantidad ? '' : 'is-falta' }}"
+                                          title="{{ $p->stock >= (int) $p->pivot->cantidad ? 'Alcanza para este paquete' : 'No alcanza: el paquete pide '.(int) $p->pivot->cantidad }}">
+                                        {{ $p->stock }} en stock
+                                    </span>
+                                    <a class="pvm-ficha" href="{{ route('inventory.productos.show', $p) }}" aria-label="Ver ficha de {{ $p->nombreVisible() }}" title="Ver ficha">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M8 7h9v9"/></svg>
+                                    </a>
                                 </li>
                             @endforeach
                             @foreach ($paq->equipos as $e)
-                                <li>
-                                    @if ($e->imagen)<img src="{{ asset('storage/'.$e->imagen) }}" alt="" loading="lazy">@else<span class="pv-paq-sin"></span>@endif
-                                    <span><b>{{ (int) $e->pivot->cantidad }}×</b> {{ trim(($e->subtipo ?: $e->tipo) ?? '') ?: 'Equipo' }}<small>{{ trim(($e->modelo ?: '').($e->marca ? ' · '.$e->marca : ''), ' ·') }}</small></span>
+                                <li class="pvm-item">
+                                    <span class="pvm-foto">
+                                        @if ($e->imagen)
+                                            <img src="{{ asset('storage/'.$e->imagen) }}" alt="" loading="lazy" onerror="this.remove()">
+                                        @endif
+                                    </span>
+                                    <span class="pvm-cant">{{ (int) $e->pivot->cantidad }}×</span>
+                                    <span class="pvm-txt">
+                                        <b>{{ trim(($e->subtipo ?: $e->tipo) ?? '') ?: 'Equipo' }}</b>
+                                        <small>{{ trim(($e->modelo ?: '').($e->marca ? ' · '.$e->marca : ''), ' ·') ?: 'Sin modelo ni marca' }}</small>
+                                    </span>
+                                    <span class="pvm-stock pvm-stock--eq">Equipo</span>
+                                    <span></span>
                                 </li>
                             @endforeach
                         </ul>
+
+                        <footer class="pvm-pie">
+                            @can('inventario.editar')
+                                <a class="pvm-btn" href="{{ route('inventory.paquetes.edit', $paq) }}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                    Editar paquete
+                                </a>
+                            @endcan
+                            <button type="button" class="pvm-btn pvm-btn--prim" onclick="document.getElementById('paquete-modal-{{ $paq->id }}').style.display='none'">Listo</button>
+                        </footer>
                     </div>
                 </div>
             @endforeach
