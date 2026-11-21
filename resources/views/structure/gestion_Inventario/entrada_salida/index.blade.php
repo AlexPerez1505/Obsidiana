@@ -17,6 +17,7 @@
             $tipo = $m->tipoVista();
 
             $series = $m->seriales->pluck('no_serie')->filter()->values();
+            $producto = $m->producto();
 
             return [
                 'modelo' => $m,
@@ -28,6 +29,7 @@
                 'fecha' => $m->movement_date?->format('Y-m-d') ?? '',
                 'fechaVista' => $m->movement_date?->format('d/m/Y') ?? '—',
                 'nombre' => $m->item_name ?: 'Sin nombre',
+                'imagen' => $producto?->imagen_path ? asset('storage/'.$producto->imagen_path) : null,
                 'series' => $series,
                 // En la tabla no caben 5 series completas: se ven las dos
                 // primeras y el total; la lista completa queda en el tooltip.
@@ -62,16 +64,18 @@
     @endphp
 
     <div class="content-actions">
+        <div class="f-search mv-top-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="fBuscar" name="search" form="filtrosMovimientos" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar equipo, serie o etiqueta..." autocomplete="off">
+        </div>
         {{-- Status del equipo con la pistola, la cámara o tecleando la etiqueta. --}}
         <button type="button" class="btn btn--ghost" data-scan-abrir title="También puedes disparar la pistola en cualquier momento">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
             Escanear
         </button>
-        {{-- Etiquetas de las entradas marcadas con la casilla, de un jalón. --}}
-        <button type="button" class="btn btn--ghost" id="mvEtiquetas" disabled style="opacity:.5; cursor:not-allowed;"
-                title="Marca entradas con la casilla para imprimir sus etiquetas">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Imprimir etiquetas (<span id="mvEtqN">0</span>)
+        <button type="button" class="mv-bulk-print" id="mvEtiquetas" disabled title="Selecciona una o varias entradas para imprimir sus etiquetas">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            <span>Etiquetas</span><b id="mvEtqN">0</b>
         </button>
         @can('inventario.registrar')
         <a href="{{ route('inventory.movimientos.create') }}" class="btn">
@@ -91,6 +95,7 @@
                 <div class="stat-num">{{ $resumen['movimientos'] }}</div>
                 <div class="stat-lbl">Movimientos registrados</div>
             </div>
+            <span class="mv-stat-art" aria-hidden="true"><svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 34 58 15l42 19-42 20-40-20Z"/><path d="M18 34v38l40 20 42-20V34"/><path d="M58 54v38M78 25l23 11"/><path d="m70 67 25-13 12 6-25 14-12-7Z"/></svg></span>
         </div>
 
         <div class="card card--accent is-green stat">
@@ -101,6 +106,7 @@
                 <div class="stat-num">{{ $resumen['entradas_mes'] }}</div>
                 <div class="stat-lbl">Entradas este mes</div>
             </div>
+            <span class="mv-stat-art" aria-hidden="true"><svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 58 48 42l34 16-34 17-34-17Z"/><path d="M14 58v25l34 16 34-16V58M48 75v24"/><path d="M94 18v43M78 45l16 16 16-16"/><path d="M82 28h24"/></svg></span>
         </div>
 
         <div class="card card--accent stat">
@@ -111,6 +117,7 @@
                 <div class="stat-num">{{ $resumen['piezas'] }}</div>
                 <div class="stat-lbl">Piezas en inventario</div>
             </div>
+            <span class="mv-stat-art" aria-hidden="true"><svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="2"><rect x="16" y="19" width="68" height="48" rx="4"/><path d="M28 78h44M40 67v11M60 67v11"/><rect x="27" y="29" width="45" height="27" rx="2"/><path d="m91 28 14 7v36l-14 7-14-7V35l14-7ZM77 43l14 7 14-7M91 50v28"/></svg></span>
         </div>
 
         <div class="card card--accent is-amber stat">
@@ -126,16 +133,13 @@
                     @endif
                 </div>
             </div>
+            <span class="mv-stat-art" aria-hidden="true"><svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="2"><path d="M64 16a34 34 0 1 1-25 11"/><path d="M64 16v20l14 9"/><path d="m91 17 14 3-5 14"/><path d="m91 73 14 3-5 14"/></svg></span>
         </div>
     </div>
 
     {{-- ===================== Búsqueda y filtros ===================== --}}
     <form method="GET" id="filtrosMovimientos" data-live="off" class="f-toolbar">
-        <div class="f-search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="fBuscar" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Buscar, o escanea / escribe la etiqueta (MB-000123) + Enter" autocomplete="off">
-        </div>
-
+        <div class="mv-filter-row">
         {{-- Catálogo del equipo en una sola fila de selectores compactos:
              el texto del label queda oculto a la vista (lo usan los lectores
              de pantalla y los chips), y se aplica en cuanto se elige. --}}
@@ -262,18 +266,19 @@
         <button type="button" class="flt-btn flt-btn--icon" id="fLimpiar" title="Limpiar todos los filtros" aria-label="Limpiar filtros">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 3H2l8 9.46V19l4 2v-8.54"/><line x1="16" y1="5" x2="22" y2="11"/><line x1="22" y1="5" x2="16" y2="11"/></svg>
         </button>
+        </div>
 
-        <x-ui.view-switch key="movimientos" />
     </form>
 
     <div class="flt-chips" id="fChips" hidden></div>
 
     {{-- ===================== Vista lista ===================== --}}
+    <div class="mv-list-shell">
     <div class="card" data-view-list style="overflow-x:auto; padding:0;">
         <table class="mv-table">
             <thead>
                 <tr>
-                    <th style="width:36px;"><input type="checkbox" id="mvEtqTodas" aria-label="Marcar todas las entradas de la página" style="width:16px; height:16px; cursor:pointer;"></th>
+                    <th class="mv-select-col"><input type="checkbox" id="mvEtqTodas" aria-label="Seleccionar todas las entradas visibles"></th>
                     <th>Movimiento</th>
                     <th>Equipo</th>
                     <th>Cantidad</th>
@@ -297,7 +302,7 @@
                         @foreach ($datos($fila) as $attr => $valor) {{ $attr }}="{{ $valor }}" @endforeach>
                         <td>
                             @if ($fila['tipo'] === 'entrada')
-                                <input type="checkbox" class="mv-etq" value="{{ $m->id }}" aria-label="Imprimir etiquetas de {{ $m->folio }}" style="width:16px; height:16px; cursor:pointer;">
+                                <input type="checkbox" class="mv-etq" value="{{ $m->id }}" aria-label="Seleccionar {{ $m->folio }}">
                             @endif
                         </td>
                         <td>
@@ -326,6 +331,13 @@
                             </div>
                         </td>
                         <td>
+                            <div class="mv-product-cell">
+                                @if ($fila['imagen'])
+                                    <img class="mv-product-image" src="{{ $fila['imagen'] }}" alt="Imagen de {{ $fila['nombre'] }}" loading="lazy">
+                                @else
+                                    <span class="mv-product-image mv-product-image--empty" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m4 7 8-4 8 4v10l-8 4-8-4V7Z"/><path d="m4 7 8 4 8-4M12 11v10"/></svg></span>
+                                @endif
+                                <div style="min-width:0;">
                             <div class="t">{{ $fila['nombre'] }}</div>
                             <div class="s">
                                 {{ ucfirst($m->item_type) }} · {{ ucfirst($fila['condicion']) }}
@@ -333,10 +345,11 @@
                                     <br><span title="{{ $fila['series']->implode(', ') }}">Serie: {{ $fila['seriesVista'] }}</span>
                                 @endif
                             </div>
+                            </div>
                         </td>
-                        <td style="white-space:nowrap;">{{ $m->quantity }} {{ $m->unit }}</td>
-                        <td>{{ $fila['almacen'] }}</td>
-                        <td>{{ $fila['quien'] }}</td>
+                        <td style="white-space:nowrap;"><span class="mv-qty">{{ $m->quantity }} {{ $m->unit }}</span></td>
+                        <td><span class="mv-cell-with-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 10 12 4l9 6v9H3v-9Z"/><path d="M8 19v-5h8v5"/></svg><span>{{ $fila['almacen'] }}</span></span></td>
+                        <td><span class="mv-cell-with-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="7" r="3"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg><span>{{ $fila['quien'] }}</span></span></td>
                         <td style="text-align:right; white-space:nowrap;">
                             @include('structure.gestion_Inventario.entrada_salida._acciones', ['movimiento' => $m])
                         </td>
@@ -358,6 +371,8 @@
                 <?php endif; ?>
             </tbody>
         </table>
+    </div>
+        <x-ui.view-switch key="movimientos" />
     </div>
 
     {{-- ===================== Vista tarjetas ===================== --}}
@@ -468,8 +483,70 @@
 
     <style>
         /* Solo lo propio de esta pantalla: lo demás vive en los partials. */
-        .mv-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-bottom:16px; }
+        .mv-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:16px; }
+        .mv-stats .stat { position:relative; display:flex; align-items:center; gap:12px; min-height:74px; overflow:hidden; padding:13px 15px; border:1px solid #20508a; border-top:2px solid #1683f7; border-radius:12px; background:linear-gradient(135deg,#111b2e 0%,#12345c 100%); box-shadow:0 8px 18px rgba(2,20,52,.22); }
+        .mv-stats .stat::after { content:''; position:absolute; right:-10px; bottom:-28px; width:92px; height:74px; border-radius:12px; background:rgba(22,131,247,.10); transform:rotate(-16deg); box-shadow:26px -18px 0 rgba(22,131,247,.06), 48px -38px 0 rgba(22,131,247,.04); pointer-events:none; }
+        .mv-stats .stat:nth-child(2) { border-top-color:#30d158; background:linear-gradient(135deg,#111b2e 0%,#123d3d 100%); }
+        .mv-stats .stat:nth-child(2)::after { background:rgba(48,209,88,.12); box-shadow:26px -18px 0 rgba(48,209,88,.06), 48px -38px 0 rgba(48,209,88,.04); }
+        .mv-stats .stat:nth-child(3) { border-top-color:#1683f7; background:linear-gradient(135deg,#111b2e 0%,#12345c 100%); }
+        .mv-stats .stat:nth-child(4) { border-top-color:#ff9f0a; background:linear-gradient(135deg,#111b2e 0%,#3b2b1f 100%); }
+        .mv-stats .stat:nth-child(4)::after { background:rgba(255,159,10,.12); box-shadow:26px -18px 0 rgba(255,159,10,.06), 48px -38px 0 rgba(255,159,10,.04); }
+        .mv-stats .stat .stat-ico { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; flex:0 0 44px; width:44px; height:44px; border-radius:12px; }
+        .mv-stats .stat .stat-ico svg { width:23px; height:23px; }
+        .mv-stats .stat > div { position:relative; z-index:1; min-width:0; }
+        .mv-stats .mv-stat-art { position:absolute; right:-3px; bottom:-18px; z-index:0; width:112px; height:96px; color:#69b4ff; opacity:.18; transform:rotate(-4deg); pointer-events:none; }
+        .mv-stats .mv-stat-art svg { width:100%; height:100%; }
+        .mv-stats .stat:nth-child(2) .mv-stat-art { color:#62e889; opacity:.16; transform:rotate(5deg); }
+        .mv-stats .stat:nth-child(3) .mv-stat-art { color:#69b4ff; opacity:.16; transform:rotate(-7deg); }
+        .mv-stats .stat:nth-child(4) .mv-stat-art { color:#ffc15c; opacity:.18; transform:rotate(5deg); }
+        .mv-stats .stat .stat-num { margin:0 0 3px; color:#f1f5f9; font-size:27px; line-height:1; font-weight:800; }
+        .mv-stats .stat .stat-lbl { color:#9db4d2; font-size:12px; line-height:1.25; }
+        .mv-stats .stat .link { color:#ffb52d; font-weight:700; }
+        @media (max-width:900px) { .mv-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+        @media (max-width:560px) { .mv-stats { grid-template-columns:1fr; } .mv-stats .stat { min-height:68px; } }
         .mv-table { width:100%; border-collapse:collapse; }
+        .mv-product-cell { display:flex; align-items:center; gap:10px; min-width:220px; }
+        .mv-product-image { display:block; flex:0 0 44px; width:44px; height:44px; object-fit:cover; border:1px solid var(--border); border-radius:10px; background:var(--surface-2); }
+        .mv-product-image--empty { display:flex; align-items:center; justify-content:center; color:var(--muted); }
+        .mv-product-image--empty svg { width:22px; height:22px; }
+        .mv-bulk-print { display:inline-flex; align-items:center; gap:7px; min-height:36px; padding:8px 11px; border:1px solid #294668; border-radius:10px; background:#102442; color:#91a9c7; cursor:not-allowed; font:inherit; font-size:12px; font-weight:700; opacity:.72; transition:border-color .15s,background .15s,color .15s,box-shadow .15s; }
+        .mv-bulk-print svg { width:16px; height:16px; }
+        .mv-bulk-print b { display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 5px; border-radius:999px; background:#1b385d; color:#a7bddb; font-size:11px; }
+        .mv-bulk-print.is-ready { border-color:#1683f7; background:linear-gradient(135deg,#123d70,#176fc1); color:#fff; cursor:pointer; opacity:1; box-shadow:0 5px 14px rgba(22,131,247,.2); }
+        .mv-bulk-print.is-ready b { background:#fff; color:#1263ad; }
+        .mv-table .mv-select-col { width:36px; padding-left:8px; padding-right:3px; text-align:center; }
+        .mv-table .mv-select-col input,
+        .mv-table input.mv-etq { appearance:none; -webkit-appearance:none; display:inline-grid; place-items:center; width:14px; height:14px; margin:0; border:1.5px solid #8eadd0; border-radius:4px; background:linear-gradient(145deg,rgba(15,40,70,.9),rgba(7,22,42,.85)); color:#fff; cursor:pointer; vertical-align:middle; box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),0 1px 2px rgba(0,0,0,.22); transition:background .15s,border-color .15s,box-shadow .15s,transform .15s; }
+        .mv-table .mv-select-col input:hover,
+        .mv-table input.mv-etq:hover { border-color:#4ba8ff; background:#163860; box-shadow:0 0 0 3px rgba(22,131,247,.12); }
+        .mv-table .mv-select-col input:focus-visible,
+        .mv-table input.mv-etq:focus-visible { outline:none; border-color:#1683f7; box-shadow:0 0 0 3px rgba(22,131,247,.22); }
+        .mv-table .mv-select-col input:checked,
+        .mv-table input.mv-etq:checked { border-color:#62b8ff; background:linear-gradient(145deg,#1683f7,#0d5fbe); box-shadow:0 0 0 3px rgba(22,131,247,.14),0 2px 5px rgba(22,131,247,.24); }
+        .mv-table .mv-select-col input:checked::after,
+        .mv-table input.mv-etq:checked::after { content:''; width:6px; height:3px; border-left:1.5px solid #fff; border-bottom:1.5px solid #fff; transform:rotate(-45deg) translateY(-1px); }
+        .mv-table .mv-select-col input:indeterminate { border-color:#39a0ff; background:#123d70; }
+        .mv-table .mv-select-col input:indeterminate::after { content:''; width:7px; height:1.5px; border-radius:2px; background:#fff; }
+        .mv-list-shell > .view-switch { border-radius:8px; box-shadow:0 5px 14px rgba(0,0,0,.2); }
+        .mv-list-shell > .view-switch button { width:30px; height:30px; }
+        .mv-list-shell > .view-switch svg { width:14px; height:14px; }
+        .mv-table { border:1px solid #203652; border-radius:12px; border-spacing:0; overflow:hidden; background:#0f1b30; }
+        .mv-table thead th { padding:10px 12px; border-bottom:1px solid #294668; background:#102442; color:#a7bddb; font-size:11px; font-weight:700; white-space:nowrap; }
+        .mv-table tbody td { padding:9px 12px; border-bottom:1px solid rgba(41,70,104,.58); color:#dce8f8; font-size:12px; vertical-align:middle; }
+        .mv-table tbody tr:last-child td { border-bottom:0; }
+        .mv-table tbody tr.mv-clic:hover { background:linear-gradient(90deg,rgba(22,131,247,.11),rgba(22,131,247,.03)); }
+        .mv-table .cell-id { gap:8px; }
+        .mv-table .mv-ico { width:28px; height:28px; flex-basis:28px; border-radius:8px; }
+        .mv-table .mv-ico svg { width:15px; height:15px; }
+        .mv-table .mv-product-cell { min-width:250px; gap:10px; }
+        .mv-table .mv-product-image { flex-basis:56px; width:56px; height:42px; border-color:#2b527c; border-radius:8px; }
+        .mv-table .mv-product-image--empty svg { width:20px; height:20px; }
+        .mv-table .t { color:#f1f5f9; font-size:12px; font-weight:750; line-height:1.25; }
+        .mv-table .s { margin-top:2px; color:#91a9c7; font-size:10px; line-height:1.25; }
+        .mv-qty { display:inline-flex; min-width:48px; justify-content:center; padding:6px 9px; border-radius:7px; background:#17365f; color:#e9f2ff; font-size:11px; font-weight:750; }
+        .mv-cell-with-icon { display:flex; align-items:center; gap:7px; color:#cbd9eb; }
+        .mv-cell-with-icon svg { flex:0 0 17px; width:17px; height:17px; color:#91afd2; }
+        .mv-table .mv-actions, .mv-table td:last-child { color:#91afd2; }
 
         /* La fila entera abre el detalle, así que se ve y se enfoca como algo
            en lo que se puede hacer clic. */
@@ -499,13 +576,29 @@
         .mv-modal-pie { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
         /* Búsqueda arriba a lo ancho; debajo, una sola fila con el catálogo
            y los demás controles. */
-        .f-toolbar > .f-search { flex:1 0 100%; }
         .f-toolbar > .flt { flex:1 0 100%; min-width:0; }
+        .mv-filter-row { flex:1 0 100%; min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:8px; }
+        .mv-filter-row > .flt { display:contents; }
+        .mv-filter-row > .flt > .flt-btn { grid-column:1; min-width:0; }
+        .mv-filter-row > .flt > .flt-panel { grid-column:1 / -1; position:static !important; display:grid !important; width:100% !important; max-width:none !important; max-height:none !important; overflow:visible !important; }
+        .mv-filter-row > .flt > .flt-panel[hidden] { display:none !important; }
+        .mv-filter-row > .flt > .flt-btn[aria-expanded="false"] + .flt-panel { display:none !important; visibility:hidden !important; }
+        .mv-filter-row > .flt-toggles { grid-column:2; }
+        .mv-filter-row > #fLimpiar { grid-column:3; }
+        .content-actions { align-items:center; gap:8px; }
+        .content-actions .mv-top-search { flex:1 1 auto; min-width:220px; max-width:none; margin-right:auto; }
+        .content-actions .mv-top-search input { width:100%; min-width:0; padding:9px 12px 9px 34px; }
+        @media (max-width:760px) {
+            .content-actions { flex-wrap:wrap; }
+            .content-actions .mv-top-search { flex:1 0 100%; order:-1; margin-right:0; }
+        }
         /* Los controles secundarios comparten una sola fila debajo del panel. */
         .f-toolbar > .flt-toggles,
-        .f-toolbar > #fLimpiar,
-        .f-toolbar > .view-switch { flex:0 0 auto !important; width:auto; }
-        .f-toolbar > .view-switch { margin-left:auto; }
+        .f-toolbar > #fLimpiar { flex:0 0 auto !important; width:auto !important; }
+        .f-toolbar > #fLimpiar { display:inline-flex; align-items:center; justify-content:center; padding:9px 11px; }
+        .mv-list-shell { position:relative; }
+        .mv-list-shell > .view-switch { position:absolute; top:4px; right:8px; z-index:3; }
+        .mv-table thead th:last-child { padding-right:86px; }
         .flt-btn { width:100%; justify-content:flex-start; padding:14px 18px; border-radius:16px 16px 0 0; background:linear-gradient(135deg, color-mix(in srgb, var(--surface) 92%, var(--primary)), var(--surface)); }
         .flt-btn[aria-expanded="false"] { border-radius:16px; }
         .flt-heading { display:flex; flex-direction:column; align-items:flex-start; gap:2px; flex:1; text-align:left; }
@@ -760,23 +853,29 @@
         </script>
     @endpush
     <script>
-        /* Etiquetas de varias entradas a la vez. */
         (function () {
-            const boton = document.getElementById('mvEtiquetas'), n = document.getElementById('mvEtqN'), todas = document.getElementById('mvEtqTodas');
+            const boton = document.getElementById('mvEtiquetas');
+            const contador = document.getElementById('mvEtqN');
+            const todas = document.getElementById('mvEtqTodas');
             const marcadas = () => [...document.querySelectorAll('.mv-etq:checked')].map(c => c.value);
             function pintar() {
-                const k = marcadas().length;
-                n.textContent = k; boton.disabled = !k;
-                boton.style.opacity = k ? '1' : '.5'; boton.style.cursor = k ? 'pointer' : 'not-allowed';
+                const cantidad = marcadas().length;
+                contador.textContent = cantidad;
+                boton.disabled = cantidad === 0;
+                boton.classList.toggle('is-ready', cantidad > 0);
                 const visibles = [...document.querySelectorAll('.mv-etq')];
                 todas.checked = visibles.length > 0 && visibles.every(c => c.checked);
-                todas.indeterminate = k > 0 && !todas.checked;
+                todas.indeterminate = cantidad > 0 && !todas.checked;
             }
-            document.addEventListener('change', e => {
-                if (e.target === todas) document.querySelectorAll('.mv-etq').forEach(c => { if (!c.closest('[hidden]') && c.closest('tr')?.style.display !== 'none') c.checked = todas.checked; });
-                if (e.target === todas || e.target.matches('.mv-etq')) pintar();
+            document.addEventListener('change', function (event) {
+                if (event.target === todas) {
+                    document.querySelectorAll('.mv-etq').forEach(function (checkbox) {
+                        if (!checkbox.closest('[hidden]') && checkbox.closest('tr')?.style.display !== 'none') checkbox.checked = todas.checked;
+                    });
+                }
+                if (event.target === todas || event.target.matches('.mv-etq')) pintar();
             });
-            boton.addEventListener('click', () => {
+            boton.addEventListener('click', function () {
                 const ids = marcadas();
                 if (ids.length) window.open(@json(route('inventory.etiquetas.lote')) + '?' + ids.map(id => 'movimientos[]=' + id).join('&'), '_blank');
             });
