@@ -253,6 +253,29 @@
     @media (max-width: 850px) { .paq-topbar { top:18px; right:18px; } .paq-hero { grid-template-columns:1fr; padding-right:160px; } .paq-hero-action { display:none; } }
     @media (max-width: 560px) { .paq-page { padding-bottom:24px; } .paq-topbar { position:static; justify-content:flex-end; margin:0 0 8px; } .paq-hero { padding:18px; } .paq-hero-copy { padding-left:44px; } .paq-total { font-size:30px; } .paq-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } .paq-stat { min-height:104px; padding:14px 12px; } .paq-stat-value { font-size:19px; } }
     @media (max-width: 390px) { .paq-stats { grid-template-columns:1fr; } }
+
+    [data-theme="light"] .paq-hero { background:linear-gradient(135deg,#f4f8ff 0%,#dcecff 100%); border-color:#bfd3ea; }
+    [data-theme="light"] .paq-hero::after { background:rgba(7,136,245,.08); }
+    [data-theme="light"] .paq-hero-icon,
+    [data-theme="light"] .paq-stat-icon,
+    [data-theme="light"] .paq-summary-icon { background:#e2efff; color:#0878d8; }
+    [data-theme="light"] .paq-total,
+    [data-theme="light"] .paq-hero h1 { color:var(--text); }
+    [data-theme="light"] .paq-hero-action .paq-total-label { color:var(--muted); }
+    [data-theme="light"] .paq-filters,
+    [data-theme="light"] .paq-stat,
+    [data-theme="light"] .paq-summary,
+    [data-theme="light"] .paq-placeholder { background:#fff; border-color:#cbdced; }
+    [data-theme="light"] .paq-filter { border-color:#b8cce2; color:#607b9a; }
+    [data-theme="light"] .paq-filter:hover { background:#eef5fc; color:var(--text); }
+    [data-theme="light"] .paq-tabs { border-color:#cbdced; }
+    [data-theme="light"] .paq-tab { color:#66809e; }
+    [data-theme="light"] .paq-stat.blue .paq-stat-icon { background:#e5f0ff; }
+    [data-theme="light"] .paq-stat.amber .paq-stat-icon { background:#fff2d8; }
+    [data-theme="light"] .paq-stat.green .paq-stat-icon { background:#e0f7eb; }
+    [data-theme="light"] .paq-stat.purple .paq-stat-icon { background:#f0e7ff; }
+    [data-theme="light"] .paq-stat.danger .paq-stat-icon { background:#ffe5e7; }
+    [data-theme="light"] .paq-summary .paq-placeholder-copy span { color:var(--muted); }
 </style>
 @endpush
 

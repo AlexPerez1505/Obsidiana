@@ -80,6 +80,11 @@
         .vt2-destino-track{height:10px;border-radius:99px;background:#202D41;overflow:hidden}
         .vt2-destino-track span{display:block;height:100%;border-radius:inherit;background:#168FF6}
         [data-theme="light"] .vt2-kpi,[data-theme="light"] .vt2-card{background:var(--surface);border-color:var(--border);color:var(--text)}
+        [data-theme="light"] .vt2-kpi-icon{background:#e2efff;color:#0878D8}
+        [data-theme="light"] .vt2-kpis .vt2-kpi:nth-child(3) .vt2-kpi-icon{background:#fff2d8}
+        [data-theme="light"] .vt2-kpis .vt2-kpi:nth-child(4) .vt2-kpi-icon{background:#e0f7eb}
+        [data-theme="light"] .vt2-kpis .vt2-kpi:nth-child(5) .vt2-kpi-icon{background:#f0e7ff}
+        [data-theme="light"] .vt2-kpis .vt2-kpi:nth-child(6) .vt2-kpi-icon{background:#ffe5e7}
         [data-theme="light"] .vt2-breakdown-row span,[data-theme="light"] .vt2-destino-head{color:var(--text)}
         [data-theme="light"] .vt2-destino-track{background:#e6edf7}
         @media(max-width:1100px){.vt2-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -136,9 +141,9 @@
 <script>
 (function () {
     const meses = @json($mesLabels);
-    const categorias = @json($categorias->map(fn ($meta) => $meta['label'])->values());
-    const colores = @json($categorias->map(fn ($meta) => $meta['color'])->values());
-    const datos = @json($categorias->keys()->map(fn ($campo) => $meses->map(fn ($mes) => (float) $mes[$campo])->values())->values());
+    const categorias = @json(collect($categorias)->map(fn ($meta) => $meta['label'])->values());
+    const colores = @json(collect($categorias)->map(fn ($meta) => $meta['color'])->values());
+    const datos = @json(collect($categorias)->keys()->map(fn ($campo) => $meses->map(fn ($mes) => (float) $mes[$campo])->values())->values());
     const moneda = value => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value || 0);
     const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     let charts = [];
