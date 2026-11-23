@@ -76,7 +76,7 @@ class Viaticos
     {
         $query = Viatic::with(['user', 'vehicle'])->latest();
 
-        if (! Administrador::pleno($user)) {
+        if (! Administrador::pleno($user) && ! $user->can('viaticos.ver_todos')) {
             $query->where('user_id', $user->id);
         }
 
@@ -97,7 +97,9 @@ class Viaticos
 
     public function puedeVer(Viatic $viatic, ?User $user): bool
     {
-        return $user && (Administrador::pleno($user) || (int) $viatic->user_id === (int) $user->id);
+        return $user && (Administrador::pleno($user)
+            || $user->can('viaticos.ver_todos')
+            || (int) $viatic->user_id === (int) $user->id);
     }
 
     /**

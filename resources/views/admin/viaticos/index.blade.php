@@ -65,7 +65,7 @@
 <div class="vt-page">
     <section class="vt-hero">
         <div><p class="vt-kicker">Gestión administrativa · Viáticos</p><h1>Viáticos y viajes</h1><p>Consulta el gasto acumulado, revisa viajes y controla los comprobantes.</p></div>
-        <div><div class="vt-hero-total">${{ number_format($total, 2) }}<small>Gasto acumulado</small></div><a class="vt-primary" href="{{ route('admin.viatics.create') }}"><x-gravityui-plus /> Nuevo viaje</a></div>
+        <div><div class="vt-hero-total">${{ number_format($total, 2) }}<small>Gasto acumulado</small></div>@can('viaticos.crear')<a class="vt-primary" href="{{ route('admin.viatics.create') }}"><x-gravityui-plus /> Nuevo viaje</a>@endcan</div>
     </section>
     <nav class="vt-tabs" role="tablist" aria-label="Secciones de viáticos"><button class="vt-tab" type="button" role="tab" aria-selected="true" data-vt-tab="resumen">Resumen</button><button class="vt-tab" type="button" role="tab" aria-selected="false" data-vt-tab="viajes">Viajes</button><button class="vt-tab" type="button" role="tab" aria-selected="false" data-vt-tab="vehiculos">Camionetas</button></nav>
 
