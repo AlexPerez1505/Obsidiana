@@ -489,6 +489,22 @@
         }
     </style>
 
+    <style>
+        /* Igualar exclusivamente la paleta de la tabla con Entrada / Salida. */
+        .card[data-view-list] { border-color:#203652; background:#0f1b30; box-shadow:0 12px 26px rgba(0,0,0,.12); }
+        .ft-table { border:1px solid #203652; border-spacing:0; background:#0f1b30; }
+        .ft-table thead { background:#102442; }
+        .ft-table th { border-bottom-color:#294668; color:#a7bddb; }
+        .ft-table td { border-bottom-color:rgba(41,70,104,.58); color:#dce8f8; }
+        .ft-table tbody tr:hover { background:linear-gradient(90deg,rgba(22,131,247,.11),rgba(22,131,247,.03)); }
+        [data-theme="light"] .card[data-view-list] { background:#fff; border-color:#b8cde2; }
+        [data-theme="light"] .ft-table { background:#fff; border-color:#c5d8e8; }
+        [data-theme="light"] .ft-table thead { background:#eaf3fc; }
+        [data-theme="light"] .ft-table th { border-bottom-color:#c7d9eb; color:#315574; }
+        [data-theme="light"] .ft-table td { border-bottom-color:#d9e5f0; color:#294966; }
+        [data-theme="light"] .ft-table tbody tr:hover { background:#f2f8fd; }
+    </style>
+
     @include('partials.tabla-filtrable.estilos')
 
     @include('partials.tabla-filtrable.script', [

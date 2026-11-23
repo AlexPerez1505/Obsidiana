@@ -43,6 +43,9 @@
 
 <div class="card catalog-card eq-card" data-live="off">
     <div class="catalog-header">
+        <span class="catalog-header-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>
+        </span>
         <h2 class="page-title">Catálogo de equipo</h2>
         <span class="catalog-count">Tipo → Subtipo → Marca → Modelo</span>
     </div>
@@ -80,7 +83,7 @@
         {{-- ---------- Tipos ---------- --}}
         <section class="eq-col">
             <header class="eq-col-head">
-                <h3>Tipos de equipo</h3>
+                <h3><span class="eq-col-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span>Tipos de equipo</h3>
                 <span class="eq-num">{{ $equipmentTypes->count() }}</span>
             </header>
 
@@ -123,7 +126,7 @@
         {{-- ---------- Subtipos ---------- --}}
         <section class="eq-col">
             <header class="eq-col-head">
-                <h3>Subtipos</h3>
+                <h3><span class="eq-col-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="m4 12 8 4 8-4M4 17l8 4 8-4"/></svg></span>Subtipos</h3>
                 <span class="eq-num">{{ $subtypes->count() }}</span>
             </header>
 
@@ -165,7 +168,7 @@
         {{-- ---------- Marcas ---------- --}}
         <section class="eq-col">
             <header class="eq-col-head">
-                <h3>Marcas</h3>
+                <h3><span class="eq-col-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m20 13-7 7-9-9V4h7l9 9Z"/><circle cx="7.5" cy="7.5" r="1"/></svg></span>Marcas</h3>
                 <span class="eq-num">{{ $brandLinks->count() }}</span>
             </header>
 
@@ -213,7 +216,7 @@
         {{-- ---------- Modelos ---------- --}}
         <section class="eq-col">
             <header class="eq-col-head">
-                <h3>Modelos</h3>
+                <h3><span class="eq-col-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg></span>Modelos</h3>
                 <span class="eq-num">{{ $equipmentModels->count() }}</span>
             </header>
 
