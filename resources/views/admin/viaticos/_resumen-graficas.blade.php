@@ -67,6 +67,10 @@
         .vt2-donut-layout{display:grid;grid-template-columns:145px 1fr;gap:14px;align-items:center;min-height:170px}
         .vt2-donut-wrap{height:150px;position:relative}
         .vt2-donut-wrap canvas{width:100%!important;height:100%!important}
+        .vt2-donut-layout{position:relative}
+        .vt2-chart-tooltip{position:absolute;z-index:20;min-width:132px;max-width:190px;padding:8px 10px;border:1px solid #3b5f88;border-radius:8px;background:#071426;color:#f8fbff;box-shadow:0 8px 20px rgba(0,0,0,.32);font-size:11px;line-height:1.35;pointer-events:none;opacity:0;transform:translateY(-50%);transition:opacity .12s ease}
+        .vt2-chart-tooltip strong{display:block;margin-bottom:2px;color:#fff;font-size:11px}
+        .vt2-chart-tooltip span{display:block;color:#b9cbe1;font-variant-numeric:tabular-nums}
         .vt2-breakdown{display:grid;gap:8px}
         .vt2-breakdown-row{display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:7px;font-size:10px}
         .vt2-breakdown-row i{width:9px;height:9px;border-radius:3px}
@@ -87,6 +91,9 @@
         [data-theme="light"] .vt2-kpis .vt2-kpi:nth-child(6) .vt2-kpi-icon{background:#ffe5e7}
         [data-theme="light"] .vt2-breakdown-row span,[data-theme="light"] .vt2-destino-head{color:var(--text)}
         [data-theme="light"] .vt2-destino-track{background:#e6edf7}
+        [data-theme="light"] .vt2-chart-tooltip{border-color:#b8cde2;background:#fff;color:#172b47;box-shadow:0 8px 20px rgba(30,64,100,.18)}
+        [data-theme="light"] .vt2-chart-tooltip strong{color:#172b47}
+        [data-theme="light"] .vt2-chart-tooltip span{color:#607a98}
         @media(max-width:1100px){.vt2-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
         @media(max-width:720px){.vt2-kpis,.vt2-lower{grid-template-columns:1fr 1fr}.vt2-donut-layout{grid-template-columns:1fr}.vt2-donut-wrap{max-width:170px;margin:auto}}
         @media(max-width:480px){.vt2-kpis{grid-template-columns:1fr}.vt2-card{padding:12px}.vt2-chart-wrap{height:235px}}
@@ -155,8 +162,35 @@
         const grid = document.documentElement.dataset.theme === 'dark' ? 'rgba(148,169,196,.16)' : 'rgba(80,100,130,.16)';
         const etiquetaTotal = { id: 'vt2-total-labels', afterDatasetsDraw(chart) { const { ctx, scales } = chart; ctx.save(); ctx.fillStyle = text; ctx.font = '700 10px Quicksand, sans-serif'; ctx.textAlign = 'center'; chart.data.labels.forEach((_, index) => { const total = chart.data.datasets.reduce((sum, ds) => sum + (Number(ds.data[index]) || 0), 0); if (!total) return; const x = chart.getDatasetMeta(chart.data.datasets.length - 1).data[index].x; const y = scales.y.getPixelForValue(total) - 7; ctx.fillText(total >= 1000 ? '$' + (total / 1000).toFixed(1) + 'k' : moneda(total).replace(' ', ' '), x, y); }); ctx.restore(); } };
         const centro = { id: 'vt2-donut-center', afterDraw(chart) { const { ctx, chartArea } = chart; if (!chartArea) return; const x = (chartArea.left + chartArea.right) / 2; const y = (chartArea.top + chartArea.bottom) / 2; ctx.save(); ctx.textAlign = 'center'; ctx.fillStyle = muted; ctx.font = '600 11px Quicksand, sans-serif'; ctx.fillText('Total', x, y - 5); ctx.fillStyle = text; ctx.font = '800 14px Quicksand, sans-serif'; ctx.fillText(moneda({{ $totalGraficas }}), x, y + 14); ctx.restore(); } };
+        function mostrarTooltipDonut({ chart, tooltip }) {
+            const layout = chart.canvas.closest('.vt2-donut-layout');
+            if (!layout) return;
+            let el = layout.querySelector('.vt2-chart-tooltip');
+            if (!el) {
+                el = document.createElement('div');
+                el.className = 'vt2-chart-tooltip';
+                layout.appendChild(el);
+            }
+            if (tooltip.opacity === 0 || !tooltip.dataPoints?.length) {
+                el.style.opacity = '0';
+                return;
+            }
+            const punto = tooltip.dataPoints[0];
+            el.innerHTML = `<strong>${punto.label}</strong><span>${moneda(punto.raw)}</span>`;
+            el.style.opacity = '1';
+            const canvasLeft = chart.canvas.offsetLeft;
+            const canvasTop = chart.canvas.offsetTop;
+            const margen = 8;
+            const preferida = canvasLeft + tooltip.caretX + 12;
+            const ancho = el.offsetWidth || 150;
+            const izquierda = preferida + ancho + margen <= layout.clientWidth
+                ? preferida
+                : canvasLeft + tooltip.caretX - ancho - 12;
+            el.style.left = Math.max(margen, izquierda) + 'px';
+            el.style.top = (canvasTop + tooltip.caretY) + 'px';
+        }
         charts.push(new Chart(document.getElementById('vt2-month-chart'), { type: 'bar', data: { labels: meses, datasets: categorias.map((label, i) => ({ label, data: datos[i], backgroundColor: colores[i], borderRadius: 3, borderSkipped: false, maxBarThickness: 34, stack: 'gastos' })) }, plugins: [etiquetaTotal], options: { responsive: true, maintainAspectRatio: false, animation: { duration: 500 }, scales: { x: { stacked: true, grid: { display: false }, ticks: { color: muted, font: { size: 9 } } }, y: { beginAtZero: true, stacked: true, grid: { color: grid, drawBorder: false }, ticks: { color: muted, font: { size: 9 }, callback: value => value >= 1000 ? '$' + (value / 1000) + 'k' : '$' + value } } }, plugins: { legend: { position: 'bottom', align: 'start', labels: { color: muted, boxWidth: 9, boxHeight: 9, usePointStyle: true, pointStyle: 'rectRounded', font: { size: 9 } } }, tooltip: { callbacks: { label: context => ' ' + context.dataset.label + ': ' + moneda(context.raw), footer: items => 'Total mensual: ' + moneda(items.reduce((sum, item) => sum + Number(item.raw || 0), 0)) } } } } }));
-        charts.push(new Chart(document.getElementById('vt2-donut-chart'), { type: 'doughnut', data: { labels: categorias, datasets: [{ data: @json($totales->values()), backgroundColor: colores, borderWidth: 0, hoverOffset: 4 }] }, plugins: [centro], options: { cutout: '70%', responsive: true, maintainAspectRatio: false, animation: { duration: 500 }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: context => ' ' + context.label + ': ' + moneda(context.raw) } } } } }));
+        charts.push(new Chart(document.getElementById('vt2-donut-chart'), { type: 'doughnut', data: { labels: categorias, datasets: [{ data: @json($totales->values()), backgroundColor: colores, borderWidth: 0, hoverOffset: 4 }] }, plugins: [centro], options: { cutout: '70%', responsive: true, maintainAspectRatio: false, animation: { duration: 500 }, plugins: { legend: { display: false }, tooltip: { enabled: false, external: mostrarTooltipDonut } } } }));
     }
     iniciar();
     new MutationObserver(() => { charts.forEach(chart => chart.destroy()); charts = []; iniciar(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
