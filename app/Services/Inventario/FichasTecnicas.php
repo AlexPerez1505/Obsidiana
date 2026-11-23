@@ -127,14 +127,33 @@ class FichasTecnicas
     {
         $ligadas = 0;
 
-        FichaTecnica::whereNull('producto_id')->whereNotNull('equipment_model_id')->get()
-            ->each(function (FichaTecnica $f) use (&$ligadas) {
-                $producto = self::productoDelModelo($f->equipment_model_id);
-                if ($producto && ! FichaTecnica::where('producto_id', $producto->id)->exists()) {
-                    $f->update(['producto_id' => $producto->id]);
-                    $ligadas++;
-                }
-            });
+        $pendientes = FichaTecnica::whereNull('producto_id')
+            ->whereNotNull('equipment_model_id')
+            ->get(['id', 'equipment_model_id']);
+
+        if ($pendientes->isEmpty()) {
+            return 0;
+        }
+
+        $modelos = $pendientes->pluck('equipment_model_id')->unique()->values();
+        $productos = Producto::whereIn('equipment_model_id', $modelos)
+            ->get(['id', 'equipment_model_id'])
+            ->keyBy('equipment_model_id');
+
+        $ocupados = FichaTecnica::whereIn('producto_id', $productos->pluck('id'))
+            ->pluck('producto_id')
+            ->flip();
+
+        foreach ($pendientes as $ficha) {
+            $producto = $productos->get($ficha->equipment_model_id);
+            if (! $producto || $ocupados->has($producto->id)) {
+                continue;
+            }
+
+            $ficha->update(['producto_id' => $producto->id]);
+            $ocupados->put($producto->id, true);
+            $ligadas++;
+        }
 
         return $ligadas;
     }
