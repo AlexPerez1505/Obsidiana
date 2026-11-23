@@ -4,6 +4,24 @@
 @section('page-title', 'Fichas técnicas')
 @section('page-sub', 'Documentos en PDF que se pueden adjuntar a cotizaciones y ventas')
 
+@push('head')
+    <style>
+        /* Estilos críticos: evitan que el listado aparezca apilado mientras carga su diseño completo. */
+        .content-actions { display:flex; justify-content:flex-end; align-items:center; margin:0 0 16px; }
+        .ft-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-bottom:16px; }
+        .ft-stats .stat { min-width:0; }
+        .f-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+        .f-search { flex:1 1 auto; min-width:0; }
+        .card[data-view-list] { overflow:hidden; }
+        .ft-table { width:100%; min-width:860px; border-collapse:collapse; }
+        @media (max-width:600px) {
+            .ft-stats { grid-template-columns:1fr; }
+            .f-toolbar { flex-wrap:wrap; }
+            .f-search { flex-basis:100%; }
+        }
+    </style>
+@endpush
+
 @section('content')
     @php
         // Solo se ofrece en los filtros lo que realmente existe en los datos.

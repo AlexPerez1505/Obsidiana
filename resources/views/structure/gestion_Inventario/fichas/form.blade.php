@@ -5,6 +5,18 @@
 @section('title', $esEdicion ? 'Editar ficha técnica' : 'Nueva ficha técnica')
 @section('page-title', $esEdicion ? 'Editar ficha técnica' : 'Nueva ficha técnica')
 
+@push('head')
+    <style>
+        /* Mantiene la composición estable antes de que carguen los estilos detallados. */
+        .ft-form { max-width:1180px; margin:0 auto; }
+        .ft-form-layout { display:grid; grid-template-columns:310px minmax(0,1fr); align-items:start; gap:24px; }
+        .ft-form-main { min-width:0; }
+        .ft-form-promo { min-height:730px; border-radius:18px; background:#071a32 url('{{ asset('images/ficha-tecnica-cover.png') }}') center/cover no-repeat; }
+        .ft-form-card, .ft-file-card { overflow:hidden; }
+        @media (max-width:560px) { .ft-form-layout { grid-template-columns:1fr; } .ft-form-promo { min-height:420px; } }
+    </style>
+@endpush
+
 @section('content')
     <form method="POST"
           action="{{ $esEdicion ? route('inventory.fichas.update', $ficha) : route('inventory.fichas.store') }}"

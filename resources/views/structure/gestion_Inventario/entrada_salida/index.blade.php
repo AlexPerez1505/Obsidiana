@@ -4,6 +4,22 @@
 @section('page-title', 'Entrada / Salida')
 @section('page-sub', 'Lo que llega con su evidencia; las salidas las genera Ventas')
 
+@push('head')
+    <style>
+        /* Evita el salto inicial mientras se carga el diseño completo del listado. */
+        .content-actions { display:flex; align-items:center; gap:10px; }
+        .f-search { flex:1 1 auto; min-width:0; }
+        .mv-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+        .mv-table-wrap { overflow:hidden; }
+        .mv-table { width:100%; min-width:980px; border-collapse:collapse; }
+        @media (max-width:700px) {
+            .mv-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .content-actions { flex-wrap:wrap; }
+            .f-search { flex-basis:100%; }
+        }
+    </style>
+@endpush
+
 @section('content')
     @php
         // Se recorre una sola vez: los mismos datos alimentan la tabla y las tarjetas.
