@@ -107,6 +107,32 @@
 .cxe .cxe-pista { margin: 8px 2px 0; color: var(--muted); font-size: 12.5px; }
 .cxe .cxe-camara { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
 
+/* ================= Almacén: escaneos recientes ================= */
+.cxe .cxe-almacen { margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.cxe .cxe-almacen-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.cxe .cxe-almacen-title { display:flex; align-items:center; gap:10px; min-width:0; }
+.cxe .cxe-almacen-icon { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; flex:0 0 34px; border-radius:10px; background:var(--cxe-info-soft); color:var(--cxe-info); }
+.cxe .cxe-almacen-icon svg { width:18px; height:18px; }
+.cxe .cxe-almacen h2 { margin:0; color:var(--text); font-size:16px; }
+.cxe .cxe-almacen-head p { margin:3px 0 0; color:var(--muted); font-size:12px; }
+.cxe .cxe-almacen-lista { display:grid; gap:8px; }
+.cxe .cxe-almacen-vacio { margin:0; padding:14px; border:1px dashed var(--border); border-radius:11px; color:var(--muted); font-size:13px; text-align:center; }
+.cxe .cxe-almacen-item { display:grid; grid-template-columns:44px minmax(0,1fr) auto; align-items:center; gap:10px; padding:9px 10px; border:1px solid var(--border); border-radius:11px; background:var(--surface-2); color:var(--text); text-align:left; cursor:pointer; font:inherit; }
+.cxe .cxe-almacen-item:hover { border-color:var(--primary); box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 12%,transparent); }
+.cxe .cxe-almacen-foto { width:44px; height:44px; border-radius:9px; object-fit:cover; background:var(--surface); border:1px solid var(--border); }
+.cxe .cxe-almacen-nombre { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13.5px; font-weight:700; }
+.cxe .cxe-almacen-meta { display:flex; flex-wrap:wrap; gap:3px 9px; margin-top:3px; color:var(--muted); font-size:11.5px; }
+.cxe .cxe-almacen-estado { color:var(--cxe-ok); font-size:11.5px; font-weight:700; white-space:nowrap; }
+.cxe .cxe-almacen-codigo { color:var(--primary); font-family:ui-monospace,Consolas,monospace; font-size:11px; }
+.cxe .cxe-almacen-item > svg { width:16px; height:16px; color:var(--muted); }
+
+@media (max-width:640px) {
+    .cxe .cxe-almacen { margin-top:12px; padding:12px; border-radius:14px; }
+    .cxe .cxe-almacen-item { grid-template-columns:38px minmax(0,1fr) auto; padding:8px; }
+    .cxe .cxe-almacen-foto { width:38px; height:38px; }
+    .cxe .cxe-almacen-estado { display:none; }
+}
+
 /* ================= Avisos ================= */
 .cxe .cxe-avisos:empty { display: none; }
 .cxe .cxe-avisos { margin-top: 12px; }

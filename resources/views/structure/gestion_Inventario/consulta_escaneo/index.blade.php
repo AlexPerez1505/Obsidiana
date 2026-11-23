@@ -66,6 +66,24 @@
         </div>
     </section>
 
+    <section class="cxe-almacen" aria-labelledby="cxe-almacen-t">
+        <div class="cxe-almacen-head">
+            <div class="cxe-almacen-title">
+                <span class="cxe-almacen-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10 12 4l9 6v9H3v-9Z"/><path d="M8 19v-5h8v5M6 10h12"/></svg>
+                </span>
+                <div>
+                    <h2 id="cxe-almacen-t">Almacén</h2>
+                    <p>Productos y equipos que has escaneado recientemente.</p>
+                </div>
+            </div>
+            <button type="button" class="cxe-btn cxe-btn--chico" data-cxe-almacen-limpiar hidden>Limpiar</button>
+        </div>
+        <div class="cxe-almacen-lista" data-cxe-almacen-lista>
+            <p class="cxe-almacen-vacio" data-cxe-almacen-vacio>Aquí aparecerán los equipos conforme los escanees.</p>
+        </div>
+    </section>
+
     <details class="cxe-ayuda">
         <summary>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
