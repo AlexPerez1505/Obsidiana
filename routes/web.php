@@ -60,6 +60,9 @@ require __DIR__.'/web/commercial/solicitudes-web.php';
 // Marketing y promociones (campañas por WhatsApp, cupones, oferta pública y webhook)
 require __DIR__.'/web/promociones.php';
 
+// Mensajería de WhatsApp (bandeja y chat con clientes)
+require __DIR__.'/web/mensajeria.php';
+
 // Inventario
 require __DIR__.'/web/inventory/inventory.php';
 require __DIR__.'/web/inventory/congresos.php';

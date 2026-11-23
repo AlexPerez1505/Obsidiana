@@ -215,6 +215,15 @@ class CatalogoPermisos
                 ],
             ],
 
+            'mensajeria' => [
+                'titulo' => 'Mensajería',
+                'descripcion' => 'Conversaciones de WhatsApp con clientes.',
+                'permisos' => [
+                    'mensajeria.ver' => 'Ver las conversaciones de WhatsApp',
+                    'mensajeria.responder' => 'Contestar, mandar archivos y plantillas por WhatsApp',
+                ],
+            ],
+
             'servicios' => [
                 'titulo' => 'Servicios',
                 'descripcion' => 'Órdenes de servicio y técnicos.',
