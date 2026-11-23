@@ -48,6 +48,10 @@
     const btnMantener = $('[data-cxe-mantener]');
     const btnCerrar = $('[data-cxe-cerrar]');
     const btnUltimo = $('[data-cxe-ultimo]');
+    const almacenLista = $('[data-cxe-almacen-lista]');
+    const almacenVacio = $('[data-cxe-almacen-vacio]');
+    const almacenLimpiar = $('[data-cxe-almacen-limpiar]');
+    const ALMACEN_KEY = 'cxe.almacen.recientes';
 
     /* =====================================================================
        Señales: sonido y vibración
@@ -379,6 +383,58 @@
         listoT.textContent = texto;
     }
 
+    function leerAlmacen() {
+        try {
+            const guardados = JSON.parse(localStorage.getItem(ALMACEN_KEY) || '[]');
+            return Array.isArray(guardados) ? guardados : [];
+        } catch (e) { return []; }
+    }
+
+    function guardarAlmacen(items) {
+        try { localStorage.setItem(ALMACEN_KEY, JSON.stringify(items.slice(0, 20))); } catch (e) { /* sin almacenamiento */ }
+    }
+
+    function pintarAlmacen() {
+        if (!almacenLista) return;
+        const items = leerAlmacen();
+        if (almacenVacio) almacenVacio.hidden = items.length > 0;
+        if (almacenLimpiar) almacenLimpiar.hidden = items.length === 0;
+        almacenLista.querySelectorAll('.cxe-almacen-item').forEach(el => el.remove());
+
+        items.forEach(function (item) {
+            const boton = document.createElement('button');
+            boton.type = 'button';
+            boton.className = 'cxe-almacen-item';
+            boton.dataset.cxeAlmacenCodigo = item.codigo || '';
+            boton.innerHTML = (item.foto
+                ? '<img class="cxe-almacen-foto" src="' + esc(item.foto) + '" alt="">'
+                : '<span class="cxe-almacen-foto" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7h18v14H3z"/><path d="m3 17 5-5 4 4 3-3 6 6M8 10h.01"/></svg></span>') +
+                '<span><span class="cxe-almacen-nombre">' + esc(item.nombre || 'Equipo') + '</span>' +
+                '<span class="cxe-almacen-meta"><span class="cxe-almacen-codigo">' + esc(item.codigo || '') + '</span>' +
+                (item.almacen ? '<span>' + esc(item.almacen) + '</span>' : '') + '</span></span>' +
+                '<span class="cxe-almacen-estado">' + esc(item.estado || 'Consultado') + '</span>' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+            almacenLista.appendChild(boton);
+        });
+    }
+
+    function registrarEnAlmacen(resumen) {
+        if (!resumen || !almacenLista) return;
+        const codigo = String(resumen.etiqueta || resumen.codigo_escaneado || resumen.referencia || '').trim().toUpperCase();
+        if (!codigo) return;
+        const ubicacion = (resumen.ubicaciones || []).find(u => u.almacen)?.almacen || '';
+        const items = leerAlmacen().filter(item => item.codigo !== codigo);
+        items.unshift({
+            codigo,
+            nombre: resumen.nombre,
+            foto: resumen.foto || '',
+            almacen: ubicacion,
+            estado: resumen.estado_fisico?.texto || 'Consultado',
+        });
+        guardarAlmacen(items);
+        pintarAlmacen();
+    }
+
     function decir(texto) {
         anuncio.textContent = '';
         setTimeout(() => { anuncio.textContent = texto; }, 30);
@@ -392,6 +448,7 @@
         cancelarCierre();
         const yaAbierta = modal.open;
         actual = ficha;
+        registrarEnAlmacen(ficha.resumen);
         retenida = false;
         pendiente = null;
         limpiarAviso(avisoModal);
@@ -866,6 +923,20 @@
         sin.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 17-5-5-6 6"/></svg>';
         img.replaceWith(sin);
     }, true);
+
+    almacenLista?.addEventListener('click', function (e) {
+        const boton = e.target.closest('[data-cxe-almacen-codigo]');
+        if (!boton || !boton.dataset.cxeAlmacenCodigo) return;
+        input.value = boton.dataset.cxeAlmacenCodigo;
+        consultar(boton.dataset.cxeAlmacenCodigo);
+    });
+
+    almacenLimpiar?.addEventListener('click', function () {
+        try { localStorage.removeItem(ALMACEN_KEY); } catch (e) { /* sin almacenamiento */ }
+        pintarAlmacen();
+    });
+
+    pintarAlmacen();
 
     // Al entrar, el lector queda listo.
     listoParaOtra();
