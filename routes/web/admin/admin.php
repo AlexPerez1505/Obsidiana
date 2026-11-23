@@ -32,10 +32,10 @@ Route::middleware(['auth', 'verified', 'approved'])->prefix('admin')->name('admi
     Route::get('/materiales', [MaterialRequestController::class, 'index'])->name('materials.index');
     Route::post('/materiales', [MaterialRequestController::class, 'store'])->name('materials.store');
     Route::get('/reportes', [ReportController::class, 'index'])->name('reports.index');
-    Route::get('/paqueteria', [PaqueteriaController::class, 'index'])->name('paqueteria.index');
-    Route::post('/paqueteria', [PaqueteriaController::class, 'store'])->name('paqueteria.store');
-    Route::get('/paqueteria/{paqueteriaEnvio}', [PaqueteriaController::class, 'show'])->name('paqueteria.show');
-    Route::put('/paqueteria/{paqueteriaEnvio}', [PaqueteriaController::class, 'update'])->name('paqueteria.update');
+    Route::get('/paqueteria', [PaqueteriaController::class, 'index'])->middleware('can:paqueteria.ver')->name('paqueteria.index');
+    Route::post('/paqueteria', [PaqueteriaController::class, 'store'])->middleware('can:paqueteria.crear')->name('paqueteria.store');
+    Route::get('/paqueteria/{paqueteriaEnvio}', [PaqueteriaController::class, 'show'])->middleware('can:paqueteria.ver')->name('paqueteria.show');
+    Route::put('/paqueteria/{paqueteriaEnvio}', [PaqueteriaController::class, 'update'])->middleware('can:paqueteria.editar')->name('paqueteria.update');
 
     // Línea de tiempo de actividad de todos los usuarios
     Route::get('/actividad', [\App\Http\Controllers\Admin\ActividadController::class, 'index'])
@@ -74,14 +74,14 @@ Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->n
 
     Route::get('/viaticos', [ViaticController::class, 'index'])->withoutMiddleware('admin')->middleware('can:viaticos.ver')->name('viatics.index');
     Route::get('/viaticos/exportar-pdf', [ViaticController::class, 'exportPdf'])->withoutMiddleware('admin')->middleware('can:viaticos.ver')->name('viatics.export');
-    Route::get('/viaticos/crear', [ViaticController::class, 'create'])->name('viatics.create');
-    Route::post('/viaticos', [ViaticController::class, 'store'])->name('viatics.store');
-    Route::get('/viaticos/{viatic}/editar', [ViaticController::class, 'edit'])->name('viatics.edit');
-    Route::patch('/viaticos/{viatic}', [ViaticController::class, 'update'])->name('viatics.update');
+    Route::get('/viaticos/crear', [ViaticController::class, 'create'])->withoutMiddleware('admin')->middleware('can:viaticos.crear')->name('viatics.create');
+    Route::post('/viaticos', [ViaticController::class, 'store'])->withoutMiddleware('admin')->middleware('can:viaticos.crear')->name('viatics.store');
+    Route::get('/viaticos/{viatic}/editar', [ViaticController::class, 'edit'])->withoutMiddleware('admin')->middleware('can:viaticos.editar')->name('viatics.edit');
+    Route::patch('/viaticos/{viatic}', [ViaticController::class, 'update'])->withoutMiddleware('admin')->middleware('can:viaticos.editar')->name('viatics.update');
     Route::delete('/viaticos/{viatic}', [ViaticController::class, 'destroy'])->withoutMiddleware('admin')->middleware(['can:viaticos.ver', 'can:viaticos.eliminar'])->name('viatics.destroy');
     Route::get('/viaticos/{viatic}', [ViaticController::class, 'show'])->withoutMiddleware('admin')->middleware('can:viaticos.ver')->name('viatics.show');
-    Route::post('/viaticos/{viatic}/gastos', [ViaticController::class, 'addExpense'])->name('viatics.expense');
-    Route::patch('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'updateExpense'])->name('viatics.expense.update');
+    Route::post('/viaticos/{viatic}/gastos', [ViaticController::class, 'addExpense'])->withoutMiddleware('admin')->middleware('can:viaticos.editar')->name('viatics.expense');
+    Route::patch('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'updateExpense'])->withoutMiddleware('admin')->middleware('can:viaticos.editar')->name('viatics.expense.update');
     Route::delete('/viaticos/{viatic}/gastos/{expense}', [ViaticController::class, 'destroyExpense'])->withoutMiddleware('admin')->middleware(['can:viaticos.ver', 'can:viaticos.eliminar'])->name('viatics.expense.destroy');
 
     Route::get('/entregas-guias', [GuiaEntregaController::class, 'index'])->withoutMiddleware('admin')->middleware('can:entregas_guias.ver')->name('guia_entregas.index');
@@ -90,12 +90,12 @@ Route::middleware(['auth', 'verified', 'approved', 'admin'])->prefix('admin')->n
     Route::post('/entregas-guias', [GuiaEntregaController::class, 'store'])->withoutMiddleware('admin')->middleware('can:entregas_guias.crear')->name('guia_entregas.store');
     Route::get('/entregas-guias/{guiaEntrega}', [GuiaEntregaController::class, 'show'])->withoutMiddleware('admin')->middleware('can:entregas_guias.ver')->name('guia_entregas.show');
 
-    Route::post('/viajes', [TripController::class, 'store'])->name('trips.store');
+    Route::post('/viajes', [TripController::class, 'store'])->withoutMiddleware('admin')->middleware('can:viaticos.crear')->name('trips.store');
     Route::get('/viajes/{trip}', [TripController::class, 'show'])->withoutMiddleware('admin')->middleware('can:viaticos.ver')->name('trips.show');
-    Route::post('/viajes/{trip}/gastos', [TripController::class, 'addExpense'])->name('trips.expense');
-    Route::patch('/viajes/{trip}/gastos/{expense}', [TripController::class, 'updateExpense'])->name('trips.expense.update');
+    Route::post('/viajes/{trip}/gastos', [TripController::class, 'addExpense'])->withoutMiddleware('admin')->middleware('can:viaticos.editar')->name('trips.expense');
+    Route::patch('/viajes/{trip}/gastos/{expense}', [TripController::class, 'updateExpense'])->withoutMiddleware('admin')->middleware('can:viaticos.editar')->name('trips.expense.update');
     Route::delete('/viajes/{trip}/gastos/{expense}', [TripController::class, 'destroyExpense'])->withoutMiddleware('admin')->middleware(['can:viaticos.ver', 'can:viaticos.eliminar'])->name('trips.expense.destroy');
-    Route::post('/viajes/{trip}/finalizar', [TripController::class, 'finish'])->name('trips.finish');
+    Route::post('/viajes/{trip}/finalizar', [TripController::class, 'finish'])->withoutMiddleware('admin')->middleware('can:viaticos.editar')->name('trips.finish');
 
     // Permisos
     Route::get('/permisos', [PermissionController::class, 'index'])->name('permissions.index');

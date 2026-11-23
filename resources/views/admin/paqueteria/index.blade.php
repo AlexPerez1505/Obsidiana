@@ -300,11 +300,11 @@
 @section('content')
     <div class="paq-page" data-paqueteria-page>
         <div class="paq-topbar">
-            <div class="paq-actions">
+            @can('paqueteria.crear')<div class="paq-actions">
                 <button type="button" class="btn" id="paq-new-shipment" title="Nuevo envío">
                     <span aria-hidden="true">+</span> Nuevo envío
                 </button>
-            </div>
+            </div>@endcan
         </div>
 
         <div class="paq-filters" role="group" aria-label="Filtrar por paquetería">
@@ -383,7 +383,7 @@
                         <small>{{ $envio['paquetes_count'] }} paquete(s) · {{ number_format($envio['peso_cobro'], 2) }} kg para cobrar · {{ $envio['costo_pendiente'] ? 'Costo pendiente' : '$'.number_format($envio['costo'], 2) }}</small>
                         @if ($envio['tracking_url'])<small><a href="{{ $envio['tracking_url'] }}" target="_blank" rel="noopener">Rastrear guía</a></small>@endif
                     </div>
-                    <div><span class="paq-envio-status">{{ $envio['estado'] === 'en_camino' ? 'En camino' : 'Por enviar' }}</span><button type="button" class="paq-change" data-edit-envio="{{ $envio['id'] }}">Editar</button></div>
+                    <div><span class="paq-envio-status">{{ $envio['estado'] === 'en_camino' ? 'En camino' : 'Por enviar' }}</span>@can('paqueteria.editar')<button type="button" class="paq-change" data-edit-envio="{{ $envio['id'] }}">Editar</button>@endcan</div>
                 </article>
             @empty
                 <div class="paq-empty">Todavía no hay envíos guardados.</div>
