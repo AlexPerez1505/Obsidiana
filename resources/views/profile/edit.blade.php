@@ -4,10 +4,10 @@
 @section('page-sub', 'Actualiza tu información personal')
 
 @section('content')
-    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); align-items:start;">
+    <div class="profile-layout">
         {{-- Datos personales --}}
-        <x-ui.card>
-            <x-ui.section-title>Datos personales</x-ui.section-title>
+        <x-ui.card class="profile-card profile-personal-card">
+            <div class="profile-card-title"><span class="profile-card-icon"><x-gravityui-persons /></span><x-ui.section-title>Datos personales</x-ui.section-title></div>
             <form method="POST" action="{{ route('profile.update') }}">
                 @csrf
                 @method('PATCH')
@@ -32,13 +32,13 @@
                     Si cambias el correo, tendrás que verificarlo de nuevo con un código.
                 </p>
 
-                <x-ui.button style="margin-top:16px;">Guardar cambios</x-ui.button>
+                <x-ui.button class="profile-action" style="margin-top:16px;"><x-gravityui-floppy-disk /> Guardar cambios</x-ui.button>
             </form>
         </x-ui.card>
 
         {{-- Cambiar contraseña --}}
-        <x-ui.card>
-            <x-ui.section-title>Cambiar contraseña</x-ui.section-title>
+        <x-ui.card class="profile-card profile-password-card">
+            <div class="profile-card-title"><span class="profile-card-icon"><x-gravityui-shield-check /></span><x-ui.section-title>Cambiar contraseña</x-ui.section-title></div>
             <form method="POST" action="{{ route('profile.password') }}">
                 @csrf
                 @method('PUT')
@@ -64,7 +64,7 @@
                     :required="true"
                 />
 
-                <x-ui.button style="margin-top:16px;">Actualizar contraseña</x-ui.button>
+                <x-ui.button class="profile-action" style="margin-top:16px;"><x-gravityui-pencil /> Actualizar contraseña</x-ui.button>
             </form>
         </x-ui.card>
 
@@ -73,8 +73,8 @@
             solas las pantallas que piden firma (entradas de inventario,
             salidas de almacén), en vez de volver a dibujarla con el mouse.
         --}}
-        <x-ui.card>
-            <x-ui.section-title>Mi firma</x-ui.section-title>
+        <x-ui.card class="profile-card profile-signature-card">
+            <div class="profile-card-title"><span class="profile-card-icon"><x-gravityui-pencil /></span><x-ui.section-title>Mi firma</x-ui.section-title></div>
             <p class="muted" style="margin:0 0 14px; font-size:13.5px;">
                 Trázala una vez y se va a cargar sola cada que tengas que firmar una entrada
                 o una salida de almacén. Siempre puedes limpiarla y firmar a mano en el momento.
@@ -108,8 +108,8 @@
                 @error('firma')<p class="err">{{ $message }}</p>@enderror
 
                 <div style="display:flex; align-items:center; gap:12px; margin-top:12px;">
-                    <x-ui.button>Guardar mi firma</x-ui.button>
-                    <a href="#" id="firma-perfil-limpiar" class="link" style="font-size:13px;">Limpiar</a>
+                    <x-ui.button class="profile-action"><x-gravityui-floppy-disk /> Guardar mi firma</x-ui.button>
+                    <a href="#" id="firma-perfil-limpiar" class="link profile-clear">Limpiar</a>
                 </div>
             </form>
         </x-ui.card>
@@ -117,6 +117,26 @@
 
     @push('head')
         <style>
+            .profile-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.28fr); grid-template-areas:'personal signature' 'password signature'; gap:20px; align-items:stretch; }
+            .profile-personal-card { grid-area:personal; }
+            .profile-password-card { grid-area:password; }
+            .profile-signature-card { grid-area:signature; }
+            .profile-card { padding:28px; border:1px solid color-mix(in srgb,var(--primary) 62%,var(--border)); border-radius:18px; background:linear-gradient(145deg,var(--surface),color-mix(in srgb,var(--surface) 84%,var(--primary))); box-shadow:var(--shadow); }
+            .profile-card-title { display:flex; align-items:center; gap:16px; margin-bottom:20px; }
+            .profile-card-title .section-title { margin:0; font-size:22px; }
+            .profile-card-icon { display:grid; place-items:center; flex:0 0 48px; width:48px; height:48px; border:1px solid var(--primary); border-radius:14px; background:var(--primary-soft); color:var(--primary); }
+            .profile-card-icon svg { width:26px; height:26px; }
+            .profile-card .form-group { margin-bottom:15px; }
+            .profile-card .form-group > label { display:block; margin-bottom:7px; font-weight:700; }
+            .profile-card .form-group input { width:100%; box-sizing:border-box; min-height:42px; padding:0 14px; border:1px solid var(--border); border-radius:11px; background:var(--surface); color:var(--text); }
+            .profile-card .form-group input:focus { border-color:var(--primary); outline:2px solid color-mix(in srgb,var(--primary) 25%,transparent); }
+            .profile-action { display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 18px; border-radius:11px; }
+            .profile-action svg { width:18px; height:18px; }
+            .profile-signature-card { display:flex; flex-direction:column; }
+            .profile-signature-card form:last-child { display:flex; flex:1; flex-direction:column; }
+            .profile-signature-card .firma-lienzo { flex:1; width:100%; max-width:none; min-height:300px; height:auto; margin:8px 0 18px; border:1px solid var(--border); border-radius:15px; }
+            .profile-signature-card .profile-clear { align-self:center; font-size:14px !important; }
+            @media (max-width:900px) { .profile-layout { grid-template-columns:1fr; grid-template-areas:'personal' 'password' 'signature'; } .profile-signature-card .firma-lienzo { min-height:240px; } }
             /* Se traza sobre blanco aunque el sistema esté en oscuro: la firma
                es tal cual se va a imprimir en las hojas. */
             .firma-lienzo { width:100%; max-width:420px; height:150px; background:#fff;
