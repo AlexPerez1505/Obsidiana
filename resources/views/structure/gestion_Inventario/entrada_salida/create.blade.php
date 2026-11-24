@@ -11,6 +11,16 @@
           enctype="multipart/form-data" id="form-entrada" novalidate>
         @csrf
 
+        <header class="entrada-form-hero">
+            <span class="entrada-form-hero-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/><path d="M19 16v5M16.5 18.5h5"/></svg>
+            </span>
+            <div>
+                <h1>Nueva entrada</h1>
+                <p>Registra el equipo que llegó, con la evidencia de cómo llegó</p>
+            </div>
+        </header>
+
         {{-- Los pasos también sirven para saltar: se puede ir directo al
              apartado que quieras, sin pasar por "Continuar". --}}
         <nav class="pasos" id="pasos" aria-label="Pasos del registro"></nav>
@@ -33,11 +43,17 @@
              1. Qué llegó
         ============================================================ --}}
         <section class="paso" data-paso="equipo" data-titulo="Equipo" data-activo>
-            <x-ui.card style="margin-bottom:18px;">
-                <x-ui.section-title style="margin:0 0 6px;">¿El equipo es nuevo o usado?</x-ui.section-title>
-                <p class="campo-nota" style="margin:0 0 14px;">
-                    De esto depende lo que se te pida después: el usado lleva checklist de recepción.
-                </p>
+            <x-ui.card class="entrada-panel entrada-panel--condicion" style="margin-bottom:18px;">
+                <div class="entrada-panel-head">
+                    <span class="entrada-panel-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
+                    </span>
+                    <div>
+                        <x-ui.section-title style="margin:0 0 2px;">¿El equipo es nuevo o usado?</x-ui.section-title>
+                        <p class="campo-nota" style="margin:0;">De esto depende lo que se te pida después: el usado lleva checklist de recepción.</p>
+                    </div>
+                    <span class="entrada-panel-chevron" aria-hidden="true">⌄</span>
+                </div>
 
                 <div class="opciones">
                     <label class="opcion">
@@ -66,8 +82,14 @@
                 </div>
             </x-ui.card>
 
-            <x-ui.card>
-                <x-ui.section-title style="margin:0 0 16px;">¿Qué llegó?</x-ui.section-title>
+            <x-ui.card class="entrada-panel entrada-panel--llego">
+                <div class="entrada-panel-head">
+                    <span class="entrada-panel-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V7l-8-4-8 4v5"/><path d="M4 12l8 4 8-4"/><path d="M12 16v5"/><path d="M4 7l8 4 8-4"/></svg>
+                    </span>
+                    <x-ui.section-title style="margin:0;">¿Qué llegó?</x-ui.section-title>
+                    <span class="entrada-panel-chevron" aria-hidden="true">⌃</span>
+                </div>
 
                 <div id="modeloExistenteAviso" class="cat-aviso" style="display:none; margin-bottom:14px;"></div>
 
@@ -138,14 +160,25 @@
                     </x-ui.form-group>
                 </div>
 
-                <x-ui.form-group label="Descripción" for="descripcion">
-                    <textarea id="descripcion" name="descripcion" rows="2">{{ old('descripcion') }}</textarea>
-                </x-ui.form-group>
+                <div class="entrada-description-panel">
+                    <div class="entrada-panel-head entrada-panel-head--small">
+                        <span class="entrada-panel-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>
+                        </span>
+                        <x-ui.section-title style="margin:0;">Descripción</x-ui.section-title>
+                        <span class="entrada-panel-chevron" aria-hidden="true">⌃</span>
+                    </div>
+                    <div class="entrada-description-grid">
+                        <x-ui.form-group label="Descripción" for="descripcion">
+                            <textarea id="descripcion" name="descripcion" rows="2">{{ old('descripcion') }}</textarea>
+                        </x-ui.form-group>
 
-                <x-ui.form-group label="Notas de la entrada" for="notas">
-                    <textarea id="notas" name="notas" rows="2"
-                              placeholder="Ej. llegó en buen estado, caja abierta para inspección...">{{ old('notas') }}</textarea>
-                </x-ui.form-group>
+                        <x-ui.form-group label="Notas de la entrada" for="notas">
+                            <textarea id="notas" name="notas" rows="2"
+                                      placeholder="Ej. llegó en buen estado, caja abierta para inspección...">{{ old('notas') }}</textarea>
+                        </x-ui.form-group>
+                    </div>
+                </div>
             </x-ui.card>
         </section>
 
