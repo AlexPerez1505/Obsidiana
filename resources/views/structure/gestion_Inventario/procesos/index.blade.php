@@ -251,6 +251,7 @@
                         <div class="data-card-foot" style="align-items:center;">
                             <span style="font-family:ui-monospace,Consolas,monospace; font-size:11px; color:var(--muted);">{{ $pieza->codigo }}</span>
                             <a href="{{ route('inventory.procesos.show', $paso) }}" class="btn">
+                                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.52.86l10-6.5a1 1 0 0 0 0-1.72l-10-6.5A1 1 0 0 0 8 5.5Z"/></svg>
                                 {{ $paso->estado === 'en_curso' ? 'Continuar' : 'Trabajar esta pieza' }}
                             </a>
                         </div>
@@ -537,7 +538,10 @@
         .pr-motivo svg { width:15px; height:15px; flex-basis:15px; }
         .pr-cola .data-card-foot { margin-top:10px; padding-top:9px; }
         .pr-cola .data-card-foot span { font-size:10px !important; }
-        .pr-cola .data-card-foot .btn { min-height:32px; padding:0 12px; border-radius:7px; font-size:11px; }
+        .pr-cola .data-card-foot .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:34px; padding:0 13px; border:1px solid #1683f7; border-radius:8px; background:linear-gradient(180deg,#1683f7 0%,#0875df 100%); color:#fff; font-size:11px; font-weight:700; line-height:1; box-shadow:0 4px 10px rgba(0,92,190,.28), inset 0 1px rgba(255,255,255,.22); transition:transform .16s ease, filter .16s ease, box-shadow .16s ease; }
+        .pr-cola .data-card-foot .btn svg { width:14px; height:14px; flex:0 0 14px; }
+        .pr-cola .data-card-foot .btn:hover { filter:brightness(1.1); transform:translateY(-1px); box-shadow:0 6px 14px rgba(0,92,190,.38), inset 0 1px rgba(255,255,255,.25); }
+        .pr-cola .data-card-foot .btn:focus-visible { outline:2px solid #8bcbff; outline-offset:2px; }
         .pr-cola-vacia { min-height:300px; font-size:12px; }
         [data-theme="light"] .pr-cola { border-color:#b8cde2; background:linear-gradient(180deg,#f1f7fc 0%,#e8f1f9 100%); }
         [data-theme="light"] .pr-cola-cab { border-bottom-color:#c7d9eb; background:linear-gradient(180deg,#e5f1fc 0%,#d8e9f8 100%); }
