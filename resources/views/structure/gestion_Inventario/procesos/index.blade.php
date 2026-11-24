@@ -50,6 +50,7 @@
                 <div class="stat-num">{{ $resumen['en_cola'] }}</div>
                 <div class="stat-lbl">Esperando turno</div>
             </div>
+            <span class="stat-art" aria-hidden="true"><img src="{{ asset('images/procesos/esperando-turno.png') }}" alt=""></span>
         </div>
 
         <div class="card card--accent is-amber stat">
@@ -60,16 +61,18 @@
                 <div class="stat-num">{{ $resumen['en_curso'] }}</div>
                 <div class="stat-lbl">En curso ahorita</div>
             </div>
+            <span class="stat-art" aria-hidden="true"><img src="{{ asset('images/procesos/en-curso.png') }}" alt=""></span>
         </div>
 
-        <div class="card card--accent stat" style="--acento:var(--danger);">
-            <span class="stat-ico orange">
+        <div class="card card--accent is-warning stat">
+            <span class="stat-ico yellow">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </span>
             <div>
                 <div class="stat-num">{{ $resumen['atoradas'] }}</div>
                 <div class="stat-lbl">Más de una semana detenidas</div>
             </div>
+            <span class="stat-art" aria-hidden="true"><img src="{{ asset('images/procesos/detenidas.png') }}" alt=""></span>
         </div>
 
         <div class="card card--accent is-green stat">
@@ -80,6 +83,7 @@
                 <div class="stat-num">{{ $resumen['listas'] }}</div>
                 <div class="stat-lbl">Salieron y ya son stock</div>
             </div>
+            <span class="stat-art" aria-hidden="true"><img src="{{ asset('images/procesos/stock.png') }}" alt=""></span>
         </div>
     </div>
 
@@ -200,6 +204,7 @@
                     <span class="pr-cola-n" data-cola-n>{{ $delProceso->count() }}</span>
                 </header>
 
+                <div class="pr-cola-list">
                 @forelse ($delProceso as $fila)
                     @php
                         $paso = $fila['paso'];
@@ -223,19 +228,19 @@
                         </div>
 
                         @if ($paso->motivo)
-                            <p class="pr-motivo">{{ $paso->motivo }}</p>
+                            <p class="pr-motivo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5Z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>{{ $paso->motivo }}</p>
                         @endif
 
                         <dl>
                             <div>
-                                <dt>Detenida</dt>
+                                    <dt><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Detenida</dt>
                                 <dd class="{{ $fila['dias'] >= 7 ? 'pr-alerta' : '' }}">
                                     {{ $fila['dias'] === 0 ? 'Hoy' : $fila['dias'].' día(s)' }}
                                 </dd>
                             </div>
-                            <div><dt>Responsable</dt><dd>{{ $fila['responsable'] }}</dd></div>
+                            <div><dt><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.5"/><path d="M4 21c.7-4 3.3-6 8-6s7.3 2 8 6"/></svg>Responsable</dt><dd>{{ $fila['responsable'] }}</dd></div>
                             <div>
-                                <dt>Al terminar</dt>
+                                    <dt><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="m4 12 8 4 8-4M4 17l8 4 8-4"/></svg>Al terminar</dt>
                                 <dd>
                                     @php $sig = $pieza->procesos->where('estado','pendiente')->where('id','!=',$paso->id); @endphp
                                     {{ $sig->isNotEmpty() ? 'Sigue en '.$sig->map->nombre()->implode(', ') : 'Pasa a stock' }}
@@ -251,11 +256,23 @@
                         </div>
                     </article>
                 @empty
-                    <p class="pr-cola-vacia">Nada esperando en {{ mb_strtolower($nombre) }}.</p>
+                    <p class="pr-cola-vacia">
+                        <span class="pr-vacia-icon" aria-hidden="true">
+                            @if ($clave === 'mantenimiento')
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 1 .33 1.82l-.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 1-1.82-.33h-.09a1.65 1.65 0 0 1-1.51 1H13a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 1-1-1.51 1.65 1.65 0 0 1-1.82-.33l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 1 .33-1.82v-.09A1.65 1.65 0 0 1 8 11H7a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 1 1.51-1 1.65 1.65 0 0 1 .33-1.82l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 1 13.58 7H13a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 1 1.51 1 1.65 1.65 0 0 1 1.82.33l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 1 17.23 13H17a2 2 0 1 1-4 0"/></svg>
+                            @elseif ($clave === 'limpieza')
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3h6M10 3v4l-3 4v8a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-8l-3-4V3"/><path d="M8 14h8M12 11v6"/></svg>
+                            @else
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                            @endif
+                        </span>
+                        <span>Nada esperando en {{ mb_strtolower($nombre) }}.</span>
+                    </p>
                 @endforelse
 
                 {{-- Sale cuando los filtros dejan esta cola sin nada. --}}
                 <p class="pr-cola-vacia" data-cola-filtrada hidden>Ninguna coincide con el filtro.</p>
+                </div>
             </section>
         @endforeach
     </div>
@@ -431,6 +448,72 @@
         @media (max-width:1050px) { .pr-salieron-card .pr-listos { grid-template-columns:repeat(4,minmax(0,1fr)); } }
         @media (max-width:760px) { .pr-salieron-card .pr-listos { grid-template-columns:repeat(2,minmax(0,1fr)); } }
         @media (max-width:430px) { .pr-salieron-card .pr-listos { grid-template-columns:1fr; } }
+    </style>
+
+    <style>
+        /* Ajuste de lectura e iconografia para las tarjetas de proceso. */
+        .pr-cola { display:flex; flex-direction:column; min-height:0; }
+        .pr-cola-list { height:600px; min-height:0; overflow-y:auto; overflow-x:hidden; padding:1px 5px 4px 1px; scrollbar-width:thin; scrollbar-color:#3978b7 rgba(6,24,48,.55); }
+        .pr-cola-list::-webkit-scrollbar { width:8px; }
+        .pr-cola-list::-webkit-scrollbar-track { border-radius:8px; background:rgba(6,24,48,.55); }
+        .pr-cola-list::-webkit-scrollbar-thumb { border:2px solid transparent; border-radius:8px; background:#3978b7; background-clip:padding-box; }
+        .pr-cola-list::-webkit-scrollbar-thumb:hover { background:#1683f7; background-clip:padding-box; }
+        .pr-cola .data-card { padding:10px 11px; }
+        .pr-cola .data-card-top { padding-bottom:8px; }
+        .pr-cola .data-card .t { font-size:12px !important; line-height:1.15; }
+        .pr-cola .data-card .s, .pr-eq-tipo { font-size:10px; line-height:1.2; }
+        .pr-cola .data-card .badge { padding:3px 7px; font-size:10px; }
+        .pr-cola .data-card dl { grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px 10px; margin-top:8px; }
+        .pr-cola .data-card dl > div:last-child { grid-column:auto; }
+        .pr-cola .data-card dt { display:flex; align-items:center; gap:4px; font-size:9px; }
+        .pr-cola .data-card dt svg { width:13px; height:13px; flex:0 0 13px; color:#8db4d9; }
+        .pr-cola .data-card dd { font-size:10px; line-height:1.15; }
+        .pr-motivo { display:flex; align-items:center; gap:6px; margin:7px 0 0; padding:6px 8px; font-size:10px; line-height:1.3; }
+        .pr-motivo svg { width:13px; height:13px; flex:0 0 13px; color:#9fc2e5; }
+        .pr-cola .data-card-foot { margin-top:8px; padding-top:7px; }
+        .pr-cola .data-card-foot span { font-size:9px !important; }
+        .pr-cola .data-card-foot .btn { min-height:29px; padding:0 10px; border-radius:7px; font-size:10px; }
+        [data-theme="light"] .pr-cola-list { scrollbar-color:#8db4d9 #eaf2f9; }
+        [data-theme="light"] .pr-cola-list::-webkit-scrollbar-track { background:#eaf2f9; }
+        [data-theme="light"] .pr-cola-list::-webkit-scrollbar-thumb { background:#8db4d9; background-clip:padding-box; }
+        @media (max-width:850px) { .pr-cola .data-card dl { grid-template-columns:repeat(2,minmax(0,1fr)); } .pr-cola .data-card dl > div:last-child { grid-column:1 / -1; } }
+        @media (max-width:700px) { .pr-cola-list { height:auto; max-height:none; overflow:visible; padding-right:1px; } }
+        @media (max-width:430px) { .pr-cola .data-card dl { grid-template-columns:1fr; } .pr-cola .data-card dl > div:last-child { grid-column:auto; } }
+    </style>
+
+    <style>
+        /* Tarjetas de resumen: icono protagonista, jerarquia clara y arte decorativo. */
+        .pr-stats .stat { min-height:92px; padding:14px 20px; gap:14px; border-top-width:3px; border-radius:12px; }
+        .pr-stats .stat > div { position:relative; z-index:1; padding-left:14px; border-left:1px solid rgba(151,194,235,.42); }
+        .pr-stats .stat-ico { width:58px; height:58px; flex-basis:58px; border-radius:13px; }
+        .pr-stats .stat-ico svg { width:31px; height:31px; }
+        .pr-stats .stat-num { font-size:30px; line-height:1; letter-spacing:.01em; }
+        .pr-stats .stat-lbl { margin-top:6px; font-size:14px; line-height:1.15; color:#c2d7ef; }
+        .pr-stats .stat-art { position:absolute !important; right:7px; bottom:-5px; z-index:0 !important; width:122px; height:88px; color:#48a5ed; opacity:.5; pointer-events:none; }
+        .pr-stats .stat-art img { display:block; width:100%; height:100%; object-fit:contain; mix-blend-mode:screen; opacity:.68; }
+        .pr-stats .stat::after { display:none; }
+        .pr-stats .stat-art svg { width:100%; height:100%; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 3px currentColor); }
+        .pr-stats .stat.is-amber .stat-art { color:#f3a43b; }
+        .pr-stats .stat-ico.yellow { background:rgba(250,204,21,.16); color:#facc15; }
+        .pr-stats .stat.is-warning { border-color:#d1a914 !important; border-top-color:#facc15 !important; background:linear-gradient(135deg,#3d3c24 0%,#4a4020 58%,#302e27 100%); box-shadow:0 8px 18px rgba(118,91,13,.2); }
+        .pr-stats .stat.is-warning::after { display:none; }
+        .pr-stats .stat.is-warning .stat-art { color:#facc15; opacity:.5; }
+        .pr-stats .stat.is-warning .stat-art { right:-16px; bottom:-9px; width:126px; height:92px; }
+        .pr-stats .stat.is-warning .stat-lbl { color:#f5e7a4; }
+        .pr-stats .stat.is-green .stat-art { color:#23d879; }
+        .pr-stats .stat { border:1px solid #1683f7; border-top:5px solid #1683f7; }
+        .pr-stats .stat { border-color:#20508a; background:linear-gradient(135deg,#111b2e 0%,#12345c 100%); box-shadow:0 8px 18px rgba(2,20,52,.22); }
+        .pr-stats .stat.is-amber { border-color:#20508a; border-top-color:#f59e0b; background:linear-gradient(135deg,#111b2e 0%,#3b2b1f 100%); }
+        .pr-stats .stat.is-warning { border-color:#20508a !important; border-top-color:#facc15 !important; background:linear-gradient(135deg,#111b2e 0%,#3b3820 100%); }
+        .pr-stats .stat.is-green { border-color:#20508a; border-top-color:#30d158; background:linear-gradient(135deg,#111b2e 0%,#123d3d 100%); }
+        .pr-cola[data-cola="hojalateria"] { border-top-color:#24558c; }
+        .pr-cola[data-cola="hojalateria"] .pr-ico.ambar { background:rgba(250,204,21,.16); color:#facc15; }
+        .pr-cola[data-cola="hojalateria"] .pr-cola-cab { border-bottom-color:rgba(250,204,21,.35); }
+        [data-theme="light"] .pr-stats .stat > div { border-left-color:rgba(255,255,255,.5); }
+        [data-theme="light"] .pr-stats .stat-lbl { color:#d5e7fa; }
+        @media (max-width:1050px) { .pr-stats .stat { min-height:88px; } .pr-stats .stat-lbl { font-size:13px; } }
+        [data-theme="light"] .pr-stats .stat-art { opacity:.4; }
+        @media (max-width:700px) { .pr-stats .stat { min-height:86px; padding:13px 16px; } .pr-stats .stat-art { right:2px; width:105px; height:78px; } }
     </style>
 
     @include('partials.tabla-filtrable.estilos')
