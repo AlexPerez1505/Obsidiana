@@ -591,6 +591,8 @@
     const paqueteriaGuias = @json($guiasFedex);
     const paqueteriaCatalogoArticulos = @json($catalogoArticulos);
     const paqModal = document.getElementById('paq-wizard-modal');
+    const paqWizardStep = paqModal.querySelector('.paq-wizard-step');
+    const paqOrigen = @json(config('logistica.origen.nombre', 'Origen'));
     const paqDetailModal = document.getElementById('paq-detail-modal');
     const paqDetailContent = document.getElementById('paq-detail-content');
     const paqRemisionSearch = document.getElementById('paq-remision-search');
@@ -651,7 +653,7 @@
         paqStepFourCost.hidden = paso !== 4;
         paqStepFourCarrier.hidden = paso !== 4;
         paqStepFive.hidden = paso !== 5;
-        document.querySelector('.paq-wizard-step').textContent = 'Nuevo envío · Paso ' + paso + ' de 5';
+        paqWizardStep.textContent = 'Nuevo envío · Paso ' + paso + ' de 5';
         document.querySelector('.paq-wizard h2').textContent = paso === 1 ? '¿Qué envías y a quién?' : (paso === 2 ? '¿Con qué paquetería?' : (paso === 3 ? 'Medidas y peso' : (paso === 4 ? 'Fechas y total' : 'Revisa y guarda')));
         document.querySelectorAll('.paq-progress i').forEach(function (bar, index) { bar.style.background = index < paso ? 'var(--primary)' : 'var(--border)'; });
         paqPrevStep.hidden = paso === 1;
@@ -1003,9 +1005,8 @@
 
     function paqValidarPaso(paso) {
         if (paso === 1) {
-            if (!paqValor('paq-data-cliente').trim()) return 'Escribe el cliente o selecciona una remisión.';
+            if (!paqValor('paq-data-cliente').trim()) return paqSelectedRemision?.folio ? 'Escribe el cliente o selecciona una remisión.' : 'Escribe el cliente del envío.';
             if (!paqValor('paq-data-destino').trim()) return 'Falta el destino.';
-            if (!paqItems.some(function (item) { return item.incluido !== false && item.nombre.trim(); })) return 'Agrega al menos un artículo.';
         }
         if (paso === 2 && !paqPuedeContinuarPasoDos()) return paqCourier === 'FedEx' && paqFedexGuideType === 'virtual' ? 'Escribe el número de la guía virtual de FedEx.' : (paqCourier === 'Otra' ? 'Escribe el nombre de la paquetería.' : 'Selecciona una paquetería y una guía.');
         if (paso === 3) {
@@ -1097,11 +1098,11 @@
         }).join('') : '<div class="paq-empty">Sin paquetes registrados.</div>';
         document.getElementById('paq-review-content').innerHTML =
             '<div class="paq-review-summary"><div class="paq-review-label">Costo del envío</div><div class="paq-review-total">' + (costo === null ? 'Sin costo' : '$' + costo.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) + '</div><div class="paq-review-sub">' + paqEscape(destino) + ' · ' + paqEscape(remision) + '</div></div>' +
-            '<div class="paq-review-route"><div class="paq-review-route-title">' + paqEscape(paqueteria) + (guia ? ' · ' + paqEscape(guia) : '') + '</div><div class="paq-review-route-line"><b></b><i></i><b></b></div><div class="paq-review-route-points"><strong>Toluca</strong><strong>' + paqEscape(destino.split(',')[0]) + '</strong></div><div class="paq-review-route-dates"><span>Salió ' + paqEscape(fecha || '—') + '<br>Registrado</span><span>' + estado + '<br>Va en camino</span><span>' + paqEscape(entrega || '—') + '<br>Llegada estimada</span></div></div>' +
+            '<div class="paq-review-route"><div class="paq-review-route-title">' + paqEscape(paqueteria) + (guia ? ' · ' + paqEscape(guia) : '') + '</div><div class="paq-review-route-line"><b></b><i></i><b></b></div><div class="paq-review-route-points"><strong>' + paqEscape(paqOrigen) + '</strong><strong>' + paqEscape(destino.split(',')[0]) + '</strong></div><div class="paq-review-route-dates"><span>Salió ' + paqEscape(fecha || '—') + '<br>Registrado</span><span>' + estado + '<br>Va en camino</span><span>' + paqEscape(entrega || '—') + '<br>Llegada estimada</span></div></div>' +
             (costo === null ? '<div class="paq-review-missing">Falta: costo. Tócala “Editar” para completarlo.</div>' : '') +
             '<div class="paq-review-section-title">Así va empacado · ' + paquetes.length + ' paquete' + (paquetes.length === 1 ? '' : 's') + ' · ' + totalCobrar.toFixed(2) + ' kg para cobrar</div>' + paquetesHtml +
             '<div class="paq-review-meta"><div><small>Cliente</small><strong>' + paqEscape(cliente) + '</strong></div><div><small>Paquetería</small><strong>' + paqEscape(paqueteria) + '</strong></div><div><small>Guía</small><strong>' + paqEscape(guia || 'Sin guía') + '</strong></div><div><small>Enviado</small><strong>' + paqEscape(fecha || '—') + '</strong></div><div><small>Entrega estimada</small><strong>' + paqEscape(entrega || '—') + '</strong></div><div><small>Lo llevó</small><strong>' + paqEscape(responsables) + '</strong></div></div>' +
-            '<div class="paq-review-meta"><div><small>Dirección</small><strong>' + paqEscape(paqValor('paq-data-direccion') || 'Sin dirección') + '</strong></div><div><small>Código postal</small><strong>' + paqEscape(paqValor('paq-data-cp') || 'Sin código postal') + '</strong></div><div><small>Teléfono</small><strong>' + paqEscape(paqValor('paq-data-telefono') || 'Sin teléfono') + '</strong></div><div><small>Ticket FedEx</small><strong>' + paqEscape(ticket) + '</strong></div></div>' +
+            '<div class="paq-review-meta"><div><small>Dirección</small><strong>' + paqEscape(paqValor('paq-data-direccion') || 'Sin dirección') + '</strong></div><div><small>Código postal</small><strong>' + paqEscape(paqValor('paq-data-cp') || 'Sin código postal') + '</strong></div><div><small>Teléfono</small><strong>' + paqEscape(paqValor('paq-data-telefono') || 'Sin teléfono') + '</strong></div><div><small>Ticket ' + paqEscape(paqueteria) + '</small><strong>' + paqEscape(ticket) + '</strong></div></div>' +
             (trackingUrl ? '<div class="paq-review-notes"><a href="' + trackingUrl + '" target="_blank" rel="noopener">Abrir rastreo de la guía</a></div>' : '') +
             (paqValor('paq-shipment-notes') ? '<div class="paq-review-notes"><small>Notas</small><p>' + paqEscape(paqValor('paq-shipment-notes')) + '</p></div>' : '') +
             '<div class="paq-review-actions"><button type="button" class="btn" data-review-copy="cliente">Copiar aviso para el cliente</button><button type="button" class="btn" data-review-copy="licenciados">Copiar resumen para los licenciados</button></div>';
@@ -1191,10 +1192,17 @@
         document.getElementById('paq-items-origin').textContent = '';
         paqItems = [];
         paqRenderItems();
+        paqActualizarPaso(1);
+        paqMostrarError('');
     });
     paqNextStep.addEventListener('click', function () {
         paqMostrarError('');
-        if (paqStep === 1 && paqSelectedRemision && !paqValidarPaso(1)) {
+        if (paqStep === 1) {
+            const error = paqValidarPaso(1);
+            if (error) {
+                paqMostrarError(error);
+                return;
+            }
             paqActualizarPaso(2);
         } else if (paqStep === 2 && !paqValidarPaso(2)) {
             paqPrepararPaquetes();

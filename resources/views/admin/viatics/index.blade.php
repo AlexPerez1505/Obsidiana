@@ -8,20 +8,39 @@
     $promedio = $viatics->count() ? $total / $viatics->count() : 0;
     $pendientes = $viatics->where('status', 'pending')->count();
     $sinVehiculo = $viatics->filter(fn ($v) => blank($v->vehicle_name))->count();
-    $gasolina = $viatics->sum(fn ($v) => (float) $v->fuel);
+    $gastos = ['tolls' => ['Casetas', '#1683f7'], 'fuel' => ['Gasolina', '#ff9f0a'], 'meals' => ['Comidas', '#30d158'], 'lodging' => ['Hospedaje', '#bf5af2'], 'additional' => ['Otros', '#a1a1aa']];
+    $tiposPorCampo = [
+        'tolls' => ['toll'],
+        'fuel' => ['fuel'],
+        'meals' => ['meal'],
+        'lodging' => ['lodging'],
+        'additional' => ['other', 'parking', 'taxi', 'fixed_fund'],
+    ];
+    $totalesPorCampo = function ($items) use ($gastos, $tiposPorCampo) {
+        return collect($gastos)->mapWithKeys(function ($meta, $campo) use ($items, $tiposPorCampo) {
+            $tipos = $tiposPorCampo[$campo];
+            $total = $items->sum(function ($viatic) use ($campo, $tipos) {
+                return $viatic->expenses->isNotEmpty()
+                    ? $viatic->expenses->whereIn('type', $tipos)->sum(fn ($gasto) => (float) $gasto->amount)
+                    : (float) $viatic->{$campo};
+            });
+
+            return [$campo => $total];
+        });
+    };
+    $gasolina = $totalesPorCampo($viatics)['fuel'];
     $viajeCaro = $viatics->sortByDesc(fn ($v) => (float) $v->total_computed)->first();
     $vehiculos = $viatics->pluck('vehicle_name')->filter()->unique()->sort()->values();
     $porLugar = $viatics->groupBy(fn ($v) => $v->place ?: 'Sin destino')->map(fn ($items) => $items->sum(fn ($v) => (float) $v->total_computed))->sortDesc();
     $porVehiculo = $viatics->groupBy(fn ($v) => $v->vehicle_name ?: 'Sin vehículo')->map(fn ($items) => $items->sum(fn ($v) => (float) $v->total_computed))->sortDesc();
-    $gastos = ['tolls' => ['Casetas', '#1683f7'], 'fuel' => ['Gasolina', '#ff9f0a'], 'meals' => ['Comidas', '#30d158'], 'lodging' => ['Hospedaje', '#bf5af2'], 'additional' => ['Otros', '#a1a1aa']];
-    $porGasto = collect($gastos)->mapWithKeys(fn ($meta, $campo) => [$campo => $viatics->sum(fn ($v) => (float) $v->{$campo})]);
+    $porGasto = $totalesPorCampo($viatics);
     $fechaDelViatico = fn ($v) => collect([$v->fecha_ida, $v->expense_date, $v->created_at])
         ->first(fn ($fecha) => filled($fecha));
     $mesesGasto = $viatics->groupBy(function ($v) use ($fechaDelViatico) {
         $fecha = $fechaDelViatico($v);
         return $fecha ? \Illuminate\Support\Carbon::parse($fecha)->format('Y-m') : 'Sin fecha';
     })
-        ->map(fn ($items) => collect($gastos)->mapWithKeys(fn ($meta, $campo) => [$campo => $items->sum(fn ($v) => (float) $v->{$campo})]))
+        ->map(fn ($items) => $totalesPorCampo($items))
         ->sortKeys();
     $maxMesGasto = max((float) ($mesesGasto->map(fn ($categorias) => $categorias->sum())->max() ?: 1), 1);
     $maxLugar = max((float) ($porLugar->max() ?: 1), 1);
