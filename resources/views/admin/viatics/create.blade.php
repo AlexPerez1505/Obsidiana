@@ -495,4 +495,49 @@ const updateTripTotal=()=>{const fund=document.getElementById('fixedFund')?.chec
   syncTotals();
 })();
 </script>
+<script>
+(() => {
+  const money = n => new Intl.NumberFormat('es-MX', {style:'currency', currency:'MXN'}).format(Number(n) || 0);
+  const syncMoneyReview = () => {
+    const yes = document.querySelector('[data-money].selected')?.dataset.money === 'si';
+    const spent = [...document.querySelectorAll('.expense')].reduce((sum, input) => sum + (Number(input.value) || 0), 0) + (document.getElementById('fixedFund')?.checked ? 500 : 0);
+    const row = document.querySelector('.trip-money-delivery');
+    const source = row?.querySelector('select[name$="[source]"]')?.value || '';
+    const recipient = row?.querySelector('select[name$="[recipient]"]')?.value || document.getElementById('payer')?.value || 'la persona responsable';
+    const delivered = [...document.querySelectorAll('.trip-money-delivery input[type="number"]')].reduce((sum, input) => sum + (Number(input.value) || 0), 0);
+    const status = document.getElementById('reviewMoneyStatus');
+    const payer = document.getElementById('reviewPayer');
+    const amount = document.getElementById('reviewMoney');
+    const label = document.getElementById('reviewBalanceLabel');
+    const balance = document.getElementById('reviewBalance');
+    const action = document.getElementById('reimburseButton');
+    if (!status || !payer || !amount || !label || !balance || !action) return;
+    if (!yes) {
+      status.textContent = 'No se entregó dinero';
+      payer.textContent = 'Sin entrega registrada';
+      amount.textContent = money(0);
+      label.textContent = 'Se le debe al responsable';
+      balance.textContent = money(spent);
+      action.hidden = !spent;
+      action.innerHTML = `Reembolsar <span id="reviewReimburse">${money(spent)}</span>`;
+      return;
+    }
+    const difference = delivered - spent;
+    status.textContent = source ? `${source} → ${recipient}` : `Dinero entregado a ${recipient}`;
+    payer.textContent = 'Entregó';
+    amount.textContent = money(delivered);
+    label.textContent = difference >= 0 ? 'Sobró' : `Se le debe a ${recipient}`;
+    balance.textContent = money(Math.abs(difference));
+    action.hidden = Math.abs(difference) < 0.01;
+    action.innerHTML = difference >= 0
+      ? `${recipient} debe devolver <span id="reviewReimburse">${money(difference)}</span>`
+      : `Reembolsar <span id="reviewReimburse">${money(Math.abs(difference))}</span> a ${recipient}`;
+    action.style.color = difference >= 0 ? '#58aaff' : '#ffb21c';
+  };
+  window.addEventListener('money-deliveries-updated', syncMoneyReview);
+  document.getElementById('next')?.addEventListener('click', () => setTimeout(syncMoneyReview, 0));
+  document.getElementById('back')?.addEventListener('click', () => setTimeout(syncMoneyReview, 0));
+  syncMoneyReview();
+})();
+</script>
 @endsection
