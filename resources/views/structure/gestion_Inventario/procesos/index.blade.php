@@ -516,6 +516,36 @@
         @media (max-width:700px) { .pr-stats .stat { min-height:86px; padding:13px 16px; } .pr-stats .stat-art { right:2px; width:105px; height:78px; } }
     </style>
 
+    <style>
+        /* Procesos: misma base oscura y sobria que Entrada / Salida, con mayor aire. */
+        .pr-cola { min-height:0; padding:9px; border-color:#20508a; border-radius:10px; background:linear-gradient(180deg,#111b2e 0%,#0b1829 100%); box-shadow:0 8px 18px rgba(2,20,52,.22); }
+        .pr-cola-cab { margin:-9px -9px 10px; padding:9px 11px; border-bottom-color:rgba(72,122,177,.42); background:linear-gradient(180deg,#142e4d 0%,#11263f 100%); }
+        .pr-cola-cab h3 { font-size:14px; }
+        .pr-cola-list { height:700px; padding:2px 6px 5px 2px; }
+        .pr-cola .data-card { padding:14px 14px; border-color:#244b76; border-radius:9px; background:linear-gradient(145deg,#132743 0%,#102139 100%); box-shadow:inset 0 1px rgba(255,255,255,.035); }
+        .pr-cola .data-card + .data-card { margin-top:9px; }
+        .pr-cola .data-card:hover { border-color:#2d76b5; background:linear-gradient(145deg,#173452 0%,#112640 100%); }
+        .pr-cola .data-card-top { padding-bottom:9px; }
+        .pr-cola .data-card .t { font-size:14px !important; line-height:1.2; }
+        .pr-cola .data-card .s, .pr-eq-tipo { font-size:11px; line-height:1.3; }
+        .pr-cola .data-card .badge { padding:4px 8px; font-size:10px; }
+        .pr-cola .data-card dl { margin-top:10px; gap:10px 14px; }
+        .pr-cola .data-card dt { font-size:10px; }
+        .pr-cola .data-card dt svg { width:15px; height:15px; flex-basis:15px; }
+        .pr-cola .data-card dd { font-size:11px; line-height:1.25; }
+        .pr-motivo { margin:9px 0 0; padding:8px 10px; font-size:11px; line-height:1.35; }
+        .pr-motivo svg { width:15px; height:15px; flex-basis:15px; }
+        .pr-cola .data-card-foot { margin-top:10px; padding-top:9px; }
+        .pr-cola .data-card-foot span { font-size:10px !important; }
+        .pr-cola .data-card-foot .btn { min-height:32px; padding:0 12px; border-radius:7px; font-size:11px; }
+        .pr-cola-vacia { min-height:300px; font-size:12px; }
+        [data-theme="light"] .pr-cola { border-color:#b8cde2; background:linear-gradient(180deg,#f1f7fc 0%,#e8f1f9 100%); }
+        [data-theme="light"] .pr-cola-cab { border-bottom-color:#c7d9eb; background:linear-gradient(180deg,#e5f1fc 0%,#d8e9f8 100%); }
+        [data-theme="light"] .pr-cola .data-card { border-color:#b8cde2; background:linear-gradient(145deg,#fff 0%,#f3f8fc 100%); }
+        [data-theme="light"] .pr-cola .data-card:hover { border-color:#70b4e8; background:#edf7ff; }
+        @media (max-width:700px) { .pr-cola-list { height:auto; overflow:visible; } .pr-cola .data-card { padding:13px; } }
+    </style>
+
     @include('partials.tabla-filtrable.estilos')
 
     @include('partials.tabla-filtrable.script', [
