@@ -275,8 +275,8 @@
 
     {{-- ===================== Ya salieron ===================== --}}
     @if ($listas->isNotEmpty())
-        <x-ui.card style="margin-top:18px;">
-            <x-ui.section-title style="margin:0 0 4px;">Salieron de procesos</x-ui.section-title>
+        <x-ui.card class="pr-salieron-card" style="margin-top:18px;">
+            <x-ui.section-title style="margin:0 0 4px;"><span class="pr-salieron-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="m4 12 8 4 8-4M4 17l8 4 8-4"/></svg></span>Salieron de procesos</x-ui.section-title>
             <p class="campo-nota" style="margin:0 0 12px;">
                 Pasaron su verificación y ya cuentan como stock disponible.
             </p>
@@ -345,6 +345,92 @@
         .pr-listos { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap:8px; }
         .pr-listo { display:flex; align-items:center; gap:10px; padding:8px 11px; min-width:0;
                     border:1px solid var(--border); border-radius:9px; }
+    </style>
+
+    <style>
+        /* Rediseño visual de Procesos: conserva datos, filtros y acciones. */
+        .pr-stats { grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:10px; }
+        .pr-stats .stat { position:relative; min-height:72px; overflow:hidden; display:flex; align-items:center; gap:11px; padding:11px 13px; border:1px solid #24558c; border-top:2px solid #1683f7; border-radius:9px; background:linear-gradient(135deg,#102d56 0%,#102c50 58%,#0a2140 100%); box-shadow:0 8px 18px rgba(0,0,0,.16); }
+        .pr-stats .stat::after { content:''; position:absolute; right:-35px; bottom:-48px; width:150px; height:100px; border:1px solid rgba(34,139,245,.35); border-radius:50%; transform:rotate(-22deg); pointer-events:none; }
+        .pr-stats .stat.is-amber { border-top-color:#f59e0b; border-color:#76501e; background:linear-gradient(135deg,#342d29 0%,#3f3022 58%,#282430 100%); }
+        .pr-stats .stat.is-amber::after { border-color:rgba(245,158,11,.4); }
+        .pr-stats .stat.is-green { border-top-color:#22d67b; border-color:#176a61; background:linear-gradient(135deg,#0e393c 0%,#0e403c 58%,#0b2e35 100%); }
+        .pr-stats .stat.is-green::after { border-color:rgba(34,214,123,.36); }
+        .pr-stats .stat > * { position:relative; z-index:1; }
+        .pr-stats .stat-ico { width:36px; height:36px; flex:0 0 36px; border-radius:9px; }
+        .pr-stats .stat-ico svg { width:19px; height:19px; }
+        .pr-stats .stat-num { font-size:21px; line-height:1; font-weight:800; color:#f5f8ff; }
+        .pr-stats .stat-lbl { margin-top:4px; color:#a9c2e3; font-size:10.5px; line-height:1.15; }
+        .f-toolbar { gap:8px; margin-bottom:9px; }
+        .f-toolbar .f-search input { min-height:36px; border-radius:8px; background:#0e2745; border-color:#28588d; }
+        .f-toolbar .flt-btn, .f-toolbar .flt-tgl { min-height:36px; height:36px; border-radius:8px; background:#0e2745; border-color:#28588d; }
+        .f-toolbar .flt-btn--icon { width:36px; }
+        .pr-colas { grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; align-items:stretch; }
+        .pr-cola { min-width:0; min-height:315px; padding:8px; border:1px solid #24558c; border-radius:9px; background:linear-gradient(180deg,#0d2547 0%,#091a32 100%); box-shadow:0 8px 18px rgba(0,0,0,.13); }
+        .pr-cola-cab { margin:-8px -8px 8px; padding:7px 9px; border-bottom:1px solid rgba(58,103,157,.45); background:linear-gradient(180deg,#123b6d,#102b50); }
+        .pr-cola-cab h3 { font-size:13px; font-weight:800; color:#eef6ff; }
+        .pr-cola-n { padding:1px 7px; border-color:#315779; background:#0b203a; color:#c3d7ec; font-size:10px; }
+        .pr-ico { width:28px; height:28px; flex-basis:28px; border-radius:8px; }
+        .pr-ico svg { width:15px; height:15px; }
+        .pr-cola .data-card { padding:8px 9px; border:1px solid #245787; border-radius:8px; background:linear-gradient(145deg,#102f59,#0b2343); box-shadow:inset 0 1px rgba(255,255,255,.03); }
+        .pr-cola .data-card + .data-card { margin-top:6px; }
+        .pr-cola .data-card:hover { border-color:#1683f7; background:linear-gradient(145deg,#123d70,#0d2b50); }
+        .pr-cola .data-card-top { padding-bottom:6px; }
+        .pr-cola .data-card .t { font-size:10px !important; line-height:1.1; }
+        .pr-cola .data-card .s, .pr-eq-tipo { font-size:9px; line-height:1.1; }
+        .pr-cola .data-card .badge { padding:2px 6px; font-size:9px; }
+        .pr-cola .data-card dl { margin-top:7px; gap:5px 8px; }
+        .pr-cola .data-card dt { font-size:8px; }
+        .pr-cola .data-card dd { font-size:9px; }
+        .pr-motivo { margin:6px 0 0; padding:5px 7px; font-size:9px; line-height:1.25; }
+        .pr-cola .data-card-foot { margin-top:6px; padding-top:6px; }
+        .pr-cola .data-card-foot span { font-size:8px !important; }
+        .pr-cola .data-card-foot .btn { min-height:25px; padding:0 9px; border-radius:6px; font-size:9px; }
+        .pr-cola-vacia { display:flex; min-height:250px; align-items:center; justify-content:center; padding:25px 12px; color:#a9c2e3; font-size:11px; text-align:center; background:radial-gradient(circle at 50% 78%,rgba(0,126,255,.15),transparent 43%); }
+        .f-conteo { margin-top:10px; color:#a9c2e3; font-size:12px; }
+        [data-theme="light"] .pr-stats .stat { color:#fff; box-shadow:0 8px 18px rgba(27,55,90,.12); }
+        [data-theme="light"] .f-toolbar .f-search input,
+        [data-theme="light"] .f-toolbar .flt-btn,
+        [data-theme="light"] .f-toolbar .flt-tgl { background:#fff; border-color:#b8cde2; color:#315574; }
+        [data-theme="light"] .pr-cola { border-color:#b8cde2; background:linear-gradient(180deg,#f1f7fc,#e8f1f9); }
+        [data-theme="light"] .pr-cola-cab { border-bottom-color:#c7d9eb; background:linear-gradient(180deg,#e5f1fc,#d8e9f8); }
+        [data-theme="light"] .pr-cola-cab h3 { color:#244765; }
+        [data-theme="light"] .pr-cola-n { border-color:#b8cde2; background:#f8fbff; color:#55738e; }
+        [data-theme="light"] .pr-cola .data-card { border-color:#b8cde2; background:#fff; box-shadow:0 3px 9px rgba(33,72,111,.08); }
+        [data-theme="light"] .pr-cola .data-card:hover { border-color:#70b4e8; background:#edf7ff; }
+        [data-theme="light"] .pr-cola-vacia { color:#66819c; background:radial-gradient(circle at 50% 78%,rgba(22,131,247,.09),transparent 43%); }
+        [data-theme="light"] .f-conteo { color:#66819c; }
+        @media (max-width:1050px) { .pr-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } .pr-colas { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+        @media (max-width:700px) { .pr-stats, .pr-colas { grid-template-columns:1fr; } .pr-cola { min-height:0; } .pr-cola-vacia { min-height:130px; } }
+    </style>
+
+    <style>
+        /* Bloque compacto de piezas que ya salieron de procesos. */
+        .pr-salieron-card { position:relative; overflow:hidden; padding:8px; border:1px solid #24558c; border-radius:9px; background:linear-gradient(180deg,#0d2547 0%,#091a32 100%); box-shadow:0 8px 18px rgba(0,0,0,.16); }
+        .pr-salieron-card::before { content:''; position:absolute; inset:0 0 auto; height:30px; background:linear-gradient(100deg,rgba(22,131,247,.2),transparent 70%); pointer-events:none; }
+        .pr-salieron-card > * { position:relative; z-index:1; }
+        .pr-salieron-card .section-title { display:flex; align-items:center; gap:7px; color:#f1f6ff; font-size:12px; font-weight:800; }
+        .pr-salieron-icon { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border:1px solid #1683f7; border-radius:7px; background:#123d70; color:#72bfff; }
+        .pr-salieron-icon svg { width:14px; height:14px; }
+        .pr-salieron-card > .campo-nota { margin:0 0 7px 31px !important; color:#9db9d8; font-size:9px; }
+        .pr-salieron-card .pr-listos { grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; }
+        .pr-salieron-card .pr-listo { position:relative; display:block; min-width:0; min-height:45px; padding:7px 8px; overflow:hidden; border:1px solid #214568; border-radius:6px; background:linear-gradient(145deg,#102b4d,#0b203b); }
+        .pr-salieron-card .pr-listo > span:first-child { display:block; padding-right:58px; color:#eef6ff; font-family:ui-monospace,Consolas,monospace; font-size:9px !important; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .pr-salieron-card .pr-listo > span:first-child > span { display:block; margin-top:2px; color:#7f9bb9 !important; font-size:7px !important; line-height:1.1; }
+        .pr-salieron-card .pr-listo > span:nth-child(2) { display:block; margin-top:4px; padding-right:2px; color:#9db9d8 !important; font-size:7.5px !important; line-height:1.15; white-space:normal; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+        .pr-salieron-card .pr-listo > .badge { position:absolute; top:7px; right:7px; padding:2px 5px; border-radius:999px; font-size:7px; line-height:1; }
+        [data-theme="light"] .pr-salieron-card { border-color:#b8cde2; background:linear-gradient(180deg,#f1f7fc,#e8f1f9); box-shadow:0 8px 18px rgba(27,55,90,.1); }
+        [data-theme="light"] .pr-salieron-card::before { background:linear-gradient(100deg,rgba(22,131,247,.1),transparent 70%); }
+        [data-theme="light"] .pr-salieron-card .section-title { color:#244765; }
+        [data-theme="light"] .pr-salieron-icon { border-color:#70b4e8; background:#e0f0fc; color:#0879df; }
+        [data-theme="light"] .pr-salieron-card > .campo-nota { color:#66819c; }
+        [data-theme="light"] .pr-salieron-card .pr-listo { border-color:#b8cde2; background:#fff; }
+        [data-theme="light"] .pr-salieron-card .pr-listo > span:first-child { color:#244765; }
+        [data-theme="light"] .pr-salieron-card .pr-listo > span:first-child > span,
+        [data-theme="light"] .pr-salieron-card .pr-listo > span:nth-child(2) { color:#66819c !important; }
+        @media (max-width:1050px) { .pr-salieron-card .pr-listos { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+        @media (max-width:760px) { .pr-salieron-card .pr-listos { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+        @media (max-width:430px) { .pr-salieron-card .pr-listos { grid-template-columns:1fr; } }
     </style>
 
     @include('partials.tabla-filtrable.estilos')
