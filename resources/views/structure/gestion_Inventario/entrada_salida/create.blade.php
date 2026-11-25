@@ -298,8 +298,22 @@
              saber después cuál venía golpeada.
         ============================================================ --}}
         <section class="paso" data-paso="piezas" data-titulo="Piezas y evidencia">
-            <x-ui.card style="margin-bottom:18px;">
-                <x-ui.section-title style="margin:0 0 6px;">Evidencia de cada pieza *</x-ui.section-title>
+            <div class="entrada-paso-banner">
+                <span class="entrada-paso-banner-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="13" height="14" rx="2"/><path d="m5 15 3-3 2 2 3-4 3 4M19 9v10M16 16l3 3 3-3"/><path d="M7 8h.01"/></svg>
+                </span>
+                <div>
+                    <span class="entrada-paso-kicker">PASO 2 DE 3</span>
+                    <h2>Piezas y evidencia</h2>
+                    <p>Registra las piezas del equipo y sube la evidencia de su condición.</p>
+                </div>
+            </div>
+
+            <x-ui.card class="entrada-paso-intro" style="margin-bottom:18px;">
+                <div class="entrada-card-title">
+                    <span class="entrada-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span>
+                    <x-ui.section-title style="margin:0 0 6px;">Evidencia de cada pieza *</x-ui.section-title>
+                </div>
                 <p class="campo-nota" style="margin:0 0 12px;">
                     Abajo hay un bloque por cada una de las <b data-eco-cantidad>1</b> pieza(s) que
                     pusiste en el paso anterior. Puedes activar la foto compartida para todas, o subir fotos
@@ -319,7 +333,10 @@
                     {{-- Un solo botón: llena las piezas vacías con el consecutivo
                          que comparten todos los equipos del mismo subtipo, marca
                          y modelo (aunque sean otros productos). --}}
-                    <button type="button" class="btn btn--ghost" data-generar-series>Seguir consecutivo</button>
+                    <button type="button" class="btn btn--ghost" data-generar-series>
+                        <svg class="entrada-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6.5 17.5 3.5 20.5 6.5 17.5 9.5z"/><path d="m16 8-5.5 5.5M9.5 13.5l-3 3M6.5 16.5 4 19l1 1 2.5-2.5M11 6H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-2"/></svg>
+                        Seguir consecutivo
+                    </button>
                 </div>
 
                 {{-- Los errores de cada pieza vienen con su índice
@@ -335,7 +352,7 @@
                 @endif
             </x-ui.card>
 
-            <x-ui.card style="margin-bottom:18px;" data-foto-compartida-opcion>
+            <x-ui.card class="entrada-paso-compartida" style="margin-bottom:18px;" data-foto-compartida-opcion>
                 <label><input type="checkbox" name="foto_compartida" value="1" data-foto-compartida @checked(old('foto_compartida'))>
                     Usar las mismas fotos para todas las piezas</label>
                 <p class="campo-nota">Se aplican a todo el lote, nuevo o usado. Si necesitas fotos distintas por pieza, no la actives.</p>
@@ -352,8 +369,11 @@
 
             <div id="piezas-rows"></div>
 
-            <x-ui.card style="margin-top:18px;">
-                <x-ui.section-title style="margin:0 0 6px;">Foto del producto (catálogo)</x-ui.section-title>
+            <x-ui.card class="entrada-paso-catalogo" style="margin-top:18px;">
+                <div class="entrada-card-title">
+                    <span class="entrada-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4 17 5-5 3 3 2-2 6 5"/></svg></span>
+                    <x-ui.section-title style="margin:0 0 6px;">Foto del producto (catálogo)</x-ui.section-title>
+                </div>
                 <p class="campo-nota" style="margin:0 0 14px;">
                     Esta sí es del modelo, no de una pieza: es la foto que se ve en el listado de
                     Productos y en las cotizaciones. Si el modelo ya tiene una, puedes saltarte esto.
@@ -383,7 +403,18 @@
              5. Firma y cierre
         ============================================================ --}}
         <section class="paso" data-paso="firma" data-titulo="Firma">
-            <x-ui.card style="margin-bottom:18px;">
+            <div class="entrada-firma-banner">
+                <span class="entrada-firma-banner-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 19 4.4-1.2L19.8 6.4a2.2 2.2 0 0 0-3.1-3.1L5.3 15.7 4 19Z"/><path d="m14.8 5.2 3.1 3.1M7.5 17.2l3.2-.8"/></svg>
+                </span>
+                <div>
+                    <span class="entrada-firma-kicker">PASO 3 DE 3</span>
+                    <h2>Firma de quien registró la entrada</h2>
+                    <p>Confirma la captura de la entrada con tu firma. Puedes firmar con el mouse o el dedo.</p>
+                </div>
+            </div>
+
+            <x-ui.card class="entrada-firma-resumen" style="margin-bottom:18px;">
                 <x-ui.section-title style="margin:0 0 12px;">Resumen</x-ui.section-title>
                 <div class="resumen">
                     <div><span class="e">Condición</span><span class="v" data-res-condicion>Nuevo</span></div>
@@ -393,7 +424,7 @@
                 </div>
             </x-ui.card>
 
-            <x-ui.card>
+            <x-ui.card class="entrada-firma-panel">
                 <x-ui.section-title style="margin:0 0 6px;">Firma de quien registró la entrada *</x-ui.section-title>
                 <p class="campo-nota" style="margin:0 0 14px;">
                     Firma con el mouse o el dedo para confirmar quién capturó esta entrada.
@@ -404,7 +435,14 @@
                             data-firma-registrada="{{ auth()->user()->firmaDataUri() }}"
                         @endif></canvas>
                 <p style="margin:10px 0 0; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
-                    <a href="#" id="limpiar-firma" class="link" style="font-size:13px;">Limpiar firma</a>
+                    <button type="button" id="limpiar-firma" class="btn btn--ghost firma-accion">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M7 6l1 14h8l1-14M10 10v6M14 10v6"/></svg>
+                        Limpiar firma
+                    </button>
+                    <a href="{{ route('profile.edit') }}" class="btn btn--ghost firma-accion">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 19 4.4-1.2L19.8 6.4a2.2 2.2 0 0 0-3.1-3.1L5.3 15.7 4 19Z"/><path d="m14.8 5.2 3.1 3.1"/></svg>
+                        Registrar mi firma
+                    </a>
 
                     @if (auth()->user()->tieneFirma())
                         <span class="campo-nota" data-firma-aviso>Se cargó tu firma registrada.</span>

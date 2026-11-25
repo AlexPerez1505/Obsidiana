@@ -443,5 +443,281 @@
             .paso-chip { margin:0 2px; padding:5px 8px; gap:5px; }
             .paso-chip .txt { display:inline; overflow:hidden; text-overflow:ellipsis; }
         }
+
+        /* ===== Paso 2: piezas y evidencia con el mismo lenguaje visual ===== */
+        section[data-paso="piezas"] { display:none; }
+        section[data-paso="piezas"][data-activo] { display:grid; grid-template-columns:minmax(250px,.8fr) minmax(0,1.35fr); gap:16px; align-items:start; }
+        section[data-paso="piezas"] > .entrada-paso-banner { grid-column:1 / -1; }
+        .entrada-paso-banner { position:relative; overflow:hidden; display:flex; align-items:center; gap:16px; min-height:92px; padding:18px 22px; border:1px solid #294b76; border-radius:11px; background:linear-gradient(135deg,#0c2343 0%,#12345c 62%,#0b2343 100%); box-shadow:0 8px 22px rgba(0,0,0,.14); }
+        .entrada-paso-banner::after { content:""; position:absolute; right:-10px; bottom:-42px; width:330px; height:130px; border:1px solid rgba(22,131,247,.34); border-radius:50%; transform:rotate(-17deg); pointer-events:none; }
+        .entrada-paso-banner > * { position:relative; z-index:1; }
+        .entrada-paso-banner-icon { display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; flex:0 0 52px; border:1px solid #1683f7; border-radius:12px; background:#0d315c; color:#75c1ff; box-shadow:0 0 12px rgba(22,131,247,.2); }
+        .entrada-paso-banner-icon svg { width:30px; height:30px; }
+        .entrada-paso-kicker { display:block; color:#53b3ff; font-size:12px; font-weight:800; letter-spacing:.08em; }
+        .entrada-paso-banner h2 { margin:2px 0 3px; color:#f5f9ff; font-size:25px; line-height:1.05; letter-spacing:-.02em; }
+        .entrada-paso-banner p { margin:0; color:#a9c3df; font-size:13px; }
+        section[data-paso="piezas"] > .card { margin:0 !important; }
+        section[data-paso="piezas"] .entrada-paso-intro,
+        section[data-paso="piezas"] .entrada-paso-compartida,
+        section[data-paso="piezas"] .entrada-paso-catalogo,
+        section[data-paso="piezas"] .pieza-card { border-color:#294b76; border-radius:11px; background:linear-gradient(135deg,#0a1c34 0%,#0d2748 100%); box-shadow:0 8px 22px rgba(0,0,0,.12); }
+        section[data-paso="piezas"] .entrada-paso-intro { grid-column:1; grid-row:2; }
+        section[data-paso="piezas"] .entrada-paso-compartida { grid-column:1; grid-row:3; padding:16px 18px; }
+        section[data-paso="piezas"] #piezas-rows { grid-column:2; grid-row:2; min-width:0; }
+        section[data-paso="piezas"] .entrada-paso-catalogo { grid-column:2; grid-row:3; }
+        .entrada-card-title { display:flex; align-items:center; gap:10px; }
+        .entrada-card-title .section-title { flex:1; }
+        .entrada-card-icon { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; flex:0 0 34px; border:1px solid #1683f7; border-radius:10px; background:#0d315c; color:#69b8ff; }
+        .entrada-card-icon svg { width:20px; height:20px; }
+        section[data-paso="piezas"] .entrada-paso-intro .section-title,
+        section[data-paso="piezas"] .entrada-paso-catalogo .section-title { color:#f4f8ff; }
+        section[data-paso="piezas"] .entrada-paso-intro .campo-nota,
+        section[data-paso="piezas"] .entrada-paso-catalogo .campo-nota { color:#9db9d8; }
+        section[data-paso="piezas"] .generar-series { margin-top:14px; border-color:#24558c; border-radius:10px; background:rgba(13,49,91,.48); }
+        section[data-paso="piezas"] .generar-series .btn { display:inline-flex; align-items:center; gap:7px; width:100%; justify-content:center; }
+        section[data-paso="piezas"] .entrada-inline-icon { display:block; width:17px; height:17px; flex:0 0 17px; color:#a9cfff; }
+        section[data-paso="piezas"] .entrada-paso-compartida > label { display:flex; align-items:center; gap:9px; color:#edf5ff; font-weight:700; }
+        section[data-paso="piezas"] .entrada-paso-compartida > label input { width:17px; height:17px; accent-color:var(--primary); }
+        section[data-paso="piezas"] .entrada-paso-compartida > .campo-nota { margin:8px 0 0; color:#9db9d8; }
+        section[data-paso="piezas"] .pieza-card { padding:14px 18px; margin-bottom:14px; }
+        section[data-paso="piezas"] .pieza-head { margin-bottom:10px; }
+        section[data-paso="piezas"] .pieza-num { display:flex; align-items:center; gap:9px; color:#f5f9ff; font-size:17px; }
+        section[data-paso="piezas"] .pieza-num .entrada-card-icon { width:32px; height:32px; flex-basis:32px; }
+        section[data-paso="piezas"] .pieza-estado { background:rgba(248,113,113,.14); color:#ff777c; }
+        section[data-paso="piezas"] .pieza-serie { margin-bottom:12px; border-color:#24558c; background:#0c203b; color:#edf5ff; }
+        section[data-paso="piezas"] .soltar { min-height:104px; padding:14px 12px; border-color:#315b8b; background:rgba(10,31,57,.72); }
+        section[data-paso="piezas"] .soltar:hover, section[data-paso="piezas"] .soltar.encima { border-color:#1683f7; background:rgba(22,131,247,.14); }
+        section[data-paso="piezas"] .soltar .t { color:#f5f9ff; }
+        section[data-paso="piezas"] .soltar .d { color:#a8c0da; }
+        section[data-paso="piezas"] .entrada-paso-catalogo input[type="file"] { border-color:#24558c; background:#0c203b; color:#edf5ff; }
+        @media (max-width:900px) {
+            section[data-paso="piezas"][data-activo] { grid-template-columns:1fr; }
+            section[data-paso="piezas"] .entrada-paso-intro,
+            section[data-paso="piezas"] .entrada-paso-compartida,
+            section[data-paso="piezas"] #piezas-rows,
+            section[data-paso="piezas"] .entrada-paso-catalogo { grid-column:1; grid-row:auto; }
+        }
+        @media (prefers-reduced-motion:reduce) { .entrada-paso-banner::after { display:none; } }
+
+        /* ===== Paso 3: firma y resumen ===== */
+        section[data-paso="firma"][data-activo] {
+            display:grid;
+            grid-template-columns:minmax(0,1.55fr) minmax(290px,.85fr);
+            gap:16px;
+            align-items:start;
+            padding:18px;
+            border:1px solid #294b76;
+            border-radius:11px;
+            background:linear-gradient(135deg,#0a1c34 0%,#0d2748 100%);
+            box-shadow:0 8px 22px rgba(0,0,0,.12);
+        }
+        section[data-paso="firma"] > .entrada-firma-banner { grid-column:1 / -1; }
+        section[data-paso="firma"] > .card { margin:0 !important; }
+        .entrada-firma-banner {
+            position:relative;
+            overflow:hidden;
+            display:flex;
+            align-items:center;
+            gap:16px;
+            min-height:92px;
+            padding:18px 22px;
+            border:0;
+            border-radius:11px;
+            background:linear-gradient(135deg,rgba(12,35,67,.8) 0%,rgba(18,52,92,.8) 62%,rgba(11,35,67,.8) 100%);
+            box-shadow:none;
+        }
+        .entrada-firma-banner::after {
+            content:"";
+            position:absolute;
+            right:-10px;
+            bottom:-42px;
+            width:330px;
+            height:130px;
+            border:1px solid rgba(22,131,247,.34);
+            border-radius:50%;
+            transform:rotate(-17deg);
+            pointer-events:none;
+        }
+        .entrada-firma-banner > * { position:relative; z-index:1; }
+        .entrada-firma-banner-icon {
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            width:52px;
+            height:52px;
+            flex:0 0 52px;
+            border:1px solid #1683f7;
+            border-radius:12px;
+            background:#0d315c;
+            color:#75c1ff;
+            box-shadow:0 0 12px rgba(22,131,247,.2);
+        }
+        .entrada-firma-banner-icon svg { width:30px; height:30px; }
+        .entrada-firma-kicker {
+            display:block;
+            color:#53b3ff;
+            font-size:12px;
+            font-weight:800;
+            letter-spacing:.08em;
+        }
+        .entrada-firma-banner h2 {
+            margin:2px 0 3px;
+            color:#f5f9ff;
+            font-size:25px;
+            line-height:1.05;
+            letter-spacing:-.02em;
+        }
+        .entrada-firma-banner p { margin:0; color:#a9c3df; font-size:13px; }
+        section[data-paso="firma"] .entrada-firma-panel,
+        section[data-paso="firma"] .entrada-firma-resumen {
+            border:0;
+            border-radius:11px;
+            background:rgba(6,22,42,.32);
+            box-shadow:none;
+        }
+        section[data-paso="firma"] .entrada-firma-panel { grid-column:1; grid-row:2; padding:18px; }
+        section[data-paso="firma"] .entrada-firma-resumen { grid-column:2; grid-row:2; padding:18px; }
+        section[data-paso="firma"] .entrada-firma-panel .section-title,
+        section[data-paso="firma"] .entrada-firma-resumen .section-title { color:#f4f8ff; }
+        section[data-paso="firma"] .entrada-firma-panel .section-title::before,
+        section[data-paso="firma"] .entrada-firma-resumen .section-title::before {
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            width:30px;
+            height:30px;
+            margin-right:9px;
+            border:1px solid #1683f7;
+            border-radius:9px;
+            background:#0d315c;
+            color:#69b8ff;
+            font-size:18px;
+            vertical-align:middle;
+        }
+        section[data-paso="firma"] .entrada-firma-panel .section-title::before { content:"✎"; }
+        section[data-paso="firma"] .entrada-firma-resumen .section-title::before { content:"▣"; }
+        section[data-paso="firma"] .entrada-firma-panel .campo-nota { color:#9db9d8; }
+        section[data-paso="firma"] .signature-box {
+            height:290px;
+            border:1px dashed #315b8b;
+            border-radius:11px;
+            background:#fff;
+        }
+        section[data-paso="firma"] .resumen {
+            display:grid;
+            grid-template-columns:1fr;
+            gap:0;
+            background:transparent;
+            border:0;
+            border-radius:0;
+        }
+        section[data-paso="firma"] .resumen > div {
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            min-height:52px;
+            padding:10px 0;
+            border-bottom:1px solid #294b76;
+            background:transparent;
+        }
+        section[data-paso="firma"] .resumen > div:last-child { border-bottom:0; }
+        section[data-paso="firma"] .resumen .e {
+            display:block;
+            color:#b9cce2;
+            font-size:13px;
+            font-weight:500;
+            letter-spacing:0;
+            text-transform:none;
+        }
+        section[data-paso="firma"] .resumen .e::before { display:inline-block; width:25px; margin-right:7px; color:#91b9e1; font-size:16px; text-align:center; vertical-align:middle; }
+        section[data-paso="firma"] .resumen > div:nth-child(1) .e::before { content:"◇"; }
+        section[data-paso="firma"] .resumen > div:nth-child(2) .e::before { content:"▱"; }
+        section[data-paso="firma"] .resumen > div:nth-child(3) .e::before { content:"↗"; }
+        section[data-paso="firma"] .resumen > div:nth-child(4) .e::before { content:"▧"; }
+        section[data-paso="firma"] .resumen .v {
+            margin:0;
+            padding:8px 12px;
+            border-radius:10px;
+            background:#132b4f;
+            color:#f5f9ff;
+            font-size:13px;
+            font-weight:700;
+            text-align:right;
+        }
+        section[data-paso="firma"] .firma-accion { display:inline-flex; align-items:center; gap:7px; min-height:36px; padding:8px 13px; }
+        section[data-paso="firma"] .firma-accion svg { width:17px; height:17px; }
+        @media (max-width:900px) {
+            section[data-paso="firma"][data-activo] { grid-template-columns:1fr; }
+            section[data-paso="firma"] .entrada-firma-panel,
+            section[data-paso="firma"] .entrada-firma-resumen { grid-column:1; grid-row:auto; }
+        }
+        @media (max-width:640px) {
+            .entrada-firma-banner { align-items:flex-start; padding:16px; }
+            .entrada-firma-banner h2 { font-size:21px; }
+            .entrada-firma-banner p { font-size:12px; }
+            section[data-paso="firma"] .signature-box { height:220px; }
+        }
+        @media (prefers-reduced-motion:reduce) { .entrada-firma-banner::after { display:none; } }
+
+        /* ===== Variantes del paso 2 y 3 para modo claro ===== */
+        :root[data-theme="light"] section[data-paso="piezas"] .entrada-paso-banner,
+        :root[data-theme="light"] .entrada-firma-banner {
+            border-color:#b8d2ec;
+            background:linear-gradient(135deg,#f2f8ff 0%,#e3f1ff 62%,#f2f8ff 100%);
+            box-shadow:0 8px 22px rgba(35,86,132,.12);
+        }
+        :root[data-theme="light"] .entrada-paso-banner::after,
+        :root[data-theme="light"] .entrada-firma-banner::after { border-color:rgba(22,131,247,.22); }
+        :root[data-theme="light"] .entrada-paso-banner-icon,
+        :root[data-theme="light"] .entrada-firma-banner-icon,
+        :root[data-theme="light"] .entrada-card-icon {
+            border-color:#1683f7;
+            background:#e1f1ff;
+            color:#0879df;
+            box-shadow:none;
+        }
+        :root[data-theme="light"] .entrada-paso-kicker,
+        :root[data-theme="light"] .entrada-firma-kicker { color:#0879df; }
+        :root[data-theme="light"] .entrada-paso-banner h2,
+        :root[data-theme="light"] .entrada-firma-banner h2 { color:#172b47; }
+        :root[data-theme="light"] .entrada-paso-banner p,
+        :root[data-theme="light"] .entrada-firma-banner p { color:#607a98; }
+        :root[data-theme="light"] section[data-paso="piezas"] .entrada-paso-intro,
+        :root[data-theme="light"] section[data-paso="piezas"] .entrada-paso-compartida,
+        :root[data-theme="light"] section[data-paso="piezas"] .entrada-paso-catalogo,
+        :root[data-theme="light"] section[data-paso="piezas"] .pieza-card,
+        :root[data-theme="light"] section[data-paso="firma"] .entrada-firma-panel,
+        :root[data-theme="light"] section[data-paso="firma"] .entrada-firma-resumen {
+            border-color:#b8d2ec;
+            background:linear-gradient(135deg,#f7fbff 0%,#eaf3fb 100%);
+            box-shadow:0 8px 22px rgba(35,86,132,.1);
+        }
+        :root[data-theme="light"] section[data-paso="piezas"] .entrada-paso-intro .section-title,
+        :root[data-theme="light"] section[data-paso="piezas"] .entrada-paso-catalogo .section-title,
+        :root[data-theme="light"] section[data-paso="piezas"] .pieza-num,
+        :root[data-theme="light"] section[data-paso="piezas"] .entrada-paso-compartida > label,
+        :root[data-theme="light"] section[data-paso="firma"] .entrada-firma-panel .section-title,
+        :root[data-theme="light"] section[data-paso="firma"] .entrada-firma-resumen .section-title { color:#172b47; }
+        :root[data-theme="light"] section[data-paso="piezas"] .entrada-paso-intro .campo-nota,
+        :root[data-theme="light"] section[data-paso="piezas"] .entrada-paso-catalogo .campo-nota,
+        :root[data-theme="light"] section[data-paso="piezas"] .entrada-paso-compartida > .campo-nota,
+        :root[data-theme="light"] section[data-paso="firma"] .entrada-firma-panel .campo-nota { color:#607a98; }
+        :root[data-theme="light"] section[data-paso="piezas"] .generar-series { border-color:#b8d2ec; background:#edf6ff; }
+        :root[data-theme="light"] section[data-paso="piezas"] .pieza-serie,
+        :root[data-theme="light"] section[data-paso="piezas"] .entrada-paso-catalogo input[type="file"] { border-color:#b8d2ec; background:#fff; color:#172b47; }
+        :root[data-theme="light"] section[data-paso="piezas"] .soltar { border-color:#9fc2e5; background:#f5faff; }
+        :root[data-theme="light"] section[data-paso="piezas"] .soltar:hover,
+        :root[data-theme="light"] section[data-paso="piezas"] .soltar.encima { border-color:#1683f7; background:#e6f3ff; }
+        :root[data-theme="light"] section[data-paso="piezas"] .soltar .t { color:#172b47; }
+        :root[data-theme="light"] section[data-paso="piezas"] .soltar .d { color:#607a98; }
+        :root[data-theme="light"] section[data-paso="firma"][data-activo] { border-color:#b8d2ec; background:linear-gradient(135deg,#f7fbff 0%,#eaf3fb 100%); box-shadow:0 8px 22px rgba(35,86,132,.1); }
+        :root[data-theme="light"] section[data-paso="firma"] .signature-box { border-color:#9fc2e5; background:#fff; }
+        :root[data-theme="light"] section[data-paso="firma"] .resumen > div { border-bottom-color:#c5d8ea; }
+        :root[data-theme="light"] section[data-paso="firma"] .resumen .e { color:#526f90; }
+        :root[data-theme="light"] section[data-paso="firma"] .resumen .v { background:#e6f1fb; color:#172b47; }
+        :root[data-theme="light"] section[data-paso="firma"] .resumen .e::before { color:#5d7d9f; }
+        :root[data-theme="light"] section[data-paso="firma"] .entrada-firma-panel .section-title::before,
+        :root[data-theme="light"] section[data-paso="firma"] .entrada-firma-resumen .section-title::before { border-color:#9fc2e5; background:#e1f1ff; color:#0879df; }
     </style>
 @endpush

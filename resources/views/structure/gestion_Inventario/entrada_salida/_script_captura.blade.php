@@ -297,7 +297,7 @@
 
             card.innerHTML = `
                 <div class="pieza-head">
-                    <span class="pieza-num">Pieza #${i + 1}</span>
+                    <span class="pieza-num"><span class="entrada-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span>Pieza #${i + 1}</span>
                     <span class="pieza-estado" data-estado>Falta su foto</span>
                 </div>
 
