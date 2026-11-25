@@ -38,12 +38,54 @@ class VentaController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $visibles = Venta::visiblesPara(auth()->user());
+        $inicioSemana = now()->startOfWeek();
+        $tendenciaSemana = collect(range(0, 6))->map(function (int $offset) use ($visibles, $inicioSemana) {
+            $fecha = $inicioSemana->copy()->addDays($offset);
+
+            return [
+                'label' => $fecha->locale('es')->isoFormat('ddd'),
+                'detalle' => $fecha->format('d/m/Y'),
+                'total' => (clone $visibles)->whereDate('created_at', $fecha)->count(),
+            ];
+        });
+        $inicioMes = now()->startOfMonth();
+        $finMes = now()->endOfMonth();
+        $tendenciaMes = collect(range(0, $inicioMes->diffInWeeks($finMes)))->map(function (int $offset) use ($visibles, $inicioMes, $finMes) {
+            $desde = $inicioMes->copy()->addWeeks($offset);
+            $hasta = $desde->copy()->addDays(6)->min($finMes);
+
+            return [
+                'label' => 'Sem '.($offset + 1),
+                'detalle' => $desde->format('d/m').' – '.$hasta->format('d/m'),
+                'total' => (clone $visibles)->whereBetween('created_at', [$desde->startOfDay(), $hasta->endOfDay()])->count(),
+            ];
+        });
+        $tendenciaAnio = collect(range(1, 12))->map(function (int $mes) use ($visibles) {
+            $fecha = now()->month($mes);
+
+            return [
+                'label' => $fecha->locale('es')->isoFormat('MMM'),
+                'detalle' => $fecha->isoFormat('MMMM YYYY'),
+                'total' => (clone $visibles)->whereYear('created_at', $fecha->year)->whereMonth('created_at', $mes)->count(),
+            ];
+        });
+
         return view('structure.commercial_management.ventas.index', [
             'ventas' => $ventas,
-            'total' => Venta::count(),
-            'confirmadas' => Venta::where('estado', 'confirmada')->count(),
-            'facturadas' => Venta::where('estado', 'facturada')->count(),
-            'montoTotal' => (float) Venta::sum('total'),
+            'total' => (clone $visibles)->count(),
+            // Las ventas nuevas se guardan como "borrador" y se muestran como
+            // "Registrada" en la interfaz mientras no estén confirmadas,
+            // facturadas o canceladas.
+            'registradas' => (clone $visibles)->whereNotIn('estado', ['confirmada', 'facturada', 'cancelada'])->count(),
+            'confirmadas' => (clone $visibles)->where('estado', 'confirmada')->count(),
+            'facturadas' => (clone $visibles)->where('estado', 'facturada')->count(),
+            'montoTotal' => (float) (clone $visibles)->sum('total'),
+            'tendencias' => [
+                'semana' => $tendenciaSemana,
+                'mes' => $tendenciaMes,
+                'anio' => $tendenciaAnio,
+            ],
         ]);
     }
 
