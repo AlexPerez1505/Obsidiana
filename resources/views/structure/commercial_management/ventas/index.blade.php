@@ -33,13 +33,27 @@
     .vd-chart-line { fill:none; stroke:var(--primary); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
     .vd-chart-area { fill:var(--primary); opacity:.14; } .vd-chart-dot { fill:var(--surface); stroke:var(--primary); stroke-width:2; }
     .vd-chart-label { fill:var(--muted); font-size:10px; }
+    .vd-trend-panel { border-color:rgba(137,103,255,.42); background:linear-gradient(145deg,var(--surface),color-mix(in srgb,var(--surface) 86%,#7654f5)); box-shadow:0 0 22px rgba(126,86,255,.12); }
+    .vd-trend-panel .vd-panel-icon { background:rgba(133,91,255,.22); color:#b792ff; box-shadow:0 0 15px rgba(141,100,255,.24); }
+    .vd-trend-panel .vd-chart-grid { stroke:rgba(138,116,230,.24); }
+    .vd-trend-panel .vd-chart-line { stroke:#a875ff; filter:drop-shadow(0 0 4px rgba(168,117,255,.7)); }
+    .vd-trend-panel .vd-chart-area { fill:#9565f5; opacity:.2; }
+    .vd-trend-panel .vd-chart-dot { fill:#111c39; stroke:#c09aff; filter:drop-shadow(0 0 4px rgba(192,154,255,.85)); }
+    .vd-trend-panel .vd-periods .active { background:linear-gradient(135deg,#8755ff,#b17aff); box-shadow:0 0 12px rgba(156,103,255,.55); }
     .vd-chart-wrap { position:relative; }
     .vd-chart-tooltip { position:absolute; z-index:4; min-width:118px; padding:8px 10px; border:1px solid #3b5f88; border-radius:8px; background:#071426; color:#f8fbff; box-shadow:0 8px 20px rgba(0,0,0,.32); font-size:11px; line-height:1.35; pointer-events:none; opacity:0; transform:translate(-50%,-110%); transition:opacity .12s ease; }
     .vd-chart-tooltip strong { display:block; color:#fff; }
     .vd-chart-tooltip span { display:block; color:#b9cbe1; }
+    .vd-donut-tooltip { position:absolute; z-index:5; min-width:118px; padding:8px 10px; border:1px solid #3b5f88; border-radius:8px; background:#071426; color:#f8fbff; box-shadow:0 8px 20px rgba(0,0,0,.32); font-size:11px; line-height:1.35; pointer-events:none; opacity:0; transform:translate(-50%,-110%); transition:opacity .12s ease; }
+    .vd-donut-tooltip strong { display:block; color:#fff; }
+    .vd-donut-tooltip span { display:block; color:#b9cbe1; }
+    .vd-state { position:relative; }
     [data-theme="light"] .vd-chart-tooltip { border-color:#b8cde2; background:#fff; color:#172b47; box-shadow:0 8px 20px rgba(30,64,100,.18); }
     [data-theme="light"] .vd-chart-tooltip strong { color:#172b47; }
     [data-theme="light"] .vd-chart-tooltip span { color:#607a98; }
+    [data-theme="light"] .vd-donut-tooltip { border-color:#b8cde2; background:#fff; color:#172b47; box-shadow:0 8px 20px rgba(30,64,100,.18); }
+    [data-theme="light"] .vd-donut-tooltip strong { color:#172b47; }
+    [data-theme="light"] .vd-donut-tooltip span { color:#607a98; }
     .vd-periods { display:flex; gap:5px; margin-left:auto; } .vd-periods span { padding:5px 10px; border-radius:99px; color:var(--muted); font-size:11px; }
     .vd-periods .active { color:#fff; background:var(--primary); }
     .vd-state { display:flex; align-items:center; gap:15px; min-height:116px; } .vd-donut { width:92px; height:92px; border-radius:50%; display:grid; place-items:center;
@@ -116,8 +130,8 @@
         $areaTendencia = $lineaTendencia.' L 600 125 L 20 125 Z';
     @endphp
     <div class="vd-middle">
-        <section class="vd-panel" data-ventas-trend><div class="vd-panel-head"><span class="vd-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 17 6-6 4 4 8-9"/><path d="M14 6h7v7"/></svg></span><div><h3>Tendencia de ventas</h3><p data-trend-caption>Ventas registradas por día · semana actual</p></div><div class="vd-periods"><span class="active" data-period="semana">Semana</span><span data-period="mes">Mes</span><span data-period="anio">Año</span></div></div><div class="vd-chart-wrap"><div class="vd-chart-tooltip" data-trend-tooltip><strong></strong><span></span></div><svg class="vd-chart" data-trend-chart viewBox="0 0 620 150" preserveAspectRatio="none" aria-label="Tendencia real de ventas"><path class="vd-chart-grid" d="M20 20H600M20 55H600M20 90H600M20 125H600"/><path class="vd-chart-area" data-trend-area d="{{ $areaTendencia }}"/><path class="vd-chart-line" data-trend-line d="{{ $lineaTendencia }}"/><g data-trend-points>@foreach($puntosTendencia as $p)<circle class="vd-chart-dot" data-label="{{ $p['label'] }}" data-detail="{{ $p['detalle'] }}" data-total="{{ $p['total'] }}" cx="{{ $p['x'] }}" cy="{{ $p['y'] }}" r="4"/><text class="vd-chart-label" x="{{ $p['x'] }}" y="145" text-anchor="middle">{{ $p['label'] }}</text>@endforeach</g></svg></div></section>
-        <section class="vd-panel"><div class="vd-panel-head"><span class="vd-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><h3>Estado de ventas</h3></div></div><div class="vd-state"><div class="vd-donut" style="background:conic-gradient(var(--vd-blue) 0 {{ $registradasPct }}%, var(--vd-green) {{ $confirmadasInicio }}% {{ $facturadasInicio }}%, var(--vd-amber) {{ $facturadasInicio }}% 100%);"><div><strong>{{ $total }}</strong><small>Ventas</small></div></div><div class="vd-donut-label"><span><i class="vd-dot" style="background:var(--vd-blue)"></i>Registrada {{ $registradas }} ({{ $registradasPct }}%)</span><span><i class="vd-dot" style="background:var(--vd-green)"></i>Confirmada {{ $confirmadas }} ({{ $confirmadasPct }}%)</span><span><i class="vd-dot" style="background:var(--vd-amber)"></i>Facturada {{ $facturadas }} ({{ $facturadasPct }}%)</span></div></div></section>
+        <section class="vd-panel vd-trend-panel" data-ventas-trend><div class="vd-panel-head"><span class="vd-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 17 6-6 4 4 8-9"/><path d="M14 6h7v7"/></svg></span><div><h3>Tendencia de ventas</h3><p data-trend-caption>Evolución de ventas en el periodo actual</p></div><div class="vd-periods"><span class="active" data-period="semana">Semana</span><span data-period="mes">Mes</span><span data-period="anio">Año</span></div></div><div class="vd-chart-wrap"><div class="vd-chart-tooltip" data-trend-tooltip><strong></strong><span></span></div><svg class="vd-chart" data-trend-chart viewBox="0 0 620 150" preserveAspectRatio="none" aria-label="Tendencia real de ventas"><path class="vd-chart-grid" d="M20 20H600M20 55H600M20 90H600M20 125H600"/><path class="vd-chart-area" data-trend-area d="{{ $areaTendencia }}"/><path class="vd-chart-line" data-trend-line d="{{ $lineaTendencia }}"/><g data-trend-points>@foreach($puntosTendencia as $p)<circle class="vd-chart-dot" data-label="{{ $p['label'] }}" data-detail="{{ $p['detalle'] }}" data-total="{{ $p['total'] }}" cx="{{ $p['x'] }}" cy="{{ $p['y'] }}" r="4"/><text class="vd-chart-label" x="{{ $p['x'] }}" y="145" text-anchor="middle">{{ $p['label'] }}</text>@endforeach</g></svg></div></section>
+        <section class="vd-panel"><div class="vd-panel-head"><span class="vd-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><h3>Estado de ventas</h3></div></div><div class="vd-state"><div class="vd-donut" data-ventas-donut data-registradas="{{ $registradas }}" data-confirmadas="{{ $confirmadas }}" data-facturadas="{{ $facturadas }}" data-total="{{ $total }}" style="background:conic-gradient(var(--vd-blue) 0 {{ $registradasPct }}%, var(--vd-green) {{ $confirmadasInicio }}% {{ $facturadasInicio }}%, var(--vd-amber) {{ $facturadasInicio }}% 100%);"><div><strong>{{ $total }}</strong><small>Ventas</small></div></div><div class="vd-donut-tooltip" data-donut-tooltip><strong></strong><span></span></div><div class="vd-donut-label"><span><i class="vd-dot" style="background:var(--vd-blue)"></i>Registrada {{ $registradas }} ({{ $registradasPct }}%)</span><span><i class="vd-dot" style="background:var(--vd-green)"></i>Confirmada {{ $confirmadas }} ({{ $confirmadasPct }}%)</span><span><i class="vd-dot" style="background:var(--vd-amber)"></i>Facturada {{ $facturadas }} ({{ $facturadasPct }}%)</span></div></div></section>
         <section class="vd-panel"><div class="vd-panel-head"><span class="vd-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m13 2-9 12h7l-1 8 9-12h-7z"/></svg></span><div><h3>Acciones rápidas</h3></div></div><div class="vd-actions"><a class="vd-action" href="{{ route('commercial.ventas.rapida.index') }}"><span>Venta rápida</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></a><a class="vd-action" href="{{ route('commercial.ventas.create') }}"><span>Nueva venta</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></a></div></section>
     </div>
 
@@ -320,7 +334,14 @@ document.addEventListener('input', function (e) {
         var coordenadas = filas.map(function (fila, i) {
             return { fila: fila, x: 20 + (i * (580 / divisor)), y: 125 - (((Number(fila.total) || 0) / maximo) * 92) };
         });
-        var camino = coordenadas.map(function (p, i) { return (i ? 'L' : 'M') + ' ' + p.x.toFixed(2) + ' ' + p.y.toFixed(2); }).join(' ');
+        var camino = coordenadas.length < 2 ? 'M 20 125' : 'M ' + coordenadas[0].x.toFixed(2) + ' ' + coordenadas[0].y.toFixed(2);
+        for (var i = 1; i < coordenadas.length; i++) {
+            var anterior = coordenadas[i - 1];
+            var actual = coordenadas[i];
+            var mitadX = (anterior.x + actual.x) / 2;
+            camino += ' Q ' + anterior.x.toFixed(2) + ' ' + anterior.y.toFixed(2) + ' ' + mitadX.toFixed(2) + ' ' + ((anterior.y + actual.y) / 2).toFixed(2);
+            camino += ' Q ' + actual.x.toFixed(2) + ' ' + actual.y.toFixed(2) + ' ' + actual.x.toFixed(2) + ' ' + actual.y.toFixed(2);
+        }
         area.setAttribute('d', camino + ' L 600 125 L 20 125 Z');
         line.setAttribute('d', camino);
         puntos.replaceChildren();
@@ -352,6 +373,41 @@ document.addEventListener('input', function (e) {
         tooltip.style.left = x + 'px'; tooltip.style.top = y + 'px'; tooltip.style.opacity = '1';
     });
     pintar('semana');
+})();
+
+(function () {
+    var donut = document.querySelector('[data-ventas-donut]');
+    var tooltip = document.querySelector('[data-donut-tooltip]');
+    if (!donut || !tooltip) return;
+    var estados = [
+        { nombre: 'Registrada', total: Number(donut.dataset.registradas) || 0 },
+        { nombre: 'Confirmada', total: Number(donut.dataset.confirmadas) || 0 },
+        { nombre: 'Facturada', total: Number(donut.dataset.facturadas) || 0 }
+    ];
+    var total = Number(donut.dataset.total) || 0;
+    donut.addEventListener('mousemove', function (e) {
+        if (!total) { tooltip.style.opacity = '0'; return; }
+        var rect = donut.getBoundingClientRect();
+        var x = e.clientX - (rect.left + rect.width / 2);
+        var y = e.clientY - (rect.top + rect.height / 2);
+        var grados = (Math.atan2(y, x) * 180 / Math.PI + 90 + 360) % 360;
+        var porcentaje = grados / 360 * 100;
+        var acumulado = 0;
+        var estado = estados[0];
+        estados.some(function (item) {
+            acumulado += item.total / total * 100;
+            if (porcentaje <= acumulado) { estado = item; return true; }
+            return false;
+        });
+        var porcentajeEstado = Math.round((estado.total / total) * 100);
+        tooltip.querySelector('strong').textContent = estado.nombre;
+        tooltip.querySelector('span').textContent = estado.total + (estado.total === 1 ? ' venta' : ' ventas') + ' · ' + porcentajeEstado + '%';
+        var caja = donut.parentElement.getBoundingClientRect();
+        tooltip.style.left = (rect.left - caja.left + rect.width / 2) + 'px';
+        tooltip.style.top = (rect.top - caja.top + rect.height / 2) + 'px';
+        tooltip.style.opacity = '1';
+    });
+    donut.addEventListener('mouseleave', function () { tooltip.style.opacity = '0'; });
 })();
 
 document.addEventListener('submit', function (e) {

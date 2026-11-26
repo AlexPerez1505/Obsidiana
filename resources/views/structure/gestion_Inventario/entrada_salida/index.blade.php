@@ -34,6 +34,9 @@
 
             $series = $m->seriales->pluck('no_serie')->filter()->values();
             $producto = $m->producto();
+            $nombreEquipo = $producto
+                ? trim(collect([$producto->subtipo, $producto->marca, $producto->modelo])->filter()->implode(' '))
+                : '';
 
             return [
                 'modelo' => $m,
@@ -44,7 +47,7 @@
                 'quien' => $m->creator?->name ?: 'Sin registrar',
                 'fecha' => $m->movement_date?->format('Y-m-d') ?? '',
                 'fechaVista' => $m->movement_date?->format('d/m/Y') ?? '—',
-                'nombre' => $m->item_name ?: 'Sin nombre',
+                'nombre' => $nombreEquipo ?: ($m->item_name ?: 'Sin nombre'),
                 'imagen' => $producto?->imagen_path ? asset('storage/'.$producto->imagen_path) : null,
                 'series' => $series,
                 // En la tabla no caben 5 series completas: se ven las dos
@@ -471,7 +474,7 @@
 
     <p class="f-conteo" id="fConteo">Mostrando {{ $movements->count() }} de {{ $movements->total() }} movimientos</p>
 
-    @include('partials._paginacion', ['paginator' => $movements])
+    @include('partials._paginacion', ['paginator' => $movements, 'mostrarSelectorPagina' => true])
 
     {{-- ===================== Eliminar ===================== --}}
     <dialog id="modalEliminar" class="mv-modal">

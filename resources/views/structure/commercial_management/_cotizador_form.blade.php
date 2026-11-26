@@ -19,7 +19,10 @@
     // ni se eligen números de serie (eso se decide al hacer la venta).
     $mostrarStock = $mostrarStock ?? true;
     $columnas = $mostrarStock ? 10 : 9;
+    $ventaDiseno = $ventaDiseno ?? false;
 @endphp
+
+<div class="{{ $ventaDiseno ? 'venta-form' : '' }}">
 
 {{-- Cabecera estandar del sistema. El guardado vive al pie del formulario. --}}
 <x-ui.page-header :title="$titulo" :subtitle="$subtitulo" :back="$backRoute">
@@ -54,11 +57,13 @@
     <div class="cot-grid">
         {{-- ===================== Columna izquierda ===================== --}}
         <div style="display:flex; flex-direction:column; gap:18px;">
+            <div class="venta-data-card">
             <div class="cot-panel">
-                <div class="cot-panel-head cot-blue">Cliente</div>
+                <div class="cot-panel-head cot-blue"><span class="venta-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.3 3.1-5 7-5s6.2 1.7 7 5"/></svg></span><span>Datos de la venta<small>Información del cliente y detalles</small></span></div>
                 <div class="cot-panel-body">
                     <div style="position:relative;">
-                        <input type="text" id="clienteSearch" class="cot-input" placeholder="Buscar cliente..." autocomplete="off">
+                        <label class="cot-lbl venta-field-label" for="clienteSearch">Cliente <b>*</b></label>
+                        <div class="venta-input-with-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3"/><path d="M5 20c.8-3.3 3.1-5 7-5s6.2 1.7 7 5"/></svg><input type="text" id="clienteSearch" class="cot-input" placeholder="Buscar cliente..." autocomplete="off"></div>
                         <div id="clienteResults" class="cot-ac"></div>
                     </div>
                     <div id="clienteSelected" style="display:none; margin-top:10px;" class="cot-chip-box"></div>
@@ -66,7 +71,7 @@
             </div>
 
             <div class="cot-panel">
-                <div class="cot-panel-head">Detalles de la propuesta</div>
+                <div class="cot-panel-head" aria-hidden="true"></div>
                 <div class="cot-panel-body">
                     {{-- Si el cliente se conoció en un congreso, se toma solo y el
                          selector queda escondido tras "Cambiar". --}}
@@ -75,34 +80,41 @@
                         <button type="button" class="cot-link" id="congresoCambiar">Cambiar</button>
                     </div>
                     <div id="congresoCampo">
-                        <label class="cot-lbl">Congreso</label>
-                        <select id="congreso_id" class="cot-input">
+                        <label class="cot-lbl venta-field-label">Congreso</label>
+                        <div class="venta-input-with-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v14H4z"/><path d="M8 3v4M16 3v4M4 9h16M8 13h2M14 13h2M8 16h2"/></svg><select id="congreso_id" class="cot-input">
                             <option value="">Sin congreso</option>
                             @foreach ($congresos as $congresoOpcion)
                                 <option value="{{ $congresoOpcion->id }}">{{ $congresoOpcion->nombre }}</option>
                             @endforeach
-                        </select>
+                        </select></div>
                         <p class="cot-hint" id="congresoHint">Déjalo en «Sin congreso» si no se levantó en uno; entonces no aparece en el PDF.</p>
                     </div>
 
                     <label class="cot-lbl" style="margin-top:14px;">Garantía del equipo</label>
-                    <select id="garantia_meses" class="cot-input">
+                    <div class="venta-input-with-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg><select id="garantia_meses" class="cot-input">
                         @foreach (\App\Models\Venta::GARANTIAS as $meses)
                             <option value="{{ $meses }}">{{ $meses > 0 ? $meses.' meses' : 'Sin garantía' }}</option>
                         @endforeach
-                    </select>
+                    </select></div>
                     <p class="cot-hint">Se imprime en la carta garantía que se entrega con el equipo. Con «Sin garantía» no se genera la carta y el contrato lo indica.</p>
 
-                    <label class="cot-lbl" style="margin-top:14px;">Nota al cliente</label>
-                    <textarea id="nota_cliente" class="cot-input" rows="3" placeholder="Opcional..." style="resize:vertical;"></textarea>
+                    <label class="cot-lbl venta-field-label" style="margin-top:14px;">Nota al cliente</label>
+                    <div class="venta-input-with-icon venta-textarea-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11a2 2 0 0 1-2 2H9l-5 3V5Z"/><path d="M8 10h8M8 13h5"/></svg><textarea id="nota_cliente" class="cot-input" rows="3" placeholder="Opcional..." style="resize:vertical;"></textarea></div>
                 </div>
             </div>
+            </div>
 
-            <div class="cot-panel">
-                <div class="cot-panel-head">Ficha técnica</div>
+            <div class="cot-panel venta-ficha-panel">
+                <div class="cot-panel-head"><span class="venta-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 12h6M9 16h6"/></svg></span><span>Ficha técnica<small>Anexa la ficha técnica del equipo (PDF)</small></span></div>
                 <div class="cot-panel-body">
-                    <div style="position:relative;">
-                        <input type="text" id="fichaSearch" class="cot-input" placeholder="Buscar ficha para anexar al PDF..." autocomplete="off">
+                    <div class="ficha-dropzone">
+                        <img class="ficha-upload-icon" src="{{ asset('images/ventas/ficha-nube-subida.png') }}" alt="">
+                        <strong>Busca y anexa la ficha técnica aquí</strong>
+                        <span>Selecciona una ficha disponible para el PDF</span>
+                        <div class="ficha-search-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                            <input type="text" id="fichaSearch" class="cot-input" placeholder="Buscar ficha para anexar al PDF..." autocomplete="off">
+                        </div>
                         <div id="fichaResults" class="cot-ac"></div>
                     </div>
                     <div id="fichasSelected" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;"></div>
@@ -112,9 +124,9 @@
 
         {{-- ===================== Columna derecha ===================== --}}
         <div style="display:flex; flex-direction:column; gap:18px;">
-            <div class="cot-panel">
+            <div class="cot-panel venta-products-panel">
                 <div class="cot-panel-head" style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-                    <span>Productos</span>
+                    <span class="venta-panel-title"><span class="venta-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span>Productos</span>
                     <span style="font-size:12px; color:var(--muted); font-weight:500;">Marca <b style="color:var(--green);">Regalo</b> para excluir del total.</span>
                 </div>
                 <div class="cot-panel-body" style="padding-bottom:6px;">
@@ -123,16 +135,16 @@
                              Inventario): el texto del label se queda para los
                              lectores de pantalla, la opción ya dice qué es. --}}
                         <div class="cot-filtros">
-                            <label>Tipo de equipo
+                            <label><svg class="filtro-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 8 4-8 4-8-4 8-4Z"/><path d="m4 12 8 4 8-4M4 17l8 4 8-4"/></svg>Tipo de equipo
                                 <select id="prodFilterType"><option value="">Todos los tipos</option></select>
                             </label>
-                            <label>Subtipo
+                            <label><svg class="filtro-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m20 13-7 7-9-9V4h7l9 9Z"/><circle cx="8" cy="8" r="1.2"/></svg>Subtipo
                                 <select id="prodFilterSubtype"><option value="">Todos los subtipos</option></select>
                             </label>
-                            <label>Marca
+                            <label><svg class="filtro-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m20 13-7 7-9-9V4h7l9 9Z"/><circle cx="8" cy="8" r="1.2"/></svg>Marca
                                 <select id="prodFilterBrand"><option value="">Todas las marcas</option></select>
                             </label>
-                            <label>Modelo
+                            <label><svg class="filtro-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>Modelo
                                 <select id="prodFilterModel"><option value="">Todos los modelos</option></select>
                             </label>
                             <button type="button" id="prodFilterClear" class="cot-filtros-x" title="Limpiar filtros" aria-label="Limpiar filtros">
@@ -155,21 +167,25 @@
                             </tr>
                         </thead>
                         <tbody id="itemsBody">
-                            <tr id="itemsEmpty"><td colspan="{{ $columnas }}" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>
+                            <tr id="itemsEmpty"><td colspan="{{ $columnas }}"><div class="venta-empty-products"><img src="{{ asset('images/ventas/ventas-sin-productos.png') }}" alt=""><strong>Aún no hay productos agregados</strong><span>Busca y selecciona productos para añadirlos a la venta.</span></div></td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <div class="cot-panel">
+            <div class="cot-panel venta-summary-panel">
+                <div class="cot-panel-head">
+                    <span class="venta-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/></svg></span>
+                    <span>Resumen del contrato<small>Totales, descuentos y forma de pago</small></span>
+                </div>
                 <div class="cot-panel-body">
                     <div class="cot-totes">
                         <div class="cot-tote-row">
-                            <label>Envío</label>
+                            <label><svg class="cot-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h11v10H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>Envío</label>
                             <input type="text" id="envio" class="cot-input cot-num" inputmode="decimal" value="" placeholder="0">
                         </div>
                         <div class="cot-tote-row">
-                            <label>Descuento</label>
+                            <label><svg class="cot-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 12 9-9 9 9-9 9-9-9Z"/><path d="m8 8 8 8M16 8l-8 8"/></svg>Descuento</label>
                             <div style="display:flex; gap:8px;">
                                 <select id="descuento_tipo" class="cot-input" style="max-width:130px;">
                                     <option value="porcentaje">%</option>
@@ -180,21 +196,23 @@
                         </div>
                         {{-- Cupón de promoción: aquí solo se escribe el código; el descuento lo calcula el servidor. --}}
                         <div class="cot-tote-row">
-                            <label for="cupon_codigo">Cupón</label>
+                            <label for="cupon_codigo"><svg class="cot-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7a3 3 0 0 0 0 6v4h16v-4a3 3 0 0 0 0-6V3H4v4Z"/><path d="M9 7h6M9 11h6"/></svg>Cupón</label>
                             <div style="display:flex; gap:8px;">
                                 <input type="text" id="cupon_codigo" class="cot-input" placeholder="Código de promoción" autocomplete="off" style="text-transform:uppercase;">
                                 <button type="button" class="btn btn--ghost" id="cuponAplicar" style="white-space:nowrap;">Aplicar</button>
                             </div>
                             <div id="cuponMsg" style="font-size:12px; margin-top:4px; color:var(--muted);"></div>
                         </div>
-                        <label style="display:flex; align-items:center; gap:8px; margin:6px 0;">
+                        <label class="cot-iva-toggle" style="display:flex; align-items:center; gap:8px; margin:6px 0;">
                             <input type="checkbox" id="aplica_iva"> Aplicar IVA (16%)
                         </label>
-                        <div class="cot-line"><span>Subtotal</span><b id="tSubtotal">$0.00</b></div>
-                        <div class="cot-line"><span>Descuento</span><b id="tDescuento">-$0.00</b></div>
-                        <div class="cot-line" id="tCuponLinea" style="display:none; color:var(--green, #15803d);"><span>Cupón <span id="tCuponCodigo"></span></span><b id="tCupon">-$0.00</b></div>
-                        <div class="cot-line"><span>IVA</span><b id="tIva">$0.00</b></div>
-                        <div class="cot-line cot-line-strong"><span>Total</span><b id="tTotal">$0.00</b></div>
+                        <div class="cot-summary-card">
+                            <div class="cot-line"><span>Subtotal</span><b id="tSubtotal">$0.00</b></div>
+                            <div class="cot-line"><span>Descuento</span><b id="tDescuento">-$0.00</b></div>
+                            <div class="cot-line" id="tCuponLinea" style="display:none; color:var(--green, #15803d);"><span>Cupón <span id="tCuponCodigo"></span></span><b id="tCupon">-$0.00</b></div>
+                            <div class="cot-line"><span>IVA</span><b id="tIva">$0.00</b></div>
+                            <div class="cot-line cot-line-strong"><span>Total</span><b id="tTotal">$0.00</b></div>
+                        </div>
 
                         {{-- Qué equipo entrega el cliente a cuenta, cada uno con su
                              valor: la suma se resta del total para el contrato.
@@ -216,24 +234,23 @@
                             </datalist>
                         @endforeach
                     </div>
-                </div>
-            </div>
-
-            <div class="cot-panel">
-                <div class="cot-panel-head">Forma de pago</div>
-                <div class="cot-panel-body">
-                    <input type="hidden" id="modalidad" value="contado">
-                    <div class="cot-seg" role="tablist">
-                        <button type="button" class="cot-seg-btn" data-mod="contado">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                            De contado
-                        </button>
-                        <button type="button" class="cot-seg-btn" data-mod="financiamiento">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
-                            En pagos
-                        </button>
+                    <div class="cot-panel venta-payment-panel">
+                        <div class="cot-panel-head"><span class="venta-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg></span><span>Forma de pago</span></div>
+                        <div class="cot-panel-body">
+                            <input type="hidden" id="modalidad" value="contado">
+                            <div class="cot-seg" role="tablist">
+                                <button type="button" class="cot-seg-btn" data-mod="contado">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                                    De contado
+                                </button>
+                                <button type="button" class="cot-seg-btn" data-mod="financiamiento">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
+                                    En pagos
+                                </button>
+                            </div>
+                            <div id="pagosBlock" style="display:none; margin-top:16px;"></div>
+                        </div>
                     </div>
-                    <div id="pagosBlock" style="display:none; margin-top:16px;"></div>
                 </div>
             </div>
         </div>
@@ -245,6 +262,10 @@
         <button type="submit" form="cotForm" class="btn">{{ $textoGuardar }}</button>
     </div>
 </form>
+
+@if ($ventaDiseno)
+</div>
+@endif
 
 <style>
     .cot-grid { display:grid; grid-template-columns:360px minmax(0,1fr); gap:18px; align-items:start; }
@@ -453,10 +474,163 @@
     .cot-prow-name { font-weight:600; font-size:14px; line-height:1.2; }
     .cot-prow-date { color:var(--muted); font-size:12px; margin-top:2px; }
     .cot-plan-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; flex-wrap:wrap; }
+    .venta-panel-icon { display:inline-grid; place-items:center; flex:none; width:34px; height:34px; border-radius:11px; background:var(--primary-soft); color:var(--primary); }
+    .venta-panel-icon svg { width:19px; height:19px; }
+    /* Diseño visual de Nueva venta: conserva los mismos campos e IDs del cotizador. */
+    .venta-form { --venta-blue:#2a9bff; --venta-purple:#8f70ff; --venta-panel:#102747; }
+    .venta-form .cot-grid { grid-template-columns:minmax(300px,.82fr) minmax(0,1.8fr); gap:16px; }
+    .venta-form .cot-grid > div { display:contents !important; }
+    .venta-form .venta-data-card { grid-column:1; grid-row:1; align-self:start; }
+    .venta-form .venta-products-panel { grid-column:2; grid-row:1; }
+    .venta-form .venta-ficha-panel { grid-column:1; grid-row:2; }
+    .venta-form .venta-summary-panel { grid-column:2; grid-row:2; min-width:0; max-width:100%; border-radius:16px; }
+    .venta-form .venta-summary-panel .venta-payment-panel { margin:18px 0 0; border:0; border-top:1px solid var(--border); border-radius:0; background:transparent; box-shadow:none; overflow:visible; }
+    .venta-form .venta-summary-panel .venta-payment-panel .cot-panel-head { padding:15px 0 7px; }
+    .venta-form .venta-summary-panel .venta-payment-panel .cot-panel-body { padding:12px 0 0; }
+    .venta-form .venta-data-card { border:1px solid color-mix(in srgb,var(--primary) 38%,var(--border)); border-radius:16px; background:linear-gradient(145deg,var(--surface),color-mix(in srgb,var(--surface) 88%,var(--primary))); box-shadow:0 12px 28px rgba(0,0,0,.12); overflow:hidden; }
+    .venta-form .venta-data-card .cot-panel { border:0; border-radius:0; background:transparent; box-shadow:none; overflow:visible; }
+    .venta-form .venta-data-card .cot-panel:first-child { border-bottom:1px solid var(--border); }
+    .venta-form .venta-data-card .cot-panel-head { padding-top:18px; }
+    .venta-form .venta-data-card .cot-panel-head small { display:block; margin-top:3px; color:var(--muted); font-size:11px; font-weight:500; letter-spacing:0; }
+    .venta-form .venta-data-card .cot-panel-body { padding-bottom:18px; }
+    .venta-form .venta-data-card .cot-panel:first-child .venta-panel-icon { width:54px; height:54px; border-radius:50%; background:linear-gradient(145deg,#244c94,#102b61); color:#f2f7ff; box-shadow:0 0 20px rgba(51,112,238,.28); }
+    .venta-form .venta-data-card .cot-panel:first-child .venta-panel-icon svg { width:31px; height:31px; }
+    .venta-form .venta-data-card .cot-lbl { color:#eef6ff; font-weight:700; }
+    .venta-form .venta-field-label { display:flex; align-items:center; gap:7px; color:#eef6ff; }
+    .venta-form .venta-field-label svg { width:17px; height:17px; color:#dceaff; flex:none; }
+    .venta-form .venta-field-label b { color:#ff7b86; }
+    .venta-form .venta-input-with-icon { position:relative; }
+    .venta-form .venta-input-with-icon > svg { position:absolute; z-index:1; left:13px; top:50%; width:18px; height:18px; transform:translateY(-50%); color:#dceaff; pointer-events:none; }
+    .venta-form .venta-input-with-icon .cot-input { padding-left:42px; }
+    .venta-form .venta-textarea-icon > svg { top:18px; transform:none; }
+    .venta-form .venta-textarea-icon .cot-input { padding-top:13px; }
+    .venta-form .venta-data-card .cot-panel:nth-child(2) > .cot-panel-head { display:none; }
+    .venta-form .venta-data-card .cot-input { color:#eef6ff; }
+    .venta-form .venta-data-card .cot-input::placeholder { color:#c2d3e8; }
+    .venta-form .cot-panel { border-color:color-mix(in srgb,var(--primary) 38%,var(--border)); border-radius:16px; background:linear-gradient(145deg,var(--surface),color-mix(in srgb,var(--surface) 88%,var(--primary))); box-shadow:0 12px 28px rgba(0,0,0,.12); overflow:hidden; }
+    .venta-form .venta-data-card .cot-panel { border:0; border-radius:0; background:transparent; box-shadow:none; overflow:visible; }
+    .venta-form .cot-panel-head { display:flex; align-items:center; gap:10px; padding:15px 18px 7px; font-size:16px; font-weight:800; }
+    .venta-form .cot-panel-head small { display:block; margin-top:3px; color:var(--muted); font-size:11px; font-weight:500; letter-spacing:0; }
+    .venta-form .venta-panel-title { display:flex; align-items:center; gap:10px; }
+    .venta-form .venta-panel-icon { display:inline-grid; place-items:center; flex:none; width:34px; height:34px; border-radius:11px; background:color-mix(in srgb,var(--primary) 20%,var(--surface)); color:var(--venta-blue); }
+    .venta-form .venta-panel-icon svg { width:19px; height:19px; }
+    .venta-form .cot-panel-body { padding:12px 18px 18px; }
+    .venta-form .cot-tote-row > label { display:flex; align-items:center; gap:8px; }
+    .venta-form .cot-row-icon { width:17px; height:17px; color:#dceaff; flex:none; }
+    .venta-form .cot-input { border-radius:10px; background:color-mix(in srgb,var(--surface) 92%,transparent); }
+    .venta-form .cot-table { background:color-mix(in srgb,var(--surface) 74%,transparent); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+    .venta-form .cot-table th { background:color-mix(in srgb,var(--surface-2) 82%,var(--primary)); }
+    .venta-form .cot-table td { background:transparent; }
+    .venta-form .venta-products-panel .venta-panel-icon { width:48px; height:48px; border-radius:50%; background:linear-gradient(145deg,#244c94,#122d61); color:#d9e6ff; box-shadow:0 0 18px rgba(51,112,238,.25); }
+    .venta-form .venta-products-panel .venta-panel-icon svg { width:27px; height:27px; }
+    .venta-form .venta-products-panel { min-height:324px; align-self:stretch; display:flex; flex-direction:column; }
+    .venta-form .venta-products-panel > .cot-panel-body:last-child { flex:1; min-height:0; overflow-y:auto !important; overflow-x:auto; scrollbar-color:#3d83d1 #0d213d; scrollbar-width:thin; }
+    .venta-form .venta-products-panel > .cot-panel-body:last-child::-webkit-scrollbar { width:8px; height:8px; }
+    .venta-form .venta-products-panel > .cot-panel-body:last-child::-webkit-scrollbar-track { background:#0d213d; border-radius:8px; }
+    .venta-form .venta-products-panel > .cot-panel-body:last-child::-webkit-scrollbar-thumb { background:#3d83d1; border-radius:8px; }
+    .venta-form .venta-summary-panel .venta-panel-icon { width:48px; height:48px; border-radius:50%; background:linear-gradient(145deg,#244c94,#122d61); color:#d9e6ff; box-shadow:0 0 18px rgba(51,112,238,.25); }
+    .venta-form .venta-summary-panel .venta-panel-icon svg { width:27px; height:27px; }
+    .venta-form .venta-ficha-panel .cot-panel-head { display:flex; align-items:center; gap:10px; padding:15px 18px 7px; }
+    .venta-form .venta-ficha-panel .venta-panel-icon { width:48px; height:48px; border-radius:50%; background:linear-gradient(145deg,#244c94,#122d61); color:#d9e6ff; box-shadow:0 0 18px rgba(51,112,238,.25); }
+    .venta-form .venta-ficha-panel .venta-panel-icon svg { width:27px; height:27px; }
+    .venta-form .ficha-dropzone { position:relative; min-height:150px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; padding:18px; border:1px dashed #6aaef0; border-radius:12px; background:linear-gradient(145deg,rgba(24,57,99,.72),rgba(12,34,63,.9)); color:#eaf4ff; text-align:center; }
+    .venta-form .ficha-upload-icon { width:92px; height:92px; object-fit:contain; color:#168cff; filter:drop-shadow(0 0 7px rgba(42,155,255,.3)); margin:-16px 0 -8px; }
+    .venta-form .ficha-dropzone strong { font-size:12px; color:#eaf4ff; }
+    .venta-form .ficha-dropzone > span { font-size:11px; color:#b8d0e9; }
+    .venta-form .ficha-search-wrap { position:relative; width:min(100%,260px); margin-top:3px; }
+    .venta-form .ficha-search-wrap > svg { position:absolute; z-index:1; left:11px; top:50%; width:16px; height:16px; transform:translateY(-50%); color:#2b79c8; pointer-events:none; }
+    .venta-form .ficha-search-wrap .cot-input { height:36px; padding:8px 10px 8px 34px; border-color:#4b87bf; background:#102747; color:#eaf4ff; font-size:12px; }
+    .venta-form .ficha-dropzone .cot-ac { width:100%; top:100%; }
+    .venta-form .cot-filtros { gap:10px; }
+    .venta-form .cot-filtros label { display:block; }
+    .venta-form .cot-filtros .filtro-icon { position:absolute; z-index:1; left:12px; top:50%; width:17px; height:17px; transform:translateY(-50%); color:#d9eaff; pointer-events:none; }
+    .venta-form .cot-filtros select { height:40px; padding-left:38px; border-radius:10px; border-color:#2d5d91; background:linear-gradient(180deg,rgba(35,78,132,.72),rgba(17,47,84,.9)); color:#eaf4ff; box-shadow:inset 0 1px 0 rgba(255,255,255,.08); }
+    .venta-form .cot-filtros select:hover { border-color:#6ea9e8; background:linear-gradient(180deg,rgba(44,94,155,.8),rgba(18,53,93,.95)); color:#fff; }
+    .venta-form .cot-filtros select:focus-visible { outline:2px solid #5d9fff; outline-offset:1px; }
+    .venta-form .cot-filtros label::after { border-color:#d9eaff; }
+    .venta-form .cot-filtros-x { height:40px; flex-basis:40px; border-radius:10px; border-color:#2d5d91; background:linear-gradient(180deg,rgba(35,78,132,.72),rgba(17,47,84,.9)); color:#d9eaff; }
+    .venta-form .cot-filtros-x:hover { background:#245b99; color:#fff; border-color:#6ea9e8; }
+    .venta-form #prodSearch { border-radius:10px; border-color:#2d5d91; background:linear-gradient(180deg,rgba(24,57,99,.72),rgba(12,34,63,.9)); }
+    .venta-form .cot-table { border-radius:10px; }
+    .venta-form .venta-empty-products { min-height:160px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; color:var(--muted); text-align:center; }
+    .venta-form .venta-empty-products img { width:96px; height:76px; object-fit:contain; filter:drop-shadow(0 0 8px rgba(76,132,255,.45)); margin-bottom:2px; }
+    .venta-form .venta-empty-products strong { color:var(--text); font-size:15px; }
+    .venta-form .venta-empty-products span { font-size:12px; }
+    .venta-form .cot-totes { display:grid; grid-template-columns:minmax(300px,1.2fr) minmax(260px,.9fr); column-gap:28px; min-width:0; max-width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:12px; padding:12px; background:linear-gradient(145deg,rgba(24,57,99,.65),rgba(12,34,63,.72)); }
+    .venta-form .cot-tote-row { display:grid; grid-template-columns:120px minmax(0,1fr); grid-column:1; min-width:0; margin:5px 0; align-items:center; justify-content:initial; }
+    .venta-form .cot-tote-row > label { min-width:0; color:#e9f3ff; font-weight:700; }
+    .venta-form .cot-tote-row > div { flex:1; min-width:0; }
+    .venta-form .cot-tote-row > div { display:flex; min-width:0; }
+    .venta-form .cot-tote-row > .cot-input { min-width:0; width:100%; max-width:none; }
+    .venta-form .cot-tote-row > #envio { width:100%; max-width:none; margin-left:0; }
+    .venta-form .cot-tote-row .cot-input { height:38px; padding:8px 10px; border-color:#2d5d91; background:linear-gradient(180deg,rgba(35,78,132,.7),rgba(17,47,84,.9)); color:#eef7ff; border-radius:8px; }
+    .venta-form .cot-tote-row .btn { height:38px; padding:8px 14px; border-color:#2d5d91; color:#eef7ff; border-radius:8px; }
+    .venta-form .cot-tote-row #descuento_tipo { flex:0 0 86px; max-width:86px !important; }
+    .venta-form .cot-tote-row #descuento_valor { flex:1 1 180px; width:100%; min-width:120px; max-width:none; }
+    .venta-form .cot-tote-row #descuento_tipo option { color:#eaf4ff; background:#102747; }
+    .venta-form .cot-tote-row #cupon_codigo { flex:1 1 0; min-width:0; max-width:none; }
+    .venta-form .cot-iva-toggle { grid-column:1; grid-row:4; align-self:start; margin:6px 0 !important; padding:10px 0 4px; border-top:1px solid rgba(107,151,205,.22); color:#eef7ff; font-weight:700; }
+    .venta-form .cot-iva-toggle input { width:17px; height:17px; accent-color:#2a9bff; }
+    .venta-form .cot-totes > .cot-line,
+    .venta-form .cot-totes > .cot-cuenta { grid-column:1 / -1; }
+    .venta-form .cot-summary-card { grid-column:2; grid-row:1 / span 4; align-self:start; min-width:0; max-width:100%; box-sizing:border-box; border:1px solid rgba(76,132,200,.36); border-radius:14px; padding:0 12px; background:linear-gradient(145deg,rgba(24,57,99,.72),rgba(12,34,63,.9)); }
+    .venta-form .cot-summary-card .cot-line { border-top:1px solid rgba(107,151,205,.2); padding:9px 4px; color:#e8f2ff; }
+    .venta-form .cot-summary-card .cot-line:first-child { border-top:0; }
+    .venta-form .cot-summary-card .cot-line b { color:#f5f9ff; }
+    .venta-form .cot-summary-card .cot-line-strong { margin:6px -6px 0; padding:11px 12px; border:0; border-radius:10px; background:linear-gradient(100deg,#168cff,#554be8); color:#fff; }
+    .venta-form .cot-summary-card .cot-line-strong b { font-size:18px; color:#fff; }
+    .venta-form .venta-summary-panel,
+    .venta-form .venta-summary-panel .cot-totes,
+    .venta-form .venta-summary-panel .cot-summary-card { background:#102747; }
+    .venta-form .cot-line-strong { border-radius:10px; padding:12px; background:linear-gradient(100deg,var(--venta-blue),var(--venta-purple)); color:#fff; border:0; }
+    .venta-form .cot-line-strong b { color:#fff; font-size:18px; }
+    .venta-form .cot-seg { border-radius:10px; background:var(--surface-2); padding:3px; }
+    .venta-form .cot-seg-btn.on { background:linear-gradient(100deg,var(--venta-blue),var(--venta-purple)); color:#fff; box-shadow:0 0 14px rgba(42,155,255,.25); }
+    .venta-form .page-foot { border:1px solid var(--border); border-radius:14px; padding:12px 16px; background:linear-gradient(145deg,var(--surface),var(--surface-2)); }
+    .venta-form .page-foot .btn:not(.btn--ghost) { background:linear-gradient(100deg,var(--venta-blue),var(--venta-purple)); box-shadow:0 8px 18px rgba(42,155,255,.22); }
+    [data-theme="light"] .venta-form .cot-panel { background:linear-gradient(145deg,#fff,#f1f6ff); box-shadow:0 12px 28px rgba(30,64,100,.1); }
+    [data-theme="light"] .venta-form .venta-data-card { background:linear-gradient(145deg,#fff,#f1f6ff); box-shadow:0 12px 28px rgba(30,64,100,.1); }
+    [data-theme="light"] .venta-form .venta-data-card .cot-lbl,
+    [data-theme="light"] .venta-form .venta-field-label,
+    [data-theme="light"] .venta-form .venta-data-card .cot-input { color:#1c3554; }
+    [data-theme="light"] .venta-form .venta-field-label svg,
+    [data-theme="light"] .venta-form .venta-input-with-icon > svg,
+    [data-theme="light"] .venta-form .cot-row-icon { color:#3c638d; }
+    [data-theme="light"] .venta-form .venta-data-card .cot-input::placeholder { color:#7188a1; }
+    [data-theme="light"] .venta-form .cot-table { background:#f8fbff; }
+    [data-theme="light"] .venta-form .cot-totes { background:linear-gradient(145deg,#eff6ff,#e5effc); }
+    [data-theme="light"] .venta-form .cot-tote-row > label,
+    [data-theme="light"] .venta-form .cot-iva-toggle { color:#1c3554; }
+    [data-theme="light"] .venta-form .cot-tote-row .cot-input { color:#1c3554; background:#f8fbff; }
+    [data-theme="light"] .venta-form .cot-tote-row .btn { color:#1c3554; }
+    [data-theme="light"] .venta-form .cot-summary-card { background:linear-gradient(145deg,#f5f9ff,#e7f0fc); border-color:#bed4ec; }
+    [data-theme="light"] .venta-form .venta-summary-panel,
+    [data-theme="light"] .venta-form .venta-summary-panel .cot-totes,
+    [data-theme="light"] .venta-form .venta-summary-panel .cot-summary-card { background:#f1f6ff; }
+    [data-theme="light"] .venta-form .cot-summary-card .cot-line { color:#1c3554; border-color:#d1e0ef; }
+    [data-theme="light"] .venta-form .cot-summary-card .cot-line b { color:#17365a; }
+    [data-theme="light"] .venta-form .cot-filtros select { border-color:#bfd7ee; background:linear-gradient(180deg,#ffffff,#edf5ff); color:#24496e; box-shadow:inset 0 1px 0 rgba(255,255,255,.9); }
+    [data-theme="light"] .venta-form .cot-filtros select:hover { border-color:#71a9dd; background:#fff; color:#17365a; }
+    [data-theme="light"] .venta-form .cot-filtros select option { color:#1c3554; background:#fff; }
+    [data-theme="light"] .venta-form .cot-tote-row #descuento_tipo option { color:#1c3554; background:#fff; }
+    [data-theme="light"] .venta-form .cot-filtros label::after { border-color:#355f8d; }
+    [data-theme="light"] .venta-form .cot-filtros-x { border-color:#b5d2ed; background:linear-gradient(180deg,#e8f4ff,#d2eaff); color:#1675c3; }
+    [data-theme="light"] .venta-form #prodSearch { border-color:#bfd7ee; background:#fff; color:#24496e; }
+    [data-theme="light"] .venta-form #prodSearch::placeholder { color:#7188a1; }
+    [data-theme="light"] .venta-form .ficha-dropzone { background:linear-gradient(145deg,#fafdff,#eaf4ff); }
+    [data-theme="light"] .venta-form .ficha-upload-icon { filter:drop-shadow(0 0 8px rgba(42,155,255,.25)); }
+    [data-theme="light"] .venta-form .ficha-dropzone { border-color:#9ac9f5; color:#24496e; }
+    [data-theme="light"] .venta-form .ficha-dropzone strong { color:#23466e; }
+    [data-theme="light"] .venta-form .ficha-dropzone > span { color:#6b83a0; }
+    [data-theme="light"] .venta-form .ficha-search-wrap .cot-input { border-color:#acd2f4; background:#edf6ff; color:#24496e; }
+    [data-theme="light"] .venta-form .cot-filtros .filtro-icon { color:#355f8d; }
+    @media(max-width:1100px){ .venta-form .cot-grid { grid-template-columns:1fr; } .venta-form .cot-grid > div { display:flex !important; flex-direction:column; gap:14px !important; } .venta-form .venta-data-card, .venta-form .venta-products-panel, .venta-form .venta-ficha-panel, .venta-form .venta-summary-panel { grid-column:auto; grid-row:auto; } .venta-form .venta-products-panel { height:324px; min-height:324px; } .venta-form .cot-totes { grid-template-columns:1fr; } .venta-form .cot-tote-row > #envio { margin-left:0; max-width:none; width:auto; } .venta-form .cot-summary-card { grid-column:1; grid-row:auto; } .venta-form .cot-iva-toggle { grid-column:1; grid-row:auto; border-left:0; border-top:1px solid rgba(107,151,205,.22); padding:12px 0 4px; } }
+    @media(max-width:620px){ .venta-form .cot-panel-head { font-size:15px; } }
 </style>
 
 <script>
 (function () {
+    window.VENTA_EMPTY_IMAGE = @json(asset('images/ventas/ventas-sin-productos.png'));
     const ROUTES = { clientes: @json($rClientes), productos: @json($rProductos), fichas: @json($rFichas) };
     const INITIAL = @json($initial);
     const MOSTRAR_STOCK = @json($mostrarStock);
@@ -695,7 +869,7 @@
         const body = $('itemsBody');
         body.innerHTML = '';
         if (!state.items.length) {
-            body.innerHTML = `<tr id="itemsEmpty"><td colspan="${COLUMNAS}" style="text-align:center; color:var(--muted); padding:22px;">Busca y agrega productos arriba.</td></tr>`;
+            body.innerHTML = `<tr id="itemsEmpty"><td colspan="${COLUMNAS}"><div class="venta-empty-products"><img src="${window.VENTA_EMPTY_IMAGE || ''}" alt=""><strong>Aún no hay productos agregados</strong><span>Busca y selecciona productos para añadirlos a la venta.</span></div></td></tr>`;
             recalc(); return;
         }
         state.items.forEach((it, idx) => {

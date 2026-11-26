@@ -27,6 +27,7 @@
             ? 'Esta venta ya tiene cobros aplicados: puedes cambiar equipo y montos, pero el plan de pagos se conserva y la diferencia se reparte entre lo que falta por cobrar.'
             : 'Puedes modificar productos, montos y plan de pagos antes de guardar.',
         'textoGuardar' => 'Guardar venta',
+        'ventaDiseno' => true,
         'avisosStock' => $avisosStock ?? [],
         'planBloqueado' => $planBloqueado ?? false,
     ])
