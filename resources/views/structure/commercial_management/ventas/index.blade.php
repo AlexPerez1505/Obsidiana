@@ -66,10 +66,12 @@
         background:var(--surface-2); border:1px solid var(--border); color:var(--text); text-decoration:none; font-size:12px; font-weight:700; transition:transform .18s ease, border-color .18s ease; }
     .vd-action:hover { transform:translateX(3px); border-color:var(--primary); } .vd-action svg { width:18px; height:18px; color:var(--primary); }
     .vd-list-card { overflow:hidden; } .vd-list-head { display:flex; align-items:center; gap:12px; padding:14px 16px 10px; }
-    .vd-list-title { display:flex; align-items:center; gap:10px; min-width:0; } .vd-list-title h3 { margin:0; font-size:15px; } .vd-list-title p { margin:2px 0 0; color:var(--muted); font-size:11px; }
-    .vd-list-title .vd-panel-icon { width:34px; height:34px; } .vd-table-tools { margin-left:auto; display:flex; align-items:center; gap:8px; }
-    .vd-table-search { position:relative; } .vd-table-search input { width:245px; padding:8px 10px 8px 31px; border:1px solid var(--border); border-radius:99px; background:var(--surface-2); color:var(--text); font:inherit; font-size:12px; }
-    .vd-table-search svg { position:absolute; width:15px; left:10px; top:50%; transform:translateY(-50%); color:var(--muted); }
+    .vd-list-title { display:flex; align-items:center; gap:10px; min-width:180px; flex:1 1 auto; } .vd-list-title h3 { margin:0; font-size:15px; } .vd-list-title p { margin:2px 0 0; color:var(--muted); font-size:11px; }
+    .vd-list-title .vd-panel-icon { width:34px; height:34px; } .vd-table-tools { margin-left:auto; display:flex; align-items:center; justify-content:flex-end; gap:8px; flex:0 1 auto; min-width:0; flex-wrap:nowrap; }
+    .vd-table-search { display:flex; align-items:center; gap:7px; width:220px; min-width:150px; box-sizing:border-box; padding:0 11px; border:1px solid var(--border); border-radius:9px; background:var(--surface-2); }
+    .vd-table-search input { display:block; width:100%; min-width:0; box-sizing:border-box; padding:9px 0; border:0; outline:0; background:transparent; color:var(--text); font:inherit; font-size:12px; }
+    .vd-table-search svg { flex:none; width:15px; color:var(--muted); pointer-events:none; }
+    .vd-table-filter { height:34px; width:145px; min-width:118px; padding:0 25px 0 10px; border:1px solid var(--border); border-radius:9px; background:var(--surface-2); color:var(--text); font:inherit; font-size:12px; }
     .vd-list-card .erp-table-wrap { padding:0 8px 8px; } .vd-list-card .erp-table { border:1px solid var(--border); border-radius:12px; overflow:hidden; }
     .vd-list-card .erp-table th { padding:10px 12px; font-size:11px; } .vd-list-card .erp-table td { padding:9px 12px; font-size:12px; }
     .vd-list-card .erp-table tbody tr:hover td { background:var(--surface-2); }
@@ -78,7 +80,8 @@
     .vd-cell-icon svg { width:15px; height:15px; }
     .vd-cell-content { min-width:0; }
     @media (max-width:1050px) { .vd-middle { grid-template-columns:1fr 1fr; } .vd-actions { grid-column:1 / -1; flex-direction:row; } .vd-action { flex:1; } }
-    @media (max-width:760px) { .vd-stats { grid-template-columns:repeat(2,1fr); } .vd-middle { grid-template-columns:1fr; } .vd-actions { grid-column:auto; flex-direction:column; } .vd-table-tools { width:100%; margin-left:0; } .vd-table-search,.vd-table-search input { width:100%; } .vd-list-head { flex-wrap:wrap; } }
+    @media (max-width:1050px) { .vd-list-head { flex-wrap:wrap; } .vd-list-title { flex-basis:100%; } .vd-table-tools { width:100%; margin-left:0; justify-content:flex-start; } }
+    @media (max-width:760px) { .vd-stats { grid-template-columns:repeat(2,1fr); } .vd-middle { grid-template-columns:1fr; } .vd-actions { grid-column:auto; flex-direction:column; } .vd-table-tools { width:100%; margin-left:0; flex-wrap:wrap; } .vd-table-search { flex:1 1 100%; width:100%; } .vd-table-filter { flex:1 1 0; min-width:0; } .vd-list-head { flex-wrap:wrap; } }
     @media (prefers-reduced-motion:reduce) { .vd-stat,.vd-action { transition:none; } }
 </style>
 @endpush
@@ -136,7 +139,7 @@
     </div>
 
     <div class="erp-card vd-list-card">
-        <div class="vd-list-head"><div class="vd-list-title"><span class="vd-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><div><h3>Listado de ventas</h3><p>Detalle de las ventas registradas</p></div></div><div class="vd-table-tools"><label class="vd-table-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input type="search" placeholder="Buscar venta..." data-ventas-search aria-label="Buscar venta"></label><x-ui.view-switch key="ventas" /></div></div>
+        <div class="vd-list-head"><div class="vd-list-title"><span class="vd-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><div><h3>Listado de ventas</h3><p>Detalle de las ventas registradas</p></div></div><div class="vd-table-tools"><label class="vd-table-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input type="search" placeholder="Buscar venta..." data-ventas-search aria-label="Buscar venta"></label><select class="vd-table-filter" data-ventas-filter="estado" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option value="borrador">Registrada</option><option value="confirmada">Confirmada</option><option value="facturada">Facturada</option><option value="cancelada">Cancelada</option></select><select class="vd-table-filter" data-ventas-filter="modalidad" aria-label="Filtrar por modalidad"><option value="">Todas las modalidades</option><option value="contado">Contado</option><option value="financiamiento">Financiamiento</option></select><x-ui.view-switch key="ventas" /></div></div>
         <div data-view-list>
         <div class="erp-table-wrap">
             <table class="erp-table" data-ventas-table>
@@ -151,7 +154,7 @@
                                 'cancelada' => 'danger', default => 'neutral',
                             };
                         @endphp
-                        <tr>
+                        <tr class="vd-venta-row" data-venta-estado="{{ $v->estado === 'borrador' ? 'borrador' : $v->estado }}" data-venta-modalidad="{{ $v->modalidad }}">
                             <td class="erp-strong"><div class="vd-cell"><span class="vd-cell-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span><div class="vd-cell-content">{{ $v->folio }}
                                 @if ($v->resumenProductos())
                                     <div style="font-weight:400; font-size:12px; color:var(--muted); margin-top:2px; max-width:240px; white-space:normal;">{{ $v->resumenProductos() }}</div>
@@ -239,7 +242,7 @@
                     'cancelada' => 'danger', default => 'neutral',
                 };
             @endphp
-            <article class="data-card">
+            <article class="data-card vd-venta-row" data-venta-estado="{{ $v->estado === 'borrador' ? 'borrador' : $v->estado }}" data-venta-modalidad="{{ $v->modalidad }}">
                 <div class="data-card-top">
                     <div style="min-width:0;">
                         <div class="t">{{ $v->folio }}</div>
@@ -305,12 +308,27 @@
 
 @push('scripts')
 <script>
-document.addEventListener('input', function (e) {
-    if (!e.target.matches('[data-ventas-search]')) return;
-    var q = e.target.value.trim().toLowerCase();
-    document.querySelectorAll('[data-ventas-table] tbody tr').forEach(function (row) {
-        row.hidden = q !== '' && !row.textContent.toLowerCase().includes(q);
+function filtrarVentas() {
+    var search = document.querySelector('[data-ventas-search]');
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var filtros = {};
+    document.querySelectorAll('[data-ventas-filter]').forEach(function (select) {
+        filtros[select.dataset.ventasFilter] = select.value;
     });
+
+    document.querySelectorAll('.vd-venta-row').forEach(function (row) {
+        var coincideTexto = q === '' || row.textContent.toLowerCase().includes(q);
+        var coincideEstado = !filtros.estado || row.dataset.ventaEstado === filtros.estado;
+        var coincideModalidad = !filtros.modalidad || row.dataset.ventaModalidad === filtros.modalidad;
+        row.hidden = !(coincideTexto && coincideEstado && coincideModalidad);
+    });
+}
+
+document.addEventListener('input', function (e) {
+    if (e.target.matches('[data-ventas-search]')) filtrarVentas();
+});
+document.addEventListener('change', function (e) {
+    if (e.target.matches('[data-ventas-filter]')) filtrarVentas();
 });
 
 // "Eliminar con historial" pide dos confirmaciones seguidas: la acción
